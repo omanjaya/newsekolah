@@ -123,16 +123,17 @@ func (q *Queries) CountTitlesActive(ctx context.Context, tenantID uuid.UUID) (in
 }
 
 const dailyLoansSeries = `-- name: DailyLoansSeries :many
-select date(borrowed_at) as day, count(*)::int as loan_count
+select (borrowed_at at time zone $1::text)::date as day, count(*)::int as loan_count
 from library_loans
-where tenant_id = $1 and borrowed_at >= $2
+where tenant_id = $2 and borrowed_at >= $3
 group by day
 order by day
 `
 
 type DailyLoansSeriesParams struct {
-	TenantID   uuid.UUID          `json:"tenant_id"`
-	BorrowedAt pgtype.Timestamptz `json:"borrowed_at"`
+	Tz       string             `json:"tz"`
+	TenantID uuid.UUID          `json:"tenant_id"`
+	Since    pgtype.Timestamptz `json:"since"`
 }
 
 type DailyLoansSeriesRow struct {
@@ -140,8 +141,10 @@ type DailyLoansSeriesRow struct {
 	LoanCount int32       `json:"loan_count"`
 }
 
+// Days are the tenant's own calendar days (tz is its IANA zone), so a loan
+// at 07:30 in UTC+8 lands on that local day, not the previous UTC one.
 func (q *Queries) DailyLoansSeries(ctx context.Context, arg DailyLoansSeriesParams) ([]DailyLoansSeriesRow, error) {
-	rows, err := q.db.Query(ctx, dailyLoansSeries, arg.TenantID, arg.BorrowedAt)
+	rows, err := q.db.Query(ctx, dailyLoansSeries, arg.Tz, arg.TenantID, arg.Since)
 	if err != nil {
 		return nil, err
 	}
@@ -161,16 +164,17 @@ func (q *Queries) DailyLoansSeries(ctx context.Context, arg DailyLoansSeriesPara
 }
 
 const dailyReturnsSeries = `-- name: DailyReturnsSeries :many
-select date(returned_at) as day, count(*)::int as return_count
+select (returned_at at time zone $1::text)::date as day, count(*)::int as return_count
 from library_loans
-where tenant_id = $1 and returned_at >= $2
+where tenant_id = $2 and returned_at >= $3
 group by day
 order by day
 `
 
 type DailyReturnsSeriesParams struct {
-	TenantID   uuid.UUID          `json:"tenant_id"`
-	ReturnedAt pgtype.Timestamptz `json:"returned_at"`
+	Tz       string             `json:"tz"`
+	TenantID uuid.UUID          `json:"tenant_id"`
+	Since    pgtype.Timestamptz `json:"since"`
 }
 
 type DailyReturnsSeriesRow struct {
@@ -178,8 +182,9 @@ type DailyReturnsSeriesRow struct {
 	ReturnCount int32       `json:"return_count"`
 }
 
+// Grouped by the tenant's calendar day, as DailyLoansSeries.
 func (q *Queries) DailyReturnsSeries(ctx context.Context, arg DailyReturnsSeriesParams) ([]DailyReturnsSeriesRow, error) {
-	rows, err := q.db.Query(ctx, dailyReturnsSeries, arg.TenantID, arg.ReturnedAt)
+	rows, err := q.db.Query(ctx, dailyReturnsSeries, arg.Tz, arg.TenantID, arg.Since)
 	if err != nil {
 		return nil, err
 	}

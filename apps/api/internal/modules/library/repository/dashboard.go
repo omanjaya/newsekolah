@@ -97,8 +97,8 @@ func (r *Repository) PopularTitlesAllTime(ctx context.Context, tenantID uuid.UUI
 	return out, nil
 }
 
-func (r *Repository) DailyLoansSeries(ctx context.Context, tenantID uuid.UUID, since time.Time) ([]service.DaySeriesPoint, error) {
-	rows, err := r.queries(ctx).DailyLoansSeries(ctx, db.DailyLoansSeriesParams{TenantID: tenantID, BorrowedAt: pdatabase.Timestamptz(since)})
+func (r *Repository) DailyLoansSeries(ctx context.Context, tenantID uuid.UUID, since time.Time, loc *time.Location) ([]service.DaySeriesPoint, error) {
+	rows, err := r.queries(ctx).DailyLoansSeries(ctx, db.DailyLoansSeriesParams{TenantID: tenantID, Since: pdatabase.Timestamptz(since), Tz: loc.String()})
 	if err != nil {
 		return nil, fmt.Errorf("daily loans series: %w", err)
 	}
@@ -109,8 +109,8 @@ func (r *Repository) DailyLoansSeries(ctx context.Context, tenantID uuid.UUID, s
 	return out, nil
 }
 
-func (r *Repository) DailyReturnsSeries(ctx context.Context, tenantID uuid.UUID, since time.Time) ([]service.DaySeriesPoint, error) {
-	rows, err := r.queries(ctx).DailyReturnsSeries(ctx, db.DailyReturnsSeriesParams{TenantID: tenantID, ReturnedAt: pdatabase.Timestamptz(since)})
+func (r *Repository) DailyReturnsSeries(ctx context.Context, tenantID uuid.UUID, since time.Time, loc *time.Location) ([]service.DaySeriesPoint, error) {
+	rows, err := r.queries(ctx).DailyReturnsSeries(ctx, db.DailyReturnsSeriesParams{TenantID: tenantID, Since: pdatabase.Timestamptz(since), Tz: loc.String()})
 	if err != nil {
 		return nil, fmt.Errorf("daily returns series: %w", err)
 	}

@@ -72,7 +72,7 @@ describe("MemberBulkRegisterDialog", () => {
     render(<MemberBulkRegisterDialog open={true} onOpenChange={vi.fn()} />);
 
     expect(useClassesQuery).toHaveBeenCalledWith(false);
-    expect(screen.queryByText("classOptional")).not.toBeInTheDocument();
+    expect(screen.queryByText("class")).not.toBeInTheDocument();
   });
 
   it("requests classes and shows the class filter for a role that can view them", () => {
@@ -82,7 +82,7 @@ describe("MemberBulkRegisterDialog", () => {
     render(<MemberBulkRegisterDialog open={true} onOpenChange={vi.fn()} />);
 
     expect(useClassesQuery).toHaveBeenCalledWith(true);
-    expect(screen.getByText("classOptional")).toBeInTheDocument();
+    expect(screen.getByText("class")).toBeInTheDocument();
   });
 
   // The dialog stays mounted while closed. Cancel used to skip the reset

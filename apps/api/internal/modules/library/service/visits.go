@@ -67,14 +67,7 @@ func (s *Service) RecordVisit(ctx context.Context, tenantID uuid.UUID, in Record
 // TodayVisitSummary is the guest book's daily totals, in the tenant's own
 // calendar day.
 func (s *Service) TodayVisitSummary(ctx context.Context, tenantID uuid.UUID) (VisitSummary, error) {
-	loc := time.UTC
-	if tz, err := s.repo.GetTenantTimezone(ctx, tenantID); err == nil && tz != "" {
-		if l, err := time.LoadLocation(tz); err == nil {
-			loc = l
-		}
-	}
-	now := clock.Now(ctx, s.clock).In(loc)
-	from := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
+	from := timeToDay(clock.Now(ctx, s.clock).In(s.tenantLocation(ctx, tenantID)))
 	var summary VisitSummary
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error

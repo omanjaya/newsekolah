@@ -14,9 +14,9 @@ import (
 	pdatabase "github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
-// SearchOpacTitles picks the fulltext path for a 3+ character query and the
-// LIKE fallback below that, matching the old app's OPAC search
-// (library_opac.go).
+// SearchOpacTitles picks the prefix fulltext path for a 3+ character query
+// and the LIKE fallback below that (or when the query holds no word),
+// matching the old app's OPAC search (library_opac.go).
 func (r *Repository) SearchOpacTitles(ctx context.Context, tenantID uuid.UUID, p service.OpacSearchParams) ([]domain.Title, error) {
 	var prefix, search *string
 	if p.ClassificationPrefix != "" {
@@ -25,9 +25,9 @@ func (r *Repository) SearchOpacTitles(ctx context.Context, tenantID uuid.UUID, p
 	if p.Search != "" {
 		search = &p.Search
 	}
-	if len([]rune(p.Search)) >= 3 {
+	if tsquery := fulltextQuery(p.Search); tsquery != "" {
 		rows, err := r.queries(ctx).SearchOpacTitlesFulltext(ctx, db.SearchOpacTitlesFulltextParams{
-			TenantID: tenantID, ClassificationPrefix: pdatabase.Text(deref(prefix)), MaterialTypeID: pdatabase.NullUUID(p.MaterialTypeID), Search: p.Search,
+			TenantID: tenantID, ClassificationPrefix: pdatabase.Text(deref(prefix)), MaterialTypeID: pdatabase.NullUUID(p.MaterialTypeID), Search: tsquery,
 			Limit: int32(p.Limit), Offset: int32(p.Offset), //nolint:gosec // clamped
 		})
 		if err != nil {

@@ -252,8 +252,8 @@ type Repository interface {
 	ListLatestLoans(ctx context.Context, tenantID uuid.UUID, limit int) ([]domain.Loan, error)
 	ListLongestOverdueLoans(ctx context.Context, tenantID uuid.UUID, asOf time.Time, limit int) ([]domain.Loan, error)
 	PopularTitlesAllTime(ctx context.Context, tenantID uuid.UUID, limit int) ([]TitleLoanCount, error)
-	DailyLoansSeries(ctx context.Context, tenantID uuid.UUID, since time.Time) ([]DaySeriesPoint, error)
-	DailyReturnsSeries(ctx context.Context, tenantID uuid.UUID, since time.Time) ([]DaySeriesPoint, error)
+	DailyLoansSeries(ctx context.Context, tenantID uuid.UUID, since time.Time, loc *time.Location) ([]DaySeriesPoint, error)
+	DailyReturnsSeries(ctx context.Context, tenantID uuid.UUID, since time.Time, loc *time.Location) ([]DaySeriesPoint, error)
 
 	CountActiveStudentsTotal(ctx context.Context, tenantID uuid.UUID) (int, error)
 	CountMembersTotal(ctx context.Context, tenantID uuid.UUID) (int, error)

@@ -25,10 +25,14 @@ function loan(patch: Partial<LibraryLoan> = {}): LibraryLoan {
 }
 
 describe("MyLibraryHistoryTable", () => {
-  it("shows the empty message when there is no history", () => {
+  // An empty history is an empty state inside the section's card, as on
+  // the reader's discipline page, not a lone muted line under a heading.
+  it("shows an empty state in the section's card when there is no history", () => {
     render(<MyLibraryHistoryTable history={[]} locale="id" />);
 
     expect(screen.getByText("noHistory")).toBeInTheDocument();
+    expect(screen.getByText("noHistoryBody")).toBeInTheDocument();
+    expect(screen.getByText("noHistory").closest("[data-slot='card']")).not.toBeNull();
   });
 
   it("shows a history row's title text from /v1/library/me, never a raw title id", () => {

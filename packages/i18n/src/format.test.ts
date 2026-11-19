@@ -8,6 +8,7 @@ import {
   formatNumber,
   formatRelative,
   formatShortDate,
+  formatShortDateTime,
   formatTime,
 } from "./format.js";
 
@@ -114,6 +115,29 @@ describe("formatShortDate", () => {
     expect(
       formatShortDate("2027-01-03", { locale: "id", timeZone: "Asia/Jakarta", now: newYear }),
     ).toBe("3 Jan");
+  });
+});
+
+describe("formatShortDateTime", () => {
+  const now = new Date("2026-11-19T03:00:00Z");
+
+  it("joins the short date and the time, in the school's zone", () => {
+    // 20.34 UTC on the 18th is 04.34 on the 19th in Makassar (UTC+8).
+    expect(
+      formatShortDateTime("2026-11-18T20:34:00Z", { locale: "id", timeZone: "Asia/Makassar", now }),
+    ).toBe("19 Nov 04.34");
+  });
+
+  it("keeps the year outside the current one", () => {
+    expect(
+      formatShortDateTime("2025-11-19T08:32:00Z", { locale: "id", timeZone: "Asia/Makassar", now }),
+    ).toBe("19 Nov 2025 16.32");
+  });
+
+  it("reads day first with a 12-hour time in English", () => {
+    expect(
+      formatShortDateTime("2026-11-19T08:32:00Z", { locale: "en", timeZone: "Asia/Makassar", now }),
+    ).toMatch(/^19 Nov 4:32\sPM$/);
   });
 });
 

@@ -10,9 +10,8 @@ import {
   SkeletonCards,
   Stat,
   StatGrid,
-  TextLink,
 } from "@newsekolah/ui";
-import { BookCheck, BookPlus, BookX, DoorOpen } from "lucide-react";
+import { ArrowLeftRight, BookCheck, BookPlus, BookX, DoorOpen } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { type ReactElement, type ReactNode, useId } from "react";
 
@@ -78,7 +77,11 @@ export function LibraryDashboardView({ toolbar }: { toolbar?: ReactNode } = {}):
       variant="wide"
       title={t("title")}
       nav={false}
-      actions={desk ? <TextLink href={desk}>{t("openDesk")}</TextLink> : undefined}
+      // A header button from 640px and the header menu on a phone, as the
+      // shortcuts of every other library page.
+      secondaryActions={
+        desk ? [{ label: t("openDesk"), icon: <ArrowLeftRight />, href: desk }] : undefined
+      }
       toolbar={toolbar}
     >
       {isError && !data ? (

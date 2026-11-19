@@ -153,7 +153,7 @@ export function VisitRecordDialog({
               />
             </Field>
           )}
-          <Field label={t("purpose")}>
+          <Field label={t("purpose")} optional>
             <Input
               value={purpose}
               onChange={(e) => {

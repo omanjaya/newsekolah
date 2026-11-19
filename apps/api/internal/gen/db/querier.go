@@ -442,7 +442,10 @@ type Querier interface {
 	// GetExitPermitInstanceForSubjectToday below agree on "today" with the
 	// tenant's own calendar, not the server's UTC one.
 	CreateWorkflowInstance(ctx context.Context, arg CreateWorkflowInstanceParams) (WorkflowInstance, error)
+	// Days are the tenant's own calendar days (tz is its IANA zone), so a loan
+	// at 07:30 in UTC+8 lands on that local day, not the previous UTC one.
 	DailyLoansSeries(ctx context.Context, arg DailyLoansSeriesParams) ([]DailyLoansSeriesRow, error)
+	// Grouped by the tenant's calendar day, as DailyLoansSeries.
 	DailyReturnsSeries(ctx context.Context, arg DailyReturnsSeriesParams) ([]DailyReturnsSeriesRow, error)
 	DeactivateActiveWorkflowDefinitions(ctx context.Context, arg DeactivateActiveWorkflowDefinitionsParams) error
 	DeactivateAllAcademicYears(ctx context.Context, tenantID uuid.UUID) error
@@ -1550,7 +1553,9 @@ type Querier interface {
 	RevokeSession(ctx context.Context, arg RevokeSessionParams) error
 	RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) ([]uuid.UUID, error)
 	// For a query of 3+ characters: Postgres fulltext against search_vector
-	// (migrations/0094), the old app's MATCH AGAINST equivalent.
+	// (migrations/0096), the old app's MATCH AGAINST equivalent. search is a
+	// prefix tsquery ("lask:*") built by the repository, so a word typed
+	// halfway still matches; ts_rank still orders the hits.
 	SearchOpacTitlesFulltext(ctx context.Context, arg SearchOpacTitlesFulltextParams) ([]LibraryTitle, error)
 	// For a query under 3 characters: a plain LIKE over title/author, plus an
 	// exact ISBN match, matching the old app's short-query fallback

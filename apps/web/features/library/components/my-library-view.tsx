@@ -5,6 +5,7 @@ import type { Locale } from "@newsekolah/i18n";
 import {
   Alert,
   Button,
+  Card,
   DataList,
   DataListItem,
   EmptyState,
@@ -142,7 +143,13 @@ export function MyLibraryView(): ReactElement {
           count={activeLoans.length > 0 ? activeLoans.length : undefined}
         />
         {activeLoans.length === 0 ? (
-          <p className="text-body-sm text-fg-muted">{t("noActiveLoans")}</p>
+          <Card>
+            <EmptyState
+              icon={<domainIcons.library aria-hidden="true" />}
+              title={t("noActiveLoans")}
+              description={t("noActiveLoansBody")}
+            />
+          </Card>
         ) : (
           <ul className="flex flex-col gap-3" data-testid="my-library-loan-cards">
             {activeLoans.map((loan) => (

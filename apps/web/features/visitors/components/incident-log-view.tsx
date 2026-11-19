@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDateTime } from "@newsekolah/i18n";
+import { formatDateRange, formatDateTime } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
   Badge,
@@ -35,17 +35,6 @@ import { IncidentDetailDialog } from "./incident-detail-dialog";
 import { IncidentForm } from "./incident-form";
 
 export { SEVERITY_VARIANT };
-
-/** "14 Okt – 13 Nov 2026" for two calendar dates ("YYYY-MM-DD"). */
-function formatDayRange(from: string, to: string, locale: Locale): string {
-  const format = new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-  return format.formatRange(new Date(`${from}T00:00:00Z`), new Date(`${to}T00:00:00Z`));
-}
 
 /**
  * The security office's incident log, defaulting to the last 30 days but
@@ -171,7 +160,7 @@ export function IncidentLogView(): ReactElement {
   );
 
   const filtered = onlyOpen === "true" || from !== defaultFrom || to !== today;
-  const rangeText = from !== "" && to !== "" ? formatDayRange(from, to, locale) : "";
+  const rangeText = from !== "" && to !== "" ? formatDateRange(from, to, { locale }) : "";
   const empty = {
     icon: <domainIcons.incident />,
     title: t("emptyTitle"),

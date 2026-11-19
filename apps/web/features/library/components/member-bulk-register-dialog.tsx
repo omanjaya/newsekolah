@@ -22,13 +22,10 @@ import { useClassesQuery } from "../../reference/api";
 import {
   type LibraryBulkRegisterResult,
   useBulkRegisterLibraryMembersMutation,
-  useLibraryMemberTypesQuery,
 } from "../members-api";
+import { MEMBER_ROLES, type MemberRole, useMemberTypeChoice } from "../use-member-type-choice";
 
 import { RejectedReasonList } from "./rejected-reason-list";
-
-const ROLES = ["student", "teacher", "staff"] as const;
-type Role = (typeof ROLES)[number];
 
 /** Registers every user of one role (optionally one class) not already a member. */
 export function MemberBulkRegisterDialog({
@@ -42,7 +39,6 @@ export function MemberBulkRegisterDialog({
   const tRole = useTranslations("app.library.members.roles");
   const tValidation = useTranslations("validation");
   const apiErrorMessage = useApiErrorMessage();
-  const memberTypes = useLibraryMemberTypesQuery();
   // Narrowing bulk registration to one class is a convenience, not a
   // requirement (the role alone is enough to register everyone) -- so a
   // role without view_academic_data (e.g. the librarian) just registers
@@ -51,24 +47,21 @@ export function MemberBulkRegisterDialog({
   const classes = useClassesQuery(canViewClasses);
   const bulkRegister = useBulkRegisterLibraryMembersMutation();
 
-  const [role, setRole] = useState<Role>("student");
+  const [role, setRole] = useState<MemberRole>("student");
   const [classId, setClassId] = useState("");
-  const [memberTypeId, setMemberTypeId] = useState("");
+  const memberType = useMemberTypeChoice(role);
+  const memberTypeId = memberType.value;
   const [result, setResult] = useState<LibraryBulkRegisterResult | null>(null);
   const [error, setError] = useState("");
   const { ref: formRef, attempted, check, reset: resetValidation } = useSubmitValidation();
 
-  const typeOptions = (memberTypes.data?.data ?? []).map((mt) => ({
-    value: mt.id,
-    label: mt.name,
-  }));
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
 
   function reset() {
     setResult(null);
     setError("");
     setClassId("");
-    setMemberTypeId("");
+    memberType.reset();
     resetValidation();
   }
 
@@ -145,16 +138,16 @@ export function MemberBulkRegisterDialog({
           >
             <Field label={t("role")}>
               <Select
-                options={ROLES.map((r) => ({ value: r, label: tRole(r) }))}
+                options={MEMBER_ROLES.map((r) => ({ value: r, label: tRole(r) }))}
                 value={role}
                 onValueChange={(value) => {
-                  setRole(value as Role);
+                  setRole(value as MemberRole);
                   setClassId("");
                 }}
               />
             </Field>
             {role === "student" && canViewClasses && (
-              <Field label={t("classOptional")}>
+              <Field label={t("class")} optional>
                 <Select
                   options={classOptions}
                   value={classId}
@@ -169,11 +162,11 @@ export function MemberBulkRegisterDialog({
               error={attempted && !memberTypeId ? tValidation("required") : undefined}
             >
               <Select
-                options={typeOptions}
+                options={memberType.options}
                 value={memberTypeId}
-                onValueChange={setMemberTypeId}
+                onValueChange={memberType.onValueChange}
                 placeholder={t("memberTypePlaceholder")}
-                disabled={memberTypes.isLoading}
+                disabled={memberType.isLoading}
               />
             </Field>
             {error && <FormError>{error}</FormError>}

@@ -30,15 +30,27 @@ describe("MyLibraryReservations", () => {
   it("invites the reader to search a title when self-service booking is enabled", () => {
     render(<MyLibraryReservations reservations={[]} bookingEnabled={true} />);
 
+    expect(screen.getByText("emptyTitle")).toBeInTheDocument();
     expect(screen.getByText("emptyBody")).toBeInTheDocument();
     expect(screen.queryByText("bookingDisabled")).not.toBeInTheDocument();
+  });
+
+  // The page's other sections ("Sedang dipinjam", "Riwayat peminjaman")
+  // title themselves above their card; holds used to put the title inside.
+  it("titles the section above its card, like the page's other sections", () => {
+    const { container } = render(<MyLibraryReservations reservations={[]} bookingEnabled />);
+
+    const heading = screen.getByRole("heading", { name: "heading" });
+    const section = container.querySelector("section");
+    expect(section).toContainElement(heading);
+    expect(heading.closest("[data-slot='card']")).toBeNull();
   });
 
   it("does not invite the reader to search when self-service booking is disabled, and explains why instead", () => {
     render(<MyLibraryReservations reservations={[]} bookingEnabled={false} />);
 
     expect(screen.queryByText("emptyBody")).not.toBeInTheDocument();
-    expect(screen.getByText("emptyBodyDisabled")).toBeInTheDocument();
+    expect(screen.getByText("emptyTitle")).toBeInTheDocument();
     expect(screen.getByText("bookingDisabled")).toBeInTheDocument();
   });
 

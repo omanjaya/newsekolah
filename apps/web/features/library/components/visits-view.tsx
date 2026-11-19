@@ -1,6 +1,6 @@
 "use client";
 
-import type { Locale } from "@newsekolah/i18n";
+import { formatShortDateTime, type Locale } from "@newsekolah/i18n";
 import {
   Badge,
   Button,
@@ -151,18 +151,17 @@ export function VisitsView(): ReactElement {
         meta: { card: "subtitle" },
         cell: ({ row }) => (
           <time dateTime={row.original.visited_at} className="tabular-nums">
-            {new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "id-ID", {
-              day: "numeric",
-              month: "short",
-              hour: "2-digit",
-              minute: "2-digit",
+            {formatShortDateTime(row.original.visited_at, {
+              locale,
               timeZone,
-            }).format(new Date(row.original.visited_at))}
+              // The school's current year: midday UTC is that year in every zone.
+              now: new Date(`${today}T12:00:00Z`),
+            })}
           </time>
         ),
       },
     ],
-    [t, locale, directoryMap, timeZone, canViewMembers],
+    [t, locale, directoryMap, timeZone, today, canViewMembers],
   );
 
   const recordButton = canRecord ? (

@@ -447,7 +447,7 @@
       "title": "Bulk register members",
       "description": "Registers every user in this role who is not already a member.",
       "role": "Role",
-      "classOptional": "Class (optional)",
+      "class": "Class",
       "classAll": "All classes",
       "memberType": "Member type",
       "memberTypePlaceholder": "Choose a member type",
@@ -501,8 +501,8 @@
       "userPlaceholder": "Choose a user",
       "memberType": "Member type",
       "memberTypePlaceholder": "Choose a member type",
-      "memberNo": "Member number (optional)",
-      "memberNoPlaceholder": "Generated automatically when left blank",
+      "memberNo": "Member number",
+      "memberNoPlaceholder": "Generated when empty",
       "notes": "Notes",
       "cancel": "Cancel",
       "submit": "Register"
@@ -867,7 +867,7 @@
       "groupName": "Group name",
       "groupSize": "Number of people",
       "purpose": "Purpose",
-      "purposePlaceholder": "Optional",
+      "purposePlaceholder": "For example reading or homework",
       "cancel": "Cancel",
       "submit": "Save"
     }
@@ -1539,9 +1539,11 @@
       "other": "Other"
     },
     "activeLoans": "Currently borrowed",
-    "noActiveLoans": "No books on loan right now.",
+    "noActiveLoans": "No books on loan right now",
+    "noActiveLoansBody": "Books you borrow at the library appear here with their due dates.",
     "history": "Loan history",
-    "noHistory": "No loan history yet.",
+    "noHistory": "No loan history yet",
+    "noHistoryBody": "Books you have returned are listed here.",
     "tiles": {
       "nextDue": "Next due date",
       "overdue": "Overdue"
@@ -1555,8 +1557,8 @@
     },
     "reserve": {
       "heading": "Holds",
-      "emptyBody": "No holds yet. Search a title below to place a hold on a book someone else has out.",
-      "emptyBodyDisabled": "No holds yet.",
+      "emptyTitle": "No holds yet",
+      "emptyBody": "Search a title below to place a hold on a book someone else has out.",
       "queuePosition": "Queue position {position}",
       "status": {
         "waiting": "Waiting",

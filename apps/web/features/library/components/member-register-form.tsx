@@ -19,10 +19,8 @@ import {
   DirectoryPicker,
   useDirectoryPickerLabels,
 } from "../../reference/components/directory-picker";
-import { useLibraryMemberTypesQuery, useRegisterLibraryMemberMutation } from "../members-api";
-
-const ROLES = ["student", "teacher", "staff"] as const;
-type Role = (typeof ROLES)[number];
+import { useRegisterLibraryMemberMutation } from "../members-api";
+import { MEMBER_ROLES, type MemberRole, useMemberTypeChoice } from "../use-member-type-choice";
 
 /** Registers one existing user (picked by role, then by name) as a library member. */
 export function MemberRegisterForm({
@@ -34,12 +32,12 @@ export function MemberRegisterForm({
   const tRole = useTranslations("app.library.members.roles");
   const tValidation = useTranslations("validation");
   const apiErrorMessage = useApiErrorMessage();
-  const memberTypes = useLibraryMemberTypesQuery();
   const register = useRegisterLibraryMemberMutation();
 
-  const [role, setRole] = useState<Role>("student");
+  const [role, setRole] = useState<MemberRole>("student");
   const [userId, setUserId] = useState("");
-  const [memberTypeId, setMemberTypeId] = useState("");
+  const memberType = useMemberTypeChoice(role);
+  const memberTypeId = memberType.value;
   const [memberNo, setMemberNo] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
@@ -47,10 +45,6 @@ export function MemberRegisterForm({
   const required = (value: string) => (attempted && !value ? tValidation("required") : undefined);
 
   const userLabels = useDirectoryPickerLabels(t("userPlaceholder"));
-  const typeOptions = (memberTypes.data?.data ?? []).map((mt) => ({
-    value: mt.id,
-    label: mt.name,
-  }));
 
   return (
     <form
@@ -83,10 +77,10 @@ export function MemberRegisterForm({
     >
       <Field label={t("role")}>
         <Select
-          options={ROLES.map((r) => ({ value: r, label: tRole(r) }))}
+          options={MEMBER_ROLES.map((r) => ({ value: r, label: tRole(r) }))}
           value={role}
           onValueChange={(value) => {
-            setRole(value as Role);
+            setRole(value as MemberRole);
             setUserId("");
           }}
         />
@@ -103,14 +97,14 @@ export function MemberRegisterForm({
       </Field>
       <Field label={t("memberType")} required error={required(memberTypeId)}>
         <Select
-          options={typeOptions}
+          options={memberType.options}
           value={memberTypeId}
-          onValueChange={setMemberTypeId}
+          onValueChange={memberType.onValueChange}
           placeholder={t("memberTypePlaceholder")}
-          disabled={memberTypes.isLoading}
+          disabled={memberType.isLoading}
         />
       </Field>
-      <Field label={t("memberNo")}>
+      <Field label={t("memberNo")} optional>
         <Input
           value={memberNo}
           onChange={(e) => {
@@ -120,7 +114,7 @@ export function MemberRegisterForm({
           maxLength={40}
         />
       </Field>
-      <Field label={t("notes")}>
+      <Field label={t("notes")} optional>
         <Input
           value={notes}
           onChange={(e) => {

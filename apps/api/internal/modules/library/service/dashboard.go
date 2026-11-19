@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -58,7 +57,11 @@ func (s *Service) Dashboard(ctx context.Context, tenantID uuid.UUID) (Dashboard,
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return Dashboard{}, err
 	}
-	now := clock.Now(ctx, s.clock)
+	// Every "today" figure and the series are read in the tenant's own
+	// calendar day, as TodayVisitSummary is, so the dashboard and the
+	// visits tab agree on what today is.
+	loc := s.tenantLocation(ctx, tenantID)
+	now := clock.Now(ctx, s.clock).In(loc)
 	dayStart := timeToDay(now)
 	dayEnd := dayStart.AddDate(0, 0, 1)
 
@@ -144,16 +147,16 @@ func (s *Service) Dashboard(ctx context.Context, tenantID uuid.UUID) (Dashboard,
 			popular = append(popular, MostBorrowedTitle{Title: withAvailability, LoanCount: c.LoanCount})
 		}
 
-		since := dayStart.AddDate(0, 0, -dashboardSeriesDays)
-		loanSeries, err := s.repo.DailyLoansSeries(ctx, tenantID, since)
+		since := dayStart.AddDate(0, 0, -(dashboardSeriesDays - 1))
+		loanSeries, err := s.repo.DailyLoansSeries(ctx, tenantID, since, loc)
 		if err != nil {
 			return err
 		}
-		returnSeries, err := s.repo.DailyReturnsSeries(ctx, tenantID, since)
+		returnSeries, err := s.repo.DailyReturnsSeries(ctx, tenantID, since, loc)
 		if err != nil {
 			return err
 		}
-		series = mergeSeries(loanSeries, returnSeries)
+		series = mergeSeries(since, dayStart, loanSeries, returnSeries)
 		return nil
 	})
 	if err != nil {
@@ -174,34 +177,38 @@ func timeToDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 }
 
-// mergeSeries combines the loans and returns series (which may have
-// different sets of days, since a day with zero loans is simply absent
-// from that series) into one ordered list of points.
-func mergeSeries(loans, returns []DaySeriesPoint) []DashboardSeriesPoint {
+// tenantLocation is the tenant's own time zone, so "today" means the
+// school's calendar day; it falls back to UTC when the zone is unset or
+// unknown.
+func (s *Service) tenantLocation(ctx context.Context, tenantID uuid.UUID) *time.Location {
+	tz, err := s.repo.GetTenantTimezone(ctx, tenantID)
+	if err != nil || tz == "" {
+		return time.UTC
+	}
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		return time.UTC
+	}
+	return loc
+}
+
+// mergeSeries combines the loans and returns series into one point per
+// calendar day from first to last inclusive. A day with no loans or
+// returns is absent from the query results and comes out as zero, so the
+// chart always spans the whole window with evenly spaced days.
+func mergeSeries(first, last time.Time, loans, returns []DaySeriesPoint) []DashboardSeriesPoint {
 	loansByDay := make(map[string]int, len(loans))
 	returnsByDay := make(map[string]int, len(returns))
-	order := make([]string, 0, len(loans)+len(returns))
-	seen := make(map[string]bool)
 	for _, p := range loans {
-		day := p.Day.Format("2006-01-02")
-		loansByDay[day] = p.Count
-		if !seen[day] {
-			seen[day] = true
-			order = append(order, day)
-		}
+		loansByDay[p.Day.Format(time.DateOnly)] = p.Count
 	}
 	for _, p := range returns {
-		day := p.Day.Format("2006-01-02")
-		returnsByDay[day] = p.Count
-		if !seen[day] {
-			seen[day] = true
-			order = append(order, day)
-		}
+		returnsByDay[p.Day.Format(time.DateOnly)] = p.Count
 	}
-	sort.Strings(order)
-	out := make([]DashboardSeriesPoint, len(order))
-	for i, day := range order {
-		out[i] = DashboardSeriesPoint{Day: day, Loans: loansByDay[day], Returns: returnsByDay[day]}
+	var out []DashboardSeriesPoint
+	for d := timeToDay(first); !d.After(last); d = d.AddDate(0, 0, 1) {
+		day := d.Format(time.DateOnly)
+		out = append(out, DashboardSeriesPoint{Day: day, Loans: loansByDay[day], Returns: returnsByDay[day]})
 	}
 	return out
 }
