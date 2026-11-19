@@ -6,6 +6,7 @@
   "searchPlaceholder": "Cari pengaturan...",
   "emptyTitle": "Tidak ada pengaturan yang cocok",
   "emptyDescription": "Coba kata kunci lain atau hapus pencarian.",
+  "clearSearch": "Hapus pencarian",
   "noAccessTitle": "Tidak ada pengaturan yang bisa dibuka",
   "noAccessDescription": "Akun Anda belum memiliki akses ke pengaturan sekolah.",
   "sections": {

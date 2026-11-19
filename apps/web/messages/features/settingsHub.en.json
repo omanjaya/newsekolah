@@ -6,6 +6,7 @@
   "searchPlaceholder": "Search settings...",
   "emptyTitle": "No matching settings",
   "emptyDescription": "Try another keyword or clear the search.",
+  "clearSearch": "Clear search",
   "noAccessTitle": "No settings available",
   "noAccessDescription": "Your account has no access to school settings yet.",
   "sections": {

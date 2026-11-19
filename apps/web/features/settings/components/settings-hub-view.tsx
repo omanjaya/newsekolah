@@ -71,6 +71,7 @@ export function SettingsHubView(): ReactElement {
             <FilteredEmptyState
               title={t("app.settingsHub.emptyTitle")}
               description={t("app.settingsHub.emptyDescription")}
+              resetLabel={t("app.settingsHub.clearSearch")}
               onReset={() => {
                 setQuery("");
               }}
