@@ -31,6 +31,7 @@ import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { isModuleEnabled } from "../../../lib/modules/feature-modules";
+import { confirmUnsavedChangesBeforeNavigation } from "../../../lib/navigation/use-unsaved-changes-protection";
 import { useSession } from "../../../lib/session/session-provider";
 import { PreviewSheet } from "../../settings/components/preview-sheet";
 import { SettingsSaveBar } from "../../settings/components/settings-save-bar";
@@ -296,9 +297,21 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
           saving={saving}
           onSave={handleSave}
           saveLabel={template ? t("save") : t("create")}
+          // A new template has its create button from the start; "Batal"
+          // goes back to the list (asking first once something was typed)
+          // instead of only clearing the fields.
+          {...(template
+            ? {}
+            : { alwaysShow: true, message: t("createPending"), discardLabel: t("cancel") })}
           onDiscard={() => {
-            setName(template?.name ?? "");
-            setBody(template?.body ?? "");
+            if (!template) {
+              void confirmUnsavedChangesBeforeNavigation().then((leave) => {
+                if (leave) router.push(LIST_HREF);
+              });
+              return;
+            }
+            setName(template.name);
+            setBody(template.body);
             setSubmitted(false);
             setError(null);
           }}

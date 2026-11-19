@@ -29,6 +29,7 @@
     "rowActions": "Actions for {name}",
     "editor": {
       "createTitle": "New template",
+      "createPending": "New template not saved yet",
       "editTitle": "Edit template",
       "nameLabel": "Template name",
       "kindLabel": "Document kind",
