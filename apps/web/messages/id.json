@@ -1730,7 +1730,7 @@
     },
     "school": {
       "users": {
-        "searchPlaceholder": "Cari nama, nama pengguna, NIS, atau NIP",
+        "searchPlaceholder": "Cari nama, NIS, atau NIP",
         "eyebrow": "Data sekolah",
         "title": "Guru, pegawai, dan siswa",
         "columns": {

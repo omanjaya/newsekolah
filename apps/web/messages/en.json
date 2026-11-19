@@ -1730,7 +1730,7 @@
     },
     "school": {
       "users": {
-        "searchPlaceholder": "Search name, username, NIS, or NIP",
+        "searchPlaceholder": "Search name, NIS, or NIP",
         "eyebrow": "School data",
         "title": "Teachers, staff and students",
         "columns": {
