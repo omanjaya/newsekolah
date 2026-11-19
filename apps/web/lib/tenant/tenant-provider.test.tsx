@@ -135,13 +135,47 @@ describe("TenantProvider", () => {
   it("names the signed-in school once the fetch is refused with nothing known", async () => {
     get.mockRejectedValue(rateLimited());
     renderProvider(undefined, (queryClient) => {
-      queryClient.setQueryData(queryKeys.me(), { tenant: { name: "SMA Contoh" } });
+      queryClient.setQueryData(queryKeys.me(), {
+        tenant: { name: "SMA Contoh", accent_color: "#1F3A5F" },
+      });
     });
 
     expect(await screen.findByText("SMA Contoh", { selector: "[data-testid=name]" })).toBeVisible();
     // The mark falls back to the school's initials beside it, not a skeleton.
     expect(screen.getByText("SC")).toBeInTheDocument();
     expect(screen.queryByText("SION")).not.toBeInTheDocument();
+    // The session's tenant is the school's whole branding: the accent follows.
+    const accents = resolveTenantAccents("#1F3A5F");
+    const style = document.documentElement.style;
+    expect(style.getPropertyValue("--tenant-accent")).toBe(accents.light);
+    expect(style.getPropertyValue("--tenant-accent-strong")).toBe(accents.lightStrong);
+  });
+
+  it("shows the signed-in school's logo and switched-off modules while the fetch is refused", async () => {
+    function Library() {
+      const { branding } = useTenant();
+      return <span data-testid="off">{branding?.disabled_public_modules.join(",") ?? "none"}</span>;
+    }
+    get.mockRejectedValue(rateLimited());
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(queryKeys.me(), {
+      tenant: {
+        name: "SMA Contoh",
+        logo_url: "https://example.test/logo.png",
+        disabled_public_modules: ["library"],
+      },
+    });
+    const { container } = render(
+      <QueryClientProvider client={queryClient}>
+        <TenantProvider>
+          <Library />
+          <TenantBrand />
+        </TenantProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("library", { selector: "[data-testid=off]" })).toBeVisible();
+    expect(container.querySelector("img")).toHaveAttribute("src", "https://example.test/logo.png");
   });
 
   it("waits for the branding before naming the school from the session", () => {

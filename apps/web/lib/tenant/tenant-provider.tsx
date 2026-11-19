@@ -26,18 +26,19 @@ type Me = components["schemas"]["Me"];
 export { PRODUCT_NAME_FALLBACK };
 
 interface TenantContextValue {
-  /** The last branding known for this school: from the server, the API, or this tab's copy. */
+  /**
+   * The last branding known for this school: from the server, the API, this
+   * tab's copy, or, while the endpoint fails with none of those, the
+   * signed-in session's school.
+   */
   branding: TenantBranding | undefined;
   /**
-   * True while the school's name is not known at all: on the first load,
-   * and while the endpoint keeps failing with nothing known and nobody
-   * signed in. Brand surfaces show a skeleton then, never the product name.
+   * True while no branding is known at all: on the first load, and while
+   * the endpoint keeps failing with nothing known and nobody signed in. Brand surfaces show a skeleton then, never the product name.
    */
   isLoading: boolean;
   /**
-   * `branding.name`; while the endpoint fails with no branding known, the
-   * signed-in account's school; the fallback product name while neither is
-   * known.
+   * `branding.name`; the fallback product name while no branding is known.
    */
   displayName: string;
   /**
@@ -63,14 +64,15 @@ function noCopyOnServer(): undefined {
 }
 
 /**
- * The school `/v1/me` names, read from the query cache without fetching:
- * this provider sits above the session, which owns that query.
+ * The school `/v1/me` carries, a full branding, read from the query cache
+ * without fetching: this provider sits above the session, which owns that
+ * query. Returns the cached object itself, so the snapshot stays stable.
  */
-function useSignedInSchoolName(): string | undefined {
+function useSignedInSchool(): TenantBranding | undefined {
   const queryClient = useQueryClient();
   return useSyncExternalStore(
     (onChange) => queryClient.getQueryCache().subscribe(onChange),
-    () => queryClient.getQueryData<Me>(queryKeys.me())?.tenant.name,
+    () => queryClient.getQueryData<Me>(queryKeys.me())?.tenant,
     noCopyOnServer,
   );
 }
@@ -138,15 +140,16 @@ export function TenantProvider({
     readBrandingSessionCopy,
     noCopyOnServer,
   );
-  const branding = data ?? sessionCopy;
   // With nothing known and the endpoint refusing, a signed-in tab still
-  // knows its school from the session, so the header names it instead of
-  // holding a skeleton for good. Not before the first failure: on a normal
-  // load the branding (and its logo) lands moments later.
-  const signedInSchoolName = useSignedInSchoolName();
-  const fallbackName = branding === undefined && failureCount > 0 ? signedInSchoolName : undefined;
-  const schoolName = branding?.name ?? fallbackName;
-  const isLoading = schoolName === undefined;
+  // knows its school from the session, whose tenant is the same branding:
+  // the header shows its name and logo, the accent follows, and modules the
+  // school switched off stay off, instead of a skeleton held for good. Not
+  // before the first failure: on a normal load the branding lands moments
+  // later.
+  const signedInSchool = useSignedInSchool();
+  const branding = data ?? sessionCopy ?? (failureCount > 0 ? signedInSchool : undefined);
+  const schoolName = branding?.name;
+  const isLoading = branding === undefined;
 
   useEffect(() => {
     if (data) writeBrandingSessionCopy(data);
