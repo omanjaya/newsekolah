@@ -278,7 +278,8 @@ func (h *PermitsHandler) GetCurrentLateArrival(ctx context.Context, _ api.GetCur
 		return nil, mapError(err)
 	}
 	if !found {
-		return nil, httpx.ErrNotFound
+		// "None in progress" is the normal answer, not an error.
+		return api.GetCurrentLateArrival204Response{}, nil
 	}
 	return api.GetCurrentLateArrival200JSONResponse(toAPILateArrival(detail)), nil
 }

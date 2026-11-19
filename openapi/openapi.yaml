@@ -14486,8 +14486,8 @@ paths:
       x-permission: authenticated
       summary: The current student's in-progress late arrival, if any
       description: |
-        404 NOT_FOUND is the normal answer when the caller has no late arrival in progress; clients treat it
-        as "none", not as a failure.
+        204 No Content is the normal answer when the caller has no late arrival in progress: "none" is not
+        an error, so it is not answered with a 404 that browsers log as a failed request.
       responses:
         "200":
           description: Detail
@@ -14495,10 +14495,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/LateArrivalDetail"
+        "204":
+          description: The caller has no late arrival in progress
         "401":
           $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
   /v1/late-arrivals/review-queue:
     get:
       tags:
