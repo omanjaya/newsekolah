@@ -56,9 +56,11 @@ func (r *Repository) CountCopiesAddedInPeriod(ctx context.Context, tenantID uuid
 	return int(n), nil
 }
 
-func (r *Repository) CountLateReturnsBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error) {
+// CountLateReturnsBetween counts returns in [from, to) made after the due
+// date, the return's date read on loc, the tenant's calendar.
+func (r *Repository) CountLateReturnsBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time, loc *time.Location) (int, error) {
 	n, err := r.queries(ctx).CountLateReturnsBetween(ctx, db.CountLateReturnsBetweenParams{
-		TenantID: tenantID, ReturnedAt: pdatabase.Timestamptz(from), ReturnedAt_2: pdatabase.Timestamptz(to),
+		TenantID: tenantID, FromAt: pdatabase.Timestamptz(from), ToAt: pdatabase.Timestamptz(to), Tz: loc.String(),
 	})
 	if err != nil {
 		return 0, fmt.Errorf("count late returns between: %w", err)
@@ -76,9 +78,11 @@ func (r *Repository) SumFinesRecordedBetween(ctx context.Context, tenantID uuid.
 	return int(n), nil
 }
 
-func (r *Repository) VisitsPerDay(ctx context.Context, tenantID uuid.UUID, from, to time.Time) ([]service.DaySeriesPoint, error) {
+// VisitsPerDay counts the visits in [from, to) per calendar day in loc,
+// the tenant's zone.
+func (r *Repository) VisitsPerDay(ctx context.Context, tenantID uuid.UUID, from, to time.Time, loc *time.Location) ([]service.DaySeriesPoint, error) {
 	rows, err := r.queries(ctx).VisitsPerDay(ctx, db.VisitsPerDayParams{
-		TenantID: tenantID, VisitedAt: pdatabase.Timestamptz(from), VisitedAt_2: pdatabase.Timestamptz(to),
+		TenantID: tenantID, FromAt: pdatabase.Timestamptz(from), ToAt: pdatabase.Timestamptz(to), Tz: loc.String(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("visits per day: %w", err)
