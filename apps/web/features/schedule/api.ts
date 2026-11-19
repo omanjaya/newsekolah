@@ -70,9 +70,11 @@ export function useSchedulesQuery(filter: ScheduleFilter) {
 }
 
 /**
- * Teacher options for a picker: active teachers for the year, narrowed by
- * a manage_attendance/manage_schedules check on the server, so a teacher
- * without either sees only themselves.
+ * Teacher options for a picker: active teachers for the year. The server
+ * lists everyone only for manage_schedules or manage_master_data; a teacher
+ * without either sees only themselves, and a user with no teaching load in
+ * the year gets a 403, so a screen that only needs other teachers enables
+ * this for those two permissions.
  */
 export function useTeacherOptionsQuery(academicYearId: string, search = "", enabled = true) {
   const client = useApiClient();
