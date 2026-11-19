@@ -16,6 +16,7 @@ import {
   NAV_MARKER_OFFSETS,
   NavGroup,
   NavRow,
+  RailFlyouts,
   RailLabel,
   RowLabel,
 } from "./sidebar-nav";
@@ -253,15 +254,20 @@ export function Sidebar({
                 ) : (
                   <span aria-hidden="true" className="h-3 shrink-0" />
                 ))}
-              {groups.map(([group, groupItems]) =>
-                rail ? (
-                  <GroupFlyout
-                    key={group}
-                    group={group}
-                    items={groupItems}
-                    activeHref={activeHref}
-                  />
-                ) : (
+              {rail ? (
+                // One flyout open at a time, forgotten when the rail widens.
+                <RailFlyouts>
+                  {groups.map(([group, groupItems]) => (
+                    <GroupFlyout
+                      key={group}
+                      group={group}
+                      items={groupItems}
+                      activeHref={activeHref}
+                    />
+                  ))}
+                </RailFlyouts>
+              ) : (
+                groups.map(([group, groupItems]) => (
                   <NavGroup
                     key={group}
                     group={group}
@@ -273,7 +279,7 @@ export function Sidebar({
                       toggleGroup(group);
                     }}
                   />
-                ),
+                ))
               )}
             </div>
           </nav>

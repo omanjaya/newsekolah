@@ -14,8 +14,15 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import type { PointerEvent, ReactElement, ReactNode, SyntheticEvent } from "react";
-import { useEffect, useId, useRef, useState } from "react";
+import type {
+  Dispatch,
+  PointerEvent,
+  ReactElement,
+  ReactNode,
+  SetStateAction,
+  SyntheticEvent,
+} from "react";
+import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
 
 import { navGroupIcons, navGroupLabelKey, type NavItem } from "../lib/navigation";
 
@@ -251,6 +258,34 @@ const FLYOUT_CLOSE_DELAY_MS = 180;
  */
 type FlyoutMode = "peek" | "pinned";
 
+/** The rail's one open flyout: its group, the route it opened on, and how. */
+interface OpenFlyout {
+  group: string;
+  at: string;
+  mode: FlyoutMode;
+}
+
+type RailFlyoutState = [OpenFlyout | null, Dispatch<SetStateAction<OpenFlyout | null>>];
+
+const RailFlyoutContext = createContext<RailFlyoutState | null>(null);
+
+/**
+ * Holds the rail's open flyout, so only one panel is open at a time.
+ * Opening a group closes the one before it; while a panel is pinned,
+ * hovering another group's icon moves the pinned panel there, as a
+ * menubar does.
+ */
+export function RailFlyouts({ children }: { children: ReactNode }): ReactElement {
+  const state = useState<OpenFlyout | null>(null);
+  return <RailFlyoutContext.Provider value={state}>{children}</RailFlyoutContext.Provider>;
+}
+
+function useRailFlyout(): RailFlyoutState {
+  const state = useContext(RailFlyoutContext);
+  if (!state) throw new Error("GroupFlyout must be used within RailFlyouts");
+  return state;
+}
+
 function focusFirstLink(container: HTMLElement | null) {
   container?.querySelector<HTMLElement>("a[href]")?.focus({ preventScroll: true });
 }
@@ -259,7 +294,7 @@ function focusFirstLink(container: HTMLElement | null) {
  * One group as a single rail icon that opens its pages in a flyout panel.
  * A mouse hovering it peeks; a click, a tap or a key pins it open and moves
  * focus to its first page. A small chevron tells it apart from the rail's
- * plain links, which navigate at once.
+ * plain links, which navigate at once. Render it inside `RailFlyouts`.
  */
 export function GroupFlyout({
   group,
@@ -272,30 +307,40 @@ export function GroupFlyout({
 }): ReactElement {
   const t = useTranslations();
   const pathname = usePathname();
+  const [current, setCurrent] = useRailFlyout();
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<number | null>(null);
-  const mode = useRef<FlyoutMode>("pinned");
   // A mouse always hovers before it presses, so the click that follows a
-  // peek must pin the panel instead of toggling it shut. pointerdown
-  // records that; the click reads it.
+  // hover must pin the panel instead of toggling it shut. The hover
+  // records that it opened the panel, pointerdown carries it to the
+  // click, and the click reads it.
+  const hoverOpened = useRef(false);
   const clickPins = useRef(false);
   // Whether focus sat inside the panel when it was asked to close, so it
   // can go back to the trigger instead of dropping to the page.
   const focusWasInside = useRef(false);
+  // A press outside the panel (not on its trigger) closed it: the reader
+  // chose where to be, and Radix leaves focus alone after that.
+  const pressedOutside = useRef(false);
 
-  // Open is derived, not stored: the panel belongs to the route it was
+  // Open is derived, not stored here: the panel belongs to the route it was
   // opened on, so following a link inside it closes it with no effect and no
   // setState during the click. Closing from the click itself aborts the
   // navigation -- Radix unmounts the portal before Next commits the route.
-  const [openedAt, setOpenedAt] = useState<string | null>(null);
-  const open = openedAt === pathname;
-  function setOpen(next: boolean) {
-    if (!next) {
-      focusWasInside.current = contentRef.current?.contains(document.activeElement) ?? false;
-    }
-    setOpenedAt(next ? pathname : null);
+  const open = current?.group === group && current.at === pathname;
+  const mode = open ? current.mode : undefined;
+
+  function openAs(next: FlyoutMode) {
+    pressedOutside.current = false;
+    setCurrent({ group, at: pathname, mode: next });
+  }
+
+  function close() {
+    focusWasInside.current = contentRef.current?.contains(document.activeElement) ?? false;
+    // Another group may have opened since this close was scheduled.
+    setCurrent((prev) => (prev?.group === group ? null : prev));
   }
 
   const label = t(navGroupLabelKey(group));
@@ -311,22 +356,34 @@ export function GroupFlyout({
 
   /** Closes a peek once the mouse has been gone a moment; a pinned panel stays. */
   function closeSoon(event: PointerEvent<HTMLElement>) {
-    if (event.pointerType !== "mouse" || mode.current !== "peek") return;
+    if (event.pointerType !== "mouse" || mode !== "peek") return;
     cancelClose();
-    closeTimer.current = window.setTimeout(() => {
-      setOpen(false);
-    }, FLYOUT_CLOSE_DELAY_MS);
+    closeTimer.current = window.setTimeout(close, FLYOUT_CLOSE_DELAY_MS);
   }
 
   function pin() {
-    mode.current = "pinned";
     cancelClose();
+    setCurrent((prev) =>
+      prev?.group === group && prev.mode !== "pinned" ? { ...prev, mode: "pinned" } : prev,
+    );
   }
 
   useEffect(() => cancelClose, []);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        // Radix opens only from the trigger's own click (or key), which
+        // asks for the panel: it is pinned.
+        if (next) {
+          hoverOpened.current = false;
+          openAs("pinned");
+        } else {
+          close();
+        }
+      }}
+    >
       <PopoverTrigger asChild>
         <button
           ref={triggerRef}
@@ -339,8 +396,10 @@ export function GroupFlyout({
             if (event.pointerType !== "mouse") return;
             cancelClose();
             if (open) return;
-            mode.current = "peek";
-            setOpen(true);
+            hoverOpened.current = true;
+            // While another group's panel is pinned, the pinned panel
+            // moves here; otherwise this is a peek.
+            openAs(current?.at === pathname && current.mode === "pinned" ? "pinned" : "peek");
           }}
           onPointerLeave={(event) => {
             // A press released off the trigger never clicks it, so the
@@ -353,15 +412,12 @@ export function GroupFlyout({
             clickPins.current = false;
           }}
           onPointerDown={() => {
-            clickPins.current = open && mode.current === "peek";
+            clickPins.current = open && hoverOpened.current;
           }}
           onClick={(event) => {
-            if (!clickPins.current) {
-              // Radix toggles next; if that opens the panel, it is pinned.
-              mode.current = "pinned";
-              return;
-            }
+            if (!clickPins.current) return;
             clickPins.current = false;
+            hoverOpened.current = false;
             // Skips Radix's toggle (composeEventHandlers checks it).
             event.preventDefault();
             pin();
@@ -405,20 +461,30 @@ export function GroupFlyout({
         // focuses its first page instead; a peek leaves focus alone.
         onOpenAutoFocus={(event) => {
           event.preventDefault();
-          if (mode.current === "pinned") focusFirstLink(contentRef.current);
+          if (mode === "pinned") focusFirstLink(contentRef.current);
         }}
-        // Radix returns focus to the trigger only when nothing outside was
-        // touched, and pressing the trigger itself counts. Focus that was in
-        // the panel and now has nowhere to be goes back to the trigger; focus
-        // the reader moved to something else stays there.
+        onPointerDownOutside={(event) => {
+          const target = event.detail.originalEvent.target;
+          if (!(target instanceof Node && triggerRef.current?.contains(target))) {
+            pressedOutside.current = true;
+          }
+        }}
+        // Radix would send focus to the trigger after any close no outside
+        // press caused, even a peek's while the reader typed elsewhere.
+        // Focus goes back to the trigger only when it was in the panel and
+        // now has nowhere to be (Escape, or the trigger pressed in Safari,
+        // which does not focus a clicked button). Focus the reader or
+        // another flyout moved stays, and so does the page after a press
+        // outside.
         onCloseAutoFocus={(event) => {
+          event.preventDefault();
           const active = document.activeElement;
           const lost = active === null || active === document.body || !active.isConnected;
-          if (focusWasInside.current && lost) {
-            event.preventDefault();
+          if (focusWasInside.current && lost && !pressedOutside.current) {
             triggerRef.current?.focus();
           }
           focusWasInside.current = false;
+          pressedOutside.current = false;
         }}
         onFocus={pin}
         onPointerEnter={(event) => {
