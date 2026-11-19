@@ -11,6 +11,7 @@ vi.mock("next-intl", () => ({
 
 vi.mock("@newsekolah/i18n", () => ({
   formatDate: (value: string) => value,
+  formatShortDate: (value: string) => value,
 }));
 
 vi.mock("../../../lib/i18n/api-error-message", () => ({

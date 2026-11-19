@@ -86,6 +86,14 @@ describe("formatShortDate", () => {
     ).toBe("27 Nov");
   });
 
+  // English rows read day first too, so a dashboard hint ("Due 1 Oct")
+  // agrees with the library lists beside it.
+  it("puts the day first in English as in Indonesian", () => {
+    expect(formatShortDate("2026-10-01", { locale: "en", timeZone: "Asia/Makassar", now })).toBe(
+      "1 Oct",
+    );
+  });
+
   it("reads the current year in the school's zone", () => {
     // 31 Dec 20.00 UTC is already New Year's Day in Jakarta.
     const newYear = new Date("2026-12-31T20:00:00Z");
@@ -108,6 +116,13 @@ describe("formatDateRange", () => {
   it("says month and year once inside one month", () => {
     expect(formatDateRange("2026-07-13", "2026-07-20", { locale: "id", timeZone: TZ })).toBe(
       "13–20 Jul 2026",
+    );
+  });
+
+  it("puts the day first in English", () => {
+    // en-GB spaces its dash even inside one month.
+    expect(formatDateRange("2026-07-13", "2026-07-20", { locale: "en", timeZone: TZ })).toMatch(
+      /^13\s–\s20 Jul 2026$/,
     );
   });
 

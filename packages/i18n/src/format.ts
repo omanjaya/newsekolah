@@ -8,6 +8,13 @@ export interface FormatOptions {
 
 const INTL_LOCALE: Record<Locale, string> = { id: "id-ID", en: "en-US" };
 
+/**
+ * Short dates and day ranges read day first in both languages ("27 Nov",
+ * "13 Jul 2026 – 18 Jun 2027"), so an English row and an Indonesian one
+ * line up the same way and every list in the app agrees.
+ */
+const SHORT_DATE_LOCALE: Record<Locale, string> = { id: "id-ID", en: "en-GB" };
+
 function toDate(value: Date | string | number): Date {
   return value instanceof Date ? value : new Date(value);
 }
@@ -44,10 +51,10 @@ function yearIn(date: Date, timeZone: string | undefined): string {
 }
 
 /**
- * A date as a stat hint or a list row has room for: "27 Nov" (id) /
- * "Nov 27" (en), with the year only outside the current one ("3 Jan
- * 2027"). `now` is the moment "the current year" is read from (defaults
- * to now, in `timeZone`).
+ * A date as a stat hint or a list row has room for: "27 Nov" in both
+ * languages, with the year only outside the current one ("3 Jan 2027").
+ * `now` is the moment "the current year" is read from (defaults to now,
+ * in `timeZone`).
  */
 export function formatShortDate(
   value: Date | string | number,
@@ -55,12 +62,17 @@ export function formatShortDate(
 ): string {
   const { date, timeZone } = placed(value, options.timeZone);
   const currentYear = yearIn(options.now ?? new Date(), options.timeZone);
-  return new Intl.DateTimeFormat(INTL_LOCALE[options.locale], {
-    day: "numeric",
-    month: "short",
-    year: yearIn(date, timeZone) === currentYear ? undefined : "numeric",
-    timeZone,
-  }).format(date);
+  return (
+    new Intl.DateTimeFormat(SHORT_DATE_LOCALE[options.locale], {
+      day: "numeric",
+      month: "short",
+      year: yearIn(date, timeZone) === currentYear ? undefined : "numeric",
+      timeZone,
+    })
+      .format(date)
+      // Some ICU builds end an abbreviated month with a period ("Sep.").
+      .replace(/\.$/, "")
+  );
 }
 
 /**
@@ -76,7 +88,7 @@ export function formatDateRange(
 ): string {
   const start = placed(from, options.timeZone);
   const end = placed(to, options.timeZone);
-  const format = new Intl.DateTimeFormat(INTL_LOCALE[options.locale], {
+  const format = new Intl.DateTimeFormat(SHORT_DATE_LOCALE[options.locale], {
     day: "numeric",
     month: "short",
     year: "numeric",
