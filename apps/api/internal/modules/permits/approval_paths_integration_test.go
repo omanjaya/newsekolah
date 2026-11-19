@@ -238,8 +238,10 @@ func TestLateArrivalQueueFollowsTheCurrentStage(t *testing.T) {
 	}
 
 	opened := openLateArrival(t, ctx, svc, w)
+	require.Equal(t, "X-A", opened.ClassName, "the opened flow names its class")
 	picket := queue(w.dutyTeacherID)
 	require.Len(t, picket, 1)
+	require.Equal(t, "X-A", picket[0].ClassName, "a queue row names the student's class")
 	require.Equal(t, "duty_teacher", picket[0].CurrentStage.Key)
 	require.Equal(t, domain.VerificationManual, picket[0].CurrentStage.Verification)
 	require.Empty(t, queue(leadershipID), "leadership has nothing to do before the review")
@@ -256,6 +258,10 @@ func TestLateArrivalQueueFollowsTheCurrentStage(t *testing.T) {
 	require.Equal(t, opened.Instance.ID, lead[0].InstanceID)
 	require.Equal(t, "leadership", lead[0].CurrentStage.Key)
 	require.Equal(t, domain.VerificationQRScan, lead[0].CurrentStage.Verification)
+	require.Equal(t, "X-A", lead[0].ClassName, "a scan-stage row names the class too")
+	detail, err := svc.GetLateArrival(ctx, w.tenantID, opened.Instance.ID)
+	require.NoError(t, err)
+	require.Equal(t, "X-A", detail.ClassName, "the approver's detail names the class")
 
 	// Leadership reads the flow it is asked to approve.
 	require.NoError(t, svc.RequireCanViewLateArrival(ctx, w.tenantID, opened.Instance.ID, leadershipID))

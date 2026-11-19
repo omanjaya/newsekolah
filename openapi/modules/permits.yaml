@@ -997,6 +997,9 @@ components:
         required_action: { $ref: "#/components/schemas/RequiredAction" }
         homeroom_reported: { type: boolean }
         completed_at: { type: string, format: date-time }
+        class_name:
+          type: string
+          description: The class the flow was opened in, read live (no snapshot). Omitted when unknown.
 
     ExitPermitSummary:
       type: object
@@ -1038,6 +1041,9 @@ components:
         required_action: { $ref: "#/components/schemas/RequiredAction" }
         homeroom_reported: { type: boolean }
         opened_at: { type: string, format: date-time }
+        class_name:
+          type: string
+          description: The class the flow was opened in, read live (no snapshot). Omitted when unknown.
 
     LeaveRequestDetail:
       type: object

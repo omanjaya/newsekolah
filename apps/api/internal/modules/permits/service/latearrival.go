@@ -18,6 +18,19 @@ type LateArrivalDetail struct {
 	LateArrival domain.LateArrival
 	Definition  domain.Definition
 	Events      []domain.Event
+	// ClassName names the class the flow was opened in, so an approver
+	// can tell two students of the same name apart; "" when unknown.
+	ClassName string
+}
+
+// lateArrivalClassName reads the display name of the class a flow was
+// opened in. A late arrival keeps no name snapshot (unlike an exit permit),
+// so this is a live read; a flow with no class gets "".
+func (s *Service) lateArrivalClassName(ctx context.Context, tenantID uuid.UUID, inst domain.Instance) (string, error) {
+	if !inst.ClassID.Valid {
+		return "", nil
+	}
+	return s.repo.GetClassName(ctx, tenantID, inst.ClassID.UUID)
 }
 
 type OpenLateArrivalInput struct {
@@ -86,7 +99,7 @@ func (s *Service) OpenLateArrival(ctx context.Context, in OpenLateArrivalInput) 
 		if err != nil {
 			return err
 		}
-		detail = LateArrivalDetail{Instance: inst, LateArrival: late, Definition: def}
+		detail = LateArrivalDetail{Instance: inst, LateArrival: late, Definition: def, ClassName: enrollment.ClassName}
 		return nil
 	})
 	if err != nil {
@@ -190,7 +203,11 @@ func (s *Service) ReviewLateArrival(ctx context.Context, in ReviewLateArrivalInp
 				return err
 			}
 		}
-		detail = LateArrivalDetail{Instance: inst, LateArrival: late, Definition: def}
+		className, err := s.lateArrivalClassName(ctx, in.TenantID, inst)
+		if err != nil {
+			return err
+		}
+		detail = LateArrivalDetail{Instance: inst, LateArrival: late, Definition: def, ClassName: className}
 		return nil
 	})
 	if err != nil {
@@ -279,7 +296,11 @@ func (s *Service) LateArrivalScan(ctx context.Context, tenantID, instanceID, stu
 				return err
 			}
 		}
-		detail = LateArrivalDetail{Instance: updated, LateArrival: late, Definition: def}
+		className, err := s.lateArrivalClassName(ctx, tenantID, updated)
+		if err != nil {
+			return err
+		}
+		detail = LateArrivalDetail{Instance: updated, LateArrival: late, Definition: def, ClassName: className}
 		return nil
 	})
 	if err != nil {
@@ -316,7 +337,11 @@ func (s *Service) GetLateArrival(ctx context.Context, tenantID, instanceID uuid.
 		if err != nil {
 			return err
 		}
-		detail = LateArrivalDetail{Instance: inst, LateArrival: late, Definition: def, Events: events}
+		className, err := s.lateArrivalClassName(ctx, tenantID, inst)
+		if err != nil {
+			return err
+		}
+		detail = LateArrivalDetail{Instance: inst, LateArrival: late, Definition: def, Events: events, ClassName: className}
 		return nil
 	})
 	return detail, err
@@ -346,7 +371,11 @@ func (s *Service) CurrentLateArrival(ctx context.Context, tenantID, studentUserI
 		if err != nil {
 			return err
 		}
-		detail = LateArrivalDetail{Instance: inst, LateArrival: late, Definition: def, Events: events}
+		className, err := s.lateArrivalClassName(ctx, tenantID, inst)
+		if err != nil {
+			return err
+		}
+		detail = LateArrivalDetail{Instance: inst, LateArrival: late, Definition: def, Events: events, ClassName: className}
 		return nil
 	})
 	return detail, found, err

@@ -186,6 +186,7 @@ func toLateArrivalReviewItem(row db.ListLateArrivalsForReviewRow) (service.LateA
 		SubjectUserID: row.SubjectUserID, ClassID: pdatabase.UUIDOrNil(row.ClassID), AcademicYearID: row.AcademicYearID,
 		CurrentStageIndex: int(row.CurrentStageIndex), CurrentStage: stage,
 		Status: domain.Status(row.Status), OpenedAt: pdatabase.TimeOrZero(row.OpenedAt),
+		ClassName: row.ClassName,
 	}, nil
 }
 
@@ -535,8 +536,17 @@ func (r *Repository) GetActiveEnrollment(ctx context.Context, tenantID, academic
 	return service.EnrollmentInfo{ClassID: row.ClassID, ClassName: row.ClassName, HomeroomTeacherID: pdatabase.UUIDOrNil(row.HomeroomTeacherID)}, true, nil
 }
 
+// GetClassName returns the class's display name, or "" for a class that
+// no longer exists (a name is display only, never a reason to fail a read).
 func (r *Repository) GetClassName(ctx context.Context, tenantID, classID uuid.UUID) (string, error) {
-	return r.queries(ctx).GetClassName(ctx, db.GetClassNameParams{TenantID: tenantID, ID: classID})
+	name, err := r.queries(ctx).GetClassName(ctx, db.GetClassNameParams{TenantID: tenantID, ID: classID})
+	if notFound(err) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("get class name: %w", err)
+	}
+	return name, nil
 }
 
 func (r *Repository) GetUserName(ctx context.Context, tenantID, userID uuid.UUID) (string, error) {

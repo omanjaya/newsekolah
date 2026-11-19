@@ -1165,6 +1165,9 @@ type Querier interface {
 	// (not a duty), the "admin" case, sees every such flow. A flow already
 	// past its review (waiting for leadership's or the class teacher's QR) is
 	// not listed here: ListLateArrivalsAtScanStage feeds those approvers.
+	// class_name is read live from classes (a cross-module read, see
+	// cross_module.sql): a late arrival keeps no snapshot, and an approver
+	// working across the school needs the class beside the name.
 	ListLateArrivalsForReview(ctx context.Context, arg ListLateArrivalsForReviewParams) ([]ListLateArrivalsForReviewRow, error)
 	ListLatestLoans(ctx context.Context, arg ListLatestLoansParams) ([]LibraryLoan, error)
 	ListLeaveDocuments(ctx context.Context, arg ListLeaveDocumentsParams) ([]LeaveDocument, error)

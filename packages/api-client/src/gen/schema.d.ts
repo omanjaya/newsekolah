@@ -11217,6 +11217,8 @@ export interface components {
             homeroom_reported: boolean;
             /** Format: date-time */
             completed_at?: string;
+            /** @description The class the flow was opened in, read live (no snapshot). Omitted when unknown. */
+            class_name?: string;
         };
         ExitPermitSummary: {
             /** Format: uuid */
@@ -11249,6 +11251,8 @@ export interface components {
             homeroom_reported?: boolean;
             /** Format: date-time */
             opened_at: string;
+            /** @description The class the flow was opened in, read live (no snapshot). Omitted when unknown. */
+            class_name?: string;
         };
         LeaveRequestDetail: {
             instance: components["schemas"]["WorkflowInstance"];

@@ -60,6 +60,9 @@ type LateArrivalReviewItem struct {
 	CurrentStage      domain.Stage
 	Status            domain.Status
 	OpenedAt          time.Time
+	// ClassName is the class the flow was opened in, read live (a late
+	// arrival keeps no snapshot); empty when the class is gone.
+	ClassName string
 }
 
 // instance is the slice of the workflow instance the approver rules read

@@ -228,6 +228,7 @@ func toAPILateArrival(d service.LateArrivalDetail) api.LateArrivalDetail {
 	return api.LateArrivalDetail{
 		Instance: toAPIInstance(d.Instance, d.Definition, d.Events), Reason: d.LateArrival.Reason, OccurrenceNumber: d.LateArrival.OccurrenceNumber,
 		RequiredAction: api.RequiredAction(d.LateArrival.RequiredAction), HomeroomReported: d.LateArrival.HomeroomReported, CompletedAt: d.LateArrival.CompletedAt,
+		ClassName: strPtr(d.ClassName),
 	}
 }
 
@@ -245,6 +246,7 @@ func toAPILateArrivalSummary(i service.LateArrivalReviewItem) api.LateArrivalSum
 		InstanceId: i.InstanceID, StudentUserId: i.SubjectUserID, ClassId: uuidPtr(i.ClassID), Status: api.WorkflowStatus(i.Status),
 		CurrentStageIndex: i.CurrentStageIndex, CurrentStage: toAPIStage(i.CurrentStage), Reason: i.Reason, OccurrenceNumber: i.OccurrenceNumber,
 		RequiredAction: api.RequiredAction(i.RequiredAction), HomeroomReported: &reported, OpenedAt: i.OpenedAt,
+		ClassName: strPtr(i.ClassName),
 	}
 }
 
