@@ -226,4 +226,22 @@ describe("ExitPermitsView history rows", () => {
     expect(cancelled).toHaveTextContent("Rumah");
     expect(cancelled).toHaveTextContent("openedAt 10.00");
   });
+
+  it("gives the day the room before the status badge, in any locale's wording", () => {
+    mocks.items = [
+      permit("p0", "completed", {
+        destination: "Apotek",
+        exited_at: "2026-11-18T07:49:00Z",
+      }),
+    ];
+    render(<ExitPermitsView />);
+
+    // The row's text never narrows below its widest fact (the day), and the
+    // status badge is what shrinks on a narrow phone (ListRow keepMetaWhole).
+    const [row] = screen.getAllByRole("listitem");
+    const title = row?.querySelector("p");
+    expect(title?.parentElement).toHaveClass("min-w-min");
+    const badge = row?.querySelector("[data-slot=list-row-trailing] > [data-slot=badge]");
+    expect(badge).not.toBeNull();
+  });
 });

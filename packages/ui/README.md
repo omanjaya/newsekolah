@@ -120,7 +120,8 @@ animates.
 - **Surfaces and content**: `Card` (`CardHeader`, `CardTitle`,
   `CardDescription`, `CardContent`, `CardFooter`; tones, padding,
   `interactive`), `HeroCard`, `SectionHeader`, `List` and `ListRow`
-  (`titleLines` for long titles), `DataList`, `Stat`/`StatGrid` (a
+  (`titleLines` for long titles, `keepMetaWhole` so a short fact such as
+  a date keeps its width and a trailing badge gives way), `DataList`, `Stat`/`StatGrid` (a
   `selected` state for tiles that filter a list; a `strip` shares its row
   equally and pairs on a phone up to four figures, eight without icons),
   `StatTile`, `IconCircle`,

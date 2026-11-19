@@ -26,8 +26,19 @@ export interface ListRowProps extends Omit<ComponentPropsWithRef<"li">, "title" 
    */
   meta?: ReactNode | readonly ReactNode[];
   /**
+   * Gives each fact of an array `meta` the room it needs before the
+   * trailing Badge: on a narrow row the badge shrinks (its label ends in an
+   * ellipsis) instead of a fact such as a date being cut, whatever the
+   * locale makes of its length. The row's text never narrows below its
+   * widest fact, so set it only where every fact is short by design (a
+   * date, a time) and the trailing slot holds a Badge.
+   */
+  keepMetaWhole?: boolean;
+  /**
    * A value, date or Badge at the end of the row. A child hidden at some
-   * width (`hidden sm:inline`) leaves no gap behind there.
+   * width (`hidden sm:inline`) leaves no gap behind there. A Badge there
+   * may shrink, ending its label in an ellipsis, when the row has no room
+   * left for it (see `keepMetaWhole`).
    */
   trailing?: ReactNode;
   /** A separate control (a menu, a button); it stays its own target above the row's. */
@@ -155,6 +166,7 @@ export function ListRow({
   title,
   titleLines = 1,
   meta,
+  keepMetaWhole = false,
   trailing,
   action,
   href,
@@ -199,12 +211,22 @@ export function ListRow({
           variant === "inset" && cn(rule, "group-last/row:border-b-0"),
         )}
       >
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        {/* With `keepMetaWhole` the text is at least as wide as its widest
+            fact (min-content), so the trailing Badge gives way first. The
+            title takes no part in that width (zero width, stretched to the
+            column), or a long title would claim the row instead. */}
+        <div
+          className={cn(
+            "flex min-w-0 flex-1 flex-col gap-0.5",
+            keepMetaWhole && hasMeta && "min-w-min",
+          )}
+        >
           <p
             className={cn(
               "text-fg",
               titleLines === 2 ? "line-clamp-2 [overflow-wrap:anywhere]" : "truncate",
               dense ? "text-label" : "text-body font-semibold",
+              keepMetaWhole && hasMeta && "w-0 min-w-full",
             )}
           >
             {interactive ? (
@@ -236,10 +258,12 @@ export function ListRow({
           // of the row, so one hidden at some width (`hidden sm:inline`)
           // takes the row's gap away with it instead of leaving an empty
           // 12px box. Text styles still inherit; the children keep their
-          // width and sit 8px apart, as they did inside a box.
+          // width and sit 8px apart, as they did inside a box. A Badge is
+          // the one child that may shrink (its label ends in an ellipsis),
+          // so a row out of room cuts the status pill, not the row.
           <div
             data-slot="list-row-trailing"
-            className="contents text-caption whitespace-nowrap text-fg-muted tabular-nums *:shrink-0 [&>*+*]:-ml-1"
+            className="contents text-caption whitespace-nowrap text-fg-muted tabular-nums *:shrink-0 [&>*+*]:-ml-1 [&>[data-slot=badge]]:min-w-0 [&>[data-slot=badge]]:shrink"
           >
             {trailing}
           </div>

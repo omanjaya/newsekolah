@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
 
+import { Badge } from "./badge.js";
 import { Card, CardContent, CardHeader, CardTitle } from "./card.js";
 import { Dialog, DialogContent } from "./dialog.js";
 import { IconButton } from "./icon-button.js";
@@ -75,6 +76,52 @@ describe("List and ListRow", () => {
     expect(box?.nextSibling?.textContent).toBe(" ");
     // The last fact has no trailing separator.
     expect(screen.getByText("keluar 15.49").parentElement).toHaveTextContent(/^keluar 15\.49$/);
+  });
+
+  // At 320px in English "19 Nov 2025" was cut to "19 Nov…" beside a
+  // "Completed" badge: the date must win the width, not the badge.
+  it("with keepMetaWhole, keeps the text as wide as its widest fact and lets the badge give way", () => {
+    const { container } = render(
+      <List>
+        <ListRow
+          title="Apotek Kimia Farma di seberang sekolah"
+          meta={["19 Nov 2025", "keluar 15.49"]}
+          keepMetaWhole
+          trailing={<Badge dot>Completed</Badge>}
+          onClick={() => undefined}
+        />
+        <ListRow
+          title="Rumah"
+          meta={["19 Nov 2025"]}
+          trailing={<Badge dot>Completed</Badge>}
+          onClick={() => undefined}
+        />
+      </List>,
+    );
+    const [kept, plain] = screen.getAllByRole("listitem");
+    const keptTitle = kept?.querySelector("p");
+    // The text column's floor is its min-content, which the title (zero
+    // width, stretched back to the column) takes no part in: the floor is
+    // the widest fact, not the title.
+    expect(keptTitle?.parentElement).toHaveClass("min-w-min", "flex-1");
+    expect(keptTitle?.parentElement).not.toHaveClass("min-w-0");
+    expect(keptTitle).toHaveClass("w-0", "min-w-full", "truncate");
+    // Without it the text still yields to the trailing slot, as before.
+    const plainTitle = plain?.querySelector("p");
+    expect(plainTitle?.parentElement).toHaveClass("min-w-0");
+    expect(plainTitle).not.toHaveClass("w-0");
+
+    // A badge in the trailing slot is the one child that may shrink, and its
+    // label ends in an ellipsis when it does.
+    const trailing = container.querySelector("[data-slot=list-row-trailing]");
+    expect(trailing).toHaveClass(
+      "*:shrink-0",
+      "[&>[data-slot=badge]]:min-w-0",
+      "[&>[data-slot=badge]]:shrink",
+    );
+    const badge = trailing?.querySelector(":scope > [data-slot=badge]");
+    expect(badge).not.toBeNull();
+    expect(screen.getAllByText("Completed")[0]).toHaveClass("min-w-0", "truncate");
   });
 
   it("truncates the title to one line unless it may take two", () => {

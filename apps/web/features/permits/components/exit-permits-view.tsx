@@ -245,6 +245,9 @@ function MyExitPermits(): ReactElement {
                             time: formatTime(inst.opened_at, { locale, timeZone }),
                           }),
                     ]}
+                    // The date stays whole on a 320px phone in every locale
+                    // ("19 Nov 2025" beside "Completed"): the badge gives way.
+                    keepMetaWhole
                     trailing={<WorkflowStatusBadge status={inst.status} />}
                     onClick={() => {
                       setOpenId(inst.id);
