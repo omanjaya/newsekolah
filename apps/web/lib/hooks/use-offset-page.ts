@@ -34,7 +34,11 @@ export interface OffsetPage {
  * one tab's page number never leaks into another.
  */
 export function useOffsetPage(pageSize: number, param = "page"): OffsetPage {
-  const [raw, setRaw, replaceRaw] = useUrlState<string>(param, isPageParam, "1");
+  // Page 1 is the list itself: back there (a reset after a filter change,
+  // or "Sebelumnya" from page 2) the param is removed, never `?page=1`.
+  const [raw, setRaw, replaceRaw] = useUrlState<string>(param, isPageParam, "1", {
+    omitDefault: true,
+  });
   const page = Number(raw);
 
   const resetPage = useCallback(() => {

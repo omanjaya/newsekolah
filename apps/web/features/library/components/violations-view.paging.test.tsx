@@ -85,7 +85,7 @@ describe("ViolationsView paging", () => {
       expect.objectContaining({ status: "paid", limit: 50, offset: 0 }),
       true,
     );
-    expect(new URLSearchParams(window.location.search).get("page")).toBe("1");
+    expect(new URLSearchParams(window.location.search).get("page")).toBeNull();
   });
 
   it("hides the pager for a single member's violations", () => {

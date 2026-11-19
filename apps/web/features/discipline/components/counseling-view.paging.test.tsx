@@ -85,6 +85,6 @@ describe("CounselingView paging", () => {
     });
     const params = new URLSearchParams(window.location.search);
     expect(params.get("mine_q")).toBe("bud");
-    expect(params.get("mine_page")).toBe("1");
+    expect(params.get("mine_page")).toBeNull();
   });
 });

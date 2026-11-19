@@ -79,7 +79,7 @@ describe("CounselingBKTeamPanel paging", () => {
       offset: 0,
       search: "",
     });
-    expect(new URLSearchParams(window.location.search).get("team_page")).toBe("1");
+    expect(new URLSearchParams(window.location.search).get("team_page")).toBeNull();
   });
 
   it("sends the debounced search and returns to the first page", async () => {
@@ -98,6 +98,6 @@ describe("CounselingBKTeamPanel paging", () => {
     });
     const params = new URLSearchParams(window.location.search);
     expect(params.get("team_q")).toBe("bud");
-    expect(params.get("team_page")).toBe("1");
+    expect(params.get("team_page")).toBeNull();
   });
 });
