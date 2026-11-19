@@ -249,8 +249,8 @@
     "columns": {
       "component": "Komponen",
       "exportCode": "Kode ekspor",
-      "rRange": "Rentang Remedial (R)",
-      "tRange": "Rentang Tuntas (T)",
+      "rRange": "Rentang remedial (R)",
+      "tRange": "Rentang tuntas (T)",
       "rMin": "R minimum",
       "rMax": "R maksimum",
       "tMin": "T minimum",
