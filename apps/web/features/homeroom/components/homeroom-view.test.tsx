@@ -92,6 +92,7 @@ describe("HomeroomView filters", () => {
       isLoading: false,
     });
     mocks.permissions = new Set();
+    mocks.date = "2026-09-29";
     window.history.replaceState(null, "", "/homeroom?tab=attendance");
   });
 
@@ -130,6 +131,20 @@ describe("HomeroomView filters", () => {
     expect(
       screen.getByRole("button", { name: "statusFilterLabel: codes.INCOMPLETE" }),
     ).toBeInTheDocument();
+  });
+
+  // A day still to come reads "not yet" on the chip and in the list, as
+  // the rows' badges do, never "incomplete" (audit r6-n4).
+  it("labels the INCOMPLETE filter as not yet on a day still to come", async () => {
+    mocks.date = "2026-09-30";
+    window.history.replaceState(null, "", "/homeroom?tab=attendance&status=INCOMPLETE");
+    const user = userEvent.setup();
+    render(<HomeroomView />);
+
+    const chip = screen.getByRole("button", { name: "statusFilterLabel: upcomingCode" });
+    await user.click(chip);
+    expect(await screen.findByRole("button", { name: "upcomingCode" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "codes.INCOMPLETE" })).not.toBeInTheDocument();
   });
 
   it("clears the status filter from its chip's remove control", async () => {

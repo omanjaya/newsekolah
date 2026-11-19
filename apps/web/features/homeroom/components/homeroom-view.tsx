@@ -135,6 +135,16 @@ export function HomeroomView(): ReactElement {
   const rows = data?.data ?? [];
   const isFiltered = search !== "" || statusCode !== "";
 
+  // A day still to come has had no lessons (ISO dates compare as
+  // strings): its unrecorded sessions are "not yet", so nobody needs
+  // attention and no guardian a call (audit r6-n4).
+  const upcoming = date > today;
+
+  // On a day still to come the INCOMPLETE option reads "not yet", as the
+  // rows' badges do, so a deep link or a pick never shows "incomplete"
+  // over them.
+  const statusOptionLabel = (code: (typeof STATUS_FILTER_CODES)[number]): string =>
+    upcoming && code === "INCOMPLETE" ? t("upcomingCode") : t(`codes.${code}`);
   const filters: DataTableFilterDef[] = [
     {
       id: "status",
@@ -144,14 +154,10 @@ export function HomeroomView(): ReactElement {
         replaceStatusCode(value as (typeof STATUS_VALUES)[number]);
         setPagination((p) => ({ ...p, pageIndex: 0 }));
       },
-      options: STATUS_FILTER_CODES.map((code) => ({ value: code, label: t(`codes.${code}`) })),
+      options: STATUS_FILTER_CODES.map((code) => ({ value: code, label: statusOptionLabel(code) })),
     },
   ];
 
-  // A day still to come has had no lessons (ISO dates compare as
-  // strings): its unrecorded sessions are "not yet", so nobody needs
-  // attention and no guardian a call (audit r6-n4).
-  const upcoming = date > today;
   const attentionRows = useMemo(
     () =>
       upcoming
