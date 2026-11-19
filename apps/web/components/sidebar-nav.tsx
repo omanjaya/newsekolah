@@ -251,6 +251,12 @@ export function GroupFlyout({
   // Hover must not pull focus out of wherever the reader was; a click or a
   // keypress must. Radix cannot tell them apart, so the trigger records it.
   const openedByHover = useRef(false);
+  // A mouse always hovers before it clicks, so the click that follows a
+  // hover-open must keep the panel open (and take focus in, as a click
+  // does) instead of toggling it shut. pointerdown records that before it
+  // clears the hover flag; the click reads it.
+  const clickKeepsOpen = useRef(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const label = t(navGroupLabelKey(group));
   const Icon = navGroupIcons[group];
@@ -285,7 +291,15 @@ export function GroupFlyout({
           }}
           onMouseLeave={closeSoon}
           onPointerDown={() => {
+            clickKeepsOpen.current = open && openedByHover.current;
             openedByHover.current = false;
+          }}
+          onClick={(event) => {
+            if (!clickKeepsOpen.current) return;
+            clickKeepsOpen.current = false;
+            // Skips Radix's toggle (composeEventHandlers checks it).
+            event.preventDefault();
+            contentRef.current?.querySelector<HTMLElement>("a[href]")?.focus();
           }}
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") openedByHover.current = false;
@@ -315,6 +329,7 @@ export function GroupFlyout({
         </button>
       </PopoverTrigger>
       <PopoverContent
+        ref={contentRef}
         side="right"
         align="start"
         sideOffset={10}
