@@ -1478,7 +1478,7 @@
           "from": "From period",
           "to": "To period",
           "pick": "Pick",
-          "stagesHint": "After submitting, ask each listed teacher to scan the approval QR. The gate QR appears after the last stage.",
+          "stagesHint": "After submitting, show your permit code to the teacher at each stage, then scan the approval QR they show. The gate QR appears after the last stage.",
           "requiredError": "Destination and period range are required.",
           "created": "Exit permit requested",
           "submit": "Submit",
@@ -1536,7 +1536,7 @@
         "opened": "Requested",
         "exitedLabel": "Through the gate",
         "idleTitle": "No exit permit in progress",
-        "idleBody": "Need to leave school during lessons? Request a permit, then ask a teacher to scan at each stage. The gate QR appears after the last stage.",
+        "idleBody": "Need to leave school during lessons? Request a permit, show your permit code to the teacher at each stage, then scan the approval QR they show. The gate QR appears after the last stage.",
         "historyTitle": "Exit permit history",
         "modeLabel": "Task on this page"
       },

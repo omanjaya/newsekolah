@@ -1478,7 +1478,7 @@
           "from": "Dari jam",
           "to": "Sampai jam",
           "pick": "Pilih",
-          "stagesHint": "Setelah diajukan, minta setiap guru yang tercantum memindai QR persetujuan. QR gerbang muncul setelah tahap terakhir.",
+          "stagesHint": "Setelah diajukan, tunjukkan kode izin ke guru di setiap tahap, lalu pindai QR persetujuan yang ia tampilkan. QR gerbang muncul setelah tahap terakhir.",
           "requiredError": "Tujuan dan rentang jam wajib diisi.",
           "created": "Izin keluar diajukan",
           "submit": "Ajukan",
@@ -1536,7 +1536,7 @@
         "opened": "Diajukan",
         "exitedLabel": "Keluar gerbang",
         "idleTitle": "Tidak ada izin keluar berjalan",
-        "idleBody": "Perlu keluar sekolah di jam pelajaran? Ajukan izin, lalu minta guru memindai di setiap tahap. QR gerbang muncul setelah tahap terakhir.",
+        "idleBody": "Perlu keluar sekolah di jam pelajaran? Ajukan izin, tunjukkan kode izin ke guru di setiap tahap, lalu pindai QR persetujuan yang ia tampilkan. QR gerbang muncul setelah tahap terakhir.",
         "historyTitle": "Riwayat izin keluar",
         "modeLabel": "Tugas di halaman ini"
       },
