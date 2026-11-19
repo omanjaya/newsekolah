@@ -101,8 +101,21 @@ describe("TPMappingEditor", () => {
     expect(screen.getAllByRole("row")).toHaveLength(2);
   });
 
+  it("lets the table's export code take the spare width instead of a fixed narrow box", () => {
+    load();
+    render(<TPMappingEditor classId="class-1" subjectId="subject-1" />);
+
+    const table = screen.getByRole("table");
+    expect(within(table).getByRole("columnheader", { name: "columns.exportCode" })).toHaveClass(
+      "w-full",
+    );
+    const code = within(table).getByRole("textbox", { name: "columns.exportCode" });
+    expect(code).toHaveClass("w-full", "min-w-48");
+    expect(code).not.toHaveClass("w-28");
+  });
+
   it("keeps the table with a saved row's remove in view once the editor fits its widest row", () => {
-    layout.width = 800;
+    layout.width = 880;
     load();
     render(<TPMappingEditor classId="class-1" subjectId="subject-1" />);
 
@@ -110,10 +123,22 @@ describe("TPMappingEditor", () => {
     expect(within(table).getByRole("button", { name: "remove" })).toBeInTheDocument();
   });
 
+  it("switches to cards when the export code would be too narrow to show a realistic code", () => {
+    // A 1090px window beside the sidebar leaves the editor about 800px:
+    // enough for the old 112px code box, which clipped TP-01-MATEMATIKA,
+    // but not for a row whose code field shows it whole (about 870px).
+    layout.width = 870;
+    load();
+    render(<TPMappingEditor classId="class-1" subjectId="subject-1" />);
+
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "columns.exportCode" })).toHaveClass("w-full");
+  });
+
   it("switches to cards when a saved row's remove would push the table past the editor", () => {
-    // Wide enough for a row without a mapping (about 690px), not for one
-    // whose actions cell also holds the remove button (about 790px).
-    layout.width = 780;
+    // Wide enough for a row without a mapping (about 770px), not for one
+    // whose actions cell also holds the remove button (about 870px).
+    layout.width = 800;
     load();
     render(<TPMappingEditor classId="class-1" subjectId="subject-1" />);
 

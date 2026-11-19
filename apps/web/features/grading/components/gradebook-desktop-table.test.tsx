@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { useTranslations } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 
@@ -102,5 +102,27 @@ describe("GradebookDesktopTable", () => {
   it("shows an empty report score as plain text to a reader", () => {
     renderTable({ canManage: false });
     expect(screen.queryByRole("button", { name: /reportScoreSet/ })).not.toBeInTheDocument();
+  });
+
+  it("shows a reader the scores as plain text, not inputs that only look editable", () => {
+    renderTable({ canManage: false });
+    expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+    const budi = screen.getByRole("row", { name: /Budi/ });
+    const citra = screen.getByRole("row", { name: /Citra/ });
+    // In the reader's locale, like the average beside it; a missing score
+    // is the same muted dash as every other empty cell.
+    expect(within(budi).getAllByText("88,0")[0]).toHaveClass("text-fg", "block");
+    expect(within(citra).getAllByText("-")[0]).toHaveClass("text-fg-muted");
+  });
+
+  it("keeps editable score inputs for a manager", () => {
+    renderTable();
+    expect(screen.getAllByRole("spinbutton")).toHaveLength(2);
+  });
+
+  it("shows a reader the star balance as text named as a balance, not a disabled action", () => {
+    renderTable({ canManage: false, starBalances: new Map([["s1", 4]]) });
+    expect(screen.queryByRole("button", { name: /starsFor/ })).not.toBeInTheDocument();
+    expect(screen.getByText('starsBalance:{"name":"Budi","balance":"4"}')).toHaveClass("sr-only");
   });
 });

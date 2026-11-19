@@ -53,14 +53,25 @@ vi.mock("../../reference/api", () => ({
 // a test can tell "publishes there" from "publishes somewhere".
 vi.mock("./erapor-export", () => ({
   EraporExport: ({
+    classes,
+    defaultClassId,
+    subjectsOf,
     canPublishIn,
     onOpenGradebook,
   }: {
+    classes: { id: string }[];
+    defaultClassId?: string;
+    subjectsOf: (classId: string) => { id: string }[];
     canPublishIn: (classId: string) => boolean;
     onOpenGradebook: (classId: string) => void;
   }) => (
     <div
       data-testid="erapor-export"
+      data-classes={classes.map((c) => c.id).join(",")}
+      data-default-class={defaultClassId ?? ""}
+      data-subjects-class-1={subjectsOf("class-1")
+        .map((s) => s.id)
+        .join(",")}
       data-can-publish={String(canPublishIn("class-2"))}
       data-can-publish-class-1={String(canPublishIn("class-1"))}
     >
@@ -332,6 +343,60 @@ describe("GradingView TP and e-Rapor panels", () => {
     expect(sheet).toHaveAttribute("data-class-id", "class-2");
     expect(sheet).toHaveAttribute("data-subject-id", "subject-2");
     expect(sheet).toHaveAttribute("data-can-manage", "true");
+  });
+
+  it("moves focus into the sheet panel once the e-Rapor panel opens the gradebook", async () => {
+    grantManageGrades();
+    window.history.replaceState(null, "", "/?tab=erapor");
+    const user = userEvent.setup();
+    render(<GradingView />);
+
+    await user.click(screen.getByRole("button", { name: "open-gradebook" }));
+    const panel = screen.getByRole("tabpanel");
+    expect(panel).toContainElement(screen.getByTestId("gradebook-sheet"));
+    expect(panel).toHaveFocus();
+  });
+
+  it("does not move focus on an ordinary tab switch", async () => {
+    grantManageGrades();
+    window.history.replaceState(null, "", "/?tab=erapor");
+    const user = userEvent.setup();
+    render(<GradingView />);
+
+    await user.click(screen.getByRole("tab", { name: "tabGradebook" }));
+    expect(screen.getByRole("tab", { name: "tabGradebook" })).toHaveFocus();
+  });
+
+  it("scopes the e-Rapor classes and per-subject subjects to a teacher's assignments", () => {
+    grantManageGrades();
+    window.history.replaceState(null, "", "/?tab=erapor");
+    render(<GradingView />);
+
+    const panel = screen.getByTestId("erapor-export");
+    expect(panel).toHaveAttribute("data-classes", "class-1");
+    expect(panel).toHaveAttribute("data-default-class", "class-1");
+    expect(panel).toHaveAttribute("data-subjects-class-1", "subject-1");
+  });
+
+  it("offers a school-wide reader every class and subject on the e-Rapor panel", () => {
+    grantViewGradesOnly();
+    window.history.replaceState(null, "", "/?tab=erapor");
+    render(<GradingView />);
+
+    const panel = screen.getByTestId("erapor-export");
+    expect(panel).toHaveAttribute("data-classes", "class-1,class-2");
+    expect(panel).toHaveAttribute("data-subjects-class-1", "subject-1,subject-2");
+  });
+
+  it("hides the e-Rapor tab from a teacher who teaches no class, leaving the sheet's empty state", () => {
+    grantManageGrades();
+    assignmentsFixture.current = [];
+    window.history.replaceState(null, "", "/?tab=erapor");
+    render(<GradingView />);
+
+    expect(screen.queryByRole("tab", { name: "tabErapor" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("erapor-export")).not.toBeInTheDocument();
+    expect(screen.getByText("noAssignmentsTitle")).toBeInTheDocument();
   });
 
   it("does not send a counselor with no teaching assignment to publish", () => {

@@ -10,7 +10,6 @@ import {
   List,
   ListRow,
 } from "@newsekolah/ui";
-import { Star } from "lucide-react";
 import { useLocale, type useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -19,6 +18,7 @@ import { formatScore } from "../lib/format-score";
 import { type StarBalances, starBalanceLabel } from "../lib/star-balances";
 
 import { GradebookScoreCell } from "./gradebook-score-cell";
+import { GradebookStarBalance } from "./gradebook-star-balance";
 import type { Edits } from "./gradebook-types";
 
 export interface GradebookMobileCardsProps {
@@ -80,19 +80,15 @@ export function GradebookMobileCards({
           <Card key={student.student_user_id}>
             <CardHeader
               action={
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={!canManage}
-                  onClick={() => {
+                <GradebookStarBalance
+                  t={t}
+                  studentName={student.name}
+                  label={starBalanceLabel(starBalances, student.student_user_id)}
+                  canManage={canManage}
+                  onOpen={() => {
                     onGiveStar(student);
                   }}
-                  className="text-fg-muted tabular-nums disabled:opacity-100"
-                  aria-label={t("starsFor", { name: student.name })}
-                >
-                  <Star aria-hidden="true" />
-                  {starBalanceLabel(starBalances, student.student_user_id)}
-                </Button>
+                />
               }
             >
               <CardTitle className="truncate">{student.name}</CardTitle>
@@ -118,7 +114,7 @@ export function GradebookMobileCards({
                         componentId={component.id}
                         rowIndex={rowIndex}
                         value={cellValue(component.id, student)}
-                        disabled={!canManage}
+                        readOnly={!canManage}
                         ariaLabel={t("scoreFor", { name: student.name, code: component.code })}
                         className="w-20 shrink-0 text-right tabular-nums"
                         min={scaleMin}

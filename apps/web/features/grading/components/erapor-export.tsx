@@ -32,7 +32,6 @@ import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { isRetryableError } from "../../../lib/query/retryable-error";
-import { useClassesQuery, useSubjectsQuery } from "../../reference/api";
 import {
   type EraporFormat,
   downloadEraporExport,
@@ -49,7 +48,34 @@ const MAX_ROWS_SHOWN = 10;
  */
 const EMPTY_STATE_CODES = new Set(["GRADES_NOT_PUBLISHED", "NO_GRADABLE_SUBJECTS"]);
 
+/** A class or subject the panel can offer, already scoped by the page. */
+export interface EraporOption {
+  id: string;
+  name: string;
+}
+
 export interface EraporExportProps {
+  /**
+   * The classes the viewer may export: the ones they teach, or every class
+   * for a school-wide reader (the server's own scope for the preview), so
+   * the picker never offers a class that would come back forbidden.
+   */
+  classes: EraporOption[];
+  /** True while the page is still working out `classes`. */
+  loading?: boolean;
+  /**
+   * Why the page could not work out `classes`, if it failed: shown as an
+   * error instead of the "no classes yet" empty state it would look like.
+   */
+  classesError?: unknown;
+  /** Retries loading `classes` after a transient failure. */
+  onRetryClasses?: () => void;
+  /** True while `classes` is being fetched again after a failure. */
+  retryingClasses?: boolean;
+  /** The class to start on (the page's current sheet); else the first class. */
+  defaultClassId?: string;
+  /** The subjects of a class the viewer may export as a per-subject file. */
+  subjectsOf: (classId: string) => EraporOption[];
   /**
    * Whether the viewer can publish grades of the given class themselves:
    * manage_grades and a teaching assignment in it (or manage_master_data).
@@ -71,12 +97,20 @@ export interface EraporExportProps {
  * second sheet (or CSV section), so nothing here is lost once the file
  * lands on disk.
  */
-export function EraporExport({ canPublishIn, onOpenGradebook }: EraporExportProps): ReactElement {
+export function EraporExport({
+  classes,
+  loading = false,
+  classesError,
+  onRetryClasses,
+  retryingClasses = false,
+  defaultClassId = "",
+  subjectsOf,
+  canPublishIn,
+  onOpenGradebook,
+}: EraporExportProps): ReactElement {
   const t = useTranslations("app.grading.erapor");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const classes = useClassesQuery();
-  const subjects = useSubjectsQuery();
   const terms = useTermsQuery();
 
   const [classId, setClassId] = useState("");
@@ -86,12 +120,24 @@ export function EraporExport({ canPublishIn, onOpenGradebook }: EraporExportProp
   const [legacySubjectId, setLegacySubjectId] = useState("");
   const [legacyDownloading, setLegacyDownloading] = useState(false);
 
-  const effectiveClassId = classId || (classes.data?.data[0]?.id ?? "");
+  const offered = (id: string) => id !== "" && classes.some((c) => c.id === id);
+  const effectiveClassId = offered(classId)
+    ? classId
+    : offered(defaultClassId)
+      ? defaultClassId
+      : (classes[0]?.id ?? "");
   const preview = useEraporPreviewQuery(effectiveClassId, termId || undefined);
   const canPublish = effectiveClassId !== "" && canPublishIn(effectiveClassId);
 
-  const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
-  const subjectOptions = (subjects.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }));
+  const classOptions = classes.map((c) => ({ value: c.id, label: c.name }));
+  const subjectOptions = (effectiveClassId ? subjectsOf(effectiveClassId) : []).map((s) => ({
+    value: s.id,
+    label: s.name,
+  }));
+  // A subject picked for one class may not be offered in the next.
+  const effectiveLegacySubjectId = subjectOptions.some((o) => o.value === legacySubjectId)
+    ? legacySubjectId
+    : "";
   const termOptions = [
     { value: "", label: t("allTerms") },
     ...(terms.data?.data ?? []).map((term) => ({ value: term.id, label: term.name })),
@@ -116,10 +162,14 @@ export function EraporExport({ canPublishIn, onOpenGradebook }: EraporExportProp
   }
 
   async function downloadLegacy() {
-    if (!effectiveClassId || !legacySubjectId) return;
+    if (!effectiveClassId || !effectiveLegacySubjectId) return;
     setLegacyDownloading(true);
     try {
-      await downloadEraporExportLegacy(effectiveClassId, legacySubjectId, termId || undefined);
+      await downloadEraporExportLegacy(
+        effectiveClassId,
+        effectiveLegacySubjectId,
+        termId || undefined,
+      );
     } catch (error) {
       toast.error(
         error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
@@ -131,6 +181,46 @@ export function EraporExport({ canPublishIn, onOpenGradebook }: EraporExportProp
 
   const rows = preview.data?.rows ?? [];
   const skipped = preview.data?.skipped ?? [];
+
+  if (loading) {
+    return <SkeletonList rows={4} leading={false} />;
+  }
+  if (classes.length === 0 && classesError) {
+    return (
+      <Alert
+        variant="danger"
+        title={
+          classesError instanceof ApiError
+            ? apiErrorMessage(classesError.code)
+            : apiErrorMessage("UNKNOWN")
+        }
+        action={
+          onRetryClasses &&
+          isRetryableError(classesError) && (
+            <Button
+              size="sm"
+              variant="secondary"
+              loading={retryingClasses}
+              onClick={onRetryClasses}
+            >
+              {t("retry")}
+            </Button>
+          )
+        }
+      >
+        {t("classesError")}
+      </Alert>
+    );
+  }
+  if (classes.length === 0) {
+    return (
+      <EmptyState
+        icon={<domainIcons.grades aria-hidden="true" />}
+        title={t("noClassesTitle")}
+        description={t("noClassesBody")}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -299,7 +389,7 @@ export function EraporExport({ canPublishIn, onOpenGradebook }: EraporExportProp
           <Field label={t("legacySubject")} className="w-full md:w-auto">
             <Select
               options={subjectOptions}
-              value={legacySubjectId}
+              value={effectiveLegacySubjectId}
               onValueChange={setLegacySubjectId}
               className="w-full md:w-56"
             />
@@ -308,7 +398,7 @@ export function EraporExport({ canPublishIn, onOpenGradebook }: EraporExportProp
             variant="secondary"
             icon={<Download />}
             loading={legacyDownloading}
-            disabled={!effectiveClassId || !legacySubjectId}
+            disabled={!effectiveClassId || !effectiveLegacySubjectId}
             onClick={() => void downloadLegacy()}
           >
             {t("legacyDownload")}
