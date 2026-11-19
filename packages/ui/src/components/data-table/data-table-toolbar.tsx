@@ -94,7 +94,18 @@ export function collectColumnHeaders<TData>(
 export interface DataTableToolbarProps<TData> {
   table: Table<TData>;
   showSearch: boolean;
+  /**
+   * The applied search. The box keeps what is typed on its own (the table
+   * applies it after a debounce) and is set from this only when
+   * `searchSyncKey` changes.
+   */
   searchValue: string;
+  /**
+   * Changes when the search was set from outside the box (a page's "Hapus
+   * semua filter" clearing its own search state), so the box shows that
+   * value instead of the stale query.
+   */
+  searchSyncKey?: number;
   onSearchChange: (value: string) => void;
   /** The search box's clear button and Escape: applied at once, past the typing debounce. */
   onSearchClear?: () => void;
@@ -187,6 +198,7 @@ export function DataTableToolbar<TData>({
   table,
   showSearch,
   searchValue,
+  searchSyncKey = 0,
   onSearchChange,
   onSearchClear,
   density,
@@ -204,6 +216,13 @@ export function DataTableToolbar<TData>({
   const uiLabels = useUiLabels();
   const labels = toolbarLabelsFrom(uiLabels, labelsOverride);
   const [localSearch, setLocalSearch] = useState(searchValue);
+  // A search set from outside the box replaces what it holds, in place:
+  // the same element, so focus handed to it stays there.
+  const [syncedKey, setSyncedKey] = useState(searchSyncKey);
+  if (syncedKey !== searchSyncKey) {
+    setSyncedKey(searchSyncKey);
+    setLocalSearch(searchValue);
+  }
   const searchRef = useRef<HTMLInputElement>(null);
   const columns = hideableColumns(table, columnLabels);
   const hasFilters = filters !== undefined && filters.length > 0;

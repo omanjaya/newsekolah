@@ -50,8 +50,8 @@ import {
   toolbarLabelsFrom,
   type DataTableToolbarLabels,
 } from "./data-table-toolbar.js";
-import { useDebouncedCallback } from "./use-debounced-callback.js";
 import { usePersistedColumnVisibility } from "./use-persisted-column-visibility.js";
+import { useTableSearch } from "./use-table-search.js";
 import { useToolbarFocusHandOff } from "./use-toolbar-focus-hand-off.js";
 
 export { selectionColumn } from "./data-table-selection.js";
@@ -274,13 +274,11 @@ export function DataTable<TData>({
     },
     [mode, onGlobalFilterChange, onPaginationChange],
   );
-  const debouncedFilterChange = useDebouncedCallback(applyFilterChange, 300);
-
-  // Clearing is immediate, not debounced: the rows come back at once.
-  const clearSearch = useCallback(() => {
-    debouncedFilterChange("");
-    applyFilterChange("");
-  }, [applyFilterChange, debouncedFilterChange]);
+  // Typing is debounced, clearing immediate (the rows come back at once).
+  const { searchSyncKey, onSearchChange, clearSearch } = useTableSearch(
+    tableGlobalFilter,
+    applyFilterChange,
+  );
   const { rootRef, handOffResetFocus, keepSearchFocus } = useToolbarFocusHandOff(searchResetKey);
   const clearLocalSearch = useCallback(() => {
     keepSearchFocus();
@@ -431,7 +429,8 @@ export function DataTable<TData>({
         table={table}
         showSearch={hasSearch}
         searchValue={tableGlobalFilter}
-        onSearchChange={debouncedFilterChange}
+        searchSyncKey={searchSyncKey}
+        onSearchChange={onSearchChange}
         onSearchClear={clearSearch}
         density={density}
         onDensityChange={setDensity}
