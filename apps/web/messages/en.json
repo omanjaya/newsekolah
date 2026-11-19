@@ -885,7 +885,6 @@
         "saveChanges": "Save changes",
         "created": "Draft saved",
         "updated": "Changes saved",
-        "requiredError": "Title and body are required.",
         "audienceError": "Pick at least one recipient.",
         "previewAudienceLabel": "Sent to",
         "previewScheduleImmediate": "Appears right after publishing",
@@ -1041,7 +1040,6 @@
         "start": "Start period",
         "end": "End period",
         "pick": "Pick",
-        "requiredError": "All fields are required.",
         "rangeError": "End period must be the same as or after the start period.",
         "created": "Schedule added",
         "cancel": "Cancel",
@@ -1384,7 +1382,6 @@
         "substituteEmpty": "No eligible teacher matches.",
         "note": "Note",
         "pick": "Pick",
-        "requiredError": "Schedule, date and substitute are required.",
         "sent": "Request sent",
         "cancel": "Cancel",
         "send": "Send request"

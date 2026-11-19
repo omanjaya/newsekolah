@@ -99,7 +99,7 @@ describe("ScheduleForm", () => {
       />,
     );
 
-    const textarea = await screen.findByRole("textbox", { name: "notes" });
+    const textarea = await screen.findByRole("textbox", { name: /^notes/ });
     expect(textarea).toHaveValue("Ganti ruang karena renovasi");
 
     await user.click(screen.getByRole("button", { name: "save" }));
@@ -127,7 +127,7 @@ describe("ScheduleForm", () => {
       />,
     );
 
-    expect(screen.queryByRole("textbox", { name: "notes" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox", { name: /^notes/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "save" })).toBeDisabled();
   });
 
@@ -162,7 +162,38 @@ describe("ScheduleForm", () => {
       />,
     );
 
-    expect(screen.getByRole("textbox", { name: "notes" })).toHaveValue("");
+    expect(screen.getByRole("textbox", { name: /^notes/ })).toHaveValue("");
     expect(screen.getByRole("button", { name: "save" })).not.toBeDisabled();
+  });
+
+  it("marks each missing field on Save and focuses the first, with no banner", async () => {
+    const user = userEvent.setup();
+    render(
+      <ScheduleForm
+        yearId="year-1"
+        initialDay={1}
+        initialStartSeq={1}
+        initialClassId=""
+        initialTeacherId="teacher-1"
+        onDone={vi.fn()}
+      />,
+    );
+
+    const classPicker = screen.getByRole("combobox", { name: "class" });
+    const subjectPicker = screen.getByRole("combobox", { name: "subject" });
+    expect(classPicker).toHaveAttribute("aria-required", "true");
+    expect(classPicker).not.toHaveAttribute("aria-invalid");
+
+    await user.click(screen.getByRole("button", { name: "save" }));
+
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(classPicker).toHaveAttribute("aria-invalid", "true");
+    expect(subjectPicker).toHaveAttribute("aria-invalid", "true");
+    // The periods have their defaults, so they are not flagged.
+    expect(screen.getByRole("combobox", { name: "start" })).not.toHaveAttribute("aria-invalid");
+    await waitFor(() => {
+      expect(classPicker).toHaveFocus();
+    });
   });
 });

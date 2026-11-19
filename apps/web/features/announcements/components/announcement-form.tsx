@@ -22,6 +22,7 @@ import {
   TabsTrigger,
   Textarea,
   TimePicker,
+  useSubmitValidation,
   useToast,
 } from "@newsekolah/ui";
 import { Pin } from "lucide-react";
@@ -73,6 +74,7 @@ export function AnnouncementForm({
   const t = useTranslations("app.announcements.form");
   const tRoot = useTranslations("app.announcements");
   const tRoles = useTranslations("app.announcements.roles");
+  const tValidation = useTranslations("validation");
   const locale = useLocale() as Locale;
   const { me } = useSession();
   // The schedule pickers read and write the school's wall clock, whatever
@@ -101,7 +103,16 @@ export function AnnouncementForm({
   );
   const startsAtIso = zonedLocalToIso(startsAt, timeZone);
   const endsAtIso = zonedLocalToIso(endsAt, timeZone);
+  // The banner carries only the server's answer: a missing title, body or
+  // audience is marked on its own field once Save has been pressed.
   const [error, setError] = useState<string | null>(null);
+  const { ref: formRef, attempted, check } = useSubmitValidation();
+  const audienceMissing =
+    (audienceType === "roles" && roleSlugs.length === 0) ||
+    (audienceType === "classes" && classIds.length === 0);
+  const requiredError = (value: string) =>
+    attempted && !value.trim() ? tValidation("required") : undefined;
+  const audienceError = attempted && audienceMissing ? t("audienceError") : undefined;
 
   const pending = create.isPending || update.isPending;
 
@@ -111,18 +122,9 @@ export function AnnouncementForm({
 
   async function submit() {
     setError(null);
-    if (!title.trim() || !body.trim()) {
-      setError(t("requiredError"));
-      setActiveTab("compose");
-      return;
-    }
-    if (audienceType === "roles" && roleSlugs.length === 0) {
-      setError(t("audienceError"));
-      setActiveTab("compose");
-      return;
-    }
-    if (audienceType === "classes" && classIds.length === 0) {
-      setError(t("audienceError"));
+    if (!check(Boolean(title.trim() && body.trim()) && !audienceMissing)) {
+      // The fields live on the compose tab: bring it back so the first
+      // missing one can take focus.
       setActiveTab("compose");
       return;
     }
@@ -157,6 +159,7 @@ export function AnnouncementForm({
 
   return (
     <form
+      ref={formRef}
       className="flex flex-col gap-5"
       noValidate
       onSubmit={(event) => {
@@ -180,7 +183,7 @@ export function AnnouncementForm({
 
         <TabsContent value="compose" className="flex flex-col gap-6">
           <FormSection title={t("sectionContent")} columns={1}>
-            <Field label={t("title")} required>
+            <Field label={t("title")} required error={requiredError(title)}>
               <Input
                 value={title}
                 maxLength={180}
@@ -189,7 +192,7 @@ export function AnnouncementForm({
                 }}
               />
             </Field>
-            <Field label={t("body")} hint={t("bodyHint")} required>
+            <Field label={t("body")} hint={t("bodyHint")} required error={requiredError(body)}>
               <Textarea
                 value={body}
                 rows={8}
@@ -211,38 +214,52 @@ export function AnnouncementForm({
               />
             </Field>
             {audienceType === "roles" && (
-              <fieldset className="flex flex-col gap-3">
-                <legend className="mb-2 text-label text-fg">{t("audienceRoles")}</legend>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {ROLE_SLUGS.map((slug) => (
-                    <Checkbox
-                      key={slug}
-                      label={tRoles(slug)}
-                      checked={roleSlugs.includes(slug)}
-                      onCheckedChange={() => {
-                        toggle(roleSlugs, slug, setRoleSlugs);
-                      }}
-                    />
-                  ))}
-                </div>
-              </fieldset>
+              <Field label={t("audienceRoles")} required error={audienceError}>
+                {(control) => (
+                  <div
+                    role="group"
+                    aria-labelledby={control.labelId}
+                    aria-describedby={control["aria-describedby"]}
+                    className="grid grid-cols-2 gap-3 sm:grid-cols-3"
+                  >
+                    {ROLE_SLUGS.map((slug) => (
+                      <Checkbox
+                        key={slug}
+                        label={tRoles(slug)}
+                        invalid={control["aria-invalid"]}
+                        checked={roleSlugs.includes(slug)}
+                        onCheckedChange={() => {
+                          toggle(roleSlugs, slug, setRoleSlugs);
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </Field>
             )}
             {audienceType === "classes" && (
-              <fieldset className="flex flex-col gap-3">
-                <legend className="mb-2 text-label text-fg">{t("audienceClasses")}</legend>
-                <div className="grid max-h-48 grid-cols-2 gap-3 overflow-y-auto rounded-md bg-surface-sunken p-3 sm:grid-cols-3">
-                  {(classes.data?.data ?? []).map((cls) => (
-                    <Checkbox
-                      key={cls.id}
-                      label={cls.name}
-                      checked={classIds.includes(cls.id)}
-                      onCheckedChange={() => {
-                        toggle(classIds, cls.id, setClassIds);
-                      }}
-                    />
-                  ))}
-                </div>
-              </fieldset>
+              <Field label={t("audienceClasses")} required error={audienceError}>
+                {(control) => (
+                  <div
+                    role="group"
+                    aria-labelledby={control.labelId}
+                    aria-describedby={control["aria-describedby"]}
+                    className="grid max-h-48 grid-cols-2 gap-3 overflow-y-auto rounded-md bg-surface-sunken p-3 sm:grid-cols-3"
+                  >
+                    {(classes.data?.data ?? []).map((cls) => (
+                      <Checkbox
+                        key={cls.id}
+                        label={cls.name}
+                        invalid={control["aria-invalid"]}
+                        checked={classIds.includes(cls.id)}
+                        onCheckedChange={() => {
+                          toggle(classIds, cls.id, setClassIds);
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </Field>
             )}
           </FormSection>
 

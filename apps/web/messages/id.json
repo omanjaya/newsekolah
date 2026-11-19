@@ -885,7 +885,6 @@
         "saveChanges": "Simpan perubahan",
         "created": "Draf tersimpan",
         "updated": "Perubahan tersimpan",
-        "requiredError": "Judul dan isi wajib diisi.",
         "audienceError": "Pilih minimal satu penerima.",
         "previewAudienceLabel": "Ditujukan untuk",
         "previewScheduleImmediate": "Tampil segera setelah diterbitkan",
@@ -1041,7 +1040,6 @@
         "start": "Jam mulai",
         "end": "Jam selesai",
         "pick": "Pilih",
-        "requiredError": "Semua kolom wajib diisi.",
         "rangeError": "Jam selesai harus sama atau setelah jam mulai.",
         "created": "Jadwal ditambahkan",
         "cancel": "Batal",
@@ -1384,7 +1382,6 @@
         "substituteEmpty": "Tidak ada guru yang cocok atau memenuhi syarat.",
         "note": "Catatan",
         "pick": "Pilih",
-        "requiredError": "Jadwal, tanggal, dan guru pengganti wajib diisi.",
         "sent": "Permintaan terkirim",
         "cancel": "Batal",
         "send": "Kirim permintaan"
