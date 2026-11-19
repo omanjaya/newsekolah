@@ -1,3 +1,4 @@
+import type { ReportExportColumn } from "../../../components/report-export-dialog";
 import type { ClassRef, GradeLevel } from "../../reference/api";
 
 export const STATUS_TOKEN: Record<
@@ -20,24 +21,52 @@ export function gradeLevelOptions(gradeLevels: GradeLevel[] | undefined) {
   return (gradeLevels ?? []).map((item) => ({ value: item.id, label: item.name }));
 }
 
+/** A column header from `app.attendanceReports.exportColumns`. */
+export type ExportColumnLabel = (
+  key:
+    | "no"
+    | "nis"
+    | "name"
+    | "status"
+    | "expected"
+    | "submitted"
+    | "complete"
+    | "total"
+    | "percentage",
+) => string;
+
 /**
- * The daily report export's columns, mirroring
+ * The daily report export's columns, in the order of
  * apps/api/internal/modules/attendance/service/report.go's
- * dailyReportColumns exactly (key and default Indonesian label) --
- * {@link ReportExportDialog}'s `availableColumns`.
+ * dailyReportColumns -- {@link ReportExportDialog}'s `availableColumns`.
+ * The headers come from the catalogue, word for word what the server
+ * writes for the request's locale (service/report_columns.go), since the
+ * dialog only sends a label the reader renamed.
  */
-export const DAILY_REPORT_EXPORT_COLUMNS = [
-  { key: "no", label: "No" },
-  { key: "name", label: "Nama Siswa" },
-  { key: "status", label: "Status" },
-  { key: "expected", label: "Jumlah Sesi" },
-  { key: "submitted", label: "Sesi Terisi" },
-  { key: "complete", label: "Lengkap" },
+export function dailyReportExportColumns(label: ExportColumnLabel): ReportExportColumn[] {
+  return (["no", "name", "status", "expected", "submitted", "complete"] as const).map((key) => ({
+    key,
+    label: label(key),
+  }));
+}
+
+/**
+ * The default status policy's codes and labels (DefaultStatusPolicy in
+ * apps/api/internal/modules/attendance/domain/policy.go). A status label is
+ * the school's own content: the server writes it as configured in every
+ * locale, so the dialog shows it as is too.
+ */
+const DEFAULT_POLICY_STATUSES = [
+  { code: "H", label: "Hadir" },
+  { code: "S", label: "Sakit" },
+  { code: "I", label: "Izin" },
+  { code: "D", label: "Dispensasi" },
+  { code: "A", label: "Alpha" },
 ];
 
 /**
  * The monthly recap export's columns for the tenant's default status
- * policy (H/S/I/D/A), mirroring
+ * policy (H/S/I/D/A), in the order of
  * apps/api/internal/modules/attendance/service/monthly_export.go's
  * monthlyRecapColumns -- {@link ReportExportDialog}'s `availableColumns`.
  * A tenant with a customised status policy still exports every one of
@@ -45,15 +74,13 @@ export const DAILY_REPORT_EXPORT_COLUMNS = [
  * from the tenant's policy); this dialog list only drives which of the
  * *default* columns a user can toggle/rename/reorder before download.
  */
-export const MONTHLY_RECAP_EXPORT_COLUMNS = [
-  { key: "no", label: "No" },
-  { key: "nis", label: "NIS" },
-  { key: "name", label: "Nama Siswa" },
-  { key: "status_H", label: "Hadir" },
-  { key: "status_S", label: "Sakit" },
-  { key: "status_I", label: "Izin" },
-  { key: "status_D", label: "Dispensasi" },
-  { key: "status_A", label: "Alpha" },
-  { key: "total", label: "Total" },
-  { key: "percentage", label: "Persentase Hadir" },
-];
+export function monthlyRecapExportColumns(label: ExportColumnLabel): ReportExportColumn[] {
+  return [
+    ...(["no", "nis", "name"] as const).map((key) => ({ key, label: label(key) })),
+    ...DEFAULT_POLICY_STATUSES.map((status) => ({
+      key: `status_${status.code}`,
+      label: status.label,
+    })),
+    ...(["total", "percentage"] as const).map((key) => ({ key, label: label(key) })),
+  ];
+}

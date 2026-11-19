@@ -113,18 +113,19 @@ func periodLabel(start, end string) string {
 	return start + " - " + end
 }
 
-// dailyReportColumns are the daily report's stable column keys and
-// default Indonesian labels, shared by every scope (class or grade
-// level) so Options.Columns always refers to the same keys regardless of
-// how many sections the export ends up with.
-func dailyReportColumns() []reportdoc.Column {
+// dailyReportColumns are the daily report's stable column keys, with
+// their headers in locale (reportColumnVocabulary), shared by every scope
+// (class or grade level) so Options.Columns always refers to the same
+// keys regardless of how many sections the export ends up with.
+func dailyReportColumns(locale string) []reportdoc.Column {
+	label := func(key string) string { return reportColumnLabel(locale, key) }
 	return []reportdoc.Column{
-		{Key: "no", Label: "No", Kind: reportdoc.ColumnNumber, Width: 5},
-		{Key: "name", Label: "Nama Siswa", Kind: reportdoc.ColumnText, Width: 28},
-		{Key: "status", Label: "Status", Kind: reportdoc.ColumnText, Width: 12},
-		{Key: "expected", Label: "Jumlah Sesi", Kind: reportdoc.ColumnNumber, Width: 12},
-		{Key: "submitted", Label: "Sesi Terisi", Kind: reportdoc.ColumnNumber, Width: 12},
-		{Key: "complete", Label: "Lengkap", Kind: reportdoc.ColumnPercent, Width: 12},
+		{Key: "no", Label: label("no"), Kind: reportdoc.ColumnNumber, Width: 5},
+		{Key: "name", Label: label("name"), Kind: reportdoc.ColumnText, Width: 28},
+		{Key: "status", Label: label("status"), Kind: reportdoc.ColumnText, Width: 12},
+		{Key: "expected", Label: label("expected"), Kind: reportdoc.ColumnNumber, Width: 12},
+		{Key: "submitted", Label: label("submitted"), Kind: reportdoc.ColumnNumber, Width: 12},
+		{Key: "complete", Label: label("complete"), Kind: reportdoc.ColumnPercent, Width: 12},
 	}
 }
 
@@ -168,9 +169,9 @@ func completeRatio(expected, submitted int) float64 {
 // ("angkatan") -- one section per class, in resolveReportScope's order.
 // Exactly one of classID/gradeLevelID must be set. locale (reportdoc.
 // LocaleID/LocaleEN) drives every reportdoc-provided piece of text
-// (dates, the PDF page-number footer, the "no rows" label); report-
-// specific text (title, scope labels, column labels) stays Indonesian,
-// this module's own default. Called with a zero reportdoc.Options (no
+// (dates, the PDF page-number footer, the "no rows" label) and the column
+// headers (reportColumnVocabulary); the rest of the report's own text
+// (title, scope labels) stays Indonesian, this module's own default. Called with a zero reportdoc.Options (no
 // format/title/letterhead/columns query params), this keeps every
 // existing caller's request working: xlsx, every column, the report's
 // own default title.
@@ -202,7 +203,7 @@ func (s *Service) ExportDailyReport(ctx context.Context, tenantID uuid.UUID, cla
 		doc := reportdoc.Document{
 			Title:           "Presensi Harian",
 			Scope:           []reportdoc.ScopeLine{scopeLine, {Label: "Tanggal", Value: reportdoc.FormatDate(locale, date)}},
-			Columns:         dailyReportColumns(),
+			Columns:         dailyReportColumns(locale),
 			Sections:        sections,
 			PageLabelFormat: reportdoc.PageLabel(locale),
 			EmptyRowsLabel:  reportdoc.EmptyRowsLabelFor(locale),

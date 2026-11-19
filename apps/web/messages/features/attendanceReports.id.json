@@ -80,5 +80,16 @@
     }
   },
   "mineTitle": "Laporan presensi saya",
-  "tabsLabel": "Jenis laporan"
+  "tabsLabel": "Jenis laporan",
+  "exportColumns": {
+    "no": "No",
+    "nis": "NIS",
+    "name": "Nama siswa",
+    "status": "Status",
+    "expected": "Jumlah sesi",
+    "submitted": "Sesi terisi",
+    "complete": "Lengkap",
+    "total": "Total",
+    "percentage": "Persentase hadir"
+  }
 }

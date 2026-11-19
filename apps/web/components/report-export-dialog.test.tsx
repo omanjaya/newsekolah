@@ -142,6 +142,46 @@ describe("ReportExportDialog", () => {
     expect(call.columns.map((c) => c.key)).toEqual(["no", "name"]);
   });
 
+  it("remembers a renamed label but lets an untouched one follow the report's default", async () => {
+    const onExport = vi.fn().mockResolvedValue(undefined);
+    const { unmount } = renderDialog(onExport);
+
+    const statusField = screen.getByRole("textbox", { name: 'columnLabel:{"column":"Status"}' });
+    await userEvent.clear(statusField);
+    await userEvent.type(statusField, "Keterangan");
+    await userEvent.click(screen.getByRole("button", { name: "export" }));
+    unmount();
+
+    // The report's default header changes (another language, or a
+    // rewording); the reader never renamed "Name", so it follows.
+    const secondExport = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ReportExportDialog
+        open
+        onOpenChange={vi.fn()}
+        reportKey="test.report"
+        defaultTitle="Test Report"
+        availableColumns={[
+          { key: "no", label: "No." },
+          { key: "name", label: "Student name" },
+          { key: "status", label: "Status" },
+        ]}
+        onExport={secondExport}
+      />,
+    );
+    expect(
+      screen.getByRole("textbox", { name: 'columnLabel:{"column":"Student name"}' }),
+    ).toHaveValue("Student name");
+    await userEvent.click(screen.getByRole("button", { name: "export" }));
+
+    const call = secondExport.mock.calls[0]?.[0] as ReportExportOptions;
+    expect(call.columns).toEqual([
+      { key: "no" },
+      { key: "name" },
+      { key: "status", label: "Keterangan" },
+    ]);
+  });
+
   it("hides the column list and exports without needing one when columnsCustomizable is false", async () => {
     const onExport = vi.fn().mockResolvedValue(undefined);
     render(

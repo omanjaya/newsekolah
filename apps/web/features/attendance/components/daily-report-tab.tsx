@@ -34,11 +34,7 @@ import {
 } from "../api";
 
 import { AttendanceDailySessions } from "./attendance-daily-sessions";
-import {
-  DAILY_REPORT_EXPORT_COLUMNS,
-  STATUS_TOKEN,
-  classOptions,
-} from "./attendance-report-options";
+import { dailyReportExportColumns, STATUS_TOKEN, classOptions } from "./attendance-report-options";
 import { ReportScopePicker, scopeIsReady } from "./report-scope-picker";
 
 /**
@@ -48,6 +44,7 @@ import { ReportScopePicker, scopeIsReady } from "./report-scope-picker";
  */
 export function DailyReportTab(): ReactElement {
   const t = useTranslations("app.attendanceReports.daily");
+  const tColumns = useTranslations("app.attendanceReports.exportColumns");
   const { me } = useSession();
 
   const [classId, setClassId] = useState("");
@@ -157,7 +154,7 @@ export function DailyReportTab(): ReactElement {
         onOpenChange={setExportOpen}
         reportKey="attendance.daily"
         defaultTitle={t("exportTitle")}
-        availableColumns={DAILY_REPORT_EXPORT_COLUMNS}
+        availableColumns={dailyReportExportColumns(tColumns)}
         onExport={handleExport}
         scopeSlot={
           <div className="flex flex-col gap-2">

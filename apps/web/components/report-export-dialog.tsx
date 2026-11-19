@@ -281,7 +281,14 @@ function ReportExportForm({
       writeStoredChoice(reportKey, {
         format,
         showLetterhead,
-        columns: columns.map((c) => ({ key: c.key, label: c.label, included: c.included })),
+        // Only a renamed label is remembered: a default one is the report's
+        // to give, so it follows the reader's language and any later
+        // rewording instead of being frozen in this browser.
+        columns: columns.map((c) => ({
+          key: c.key,
+          label: c.label.trim() !== c.defaultLabel ? c.label : "",
+          included: c.included,
+        })),
       });
       onOpenChange(false);
     } catch {
