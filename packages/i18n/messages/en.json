@@ -348,6 +348,8 @@
     "LEAVE_REQUEST_GUARDIAN_NOT_LINKED": "You are not registered as a guardian who can submit a leave request for this student.",
     "HOMEROOM_TEACHER_REQUIRED": "This student's class has no active homeroom teacher yet, so a leave request cannot be submitted. Contact the school.",
     "WORKFLOW_ALREADY_IN_PROGRESS": "This student already has a leave request in progress today.",
-    "TEMPLATE_INVALID": "The template body is invalid. Check for a '{{ }}' tag that is unclosed or mistyped."
+    "TEMPLATE_INVALID": "The template body is invalid. Check for a '{{ }}' tag that is unclosed or mistyped.",
+    "WORKFLOW_STAGE_MISMATCH": "The stage this request is waiting at cannot be approved this way. Check the stage, then ask its approver for a code.",
+    "WORKFLOW_APPROVER_NOT_ELIGIBLE": "This code is not from someone allowed to approve this stage."
   }
 }

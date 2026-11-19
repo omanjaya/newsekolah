@@ -198,6 +198,8 @@ export type MessageKey =
   | "errors.WARNING_LETTER_ALREADY_ISSUED"
   | "errors.WARNING_LETTER_NOT_DUE"
   | "errors.WORKFLOW_ALREADY_IN_PROGRESS"
+  | "errors.WORKFLOW_APPROVER_NOT_ELIGIBLE"
+  | "errors.WORKFLOW_STAGE_MISMATCH"
   | "nav.academic.items.attendance"
   | "nav.academic.items.grading"
   | "nav.academic.items.homeroomClass"
@@ -481,6 +483,8 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.WARNING_LETTER_ALREADY_ISSUED",
   "errors.WARNING_LETTER_NOT_DUE",
   "errors.WORKFLOW_ALREADY_IN_PROGRESS",
+  "errors.WORKFLOW_APPROVER_NOT_ELIGIBLE",
+  "errors.WORKFLOW_STAGE_MISMATCH",
   "nav.academic.items.attendance",
   "nav.academic.items.grading",
   "nav.academic.items.homeroomClass",

@@ -6,6 +6,7 @@ import { formatDateTime, formatTime } from "@newsekolah/i18n";
 import {
   Button,
   Card,
+  ConfirmDialog,
   DataList,
   DataListItem,
   DialogFooter,
@@ -188,6 +189,7 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
   const scan = useScanExitPermitStageMutation();
   const periodRange = usePeriodRange(data);
   const [scanning, setScanning] = useState(false);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
 
   if (isLoading) return <Skeleton className="h-64 w-full rounded-xl" />;
   if (error || !data) return <QueryError retry={refetch} error={error} />;
@@ -255,12 +257,7 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
             variant="ghost"
             loading={cancel.isPending}
             onClick={() => {
-              cancel.mutate(id, {
-                onError: fail,
-                onSuccess: () => {
-                  toast.success(t("cancelled"));
-                },
-              });
+              setConfirmingCancel(true);
             }}
           >
             {t("cancel")}
@@ -270,13 +267,6 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
     >
       <Card padding="sm" className="mt-3 text-fg">
         <WorkflowSteps instance={inst} />
-        {inst.status === "in_progress" && (
-          <DataList>
-            <DataListItem label={t("code")} hint={t("codeHint")}>
-              <code className="font-mono text-body-sm break-all select-all">{inst.id}</code>
-            </DataListItem>
-          </DataList>
-        )}
         {inst.status === "in_progress" && stage?.verification === "manual" && (
           <p className="text-body-sm text-fg-muted">{t("waitManual", { stage: stage.label })}</p>
         )}
@@ -287,7 +277,10 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
           size="lg"
           label={t("gateQrLabel")}
           payload={encodeScanPayload("gate", id, gate.data.token)}
-          code={gate.data.token}
+          // The gate scanner needs the whole payload (permit and token), so
+          // a typed token could never pass; the guard records a student
+          // without a working QR by hand instead.
+          code=""
           expiresAt={gate.data.expires_at}
           onRenew={() => {
             gate.mutate(id, { onError: fail });
@@ -310,6 +303,26 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
           onToken={(token) => scan.mutateAsync({ id, token })}
         />
       )}
+      <ConfirmDialog
+        open={confirmingCancel}
+        onOpenChange={setConfirmingCancel}
+        tone="danger"
+        title={t("cancelConfirm.title")}
+        description={t("cancelConfirm.body")}
+        confirmLabel={t("cancelConfirm.confirm")}
+        cancelLabel={t("cancelConfirm.keep")}
+        confirming={cancel.isPending}
+        onConfirm={async () => {
+          try {
+            await cancel.mutateAsync(id);
+            toast.success(t("cancelled"));
+          } catch (error) {
+            fail(error);
+          } finally {
+            setConfirmingCancel(false);
+          }
+        }}
+      />
     </HeroCard>
   );
 }

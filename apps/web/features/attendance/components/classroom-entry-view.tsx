@@ -91,7 +91,12 @@ export function ClassroomEntryView(): ReactElement {
         manualLabel={t("scanLabel")}
         manualPlaceholder={t("placeholder")}
         submitLabel={t("submit")}
-      />
+      >
+        {/* The teacher's QR prints no code to type: the field is for a
+            hardware scanner, and a student who cannot scan is marked by
+            the teacher on the class roster. */}
+        <p className="text-body-sm text-fg-muted">{t("cannotScanHint")}</p>
+      </Scanner>
     </AppPage>
   );
 }

@@ -905,7 +905,7 @@
       "navLabel": "Piket hari ini",
       "eyebrow": "Kesiswaan",
       "title": "Piket hari ini",
-      "intro": "Tampilkan QR sesuai keperluan. Setiap kode sekali pakai dan diperbarui otomatis saat kedaluwarsa. Persetujuan izin keluar ada di halaman Izin keluar, tab Setujui.",
+      "intro": "Tampilkan QR sesuai keperluan. Setiap kode sekali pakai dan diperbarui otomatis saat kedaluwarsa.",
       "purposes": {
         "classroom_entry": "Masuk kelas",
         "late_arrival": "Terlambat",
@@ -914,7 +914,8 @@
       },
       "help": {
         "classroom_entry": "Siswa memindai kode ini saat masuk kelas untuk mencatat kehadirannya di sesi yang sedang berjalan. Kode diperbarui sendiri saat habis.",
-        "late_arrival": "Siswa yang datang terlambat memindai kode ini. Namanya langsung masuk antrean terlambat di halaman ini."
+        "late_arrival": "Siswa yang datang terlambat memindai kode ini. Namanya langsung masuk antrean terlambat di halaman ini.",
+        "exit": "Siswa yang mengajukan izin keluar memindai kode ini dari tombol Pindai QR di layar izinnya. Tahap BK dan pimpinan disetujui dari Perlu tindakan."
       },
       "manualForm": {
         "intro": "Untuk siswa yang tidak membawa HP: pilih jenisnya, cari siswanya, lalu catat langsung di sini.",
@@ -946,11 +947,12 @@
       "modeLabel": "Mode piket",
       "qrLabel": {
         "classroom_entry": "Kode QR masuk kelas",
-        "late_arrival": "Kode QR terlambat"
+        "late_arrival": "Kode QR terlambat",
+        "exit": "Kode QR persetujuan piket izin keluar"
       },
       "queue": {
         "title": "Antrean terlambat",
-        "description": "Siswa yang memindai QR terlambat dan menunggu tinjauan Anda.",
+        "description": "Siswa terlambat yang menunggu tinjauan atau QR persetujuan Anda.",
         "openInbox": "Lihat semua",
         "emptyTitle": "Belum ada yang terlambat",
         "emptyBody": "Siswa yang memindai QR terlambat muncul di sini.",
@@ -1413,7 +1415,7 @@
         }
       },
       "scan": {
-        "placeholder": "Tempel atau ketik kode di bawah QR",
+        "placeholder": "Kode dari alat pemindai",
         "submit": "Kirim kode",
         "cameraLabel": "Pindai dengan kamera",
         "failedTitle": "Kode tidak diterima"
@@ -1421,15 +1423,16 @@
       "classroomEntry": {
         "navLabel": "Pindai masuk kelas",
         "intro": "Arahkan kamera ke QR yang ditampilkan guru di depan kelas untuk mencatat kehadiran Anda pada pelajaran yang sedang berjalan.",
-        "scanLabel": "Kode masuk kelas",
-        "placeholder": "Kode di bawah QR",
+        "scanLabel": "Kode QR masuk kelas (alat pemindai)",
+        "placeholder": "Kode dari alat pemindai",
         "submit": "Kirim kode",
         "successTitle": "Berhasil dicatat",
         "successBody": "Tercatat masuk kelas {teacher} pukul {time}.",
         "errorTitle": "Pindai gagal",
         "studentsOnlyTitle": "Khusus siswa",
         "studentsOnlyBody": "Halaman ini dipakai siswa untuk memindai QR masuk kelas dari guru. Akun Anda bukan akun siswa.",
-        "backHome": "Ke beranda"
+        "backHome": "Ke beranda",
+        "cannotScanHint": "Tidak bisa memindai? Minta guru mencatat kehadiran Anda di daftar kelas."
       },
       "qr": {
         "expiresIn": "Berlaku {seconds} detik lagi",
@@ -1453,8 +1456,7 @@
         "finished": "Selesai",
         "detailTitle": "Detail izin keluar",
         "student": "Siswa",
-        "code": "Kode izin",
-        "scanStageLabel": "Pindai QR {stage}: masukkan kode",
+        "scanStageLabel": "Kode QR {stage} (alat pemindai)",
         "stageDone": "Tahap disetujui",
         "showGateQr": "Tampilkan QR gerbang",
         "exitedTitle": "Sudah keluar gerbang",
@@ -1475,18 +1477,14 @@
           "description": "Tulis tujuan dan jam pelajaran yang akan ditinggalkan."
         },
         "approve": {
-          "hint": "Minta siswa menunjukkan kode izinnya, ketik atau pindai kodenya, lalu biarkan siswa memindai QR persetujuan yang muncul.",
-          "permitCode": "Kode izin siswa",
-          "showQr": "Tampilkan QR persetujuan",
-          "title": "Setujui tahap izin keluar",
-          "permitCodePlaceholder": "Ketik atau tempel kode izin",
-          "qrLabel": "Kode QR persetujuan izin keluar",
-          "class": "Kelas",
-          "destination": "Tujuan"
+          "title": "Setujui tahap piket",
+          "hint": "Siswa memindai QR ini dari tombol Pindai QR di layar izinnya. Tahap BK dan pimpinan disetujui dari Perlu tindakan.",
+          "qrLabel": "Kode QR persetujuan piket izin keluar",
+          "help": "Satu kode untuk satu siswa. Kode diperbarui sendiri saat habis."
         },
         "gate": {
           "hint": "Arahkan kamera ke QR gerbang di HP siswa. Hasilnya muncul di bawah kamera.",
-          "payloadLabel": "Kode QR gerbang",
+          "payloadLabel": "Kode QR gerbang (alat pemindai)",
           "needPayload": "Kode gerbang harus berasal dari QR siswa.",
           "passed": "Siswa diizinkan keluar",
           "lastTitle": "Terakhir keluar",
@@ -1517,7 +1515,6 @@
           "scanStage": "Pindai QR {stage}",
           "scanHint": "Minta {stage} menampilkan QR persetujuan, lalu arahkan kamera ke kode itu."
         },
-        "codeHint": "Tunjukkan kode ini ke guru yang menyetujui.",
         "waitManual": "Menunggu {stage} meninjau.",
         "gateQrLabel": "Kode QR gerbang izin keluar",
         "lessons": "Jam pelajaran",
@@ -1526,7 +1523,13 @@
         "idleTitle": "Tidak ada izin keluar berjalan",
         "idleBody": "Perlu keluar sekolah di jam pelajaran? Ajukan izin, lalu minta guru memindai di setiap tahap. QR gerbang muncul setelah tahap terakhir.",
         "historyTitle": "Riwayat izin keluar",
-        "modeLabel": "Tugas di halaman ini"
+        "modeLabel": "Tugas di halaman ini",
+        "cancelConfirm": {
+          "title": "Batalkan izin keluar?",
+          "body": "Persetujuan yang sudah didapat ikut batal, dan izin ini tidak bisa dilanjutkan lagi.",
+          "confirm": "Batalkan izin",
+          "keep": "Kembali"
+        }
       },
       "late": {
         "eyebrow": "Kesiswaan",
@@ -1536,7 +1539,7 @@
         "noneTitle": "Tidak ada catatan keterlambatan aktif",
         "noneBody": "Jika Anda datang terlambat, pindai QR terlambat di meja piket lalu masukkan kodenya di sini.",
         "reasonLabel": "Alasan",
-        "scanDutyLabel": "Kode QR terlambat dari guru piket",
+        "scanDutyLabel": "Kode QR terlambat (alat pemindai)",
         "opened": "Keterlambatan tercatat. Tunggu peninjauan guru piket.",
         "occurrence": "Keterlambatan ke",
         "occurrenceValue": "ke-{n}",
@@ -1546,7 +1549,7 @@
           "call_parent": "Hubungi orang tua",
           "send_home": "Dipulangkan"
         },
-        "scanStageLabel": "Pindai QR {stage}: masukkan kode",
+        "scanStageLabel": "Kode QR {stage} (alat pemindai)",
         "stageDone": "Tahap selesai",
         "waitManual": "Menunggu {stage} meninjau.",
         "queueEmptyTitle": "Tidak ada keterlambatan menunggu",
@@ -1557,7 +1560,7 @@
         "review": "Tinjau",
         "reviewTitle": "Tinjau keterlambatan",
         "homeroomReported": "Sudah dilaporkan ke wali kelas",
-        "reviewHint": "Setelah ditinjau, siswa memindai QR pimpinan untuk menutup alur.",
+        "reviewHint": "Setelah ditinjau, siswa memindai QR tahap berikutnya. Penyetujunya menampilkan QR itu dari Perlu tindakan.",
         "reviewed": "Peninjauan tersimpan",
         "cancel": "Batal",
         "submitReview": "Simpan peninjauan",
@@ -1572,7 +1575,10 @@
           "title": "Tercatat pukul {time}",
           "scanStage": "Pindai QR {stage}",
           "scanHint": "Minta {stage} menampilkan QR, lalu arahkan kamera ke kode itu."
-        }
+        },
+        "cannotScanHint": "Tidak bisa memindai? Minta guru piket mencatat Anda lewat Catat manual.",
+        "showQr": "Tampilkan QR",
+        "approveTitle": "QR persetujuan {stage}"
       },
       "leave": {
         "eyebrow": "Kesiswaan",
@@ -1680,6 +1686,15 @@
         "lateWaiting": "Menunggu",
         "lateToday": "Tercatat hari ini",
         "leaveWaiting": "Menunggu Anda"
+      },
+      "approve": {
+        "qrLabel": "Kode QR persetujuan",
+        "qrLabelStage": "Kode QR persetujuan {stage}",
+        "hint": "Minta siswa menekan tombol Pindai QR di layar izinnya, lalu memindai kode ini.",
+        "hintStage": "Minta siswa menekan Pindai QR {stage} di layar izinnya, lalu memindai kode ini.",
+        "class": "Kelas",
+        "destination": "Tujuan",
+        "reason": "Alasan"
       }
     },
     "verify": {

@@ -33,8 +33,9 @@ import {
 } from "../api";
 import { mergePermitQueues, type PermitQueueRow } from "../lib/permit-queue";
 
+import { ApprovePanel } from "./approve-panel";
 import { BulkApproveBar, useBulkLeaveApproval } from "./bulk-leave-approval";
-import { ApprovePanel, GatePanel } from "./exit-permit-panels";
+import { GatePanel } from "./exit-permit-panels";
 import { LateArrivalReviewForm } from "./late-arrivals-view";
 import { LeaveRequestDetail } from "./leave-request-detail";
 import { PermitQueueCard } from "./permit-queue-card";
@@ -271,7 +272,7 @@ export function PermitUnifiedQueue(): ReactElement {
         <DialogContent title={selected ? t(selected.type) : t("permits")}>
           {selected?.type === "leave" && <LeaveRequestDetail id={selected.id} />}
           {selected?.type === "exit" && selected.status === "in_progress" && canApprove && (
-            <ApprovePanel key={selected.id} prefillId={selected.id} />
+            <ApprovePanel key={selected.id} kind="exit_permit" instanceId={selected.id} />
           )}
           {selected?.type === "exit" &&
             (selected.status !== "in_progress" || !canApprove) &&
@@ -279,7 +280,12 @@ export function PermitUnifiedQueue(): ReactElement {
           {selected?.type === "exit" && selected.status !== "in_progress" && !canGate && (
             <p>{exitQueue("awaitingGate")}</p>
           )}
-          {selected?.type === "late" && (
+          {/* A late arrival past its picket review waits for this
+              approver's own QR (leadership, the class teacher). */}
+          {selected?.type === "late" && selected.late.current_stage.verification === "qr_scan" && (
+            <ApprovePanel key={selected.id} kind="late_arrival" instanceId={selected.id} />
+          )}
+          {selected?.type === "late" && selected.late.current_stage.verification !== "qr_scan" && (
             <LateArrivalReviewForm
               item={selected.late}
               onDone={() => {

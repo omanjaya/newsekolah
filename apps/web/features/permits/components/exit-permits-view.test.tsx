@@ -7,6 +7,8 @@ import { ExitPermitsView } from "./exit-permits-view";
 
 const mocks = vi.hoisted(() => ({
   items: [] as WorkflowInstance[],
+  canSubmit: true,
+  permissions: [] as string[],
 }));
 
 vi.mock("next-intl", () => ({
@@ -18,10 +20,13 @@ vi.mock("../../../components/query-error", () => ({
   QueryError: () => <div data-testid="query-error" />,
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
-  useCan: () => false,
+  useCan: (permission: string) => mocks.permissions.includes(permission),
   useSession: () => ({ me: { profile_kind: "student", tenant: { timezone: "Asia/Makassar" } } }),
 }));
-vi.mock("../lib/use-can-submit-permit", () => ({ useCanSubmitPermit: () => true }));
+vi.mock("../lib/use-can-submit-permit", () => ({ useCanSubmitPermit: () => mocks.canSubmit }));
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(window.location.search),
+}));
 vi.mock("../api", () => ({
   useMyExitPermitsQuery: () => ({
     data: { data: mocks.items },
@@ -37,7 +42,10 @@ vi.mock("./exit-permit-detail", () => ({
   CreateForm: () => null,
   ExitPermitDetail: () => null,
 }));
-vi.mock("./exit-permit-panels", () => ({ ApprovePanel: () => null, GatePanel: () => null }));
+vi.mock("./exit-permit-panels", () => ({ GatePanel: () => <div data-testid="gate-panel" /> }));
+vi.mock("./desk-qr-panel", () => ({
+  DeskQrPanel: ({ purpose }: { purpose: string }) => <div data-testid="desk-qr">{purpose}</div>,
+}));
 vi.mock("./review-inbox-banner", () => ({ ReviewInboxBanner: () => null }));
 
 function permit(id: string, status: WorkflowInstance["status"]): WorkflowInstance {
@@ -54,6 +62,19 @@ function permit(id: string, status: WorkflowInstance["status"]): WorkflowInstanc
 
 beforeEach(() => {
   mocks.items = [];
+  mocks.canSubmit = true;
+  mocks.permissions = [];
+});
+
+describe("ExitPermitsView for an approving teacher", () => {
+  it("approves the picket stage with the desk's rotating QR instead of a typed permit code", () => {
+    mocks.canSubmit = false;
+    mocks.permissions = ["issue_scan_tokens"];
+    render(<ExitPermitsView />);
+    expect(screen.getByTestId("desk-qr")).toHaveTextContent("approve_stage");
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("gate-panel")).not.toBeInTheDocument();
+  });
 });
 
 describe("ExitPermitsView for a student", () => {

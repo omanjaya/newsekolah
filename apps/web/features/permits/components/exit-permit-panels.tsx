@@ -6,17 +6,10 @@ import { formatTime } from "@newsekolah/i18n";
 import {
   Avatar,
   type BarcodeScanEvent,
-  Card,
-  CardHeader,
-  CardTitle,
-  DataList,
-  DataListItem,
   EmptyState,
   IconButton,
   List,
   ListRow,
-  QrPanel,
-  QrPanelSkeleton,
   Scanner,
   SectionHeader,
   type ScannerResultValue,
@@ -26,119 +19,13 @@ import {
 import { Undo2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
 import { formatDisplayName } from "../../../lib/text/format-name";
-import {
-  decodeScanPayload,
-  encodeScanPayload,
-  useExitPermitQuery,
-  useIssueScanTokenMutation,
-  useScanGateMutation,
-} from "../api";
-
-import { WorkflowSteps } from "./workflow-stepper";
-
-/**
- * Teacher: mint an approve-stage QR for the permit code the student shows.
- * `prefillId` lets the review queue jump straight here for one permit
- * (typing the code by hand is the fallback when a student walks up
- * without having been listed there yet). The caller keys this component on
- * `prefillId` so a new value remounts it with a fresh initial state instead
- * of needing an effect to resynchronize local state from a prop.
- */
-export function ApprovePanel({
-  prefillId,
-  modeSwitch,
-}: {
-  prefillId?: string;
-  /** The desk's gate and approve switch, drawn at the end of the scanner's header. */
-  modeSwitch?: ReactNode;
-} = {}): ReactElement {
-  const t = useTranslations("app.permits.exit.approve");
-  const tQr = useTranslations("app.permits.qr");
-  const toast = useToast();
-  const apiErrorMessage = useApiErrorMessage();
-  const issue = useIssueScanTokenMutation();
-  const detail = useExitPermitQuery(issue.data?.context_id ?? "");
-
-  function mint(id: string) {
-    issue.mutate(
-      { purpose: "approve_stage", context_id: id },
-      {
-        onError: (error) => {
-          toast.error(
-            error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-          );
-        },
-      },
-    );
-  }
-
-  useEffect(() => {
-    if (prefillId) mint(prefillId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mint once on mount; the key remount covers a changed prefillId
-  }, []);
-
-  function handleScan(event: BarcodeScanEvent) {
-    const { instanceId, token } = decodeScanPayload(event.code);
-    mint(instanceId ?? token);
-  }
-
-  return (
-    <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
-      {/* The permit code is typed (or read by a hardware scanner); the
-          student has no QR of their own to show, so no camera here. */}
-      <Scanner
-        title={t("title")}
-        description={t("hint")}
-        headerEnd={modeSwitch}
-        camera={false}
-        manualEntry="open"
-        manualLabel={t("permitCode")}
-        manualPlaceholder={t("permitCodePlaceholder")}
-        submitLabel={t("showQr")}
-        onScan={handleScan}
-        disabled={issue.isPending}
-      />
-      {issue.isPending ? (
-        <QrPanelSkeleton size="lg" />
-      ) : issue.data ? (
-        <div className="flex flex-col gap-4">
-          <QrPanel
-            size="lg"
-            label={t("qrLabel")}
-            payload={encodeScanPayload("approve", issue.data.context_id ?? "", issue.data.token)}
-            code={issue.data.token}
-            expiresAt={issue.data.expires_at}
-            onRenew={() => {
-              if (issue.data.context_id) mint(issue.data.context_id);
-            }}
-            renewing={issue.isPending}
-            expiredLabel={tQr("expired")}
-            expiresInLabel={(seconds) => tQr("expiresIn", { seconds })}
-            renewLabel={tQr("renew")}
-          />
-          {detail.data && (
-            <Card padding="md">
-              <CardHeader>
-                <CardTitle>{formatDisplayName(detail.data.student_name)}</CardTitle>
-              </CardHeader>
-              <DataList>
-                <DataListItem label={t("class")}>{detail.data.class_name}</DataListItem>
-                <DataListItem label={t("destination")}>{detail.data.destination}</DataListItem>
-              </DataList>
-              <WorkflowSteps instance={detail.data.instance} orientation="vertical" />
-            </Card>
-          )}
-        </div>
-      ) : null}
-    </div>
-  );
-}
+import { decodeScanPayload, useScanGateMutation } from "../api";
 
 interface GateLogEntry {
   key: string;
@@ -153,6 +40,10 @@ interface GateLogEntry {
  * gate can see who has already passed without leaving the screen -- this
  * list lives only in this tab's memory, not the server, so "undo" only
  * hides an entry here; it does not reverse the recorded gate scan.
+ *
+ * The typed field is for a keyboard-wedge barcode scanner, which types the
+ * whole QR payload (permit and token). The student's gate QR prints no
+ * code under it, since the token alone cannot name the permit.
  */
 export function GatePanel({ modeSwitch }: { modeSwitch?: ReactNode } = {}): ReactElement {
   const t = useTranslations("app.permits.exit.gate");
