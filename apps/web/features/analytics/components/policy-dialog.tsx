@@ -24,7 +24,12 @@ import {
   useUpdateEarlyWarningPolicyMutation,
 } from "../api";
 
-import { POLICY_FIELDS as fields, type PolicyField, visiblePolicyFields } from "./policy-fields";
+import {
+  POLICY_FIELDS as fields,
+  type PolicyField,
+  type PolicyGroup,
+  visiblePolicyGroups,
+} from "./policy-fields";
 
 export function PolicyDialog({
   open,
@@ -80,7 +85,7 @@ function PolicyForm({
   const toast = useToast();
   const update = useUpdateEarlyWarningPolicyMutation();
   const { me } = useSession();
-  const shown = visiblePolicyFields((module) => isModuleEnabled(me, module));
+  const groups = visiblePolicyGroups((module) => isModuleEnabled(me, module));
   const [draft, setDraft] = useState(
     () =>
       Object.fromEntries(fields.map((key) => [key, String(initial[key])])) as Record<
@@ -122,27 +127,9 @@ function PolicyForm({
     >
       <p className="text-body-sm text-fg-muted">{t("description")}</p>
       {error && <Alert variant="danger" title={error} />}
-      <div className="grid gap-3 sm:grid-cols-2">
-        {shown.map((key) => {
-          const rate = key.endsWith("_rate");
-          const decimal = rate || key.startsWith("grade_drop_");
-          return (
-            <Field key={key} label={t(`fields.${key}`)} required>
-              <NumberInput
-                required
-                min={decimal ? 0.01 : 1}
-                max={rate ? 1 : undefined}
-                step={decimal ? 0.01 : 1}
-                precision={decimal ? 2 : 0}
-                value={draft[key] === "" ? null : Number(draft[key])}
-                onChange={(next) => {
-                  setDraft({ ...draft, [key]: next === null ? "" : String(next) });
-                }}
-              />
-            </Field>
-          );
-        })}
-      </div>
+      {groups.map((group) => (
+        <PolicyFieldGroup key={group.id} group={group} draft={draft} onChange={setDraft} />
+      ))}
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
@@ -152,5 +139,48 @@ function PolicyForm({
         </Button>
       </DialogFooter>
     </form>
+  );
+}
+
+/**
+ * One section of the policy form. The school-day window stands alone on a
+ * full row; every other section is a fieldset whose legend names the
+ * signal, so its watch and at-risk fields read as a pair on one row.
+ */
+function PolicyFieldGroup({
+  group,
+  draft,
+  onChange,
+}: {
+  group: PolicyGroup;
+  draft: Record<PolicyField, string>;
+  onChange: (next: Record<PolicyField, string>) => void;
+}): ReactElement {
+  const t = useTranslations("app.analytics.policy");
+  const inputs = group.fields.map((key) => {
+    const rate = key.endsWith("_rate");
+    const decimal = rate || key.startsWith("grade_drop_");
+    return (
+      <Field key={key} label={t(`fields.${key}`)} required>
+        <NumberInput
+          required
+          min={decimal ? 0.01 : 1}
+          max={rate ? 1 : undefined}
+          step={decimal ? 0.01 : 1}
+          precision={decimal ? 2 : 0}
+          value={draft[key] === "" ? null : Number(draft[key])}
+          onChange={(next) => {
+            onChange({ ...draft, [key]: next === null ? "" : String(next) });
+          }}
+        />
+      </Field>
+    );
+  });
+  if (group.id === "window") return <>{inputs}</>;
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="mb-2 text-label text-fg">{t(`groups.${group.id}`)}</legend>
+      <div className="grid grid-cols-2 gap-3">{inputs}</div>
+    </fieldset>
   );
 }

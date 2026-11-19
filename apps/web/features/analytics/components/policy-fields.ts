@@ -3,24 +3,34 @@ import type { EarlyWarningPolicy } from "../api";
 
 export type PolicyField = Exclude<keyof EarlyWarningPolicy, "version">;
 
-/** Every tunable field of the early-warning policy, in form order. */
-export const POLICY_FIELDS: PolicyField[] = [
-  "window_days",
-  "attendance_watch_rate",
-  "attendance_at_risk_rate",
-  "discipline_watch_points",
-  "discipline_at_risk_points",
-  "warning_letter_watch_count",
-  "warning_letter_at_risk_count",
-  "grade_drop_watch_points",
-  "grade_drop_at_risk_points",
-  "attendance_weight",
-  "discipline_weight",
-  "warning_weight",
-  "grade_weight",
-  "watch_score",
-  "at_risk_score",
+export type PolicyGroupId =
+  "window" | "attendance" | "discipline" | "warningLetter" | "gradeDrop" | "weights" | "totalScore";
+
+export interface PolicyGroup {
+  id: PolicyGroupId;
+  fields: PolicyField[];
+}
+
+/**
+ * The policy form's sections, in form order. Each signal's watch and
+ * at-risk thresholds share a section, so the pair reads side by side
+ * instead of straddling rows of one flat grid.
+ */
+export const POLICY_GROUPS: PolicyGroup[] = [
+  { id: "window", fields: ["window_days"] },
+  { id: "attendance", fields: ["attendance_watch_rate", "attendance_at_risk_rate"] },
+  { id: "discipline", fields: ["discipline_watch_points", "discipline_at_risk_points"] },
+  { id: "warningLetter", fields: ["warning_letter_watch_count", "warning_letter_at_risk_count"] },
+  { id: "gradeDrop", fields: ["grade_drop_watch_points", "grade_drop_at_risk_points"] },
+  {
+    id: "weights",
+    fields: ["attendance_weight", "discipline_weight", "warning_weight", "grade_weight"],
+  },
+  { id: "totalScore", fields: ["watch_score", "at_risk_score"] },
 ];
+
+/** Every tunable field of the early-warning policy, in form order. */
+export const POLICY_FIELDS: PolicyField[] = POLICY_GROUPS.flatMap((group) => group.fields);
 
 /**
  * The toggleable module whose signal each field tunes. A field of a
@@ -45,4 +55,13 @@ export function visiblePolicyFields(isEnabled: (module: FeatureModule) => boolea
     const module = FIELD_MODULE[key];
     return !module || isEnabled(module);
   });
+}
+
+/** The form's sections with only their visible fields; a section left empty is dropped. */
+export function visiblePolicyGroups(isEnabled: (module: FeatureModule) => boolean): PolicyGroup[] {
+  const shown = new Set(visiblePolicyFields(isEnabled));
+  return POLICY_GROUPS.map((group) => ({
+    ...group,
+    fields: group.fields.filter((key) => shown.has(key)),
+  })).filter((group) => group.fields.length > 0);
 }

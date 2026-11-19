@@ -87,22 +87,30 @@
     "saved": "Policy saved.",
     "save": "Save",
     "cancel": "Cancel",
+    "groups": {
+      "attendance": "Absence ratio (0–1)",
+      "discipline": "Discipline points",
+      "warningLetter": "Warning letters",
+      "gradeDrop": "Grade drop",
+      "weights": "Signal weights",
+      "totalScore": "Total score"
+    },
     "fields": {
       "window_days": "School-day window",
-      "attendance_watch_rate": "Absence ratio: watch (0–1)",
-      "attendance_at_risk_rate": "Absence ratio: at risk (0–1)",
-      "discipline_watch_points": "Discipline points: watch",
-      "discipline_at_risk_points": "Discipline points: at risk",
-      "warning_letter_watch_count": "Warning letters: watch",
-      "warning_letter_at_risk_count": "Warning letters: at risk",
-      "grade_drop_watch_points": "Grade drop: watch",
-      "grade_drop_at_risk_points": "Grade drop: at risk",
-      "attendance_weight": "Attendance weight",
-      "discipline_weight": "Discipline weight",
-      "warning_weight": "Warning letter weight",
-      "grade_weight": "Grade weight",
-      "watch_score": "Total score: watch",
-      "at_risk_score": "Total score: at risk"
+      "attendance_watch_rate": "Watch",
+      "attendance_at_risk_rate": "At risk",
+      "discipline_watch_points": "Watch",
+      "discipline_at_risk_points": "At risk",
+      "warning_letter_watch_count": "Watch",
+      "warning_letter_at_risk_count": "At risk",
+      "grade_drop_watch_points": "Watch",
+      "grade_drop_at_risk_points": "At risk",
+      "attendance_weight": "Attendance",
+      "discipline_weight": "Discipline",
+      "warning_weight": "Warning letters",
+      "grade_weight": "Grades",
+      "watch_score": "Watch",
+      "at_risk_score": "At risk"
     }
   }
 }
