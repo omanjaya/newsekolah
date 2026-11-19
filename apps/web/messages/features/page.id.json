@@ -21,5 +21,8 @@
     "sessionTitle": "Sesi berakhir",
     "signInAgain": "Masuk lagi",
     "code": "Kode galat: {code}"
+  },
+  "recordNotFound": {
+    "body": "Tautan ini mungkin salah, atau datanya sudah dihapus."
   }
 }

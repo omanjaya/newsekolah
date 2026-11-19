@@ -21,5 +21,8 @@
     "sessionTitle": "Session ended",
     "signInAgain": "Sign in again",
     "code": "Error code: {code}"
+  },
+  "recordNotFound": {
+    "body": "This link may be wrong, or the record has been deleted."
   }
 }

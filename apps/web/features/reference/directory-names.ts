@@ -88,11 +88,13 @@ function loaderFor(client: ApiClient): DirectoryNameLoader {
   return loader;
 }
 
-interface NamesResult {
+export interface NamesResult {
   names: Map<string, DirectoryUser>;
   isLoading: boolean;
   isError: boolean;
   isSuccess: boolean;
+  /** The first failed lookup's error, so a screen can tell a malformed id from an outage. */
+  error: unknown;
   refetch: () => void;
 }
 
@@ -102,6 +104,7 @@ function combineNames(
     isLoading: boolean;
     isError: boolean;
     isSuccess: boolean;
+    error: unknown;
     refetch: () => unknown;
   }[],
 ): NamesResult {
@@ -114,6 +117,7 @@ function combineNames(
     isLoading: results.some((result) => result.isLoading),
     isError: results.some((result) => result.isError),
     isSuccess: results.every((result) => result.isSuccess),
+    error: results.find((result) => result.isError)?.error,
     refetch: () => {
       for (const result of results) void result.refetch();
     },

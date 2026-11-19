@@ -138,7 +138,9 @@
           "A": "Absent"
         }
       }
-    }
+    },
+    "notFoundTitle": "Club not found",
+    "backToClubs": "Back to clubs"
   },
   "events": {
     "searchPlaceholder": "Search event name or location",

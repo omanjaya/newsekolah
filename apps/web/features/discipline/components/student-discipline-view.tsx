@@ -15,8 +15,10 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
+import { RecordNotFoundPage } from "../../../components/record-not-found";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryLookup } from "../../reference/directory-names";
+import { personRecordStatus } from "../../reference/person-record";
 import { studentProfileHref } from "../../students/href";
 
 import { StudentDisciplinePanel } from "./student-discipline-panel";
@@ -35,15 +37,25 @@ export function StudentDisciplineView({ studentId }: { studentId: string }): Rea
   const canCounsel = useCan("manage_counseling");
   // "Still loading", "failed" and "not found" differ: the name stays a
   // placeholder while loading or after a failed lookup (the description
-  // offers a retry), and only a successful lookup without the student says
-  // unknown.
+  // offers a retry), and a student the school does not have (an unknown or
+  // malformed id) is the not-found page, with no actions to record against.
   const lookup = useDirectoryLookup([studentId]);
   const student = lookup.names.get(studentId);
-  const unknown = lookup.isSuccess && !student;
-  const namePending = !student && !unknown;
+  const status = personRecordStatus(lookup, studentId);
+  const namePending = !student;
   const studentName = student?.name ?? t("unknownStudent");
   const report = useOpenStudentDisciplineReport();
   const [recording, setRecording] = useState(false);
+
+  if (status === "missing") {
+    return (
+      <RecordNotFoundPage
+        title={t("notFoundTitle")}
+        backHref="/discipline/violations"
+        backLabel={t("backToViolations")}
+      />
+    );
+  }
 
   const secondaryActions: PageHeaderAction[] = [
     ...(canCounsel

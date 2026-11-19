@@ -16,7 +16,6 @@ import {
   DialogContent,
   EmptyState,
   SkeletonDetail,
-  StatePage,
   Tabs,
   TabsContent,
   TabsList,
@@ -26,13 +25,14 @@ import {
   type PageHeaderAction,
 } from "@newsekolah/ui";
 import { BadgeCheck, FileText, Pencil, Printer, Scale } from "lucide-react";
-import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { RecordNotFoundPage } from "../../../components/record-not-found";
+import { isNotFoundError } from "../../../lib/api/not-found";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
@@ -117,26 +117,21 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
       </AppPage>
     );
   }
-  if (member.isError) {
+  // An unknown or malformed id is a missing member, not a failure to retry.
+  if (!member.data && (!member.isError || isNotFoundError(member.error))) {
     return (
-      <AppPage title={t("loadErrorTitle")} nav={false}>
-        <QueryError retry={() => member.refetch()} error={member.error} />
-      </AppPage>
+      <RecordNotFoundPage
+        title={t("notFoundTitle")}
+        description={t("notFoundBody")}
+        backHref="/library/members"
+        backLabel={t("backToList")}
+      />
     );
   }
   if (!member.data) {
     return (
-      <AppPage title={t("notFoundTitle")} nav={false} header={false}>
-        <StatePage
-          kind="not-found"
-          title={t("notFoundTitle")}
-          description={t("notFoundBody")}
-          action={
-            <Button asChild>
-              <Link href="/library/members">{t("backToList")}</Link>
-            </Button>
-          }
-        />
+      <AppPage title={t("loadErrorTitle")} nav={false}>
+        <QueryError retry={() => member.refetch()} error={member.error} />
       </AppPage>
     );
   }

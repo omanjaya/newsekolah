@@ -364,7 +364,9 @@
     "nis": "Student no. {nis}",
     "openProfile": "Open the student profile",
     "nameLoadError": "Could not load the student's name.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "notFoundTitle": "Student not found",
+    "backToViolations": "Back to violations"
   },
   "pointsMeter": {
     "label": "{points} points against the warning letter thresholds",

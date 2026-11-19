@@ -1,8 +1,10 @@
+import { ApiError } from "@newsekolah/api-client";
 import type * as UiModule from "@newsekolah/ui";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+const clubFailure = vi.hoisted<{ current: unknown }>(() => ({ current: null }));
 const mocks = vi.hoisted(() => ({
   canManage: true,
   leave: vi.fn(),
@@ -37,20 +39,29 @@ vi.mock("./club-detail-forms", () => ({
 }));
 vi.mock("./meeting-attendance-editor", () => ({ MeetingAttendanceEditor: () => null }));
 vi.mock("../api", () => ({
-  useExtracurricularQuery: () => ({
-    data: {
-      id: "club-1",
-      academic_year_id: "year-1",
-      name: "Pramuka",
-      description: "Kegiatan pramuka mingguan.",
-      location: "Lapangan",
-      capacity: 30,
-      meeting_day: 5,
-      meeting_start: "15:00",
-      meeting_end: "16:30",
-      is_active: true,
-    },
-  }),
+  useExtracurricularQuery: () =>
+    clubFailure.current
+      ? {
+          data: undefined,
+          isLoading: false,
+          isError: true,
+          error: clubFailure.current,
+          refetch: vi.fn(),
+        }
+      : {
+          data: {
+            id: "club-1",
+            academic_year_id: "year-1",
+            name: "Pramuka",
+            description: "Kegiatan pramuka mingguan.",
+            location: "Lapangan",
+            capacity: 30,
+            meeting_day: 5,
+            meeting_start: "15:00",
+            meeting_end: "16:30",
+            is_active: true,
+          },
+        },
   useClubMembersQuery: () => ({
     data: {
       data: [
@@ -71,12 +82,46 @@ vi.mock("../api", () => ({
 import { ClubDetailView } from "./club-detail-view";
 
 beforeEach(() => {
+  clubFailure.current = null;
   mocks.canManage = true;
   mocks.leave.mockReset();
   window.history.replaceState(null, "", "/activities/clubs/club-1");
 });
 
 describe("ClubDetailView", () => {
+  it("shows the not-found page for a malformed id, with no enrol action or empty roster", () => {
+    clubFailure.current = new ApiError({
+      status: 400,
+      code: "VALIDATION_FAILED",
+      message: "invalid",
+      details: [{ field: "clubId", code: "INVALID_FORMAT" }],
+    });
+    render(<ClubDetailView clubId="abc" />);
+
+    expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "backToClubs" })).toHaveAttribute(
+      "href",
+      "/activities/clubs",
+    );
+    expect(screen.queryByRole("button", { name: "members.add" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+  });
+
+  it("shows the not-found page for an unknown club", () => {
+    clubFailure.current = new ApiError({ status: 404, code: "NOT_FOUND", message: "missing" });
+    render(<ClubDetailView clubId="00000000-0000-0000-0000-000000000000" />);
+
+    expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
+  });
+
+  it("offers a retry, not an empty club, when the club fails to load", () => {
+    clubFailure.current = new ApiError({ status: 503, code: "UNAVAILABLE", message: "down" });
+    render(<ClubDetailView clubId="club-1" />);
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+  });
+
   it("states the club's schedule and quota under its name", () => {
     render(<ClubDetailView clubId="club-1" />);
     expect(screen.getByText("weekdays.friday, 15.00 – 16.30")).toBeInTheDocument();

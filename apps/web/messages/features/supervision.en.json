@@ -94,7 +94,9 @@
       "scheduled": "Scheduled",
       "observed": "Done"
     },
-    "viewResult": "See result"
+    "viewResult": "See result",
+    "notFoundTitle": "Supervision cycle not found",
+    "backToCycles": "Back to supervision"
   },
   "completeObservation": {
     "breadcrumb": "Fill in observation",

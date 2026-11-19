@@ -20,6 +20,8 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
+import { RecordNotFoundPage } from "../../../components/record-not-found";
+import { isNotFoundError } from "../../../lib/api/not-found";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { navAccessFromMe } from "../../../lib/navigation-access";
@@ -30,7 +32,8 @@ import { useStudentRiskQuery } from "../../analytics/api";
 import { useOpenStudentDisciplineReport } from "../../discipline/components/use-open-student-discipline-report";
 import { useMentorStudentSnapshotQuery } from "../../mentoring/api";
 import { useClassesQuery } from "../../reference/api";
-import { useDirectoryNames } from "../../reference/directory-names";
+import { useDirectoryLookup } from "../../reference/directory-names";
+import { personRecordStatus } from "../../reference/person-record";
 import { useUserQuery } from "../../school/api";
 import { UserForm } from "../../school/components/user-form";
 import { visibleStudentProfileTabs, type StudentProfileTab } from "../lib/profile-tabs";
@@ -96,7 +99,8 @@ export function StudentProfileView({ studentId }: { studentId: string }): ReactE
     [me],
   );
 
-  const studentMap = useDirectoryNames([studentId]);
+  const lookup = useDirectoryLookup([studentId]);
+  const studentMap = lookup.names;
   const user = useUserQuery(canViewUsers ? studentId : "");
   const snapshot = useMentorStudentSnapshotQuery(studentId, canSnapshot);
   const risk = useStudentRiskQuery(studentId, canRisk);
@@ -126,6 +130,21 @@ export function StudentProfileView({ studentId }: { studentId: string }): ReactE
       : []),
     { label: name },
   ];
+
+  // A student the school does not have (an unknown or malformed id in the
+  // address) is not found: no tabs whose every panel would fail to load.
+  if (
+    personRecordStatus(lookup, studentId) === "missing" ||
+    (!user.data && isNotFoundError(user.error))
+  ) {
+    return (
+      <RecordNotFoundPage
+        title={t("notFoundTitle")}
+        backHref={canOpenClasses ? "/school/classes" : "/dashboard"}
+        backLabel={canOpenClasses ? t("backToClasses") : t("backHome")}
+      />
+    );
+  }
 
   if (tabs.length === 0) {
     return (

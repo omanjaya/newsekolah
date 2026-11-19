@@ -25,6 +25,8 @@ import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { RecordNotFoundPage } from "../../../components/record-not-found";
+import { isNotFoundError } from "../../../lib/api/not-found";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import {
@@ -177,6 +179,16 @@ export function TitleDetailView({ titleId }: { titleId: string }): ReactElement 
       <AppPage title={tCatalogue("title")} breadcrumb={false} nav={false} header={false}>
         <SkeletonDetail />
       </AppPage>
+    );
+  }
+  // An unknown or malformed id is a missing title, not a failure to retry.
+  if (!data && isNotFoundError(title.error)) {
+    return (
+      <RecordNotFoundPage
+        title={t("missingTitle")}
+        backHref="/library/catalogue"
+        backLabel={t("backToCatalogue")}
+      />
     );
   }
   if (!data) {

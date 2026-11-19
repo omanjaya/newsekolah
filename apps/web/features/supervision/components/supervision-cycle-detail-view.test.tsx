@@ -1,9 +1,11 @@
+import { ApiError } from "@newsekolah/api-client";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SupervisionCycleDetailView } from "./supervision-cycle-detail-view";
 
 const can = vi.fn(() => true);
+const cycleError = vi.hoisted<{ current: unknown }>(() => ({ current: null }));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -22,20 +24,29 @@ vi.mock("../lib/use-cycle-trail", () => ({ useCycleTrail: () => ({ cycle: () => 
 vi.mock("./cycle-nav", () => ({ CycleNav: () => null }));
 vi.mock("./schedule-observation-form", () => ({ ScheduleObservationForm: () => null }));
 vi.mock("../api", () => ({
-  useSupervisionCycleQuery: () => ({
-    data: {
-      id: "c1",
-      name: "Semester ganjil",
-      instrument: {
-        name: "Instrumen",
-        scale_min: 1,
-        scale_max: 4,
-        criteria: [{ key: "plan", name: "Perencanaan" }],
-      },
-    },
-    isLoading: false,
-    isError: false,
-  }),
+  useSupervisionCycleQuery: () =>
+    cycleError.current
+      ? {
+          data: undefined,
+          isLoading: false,
+          isError: true,
+          error: cycleError.current,
+          refetch: vi.fn(),
+        }
+      : {
+          data: {
+            id: "c1",
+            name: "Semester ganjil",
+            instrument: {
+              name: "Instrumen",
+              scale_min: 1,
+              scale_max: 4,
+              criteria: [{ key: "plan", name: "Perencanaan" }],
+            },
+          },
+          isLoading: false,
+          isError: false,
+        },
   useScheduledObservationsQuery: () => ({
     data: {
       data: [
@@ -68,6 +79,7 @@ vi.mock("../api", () => ({
 }));
 
 beforeEach(() => {
+  cycleError.current = null;
   can.mockReturnValue(true);
 });
 
@@ -80,6 +92,23 @@ function rowOf(name: string): HTMLElement {
 }
 
 describe("SupervisionCycleDetailView", () => {
+  it("shows the not-found page for a malformed or unknown cycle id", () => {
+    cycleError.current = new ApiError({
+      status: 400,
+      code: "VALIDATION_FAILED",
+      message: "invalid",
+      details: [{ field: "cycleId", code: "INVALID_FORMAT" }],
+    });
+    render(<SupervisionCycleDetailView cycleId="abc" />);
+
+    expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "backToCycles" })).toHaveAttribute(
+      "href",
+      "/supervision/cycles",
+    );
+    expect(screen.queryByRole("button", { name: "actions.retry" })).not.toBeInTheDocument();
+  });
+
   it("marks observed visits done and opens their result instead of a new fill", () => {
     render(<SupervisionCycleDetailView cycleId="c1" />);
     const done = within(rowOf("Guru Satu"));

@@ -78,7 +78,11 @@
       "grade_drop_at_risk": "Report-score average dropped from {previous_average} to {current_average}",
       "unknown": "Unknown signal"
     },
-    "openProfile": "Open the student profile"
+    "openProfile": "Open the student profile",
+    "notFoundTitle": "Student not found",
+    "backToList": "Back to early warning",
+    "noResultTitle": "No early warning result yet",
+    "noResultBody": "This student's signals have not been computed this school year, or the student is outside the classes you can see."
   },
   "policy": {
     "title": "Early-warning policy",

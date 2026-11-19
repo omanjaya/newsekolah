@@ -62,7 +62,9 @@
       "members": "Members",
       "notes": "Meeting notes"
     },
-    "tabsLabel": "Group sections"
+    "tabsLabel": "Group sections",
+    "notFoundTitle": "Mentoring group not found",
+    "backToGroups": "Back to mentoring groups"
   },
   "members": {
     "columns": {

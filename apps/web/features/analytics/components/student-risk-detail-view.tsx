@@ -7,9 +7,11 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { AppPage } from "../../../components/app-page";
+import { RecordNotFoundPage } from "../../../components/record-not-found";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useCan } from "../../../lib/session/session-provider";
-import { useDirectoryNames } from "../../reference/directory-names";
+import { useDirectoryLookup } from "../../reference/directory-names";
+import { personRecordStatus } from "../../reference/person-record";
 import { studentProfileHref } from "../../students/href";
 
 import { StudentRiskPanel } from "./student-risk-panel";
@@ -31,9 +33,21 @@ export function StudentRiskDetailView({ studentId }: StudentRiskDetailViewProps)
   const disciplineOn = useModuleEnabled("discipline");
   const canCounsel = useCan("manage_counseling") && disciplineOn;
 
-  const studentMap = useDirectoryNames([studentId]);
-  const student = studentMap.get(studentId);
+  const lookup = useDirectoryLookup([studentId]);
+  const student = lookup.names.get(studentId);
   const studentName = student?.name ?? t("unknownStudent");
+
+  // A student the school does not have (an unknown or malformed id in the
+  // address) is not found, not a risk result that failed to load.
+  if (personRecordStatus(lookup, studentId) === "missing") {
+    return (
+      <RecordNotFoundPage
+        title={t("notFoundTitle")}
+        backHref="/analytics"
+        backLabel={t("backToList")}
+      />
+    );
+  }
 
   return (
     <AppPage

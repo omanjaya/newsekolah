@@ -970,7 +970,9 @@
     "emptyBody": "Start a session to match the shelves with the catalogue. Scan every copy, then close the session to see what is missing or misplaced.",
     "continueScan": "Continue scanning",
     "loadErrorTitle": "This stocktake could not be loaded",
-    "downloading": "Downloading report"
+    "downloading": "Downloading report",
+    "notFoundTitle": "Stocktake session not found",
+    "backToList": "Back to stocktakes"
   },
   "masterData": {
     "eyebrow": "Library",
@@ -1671,6 +1673,8 @@
       "language": "Language",
       "subjects": "Subjects",
       "abstract": "Summary"
-    }
+    },
+    "missingTitle": "Title not found",
+    "backToCatalogue": "Back to the catalogue"
   }
 }

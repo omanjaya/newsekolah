@@ -62,7 +62,9 @@
       "members": "Anggota",
       "notes": "Catatan pertemuan"
     },
-    "tabsLabel": "Bagian kelompok"
+    "tabsLabel": "Bagian kelompok",
+    "notFoundTitle": "Kelompok mentoring tidak ditemukan",
+    "backToGroups": "Kembali ke kelompok mentoring"
   },
   "members": {
     "columns": {
