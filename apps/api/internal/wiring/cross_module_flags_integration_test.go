@@ -33,6 +33,11 @@ func enrolledStudent(t *testing.T, pool *pgxpool.Pool, fx gradeLevelFixture) uui
 		TenantID: fx.tenantID, Username: "siswa-" + uuid.NewString()[:8], PasswordHash: "x", Name: "Siswa", Status: "active", Locale: "id",
 	})
 	require.NoError(t, err)
+	// A student profile, as identity creates one: mentoring's per-student
+	// snapshot only answers for students.
+	require.NoError(t, q.CreateUserProfile(ctx, db.CreateUserProfileParams{
+		UserID: student.ID, TenantID: fx.tenantID, Kind: "student",
+	}))
 	_, err = q.AcademicCreateEnrollment(ctx, db.AcademicCreateEnrollmentParams{
 		TenantID: fx.tenantID, AcademicYearID: fx.yearID, StudentUserID: student.ID, ClassID: fx.classAID,
 		JoinedOn: database.Date(time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC)),

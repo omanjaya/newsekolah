@@ -61,8 +61,13 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
 
+const teacherOptionsQuery = vi.fn((_yearId: string, _search: string, enabled: boolean) =>
+  enabled ? { data: { data: [] }, isLoading: false } : { data: undefined, isLoading: false },
+);
+
 vi.mock("../../schedule/api", () => ({
-  useTeacherOptionsQuery: () => ({ data: { data: [] }, isLoading: false }),
+  useTeacherOptionsQuery: (yearId: string, search: string, enabled: boolean) =>
+    teacherOptionsQuery(yearId, search, enabled),
 }));
 
 vi.mock("../../reference/api", async () => {
@@ -213,6 +218,29 @@ describe("DaySessions", () => {
         "href",
         "/schedule",
       );
+    } finally {
+      mePermissions.pop();
+    }
+  });
+
+  it("does not ask for teacher options a teacher without schedule rights may not read", () => {
+    // A picket teacher (manage_attendance by duty, no teaching load) is
+    // refused the list with a 403; the picker would only hold themselves.
+    teacherOptionsQuery.mockClear();
+    todaySessions = [];
+    render(<DaySessions />);
+
+    expect(teacherOptionsQuery).toHaveBeenCalled();
+    expect(teacherOptionsQuery.mock.calls.every(([, , enabled]) => !enabled)).toBe(true);
+    expect(screen.queryByText("teacherLabel")).not.toBeInTheDocument();
+  });
+
+  it("asks for teacher options when the reader may pick any teacher", () => {
+    teacherOptionsQuery.mockClear();
+    mePermissions.push("manage_schedules");
+    try {
+      render(<DaySessions />);
+      expect(teacherOptionsQuery).toHaveBeenCalledWith("year-1", "", true);
     } finally {
       mePermissions.pop();
     }

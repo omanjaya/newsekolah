@@ -68,6 +68,16 @@ func seedMentoringFixture(t *testing.T, adminPool *pgxpool.Pool) mentoringFixtur
 	})
 	require.NoError(t, err)
 
+	// Profiles as identity creates them: the per-student reads only accept
+	// a student profile.
+	for userID, kind := range map[uuid.UUID]string{
+		mentor.ID: "teacher", student.ID: "student", counselor.ID: "teacher",
+	} {
+		require.NoError(t, q.CreateUserProfile(ctx, db.CreateUserProfileParams{
+			UserID: userID, TenantID: tenantRow.ID, Kind: kind,
+		}))
+	}
+
 	return mentoringFixture{
 		tenantID: tenantRow.ID, yearID: year.ID, mentorID: mentor.ID, studentID: student.ID, counselorID: counselor.ID,
 	}

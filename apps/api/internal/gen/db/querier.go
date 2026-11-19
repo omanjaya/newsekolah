@@ -1494,8 +1494,11 @@ type Querier interface {
 	MentoringListMeetingNotesForGroup(ctx context.Context, arg MentoringListMeetingNotesForGroupParams) ([]MentorMeetingNote, error)
 	MentoringListTermSummariesForGroup(ctx context.Context, arg MentoringListTermSummariesForGroupParams) ([]MentorTermSummary, error)
 	MentoringRemoveGroupMember(ctx context.Context, arg MentoringRemoveGroupMemberParams) error
-	// cross-module read: users (identity) and enrollments/classes (academic),
-	// for the name and class shown in the mentor's per-student view.
+	// cross-module read: users/user_profiles (identity) and enrollments/classes
+	// (academic), for the name and class shown in the mentor's per-student view.
+	// Only a student profile qualifies: a staff member's or an administrator's
+	// id is no student, so it finds no row (a 404) instead of a made-up
+	// snapshot under their name.
 	MentoringStudentInfo(ctx context.Context, arg MentoringStudentInfoParams) (MentoringStudentInfoRow, error)
 	MentoringUpdateGroup(ctx context.Context, arg MentoringUpdateGroupParams) (MentorGroup, error)
 	MentoringUpdateMeetingNote(ctx context.Context, arg MentoringUpdateMeetingNoteParams) (MentorMeetingNote, error)

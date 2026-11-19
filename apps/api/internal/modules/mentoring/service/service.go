@@ -47,7 +47,7 @@ type Repository interface {
 
 	HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string, today time.Time) (bool, error)
 	// StudentInfo returns domain.ErrStudentNotFound for a user id the
-	// tenant does not have.
+	// tenant does not have, or has as anyone but a student.
 	StudentInfo(ctx context.Context, tenantID, yearID, studentUserID uuid.UUID) (StudentInfo, error)
 	// GetTenantTimezone resolves the tenant's configured IANA timezone, for
 	// HasActiveDuty's tenant-local "today" (tenantNow, see tenant.go).

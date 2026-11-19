@@ -41,7 +41,7 @@ export function StudentDisciplineView({ studentId }: { studentId: string }): Rea
   // malformed id) is the not-found page, with no actions to record against.
   const lookup = useDirectoryLookup([studentId]);
   const student = lookup.names.get(studentId);
-  const status = personRecordStatus(lookup, studentId);
+  const status = personRecordStatus(lookup, studentId, "student");
   const namePending = !student;
   const studentName = student?.name ?? t("unknownStudent");
   const report = useOpenStudentDisciplineReport();

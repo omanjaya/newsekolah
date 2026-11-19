@@ -1,7 +1,12 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ permissions: [] as string[], openReport: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  permissions: [] as string[],
+  openReport: vi.fn(),
+  user: undefined as Record<string, unknown> | undefined,
+  lookupPending: false,
+}));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -28,9 +33,27 @@ vi.mock("./student-overview", () => ({
 }));
 vi.mock("../../reference/directory-names", async () => {
   const { directoryNamesStub } = await import("../../../test/directory-names-stub");
-  return directoryNamesStub([{ id: "s1", name: "Siswa Satu" }]);
+  const stub = directoryNamesStub([
+    { id: "s1", name: "Siswa Satu", profile_kind: "student" },
+    { id: "staff-1", name: "Admin Contoh", profile_kind: "staff" },
+  ]);
+  return {
+    ...stub,
+    // A pending lookup knows no one yet, as while the batched request waits.
+    useDirectoryLookup: () =>
+      mocks.lookupPending
+        ? {
+            names: new Map(),
+            isLoading: true,
+            isError: false,
+            isSuccess: false,
+            error: undefined,
+            refetch: () => undefined,
+          }
+        : stub.useDirectoryLookup(),
+  };
 });
-vi.mock("../../school/api", () => ({ useUserQuery: () => ({ data: undefined }) }));
+vi.mock("../../school/api", () => ({ useUserQuery: () => ({ data: mocks.user }) }));
 vi.mock("../../mentoring/api", () => ({
   useMentorStudentSnapshotQuery: () => ({ data: undefined }),
 }));
@@ -59,6 +82,8 @@ function tabNames(): (string | null)[] {
 describe("StudentProfileView tab visibility", () => {
   beforeEach(() => {
     mocks.permissions = [];
+    mocks.user = undefined;
+    mocks.lookupPending = false;
     window.history.replaceState(null, "", "/students/s1");
   });
 
@@ -67,6 +92,26 @@ describe("StudentProfileView tab visibility", () => {
     render(<StudentProfileView studentId="00000000-0000-0000-0000-000000000000" />);
     expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "backHome" })).toHaveAttribute("href", "/dashboard");
+    expect(tabNames()).toEqual([]);
+  });
+
+  it("shows the not-found page for a staff member's id, not a student profile", () => {
+    mocks.permissions = ["view_discipline", "view_reports", "manage_counseling"];
+    render(<StudentProfileView studentId="staff-1" />);
+    expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
+    expect(screen.queryByText("Admin Contoh")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "printReport" })).toBeNull();
+    expect(tabNames()).toEqual([]);
+  });
+
+  it("shows the not-found page for a staff user record while the directory lookup is pending", () => {
+    mocks.permissions = ["view_users", "view_discipline", "view_reports", "manage_counseling"];
+    mocks.lookupPending = true;
+    mocks.user = { id: "staff-1", name: "Admin Contoh", profile_kind: "staff" };
+    render(<StudentProfileView studentId="staff-1" />);
+    expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
+    expect(screen.queryByText("Admin Contoh")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "printReport" })).toBeNull();
     expect(tabNames()).toEqual([]);
   });
 

@@ -39,7 +39,7 @@ export function StudentRiskDetailView({ studentId }: StudentRiskDetailViewProps)
 
   // A student the school does not have (an unknown or malformed id in the
   // address) is not found, not a risk result that failed to load.
-  if (personRecordStatus(lookup, studentId) === "missing") {
+  if (personRecordStatus(lookup, studentId, "student") === "missing") {
     return (
       <RecordNotFoundPage
         title={t("notFoundTitle")}

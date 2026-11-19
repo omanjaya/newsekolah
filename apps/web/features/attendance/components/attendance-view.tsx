@@ -106,9 +106,11 @@ export function DaySessions(): ReactElement {
     isTeacher ? (me?.id ?? "") : "",
   );
 
-  // The server lists every teacher only for schedule/master-data managers;
-  // other teachers get just themselves, and a non-teaching user gets a 403.
-  const teacherOptions = useTeacherOptionsQuery(year.id, "", canPickAnyTeacher || isTeacher);
+  // The server lists every teacher only for schedule/master-data managers.
+  // Anyone else gets at most themselves (and a 403 without a teaching load,
+  // a picket teacher for one), which the picker never shows, so only a
+  // reader who may pick another teacher asks for the list.
+  const teacherOptions = useTeacherOptionsQuery(year.id, "", canPickAnyTeacher);
   const sessions = useTodaySessionsQuery(
     { date, teacherUserId: selectedTeacherId || undefined },
     selectedTeacherId !== "",
