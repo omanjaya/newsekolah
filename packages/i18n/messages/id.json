@@ -349,7 +349,7 @@
     "HOMEROOM_TEACHER_REQUIRED": "Kelas siswa ini belum memiliki wali kelas aktif, jadi izin belum bisa diajukan. Hubungi sekolah.",
     "WORKFLOW_ALREADY_IN_PROGRESS": "Sudah ada pengajuan izin yang masih berjalan hari ini untuk siswa ini.",
     "TEMPLATE_INVALID": "Isi templat tidak valid. Periksa tanda '{{ }}' yang belum ditutup atau salah tulis.",
-    "WORKFLOW_STAGE_MISMATCH": "Tahap yang sedang ditunggu tidak bisa disetujui dengan cara ini. Periksa tahapnya, lalu minta kode dari penyetuju tahap itu.",
-    "WORKFLOW_APPROVER_NOT_ELIGIBLE": "Kode ini bukan dari orang yang berhak menyetujui tahap ini."
+    "WORKFLOW_STAGE_MISMATCH": "Tahap yang sedang ditunggu tidak bisa disetujui dengan cara ini.",
+    "WORKFLOW_APPROVER_NOT_ELIGIBLE": "Anda atau pemilik kode ini tidak berhak menyetujui tahap ini."
   }
 }
