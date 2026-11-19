@@ -1,6 +1,5 @@
 "use client";
 
-import { Keyboard } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -9,7 +8,6 @@ import {
   useSyncExternalStore,
   type ReactElement,
   type ReactNode,
-  type RefObject,
 } from "react";
 
 import { createDuplicateScanGuard } from "../hooks/duplicate-scan-guard.js";
@@ -24,17 +22,13 @@ import { useSubmitValidation } from "../hooks/use-submit-validation.js";
 import { cn } from "../utils/cn.js";
 
 import type { ScanHandlerResult } from "./barcode-scanner-field.js";
-import { Button } from "./button.js";
-import { Field } from "./field.js";
-import { Input } from "./input.js";
+import { ScannerManualEntry } from "./scanner-manual-entry.js";
 import { ScannerResultBanner, type ScannerResultValue } from "./scanner-result.js";
 import { ScannerViewfinder, type ScannerFlash } from "./scanner-viewfinder.js";
 import { useUiLabels } from "./ui-labels.js";
 
 const CAMERA_DUPLICATE_WINDOW_MS = 2000;
 const FLASH_MS = 700;
-/** Long enough for "sion:<kind>:<uuid>:<token>" (93 characters); see BarcodeScannerField. */
-const MANUAL_ENTRY_MAX_LENGTH = 128;
 
 export type ScannerVariant = "action" | "kiosk";
 
@@ -82,6 +76,14 @@ export interface ScannerProps {
   continuous?: boolean;
   /** The typed fallback: true (default) behind a toggle, "open" shown from the start, false none. */
   manualEntry?: boolean | "open";
+  /**
+   * On mount, put keyboard focus on the typed fallback: its field where it
+   * is shown and the device has a fine pointer (a keyboard is at hand, and
+   * no on-screen keyboard pops up), otherwise its toggle. For a host that
+   * swaps one scanner for another (a kiosk session ending), so focus does
+   * not drop to the page body with the control that held it.
+   */
+  focusEntryOnMount?: boolean;
   manualLabel?: string;
   manualPlaceholder?: string;
   submitLabel?: string;
@@ -126,6 +128,7 @@ export function Scanner({
   autoStart = true,
   continuous = true,
   manualEntry = true,
+  focusEntryOnMount = false,
   manualLabel,
   manualPlaceholder,
   submitLabel,
@@ -276,7 +279,7 @@ export function Scanner({
   );
 
   const manual = manualEntry !== false && (
-    <ManualEntry
+    <ScannerManualEntry
       kiosk={kiosk}
       open={manualOpen || !cameraOffered}
       collapsible={cameraOffered && manualEntry !== "open"}
@@ -290,6 +293,7 @@ export function Scanner({
       onChange={setValue}
       onSubmit={submitManual}
       entryRef={manualRef}
+      focusOnMount={focusEntryOnMount}
       attempted={manualAttempted}
       check={checkManual}
       isScanPending={hardware.isScanPending}
@@ -373,121 +377,5 @@ export function Scanner({
         </div>
       </div>
     </section>
-  );
-}
-
-function ManualEntry({
-  kiosk,
-  open,
-  collapsible,
-  onToggle,
-  value,
-  onChange,
-  onSubmit,
-  entryRef,
-  attempted,
-  check,
-  isScanPending,
-  disabled,
-  label,
-  placeholder,
-  submitLabel,
-}: {
-  kiosk: boolean;
-  open: boolean;
-  collapsible: boolean;
-  onToggle: () => void;
-  value: string;
-  onChange: (value: string) => void;
-  onSubmit: () => void;
-  /**
-   * The form convention: the button stays enabled on an empty field, and
-   * pressing it says what is missing and puts the caret back in the field.
-   * The Scanner owns this state and clears it on every accepted scan.
-   */
-  entryRef: RefObject<HTMLDivElement | null>;
-  attempted: boolean;
-  check: (valid: boolean) => boolean;
-  /** A hardware scanner just typed here: its Enter is the scanner hook's, not this field's. */
-  isScanPending: () => boolean;
-  disabled: boolean;
-  label: string;
-  placeholder: string;
-  submitLabel: string;
-}): ReactElement {
-  const labels = useUiLabels();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const empty = value.trim() === "";
-  // Opening the fallback (from the toggle or a camera that cannot be used)
-  // puts the caret in it; a field shown from the start waits for a tap.
-  useEffect(() => {
-    if (open && collapsible) inputRef.current?.focus();
-  }, [open, collapsible]);
-  const submit = () => {
-    // A send clears the message (the field empties after it, which is not a
-    // new mistake to flag), as does any scan from the camera or a scanner.
-    if (!check(!empty)) return;
-    onSubmit();
-  };
-  return (
-    <div className="flex flex-col gap-3">
-      {collapsible && (
-        <Button
-          variant="ghost"
-          size={kiosk ? "md" : "sm"}
-          icon={<Keyboard />}
-          aria-expanded={open}
-          onClick={onToggle}
-          className={cn("self-center text-accent", kiosk && "text-body")}
-        >
-          {open ? labels.scannerManualHide : labels.scannerManualEntry}
-        </Button>
-      )}
-      {open && (
-        // The field and its button share one row inside the Field at every
-        // width, so the message under the field sits right below it, never
-        // under a button stacked between them.
-        <div ref={entryRef} className={cn(collapsible && "animate-enter")}>
-          <Field
-            label={label}
-            error={attempted && empty ? labels.scannerManualRequired : undefined}
-            className={cn(kiosk && "[&_label]:text-heading")}
-          >
-            <div className="flex gap-2">
-              <Input
-                ref={inputRef}
-                value={value}
-                autoComplete="off"
-                spellCheck={false}
-                maxLength={MANUAL_ENTRY_MAX_LENGTH}
-                placeholder={placeholder}
-                disabled={disabled}
-                onChange={(event) => {
-                  onChange(event.target.value);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key !== "Enter") return;
-                  event.preventDefault();
-                  // A hardware scan typed into this field is reported once, by
-                  // the page-wide listener, as a "scanner" scan.
-                  if (!isScanPending()) submit();
-                }}
-                className={cn(
-                  "min-w-0 flex-1",
-                  kiosk && "h-16 px-4 text-title-lg font-sans font-normal md:pointer-fine:h-16",
-                )}
-              />
-              <Button
-                disabled={disabled}
-                onClick={submit}
-                className={cn("shrink-0", kiosk && "h-16 px-5 text-heading sm:px-8 md:h-16")}
-              >
-                {submitLabel}
-              </Button>
-            </div>
-          </Field>
-        </div>
-      )}
-    </div>
   );
 }

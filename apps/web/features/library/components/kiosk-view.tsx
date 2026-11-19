@@ -119,6 +119,10 @@ export function KioskView(): ReactElement {
   const [memberUserId, setMemberUserIdState] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<KioskFeedback | null>(null);
   const [countdown, setCountdown] = useState<Countdown | null>(null);
+  // A session started or ended by the reader swaps the scanner (and the
+  // control they used goes with it): keep their focus on the next scan
+  // field. One that runs out by itself leaves focus alone.
+  const [focusScanner, setFocusScanner] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedbackCount = useRef(0);
   // Read synchronously by the card handler: a scan queued behind a lookup
@@ -150,6 +154,7 @@ export function KioskView(): ReactElement {
       setMemberUserId(null);
       setFeedback(null);
       setCountdown(null);
+      setFocusScanner(false);
     }, IDLE_RESET_MS);
   }, [setMemberUserId]);
 
@@ -165,6 +170,7 @@ export function KioskView(): ReactElement {
     setMemberUserId(null);
     setFeedback(null);
     setCountdown(null);
+    setFocusScanner(true);
   }, [setMemberUserId]);
 
   const showError = (error: unknown) => {
@@ -204,6 +210,7 @@ export function KioskView(): ReactElement {
       scanFeedback.playSuccess();
       setMemberUserId(userId);
       setFeedback(null);
+      setFocusScanner(true);
       scheduleReset();
       return true;
     } catch (error) {
@@ -314,6 +321,7 @@ export function KioskView(): ReactElement {
           onScan={active ? handleBookScan : handleCardScan}
           result={result}
           manualEntry={active || !wide ? true : "open"}
+          focusEntryOnMount={focusScanner}
           manualLabel={active ? t("active.scanLabel") : t("idle.scanLabel")}
           submitLabel={active ? t("active.submit") : t("idle.submit")}
           disabled={borrow.isPending || returnLoan.isPending}

@@ -192,4 +192,34 @@ describe("KioskView", () => {
       vi.useRealTimers();
     }
   });
+
+  it("keeps keyboard focus on the card field when the reader ends the session", async () => {
+    // A keyboard at hand: the scanner focuses its field, not its toggle.
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(pointer: fine)",
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+    try {
+      render(<KioskView />);
+      scanCard(MEMBER_USER_ID);
+      await screen.findByRole("heading", { level: 1, name: "active.title" });
+      // The card field went with the idle scanner: focus moves to the book field.
+      expect(screen.getByLabelText("active.scanLabel")).toHaveFocus();
+
+      const done = screen.getByRole("button", { name: "active.done" });
+      done.focus();
+      fireEvent.click(done);
+
+      expect(screen.getByLabelText("idle.scanLabel")).toHaveFocus();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("leaves focus alone on first load", () => {
+    render(<KioskView />);
+    expect(screen.getByLabelText("idle.scanLabel")).not.toHaveFocus();
+  });
 });

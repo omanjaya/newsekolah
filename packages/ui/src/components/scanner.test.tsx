@@ -332,6 +332,46 @@ describe("Scanner", () => {
     expect(field.compareDocumentPosition(camera) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  describe("focusEntryOnMount", () => {
+    function installPointer(fine: boolean) {
+      vi.stubGlobal("matchMedia", (query: string) => ({
+        matches: fine && query === "(pointer: fine)",
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }));
+    }
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("puts the caret in a shown field where a keyboard is at hand", () => {
+      installPointer(true);
+      render(<Scanner onScan={vi.fn()} focusEntryOnMount />);
+      expect(screen.getByLabelText("Kode")).toHaveFocus();
+    });
+
+    it("focuses the manual entry toggle when the field is behind it", () => {
+      installPointer(true);
+      installCamera(() => Promise.resolve({ getTracks: () => [] }));
+      render(<Scanner onScan={vi.fn()} autoStart={false} focusEntryOnMount />);
+      expect(screen.getByRole("button", { name: "Masukkan kode manual" })).toHaveFocus();
+    });
+
+    it("does not open an on-screen keyboard on a touch screen", () => {
+      installPointer(false);
+      render(<Scanner onScan={vi.fn()} focusEntryOnMount />);
+      expect(screen.getByLabelText("Kode")).not.toHaveFocus();
+    });
+
+    it("leaves focus alone unless asked", () => {
+      installPointer(true);
+      render(<Scanner onScan={vi.fn()} />);
+      expect(screen.getByLabelText("Kode")).not.toHaveFocus();
+    });
+  });
+
   it("has no accessibility violations", async () => {
     installCamera(() => Promise.resolve({ getTracks: () => [] }));
     const { container } = render(
