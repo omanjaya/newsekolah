@@ -88,7 +88,7 @@ export function ReadInPlaceDialog({
               );
             }}
           >
-            <Field label={t("member")} className="flex-1">
+            <Field label={t("member")} optional className="flex-1">
               <DirectoryPicker
                 value={memberUserId}
                 onValueChange={setMemberUserId}
@@ -96,7 +96,7 @@ export function ReadInPlaceDialog({
                 showUsername
               />
             </Field>
-            <Field label={t("visitorName")} className="flex-1">
+            <Field label={t("visitorName")} optional className="flex-1">
               <Input
                 value={visitorName}
                 onChange={(e) => {
