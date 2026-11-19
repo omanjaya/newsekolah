@@ -214,7 +214,7 @@ describe("DataTableFilters", () => {
       render(
         <DataTableFilters filters={[dateRangeFilter({ from: "2026-09-01", to: "2026-09-15" })]} />,
       );
-      expect(screen.getByRole("button", { name: "Tanggal: 1-15 Sep 2026" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Tanggal: 1–15 Sep 2026" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Hapus filter Tanggal" })).toBeInTheDocument();
     });
 
@@ -250,7 +250,25 @@ describe("DataTableFilters", () => {
       rerender(
         <DataTableFilters filters={[dateRangeFilter({ from: "2026-11-19", to: "2026-11-01" })]} />,
       );
-      expect(screen.getByRole("button", { name: "Tanggal: 1-19 Nov 2026" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Tanggal: 1–19 Nov 2026" })).toBeInTheDocument();
+    });
+
+    // The same en dash as every other range on the page (an empty state's
+    // "20 Nov 2026 – 1 Jan 2030"), never an ASCII hyphen.
+    it("joins a span across months or years with a spaced en dash", () => {
+      const { rerender } = render(
+        <DataTableFilters filters={[dateRangeFilter({ from: "2026-11-20", to: "2027-01-01" })]} />,
+      );
+      expect(
+        screen.getByRole("button", { name: "Tanggal: 20 Nov 2026 – 1 Jan 2027" }),
+      ).toBeInTheDocument();
+
+      rerender(
+        <DataTableFilters filters={[dateRangeFilter({ from: "2026-09-20", to: "2026-11-02" })]} />,
+      );
+      expect(
+        screen.getByRole("button", { name: "Tanggal: 20 Sep – 2 Nov 2026" }),
+      ).toBeInTheDocument();
     });
 
     it("applies a caller-supplied preset and closes the popover", async () => {
@@ -339,7 +357,7 @@ describe("DataTableFilters", () => {
         />,
       );
       // The pill still says which days are shown.
-      const trigger = screen.getByRole("button", { name: "Tanggal: 1-17 Nov 2026" });
+      const trigger = screen.getByRole("button", { name: "Tanggal: 1–17 Nov 2026" });
       expect(trigger.parentElement).toHaveClass("border-border", "bg-surface");
       expect(trigger.parentElement).not.toHaveClass("bg-accent-soft");
       expect(screen.queryByRole("button", { name: /Hapus filter/ })).not.toBeInTheDocument();

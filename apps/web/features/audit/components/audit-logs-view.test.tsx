@@ -212,7 +212,7 @@ describe("AuditLogsView filters", () => {
       }),
     );
     expect(
-      screen.getByRole("button", { name: "filters.dateRange: 1-19 Nov 2026" }),
+      screen.getByRole("button", { name: "filters.dateRange: 1–19 Nov 2026" }),
     ).toBeInTheDocument();
   });
 
