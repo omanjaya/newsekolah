@@ -54,7 +54,8 @@
       "cancel": "Batal",
       "save": "Simpan",
       "period": "Periode",
-      "periodHint": "Pilih tanggal mulai, lalu tanggal selesai."
+      "periodHint": "Pilih tanggal mulai, lalu tanggal selesai.",
+      "periodRequired": "Pilih tanggal mulai dan tanggal selesai."
     },
     "editTitle": "Ubah tahun ajaran",
     "rowActions": "Aksi lain untuk {label}"

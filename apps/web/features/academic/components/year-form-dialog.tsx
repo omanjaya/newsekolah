@@ -8,6 +8,7 @@ import {
   DialogFooter,
   Field,
   Input,
+  useSubmitValidation,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -35,17 +36,29 @@ function YearForm({
   const [label, setLabel] = useState(target === "new" ? "" : target.label);
   const [startsOn, setStartsOn] = useState(target === "new" ? "" : target.starts_on);
   const [endsOn, setEndsOn] = useState(target === "new" ? "" : target.ends_on);
+  // Simpan stays enabled: pressing it on an empty form marks each missing
+  // field and focuses the first (docs/07-ui-ux.md, "Tombol simpan form").
+  const { ref, attempted, check } = useSubmitValidation();
+  const tValidation = useTranslations("validation");
+  const labelMissing = !label.trim();
+  const periodMissing = !startsOn || !endsOn;
 
   return (
     <form
+      ref={ref}
+      noValidate
       className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!label.trim() || !startsOn || !endsOn) return;
+        if (!check(!labelMissing && !periodMissing)) return;
         onSubmit({ label: label.trim(), starts_on: startsOn, ends_on: endsOn });
       }}
     >
-      <Field label={t("form.label")} required>
+      <Field
+        label={t("form.label")}
+        required
+        error={attempted && labelMissing ? tValidation("required") : undefined}
+      >
         <Input
           value={label}
           onChange={(e) => {
@@ -54,7 +67,12 @@ function YearForm({
           placeholder={t("form.labelPlaceholder")}
         />
       </Field>
-      <Field label={t("form.period")} required hint={t("form.periodHint")}>
+      <Field
+        label={t("form.period")}
+        required
+        hint={t("form.periodHint")}
+        error={attempted && periodMissing ? t("form.periodRequired") : undefined}
+      >
         <DateRangePicker
           value={startsOn ? { from: startsOn, to: endsOn } : null}
           onChange={(range) => {
