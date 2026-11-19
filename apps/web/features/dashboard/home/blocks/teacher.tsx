@@ -49,6 +49,7 @@ interface SessionRange extends TimeRange {
 const ATTENDANCE_HREF = "/attendance";
 const SCHEDULE_HREF = "/schedule";
 const JOURNAL_HREF = "/journal";
+const VIEW_ACADEMIC_DATA = "view_academic_data";
 
 /**
  * Formats a period's wall-clock start or end, and a lesson's span, the way
@@ -78,8 +79,14 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
   const { clock, range } = useClockLabels();
   const sessions = useTodaySessionsQuery({ date: todayInZone(me.tenant.timezone) }, active);
   const periods = useAllPeriodsQuery(active);
-  const classes = useClassesQuery(active);
-  const subjects = useSubjectsQuery(active);
+  // The class and subject names only dress the hero and the card's rows,
+  // and their lists need view_academic_data, which the teacher persona
+  // (manage_attendance) does not imply. Without it they are not read at
+  // all, so a role that lacks it gets a home it can load instead of a
+  // 403 no retry can fix.
+  const canReadNames = me.permissions.includes(VIEW_ACADEMIC_DATA);
+  const classes = useClassesQuery(active && canReadNames);
+  const subjects = useSubjectsQuery(active && canReadNames);
   const classMap = useLookup(classes.data?.data);
   const subjectMap = useLookup(subjects.data?.data);
   const periodMap = useLookup(periods.data?.data);
@@ -96,10 +103,13 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
   // Every read the hero, the tile and the card stand on: a failed class or
   // subject read would leave the hero without a title and the card's rows
   // without a class, so it fails the block like the sessions themselves
-  // (audit r3-n19).
-  const reads = [sessions, periods, classes, subjects];
+  // (audit r3-n19). A name read that never runs (no permission, or the
+  // classes list waiting on an active school year) is not a failure: the
+  // hero then names the lesson by what is known.
+  const nameReads = canReadNames ? [classes, subjects] : [];
+  const reads = [sessions, periods, ...nameReads];
   const readError: unknown = reads.find((read) => read.isError)?.error ?? null;
-  const namesReady = classes.isSuccess && subjects.isSuccess;
+  const namesFailed = nameReads.some((read) => read.isError);
   const block: PersonaBlock = {
     tiles: [],
     main: [],
@@ -146,14 +156,17 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
     );
     const picked = pickCurrentOrNext(eligible, now);
 
-    // Without the class and subject names the hero would have no title, so
-    // there is none: the home shows its failure notice in its place.
-    if (namesReady && picked) {
+    // A failed name read leaves no hero: the home shows its failure notice
+    // in its place. Otherwise the hero names the lesson with whichever of
+    // the subject and class is known, and with its period when neither is.
+    if (!namesFailed && picked) {
       const { session, start } = picked.item;
+      const startPeriod = periodMap.get(session.start_period_id);
       const subjectName = subjectMap.get(session.subject_id)?.name ?? "";
       const className = classMap.get(session.class_id)?.name ?? "";
-      const title = [subjectName, className].filter(Boolean).join(" · ");
-      const startsAt = periodMap.get(session.start_period_id)?.starts_at;
+      const title =
+        [subjectName, className].filter(Boolean).join(" · ") || (startPeriod?.name ?? "");
+      const startsAt = startPeriod?.starts_at;
       const startLabel = clock(startsAt);
       const rangeLabel = range(startsAt, periodMap.get(session.end_period_id)?.ends_at);
       const sessionHref = `${ATTENDANCE_HREF}/${session.id}`;
@@ -187,7 +200,7 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
           secondaryAction: { label: t("hero.scheduleAction"), href: SCHEDULE_HREF },
         };
       }
-    } else if (namesReady) {
+    } else if (!namesFailed) {
       const allDone = todaySessions.length > 0;
       block.hero = {
         key: "teacher.idle",
