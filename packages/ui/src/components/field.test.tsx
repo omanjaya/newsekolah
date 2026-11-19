@@ -303,6 +303,7 @@ describe("Field", () => {
     expect(cell).toHaveClass(
       "sm:col-start-2",
       "sm:grid",
+      "sm:grid-cols-1",
       "sm:min-h-11",
       "sm:items-center",
       "md:pointer-fine:min-h-9",

@@ -272,7 +272,7 @@ export function Field({
             // Switch) centred in it, so it sits level with the label
             // instead of riding at the top of the row.
             horizontal &&
-              "sm:col-start-2 sm:grid sm:min-h-11 sm:items-center md:pointer-fine:min-h-9",
+              "sm:col-start-2 sm:grid sm:grid-cols-1 sm:min-h-11 sm:items-center md:pointer-fine:min-h-9",
             inline && "flex",
           )}
         >
