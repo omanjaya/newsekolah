@@ -19,6 +19,7 @@ import {
   useCameraScanner,
   type CameraStatus,
 } from "../hooks/use-camera-scanner.js";
+import { useSubmitValidation } from "../hooks/use-submit-validation.js";
 import { cn } from "../utils/cn.js";
 
 import type { ScanHandlerResult } from "./barcode-scanner-field.js";
@@ -387,11 +388,21 @@ function ManualEntry({
 }): ReactElement {
   const labels = useUiLabels();
   const inputRef = useRef<HTMLInputElement>(null);
+  // The form convention: the button stays enabled on an empty field, and
+  // pressing it says what is missing and puts the caret back in the field.
+  const { ref: entryRef, attempted, check, reset } = useSubmitValidation<HTMLDivElement>();
+  const empty = value.trim() === "";
   // Opening the fallback (from the toggle or a camera that cannot be used)
   // puts the caret in it; a field shown from the start waits for a tap.
   useEffect(() => {
     if (open && collapsible) inputRef.current?.focus();
   }, [open, collapsible]);
+  const submit = () => {
+    if (!check(!empty)) return;
+    // The field empties after a send: that is not a new mistake to flag.
+    reset();
+    onSubmit();
+  };
   return (
     <div className="flex flex-col gap-3">
       {collapsible && (
@@ -407,43 +418,47 @@ function ManualEntry({
         </Button>
       )}
       {open && (
-        <div
-          className={cn(
-            "flex flex-col gap-2 sm:flex-row sm:items-end",
-            collapsible && "animate-enter",
-          )}
-        >
-          <Field label={label} className={cn("min-w-0 flex-1", kiosk && "[&_label]:text-heading")}>
-            <Input
-              ref={inputRef}
-              value={value}
-              autoComplete="off"
-              spellCheck={false}
-              maxLength={MANUAL_ENTRY_MAX_LENGTH}
-              placeholder={placeholder}
-              disabled={disabled}
-              onChange={(event) => {
-                onChange(event.target.value);
-              }}
-              onKeyDown={(event) => {
-                if (event.key !== "Enter") return;
-                event.preventDefault();
-                // A hardware scan typed into this field is reported once, by
-                // the page-wide listener, as a "scanner" scan.
-                if (!isScanPending()) onSubmit();
-              }}
-              className={cn(
-                kiosk && "h-16 px-4 text-title-lg font-sans font-normal md:pointer-fine:h-16",
-              )}
-            />
-          </Field>
-          <Button
-            disabled={disabled || value.trim() === ""}
-            onClick={onSubmit}
-            className={cn(kiosk && "h-16 px-8 text-heading md:h-16")}
+        // The field and its button share one row inside the Field, so a
+        // message under the field never pulls the button out of line.
+        <div ref={entryRef} className={cn(collapsible && "animate-enter")}>
+          <Field
+            label={label}
+            error={attempted && empty ? labels.scannerManualRequired : undefined}
+            className={cn(kiosk && "[&_label]:text-heading")}
           >
-            {submitLabel}
-          </Button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                ref={inputRef}
+                value={value}
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={MANUAL_ENTRY_MAX_LENGTH}
+                placeholder={placeholder}
+                disabled={disabled}
+                onChange={(event) => {
+                  onChange(event.target.value);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter") return;
+                  event.preventDefault();
+                  // A hardware scan typed into this field is reported once, by
+                  // the page-wide listener, as a "scanner" scan.
+                  if (!isScanPending()) submit();
+                }}
+                className={cn(
+                  "min-w-0 flex-1",
+                  kiosk && "h-16 px-4 text-title-lg font-sans font-normal md:pointer-fine:h-16",
+                )}
+              />
+              <Button
+                disabled={disabled}
+                onClick={submit}
+                className={cn(kiosk && "h-16 px-8 text-heading md:h-16")}
+              >
+                {submitLabel}
+              </Button>
+            </div>
+          </Field>
         </div>
       )}
     </div>
