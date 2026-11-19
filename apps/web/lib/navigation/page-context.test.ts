@@ -64,6 +64,14 @@ describe("resolvePageContext", () => {
     expect(context.groupKey).toBe(TOP_LEVEL_EYEBROW_KEY);
   });
 
+  // Notifikasi is in no menu and no group; without an eyebrow its title
+  // sat 20px higher than every sibling page's.
+  it("gives a page no menu lists the top block's eyebrow", () => {
+    const context = resolvePageContext("/notifications", appNavigationFor(ADMIN));
+    expect(context.page?.key).toBe("notifications");
+    expect(context.groupKey).toBe(TOP_LEVEL_EYEBROW_KEY);
+  });
+
   it("marks the longest matching page current, not every ancestor", () => {
     const context = resolvePageContext("/attendance/reports", appNavigationFor(ADMIN));
     expect(context.page?.key).toBe("attendance-reports");
@@ -128,6 +136,7 @@ describe("resolvePageContext", () => {
     expect(context.page).toBeUndefined();
     expect(context.tabs).toEqual([]);
     expect(context.isDetail).toBe(false);
+    expect(context.groupKey).toBeUndefined();
   });
 });
 

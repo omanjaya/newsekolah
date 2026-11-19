@@ -34,7 +34,8 @@ export interface PageContext {
   /**
    * The page's eyebrow: the message key of the heading the reader's own
    * menu shows the entry under, so the eyebrow and the sidebar heading read
-   * alike, or `TOP_LEVEL_EYEBROW_KEY` for an entry in the menu's top block.
+   * alike, or `TOP_LEVEL_EYEBROW_KEY` for an entry in the menu's top block
+   * or a registry page outside every menu group.
    */
   groupKey?: string;
   /** The area's pages as tabs, in registry order: two or more, only on an area's own pages. */
@@ -70,7 +71,13 @@ function menuGroupKey(
   page: NavItem | undefined,
   entries: readonly NavItem[],
 ): string | undefined {
-  if (!entry) return page?.group === undefined ? undefined : navGroupLabelKey(page.group);
+  // A page no menu lists (Notifikasi, opened from the header's bell) still
+  // takes an eyebrow, so its head keeps every sibling's geometry: its
+  // registry group, or the top block's when it has none.
+  if (!entry) {
+    if (!page) return undefined;
+    return page.group === undefined ? TOP_LEVEL_EYEBROW_KEY : navGroupLabelKey(page.group);
+  }
   const inMain = (item: NavItem) => (item.sidebarPlacement ?? "main") === "main";
   if (!inMain(entry)) {
     const group = entry.group ?? page?.group;
