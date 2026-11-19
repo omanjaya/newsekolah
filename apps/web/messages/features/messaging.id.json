@@ -44,11 +44,11 @@
       "localeOption": "{name} ({code})",
       "locales": {
         "id": "Bahasa Indonesia",
-        "en": "Bahasa Inggris",
-        "en_US": "Bahasa Inggris (AS)",
-        "en_GB": "Bahasa Inggris (Britania Raya)",
-        "ms": "Bahasa Melayu",
-        "ar": "Bahasa Arab"
+        "en": "Inggris",
+        "en_US": "Inggris (AS)",
+        "en_GB": "Inggris (UK)",
+        "ms": "Melayu",
+        "ar": "Arab"
       },
       "metaTemplateNameLabel": "Nama templat di Meta",
       "bodyLabel": "Isi pesan",
