@@ -196,7 +196,7 @@
     }
   },
   "achievements": {
-    "searchPlaceholder": "Search competition name",
+    "searchPlaceholder": "Search student or competition",
     "eyebrow": "Activities",
     "title": "Student achievements",
     "filters": {
