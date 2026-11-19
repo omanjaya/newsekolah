@@ -179,7 +179,9 @@
       "observer_notes": "Catatan pengamat",
       "teacher_response": "Tanggapan guru",
       "agreed_follow_up": "Tindak lanjut"
-    }
+    },
+    "notFoundTitle": "Laporan guru tidak ditemukan",
+    "backToResults": "Kembali ke hasil siklus"
   },
   "observationDetail": {
     "notFoundTitle": "Observasi tidak ditemukan",

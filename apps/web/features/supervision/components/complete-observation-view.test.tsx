@@ -1,9 +1,11 @@
+import { ApiError } from "@newsekolah/api-client";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CompleteObservationView } from "./complete-observation-view";
 
 const observationId = vi.fn<() => string | null>();
+const cycleError = vi.hoisted<{ current: unknown }>(() => ({ current: null }));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -24,11 +26,14 @@ vi.mock("./complete-observation-form", () => ({
   CompleteObservationForm: () => <form aria-label="observation form" />,
 }));
 vi.mock("../api", () => ({
-  useSupervisionCycleQuery: () => ({
-    data: { id: "c1", name: "Siklus", instrument: { criteria: [] } },
-    isLoading: false,
-    isError: false,
-  }),
+  useSupervisionCycleQuery: () =>
+    cycleError.current
+      ? { data: undefined, isLoading: false, isError: true, error: cycleError.current }
+      : {
+          data: { id: "c1", name: "Siklus", instrument: { criteria: [] } },
+          isLoading: false,
+          isError: false,
+        },
   useScheduledObservationsQuery: () => ({
     data: {
       data: [
@@ -46,9 +51,28 @@ vi.mock("../api", () => ({
   }),
 }));
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  cycleError.current = null;
+});
 
 describe("CompleteObservationView", () => {
+  it("shows the cycle's not-found page, with no retry, for a malformed cycle id", () => {
+    cycleError.current = new ApiError({
+      status: 400,
+      code: "VALIDATION_FAILED",
+      message: "invalid",
+      details: [{ field: "cycleId", code: "INVALID_FORMAT" }],
+    });
+    render(<CompleteObservationView cycleId="abc" scheduledId="abc" />);
+    expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "backToCycles" })).toHaveAttribute(
+      "href",
+      "/supervision/cycles",
+    );
+    expect(screen.queryByRole("button", { name: "actions.retry" })).not.toBeInTheDocument();
+  });
+
   it("opens the form for a visit still to be observed", () => {
     observationId.mockReturnValue(null);
     render(<CompleteObservationView cycleId="c1" scheduledId="s1" />);

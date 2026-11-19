@@ -28,11 +28,13 @@ import { useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { RecordNotFoundPage } from "../../../components/record-not-found";
 import {
   ReportExportDialog,
   type ReportExportColumn,
   type ReportExportOptions,
 } from "../../../components/report-export-dialog";
+import { isNotFoundError } from "../../../lib/api/not-found";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import {
@@ -41,7 +43,16 @@ import {
   useTeacherSupervisionReportQuery,
 } from "../api";
 import { averageScore, formatScore } from "../lib/score-format";
-import { useCycleTrail } from "../lib/use-cycle-trail";
+import { cycleHref, useCycleTrail } from "../lib/use-cycle-trail";
+
+import { CycleNotFoundPage } from "./cycle-not-found";
+
+/** Whether a not-found report read failed on the cycle rather than the teacher. */
+function cycleIsMissing(error: unknown): boolean {
+  if (!(error instanceof ApiError)) return false;
+  if (error.code === "SUPERVISION_CYCLE_NOT_FOUND") return true;
+  return (error.details ?? []).some((detail) => detail.field === "cycleId");
+}
 
 /**
  * The figures of one report: the overall average against the scale, each
@@ -173,6 +184,21 @@ export function TeacherSupervisionReportView({
     teacherId,
   );
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // On its own route, an unknown or malformed id is a missing record, not a
+  // failure to retry: the cycle's not-found page when the cycle is what is
+  // missing, otherwise this teacher's, leading back to the cycle's results.
+  if (!hideHeader && isError && !data && isNotFoundError(error)) {
+    return cycleIsMissing(error) ? (
+      <CycleNotFoundPage />
+    ) : (
+      <RecordNotFoundPage
+        title={t("notFoundTitle")}
+        backHref={`${cycleHref(cycleId)}/report`}
+        backLabel={t("backToResults")}
+      />
+    );
+  }
 
   let content: ReactElement;
   if (isError && !data) {

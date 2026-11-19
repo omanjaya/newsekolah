@@ -16,11 +16,13 @@ import { useMemo } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { isNotFoundError } from "../../../lib/api/not-found";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { useScheduledObservationsQuery, useSupervisionCycleQuery } from "../api";
 import { useCycleTrail } from "../lib/use-cycle-trail";
 
 import { CycleNav } from "./cycle-nav";
+import { CycleNotFoundPage } from "./cycle-not-found";
 
 interface TeacherRow {
   teacherUserId: string;
@@ -59,6 +61,11 @@ export function SupervisionCycleReportView({ cycleId }: { cycleId: string }): Re
     }
     return [...byTeacher.values()];
   }, [scheduled.data]);
+
+  // An unknown or malformed cycle id is a missing cycle, not a failure to retry.
+  if (cycle.isError && !cycle.data && isNotFoundError(cycle.error)) {
+    return <CycleNotFoundPage />;
+  }
 
   if (cycle.isError && !cycle.data) {
     return (

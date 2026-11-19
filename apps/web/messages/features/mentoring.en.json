@@ -169,7 +169,8 @@
     },
     "termSummary": {
       "title": "Term summary"
-    }
+    },
+    "notFoundTitle": "Student not found"
   },
   "termSummary": {
     "term": "Term",

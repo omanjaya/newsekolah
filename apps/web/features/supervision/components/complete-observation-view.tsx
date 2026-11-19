@@ -11,12 +11,14 @@ import type { ReactElement } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { isNotFoundError } from "../../../lib/api/not-found";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { useScheduledObservationsQuery, useSupervisionCycleQuery } from "../api";
 import { cycleHref, useCycleTrail } from "../lib/use-cycle-trail";
 import { useLessonContext } from "../lib/use-lesson-context";
 
 import { CompleteObservationForm } from "./complete-observation-form";
+import { CycleNotFoundPage } from "./cycle-not-found";
 
 /**
  * The full-page "fill the instrument" screen for one scheduled observation:
@@ -49,6 +51,13 @@ export function CompleteObservationView({
 
   const backHref = cycleHref(cycleId);
   const breadcrumb = trail.within(cycleId, cycle.data?.name, { label: t("breadcrumb") });
+
+  // An unknown or malformed cycle id is a missing cycle, not a failure to
+  // retry. (A scheduled id the cycle does not have is told below, once the
+  // cycle's list has loaded.)
+  if (cycle.isError && !cycle.data && isNotFoundError(cycle.error)) {
+    return <CycleNotFoundPage />;
+  }
 
   const failed = (cycle.isError && !cycle.data) || (scheduledList.isError && !scheduledList.data);
   if (failed) {

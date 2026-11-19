@@ -1,9 +1,11 @@
+import { ApiError } from "@newsekolah/api-client";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TeacherSupervisionReportView } from "./teacher-supervision-report-view";
 
 const report = vi.fn<() => unknown>();
+const reportError = vi.hoisted<{ current: unknown }>(() => ({ current: null }));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -16,13 +18,16 @@ vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
 }));
 vi.mock("../api", () => ({
-  useTeacherSupervisionReportQuery: () => ({
-    data: report(),
-    isLoading: false,
-    isError: false,
-    error: null,
-    refetch: vi.fn(),
-  }),
+  useTeacherSupervisionReportQuery: () =>
+    reportError.current
+      ? {
+          data: undefined,
+          isLoading: false,
+          isError: true,
+          error: reportError.current,
+          refetch: vi.fn(),
+        }
+      : { data: report(), isLoading: false, isError: false, error: null, refetch: vi.fn() },
   downloadTeacherSupervisionReport: vi.fn(),
 }));
 
@@ -40,9 +45,67 @@ const cycle = {
   },
 };
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  reportError.current = null;
+});
 
 describe("TeacherSupervisionReportView", () => {
+  it("shows the teacher's not-found page, back to the cycle results, for a malformed teacher id", () => {
+    reportError.current = new ApiError({
+      status: 400,
+      code: "VALIDATION_FAILED",
+      message: "invalid",
+      details: [{ field: "teacherId", code: "INVALID_FORMAT" }],
+    });
+    render(<TeacherSupervisionReportView cycleId="c1" teacherId="abc" />);
+    expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "backToResults" })).toHaveAttribute(
+      "href",
+      "/supervision/cycles/c1/report",
+    );
+    expect(screen.queryByRole("button", { name: "actions.retry" })).not.toBeInTheDocument();
+  });
+
+  it("shows the cycle's not-found page when the cycle is what is missing", () => {
+    reportError.current = new ApiError({
+      status: 404,
+      code: "SUPERVISION_CYCLE_NOT_FOUND",
+      message: "not found",
+    });
+    render(
+      <TeacherSupervisionReportView
+        cycleId="00000000-0000-0000-0000-000000000000"
+        teacherId="t1"
+      />,
+    );
+    expect(screen.getByRole("link", { name: "backToCycles" })).toHaveAttribute(
+      "href",
+      "/supervision/cycles",
+    );
+
+    cleanup();
+    reportError.current = new ApiError({
+      status: 400,
+      code: "VALIDATION_FAILED",
+      message: "invalid",
+      details: [
+        { field: "cycleId", code: "INVALID_FORMAT" },
+        { field: "teacherId", code: "INVALID_FORMAT" },
+      ],
+    });
+    render(<TeacherSupervisionReportView cycleId="abc" teacherId="abc" />);
+    expect(screen.getByRole("link", { name: "backToCycles" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "backToResults" })).not.toBeInTheDocument();
+  });
+
+  it("keeps a retryable failure for an error that is not a missing record", () => {
+    reportError.current = new ApiError({ status: 500, code: "INTERNAL", message: "boom" });
+    render(<TeacherSupervisionReportView cycleId="c1" teacherId="t1" />);
+    expect(screen.queryByText("notFoundTitle")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "actions.retry" })).toBeInTheDocument();
+  });
+
   it("shows one empty state and no export while nothing has been observed", () => {
     report.mockReturnValue({
       teacher_name: "Guru Contoh",

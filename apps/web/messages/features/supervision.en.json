@@ -179,7 +179,9 @@
       "observer_notes": "Observer notes",
       "teacher_response": "Teacher response",
       "agreed_follow_up": "Agreed follow-up"
-    }
+    },
+    "notFoundTitle": "Teacher report not found",
+    "backToResults": "Back to cycle results"
   },
   "observationDetail": {
     "notFoundTitle": "Observation not found",
