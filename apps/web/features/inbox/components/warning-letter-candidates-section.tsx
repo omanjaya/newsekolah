@@ -5,6 +5,7 @@ import {
   Badge,
   Button,
   Card,
+  ConfirmDialog,
   EmptyState,
   List,
   ListRow,
@@ -14,10 +15,12 @@ import {
 import { ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
+import { useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
+  type SPCandidate,
   useDisciplinePolicyQuery,
   useIssueWarningLetterMutation,
   useSPCandidatesQuery,
@@ -26,10 +29,18 @@ import { dueLevels } from "../../discipline/lib/sp-due-levels";
 import { studentProfileHref } from "../../students/href";
 import { INBOX_SP_FILTERS } from "../use-action-inbox-count";
 
+/** The letter the reader asked to issue, held until they confirm it. */
+interface PendingIssue {
+  candidate: SPCandidate;
+  level: number;
+  label: string;
+}
+
 /**
  * Students whose points reached a warning-letter level not yet issued, as
- * rows that open the student's discipline tab, with the same one-click
- * issue as the at-risk tab as each row's own action.
+ * rows that open the student's discipline tab, with the at-risk tab's issue
+ * flow as each row's own action: issuing numbers a letter on the student's
+ * record, so it is confirmed first, and only the row being issued spins.
  */
 export function WarningLetterCandidatesSection(): ReactElement {
   const t = useTranslations("app.inbox.warningLetters");
@@ -38,11 +49,32 @@ export function WarningLetterCandidatesSection(): ReactElement {
   const policy = useDisciplinePolicyQuery();
   const candidates = useSPCandidatesQuery(INBOX_SP_FILTERS);
   const issue = useIssueWarningLetterMutation();
+  const [pendingIssue, setPendingIssue] = useState<PendingIssue | null>(null);
   const levels = policy.data?.levels ?? [];
   const rows = (candidates.data?.data ?? []).flatMap((candidate) => {
     const [next, ...rest] = dueLevels(candidate, levels);
     return next ? [{ candidate, due: [next, ...rest] as const, next }] : [];
   });
+
+  function confirmIssue() {
+    if (!pendingIssue) return;
+    const { candidate, level, label } = pendingIssue;
+    issue.mutate(
+      { student_user_id: candidate.student_user_id, level },
+      {
+        onSuccess: () => {
+          setPendingIssue(null);
+          toast.success(t("issued", { level: label }));
+        },
+        // On failure the dialog stays open so the reader can try again.
+        onError: (error) => {
+          toast.error(
+            error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+          );
+        },
+      },
+    );
+  }
 
   if (candidates.isLoading || policy.isLoading) {
     return <SkeletonList rows={3} />;
@@ -80,30 +112,18 @@ export function WarningLetterCandidatesSection(): ReactElement {
               points: candidate.total_points,
             })}
             trailing={due.map((level) => (
-              <Badge key={level.level} tone="warning" size="sm">
+              <Badge key={level.level} tone="accent" size="sm">
                 {level.label}
               </Badge>
             ))}
             action={
               <Button
                 size="sm"
-                loading={issue.isPending}
+                loading={
+                  issue.isPending && issue.variables.student_user_id === candidate.student_user_id
+                }
                 onClick={() => {
-                  issue.mutate(
-                    { student_user_id: candidate.student_user_id, level: next.level },
-                    {
-                      onSuccess: () => {
-                        toast.success(t("issued", { level: next.label }));
-                      },
-                      onError: (error) => {
-                        toast.error(
-                          error instanceof ApiError
-                            ? apiErrorMessage(error.code)
-                            : apiErrorMessage("UNKNOWN"),
-                        );
-                      },
-                    },
-                  );
+                  setPendingIssue({ candidate, level: next.level, label: next.label });
                 }}
               >
                 {t("issue", { level: next.label })}
@@ -112,6 +132,20 @@ export function WarningLetterCandidatesSection(): ReactElement {
           />
         ))}
       </List>
+      <ConfirmDialog
+        open={pendingIssue !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingIssue(null);
+        }}
+        title={t("issueConfirm.title", {
+          level: pendingIssue?.label ?? "",
+          student: pendingIssue?.candidate.student_name ?? "",
+        })}
+        description={t("issueConfirm.body")}
+        confirmLabel={t("issue", { level: pendingIssue?.label ?? "" })}
+        confirming={issue.isPending}
+        onConfirm={confirmIssue}
+      />
     </Card>
   );
 }

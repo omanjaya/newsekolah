@@ -13,7 +13,11 @@
     "open": "Buka siswa",
     "issue": "Terbitkan {level}",
     "issued": "{level} berhasil diterbitkan.",
-    "meta": "{nis} · {className} · {points} poin"
+    "meta": "{nis} · {className} · {points} poin",
+    "issueConfirm": {
+      "title": "Terbitkan {level} untuk {student}?",
+      "body": "Nomor surat dibuat dan surat tercatat di riwayat siswa. Surat yang sudah terbit tidak bisa ditarik dari layar ini."
+    }
   },
   "backHome": "Kembali ke beranda",
   "historyLeave": "Lihat riwayat izin",
