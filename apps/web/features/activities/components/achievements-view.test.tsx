@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -10,7 +10,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string) =>
+    ({ "levels.national": "Nasional", "levels.city": "Kota" })[key] ?? key,
 }));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/activities/achievements",
@@ -33,7 +34,11 @@ vi.mock("../../reference/api", () => ({
   useDirectoryQuery: () => ({ data: { data: [] }, isLoading: false }),
 }));
 vi.mock("../../reference/directory-names", () => ({
-  useDirectoryName: () => ({ id: "student-1", name: "Siswa Contoh" }),
+  useDirectoryNames: () =>
+    new Map([
+      ["student-1", { id: "student-1", name: "Siswa Contoh" }],
+      ["student-2", { id: "student-2", name: "Budi Santoso" }],
+    ]),
 }));
 vi.mock("../api", () => ({
   useAchievementsQuery: mocks.useAchievementsQuery,
@@ -96,5 +101,71 @@ describe("AchievementsView filters", () => {
     expect(table.queryByText("2026-11-17")).not.toBeInTheDocument();
     expect(table.queryByRole("button", { name: "edit" })).not.toBeInTheDocument();
     expect(table.getByRole("button", { name: "rowActions" })).toBeInTheDocument();
+  });
+});
+
+describe("AchievementsView search and empty states", () => {
+  beforeEach(() => {
+    mocks.canManage = true;
+    mocks.useAchievementsQuery.mockReset();
+    window.history.replaceState(null, "", "/activities/achievements");
+  });
+
+  const rows = [
+    {
+      id: "a1",
+      student_user_id: "student-1",
+      competition_name: "Olimpiade Sains",
+      level: "city",
+      placement: "Juara 1",
+      achieved_on: "2026-11-17",
+    },
+    {
+      id: "a2",
+      student_user_id: "student-2",
+      competition_name: "Lomba Pidato",
+      level: "national",
+      placement: "Juara 2",
+      achieved_on: "2026-10-01",
+    },
+  ];
+
+  it("finds a row by the student's name and by the level's label", async () => {
+    mocks.useAchievementsQuery.mockReturnValue({ data: { data: rows }, isLoading: false });
+    const user = userEvent.setup();
+    render(<AchievementsView />);
+    const search = screen.getByRole("searchbox");
+
+    await user.type(search, "Budi");
+    const table = () => within(screen.getByRole("table"));
+    await waitFor(() => {
+      expect(table().queryByText("Olimpiade Sains")).not.toBeInTheDocument();
+    });
+    expect(table().getByText("Lomba Pidato")).toBeInTheDocument();
+
+    await user.clear(search);
+    await user.type(search, "Kota");
+    await waitFor(() => {
+      expect(table().queryByText("Lomba Pidato")).not.toBeInTheDocument();
+    });
+    expect(table().getByText("Olimpiade Sains")).toBeInTheDocument();
+  });
+
+  it("shows the first-use state with no class chosen", () => {
+    mocks.useAchievementsQuery.mockReturnValue({ data: { data: [] }, isLoading: false });
+    render(<AchievementsView />);
+    expect(screen.getByText("emptyTitle")).toBeInTheDocument();
+  });
+
+  it("shows a filtered empty state with a reset when the chosen class has none", async () => {
+    window.history.replaceState(null, "", "/activities/achievements?class_id=class-7a");
+    mocks.useAchievementsQuery.mockReturnValue({ data: { data: [] }, isLoading: false });
+    const user = userEvent.setup();
+    render(<AchievementsView />);
+
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+    expect(screen.getByText("Tidak ada yang cocok")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Hapus filter" }));
+    expect(new URLSearchParams(window.location.search).get("class_id")).toBe("");
   });
 });
