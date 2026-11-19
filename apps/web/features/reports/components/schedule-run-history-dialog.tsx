@@ -9,7 +9,7 @@ import {
   List,
   ListRow,
   SkeletonList,
-  type BadgeTone,
+  deliveryStatusTone,
 } from "@newsekolah/ui";
 import { History } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -17,12 +17,6 @@ import type { ReactElement } from "react";
 
 import { useSession } from "../../../lib/session/session-provider";
 import { useReportScheduleRunsQuery } from "../api";
-
-const STATUS_TONE: Record<string, BadgeTone> = {
-  success: "success",
-  failed: "danger",
-  pending: "neutral",
-};
 
 export function ScheduleRunHistoryDialog({
   scheduleId,
@@ -61,7 +55,7 @@ export function ScheduleRunHistoryDialog({
                 title={formatDateTime(run.due_at, { locale, timeZone })}
                 meta={run.status === "failed" ? run.error_message : undefined}
                 trailing={
-                  <Badge tone={STATUS_TONE[run.status] ?? "neutral"} size="sm">
+                  <Badge tone={deliveryStatusTone(run.status)} size="sm">
                     {t(`status.${run.status}`)}
                   </Badge>
                 }

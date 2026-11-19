@@ -10,7 +10,7 @@ import {
   EmptyState,
   FilteredEmptyState,
   useToast,
-  type BadgeTone,
+  deliveryStatusTone,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -29,12 +29,6 @@ import {
 } from "../api";
 
 const PAGE_SIZE = 20;
-
-const STATUS_TONE: Record<WebhookDelivery["status"], BadgeTone> = {
-  success: "success",
-  failed: "danger",
-  pending: "warning",
-};
 
 const STATUS_LABEL: Record<WebhookDelivery["status"], string> = {
   success: "statusSuccess",
@@ -93,7 +87,7 @@ export function WebhookDeliveriesPanel({
       cell: ({ row }) => {
         const status = row.original.status;
         return (
-          <Badge size="sm" tone={STATUS_TONE[status]}>
+          <Badge size="sm" tone={deliveryStatusTone(status)}>
             {t(STATUS_LABEL[status])}
           </Badge>
         );

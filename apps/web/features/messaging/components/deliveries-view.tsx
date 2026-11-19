@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
   useToast,
-  type BadgeTone,
+  deliveryStatusTone,
 } from "@newsekolah/ui";
 import { Send } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -31,19 +31,7 @@ import { useState } from "react";
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
-import {
-  useResendWhatsAppDeliveryMutation,
-  useWhatsAppDeliveriesQuery,
-  type WhatsAppDeliveryStatus,
-} from "../api";
-
-const STATUS_TONE: Record<WhatsAppDeliveryStatus, BadgeTone> = {
-  pending: "neutral",
-  sent: "info",
-  delivered: "success",
-  read: "success",
-  failed: "danger",
-};
+import { useResendWhatsAppDeliveryMutation, useWhatsAppDeliveriesQuery } from "../api";
 
 export function DeliveriesView(): ReactElement {
   const t = useTranslations("app.messaging.deliveries");
@@ -134,7 +122,7 @@ export function DeliveriesView(): ReactElement {
                 <TableCell className="text-fg-muted">{delivery.provider}</TableCell>
                 <TableCell>
                   <div className="flex flex-col items-start gap-0.5">
-                    <Badge tone={STATUS_TONE[delivery.status]} size="sm">
+                    <Badge tone={deliveryStatusTone(delivery.status)} size="sm">
                       {t(`status.${delivery.status}`)}
                     </Badge>
                     {delivery.status === "failed" && delivery.error && (

@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import { expectNoAxeViolations } from "../test/axe.js";
 
 import {
+  DELIVERY_STATUS_TONE,
+  deliveryStatusTone,
   SEMANTIC_STATUS_TOKEN,
   SEMANTIC_STATUS_TONE,
   SemanticStatusBadge,
@@ -12,6 +14,21 @@ import {
   type SemanticStatus,
 } from "./semantic-status.js";
 import { StatusBadge } from "./status-badge.js";
+
+describe("delivery status mapping", () => {
+  it("colours a queued send neutral, a failure danger and a landed send success", () => {
+    expect(deliveryStatusTone("pending")).toBe("neutral");
+    expect(deliveryStatusTone("sent")).toBe("info");
+    expect(deliveryStatusTone("failed")).toBe("danger");
+    for (const done of ["delivered", "read", "success"] as const) {
+      expect(DELIVERY_STATUS_TONE[done]).toBe("success");
+    }
+  });
+
+  it("reads an unknown status as neutral", () => {
+    expect(deliveryStatusTone("bogus")).toBe("neutral");
+  });
+});
 
 describe("semantic status mapping", () => {
   it("gives the same tone to states that mean the same thing", () => {
