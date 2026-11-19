@@ -5,6 +5,8 @@
  * failure. The caller gets a `PushState` rather than a thrown error.
  */
 
+import { describeUserAgent } from "../../lib/user-agent";
+
 /** What the browser will let this viewer do about push right now. */
 export type PushState =
   /** No service worker, no PushManager, or no key configured for this deployment. */
@@ -73,26 +75,8 @@ function isSupported(): boolean {
  * and accept that two Chrome windows look alike.
  */
 function deviceName(): string {
-  const ua = navigator.userAgent;
-  const browser = ua.includes("Firefox/")
-    ? "Firefox"
-    : ua.includes("Edg/")
-      ? "Edge"
-      : ua.includes("Chrome/")
-        ? "Chrome"
-        : ua.includes("Safari/")
-          ? "Safari"
-          : "Browser";
-  const platform = ua.includes("Android")
-    ? "Android"
-    : /iPhone|iPad/.test(ua)
-      ? "iOS"
-      : ua.includes("Macintosh")
-        ? "macOS"
-        : ua.includes("Windows")
-          ? "Windows"
-          : "";
-  return platform ? `${browser} di ${platform}` : browser;
+  const { browser = "Browser", os } = describeUserAgent(navigator.userAgent);
+  return os ? `${browser} di ${os}` : browser;
 }
 
 function toRegistration(subscription: PushSubscription): WebPushRegistration {
