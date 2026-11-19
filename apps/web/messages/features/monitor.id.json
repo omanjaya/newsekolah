@@ -5,7 +5,7 @@
   "tokenLabel": "Token tampilan",
   "tokenPlaceholder": "Masukkan token monitor sekolah",
   "tokenHint": "Token tampilan didapat dari admin sekolah.",
-  "tokenHintAdmin": "Token tampilan disimpan di pengaturan sekolah dan saat ini diatur oleh operator platform. Hubungi operator untuk membuat atau mengganti token.",
+  "tokenHintAdmin": "Token tampilan saat ini diatur oleh operator platform. Hubungi operator untuk membuat atau mengganti token.",
   "tokenSubmit": "Tampilkan monitor",
   "tokenForget": "Ganti token",
   "tokenInvalidTitle": "Token tidak berlaku",

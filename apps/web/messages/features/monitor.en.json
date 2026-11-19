@@ -5,7 +5,7 @@
   "tokenLabel": "Display token",
   "tokenPlaceholder": "Enter the school's monitor token",
   "tokenHint": "The school admin can give you the display token.",
-  "tokenHintAdmin": "The display token is stored in the school settings and is currently set by the platform operator. Contact the operator to create or change it.",
+  "tokenHintAdmin": "The display token is currently set by the platform operator. Contact the operator to create or change it.",
   "tokenSubmit": "Show monitor",
   "tokenForget": "Change token",
   "tokenInvalidTitle": "Invalid token",
