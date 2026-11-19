@@ -262,7 +262,7 @@ interface HistoryEvent {
  * on one time line, newest first. A reader without either permission sees
  * nothing here; the full lists stay in their tabs.
  */
-function StudentHistory({ studentId }: { studentId: string }): ReactElement | null {
+export function StudentHistory({ studentId }: { studentId: string }): ReactElement | null {
   const t = useTranslations("app.studentProfile.history");
   const format = useFormatter();
   const disciplineOn = useModuleEnabled("discipline");
