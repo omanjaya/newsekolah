@@ -176,6 +176,24 @@ function clearFilter(filter: DataTableFilterDef): void {
 }
 
 /**
+ * Moves focus, before a reset takes its own button away, to a control of
+ * the toolbar that stays, so it does not drop to <body> and the next Tab
+ * back to the top: from the keyboard (a click with no pointer count,
+ * `detail` 0) the search box; from a tap or a click, or with no search
+ * box, the first filter pill (always rendered, active or not), which
+ * raises no phone keyboard.
+ */
+export function focusAfterReset(
+  detail: number,
+  search: HTMLElement | null | undefined,
+  pills: HTMLElement | null | undefined,
+): void {
+  const target =
+    detail === 0 && search?.isConnected ? search : pills?.querySelector<HTMLElement>("button");
+  target?.focus();
+}
+
+/**
  * A row of filter pills next to a `DataTable`'s search box (rendered by
  * `DataTableToolbar` when the `filters` prop is passed to `DataTable`). Each
  * pill is its own trigger; once it has a value it grows a remove control and
@@ -209,6 +227,7 @@ export function DataTableFilters({
     // keeps the pills' focus rings inside the scroller's clip.
     <div
       ref={scrollerRef}
+      data-slot="data-table-filters"
       className={cn(
         "-my-1 flex scrollbar-none items-center gap-1.5 overflow-x-auto py-1 [&>*]:shrink-0",
         // An edge with more pills past it fades out, as a tab strip's does,
@@ -252,16 +271,7 @@ export function DataTableFilters({
           onClick={(event) => {
             // The button leaves the page once nothing is filtered, which
             // would drop focus to <body> and the next Tab back to the top.
-            // Focus moves first, to a control that stays: from the keyboard
-            // (a click with no pointer count) the search box; from a tap or
-            // a click, or with no search box, the first pill (always
-            // rendered, active or not), which raises no phone keyboard.
-            const search = resetFocusRef?.current;
-            const target =
-              event.detail === 0 && search?.isConnected
-                ? search
-                : scrollerRef.current?.querySelector<HTMLElement>("button");
-            target?.focus();
+            focusAfterReset(event.detail, resetFocusRef?.current, scrollerRef.current);
             for (const filter of filters) {
               if (isFilterActive(filter)) clearFilter(filter);
             }

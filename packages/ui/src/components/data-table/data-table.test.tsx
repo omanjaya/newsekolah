@@ -5,6 +5,7 @@ import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { EmptyState } from "../empty-state.js";
+import { FilteredEmptyState } from "../filtered-empty-state.js";
 
 import { DataTableStateProvider } from "./data-table-state.js";
 import { DataTable, selectionColumn } from "./data-table.js";
@@ -416,6 +417,95 @@ describe("DataTable", () => {
     expect(screen.queryByRole("button", { name: "Hapus semua filter" })).not.toBeInTheDocument();
     expect(search).toHaveFocus();
     expect(document.activeElement).not.toBe(document.body);
+  });
+
+  // The empty state's own "Hapus semua filter" takes the empty state away
+  // with it; focus fell to <body> there too.
+  describe("focus after the empty state's reset", () => {
+    function EmptyFilteredHarness({ searchable }: { searchable: boolean }) {
+      const [type, setType] = useState("a");
+      return (
+        <DataTable
+          mode="local"
+          data={type === "" ? ROWS : []}
+          columns={columns}
+          searchable={searchable}
+          filters={[
+            {
+              id: "type",
+              label: "Jenis",
+              value: type,
+              onChange: setType,
+              options: [{ value: "a", label: "A" }],
+            },
+          ]}
+          emptyState={
+            <FilteredEmptyState
+              searchable={searchable}
+              onReset={() => {
+                setType("");
+              }}
+            />
+          }
+        />
+      );
+    }
+
+    function emptyStateReset(container: HTMLElement): HTMLElement {
+      const slot = container.querySelector<HTMLElement>("[data-slot=data-table-empty]");
+      if (!slot) throw new Error("no empty state");
+      return within(slot).getByRole("button", { name: "Hapus semua filter" });
+    }
+
+    it("moves to the search box from the keyboard", async () => {
+      const user = userEvent.setup();
+      const { container } = render(<EmptyFilteredHarness searchable />);
+      emptyStateReset(container).focus();
+      await user.keyboard("{Enter}");
+
+      expect(container.querySelector("[data-slot=data-table-empty]")).toBeNull();
+      expect(screen.getByRole("searchbox", { name: "Cari" })).toHaveFocus();
+      expect(document.activeElement).not.toBe(document.body);
+    });
+
+    it("moves to the first filter pill without a search box, or after a click", async () => {
+      const user = userEvent.setup();
+      const { container, unmount } = render(<EmptyFilteredHarness searchable={false} />);
+      emptyStateReset(container).focus();
+      await user.keyboard("{Enter}");
+      expect(container.querySelector("[data-slot=data-table-empty]")).toBeNull();
+      expect(screen.getByRole("button", { name: "Jenis" })).toHaveFocus();
+      unmount();
+
+      const second = render(<EmptyFilteredHarness searchable />);
+      await user.click(emptyStateReset(second.container));
+      expect(screen.getByRole("button", { name: "Jenis" })).toHaveFocus();
+    });
+
+    it("keeps focus in the search box when its 'no results' clear remounts it", async () => {
+      const user = userEvent.setup();
+      const { container } = render(
+        <DataTable
+          mode="local"
+          data={ROWS}
+          columns={columns}
+          emptyState={<EmptyState title="Belum ada data" />}
+        />,
+      );
+      await user.type(screen.getByRole("searchbox", { name: "Cari" }), "zzz");
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+      });
+      const slot = container.querySelector<HTMLElement>("[data-slot=data-table-empty]");
+      if (!slot) throw new Error("no empty state");
+      within(slot).getByRole("button").focus();
+      await user.keyboard("{Enter}");
+
+      expect(container.querySelector("[data-slot=data-table-empty]")).toBeNull();
+      const search = screen.getByRole("searchbox", { name: "Cari" });
+      expect(search).toHaveValue("");
+      expect(search).toHaveFocus();
+    });
   });
 
   it("provides select all for mobile cards", () => {

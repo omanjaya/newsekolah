@@ -1,24 +1,34 @@
 "use client";
 
 import { CloudOff, Inbox, RotateCw } from "lucide-react";
-import { isValidElement, type ReactElement, type ReactNode } from "react";
+import { isValidElement, type MouseEvent, type ReactElement, type ReactNode } from "react";
 
 import { Alert } from "../alert.js";
 import { Button } from "../button.js";
 import { EmptyState, EmptyStateInlineScope } from "../empty-state.js";
-import { FilteredEmptyState } from "../filtered-empty-state.js";
+import { FilteredEmptyState, FilteredResetFocusContext } from "../filtered-empty-state.js";
 import { IconCircle } from "../icon-circle.js";
 import { useUiLabels, type UiLabels } from "../ui-labels.js";
 
 /**
  * The empty slot of the table body. The table's card (or, on a phone, the
  * slot's own card) is already the frame, so an `EmptyState` inside renders
- * its `inline` variant: no second border, the inline icon and spacing.
+ * its `inline` variant: no second border, the inline icon and spacing. A
+ * `FilteredEmptyState` inside calls `onResetFocus` before its reset, which
+ * takes the slot away with the button in it.
  */
-export function DataTableEmptySlot({ children }: { children: ReactNode }): ReactElement {
+export function DataTableEmptySlot({
+  children,
+  onResetFocus,
+}: {
+  children: ReactNode;
+  onResetFocus?: (event: MouseEvent<HTMLButtonElement>) => void;
+}): ReactElement {
   return (
     <div data-slot="data-table-empty" className="flex flex-col justify-center">
-      <EmptyStateInlineScope>{children}</EmptyStateInlineScope>
+      <FilteredResetFocusContext.Provider value={onResetFocus ?? null}>
+        <EmptyStateInlineScope>{children}</EmptyStateInlineScope>
+      </FilteredResetFocusContext.Provider>
     </div>
   );
 }

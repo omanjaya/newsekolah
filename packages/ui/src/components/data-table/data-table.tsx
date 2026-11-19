@@ -52,6 +52,7 @@ import {
 } from "./data-table-toolbar.js";
 import { useDebouncedCallback } from "./use-debounced-callback.js";
 import { usePersistedColumnVisibility } from "./use-persisted-column-visibility.js";
+import { useToolbarFocusHandOff } from "./use-toolbar-focus-hand-off.js";
 
 export { selectionColumn } from "./data-table-selection.js";
 
@@ -280,10 +281,12 @@ export function DataTable<TData>({
     debouncedFilterChange("");
     applyFilterChange("");
   }, [applyFilterChange, debouncedFilterChange]);
+  const { rootRef, handOffResetFocus, keepSearchFocus } = useToolbarFocusHandOff(searchResetKey);
   const clearLocalSearch = useCallback(() => {
+    keepSearchFocus();
     clearSearch();
     setSearchResetKey((key) => key + 1);
-  }, [clearSearch]);
+  }, [clearSearch, keepSearchFocus]);
 
   // TanStack caches each row's accessor values and rebuilds rows only when
   // `data` changes. A column whose accessor reads a lookup (a name map that
@@ -383,7 +386,7 @@ export function DataTable<TData>({
   const stateContent = failed ? (
     <DataTableErrorState error={error} onRetry={onRetry} retrying={retrying} />
   ) : empty ? (
-    <DataTableEmptySlot>
+    <DataTableEmptySlot onResetFocus={handOffResetFocus}>
       {hasNoLocalSearchResults ? (
         <DataTableSearchEmptyState
           title={toolbarCopy.noSearchResultsTitle}
@@ -422,7 +425,7 @@ export function DataTable<TData>({
   );
 
   return (
-    <div className={cn("flex flex-col gap-3", fillHeight && "md:h-full md:min-h-0")}>
+    <div ref={rootRef} className={cn("flex flex-col gap-3", fillHeight && "md:h-full md:min-h-0")}>
       <DataTableToolbar
         key={searchResetKey}
         table={table}
