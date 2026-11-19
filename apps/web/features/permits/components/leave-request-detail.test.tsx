@@ -1,5 +1,6 @@
+import { ApiError } from "@newsekolah/api-client";
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { LeaveRequestDetail } from "./leave-request-detail";
 
@@ -41,6 +42,7 @@ const stage = (key: string) => ({
 });
 
 let detail: Record<string, unknown> = {};
+let queryError: unknown = null;
 
 // The "../api" factory below is hoisted above this module's body and hands
 // this function over as a hook, so it has to exist before the factory runs.
@@ -53,7 +55,12 @@ const mutation = vi.hoisted(() => () => ({
 
 vi.mock("../api", () => ({
   LEAVE_EVIDENCE_MAX_LONG_EDGE: 1600,
-  useLeaveRequestQuery: () => ({ data: detail, isLoading: false, error: null, refetch: vi.fn() }),
+  useLeaveRequestQuery: () => ({
+    data: queryError ? undefined : detail,
+    isLoading: false,
+    error: queryError,
+    refetch: vi.fn(),
+  }),
   useReviewLeaveRequestMutation: mutation,
   useIssueLeaveLetterMutation: mutation,
   useUploadEvidenceMutation: mutation,
@@ -86,6 +93,44 @@ function leave(status: string, stageIndex: number, overrides: Record<string, unk
 }
 
 describe("LeaveRequestDetail", () => {
+  describe("a request the reader cannot open", () => {
+    afterEach(() => {
+      queryError = null;
+    });
+
+    it("says so in words for any reader and leads a student back to their requests", () => {
+      permissions = new Set();
+      queryError = new ApiError({ status: 404, code: "NOT_FOUND", message: "not found" });
+      render(<LeaveRequestDetail id="missing" layout="page" />);
+
+      expect(screen.getByText("notFoundBody")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "notFoundBackToMine" })).toHaveAttribute(
+        "href",
+        "/leave-requests",
+      );
+    });
+
+    it("leads a reviewer to the leave queue", () => {
+      permissions = new Set(["review_leave_requests"]);
+      queryError = new ApiError({ status: 403, code: "FORBIDDEN", message: "forbidden" });
+      render(<LeaveRequestDetail id="missing" layout="page" />);
+
+      expect(screen.getByRole("link", { name: "issuerOpenInbox" })).toHaveAttribute(
+        "href",
+        "/inbox?type=leave",
+      );
+    });
+
+    it("adds no link inside the inbox dialog", () => {
+      permissions = new Set();
+      queryError = new ApiError({ status: 404, code: "NOT_FOUND", message: "not found" });
+      render(<LeaveRequestDetail id="missing" />);
+
+      expect(screen.getByText("notFoundTitle")).toBeInTheDocument();
+      expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    });
+  });
+
   // The alert said the letter could be downloaded "above" while its
   // button was the card's last control, under the fold on a phone.
   it("offers the issued letter in the outcome alert, once", () => {
