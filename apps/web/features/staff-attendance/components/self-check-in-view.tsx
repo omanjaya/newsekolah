@@ -18,7 +18,7 @@ import {
   useToast,
   type StatusName,
 } from "@newsekolah/ui";
-import { LogIn, LogOut } from "lucide-react";
+import { Fingerprint, LogIn, LogOut } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -35,8 +35,6 @@ import {
   useStaffAttendanceMyHistoryQuery,
 } from "../api";
 import { shiftDateISO } from "../time";
-
-import { StaffAttendanceWorkspaceNav } from "./staff-attendance-workspace-nav";
 
 const STATUS_TOKEN: Partial<Record<AttendanceRecord["status_code"], StatusName>> = {
   present: "present",
@@ -64,6 +62,7 @@ export function SelfCheckInView(): ReactElement {
   const now = useBusinessNow();
   const t = useTranslations("app.staffAttendance.self");
   const tStatus = useTranslations("app.staffAttendance.statuses");
+  const tArea = useTranslations("app.staffAttendance");
   const locale = useLocale() as Locale;
   const { me } = useSession();
   const timeZone = me?.tenant.timezone;
@@ -71,6 +70,7 @@ export function SelfCheckInView(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const scan = useScanStaffAttendanceMutation();
   const canEditSchedules = useCan("manage_staff_attendance_schedules");
+  const canViewBoard = useCan("view_staff_attendance");
 
   const today = todayInZone(timeZone);
   const from = shiftDateISO(today, -(WEEK_DAYS - 1));
@@ -127,7 +127,17 @@ export function SelfCheckInView(): ReactElement {
   }
 
   return (
-    <AppPage variant="narrow" nav={<StaffAttendanceWorkspaceNav />}>
+    // The school-wide board is a header link, as the board links back here:
+    // it has a tab row of its own, so a shared tab strip above both would
+    // vanish on one of them. Each link carries its destination's icon.
+    <AppPage
+      variant="narrow"
+      secondaryActions={
+        canViewBoard
+          ? [{ label: tArea("navLabel"), icon: <Fingerprint />, href: "/staff-attendance" }]
+          : []
+      }
+    >
       <Card padding="lg">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
