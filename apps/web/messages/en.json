@@ -1390,7 +1390,19 @@
         "cancel": "Cancel",
         "send": "Send request"
       },
-      "directionLabel": "Request direction"
+      "directionLabel": "Request direction",
+      "rejectConfirm": {
+        "title": "Decline the request from {teacher}?",
+        "body": "{lesson}. The requesting teacher sees the request declined, with your reason if you give one.",
+        "noteLabel": "Reason",
+        "confirm": "Decline request"
+      },
+      "cancelConfirm": {
+        "title": "Cancel the request to {teacher}?",
+        "body": "{lesson}. The request is withdrawn and can no longer be answered.",
+        "confirm": "Cancel request",
+        "keep": "Keep request"
+      }
     },
     "permits": {
       "workflow": {

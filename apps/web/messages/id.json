@@ -1390,7 +1390,19 @@
         "cancel": "Batal",
         "send": "Kirim permintaan"
       },
-      "directionLabel": "Arah permintaan"
+      "directionLabel": "Arah permintaan",
+      "rejectConfirm": {
+        "title": "Tolak permintaan dari {teacher}?",
+        "body": "{lesson}. Guru yang meminta melihat permintaan ini ditolak, beserta alasan bila Anda mengisinya.",
+        "noteLabel": "Alasan",
+        "confirm": "Tolak permintaan"
+      },
+      "cancelConfirm": {
+        "title": "Batalkan permintaan ke {teacher}?",
+        "body": "{lesson}. Permintaan ditarik dan tidak bisa dijawab lagi.",
+        "confirm": "Batalkan permintaan",
+        "keep": "Jangan batalkan"
+      }
     },
     "permits": {
       "workflow": {

@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -8,6 +8,7 @@ const requests = vi.hoisted(() => ({
   incoming: [] as unknown[],
   outgoing: [] as unknown[],
 }));
+const mutations = vi.hoisted(() => ({ respond: vi.fn(), cancel: vi.fn() }));
 
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
@@ -37,14 +38,16 @@ vi.mock("../api", () => ({
     isLoading: false,
     isError: false,
   }),
-  useRespondSubstitutionMutation: () => ({ mutate: vi.fn(), isPending: false }),
-  useCancelSubstitutionMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useRespondSubstitutionMutation: () => ({ mutate: mutations.respond, isPending: false }),
+  useCancelSubstitutionMutation: () => ({ mutate: mutations.cancel, isPending: false }),
 }));
 
 afterEach(() => {
   cleanup();
   requests.incoming = [];
   requests.outgoing = [];
+  mutations.respond.mockReset();
+  mutations.cancel.mockReset();
 });
 
 function request(id: string, status: string) {
@@ -79,4 +82,54 @@ it("repeats the request only on the empty list of one's own requests", async () 
   await user.click(screen.getByRole("radio", { name: /outgoing/ }));
   expect(screen.getByText("emptyOutgoingBody")).toBeInTheDocument();
   expect(screen.getAllByRole("button", { name: "request" })).toHaveLength(2);
+});
+
+it("colours a declined request like every other refusal", () => {
+  requests.incoming = [request("r1", "rejected")];
+  render(<SubstitutionsView />);
+
+  const badge = screen.getByText("status.rejected");
+  expect(badge.closest("[data-status]")).toHaveAttribute("data-status", "rejected");
+});
+
+it("asks before declining and sends the optional reason as the note", async () => {
+  const user = userEvent.setup();
+  requests.incoming = [request("r1", "pending")];
+  render(<SubstitutionsView />);
+
+  await user.click(screen.getByRole("button", { name: "reject" }));
+  expect(mutations.respond).not.toHaveBeenCalled();
+
+  const dialog = await screen.findByRole("dialog");
+  expect(dialog).toHaveTextContent("rejectConfirm.title");
+  await user.type(within(dialog).getByRole("textbox"), "  Ada rapat  ");
+  await user.click(within(dialog).getByRole("button", { name: "rejectConfirm.confirm" }));
+
+  expect(mutations.respond).toHaveBeenCalledWith(
+    { id: "r1", accept: false, note: "Ada rapat" },
+    expect.any(Object),
+  );
+});
+
+it("accepts with one tap", async () => {
+  const user = userEvent.setup();
+  requests.incoming = [request("r1", "pending")];
+  render(<SubstitutionsView />);
+
+  await user.click(screen.getByRole("button", { name: "accept" }));
+  expect(mutations.respond).toHaveBeenCalledWith({ id: "r1", accept: true }, expect.any(Object));
+});
+
+it("asks before cancelling one's own request", async () => {
+  const user = userEvent.setup();
+  requests.outgoing = [request("r1", "pending")];
+  render(<SubstitutionsView />);
+
+  await user.click(screen.getByRole("radio", { name: /outgoing/ }));
+  await user.click(screen.getByRole("button", { name: "cancel" }));
+  expect(mutations.cancel).not.toHaveBeenCalled();
+
+  const dialog = await screen.findByRole("dialog");
+  await user.click(within(dialog).getByRole("button", { name: "cancelConfirm.confirm" }));
+  expect(mutations.cancel).toHaveBeenCalledWith("r1", expect.any(Object));
 });
