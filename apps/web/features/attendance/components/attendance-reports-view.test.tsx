@@ -68,4 +68,13 @@ describe("AttendanceReportsView", () => {
     expect(tabNames()).toEqual([]);
     expect(screen.getByText("emptyTitle")).toBeInTheDocument();
   });
+
+  it("writes the shared ?date= in the short shape the 'Harian' tab uses", () => {
+    reader.permissions = ["manage_attendance"];
+    reader.role = "teacher";
+    render(<AttendanceReportsView />);
+    // "29 Sep 2026", not the picker's default long month.
+    expect(screen.getByText(/^29 Sep 2026$/)).toBeInTheDocument();
+    expect(screen.queryByText(/September/)).not.toBeInTheDocument();
+  });
 });

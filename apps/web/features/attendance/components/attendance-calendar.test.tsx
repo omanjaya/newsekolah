@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type * as AttendanceApiModule from "../api";
 
@@ -169,5 +169,63 @@ describe("AttendanceCalendar", () => {
     fireEvent.click(dayButton("20"));
 
     expect(screen.getByText('daySentence {"status":"codes.A"}')).toBeInTheDocument();
+  });
+
+  it("names the month's figures for assistive technology", () => {
+    calendarData = [];
+    render(<AttendanceCalendar />);
+
+    const group = screen.getByRole("group", { name: "statsLabel" });
+    expect(group).toContainElement(screen.getByTestId("attendance-mine-tiles"));
+  });
+
+  describe("bringing the day's detail into view", () => {
+    function stubViewport(sideBySide: boolean, reduceMotion = false) {
+      vi.stubGlobal(
+        "matchMedia",
+        (query: string) =>
+          ({
+            matches: query.includes("min-width") ? sideBySide : reduceMotion,
+            media: query,
+          }) as MediaQueryList,
+      );
+      const scrollIntoView = vi.fn();
+      Element.prototype.scrollIntoView = scrollIntoView;
+      return scrollIntoView;
+    }
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("scrolls the detail into view on a phone, where it sits under the calendar", () => {
+      const scrollIntoView = stubViewport(false);
+      calendarData = [day("2026-09-18", "INCOMPLETE")];
+      render(<AttendanceCalendar />);
+
+      fireEvent.click(dayButton("18"));
+
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollIntoView.mock.contexts[0]).toBe(screen.getByTestId("attendance-day-detail"));
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: "start", behavior: "smooth" });
+    });
+
+    it("jumps without a smooth scroll under reduced motion", () => {
+      const scrollIntoView = stubViewport(false, true);
+      render(<AttendanceCalendar />);
+
+      fireEvent.click(dayButton("18"));
+
+      expect(scrollIntoView).toHaveBeenCalledWith({ block: "start", behavior: "auto" });
+    });
+
+    it("leaves the page still on a wide screen, where the detail sits beside the calendar", () => {
+      const scrollIntoView = stubViewport(true);
+      render(<AttendanceCalendar />);
+
+      fireEvent.click(dayButton("18"));
+
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    });
   });
 });

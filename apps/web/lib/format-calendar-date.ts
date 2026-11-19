@@ -3,8 +3,11 @@ import type { DateTimeFormatOptions, useFormatter } from "next-intl";
 type Formatter = ReturnType<typeof useFormatter>;
 type DateOptions = Omit<DateTimeFormatOptions, "timeZone">;
 
-/** "13 Jul 2026": the default shape of a calendar date in a list or a table. */
-const SHORT_DATE: DateOptions = { day: "numeric", month: "short", year: "numeric" };
+/**
+ * "13 Jul 2026": the default shape of a calendar date in a list or a table,
+ * and of a date picker that sits beside one (the attendance report tabs).
+ */
+export const SHORT_DATE: DateOptions = { day: "numeric", month: "short", year: "numeric" };
 
 /**
  * A calendar date ("2026-07-13", no time of day) placed at UTC midnight.

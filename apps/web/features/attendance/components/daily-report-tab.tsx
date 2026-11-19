@@ -21,6 +21,7 @@ import {
   ReportExportDialog,
   type ReportExportOptions,
 } from "../../../components/report-export-dialog";
+import { SHORT_DATE } from "../../../lib/format-calendar-date";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useSession } from "../../../lib/session/session-provider";
 import { useClassesQuery, useGradeLevelsQuery } from "../../reference/api";
@@ -133,7 +134,7 @@ export function DailyReportTab(): ReactElement {
             value={date}
             onChange={setDate}
             clearable={false}
-            formatOptions={{ day: "numeric", month: "short", year: "numeric" }}
+            formatOptions={SHORT_DATE}
             className="w-full sm:w-44"
           />
         </Field>
