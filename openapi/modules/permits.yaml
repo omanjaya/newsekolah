@@ -997,6 +997,9 @@ components:
         required_action: { $ref: "#/components/schemas/RequiredAction" }
         homeroom_reported: { type: boolean }
         completed_at: { type: string, format: date-time }
+        class_name:
+          type: string
+          description: The class the flow was opened in, read live (no snapshot). Omitted when unknown.
 
     ExitPermitSummary:
       type: object
@@ -1007,6 +1010,9 @@ components:
         class_id: { type: string, format: uuid }
         status: { $ref: "#/components/schemas/WorkflowStatus" }
         current_stage_index: { type: integer }
+        # The stage the permit waits at; omitted once every stage has
+        # passed (an approved permit awaiting the gate).
+        current_stage: { $ref: "#/components/schemas/WorkflowStage" }
         destination: { type: string }
         student_name: { type: string }
         class_name: { type: string }
@@ -1038,6 +1044,9 @@ components:
         required_action: { $ref: "#/components/schemas/RequiredAction" }
         homeroom_reported: { type: boolean }
         opened_at: { type: string, format: date-time }
+        class_name:
+          type: string
+          description: The class the flow was opened in, read live (no snapshot). Omitted when unknown.
 
     LeaveRequestDetail:
       type: object

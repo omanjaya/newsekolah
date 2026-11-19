@@ -17,5 +17,6 @@
   },
   "backHome": "Back to home",
   "historyLeave": "View leave history",
-  "historyWarningLetters": "View warning letters"
+  "historyWarningLetters": "View warning letters",
+  "openDuty": "Open today's duty"
 }

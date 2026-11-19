@@ -1434,7 +1434,8 @@
         "placeholder": "Code from a barcode scanner",
         "submit": "Submit code",
         "cameraLabel": "Scan with camera",
-        "failedTitle": "Code not accepted"
+        "failedTitle": "Code not accepted",
+        "stageApproved": "{stage} stage approved"
       },
       "classroomEntry": {
         "navLabel": "Scan classroom entry",
@@ -1473,7 +1474,7 @@
         "detailTitle": "Exit permit",
         "student": "Student",
         "scanStageLabel": "{stage} QR code (barcode scanner)",
-        "stageDone": "Stage approved",
+        "approvedAwaitGate": "Every stage is approved. Show the gate QR to security.",
         "showGateQr": "Show gate QR",
         "exitedTitle": "Left through the gate",
         "cancel": "Cancel permit",
@@ -1557,8 +1558,6 @@
         "reasonLabel": "Reason",
         "scanDutyLabel": "Late-arrival QR code (barcode scanner)",
         "opened": "Late arrival recorded. Wait for the duty teacher's review.",
-        "occurrence": "Occurrence",
-        "occurrenceValue": "#{n}",
         "requiredAction": "Follow-up",
         "actions": {
           "none": "None",
@@ -1566,7 +1565,6 @@
           "send_home": "Send home"
         },
         "scanStageLabel": "{stage} QR code (barcode scanner)",
-        "stageDone": "Stage completed",
         "waitManual": "Waiting for {stage} to review.",
         "queueEmptyTitle": "No late arrivals waiting",
         "queueEmptyBody": "Students who scan your late-arrival QR appear in this queue.",
@@ -1594,7 +1592,10 @@
         },
         "cannotScanHint": "Can't scan? Ask the duty teacher to record you with Manual record.",
         "showQr": "Show QR",
-        "approveTitle": "{stage} approval QR"
+        "completedBody": "Every stage is approved. You may go to class.",
+        "finished": "Late arrival complete. You may go to class.",
+        "completedBodySendHome": "Every stage is approved. Follow the duty teacher's directions for going home.",
+        "finishedSendHome": "Late arrival complete. Follow the duty teacher's directions for going home."
       },
       "leave": {
         "eyebrow": "Student affairs",
@@ -1710,7 +1711,11 @@
         "hintStage": "Ask the student to press Scan the {stage} QR on their permit, then scan this code.",
         "class": "Class",
         "destination": "Destination",
-        "reason": "Reason"
+        "reason": "Reason",
+        "title": "Approval QR",
+        "titleStage": "{stage} approval QR",
+        "approvedFor": "{name} approved for the {stage} stage.",
+        "closedFor": "{name}'s flow is already closed; the QR is no longer needed."
       }
     },
     "verify": {

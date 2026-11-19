@@ -74,6 +74,17 @@ export function LateArrivalsView(): ReactElement {
 
 function MyLateArrival(): ReactElement {
   const current = useCurrentLateArrivalQuery();
+  // The flow the card showed last. "current" only returns a flow still in
+  // progress, so the last stage's scan makes it vanish; the card stays on
+  // that flow, read by id, so its finished state ("Selesai", go to class)
+  // answers the scan instead of the page dropping back to a second
+  // check-in. A fresh visit starts on the check-in, as the exit permit does.
+  const [cardId, setCardId] = useState<string | null>(null);
+  const openId = current.data?.instance.id;
+  if (openId && openId !== cardId) setCardId(openId);
+  const closedId = current.data === null && cardId ? cardId : "";
+  const closed = useLateArrivalQuery(closedId);
+
   if (current.isLoading) return <Skeleton className="h-96 w-full rounded-xl" />;
   // Only a 404 means "no late arrival open" (the query maps it to null);
   // any other failure must not offer a second check-in to a student who
@@ -81,7 +92,15 @@ function MyLateArrival(): ReactElement {
   if (current.isError) {
     return <QueryError retry={() => void current.refetch()} error={current.error} />;
   }
-  return current.data ? <ActiveLateArrival detail={current.data} /> : <LateCheckIn />;
+  if (current.data) return <ActiveLateArrival detail={current.data} />;
+  if (closedId !== "") {
+    if (closed.data) return <ActiveLateArrival detail={closed.data} />;
+    if (closed.isError) {
+      return <QueryError retry={() => void closed.refetch()} error={closed.error} />;
+    }
+    return <Skeleton className="h-96 w-full rounded-xl" />;
+  }
+  return <LateCheckIn />;
 }
 
 /** No late arrival open yet: the camera first, to scan the duty desk's QR. */
@@ -155,6 +174,7 @@ function LateCheckIn(): ReactElement {
 function ActiveLateArrival({ detail }: { detail: LateArrivalDetail }): ReactElement {
   const t = useTranslations("app.permits.late");
   const tWorkflow = useTranslations("app.permits.workflow");
+  const tScan = useTranslations("app.permits.scan");
   const locale = useLocale() as Locale;
   const { me } = useSession();
   const scan = useScanLateArrivalStageMutation();
@@ -162,6 +182,8 @@ function ActiveLateArrival({ detail }: { detail: LateArrivalDetail }): ReactElem
   const inst = detail.instance;
   const stage = inst.current_stage;
   const scanStage = inst.status === "in_progress" && stage?.verification === "qr_scan";
+  // A student sent home must not be told to go to class at the end.
+  const sendHome = (action: LateArrivalDetail["required_action"]) => action === "send_home";
 
   return (
     <div className="flex w-full max-w-2xl flex-col gap-4">
@@ -197,13 +219,17 @@ function ActiveLateArrival({ detail }: { detail: LateArrivalDetail }): ReactElem
           {inst.status === "in_progress" && stage?.verification === "manual" && (
             <p className="text-body-sm text-fg-muted">{t("waitManual", { stage: stage.label })}</p>
           )}
+          {inst.status === "completed" && (
+            <p className="text-body-sm text-fg-muted">
+              {sendHome(detail.required_action) ? t("completedBodySendHome") : t("completedBody")}
+            </p>
+          )}
         </Card>
       </HeroCard>
+      {/* The occurrence is the hero's eyebrow ("Keterlambatan ke-1"); this
+          card holds only what the eyebrow does not say. */}
       <Card padding="md">
         <DataList>
-          <DataListItem label={t("occurrence")}>
-            {t("occurrenceValue", { n: detail.occurrence_number })}
-          </DataListItem>
           <DataListItem label={t("requiredAction")}>
             {t(`actions.${detail.required_action}`)}
           </DataListItem>
@@ -216,9 +242,16 @@ function ActiveLateArrival({ detail }: { detail: LateArrivalDetail }): ReactElem
           title={t("hero.scanStage", { stage: stage.label })}
           description={t("hero.scanHint", { stage: stage.label })}
           manualLabel={t("scanStageLabel", { stage: stage.label })}
-          successMessage={t("stageDone")}
+          // The last stage closes the flow: say it is done, not one more stage.
+          successMessage={(result) =>
+            result.instance.status === "in_progress"
+              ? tScan("stageApproved", { stage: stage.label })
+              : sendHome(result.required_action)
+                ? t("finishedSendHome")
+                : t("finished")
+          }
           pending={scan.isPending}
-          onToken={(token) => scan.mutateAsync({ id: inst.id, token })}
+          onToken={(token: string) => scan.mutateAsync({ id: inst.id, token })}
         />
       )}
     </div>

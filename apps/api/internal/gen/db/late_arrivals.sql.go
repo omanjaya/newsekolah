@@ -124,10 +124,12 @@ func (q *Queries) GetLateArrival(ctx context.Context, arg GetLateArrivalParams) 
 
 const listLateArrivalsAtScanStage = `-- name: ListLateArrivalsAtScanStage :many
 select la.instance_id, la.tenant_id, la.reason, la.occurrence_number, la.required_action, la.homeroom_reported, la.completed_at, la.duty_teacher_user_id, wi.subject_user_id, wi.class_id, wi.current_stage_index, wi.status, wi.opened_at,
-  wi.academic_year_id, (wd.stages -> wi.current_stage_index)::jsonb as current_stage
+  wi.academic_year_id, (wd.stages -> wi.current_stage_index)::jsonb as current_stage,
+  coalesce(c.name, '')::text as class_name
 from late_arrivals la
 join workflow_instances wi on wi.id = la.instance_id
 join workflow_definitions wd on wd.id = wi.definition_id
+left join classes c on c.tenant_id = wi.tenant_id and c.id = wi.class_id
 where la.tenant_id = $1 and wi.status = 'in_progress'
   and (wd.stages -> wi.current_stage_index ->> 'verification') = 'qr_scan'
 order by wi.opened_at
@@ -149,6 +151,7 @@ type ListLateArrivalsAtScanStageRow struct {
 	OpenedAt          pgtype.Timestamptz `json:"opened_at"`
 	AcademicYearID    uuid.UUID          `json:"academic_year_id"`
 	CurrentStage      []byte             `json:"current_stage"`
+	ClassName         string             `json:"class_name"`
 }
 
 // Every open flow whose current stage needs an approver's QR (the default
@@ -183,6 +186,7 @@ func (q *Queries) ListLateArrivalsAtScanStage(ctx context.Context, tenantID uuid
 			&i.OpenedAt,
 			&i.AcademicYearID,
 			&i.CurrentStage,
+			&i.ClassName,
 		); err != nil {
 			return nil, err
 		}
@@ -196,10 +200,12 @@ func (q *Queries) ListLateArrivalsAtScanStage(ctx context.Context, tenantID uuid
 
 const listLateArrivalsForReview = `-- name: ListLateArrivalsForReview :many
 select la.instance_id, la.tenant_id, la.reason, la.occurrence_number, la.required_action, la.homeroom_reported, la.completed_at, la.duty_teacher_user_id, wi.subject_user_id, wi.class_id, wi.current_stage_index, wi.status, wi.opened_at,
-  wi.academic_year_id, (wd.stages -> wi.current_stage_index)::jsonb as current_stage
+  wi.academic_year_id, (wd.stages -> wi.current_stage_index)::jsonb as current_stage,
+  coalesce(c.name, '')::text as class_name
 from late_arrivals la
 join workflow_instances wi on wi.id = la.instance_id
 join workflow_definitions wd on wd.id = wi.definition_id
+left join classes c on c.tenant_id = wi.tenant_id and c.id = wi.class_id
 where la.tenant_id = $1 and wi.status = 'in_progress'
   and (wd.stages -> wi.current_stage_index ->> 'verification') = 'manual'
   and (
@@ -234,6 +240,7 @@ type ListLateArrivalsForReviewRow struct {
 	OpenedAt          pgtype.Timestamptz `json:"opened_at"`
 	AcademicYearID    uuid.UUID          `json:"academic_year_id"`
 	CurrentStage      []byte             `json:"current_stage"`
+	ClassName         string             `json:"class_name"`
 }
 
 // The picket teacher's review queue: open flows whose current stage is a
@@ -244,6 +251,9 @@ type ListLateArrivalsForReviewRow struct {
 // (not a duty), the "admin" case, sees every such flow. A flow already
 // past its review (waiting for leadership's or the class teacher's QR) is
 // not listed here: ListLateArrivalsAtScanStage feeds those approvers.
+// class_name is read live from classes (a cross-module read, see
+// cross_module.sql): a late arrival keeps no snapshot, and an approver
+// working across the school needs the class beside the name.
 func (q *Queries) ListLateArrivalsForReview(ctx context.Context, arg ListLateArrivalsForReviewParams) ([]ListLateArrivalsForReviewRow, error) {
 	rows, err := q.db.Query(ctx, listLateArrivalsForReview, arg.TenantID, arg.DutyTeacherUserID)
 	if err != nil {
@@ -269,6 +279,7 @@ func (q *Queries) ListLateArrivalsForReview(ctx context.Context, arg ListLateArr
 			&i.OpenedAt,
 			&i.AcademicYearID,
 			&i.CurrentStage,
+			&i.ClassName,
 		); err != nil {
 			return nil, err
 		}

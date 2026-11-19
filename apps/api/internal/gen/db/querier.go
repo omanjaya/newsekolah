@@ -1127,6 +1127,8 @@ type Querier interface {
 	// plus security, who see every 'approved' permit awaiting their gate scan.
 	// sqlc.arg('today') is the tenant-local date (s.tenantNow), not
 	// current_date: the Postgres session timezone is never set per tenant.
+	// current_stage is null once every stage has passed (an approved permit
+	// waiting at the gate): the index is then past the last stage.
 	ListExitPermitsForApproval(ctx context.Context, arg ListExitPermitsForApprovalParams) ([]ListExitPermitsForApprovalRow, error)
 	ListExitPermitsForReport(ctx context.Context, arg ListExitPermitsForReportParams) ([]ListExitPermitsForReportRow, error)
 	// The guard's lookup list: everyone expected on a given day, soonest first.
@@ -1169,6 +1171,9 @@ type Querier interface {
 	// (not a duty), the "admin" case, sees every such flow. A flow already
 	// past its review (waiting for leadership's or the class teacher's QR) is
 	// not listed here: ListLateArrivalsAtScanStage feeds those approvers.
+	// class_name is read live from classes (a cross-module read, see
+	// cross_module.sql): a late arrival keeps no snapshot, and an approver
+	// working across the school needs the class beside the name.
 	ListLateArrivalsForReview(ctx context.Context, arg ListLateArrivalsForReviewParams) ([]ListLateArrivalsForReviewRow, error)
 	ListLatestLoans(ctx context.Context, arg ListLatestLoansParams) ([]LibraryLoan, error)
 	ListLeaveDocuments(ctx context.Context, arg ListLeaveDocumentsParams) ([]LeaveDocument, error)

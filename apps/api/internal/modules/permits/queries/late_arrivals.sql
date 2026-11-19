@@ -38,11 +38,16 @@ limit 1;
 -- (not a duty), the "admin" case, sees every such flow. A flow already
 -- past its review (waiting for leadership's or the class teacher's QR) is
 -- not listed here: ListLateArrivalsAtScanStage feeds those approvers.
+-- class_name is read live from classes (a cross-module read, see
+-- cross_module.sql): a late arrival keeps no snapshot, and an approver
+-- working across the school needs the class beside the name.
 select la.*, wi.subject_user_id, wi.class_id, wi.current_stage_index, wi.status, wi.opened_at,
-  wi.academic_year_id, (wd.stages -> wi.current_stage_index)::jsonb as current_stage
+  wi.academic_year_id, (wd.stages -> wi.current_stage_index)::jsonb as current_stage,
+  coalesce(c.name, '')::text as class_name
 from late_arrivals la
 join workflow_instances wi on wi.id = la.instance_id
 join workflow_definitions wd on wd.id = wi.definition_id
+left join classes c on c.tenant_id = wi.tenant_id and c.id = wi.class_id
 where la.tenant_id = $1 and wi.status = 'in_progress'
   and (wd.stages -> wi.current_stage_index ->> 'verification') = 'manual'
   and (
@@ -64,10 +69,12 @@ order by wi.opened_at;
 -- (Service.ListLateArrivalsForReview). Late arrivals are same-day flows
 -- (ExpireHangingInstances closes them at midnight), so this stays small.
 select la.*, wi.subject_user_id, wi.class_id, wi.current_stage_index, wi.status, wi.opened_at,
-  wi.academic_year_id, (wd.stages -> wi.current_stage_index)::jsonb as current_stage
+  wi.academic_year_id, (wd.stages -> wi.current_stage_index)::jsonb as current_stage,
+  coalesce(c.name, '')::text as class_name
 from late_arrivals la
 join workflow_instances wi on wi.id = la.instance_id
 join workflow_definitions wd on wd.id = wi.definition_id
+left join classes c on c.tenant_id = wi.tenant_id and c.id = wi.class_id
 where la.tenant_id = $1 and wi.status = 'in_progress'
   and (wd.stages -> wi.current_stage_index ->> 'verification') = 'qr_scan'
 order by wi.opened_at;

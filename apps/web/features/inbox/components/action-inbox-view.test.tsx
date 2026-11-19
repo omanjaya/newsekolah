@@ -6,6 +6,7 @@ import { ActionInboxView } from "./action-inbox-view";
 const mocks = vi.hoisted(() => ({
   permissions: new Set<string>(),
   profileKind: "student",
+  duties: [] as { slug: string }[],
   summary: vi.fn(),
 }));
 
@@ -19,6 +20,7 @@ vi.mock("../../../lib/session/session-provider", () => ({
       profile_kind: mocks.profileKind,
       permissions: [...mocks.permissions],
       roles: [],
+      duties: mocks.duties,
       disabled_modules: [],
     },
   }),
@@ -48,6 +50,7 @@ function summary(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   mocks.permissions = new Set();
   mocks.profileKind = "student";
+  mocks.duties = [];
   mocks.summary.mockReset().mockReturnValue(summary());
 });
 
@@ -111,6 +114,25 @@ describe("ActionInboxView", () => {
       "href",
       "/discipline/warning-letters",
     );
+  });
+
+  it("does not offer warning letters to an all-clear reader who cannot issue them", () => {
+    mocks.profileKind = "teacher";
+    mocks.permissions = new Set(["view_discipline"]);
+    mocks.summary.mockReturnValue(summary({ leave: 0, warningLetters: 0, total: 0 }));
+    render(<ActionInboxView />);
+    expect(screen.getByText("emptyTitle")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "historyWarningLetters" })).not.toBeInTheDocument();
+  });
+
+  it("offers the duty desk to an all-clear teacher on picket duty", () => {
+    mocks.profileKind = "teacher";
+    mocks.duties = [{ slug: "picket" }];
+    mocks.permissions = new Set(["issue_scan_tokens", "view_discipline"]);
+    mocks.summary.mockReturnValue(summary({ leave: 0, warningLetters: 0, total: 0 }));
+    render(<ActionInboxView />);
+    expect(screen.getByRole("link", { name: "openDuty" })).toHaveAttribute("href", "/duty");
+    expect(screen.queryByRole("link", { name: "historyWarningLetters" })).not.toBeInTheDocument();
   });
 
   it("offers the way home from the no-access state", () => {

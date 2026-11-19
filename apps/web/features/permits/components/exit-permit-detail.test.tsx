@@ -11,11 +11,13 @@ const mocks = vi.hoisted(() => ({
   detail: undefined as ExitPermitDetail | undefined,
   cancel: vi.fn(),
   gate: undefined as { token: string; expires_at: string } | undefined,
+  scanDialog: vi.fn(),
 }));
 
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string, values?: Record<string, string>) =>
+    values?.stage ? `${key}:${values.stage}` : key,
 }));
 vi.mock("@newsekolah/i18n", () => ({
   formatTime: () => "07:10",
@@ -41,7 +43,12 @@ vi.mock("../api", () => ({
   useScanExitPermitStageMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCreateExitPermitMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
-vi.mock("./stage-scan-dialog", () => ({ StageScanDialog: () => null }));
+vi.mock("./stage-scan-dialog", () => ({
+  StageScanDialog: (props: unknown) => {
+    mocks.scanDialog(props);
+    return null;
+  },
+}));
 
 import { ActiveExitPermitCard } from "./exit-permit-detail";
 
@@ -83,6 +90,7 @@ beforeEach(() => {
   mocks.cancel.mockReset();
   mocks.cancel.mockResolvedValue(undefined);
   mocks.gate = undefined;
+  mocks.scanDialog.mockReset();
 });
 
 describe("ActiveExitPermitCard", () => {
@@ -91,7 +99,20 @@ describe("ActiveExitPermitCard", () => {
     render(<ActiveExitPermitCard id={PERMIT_ID} />);
     expect(screen.queryByText(PERMIT_ID)).not.toBeInTheDocument();
     expect(screen.queryByText("code")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "hero.scanStage" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "hero.scanStage:Guru piket" })).toBeInTheDocument();
+  });
+
+  it("names the approved stage on a scan, and points to the gate QR after the last one", () => {
+    mocks.detail = detail("in_progress");
+    render(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    const props = mocks.scanDialog.mock.calls.at(-1)?.[0] as {
+      successMessage: (result: { instance: { status: string } }) => string;
+    };
+    expect(props.successMessage({ instance: { status: "in_progress" } })).toBe(
+      "stageApproved:Guru piket",
+    );
+    expect(props.successMessage({ instance: { status: "approved" } })).toBe("approvedAwaitGate");
   });
 
   it("asks before cancelling, and cancels only on confirm", async () => {

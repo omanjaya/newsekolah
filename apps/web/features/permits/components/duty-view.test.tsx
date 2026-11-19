@@ -64,8 +64,21 @@ vi.mock("../api", () => ({
   }),
 }));
 vi.mock("./approve-panel", () => ({
-  ApprovePanel: ({ kind, instanceId }: { kind: string; instanceId: string }) => (
-    <div data-testid="approve-panel">{`${kind}:${instanceId}`}</div>
+  ApprovePanel: ({
+    kind,
+    instanceId,
+    onApproved,
+  }: {
+    kind: string;
+    instanceId: string;
+    onApproved?: () => void;
+  }) => (
+    <div data-testid="approve-panel">
+      {`${kind}:${instanceId}`}
+      <button type="button" onClick={onApproved}>
+        student-scanned
+      </button>
+    </div>
   ),
 }));
 vi.mock("./late-arrivals-view", () => ({
@@ -90,6 +103,7 @@ function lateItem(id: string, verification: "manual" | "qr_scan") {
       verification,
     },
     reason: "Macet",
+    class_name: "X-A",
     occurrence_number: 1,
     required_action: "none",
     opened_at: "2026-09-29T00:10:00Z",
@@ -191,5 +205,20 @@ describe("DutyView", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "showQr" }));
     expect(screen.getByTestId("approve-panel")).toHaveTextContent("late_arrival:b");
+  });
+
+  it("names each queued student's class, and the approval sheet's stage and student", async () => {
+    mocks.lateItems = [lateItem("b", "qr_scan")];
+    render(<DutyView />);
+    expect(screen.getByText(/^X-A · occurrence/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "showQr" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveAccessibleName("titleStage");
+    expect(dialog).toHaveAccessibleDescription("unknownStudent · X-A");
+
+    // The student's scan approved the stage: the sheet hands back.
+    await userEvent.click(screen.getByRole("button", { name: "student-scanned" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

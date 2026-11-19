@@ -128,4 +128,10 @@ func TestLateAndExitCountsMatchQueues(t *testing.T) {
 
 	requireExitMatches(w.counselorID, 1)
 	requireExitMatches(w.studentID, 0)
+
+	// The queue row names the stage it waits at, for the approver's sheet.
+	queue, err := svc.ListExitPermitsForApproval(ctx, w.tenantID, w.counselorID)
+	require.NoError(t, err)
+	require.NotNil(t, queue[0].CurrentStage)
+	require.Equal(t, "counselor", queue[0].CurrentStage.Key)
 }

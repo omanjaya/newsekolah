@@ -246,7 +246,7 @@ func (s *Service) RecordLateArrivalByStaff(ctx context.Context, in RecordLateArr
 			return err
 		}
 
-		detail = LateArrivalDetail{Instance: inst, LateArrival: late, Definition: def}
+		detail = LateArrivalDetail{Instance: inst, LateArrival: late, Definition: def, ClassName: enrollment.ClassName}
 		return nil
 	})
 	if err != nil {

@@ -50,8 +50,21 @@ vi.mock("../api", () => ({
 }));
 vi.mock("./exit-permit-panels", () => ({ GatePanel: () => null }));
 vi.mock("./approve-panel", () => ({
-  ApprovePanel: ({ kind, instanceId }: { kind: string; instanceId: string }) => (
-    <div data-testid="approve-panel">{`${kind}:${instanceId}`}</div>
+  ApprovePanel: ({
+    kind,
+    instanceId,
+    onApproved,
+  }: {
+    kind: string;
+    instanceId: string;
+    onApproved?: () => void;
+  }) => (
+    <div data-testid="approve-panel">
+      {`${kind}:${instanceId}`}
+      <button type="button" onClick={onApproved}>
+        student-scanned
+      </button>
+    </div>
   ),
 }));
 vi.mock("./late-arrivals-view", () => ({
@@ -225,6 +238,29 @@ describe("permit queue late arrival actions", () => {
     expect(screen.queryByTestId("late-review-form")).not.toBeInTheDocument();
   });
 
+  it("titles the approval sheet with the stage and names the student and class before the QR", async () => {
+    mocks.directory.mockReturnValue(new Map([["student-b", { id: "student-b", name: "Siswa b" }]]));
+    mocks.late.mockReturnValue({
+      ...emptyResult,
+      data: { data: [{ ...lateItemAtLeadership("b"), class_name: "X-A" }] },
+    });
+    render(<PermitUnifiedQueue />);
+    // The late card names the class, as exit and leave cards do.
+    expect(screen.getByText("(X-A)")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "open" }));
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveAccessibleName("titleStage");
+    expect(dialog).toHaveAccessibleDescription("Siswa b · X-A");
+  });
+
+  it("closes the approval sheet once the student's scan approved the stage", async () => {
+    mocks.late.mockReturnValue({ ...emptyResult, data: { data: [lateItemAtLeadership("b")] } });
+    render(<PermitUnifiedQueue />);
+    await userEvent.click(screen.getByRole("button", { name: "open" }));
+    await userEvent.click(screen.getByRole("button", { name: "student-scanned" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("opens the exit permit's own stage QR for an approver, with no code to type", async () => {
     mocks.can.mockImplementation((permission: string) => permission === "issue_scan_tokens");
     mocks.exit.mockReturnValue({
@@ -238,6 +274,12 @@ describe("permit queue late arrival actions", () => {
             class_name: "10 A",
             status: "in_progress",
             current_stage_index: 1,
+            current_stage: {
+              key: "counselor",
+              label: "Guru BK",
+              approver_rule: "duty:counselor",
+              verification: "qr_scan",
+            },
             destination: "Puskesmas",
             opened_at: "2026-09-29T00:10:00Z",
           },
@@ -247,6 +289,9 @@ describe("permit queue late arrival actions", () => {
     render(<PermitUnifiedQueue />);
     await userEvent.click(screen.getByRole("button", { name: "open" }));
     expect(screen.getByTestId("approve-panel")).toHaveTextContent("exit_permit:e");
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveAccessibleName("titleStage");
+    expect(dialog).toHaveAccessibleDescription("Siswa e · 10 A");
   });
 });
 

@@ -2,6 +2,7 @@
 
 import { ApiError, queryKeys, type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 
 import { useApiClient } from "../../lib/api/client";
 
@@ -53,13 +54,18 @@ export function decodeScanPayload(raw: string): {
   return { token: value };
 }
 
-function useInvalidatePermits() {
+/**
+ * Marks every permits query stale (lists, queues, details) and the badges
+ * that count them, after a change the caller made or saw happen.
+ */
+export function useInvalidatePermits() {
   const queryClient = useQueryClient();
-  return () => {
+  // Stable, so an effect may depend on it.
+  return useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["permits"] });
     void queryClient.invalidateQueries({ queryKey: queryKeys.inboxCounts() });
     void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount() });
-  };
+  }, [queryClient]);
 }
 
 // Scan tokens (teacher side).
@@ -96,7 +102,16 @@ export function useMyExitPermitsQuery(enabled = true) {
   });
 }
 
-export function useExitPermitQuery(id: string) {
+/**
+ * How often a detail is re-read. An approver showing a stage QR polls fast
+ * (`pollMs`), since the student's scan of it sends the approver no push;
+ * `false` stops polling.
+ */
+interface DetailPolling {
+  pollMs?: number | false;
+}
+
+export function useExitPermitQuery(id: string, { pollMs = 15_000 }: DetailPolling = {}) {
   const client = useApiClient();
   useExitPermitDetailLive(id);
   return useQuery({
@@ -104,7 +119,7 @@ export function useExitPermitQuery(id: string) {
     queryFn: () =>
       client.GET("/v1/exit-permits/{instanceId}", { params: { path: { instanceId: id } } }),
     enabled: id !== "",
-    refetchInterval: 15_000,
+    refetchInterval: pollMs,
     // Pause polling on a hidden tab instead of ticking forever in the
     // background.
     refetchIntervalInBackground: false,
@@ -236,13 +251,15 @@ export function useCurrentLateArrivalQuery(enabled = true) {
   });
 }
 
-export function useLateArrivalQuery(id: string) {
+export function useLateArrivalQuery(id: string, { pollMs = false }: DetailPolling = {}) {
   const client = useApiClient();
   return useQuery({
     queryKey: queryKeys.lateArrival(id),
     queryFn: () =>
       client.GET("/v1/late-arrivals/{instanceId}", { params: { path: { instanceId: id } } }),
     enabled: id !== "",
+    refetchInterval: pollMs,
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -310,6 +327,7 @@ export function useReviewLateArrivalMutation() {
 
 export function useScanLateArrivalStageMutation() {
   const client = useApiClient();
+  const queryClient = useQueryClient();
   const invalidate = useInvalidatePermits();
   return useMutation({
     mutationFn: ({ id, token }: { id: string; token: string }) =>
@@ -317,7 +335,12 @@ export function useScanLateArrivalStageMutation() {
         params: { path: { instanceId: id } },
         body: { token },
       }),
-    onSuccess: invalidate,
+    // The last scan closes the flow, so "current" stops returning it; the
+    // student's card then reads the flow by id, already answered here.
+    onSuccess: (detail, { id }) => {
+      queryClient.setQueryData(queryKeys.lateArrival(id), detail);
+      invalidate();
+    },
 
     meta: { errorToast: false },
   });

@@ -60,6 +60,9 @@ type LateArrivalReviewItem struct {
 	CurrentStage      domain.Stage
 	Status            domain.Status
 	OpenedAt          time.Time
+	// ClassName is the class the flow was opened in, read live (a late
+	// arrival keeps no snapshot); empty when the class is gone.
+	ClassName string
 }
 
 // instance is the slice of the workflow instance the approver rules read
@@ -89,8 +92,11 @@ type ExitPermitReviewItem struct {
 	SubjectUserID     uuid.UUID
 	ClassID           uuid.NullUUID
 	CurrentStageIndex int
-	Status            domain.Status
-	OpenedAt          time.Time
+	// CurrentStage is the stage the permit waits at, so an approver's
+	// sheet can name it; nil once every stage has passed.
+	CurrentStage *domain.Stage
+	Status       domain.Status
+	OpenedAt     time.Time
 }
 
 // LeaveRequestItem is a leave request joined with its workflow state.

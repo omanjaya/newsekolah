@@ -30,7 +30,10 @@ returning *;
 -- plus security, who see every 'approved' permit awaiting their gate scan.
 -- sqlc.arg('today') is the tenant-local date (s.tenantNow), not
 -- current_date: the Postgres session timezone is never set per tenant.
-select ep.*, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id
+-- current_stage is null once every stage has passed (an approved permit
+-- waiting at the gate): the index is then past the last stage.
+select ep.*, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id,
+  (wd.stages -> wi.current_stage_index)::jsonb as current_stage
 from exit_permits ep
 join workflow_instances wi on wi.id = ep.instance_id
 join workflow_definitions wd on wd.id = wi.definition_id
