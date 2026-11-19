@@ -42,19 +42,3 @@ export function formatShortWeekdayDate(
     timeZone,
   }).format(new Date(value));
 }
-
-/** A moment, short: "25 Sep, 09.14", in the school's time zone. */
-export function formatShortDateTime(
-  value: string,
-  locale: Locale,
-  timeZone: string | undefined,
-): string {
-  return new Intl.DateTimeFormat(INTL_LOCALE[locale], {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-    timeZone,
-  }).format(new Date(value));
-}

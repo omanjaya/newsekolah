@@ -1,6 +1,6 @@
 "use client";
 
-import type { Locale } from "@newsekolah/i18n";
+import { formatShortDateTime, type Locale } from "@newsekolah/i18n";
 import {
   SemanticStatusBadge,
   Stepper,
@@ -12,9 +12,9 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import type { WorkflowInstance } from "../api";
 import { buildMineStageTrack, type LeaveMineStageKey } from "../lib/leave-mine-stage-track";
-import { formatShortDateTime } from "../lib/permit-dates";
 
 /** Where a stage of `instance` stands, from the instance's status and current index. */
 function stageState(instance: WorkflowInstance, index: number): StepperStepState {
@@ -63,6 +63,7 @@ export function WorkflowSteps({
   const t = useTranslations("app.permits.workflow");
   const locale = useLocale() as Locale;
   const { me } = useSession();
+  const timeZone = me?.tenant.timezone;
   const times = stageTimes(instance);
   const lastIndex = instance.stages.length - 1;
   const steps: StepperStep[] = instance.stages.map((stage, index) => {
@@ -82,7 +83,13 @@ export function WorkflowSteps({
       description,
       time:
         at && (state === "complete" || state === "stopped")
-          ? formatShortDateTime(at, locale, me?.tenant.timezone)
+          ? // The shared short form ("19 Nov 16.32"), with the year only
+            // outside the school's current one; midday UTC is that year everywhere.
+            formatShortDateTime(at, {
+              locale,
+              timeZone,
+              now: new Date(`${todayInZone(timeZone)}T12:00:00Z`),
+            })
           : undefined,
       state,
     };
