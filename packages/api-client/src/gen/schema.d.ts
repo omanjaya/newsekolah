@@ -11209,6 +11209,12 @@ export interface components {
             student_name: string;
             class_name: string;
         };
+        /** @description One of the student's own exit permits in their history: the workflow instance plus where they went and when they passed the gate, so a row can say so without opening the permit. */
+        MyExitPermit: components["schemas"]["WorkflowInstance"] & {
+            destination: string;
+            /** Format: date-time */
+            exited_at?: string;
+        };
         LateArrivalDetail: {
             instance: components["schemas"]["WorkflowInstance"];
             reason: string;
@@ -24895,7 +24901,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        data: components["schemas"]["WorkflowInstance"][];
+                        data: components["schemas"]["MyExitPermit"][];
                     };
                 };
             };

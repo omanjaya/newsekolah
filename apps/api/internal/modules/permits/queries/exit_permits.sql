@@ -8,6 +8,11 @@ returning *;
 -- name: GetExitPermit :one
 select * from exit_permits where tenant_id = $1 and instance_id = $2;
 
+-- name: ListExitPermitsByInstances :many
+-- The permit rows of a page of a student's own exit permit instances.
+select * from exit_permits
+where tenant_id = $1 and instance_id = any(sqlc.arg('instance_ids')::uuid[]);
+
 -- name: MarkExitPermitIssued :one
 update exit_permits set issued_at = $3
 where tenant_id = $1 and instance_id = $2

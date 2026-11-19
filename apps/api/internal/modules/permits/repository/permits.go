@@ -49,6 +49,25 @@ func (r *Repository) GetExitPermit(ctx context.Context, tenantID, instanceID uui
 	return toExitPermit(row), true, nil
 }
 
+// ListExitPermitsByInstances returns the permit rows of the given
+// instances, keyed by instance id; an id with no row is left out.
+func (r *Repository) ListExitPermitsByInstances(ctx context.Context, tenantID uuid.UUID, instanceIDs []uuid.UUID) (map[uuid.UUID]domain.ExitPermit, error) {
+	out := make(map[uuid.UUID]domain.ExitPermit, len(instanceIDs))
+	if len(instanceIDs) == 0 {
+		return out, nil
+	}
+	rows, err := r.queries(ctx).ListExitPermitsByInstances(ctx, db.ListExitPermitsByInstancesParams{
+		TenantID: tenantID, InstanceIds: instanceIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list exit permits by instances: %w", err)
+	}
+	for _, row := range rows {
+		out[row.InstanceID] = toExitPermit(row)
+	}
+	return out, nil
+}
+
 func (r *Repository) MarkExitPermitIssued(ctx context.Context, tenantID, instanceID uuid.UUID, issuedAt time.Time) (domain.ExitPermit, error) {
 	row, err := r.queries(ctx).MarkExitPermitIssued(ctx, db.MarkExitPermitIssuedParams{
 		TenantID: tenantID, InstanceID: instanceID, IssuedAt: pdatabase.Timestamptz(issuedAt),

@@ -231,6 +231,16 @@ func toAPILateArrival(d service.LateArrivalDetail) api.LateArrivalDetail {
 	}
 }
 
+func toAPIMyExitPermit(it service.MyExitPermit) api.MyExitPermit {
+	inst := toAPIInstance(it.Instance, it.Definition, nil)
+	return api.MyExitPermit{
+		Id: inst.Id, Kind: inst.Kind, Status: inst.Status, CurrentStageIndex: inst.CurrentStageIndex,
+		CurrentStage: inst.CurrentStage, Stages: inst.Stages, SubjectUserId: inst.SubjectUserId,
+		ClassId: inst.ClassId, OpenedAt: inst.OpenedAt, ClosedAt: inst.ClosedAt, Events: inst.Events,
+		Destination: it.Permit.Destination, ExitedAt: it.Permit.ExitedAt,
+	}
+}
+
 func toAPIExitPermitSummary(i service.ExitPermitReviewItem) api.ExitPermitSummary {
 	return api.ExitPermitSummary{
 		InstanceId: i.InstanceID, StudentUserId: i.SubjectUserID, ClassId: uuidPtr(i.ClassID), Status: api.WorkflowStatus(i.Status),

@@ -1117,6 +1117,8 @@ type Querier interface {
 	// for each (student, date) across that date's submitted sessions, the raw
 	// input to attendance/domain.ComputeDailyStatus.
 	ListEntryStatusesForStudentsDates(ctx context.Context, arg ListEntryStatusesForStudentsDatesParams) ([]ListEntryStatusesForStudentsDatesRow, error)
+	// The permit rows of a page of a student's own exit permit instances.
+	ListExitPermitsByInstances(ctx context.Context, arg ListExitPermitsByInstancesParams) ([]ExitPermit, error)
 	// Missing feature (docs/analysis/backend-inventory.md 1.15): a queue for
 	// the counselor/leadership approval stages (the duty_teacher/class_teacher
 	// stages are QR-scan only, same as the old app -- no listing needed there)

@@ -149,6 +149,49 @@ func (q *Queries) GetExitPermit(ctx context.Context, arg GetExitPermitParams) (E
 	return i, err
 }
 
+const listExitPermitsByInstances = `-- name: ListExitPermitsByInstances :many
+select instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot from exit_permits
+where tenant_id = $1 and instance_id = any($2::uuid[])
+`
+
+type ListExitPermitsByInstancesParams struct {
+	TenantID    uuid.UUID   `json:"tenant_id"`
+	InstanceIds []uuid.UUID `json:"instance_ids"`
+}
+
+// The permit rows of a page of a student's own exit permit instances.
+func (q *Queries) ListExitPermitsByInstances(ctx context.Context, arg ListExitPermitsByInstancesParams) ([]ExitPermit, error) {
+	rows, err := q.db.Query(ctx, listExitPermitsByInstances, arg.TenantID, arg.InstanceIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ExitPermit{}
+	for rows.Next() {
+		var i ExitPermit
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.TenantID,
+			&i.Destination,
+			&i.StartPeriodID,
+			&i.EndPeriodID,
+			&i.IssuedAt,
+			&i.GateTokenID,
+			&i.ExitedAt,
+			&i.SecurityUserID,
+			&i.StudentNameSnapshot,
+			&i.ClassNameSnapshot,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listExitPermitsForApproval = `-- name: ListExitPermitsForApproval :many
 select ep.instance_id, ep.tenant_id, ep.destination, ep.start_period_id, ep.end_period_id, ep.issued_at, ep.gate_token_id, ep.exited_at, ep.security_user_id, ep.student_name_snapshot, ep.class_name_snapshot, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id
 from exit_permits ep

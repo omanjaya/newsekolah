@@ -14097,7 +14097,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: "#/components/schemas/WorkflowInstance"
+                      $ref: "#/components/schemas/MyExitPermit"
         "401":
           $ref: "#/components/responses/Unauthorized"
     post:
@@ -26197,6 +26197,20 @@ components:
           type: string
         class_name:
           type: string
+    MyExitPermit:
+      description: "One of the student's own exit permits in their history: the workflow instance plus where they went and
+        when they passed the gate, so a row can say so without opening the permit."
+      allOf:
+        - $ref: "#/components/schemas/WorkflowInstance"
+        - type: object
+          required:
+            - destination
+          properties:
+            destination:
+              type: string
+            exited_at:
+              type: string
+              format: date-time
     LateArrivalDetail:
       type: object
       required:
