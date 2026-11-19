@@ -1,9 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useSPCandidatesQuery: vi.fn(),
+  issue: vi.fn(),
   canIssue: true,
 }));
 
@@ -41,7 +42,7 @@ vi.mock("../api", () => ({
     },
     isLoading: false,
   }),
-  useIssueWarningLetterMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useIssueWarningLetterMutation: () => ({ mutate: mocks.issue, isPending: false }),
   useSPCandidatesQuery: mocks.useSPCandidatesQuery,
 }));
 
@@ -101,5 +102,77 @@ describe("AtRiskPanel filters", () => {
       expect.objectContaining({ classId: "" }),
     );
     expect(new URLSearchParams(window.location.search).get("class_id")).toBe("");
+  });
+});
+
+function candidate(id: string, name: string) {
+  return {
+    student_user_id: id,
+    student_name: name,
+    nis: "1001",
+    class_name: "7A",
+    total_points: 30,
+    issued_levels: [],
+  };
+}
+
+describe("AtRiskPanel states and issuing", () => {
+  beforeEach(() => {
+    mocks.canIssue = true;
+    mocks.issue.mockReset();
+    mocks.useSPCandidatesQuery.mockReset();
+    window.history.replaceState(null, "", "/discipline/at-risk");
+  });
+
+  it("shows a load failure with a retry instead of an empty all-clear", async () => {
+    const refetch = vi.fn();
+    mocks.useSPCandidatesQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error("boom"),
+      refetch,
+    });
+    const user = userEvent.setup();
+    render(<AtRiskPanel />);
+
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+    await user.click(within(screen.getByRole("alert")).getByRole("button"));
+    expect(refetch).toHaveBeenCalled();
+  });
+
+  it("shows the filtered empty state, not the first-use one, while a filter is set", () => {
+    window.history.replaceState(null, "", "/discipline/at-risk?class_id=class-7a");
+    mocks.useSPCandidatesQuery.mockReturnValue({ data: { data: [] }, isLoading: false });
+    render(<AtRiskPanel />);
+
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+  });
+
+  it("asks before issuing a letter and issues only for the confirmed student", async () => {
+    mocks.useSPCandidatesQuery.mockReturnValue({
+      data: { data: [candidate("s1", "Ayu"), candidate("s2", "Budi")] },
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<AtRiskPanel />);
+
+    expect(screen.queryByRole("link", { name: "Ayu" })).not.toBeInTheDocument();
+    expect(screen.getAllByText("pointsValue")).not.toHaveLength(0);
+
+    // The table and the phone card list both render; act on the table row.
+    const budiRow = screen
+      .getAllByText("Budi")
+      .map((cell) => cell.closest("tr"))
+      .find((row) => row !== null);
+    expect(budiRow).toBeDefined();
+    await user.click(within(budiRow as HTMLElement).getByRole("button", { name: "issue" }));
+    expect(mocks.issue).not.toHaveBeenCalled();
+
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "issue" }));
+    expect(mocks.issue).toHaveBeenCalledWith(
+      { student_user_id: "s2", level: 1 },
+      expect.any(Object),
+    );
   });
 });

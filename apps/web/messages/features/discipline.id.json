@@ -199,6 +199,11 @@
       },
       "issue": "Terbitkan {level}",
       "issued": "{level} diterbitkan",
+      "pointsValue": "{points} poin",
+      "issueConfirm": {
+        "title": "Terbitkan {level} untuk {student}?",
+        "body": "Nomor surat dibuat dan surat tercatat di riwayat siswa. Surat yang sudah terbit tidak bisa ditarik dari layar ini."
+      },
       "emptyTitle": "Belum ada kandidat SP",
       "emptyBody": "Siswa yang poinnya mencapai ambang SP muncul di sini.",
       "noPolicyTitle": "Kebijakan SP belum diatur",
