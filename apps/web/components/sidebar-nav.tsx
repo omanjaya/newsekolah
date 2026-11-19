@@ -30,7 +30,7 @@ export const NAV_MARKER_OFFSETS = { top: 4, nested: 31 } as const;
 
 /** One row's frame: 36px, the pill radius, colour changes at the 120ms state pace. */
 const ROW =
-  "relative flex h-9 shrink-0 items-center rounded-md text-body-sm font-medium outline-none transition-colors focus-visible:-outline-offset-2";
+  "relative flex h-9 shrink-0 items-center rounded-md text-body-sm font-medium transition-colors focus-visible:-outline-offset-2";
 const ROW_IDLE_TOP = "text-fg hover:bg-state-hover active:bg-state-pressed";
 const ROW_IDLE_NESTED = "text-fg-muted hover:bg-state-hover hover:text-fg active:bg-state-pressed";
 const ROW_ACTIVE = "bg-accent-soft font-semibold text-accent-soft-fg";

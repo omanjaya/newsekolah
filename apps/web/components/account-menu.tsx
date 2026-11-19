@@ -89,7 +89,7 @@ const AccountTrigger = forwardRef<
       type="button"
       aria-label={t("profileMenu.label")}
       className={cn(
-        "flex shrink-0 items-center gap-2.5 rounded-full outline-none motion-press",
+        "flex shrink-0 items-center gap-2.5 rounded-full motion-press",
         "md:h-10 md:rounded-md md:p-1 md:hover:bg-state-hover md:data-[state=open]:bg-state-hover lg:pr-2",
         className,
       )}
@@ -219,7 +219,7 @@ export function AccountMenu(): ReactElement {
                     onClick={() => {
                       setOpen(false);
                     }}
-                    className="flex min-h-12 items-center gap-3 px-4 text-body text-fg outline-none transition-colors focus-visible:-outline-offset-2 active:bg-state-pressed"
+                    className="flex min-h-12 items-center gap-3 px-4 text-body text-fg transition-colors focus-visible:-outline-offset-2 active:bg-state-pressed"
                   >
                     <item.icon aria-hidden="true" className="size-5 shrink-0 text-fg-muted" />
                     <span className="min-w-0 flex-1 truncate">{t(item.labelKey)}</span>

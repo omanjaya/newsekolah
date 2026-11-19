@@ -41,7 +41,7 @@ export function QuickActionGrid({
             // A border, not an outside ring: the sheet's scroller clips
             // whatever is drawn past a tile's box.
             className={cn(
-              "flex h-full rounded-lg border border-border bg-surface text-label text-fg outline-none motion-press active:bg-state-pressed",
+              "flex h-full rounded-lg border border-border bg-surface text-label text-fg motion-press focus-visible:-outline-offset-2 active:bg-state-pressed",
               row
                 ? "min-h-14 items-center gap-3 px-3 py-2"
                 : "min-h-24 flex-col items-start gap-3 p-4",

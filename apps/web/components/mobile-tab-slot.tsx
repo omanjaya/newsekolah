@@ -30,7 +30,7 @@ import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from "react
  * labels, chosen to fit five slots on a 360px phone.
  */
 const SLOT_BASE =
-  "tab-press relative flex h-16 w-full min-w-0 flex-col items-center rounded-md px-0.5 text-caption whitespace-nowrap outline-none select-none";
+  "tab-press relative flex h-16 w-full min-w-0 flex-col items-center rounded-md px-0.5 text-caption whitespace-nowrap select-none";
 
 const TAB_SLOT = cn(SLOT_BASE, "gap-1 pt-2 focus-visible:-outline-offset-2");
 

@@ -48,6 +48,23 @@ export const ARBITRARY_FONT_SIZE_SOURCE = String.raw`\btext-\[(?:length:)?(?:\d*
 export const PANEL_RADIUS_SOURCE = String.raw`^(?=[\s\S]*(?:^|[\s:])border(?:\s|$))(?=[\s\S]*(?:^|[\s:])rounded-(?:xs|sm)(?:\s|$))`;
 
 /**
+ * `outline-none`, `outline-hidden`, `focus:outline-none`: a class that
+ * switches off the base `:focus-visible` ring (packages/ui/src/styles.css).
+ * Tailwind's utilities layer beats that base rule, so the control is left
+ * with no visible focus at all (WCAG 2.4.7).
+ */
+export const HIDDEN_FOCUS_OUTLINE_SOURCE = String.raw`(?:^|\s)(?:focus:)?outline-(?:none|hidden)(?=\s|$)`;
+
+/**
+ * `focus-visible:outline-2`, `focus-visible:outline-focus-ring`,
+ * `has-[input:focus-visible]:outline-2`, `focus-visible:outline-none`: the
+ * same class string decides what keyboard focus looks like itself, so a
+ * hidden outline next to it is deliberate. An offset alone
+ * (`focus-visible:-outline-offset-2`) draws nothing and does not count.
+ */
+export const FOCUS_OUTLINE_STYLE_SOURCE = String.raw`(?:focus-visible|has-\[[^\]]*\]):outline-(?!offset)`;
+
+/**
  * @param {string} source regex source, no forward slashes
  * @param {string} message
  * @returns {{ selector: string, message: string }[]}

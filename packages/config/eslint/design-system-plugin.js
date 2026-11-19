@@ -4,7 +4,12 @@
 // without touching the others. The class-name rules read string literals
 // and template text, the same technique as ./design-system-patterns.js;
 // the element rules read JSX. See docs/07-ui-ux.md section 0.
-import { ARBITRARY_FONT_SIZE_SOURCE, PANEL_RADIUS_SOURCE } from "./design-system-patterns.js";
+import {
+  ARBITRARY_FONT_SIZE_SOURCE,
+  FOCUS_OUTLINE_STYLE_SOURCE,
+  HIDDEN_FOCUS_OUTLINE_SOURCE,
+  PANEL_RADIUS_SOURCE,
+} from "./design-system-patterns.js";
 
 /**
  * The few node shapes these rules read, typed here so the rules need no
@@ -22,6 +27,8 @@ import { ARBITRARY_FONT_SIZE_SOURCE, PANEL_RADIUS_SOURCE } from "./design-system
 
 const FONT_SIZE = new RegExp(ARBITRARY_FONT_SIZE_SOURCE);
 const PANEL_RADIUS = new RegExp(PANEL_RADIUS_SOURCE);
+const HIDDEN_FOCUS_OUTLINE = new RegExp(HIDDEN_FOCUS_OUTLINE_SOURCE);
+const FOCUS_OUTLINE_STYLE = new RegExp(FOCUS_OUTLINE_STYLE_SOURCE);
 
 /**
  * Raw elements a feature screen should not build itself, with the shared
@@ -104,6 +111,29 @@ const noPanelRadius = {
   create(context) {
     return onStrings((loc, text) => {
       if (PANEL_RADIUS.test(text)) context.report({ loc, messageId: "panel" });
+    });
+  },
+};
+
+/** @type {import("eslint").Rule.RuleModule} */
+const noHiddenFocusOutline = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Keep the base focus-visible ring: no outline-none or outline-hidden without a focus-visible outline of its own.",
+    },
+    messages: {
+      hidden:
+        "outline-none and outline-hidden beat the base :focus-visible ring, so keyboard focus becomes invisible (WCAG 2.4.7). Drop it (add focus-visible:-outline-offset-2 to keep the ring inside a row), or give the same element its own focus-visible:outline-* style.",
+    },
+    schema: [],
+  },
+  create(context) {
+    return onStrings((loc, text) => {
+      if (HIDDEN_FOCUS_OUTLINE.test(text) && !FOCUS_OUTLINE_STYLE.test(text)) {
+        context.report({ loc, messageId: "hidden" });
+      }
     });
   },
 };
@@ -205,6 +235,7 @@ export const designSystemPlugin = {
   rules: {
     "no-literal-font-size": noLiteralFontSize,
     "no-panel-radius": noPanelRadius,
+    "no-hidden-focus-outline": noHiddenFocusOutline,
     "no-raw-elements": noRawElements,
     "no-native-pickers": noNativePickers,
   },

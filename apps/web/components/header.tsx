@@ -137,7 +137,7 @@ export function Header(): ReactElement {
         aria-keyshortcuts="Meta+K Control+K"
         className={cn(
           "hidden h-9 w-full max-w-[26rem] items-center gap-2.5 rounded-md border border-border bg-surface-sunken pr-1.5 pl-3 md:flex",
-          "text-body-sm text-fg-muted outline-none transition-colors hover:border-border-strong hover:text-fg",
+          "text-body-sm text-fg-muted transition-colors hover:border-border-strong hover:text-fg",
         )}
       >
         <Search className="size-4 shrink-0" aria-hidden="true" />

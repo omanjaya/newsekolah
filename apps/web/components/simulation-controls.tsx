@@ -69,7 +69,7 @@ export function SimulationControls(): ReactElement | null {
       <details className="group min-w-0 flex-1">
         <summary
           title={active ? `${t("warning")} ${t(active.mode)}` : t("intro")}
-          className="flex min-h-10 cursor-pointer list-none items-center gap-3 outline-none [&::-webkit-details-marker]:hidden"
+          className="flex min-h-10 cursor-pointer list-none items-center gap-3 [&::-webkit-details-marker]:hidden"
         >
           <Clock aria-hidden="true" className="size-4 shrink-0" />
           <span className="min-w-0 flex-1 truncate">

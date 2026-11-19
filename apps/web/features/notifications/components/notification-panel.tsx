@@ -70,7 +70,7 @@ export function NotificationPanel({ onNavigate }: { onNavigate: () => void }): R
       <Link
         href="/notifications"
         onClick={onNavigate}
-        className="border-t border-line px-3 py-3 text-center text-label text-accent outline-none transition-colors hover:bg-state-hover focus-visible:-outline-offset-2"
+        className="border-t border-line px-3 py-3 text-center text-label text-accent transition-colors hover:bg-state-hover focus-visible:-outline-offset-2"
       >
         {t("seeAll")}
       </Link>
@@ -118,7 +118,7 @@ function PanelRow({
   );
 
   const rowClass =
-    "block w-full text-left outline-none transition-colors hover:bg-state-hover focus-visible:-outline-offset-2 active:bg-state-pressed";
+    "block w-full text-left transition-colors hover:bg-state-hover focus-visible:-outline-offset-2 active:bg-state-pressed";
   return (
     <li className={cn(unread && "bg-state-selected")}>
       {href ? (

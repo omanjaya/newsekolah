@@ -308,7 +308,7 @@ export function Sidebar({
               onClick={toggleRail}
               aria-label={toggleLabel}
               aria-expanded={!rail}
-              className="flex h-9 w-full shrink-0 items-center gap-3 rounded-md px-2.5 text-left text-body-sm font-medium text-fg-muted outline-none transition-colors hover:bg-state-hover hover:text-fg focus-visible:-outline-offset-2 active:bg-state-pressed"
+              className="flex h-9 w-full shrink-0 items-center gap-3 rounded-md px-2.5 text-left text-body-sm font-medium text-fg-muted transition-colors hover:bg-state-hover hover:text-fg focus-visible:-outline-offset-2 active:bg-state-pressed"
             >
               {rail ? (
                 <PanelLeftOpen className="size-5 shrink-0" aria-hidden="true" />

@@ -66,6 +66,29 @@ describe("design-system plugin", () => {
     });
   });
 
+  describe("no-hidden-focus-outline", () => {
+    it.each([
+      'const a = <a className="flex rounded-md outline-none focus-visible:-outline-offset-2" />;',
+      'const a = "outline-hidden transition-colors";',
+      "const a = `rounded-full outline-none ${b}`;",
+      'const a = "px-3 focus:outline-none";',
+    ])("rejects %s", (code) => {
+      expect(ruleIds(code, only("no-hidden-focus-outline"))).toEqual([
+        "design-system/no-hidden-focus-outline",
+      ]);
+    });
+
+    it.each([
+      'const a = <a className="flex rounded-md focus-visible:-outline-offset-2" />;',
+      'const a = "outline-none focus-visible:outline-2 focus-visible:outline-focus-ring";',
+      'const a = "outline-none has-[input:focus-visible]:outline-2";',
+      'const a = "group pb-2 focus-visible:outline-none";',
+      'const a = "outline-offset-2 outline-focus-ring";',
+    ])("allows %s", (code) => {
+      expect(ruleIds(code, only("no-hidden-focus-outline"))).toEqual([]);
+    });
+  });
+
   describe("no-raw-elements", () => {
     it.each([
       "const a = <h2>Judul</h2>;",

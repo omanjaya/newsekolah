@@ -49,4 +49,14 @@ export default [
       "design-system/no-raw-elements": "error",
     },
   },
+  // Keyboard focus stays visible (docs/07-ui-ux.md section 6): no class
+  // string switches off the base :focus-visible ring unless it draws its
+  // own focus-visible outline. Tests assert on these class names.
+  {
+    files: ["**/*.{ts,tsx}"],
+    ignores: ["**/*.test.{ts,tsx}", "**/*.stories.tsx"],
+    rules: {
+      "design-system/no-hidden-focus-outline": "error",
+    },
+  },
 ];

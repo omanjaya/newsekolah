@@ -133,7 +133,7 @@ export function MobileMenu({
                 close();
                 palette.open();
               }}
-              className="flex h-11 w-full items-center gap-3 rounded-md border border-border bg-surface-sunken px-3 text-left text-body text-fg-muted outline-none transition-colors active:bg-state-pressed"
+              className="flex h-11 w-full items-center gap-3 rounded-md border border-border bg-surface-sunken px-3 text-left text-body text-fg-muted transition-colors focus-visible:-outline-offset-2 active:bg-state-pressed"
             >
               <Search aria-hidden="true" className="size-5 shrink-0" />
               <span className="min-w-0 flex-1 truncate">{t("app.shell.phoneMenu.search")}</span>
@@ -235,7 +235,7 @@ function RecentChips({
           <Link
             href={item.href}
             onClick={onNavigate}
-            className="flex h-11 items-center gap-2 rounded-full border border-border bg-surface px-3.5 text-label text-fg outline-none motion-press active:bg-state-pressed"
+            className="flex h-11 items-center gap-2 rounded-full border border-border bg-surface px-3.5 text-label text-fg motion-press focus-visible:-outline-offset-2 active:bg-state-pressed"
           >
             <item.icon aria-hidden="true" className="size-4 shrink-0 text-fg-muted" />
             {t(item.labelKey)}
@@ -274,7 +274,7 @@ function MenuRow({
           if (!event.defaultPrevented) onNavigate();
         }}
         className={cn(
-          "flex min-h-12 min-w-0 flex-1 items-center gap-3 px-4 text-body outline-none transition-colors focus-visible:-outline-offset-2",
+          "flex min-h-12 min-w-0 flex-1 items-center gap-3 px-4 text-body transition-colors focus-visible:-outline-offset-2",
           active
             ? "bg-accent-soft font-semibold text-accent-soft-fg"
             : "text-fg active:bg-state-pressed",
@@ -300,7 +300,7 @@ function MenuRow({
             { name: label },
           )}
           onClick={onToggleFavorite}
-          className="flex size-12 shrink-0 items-center justify-center text-fg-muted outline-none focus-visible:-outline-offset-2 active:bg-state-pressed"
+          className="flex size-12 shrink-0 items-center justify-center text-fg-muted focus-visible:-outline-offset-2 active:bg-state-pressed"
         >
           <Star
             aria-hidden="true"
