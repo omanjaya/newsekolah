@@ -1,5 +1,5 @@
 import { ChevronDown, X } from "lucide-react";
-import type { ReactElement } from "react";
+import { useRef, type ReactElement } from "react";
 
 import { cn } from "../../utils/cn.js";
 
@@ -37,8 +37,10 @@ export function FilterPillShell({
   onRemove: () => void;
   trigger: ReactElement;
 }): ReactElement {
+  const shellRef = useRef<HTMLDivElement>(null);
   return (
     <div
+      ref={shellRef}
       className={cn(
         "inline-flex items-center rounded-full border",
         active
@@ -52,7 +54,13 @@ export function FilterPillShell({
           type="button"
           aria-label={removeLabel}
           className="-ml-1 flex size-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-state-hover active:bg-state-pressed md:pointer-fine:size-8"
-          onClick={onRemove}
+          onClick={() => {
+            // This control leaves with the filter's value; its own pill's
+            // trigger (the shell's first button) stays, so focus goes there
+            // rather than dropping to <body>.
+            shellRef.current?.querySelector<HTMLElement>("button")?.focus();
+            onRemove();
+          }}
         >
           <X className="size-3.5" aria-hidden="true" />
         </button>

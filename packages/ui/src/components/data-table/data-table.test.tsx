@@ -373,6 +373,51 @@ describe("DataTable", () => {
     expect(screen.getByRole("button", { name: "Jenis" })).toBeInTheDocument();
   });
 
+  // The reset button takes itself away; focus fell to <body> and the next
+  // Tab started back at the top of the toolbar.
+  it("moves focus to the search box when 'Hapus semua filter' is pressed from the keyboard", async () => {
+    function FilteredHarness() {
+      const [type, setType] = useState("a");
+      return (
+        <DataTable
+          mode="local"
+          data={ROWS}
+          columns={columns}
+          filters={[
+            {
+              id: "type",
+              label: "Jenis",
+              value: type,
+              // As a page whose filters live in the address: the value
+              // changes a moment after the press, not within it.
+              onChange: (next) => {
+                setTimeout(() => {
+                  setType(next);
+                }, 0);
+              },
+              options: [{ value: "a", label: "A" }],
+            },
+          ]}
+          emptyState={<EmptyState title="Belum ada data" />}
+        />
+      );
+    }
+    const user = userEvent.setup();
+    render(<FilteredHarness />);
+    const reset = screen.getByRole("button", { name: "Hapus semua filter" });
+    reset.focus();
+    await user.keyboard("{Enter}");
+
+    const search = screen.getByRole("searchbox", { name: "Cari" });
+    expect(search).toHaveFocus();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(screen.queryByRole("button", { name: "Hapus semua filter" })).not.toBeInTheDocument();
+    expect(search).toHaveFocus();
+    expect(document.activeElement).not.toBe(document.body);
+  });
+
   it("provides select all for mobile cards", () => {
     render(<SelectionHarness />);
     expect(screen.getAllByLabelText("Pilih semua baris").length).toBeGreaterThan(1);

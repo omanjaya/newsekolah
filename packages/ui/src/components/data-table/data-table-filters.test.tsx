@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../../test/axe.js";
@@ -166,6 +167,70 @@ describe("DataTableFilters", () => {
     await user.click(screen.getByRole("button", { name: "Hapus semua filter" }));
     expect(onMaterialChange).toHaveBeenCalledWith("");
     expect(onAvailabilityChange).toHaveBeenCalledWith("");
+  });
+
+  // Both controls take themselves away with the value they clear; focus
+  // fell to <body> and the next Tab started back at the top.
+  describe("focus after a control takes itself away", () => {
+    function Stateful({ search = false }: { search?: boolean }) {
+      const [material, setMaterial] = useState("book");
+      const [from, setFrom] = useState("2030-01-01");
+      const searchRef = useRef<HTMLInputElement>(null);
+      return (
+        <>
+          {search && <input ref={searchRef} type="search" aria-label="Cari" />}
+          <DataTableFilters
+            resetFocusRef={search ? searchRef : undefined}
+            filters={[
+              materialTypeFilter({ value: material, onChange: setMaterial }),
+              dateRangeFilter({
+                from,
+                onChangeRange: (range) => {
+                  setFrom(range.from);
+                },
+              }),
+            ]}
+          />
+        </>
+      );
+    }
+
+    it("moves to the first pill after 'Hapus semua filter' when there is no search box", async () => {
+      const user = userEvent.setup();
+      render(<Stateful />);
+      screen.getByRole("button", { name: "Hapus semua filter" }).focus();
+      await user.keyboard("{Enter}");
+
+      expect(screen.queryByRole("button", { name: "Hapus semua filter" })).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Jenis bahan" })).toHaveFocus();
+    });
+
+    it("moves to the search box after a keyboard reset, and to the first pill after a click", async () => {
+      const user = userEvent.setup();
+      const { unmount } = render(<Stateful search />);
+      screen.getByRole("button", { name: "Hapus semua filter" }).focus();
+      await user.keyboard("{Enter}");
+      expect(screen.getByRole("searchbox", { name: "Cari" })).toHaveFocus();
+      unmount();
+
+      // A tap raises no phone keyboard: the pill row keeps focus instead.
+      render(<Stateful search />);
+      await user.click(screen.getByRole("button", { name: "Hapus semua filter" }));
+      expect(screen.getByRole("button", { name: "Jenis bahan" })).toHaveFocus();
+    });
+
+    it("moves to the pill's own trigger after its remove control", async () => {
+      const user = userEvent.setup();
+      render(<Stateful />);
+      screen.getByRole("button", { name: "Hapus filter Tanggal" }).focus();
+      await user.keyboard("{Enter}");
+
+      expect(
+        screen.queryByRole("button", { name: "Hapus filter Tanggal" }),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Tanggal" })).toHaveFocus();
+      expect(document.activeElement).not.toBe(document.body);
+    });
   });
 
   // A filtered empty table showed "Reset filter" in the toolbar and "Hapus

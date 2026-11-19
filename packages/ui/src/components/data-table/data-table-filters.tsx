@@ -1,7 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { useRef, useState, type ReactElement } from "react";
+import { useRef, useState, type ReactElement, type RefObject } from "react";
 
 import { useScrollEdges } from "../../hooks/use-scroll-edges.js";
 import { cn } from "../../utils/cn.js";
@@ -142,6 +142,13 @@ export interface DataTableFiltersProps {
   filters: DataTableFilterDef[];
   labels?: Partial<DataTableFiltersLabels>;
   className?: string;
+  /**
+   * Where focus goes when "Hapus semua filter", pressed from the keyboard,
+   * takes itself away (the table's search box, which `DataTableToolbar`
+   * passes). Without it, while it is not on the page, or after a tap,
+   * focus goes to the first filter pill.
+   */
+  resetFocusRef?: RefObject<HTMLElement | null>;
 }
 
 /**
@@ -179,6 +186,7 @@ export function DataTableFilters({
   filters,
   labels: labelsOverride,
   className,
+  resetFocusRef,
 }: DataTableFiltersProps): ReactElement {
   const uiLabels = useUiLabels();
   const labels: DataTableFiltersLabels = {
@@ -241,7 +249,19 @@ export function DataTableFilters({
         <button
           type="button"
           className="h-11 shrink-0 rounded-full px-3 text-label text-accent transition-colors hover:bg-state-hover md:pointer-fine:h-8"
-          onClick={() => {
+          onClick={(event) => {
+            // The button leaves the page once nothing is filtered, which
+            // would drop focus to <body> and the next Tab back to the top.
+            // Focus moves first, to a control that stays: from the keyboard
+            // (a click with no pointer count) the search box; from a tap or
+            // a click, or with no search box, the first pill (always
+            // rendered, active or not), which raises no phone keyboard.
+            const search = resetFocusRef?.current;
+            const target =
+              event.detail === 0 && search?.isConnected
+                ? search
+                : scrollerRef.current?.querySelector<HTMLElement>("button");
+            target?.focus();
             for (const filter of filters) {
               if (isFilterActive(filter)) clearFilter(filter);
             }

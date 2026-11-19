@@ -2,7 +2,7 @@
 
 import { flexRender, type Column, type Table } from "@tanstack/react-table";
 import { Columns3, Ellipsis, Rows3, X } from "lucide-react";
-import { useState, type ReactElement, type ReactNode } from "react";
+import { useRef, useState, type ReactElement, type ReactNode } from "react";
 
 import { cn } from "../../utils/cn.js";
 import {
@@ -204,6 +204,7 @@ export function DataTableToolbar<TData>({
   const uiLabels = useUiLabels();
   const labels = toolbarLabelsFrom(uiLabels, labelsOverride);
   const [localSearch, setLocalSearch] = useState(searchValue);
+  const searchRef = useRef<HTMLInputElement>(null);
   const columns = hideableColumns(table, columnLabels);
   const hasFilters = filters !== undefined && filters.length > 0;
   // Density and columns arrange rows: over an empty table that no search or
@@ -255,6 +256,7 @@ export function DataTableToolbar<TData>({
     >
       {showSearch && (
         <SearchInput
+          ref={searchRef}
           size="sm"
           value={localSearch}
           onChange={(event) => {
@@ -278,6 +280,7 @@ export function DataTableToolbar<TData>({
         <DataTableFilters
           filters={filters}
           labels={filtersLabels}
+          resetFocusRef={searchRef}
           className={cn(
             "order-4 basis-full md:order-2 md:min-w-48 md:flex-1 md:basis-0",
             "max-md:-mx-4 max-md:basis-[calc(100%+2rem)] max-md:scroll-px-4 max-md:px-4",
