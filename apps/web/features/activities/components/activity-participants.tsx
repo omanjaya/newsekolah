@@ -8,8 +8,7 @@ import { useState, type ReactElement } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { formatDisplayName } from "../../../lib/text/format-name";
-import { useGradeLevelsQuery } from "../../academic/api-master-data";
-import { useClassesQuery } from "../../reference/api";
+import { useClassesQuery, useGradeLevelsQuery } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
 import {
   useActivityEventQuery,
@@ -34,8 +33,15 @@ export function ActivityParticipants({
   const toast = useToast();
   const errorMessage = useApiErrorMessage();
   const event = useActivityEventQuery(activityId);
-  const classes = useClassesQuery();
-  const grades = useGradeLevelsQuery();
+  const participants = event.data?.participants ?? [];
+  // The class and grade lists feed the add form and name the class and
+  // grade rows; a reader whose list has neither never fetches them.
+  const classes = useClassesQuery(
+    canManage || participants.some((participant) => participant.scope === "class"),
+  );
+  const grades = useGradeLevelsQuery(
+    canManage || participants.some((participant) => participant.scope === "grade_level"),
+  );
   const add = useAddActivityParticipantMutation(activityId);
   const remove = useRemoveActivityParticipantMutation();
   const [scope, setScope] = useState("student");
@@ -45,7 +51,7 @@ export function ActivityParticipants({
     toast.error(error instanceof ApiError ? errorMessage(error.code) : errorMessage("UNKNOWN"));
   };
   const studentNameById = useDirectoryNames(
-    (event.data?.participants ?? []).map((participant) => participant.student_user_id),
+    participants.map((participant) => participant.student_user_id),
   );
   return (
     <div className="flex flex-col gap-4">
@@ -109,11 +115,11 @@ export function ActivityParticipants({
       {event.isLoading && <p className="text-body-sm text-fg-muted">{t("loading")}</p>}
       {!event.isLoading &&
         !event.isError &&
-        ((event.data?.participants ?? []).length === 0 ? (
+        (participants.length === 0 ? (
           <EmptyState icon={<Users aria-hidden="true" />} title={t("empty")} />
         ) : (
           <ul className="divide-y divide-border">
-            {(event.data?.participants ?? []).map((participant) => {
+            {participants.map((participant) => {
               const name =
                 participant.scope === "student"
                   ? (studentNameById.get(participant.student_user_id ?? "")?.name ?? t("unknown"))

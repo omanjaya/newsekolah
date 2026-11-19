@@ -61,6 +61,13 @@ export function ActivitiesCalendarView(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
 
   const [opened, setOpened] = useState<ActivityEvent | null>(null);
+  // The last event opened, kept through the dialog's close animation so its
+  // title and body do not blank out while it fades.
+  const [shownEvent, setShownEvent] = useState<ActivityEvent | null>(null);
+  const openEvent = (event: ActivityEvent) => {
+    setOpened(event);
+    setShownEvent(event);
+  };
   const participantsHeadingId = useId();
 
   const events = data?.data ?? [];
@@ -101,7 +108,7 @@ export function ActivitiesCalendarView(): ReactElement {
                       label: t("participants.title"),
                       icon: <Users />,
                       onClick: () => {
-                        setOpened(row.original);
+                        openEvent(row.original);
                       },
                     },
                     {
@@ -167,7 +174,7 @@ export function ActivitiesCalendarView(): ReactElement {
           onRetry={() => void refetch()}
           getRowId={(item) => item.id}
           onRowActivate={(item) => {
-            setOpened(item);
+            openEvent(item);
           }}
           fillHeight
           emptyState={
@@ -243,18 +250,20 @@ export function ActivitiesCalendarView(): ReactElement {
         }}
       >
         <DialogContent
-          title={opened?.name ?? t("participants.title")}
+          title={shownEvent?.name ?? t("participants.title")}
           description={
-            opened ? formatDayRange(opened.start_date, opened.end_date, locale) : undefined
+            shownEvent
+              ? formatDayRange(shownEvent.start_date, shownEvent.end_date, locale)
+              : undefined
           }
         >
-          {opened && (
+          {shownEvent && (
             <div className="flex flex-col gap-4">
               <DataList>
-                <DataListItem label={t("columns.location")}>{opened.location}</DataListItem>
+                <DataListItem label={t("columns.location")}>{shownEvent.location}</DataListItem>
                 <DataListItem label={t("form.description")}>
-                  {opened.description && (
-                    <p className="whitespace-pre-line">{opened.description}</p>
+                  {shownEvent.description && (
+                    <p className="whitespace-pre-line">{shownEvent.description}</p>
                   )}
                 </DataListItem>
               </DataList>
@@ -265,7 +274,7 @@ export function ActivitiesCalendarView(): ReactElement {
                   title={t("participants.title")}
                   titleId={participantsHeadingId}
                 />
-                <ActivityParticipants activityId={opened.id} canManage={canManage} />
+                <ActivityParticipants activityId={shownEvent.id} canManage={canManage} />
               </section>
             </div>
           )}
