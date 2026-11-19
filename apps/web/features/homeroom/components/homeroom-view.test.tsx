@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -341,13 +341,32 @@ describe("HomeroomView overview", () => {
     expect(hero?.parentElement).toHaveTextContent("Sen, 28 Sep");
   });
 
+  // Radix shows the chosen panel a render after the tab changes, and a
+  // browser does not focus a hidden element: focusing it at once left
+  // focus on <body> (audit r4-r3-n22). jsdom focuses hidden elements, so
+  // the test refuses them as a browser does.
   it("moves focus to the class attendance list when a stat cell opens it", async () => {
-    const user = userEvent.setup();
-    render(<HomeroomView />);
+    // eslint-disable-next-line @typescript-eslint/unbound-method -- called with its element below
+    const realFocus = HTMLElement.prototype.focus;
+    const spy = vi.spyOn(HTMLElement.prototype, "focus").mockImplementation(function (
+      this: HTMLElement,
+      options?: FocusOptions,
+    ) {
+      if (this.closest("[hidden]")) return;
+      realFocus.call(this, options);
+    });
+    try {
+      const user = userEvent.setup();
+      render(<HomeroomView />);
 
-    await user.click(screen.getByRole("button", { name: /statAbsent/ }));
+      await user.click(screen.getByRole("button", { name: /statAbsent/ }));
 
-    expect(screen.getByRole("tabpanel")).toHaveFocus();
+      await waitFor(() => {
+        expect(screen.getByRole("tabpanel")).toHaveFocus();
+      });
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("says the day did not load instead of a false all-clear, with one retry", async () => {

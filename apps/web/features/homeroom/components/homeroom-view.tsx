@@ -114,8 +114,17 @@ export function HomeroomView(): ReactElement {
   const focusAttendance = useRef(false);
   useEffect(() => {
     if (tab !== "attendance" || !focusAttendance.current) return;
-    focusAttendance.current = false;
-    attendancePanel.current?.focus();
+    // Radix keeps every panel mounted but shows the chosen one (drops its
+    // `hidden`) only in a render after this one commits, and a hidden
+    // element takes no focus: focusing it here left focus on <body>
+    // (audit r4-r3-n22). A frame later the panel is shown.
+    const frame = requestAnimationFrame(() => {
+      focusAttendance.current = false;
+      attendancePanel.current?.focus();
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+    };
   }, [tab]);
 
   const rows = data?.data ?? [];
