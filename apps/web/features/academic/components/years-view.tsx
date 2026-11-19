@@ -14,15 +14,16 @@ import {
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Archive, CalendarRange, CircleCheck, ListTree, Pencil, Plus } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { formatCalendarDateRange } from "../../../lib/format-calendar-date";
+import { useQuickAction } from "../../../lib/hooks/use-quick-action";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { ADD_ACADEMIC_YEAR_ACTION } from "../../../lib/quick-actions";
 import { useCan } from "../../../lib/session/session-provider";
 import {
   type AcademicYear,
@@ -32,7 +33,6 @@ import {
   useCreateAcademicYearMutation,
   useUpdateAcademicYearMutation,
 } from "../api";
-import { NEW_YEAR_PARAM } from "../lib/year-links";
 
 import { AcademicWorkspaceLinks } from "./academic-workspace-links";
 import { TermsPanel } from "./terms-panel";
@@ -44,7 +44,6 @@ interface PendingAction {
 }
 
 const ARCHIVED_VALUES = ["", "true"] as const;
-const NEW_PARAM = NEW_YEAR_PARAM;
 
 export function YearsView(): ReactElement {
   const tWorkspace = useTranslations("app.academic.workspace");
@@ -65,20 +64,16 @@ export function YearsView(): ReactElement {
   const activate = useActivateAcademicYearMutation();
   const archive = useArchiveAcademicYearMutation();
 
-  // `?new=1` (the year-pair step's "Tambah tahun ajaran" link) opens the
-  // add dialog straight away, so the reader does not have to find it again.
-  const searchParams = useSearchParams();
-  const [editing, setEditing] = useState<AcademicYear | "new" | null>(() =>
-    canManage && searchParams.get(NEW_PARAM) === "1" ? "new" : null,
+  const [editing, setEditing] = useState<AcademicYear | "new" | null>(null);
+  // The year-pair step's "Tambah tahun ajaran" link opens the add dialog
+  // straight away, so the reader does not have to find it again.
+  useQuickAction(
+    ADD_ACADEMIC_YEAR_ACTION,
+    () => {
+      setEditing("new");
+    },
+    canManage,
   );
-  const closeEditing = () => {
-    setEditing(null);
-    const url = new URL(window.location.href);
-    if (!url.searchParams.has(NEW_PARAM)) return;
-    // Dropped once the dialog closes, so a reload or Back does not reopen it.
-    url.searchParams.delete(NEW_PARAM);
-    window.history.replaceState(null, "", url.href);
-  };
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [managingTerms, setManagingTerms] = useState<AcademicYear | null>(null);
 
@@ -278,7 +273,7 @@ export function YearsView(): ReactElement {
       <YearFormDialog
         target={editing}
         onOpenChange={(open) => {
-          if (!open) closeEditing();
+          if (!open) setEditing(null);
         }}
         pending={create.isPending || update.isPending}
         onSubmit={(body) => {
@@ -287,7 +282,7 @@ export function YearsView(): ReactElement {
               if (editing === "new") await create.mutateAsync(body);
               else if (editing) await update.mutateAsync({ id: editing.id, body });
               toast.success(t("saved"));
-              closeEditing();
+              setEditing(null);
             } catch (error) {
               fail(error);
             }

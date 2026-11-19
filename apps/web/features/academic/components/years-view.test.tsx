@@ -125,19 +125,32 @@ describe("YearsView first use", () => {
     expect(adds.filter((button) => button.className.includes("border-border"))).toHaveLength(1);
   });
 
-  it("opens the add dialog straight away from ?new=1, and drops the flag once closed", () => {
-    window.history.replaceState(null, "", "/academic/years?new=1");
+  it("opens the add dialog straight away from the add-year quick action, and drops the flag", () => {
+    window.history.replaceState(null, "", "/academic/years?quick=add-academic-year");
     render(<YearsView />);
     expect(mocks.dialogTarget).toBe("new");
+    expect(new URLSearchParams(window.location.search).has("quick")).toBe(false);
     act(() => {
       mocks.dialogClose?.();
     });
-    expect(new URLSearchParams(window.location.search).has("new")).toBe(false);
+    expect(mocks.dialogTarget).toBeNull();
   });
 
-  it("ignores ?new=1 for a reader who cannot add a year", () => {
+  it("opens the dialog once the session shows the reader may add a year", () => {
     mocks.canManage = false;
-    window.history.replaceState(null, "", "/academic/years?new=1");
+    window.history.replaceState(null, "", "/academic/years?quick=add-academic-year");
+    const { rerender } = render(<YearsView />);
+    expect(mocks.dialogTarget).toBeNull();
+
+    mocks.canManage = true;
+    rerender(<YearsView />);
+    expect(mocks.dialogTarget).toBe("new");
+    expect(new URLSearchParams(window.location.search).has("quick")).toBe(false);
+  });
+
+  it("ignores the add-year quick action for a reader who cannot add a year", () => {
+    mocks.canManage = false;
+    window.history.replaceState(null, "", "/academic/years?quick=add-academic-year");
     render(<YearsView />);
     expect(mocks.dialogTarget).toBeNull();
   });

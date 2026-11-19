@@ -12,6 +12,16 @@ import { canOpenPath } from "./navigation-permissions";
  */
 export const QUICK_ACTION_PARAM = "quick";
 
+/**
+ * In-page action on the academic years screen that opens its add dialog.
+ * Not a palette entry: the yearly flows link to it when they need a
+ * second year.
+ */
+export const ADD_ACADEMIC_YEAR_ACTION = "add-academic-year";
+
+/** The academic years screen with its add dialog already open. */
+export const ADD_ACADEMIC_YEAR_HREF = `/academic/years?${QUICK_ACTION_PARAM}=${ADD_ACADEMIC_YEAR_ACTION}`;
+
 export type QuickActionId =
   | "record-violation"
   | "submit-leave"

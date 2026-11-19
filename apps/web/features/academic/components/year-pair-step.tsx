@@ -18,9 +18,9 @@ import { useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { ADD_ACADEMIC_YEAR_HREF } from "../../../lib/quick-actions";
 import { useCan } from "../../../lib/session/session-provider";
 import type { AcademicYear } from "../api";
-import { NEW_ACADEMIC_YEAR_HREF } from "../lib/year-links";
 
 /**
  * The two years of a yearly flow, kept in the URL (`fromYear`, `toYear`)
@@ -158,7 +158,7 @@ export function YearPairStep({
           action={
             canAddYear ? (
               <Button asChild size="sm" variant="secondary" icon={<Plus />}>
-                <Link href={NEW_ACADEMIC_YEAR_HREF}>{t("addYear")}</Link>
+                <Link href={ADD_ACADEMIC_YEAR_HREF}>{t("addYear")}</Link>
               </Button>
             ) : undefined
           }

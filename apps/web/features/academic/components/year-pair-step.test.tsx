@@ -73,7 +73,7 @@ describe("YearPairStep", () => {
     expect(screen.getByText("needTwoYears")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "addYear" })).toHaveAttribute(
       "href",
-      "/academic/years?new=1",
+      "/academic/years?quick=add-academic-year",
     );
   });
 
