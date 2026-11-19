@@ -34,5 +34,9 @@ it("names the visitor pass in the meta line for a phone, where the trailing badg
   const passes = screen.getAllByText(/badgeNumber 12/);
   // One for the phone (meta line, hidden from sm), one for wider screens (trailing badge).
   expect(passes).toHaveLength(2);
-  expect(passes.some((el) => el.classList.contains("sm:hidden"))).toBe(true);
+  const phonePass = passes.find((el) => el.classList.contains("sm:hidden"));
+  expect(phonePass).toBeDefined();
+  // A long host and arrival line truncates; the pass number must not go with it.
+  expect(phonePass?.closest(".truncate")).toBeNull();
+  expect(phonePass).toHaveClass("shrink-0");
 });
