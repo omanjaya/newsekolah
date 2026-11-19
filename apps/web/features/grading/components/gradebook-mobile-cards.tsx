@@ -16,6 +16,7 @@ import type { ReactElement } from "react";
 
 import type { AssessmentComponent, GradebookStudent } from "../api";
 import { formatScore } from "../lib/format-score";
+import { type StarBalances, starBalanceLabel } from "../lib/star-balances";
 
 import { GradebookScoreCell } from "./gradebook-score-cell";
 import type { Edits } from "./gradebook-types";
@@ -27,7 +28,7 @@ export interface GradebookMobileCardsProps {
   canManage: boolean;
   edits: Edits;
   cellValue: (componentId: string, student: GradebookStudent) => string;
-  starBalances: Map<string, number>;
+  starBalances: StarBalances;
   scaleMin: number;
   scaleMax: number;
   rangeHint: string;
@@ -90,7 +91,7 @@ export function GradebookMobileCards({
                   aria-label={t("starsFor", { name: student.name })}
                 >
                   <Star aria-hidden="true" />
-                  {starBalances.get(student.student_user_id) ?? 0}
+                  {starBalanceLabel(starBalances, student.student_user_id)}
                 </Button>
               }
             >

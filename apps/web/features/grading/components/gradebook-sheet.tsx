@@ -41,6 +41,7 @@ import {
   gradebookTuntasRate,
   gradebookUngradedCount,
 } from "../lib/gradebook-stats";
+import type { StarBalances } from "../lib/star-balances";
 
 import { ComponentDialog } from "./component-dialog";
 import { GradebookExportScopePicker } from "./gradebook-export-scope-picker";
@@ -127,9 +128,13 @@ export function GradebookSheet({
   // fresh `starBalances` identity on every render of this component (e.g.
   // every keystroke in the search box) even when the underlying balances
   // had not changed, which a Map's reference identity cannot express to a
-  // memoized consumer the way a primitive value can.
-  const starBalances = useMemo(
-    () => new Map((starBalancesQuery.data?.data ?? []).map((b) => [b.student_user_id, b.balance])),
+  // memoized consumer the way a primitive value can. `null` until they
+  // load (or when they cannot), so the rows show "-" rather than 0.
+  const starBalances = useMemo<StarBalances>(
+    () =>
+      starBalancesQuery.data
+        ? new Map(starBalancesQuery.data.data.map((b) => [b.student_user_id, b.balance]))
+        : null,
     [starBalancesQuery.data],
   );
 
@@ -361,7 +366,7 @@ export function GradebookSheet({
           studentName={starTarget.name}
           classId={sheet.class_id}
           subjectId={sheet.subject_id}
-          currentBalance={starBalances.get(starTarget.student_user_id) ?? 0}
+          currentBalance={starBalances?.get(starTarget.student_user_id) ?? 0}
         />
       )}
 
