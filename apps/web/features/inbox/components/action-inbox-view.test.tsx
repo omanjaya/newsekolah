@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ActionInboxView } from "./action-inbox-view";
@@ -27,18 +27,61 @@ vi.mock("../../../lib/session/session-provider", () => ({
 }));
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../use-action-inbox-count", () => ({ useActionInboxSummary: mocks.summary }));
-vi.mock("../../permits/components/permit-unified-queue", () => ({
-  PermitUnifiedQueue: ({ onSheetOpenChange }: { onSheetOpenChange?: (open: boolean) => void }) => (
-    <div data-testid="permit-queue">
-      <button type="button" onClick={() => onSheetOpenChange?.(true)}>
-        open-sheet
-      </button>
-      <button type="button" onClick={() => onSheetOpenChange?.(false)}>
-        close-sheet
-      </button>
-    </div>
-  ),
-}));
+vi.mock("../../permits/components/permit-unified-queue", async () => {
+  const { Dialog, DialogContent } = await import("@newsekolah/ui");
+  const { useState } = await import("react");
+  /**
+   * The queue's sheet in miniature: a real dialog opened from a row's
+   * button, which closes itself (as an approved stage does) after the
+   * row, and its button, left the queue.
+   */
+  function PermitUnifiedQueue({
+    onSheetOpenChange,
+    returnFocusFallback,
+  }: {
+    onSheetOpenChange?: (open: boolean) => void;
+    returnFocusFallback?: () => HTMLElement | null | undefined;
+  }) {
+    const [open, setOpen] = useState(false);
+    const [rowGone, setRowGone] = useState(false);
+    return (
+      <div data-testid="permit-queue">
+        <button type="button" onClick={() => onSheetOpenChange?.(true)}>
+          open-sheet
+        </button>
+        <button type="button" onClick={() => onSheetOpenChange?.(false)}>
+          close-sheet
+        </button>
+        {!rowGone && (
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(true);
+              onSheetOpenChange?.(true);
+            }}
+          >
+            open-row
+          </button>
+        )}
+        <Dialog open={open}>
+          <DialogContent title="sheet" returnFocusFallback={returnFocusFallback}>
+            <button
+              type="button"
+              onClick={() => {
+                setRowGone(true);
+                setOpen(false);
+                onSheetOpenChange?.(false);
+              }}
+            >
+              approved-close
+            </button>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+  return { PermitUnifiedQueue };
+});
 vi.mock("./warning-letter-candidates-section", () => ({
   WarningLetterCandidatesSection: () => <div data-testid="sp-section" />,
 }));
@@ -126,6 +169,45 @@ describe("ActionInboxView", () => {
     fireEvent.click(screen.getByRole("button", { name: "close-sheet" }));
     expect(screen.getByText("emptyTitle")).toBeInTheDocument();
     expect(screen.queryByTestId("permit-queue")).not.toBeInTheDocument();
+  });
+
+  it("puts focus on the all-clear when the sheet closes itself after the last item", async () => {
+    mocks.permissions = new Set(["issue_scan_tokens"]);
+    mocks.summary.mockReturnValue(summary({ leave: 1, warningLetters: 0, total: 1 }));
+    const { rerender } = render(<ActionInboxView />);
+    fireEvent.click(screen.getByRole("button", { name: "open-row" }));
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+
+    mocks.summary.mockReturnValue(summary({ leave: 0, warningLetters: 0, total: 0 }));
+    rerender(<ActionInboxView />);
+    fireEvent.click(screen.getByRole("button", { name: "approved-close" }));
+
+    const allClear = screen.getByText("emptyTitle").closest<HTMLElement>("#inbox-all-clear");
+    expect(allClear).not.toBeNull();
+    await waitFor(() => {
+      expect(allClear).toHaveFocus();
+    });
+    expect(document.body).not.toHaveFocus();
+  });
+
+  it("puts focus on the permits heading when the sheet's row left but other work waits", async () => {
+    mocks.permissions = new Set(["issue_scan_tokens", "issue_warning_letters"]);
+    const { rerender } = render(<ActionInboxView />);
+    fireEvent.click(screen.getByRole("button", { name: "open-row" }));
+    await waitFor(() => {
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+
+    mocks.summary.mockReturnValue(summary({ leave: 0, warningLetters: 1, total: 1 }));
+    rerender(<ActionInboxView />);
+    fireEvent.click(screen.getByRole("button", { name: "approved-close" }));
+
+    const heading = screen.getByRole("heading", { name: "permits" });
+    await waitFor(() => {
+      expect(heading).toHaveFocus();
+    });
   });
 
   it("offers the warning letters as the history of an all-clear issuer", () => {

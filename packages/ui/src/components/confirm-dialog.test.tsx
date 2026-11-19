@@ -1,9 +1,10 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
+import { endExitAnimation, playExitAnimations } from "../test/exit-animation.js";
 
 import { Button } from "./button.js";
 import { ConfirmDialog } from "./confirm-dialog.js";
@@ -36,6 +37,83 @@ function Harness({ onConfirm }: { onConfirm: () => void }) {
     </>
   );
 }
+
+/** A caller that clears its target as the dialog closes, as most do. */
+function TargetHarness({ onConfirm }: { onConfirm?: () => void }) {
+  const [target, setTarget] = useState<string | null>(null);
+  return (
+    <>
+      <Button
+        onClick={() => {
+          setTarget("Fisika");
+        }}
+      >
+        Hapus Fisika
+      </Button>
+      <Button
+        onClick={() => {
+          setTarget("Kimia");
+        }}
+      >
+        Hapus Kimia
+      </Button>
+      <ConfirmDialog
+        open={target !== null}
+        onOpenChange={(open) => {
+          if (!open) setTarget(null);
+        }}
+        title={target ? `Hapus ${target}?` : ""}
+        description={target ? `${target} dihapus dari tahun ini.` : ""}
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        tone="danger"
+        onConfirm={() => {
+          onConfirm?.();
+          setTarget(null);
+        }}
+      />
+    </>
+  );
+}
+
+describe("ConfirmDialog while it closes", () => {
+  it.each([
+    ["cancelled", "Batal"],
+    ["confirmed", "Hapus"],
+  ])("keeps its title and body when %s and the caller clears its target", async (_, button) => {
+    const restore = playExitAnimations();
+    try {
+      const user = userEvent.setup({ pointerEventsCheck: 0 });
+      render(<TargetHarness />);
+      await user.click(screen.getByRole("button", { name: "Hapus Fisika" }));
+      const dialog = await screen.findByRole("dialog");
+      await user.click(within(dialog).getByRole("button", { name: button }));
+
+      // Still on screen, fading out: it says what it said.
+      expect(dialog).toHaveAttribute("data-state", "closed");
+      expect(dialog).toHaveTextContent("Hapus Fisika?");
+      expect(dialog).toHaveTextContent("Fisika dihapus dari tahun ini.");
+
+      endExitAnimation(dialog);
+      await waitFor(() => expect(dialog).not.toBeInTheDocument());
+    } finally {
+      restore();
+    }
+  });
+
+  it("speaks of the new target when it opens again", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    render(<TargetHarness />);
+    await user.click(screen.getByRole("button", { name: "Hapus Fisika" }));
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "Hapus Kimia" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveAccessibleName("Hapus Kimia?");
+    expect(dialog).toHaveAccessibleDescription("Kimia dihapus dari tahun ini.");
+  });
+});
 
 describe("ConfirmDialog", () => {
   it("does not call onConfirm just by opening", async () => {

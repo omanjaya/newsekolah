@@ -189,4 +189,99 @@ describe("focus return after a dialog opened from state", () => {
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.getByRole("textbox", { name: "Tujuan" })).toHaveFocus());
   });
+  it.each(["dialog", "sheet"] as const)(
+    "%s: goes to the fallback when the opener left the page meanwhile",
+    async (kind) => {
+      const user = userEvent.setup();
+      function RowGone() {
+        const [open, setOpen] = useState(false);
+        const [row, setRow] = useState(true);
+        const close = () => {
+          setRow(false);
+          setOpen(false);
+        };
+        const body = (
+          <Button type="button" onClick={close}>
+            Selesai
+          </Button>
+        );
+        return (
+          <>
+            <h2 id="daftar">Daftar</h2>
+            {row && (
+              <Button
+                onClick={() => {
+                  setOpen(true);
+                }}
+              >
+                Buka
+              </Button>
+            )}
+            {kind === "dialog" ? (
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogContent
+                  title="Rincian"
+                  returnFocusFallback={() => document.getElementById("daftar")}
+                >
+                  {body}
+                </DialogContent>
+              </Dialog>
+            ) : (
+              <Sheet open={open} onOpenChange={setOpen}>
+                <SheetContent
+                  title="Rincian"
+                  returnFocusFallback={() => document.getElementById("daftar")}
+                >
+                  {body}
+                </SheetContent>
+              </Sheet>
+            )}
+          </>
+        );
+      }
+      render(<RowGone />);
+      await user.click(screen.getByRole("button", { name: "Buka" }));
+      await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
+      await user.click(screen.getByRole("button", { name: "Selesai" }));
+
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      const heading = screen.getByRole("heading", { name: "Daftar" });
+      await waitFor(() => expect(heading).toHaveFocus());
+      expect(heading).toHaveAttribute("tabindex", "-1");
+      expect(heading.closest("[aria-hidden='true']")).toBeNull();
+    },
+  );
+
+  it("prefers the opener over the fallback while the opener is still there", async () => {
+    const user = userEvent.setup();
+    function Kept() {
+      const [open, setOpen] = useState(false);
+      return (
+        <>
+          <h2 id="daftar">Daftar</h2>
+          <Button
+            onClick={() => {
+              setOpen(true);
+            }}
+          >
+            Buka
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogContent
+              title="Rincian"
+              returnFocusFallback={() => document.getElementById("daftar")}
+            >
+              <input aria-label="Catatan" />
+            </DialogContent>
+          </Dialog>
+        </>
+      );
+    }
+    render(<Kept />);
+    const opener = screen.getByRole("button", { name: "Buka" });
+    await user.click(opener);
+    await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(opener).toHaveFocus());
+  });
 });

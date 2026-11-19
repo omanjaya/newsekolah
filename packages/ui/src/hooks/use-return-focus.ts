@@ -4,6 +4,14 @@ import { useRef } from "react";
 
 type AutoFocusHandler = ((event: Event) => void) | undefined;
 
+/**
+ * Where focus goes when the element that opened a dialog is gone by the
+ * time it closes (its row left the list, its section was swapped out).
+ * Read once the dialog has closed, so it can name an element the close
+ * itself brought in.
+ */
+export type ReturnFocusFallback = () => HTMLElement | null | undefined;
+
 export interface ReturnFocusHandlers {
   onOpenAutoFocus: (event: Event) => void;
   onCloseAutoFocus: (event: Event) => void;
@@ -59,11 +67,14 @@ function returnCandidates(active: HTMLElement): HTMLElement[] {
  * Spread the result onto `DialogPrimitive.Content`, passing the caller's
  * own handlers through. A caller that prevents the close event's default
  * keeps full control. When nothing remembered can take focus any more,
- * Radix's own behaviour (its trigger, if there is one) runs instead.
+ * `fallback` names where it goes instead (a heading or a region is made
+ * focusable with `tabindex="-1"`); without one, Radix's own behaviour
+ * (its trigger, if there is one) runs.
  */
 export function useReturnFocus(
   onOpenAutoFocus: AutoFocusHandler,
   onCloseAutoFocus: AutoFocusHandler,
+  fallback?: ReturnFocusFallback,
 ): ReturnFocusHandlers {
   const returnTo = useRef<HTMLElement[]>([]);
   return {
@@ -88,6 +99,14 @@ export function useReturnFocus(
           return;
         }
       }
+      const target = fallback?.();
+      if (!target?.isConnected) return;
+      // A heading or a region is not focusable by itself.
+      if (target.tabIndex < 0 && !target.hasAttribute("tabindex")) {
+        target.setAttribute("tabindex", "-1");
+      }
+      target.focus();
+      if (document.activeElement === target) event.preventDefault();
     },
   };
 }

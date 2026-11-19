@@ -265,7 +265,17 @@ export function Field({
             <div className="flex shrink-0 items-center text-body-sm">{labelAside}</div>
           )}
         </div>
-        <div className={cn("min-w-0", horizontal && "sm:col-start-2", inline && "flex")}>
+        <div
+          className={cn(
+            "min-w-0",
+            // As tall as the label row at least, with a shorter control (a
+            // Switch) centred in it, so it sits level with the label
+            // instead of riding at the top of the row.
+            horizontal &&
+              "sm:col-start-2 sm:grid sm:grid-cols-1 sm:min-h-11 sm:items-center md:pointer-fine:min-h-9",
+            inline && "flex",
+          )}
+        >
           {control}
         </div>
         {(hasHint || hasError) && (

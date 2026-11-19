@@ -218,6 +218,61 @@ describe("KioskView", () => {
     }
   });
 
+  it("puts keyboard focus on the card field when the session times out", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(pointer: fine)",
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+    try {
+      render(<KioskView />);
+      scanCard(MEMBER_USER_ID);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      // The reader left focus on a control of the session, which goes with it.
+      screen.getByRole("button", { name: "active.done" }).focus();
+
+      act(() => {
+        vi.advanceTimersByTime(20_000);
+      });
+
+      expect(screen.getByRole("heading", { level: 1, name: "idle.title" })).toBeInTheDocument();
+      expect(screen.getByLabelText("idle.scanLabel")).toHaveFocus();
+      expect(document.body).not.toHaveFocus();
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("does not pull focus from outside the kiosk when the session times out", async () => {
+    vi.useFakeTimers();
+    const outside = document.createElement("button");
+    outside.textContent = "outside";
+    document.body.append(outside);
+    try {
+      render(<KioskView />);
+      scanCard(MEMBER_USER_ID);
+      await act(async () => {
+        await Promise.resolve();
+      });
+      outside.focus();
+
+      act(() => {
+        vi.advanceTimersByTime(20_000);
+      });
+
+      expect(screen.getByRole("heading", { level: 1, name: "idle.title" })).toBeInTheDocument();
+      expect(outside).toHaveFocus();
+    } finally {
+      outside.remove();
+      vi.useRealTimers();
+    }
+  });
+
   it("leaves focus alone on first load", () => {
     render(<KioskView />);
     expect(screen.getByLabelText("idle.scanLabel")).not.toHaveFocus();

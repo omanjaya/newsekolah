@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -258,6 +258,106 @@ describe("permit queue late arrival actions", () => {
     await userEvent.click(screen.getByRole("button", { name: "student-scanned" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(onSheetOpenChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it("keeps naming the student once a refetch drops the approved row from the lookup", async () => {
+    // The directory resolves only the ids it is asked for, as the real
+    // per-id lookup does: an id that leaves the list leaves the map.
+    mocks.directory.mockImplementation(
+      (ids: string[]) =>
+        new Map(
+          ids
+            .filter((id) => id === "student-b")
+            .map((id) => [id, { id, name: "Siswa Dua Contoh" }]),
+        ),
+    );
+    mocks.late.mockReturnValue({
+      ...emptyResult,
+      data: { data: [{ ...lateItemAtLeadership("b"), class_name: "X-A" }] },
+    });
+    const { rerender } = render(<PermitUnifiedQueue />);
+    await userEvent.click(screen.getByRole("button", { name: "open" }));
+    expect(screen.getByRole("dialog")).toHaveAccessibleDescription("Siswa Dua Contoh · X-A");
+
+    mocks.late.mockReturnValue(emptyResult);
+    rerender(<PermitUnifiedQueue />);
+    expect(screen.getByRole("dialog")).toHaveAccessibleDescription("Siswa Dua Contoh · X-A");
+  });
+
+  it("moves focus to the next row's Tindak lanjuti when the sheet closes itself", async () => {
+    mocks.late.mockReturnValue({
+      ...emptyResult,
+      data: { data: [lateItemAtLeadership("b"), lateItemAtLeadership("c")] },
+    });
+    const { rerender } = render(<PermitUnifiedQueue />);
+    const [first] = screen.getAllByRole("button", { name: "open" });
+    if (!first) throw new Error("no row");
+    await userEvent.click(first);
+
+    // The scan passed the stage: the refetch drops the row and its button.
+    mocks.late.mockReturnValue({ ...emptyResult, data: { data: [lateItemAtLeadership("c")] } });
+    rerender(<PermitUnifiedQueue />);
+    await userEvent.click(screen.getByRole("button", { name: "student-scanned" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    const next = screen.getByRole("button", { name: "open" });
+    await waitFor(() => {
+      expect(next).toHaveFocus();
+    });
+    // Nothing still hides it from assistive technology.
+    expect(next.closest("[aria-hidden='true']")).toBeNull();
+  });
+
+  it("moves focus to the row that took a middle row's place, not to the top", async () => {
+    mocks.late.mockReturnValue({
+      ...emptyResult,
+      data: {
+        data: [lateItemAtLeadership("a"), lateItemAtLeadership("b"), lateItemAtLeadership("c")],
+      },
+    });
+    const { rerender } = render(<PermitUnifiedQueue />);
+    const second = screen.getAllByRole("button", { name: "open" })[1];
+    if (!second) throw new Error("no second row");
+    await userEvent.click(second);
+    expect(screen.getByTestId("approve-panel")).toHaveTextContent("late_arrival:b");
+
+    mocks.late.mockReturnValue({
+      ...emptyResult,
+      data: { data: [lateItemAtLeadership("a"), lateItemAtLeadership("c")] },
+    });
+    rerender(<PermitUnifiedQueue />);
+    await userEvent.click(screen.getByRole("button", { name: "student-scanned" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    // The old third row now sits second.
+    const next = screen.getAllByRole("button", { name: "open" })[1];
+    await waitFor(() => {
+      expect(next).toHaveFocus();
+    });
+  });
+
+  it("hands focus to the host's fallback when the last row left with the sheet", async () => {
+    mocks.late.mockReturnValue({ ...emptyResult, data: { data: [lateItemAtLeadership("b")] } });
+    const heading = document.createElement("h2");
+    heading.textContent = "permits";
+    document.body.append(heading);
+    const fallback = () => heading;
+    const { rerender } = render(<PermitUnifiedQueue returnFocusFallback={fallback} />);
+    await userEvent.click(screen.getByRole("button", { name: "open" }));
+
+    mocks.late.mockReturnValue(emptyResult);
+    rerender(<PermitUnifiedQueue returnFocusFallback={fallback} />);
+    await userEvent.click(screen.getByRole("button", { name: "student-scanned" }));
+
+    await waitFor(() => {
+      expect(heading).toHaveFocus();
+    });
+    expect(heading).toHaveAttribute("tabindex", "-1");
+    heading.remove();
   });
 
   it("opens the approver's stage QR for a late arrival waiting at a QR stage", async () => {

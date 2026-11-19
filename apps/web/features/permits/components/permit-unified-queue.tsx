@@ -13,11 +13,12 @@ import {
   SkeletonList,
   cn,
   useToast,
+  type ReturnFocusFallback,
 } from "@newsekolah/ui";
 import { Inbox } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
@@ -48,11 +49,18 @@ import { PermitQueueCard } from "./permit-queue-card";
  * (the stage it approves has passed) leaves it open; a host that swaps the
  * whole queue out when nothing is left waiting (the inbox's all-clear)
  * waits for the sheet to close, so its success line can be read.
+ *
+ * When the sheet closes after its row left the queue (the approval it
+ * showed went through), focus moves to the next row's "Tindak lanjuti",
+ * or, with no row left, to `returnFocusFallback`: the host's heading or
+ * whatever it swapped the queue for.
  */
 export function PermitUnifiedQueue({
   onSheetOpenChange,
+  returnFocusFallback,
 }: {
   onSheetOpenChange?: (open: boolean) => void;
+  returnFocusFallback?: ReturnFocusFallback;
 } = {}): ReactElement {
   const t = useTranslations("app.serviceWorkspace");
   const tLeave = useTranslations("app.permits.leave");
@@ -73,7 +81,14 @@ export function PermitUnifiedQueue({
   const review = useReviewLeaveRequestMutation();
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<PermitQueueRow | null>(null);
-  const select = (row: PermitQueueRow | null) => {
+  // Where the open sheet's row sat in the list, so focus can land on the
+  // row that takes its place once the row is gone.
+  const selectedIndex = useRef(0);
+  const listRef = useRef<HTMLUListElement>(null);
+  // Closing passes no index, so the opener's position survives until
+  // focus has moved.
+  const select = (row: PermitQueueRow | null, index?: number) => {
+    if (row !== null && index !== undefined) selectedIndex.current = index;
     setSelected(row);
     onSheetOpenChange?.(row !== null);
   };
@@ -97,9 +112,13 @@ export function PermitUnifiedQueue({
     exit: canApprove || canGate ? exit.data?.data : undefined,
     late: canLate ? late.data?.data : undefined,
   });
-  // Rows from the late-arrival queue carry no name; look those up.
+  // Rows from the late-arrival queue carry no name; look those up. The open
+  // sheet's student stays in the lookup after a refetch drops the row (its
+  // stage was approved), so the sheet goes on naming them.
   const names = useDirectoryNames(
-    rows.filter((row) => row.studentName.length === 0).map((row) => row.studentId),
+    [...rows, ...(selected ? [selected] : [])]
+      .filter((row) => row.studentName.length === 0)
+      .map((row) => row.studentId),
     canLate,
   );
   const nameFor = (row: PermitQueueRow) =>
@@ -176,6 +195,12 @@ export function PermitUnifiedQueue({
   const closeSelected = () => {
     select(null);
   };
+  // The opener left with its row: the row now in its place, else the last.
+  const focusAfterSheet = () => {
+    const openers = listRef.current?.querySelectorAll<HTMLElement>("[data-queue-open]");
+    const next = openers?.[Math.min(selectedIndex.current, openers.length - 1)];
+    return next ?? returnFocusFallback?.();
+  };
   // A late arrival at the picket review takes the review form, titled and
   // naming the student (and class) as the duty desk's review sheet is.
   const selectedLateReview =
@@ -186,7 +211,7 @@ export function PermitUnifiedQueue({
   );
   const selectableLeave = canLeave && visible.filter((row) => row.type === "leave").length > 1;
   const cells = bentoCells(
-    visible.map((row) => ({
+    visible.map((row, index) => ({
       key: `${row.type}-${row.id}`,
       node: (
         <PermitQueueCard
@@ -209,7 +234,7 @@ export function PermitUnifiedQueue({
             rejectLeave(row.id, reason);
           }}
           onOpenDetail={() => {
-            select(row);
+            select(row, index);
           }}
         />
       ),
@@ -287,7 +312,7 @@ export function PermitUnifiedQueue({
       )}
       {!loading && errors.length === 0 && visible.length > 0 && <BulkApproveBar bulk={bulk} />}
       {!loading && errors.length === 0 && visible.length > 0 && (
-        <ul className="grid gap-4 lg:grid-cols-2">
+        <ul ref={listRef} className="grid gap-4 lg:grid-cols-2">
           {cells.map((cell) => (
             <li
               key={cell.key}
@@ -305,6 +330,7 @@ export function PermitUnifiedQueue({
         }}
       >
         <DialogContent
+          returnFocusFallback={focusAfterSheet}
           title={
             selectedApproval
               ? selectedApproval.stage
