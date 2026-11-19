@@ -403,6 +403,11 @@ export function GradingView(): ReactElement {
             <EraporExport
               classes={classList}
               loading={scopeLoading}
+              classesError={classes.error}
+              onRetryClasses={() => {
+                void classes.refetch();
+              }}
+              retryingClasses={classes.isRefetching}
               defaultClassId={effectiveClassId}
               subjectsOf={eraporSubjectsOf}
               canPublishIn={canPublishIn}

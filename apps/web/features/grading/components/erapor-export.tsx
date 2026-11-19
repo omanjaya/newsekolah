@@ -63,6 +63,15 @@ export interface EraporExportProps {
   classes: EraporOption[];
   /** True while the page is still working out `classes`. */
   loading?: boolean;
+  /**
+   * Why the page could not work out `classes`, if it failed: shown as an
+   * error instead of the "no classes yet" empty state it would look like.
+   */
+  classesError?: unknown;
+  /** Retries loading `classes` after a transient failure. */
+  onRetryClasses?: () => void;
+  /** True while `classes` is being fetched again after a failure. */
+  retryingClasses?: boolean;
   /** The class to start on (the page's current sheet); else the first class. */
   defaultClassId?: string;
   /** The subjects of a class the viewer may export as a per-subject file. */
@@ -91,6 +100,9 @@ export interface EraporExportProps {
 export function EraporExport({
   classes,
   loading = false,
+  classesError,
+  onRetryClasses,
+  retryingClasses = false,
   defaultClassId = "",
   subjectsOf,
   canPublishIn,
@@ -172,6 +184,33 @@ export function EraporExport({
 
   if (loading) {
     return <SkeletonList rows={4} leading={false} />;
+  }
+  if (classes.length === 0 && classesError) {
+    return (
+      <Alert
+        variant="danger"
+        title={
+          classesError instanceof ApiError
+            ? apiErrorMessage(classesError.code)
+            : apiErrorMessage("UNKNOWN")
+        }
+        action={
+          onRetryClasses &&
+          isRetryableError(classesError) && (
+            <Button
+              size="sm"
+              variant="secondary"
+              loading={retryingClasses}
+              onClick={onRetryClasses}
+            >
+              {t("retry")}
+            </Button>
+          )
+        }
+      >
+        {t("classesError")}
+      </Alert>
+    );
   }
   if (classes.length === 0) {
     return (

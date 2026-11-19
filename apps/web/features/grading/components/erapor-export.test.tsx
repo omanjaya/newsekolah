@@ -182,6 +182,22 @@ describe("EraporExport class scope", () => {
     expect(previewMock).toHaveBeenLastCalledWith("", undefined);
   });
 
+  it("tells a failed class list apart from a school with no classes, and offers a retry", async () => {
+    emptyPreview();
+    const onRetryClasses = vi.fn();
+    const user = userEvent.setup();
+    renderExport({
+      classes: [],
+      classesError: new ApiError({ status: 503, code: "UNAVAILABLE", message: "down" }),
+      onRetryClasses,
+    });
+
+    expect(screen.queryByText("noClassesTitle")).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("classesError");
+    await user.click(screen.getByRole("button", { name: "retry" }));
+    expect(onRetryClasses).toHaveBeenCalledOnce();
+  });
+
   it("offers the per-subject file only for subjects of the exported class", async () => {
     emptyPreview();
     const subjectsOf = vi.fn(() => [{ id: "subject-1", name: "Matematika" }]);
