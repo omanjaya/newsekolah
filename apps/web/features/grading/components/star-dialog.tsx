@@ -28,13 +28,16 @@ export interface StarDialogProps {
   studentName: string;
   classId: string;
   subjectId?: string;
-  currentBalance: number;
+  /** The student's balance, or null while the class's balances are unknown. */
+  currentBalance: number | null;
 }
 
 /**
  * Records one +1 or -1 star event for a student, with an optional note.
  * The balance shown here is the class roster's cached balance, refreshed
- * by useGiveStarMutation's invalidation once the entry is saved. The
+ * by useGiveStarMutation's invalidation once the entry is saved; while
+ * that roster is loading or failed to load, the dialog says the balance
+ * is unknown rather than printing 0. The
  * caller mounts this only while a student is targeted, so each open
  * starts from a fresh instance with the form reset.
  */
@@ -95,7 +98,9 @@ export function StarDialog({
         >
           <p className="flex items-center gap-1.5 text-body-sm text-fg-muted">
             <Star className="size-4" aria-hidden="true" />
-            {t("currentBalance", { count: currentBalance })}
+            {currentBalance === null
+              ? t("currentBalanceUnknown")
+              : t("currentBalance", { count: currentBalance })}
           </p>
           <SegmentedControl<"give" | "take">
             aria-label={t("action")}

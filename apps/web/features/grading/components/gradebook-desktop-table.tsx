@@ -2,6 +2,7 @@
 
 import {
   Button,
+  IconButton,
   Table,
   TableBody,
   TableCell,
@@ -10,12 +11,13 @@ import {
   TableRow,
   cn,
 } from "@newsekolah/ui";
-import { Star } from "lucide-react";
+import { Pencil, Star } from "lucide-react";
 import { useLocale, type useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import type { AssessmentComponent, GradebookStudent } from "../api";
 import { formatScore } from "../lib/format-score";
+import { type StarBalances, starBalanceLabel } from "../lib/star-balances";
 
 import { GradebookColumnMenu } from "./gradebook-column-menu";
 import { GradebookScoreCell } from "./gradebook-score-cell";
@@ -29,7 +31,7 @@ export interface GradebookDesktopTableProps {
   edits: Edits;
   cellValue: (componentId: string, student: GradebookStudent) => string;
   savingComponentId: string | null;
-  starBalances: Map<string, number>;
+  starBalances: StarBalances;
   scaleMin: number;
   scaleMax: number;
   /** "Nilai {min}-{max}", precomputed once and reused on every out-of-range cell's inline hint. */
@@ -216,10 +218,25 @@ export function GradebookDesktopTable({
                 {live?.average !== undefined ? formatScore(live.average, locale) : "-"}
               </TableCell>
               <TableCell className="border-l border-line text-right tabular-nums">
-                {canManage ? (
-                  // Opens the override even without a score yet (a teacher
-                  // may set the report score directly), but an empty one
-                  // reads as a plain muted dash, not an underlined link.
+                {student.report_score === undefined ? (
+                  canManage ? (
+                    // Opens the override even without a score yet (a
+                    // teacher may set the report score directly): a pencil
+                    // with a real hit area and a tooltip, so it never
+                    // reads as the plain "-" of an empty cell beside it.
+                    <IconButton
+                      size="sm"
+                      icon={<Pencil />}
+                      aria-label={t("reportScoreSet", { name: student.name })}
+                      onClick={() => {
+                        onManualOverride(student);
+                      }}
+                      className="text-fg-muted hover:text-fg"
+                    />
+                  ) : (
+                    <span className="text-fg-muted">-</span>
+                  )
+                ) : canManage ? (
                   <Button
                     variant="link"
                     size="sm"
@@ -227,27 +244,14 @@ export function GradebookDesktopTable({
                       onManualOverride(student);
                     }}
                     title={pending ? t("reportScorePending") : undefined}
-                    aria-label={
-                      student.report_score === undefined
-                        ? t("reportScoreSet", { name: student.name })
-                        : undefined
-                    }
-                    className={
-                      student.report_score !== undefined
-                        ? "text-fg underline decoration-dotted underline-offset-2"
-                        : "font-normal text-fg-muted"
-                    }
+                    className="text-fg underline decoration-dotted underline-offset-2"
                   >
-                    {student.report_score !== undefined
-                      ? formatScore(student.report_score, locale)
-                      : "-"}
+                    {formatScore(student.report_score, locale)}
                   </Button>
-                ) : student.report_score !== undefined ? (
+                ) : (
                   <span className="text-label text-fg">
                     {formatScore(student.report_score, locale)}
                   </span>
-                ) : (
-                  <span className="text-fg-muted">-</span>
                 )}
                 {pending && (
                   <span
@@ -270,7 +274,7 @@ export function GradebookDesktopTable({
                   aria-label={t("starsFor", { name: student.name })}
                 >
                   <Star aria-hidden="true" />
-                  {starBalances.get(student.student_user_id) ?? 0}
+                  {starBalanceLabel(starBalances, student.student_user_id)}
                 </Button>
               </TableCell>
             </TableRow>

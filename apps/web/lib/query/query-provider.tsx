@@ -1,12 +1,12 @@
 "use client";
 
-import { ApiError } from "@newsekolah/api-client";
 import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { refreshSessionOnModuleDisabled } from "./module-disabled";
 import { createMutationCache } from "./mutation-cache";
+import { isRetryableError } from "./retryable-error";
 
 function createQueryClient() {
   // A request refused with MODULE_DISABLED means the session's module list is
@@ -21,12 +21,7 @@ function createQueryClient() {
     defaultOptions: {
       queries: {
         staleTime: 30_000,
-        retry: (failureCount, error) => {
-          if (error instanceof ApiError && error.status < 500) {
-            return false;
-          }
-          return failureCount < 2;
-        },
+        retry: (failureCount, error) => isRetryableError(error) && failureCount < 2,
       },
       mutations: {
         retry: false,

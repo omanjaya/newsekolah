@@ -118,6 +118,7 @@
   "starDialog": {
     "title": "Stars for {name}",
     "currentBalance": "Current balance: {count} stars",
+    "currentBalanceUnknown": "Current balance unknown",
     "action": "Action",
     "give": "Give",
     "take": "Take",
@@ -234,16 +235,23 @@
     "legacyHint": "The old per-subject sheet (No / NIS / Nama / Nilai Rapor / one column per mapped TP code / Validasi), for import tooling that still expects this shape.",
     "legacySubject": "Subject",
     "legacyDownload": "Download legacy sheet",
-    "pickClass": "Class"
+    "pickClass": "Class",
+    "retry": "Try again",
+    "notPublishedTitle": "No grades published for this class yet",
+    "notPublishedBodyManage": "Publish your subject's grades on the Grades tab, then come back here.",
+    "notPublishedBodyRead": "The subject teachers have not published this class's grades for this term yet.",
+    "openGradebook": "Open the Grades tab",
+    "noSubjectsTitle": "This class has no subjects yet",
+    "noSubjectsBody": "The e-Rapor export opens once this class has subjects with grade components."
   },
   "tpMapping": {
-    "pickTerm": "Select term",
+    "description": "The TP mapping fills the learning objective columns of the legacy e-Rapor sheet. For each component, enter its TP code and the score ranges: a score in the T range is marked Tuntas (met), a score in the R range Remedial.",
     "noComponents": "No formative components (or the tenant's configured TP kind) for this class, subject and term yet.",
     "columns": {
       "component": "Component",
       "exportCode": "Export code",
-      "rRange": "R range",
-      "tRange": "T range",
+      "rRange": "Remedial range (R)",
+      "tRange": "Met range (T)",
       "rMin": "R minimum",
       "rMax": "R maximum",
       "tMin": "T minimum",
@@ -268,5 +276,7 @@
     "tuntas": "Passing KKTP",
     "ungraded": "Not yet graded",
     "filled": "Scores filled"
-  }
+  },
+  "tpReadOnlyTitle": "The subject teacher maps the TP",
+  "tpReadOnlyBody": "Only a teacher who teaches this class and subject maps its TP. You can still view its grades on the Grades tab."
 }

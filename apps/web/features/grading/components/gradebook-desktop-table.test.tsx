@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { useTranslations } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 
@@ -69,12 +69,34 @@ describe("GradebookDesktopTable", () => {
     expect(screen.getByText(/missingCount:\{"count":1\}/)).toBeVisible();
   });
 
-  it("shows an empty report score as a muted dash a manager can still set", () => {
+  it("offers an empty report score to a manager as a pencil button, not a bare dash", () => {
+    const onManualOverride = vi.fn();
+    renderTable({ onManualOverride });
+    const button = screen.getByRole("button", { name: 'reportScoreSet:{"name":"Citra"}' });
+    expect(button).not.toHaveTextContent("-");
+    expect(button.querySelector("svg")).not.toBeNull();
+    // A real hit area (IconButton sm is 32px), not a 6px link around "-".
+    expect(button).toHaveClass("size-8");
+    fireEvent.click(button);
+    expect(onManualOverride).toHaveBeenCalledWith(empty);
+  });
+
+  it("keeps an existing report score as an underlined value a manager can change", () => {
     renderTable();
-    const set = screen.getByRole("button", { name: 'reportScoreSet:{"name":"Citra"}' });
-    expect(set).toHaveTextContent("-");
-    expect(set).toHaveClass("text-fg-muted");
-    expect(set).not.toHaveClass("underline");
+    expect(screen.getByRole("button", { name: /^88/ })).toHaveClass("underline");
+  });
+
+  it("shows a dash, not a false zero, while the star balances are unknown", () => {
+    renderTable({ starBalances: null });
+    expect(screen.getByRole("button", { name: 'starsFor:{"name":"Budi"}' })).toHaveTextContent("-");
+  });
+
+  it("shows each student's star balance once loaded", () => {
+    renderTable({ starBalances: new Map([["s1", 4]]) });
+    expect(screen.getByRole("button", { name: 'starsFor:{"name":"Budi"}' })).toHaveTextContent("4");
+    expect(screen.getByRole("button", { name: 'starsFor:{"name":"Citra"}' })).toHaveTextContent(
+      "0",
+    );
   });
 
   it("shows an empty report score as plain text to a reader", () => {

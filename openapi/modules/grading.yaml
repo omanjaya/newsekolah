@@ -468,7 +468,7 @@ paths:
     get:
       tags: [grading]
       operationId: getStarLedger
-      x-permission: manage_grades
+      x-permission: view_grades
       summary: One student's star ledger and balance
       parameters:
         - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
@@ -494,7 +494,7 @@ paths:
     get:
       tags: [grading]
       operationId: listClassStarBalances
-      x-permission: manage_grades
+      x-permission: view_grades
       summary: Star balances of one class
       parameters:
         - { name: classId, in: path, required: true, schema: { type: string, format: uuid } }

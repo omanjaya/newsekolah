@@ -102,6 +102,23 @@ func TestViewGradesScoping(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("principal (view_grades bypass) reads the class star balances and a student's ledger", func(t *testing.T) {
+		// GET /v1/grading/stars/class/{id} and /v1/grading/stars/{id} are
+		// reads like the gradebook: a school-wide reader sees real balances
+		// next to the scores, not a 403 the sheet would render as zeros.
+		_, err := svc.ClassStarBalances(ctx, fx.tenantID, principalLike.ID, true, fx.classID)
+		require.NoError(t, err)
+		_, _, err = svc.StarLedger(ctx, fx.tenantID, principalLike.ID, true, fx.studentID, true, 50)
+		require.NoError(t, err)
+	})
+
+	t.Run("a plain teacher still cannot read another class's star balances", func(t *testing.T) {
+		_, err := svc.ClassStarBalances(ctx, fx.tenantID, otherTeacher.ID, false, fx.classID)
+		require.ErrorIs(t, err, domain.ErrNotTeachingThisClass)
+		_, _, err = svc.StarLedger(ctx, fx.tenantID, otherTeacher.ID, false, fx.studentID, true, 50)
+		require.ErrorIs(t, err, domain.ErrNotTeachingThisClass)
+	})
+
 	t.Run("principal never gets the write bypass: saving scores on an unowned class is still refused", func(t *testing.T) {
 		// grading/transport/http/handler.go's canManageAny (manage_master_data
 		// only) is unchanged by this feature, so a principal -- who holds

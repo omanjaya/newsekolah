@@ -56,9 +56,9 @@ export function GradingView(): ReactElement {
   const canManageGrades = useCan("manage_grades");
   // view_grades is the read-only split of manage_grades (e.g. the
   // principal oversight role): every score/component/weight/publication
-  // control stays hidden (GradebookSheet's canManage prop, still driven
-  // by canManageGrades alone below), but the sheet itself, its export
-  // and the e-Rapor preview/download render with real values.
+  // control stays hidden (GradebookSheet's canManage prop, canEditSheet
+  // below), but the sheet itself, its export and the e-Rapor
+  // preview/download render with real values.
   const canViewGrades = useCan("view_grades");
   const canManageSettings = useCan("manage_settings");
 
@@ -67,15 +67,20 @@ export function GradingView(): ReactElement {
   // transport/http/handler.go's canViewAny -- the same supervisory
   // bypass attendance's Actor.CanViewAll uses); a teacher gets the
   // classes and subjects they are assigned to teach, so the pickers
-  // never offer a sheet that would come back forbidden.
+  // never offer a sheet that would come back forbidden. Reading any
+  // sheet is not editing it: every write still needs the actor to teach
+  // the pair (or manage_master_data), so a school-wide reader who also
+  // teaches (a counselor, a vice principal) still loads their own
+  // assignments to know which sheets they may edit.
   const canManageAny = useCan("manage_master_data");
   const canViewReports = useCan("view_reports");
   const canOpenAny = canManageAny || canViewReports;
+  const needsAssignments = !canOpenAny || (canManageGrades && !canManageAny);
   const { me } = useSession();
   const year = useActiveYear();
   const assignments = useTeachingAssignmentsForTeacherQuery(
-    canOpenAny ? "" : year.id,
-    canOpenAny ? "" : (me?.id ?? ""),
+    needsAssignments ? year.id : "",
+    needsAssignments ? (me?.id ?? "") : "",
   );
 
   const classes = useClassesQuery();
@@ -96,7 +101,6 @@ export function GradingView(): ReactElement {
   // assignment rather than one per term it happens to span: a teacher's
   // whole scope fits one picker.
   const assignmentPairs = useMemo<AssignmentPair[]>(() => {
-    if (canOpenAny) return [];
     const seen = new Set<string>();
     const pairs: AssignmentPair[] = [];
     for (const a of activeAssignments) {
@@ -106,14 +110,16 @@ export function GradingView(): ReactElement {
       pairs.push(pair);
     }
     return pairs;
-  }, [canOpenAny, activeAssignments]);
+  }, [activeAssignments]);
 
   const [classId, setClassId] = useUrlState<string>(
     "class",
     ["", ...classList.map((item) => item.id)],
     "",
   );
-  const effectiveClassId = classId || (classList[0]?.id ?? "");
+  // A school-wide reader who also teaches starts on a sheet they teach
+  // (the one they most likely came to fill), not the school's first class.
+  const effectiveClassId = classId || (assignmentPairs[0]?.classId ?? classList[0]?.id ?? "");
 
   const subjectList = useMemo(() => {
     const all = subjects.data?.data ?? [];
@@ -147,14 +153,27 @@ export function GradingView(): ReactElement {
   const [pendingChanges, setPendingChanges] = useState(0);
 
   // A subject picked for one class may not be taught in the next, so the
-  // sheet falls back to the first subject this class offers.
+  // sheet falls back to a subject the actor teaches in this class, else
+  // the first subject this class offers.
   const effectiveSubjectId =
     subjectId && subjectList.some((s) => s.id === subjectId)
       ? subjectId
-      : (subjectList[0]?.id ?? "");
+      : (assignmentPairs.find((pair) => pair.classId === effectiveClassId)?.subjectId ??
+        subjectList[0]?.id ??
+        "");
   const scopeLoading =
-    classes.isLoading || subjects.isLoading || (!canOpenAny && assignments.isLoading);
+    classes.isLoading || subjects.isLoading || (needsAssignments && assignments.isLoading);
   const noAssignments = !canOpenAny && !scopeLoading && classList.length === 0;
+  // The sheet is editable only where the server accepts the writes: a
+  // pair the actor teaches, or any pair for manage_master_data. Anything
+  // else a school-wide reader opens is the same read-only sheet a
+  // view_grades-only principal sees.
+  const canEditSheet =
+    canManageGrades &&
+    (canManageAny ||
+      assignmentPairs.some(
+        (pair) => pair.classId === effectiveClassId && pair.subjectId === effectiveSubjectId,
+      ));
 
   // A scope change (class, subject, term, tab) would drop unsaved scores, so
   // it waits behind a confirmation when there are any.
@@ -277,7 +296,7 @@ export function GradingView(): ReactElement {
       termId={termId || undefined}
       className={classNameOf(effectiveClassId)}
       subjectName={subjectNameOf(effectiveSubjectId)}
-      canManage={canManageGrades}
+      canManage={canEditSheet}
       onPendingChangesChange={setPendingChanges}
     />
   ) : (
@@ -323,20 +342,34 @@ export function GradingView(): ReactElement {
         </TabsContent>
         {showTpTab && (
           <TabsContent value="tp" className="pt-0">
-            {effectiveClassId && effectiveSubjectId ? (
+            {!(effectiveClassId && effectiveSubjectId) ? (
+              gradebookPanel
+            ) : canEditSheet ? (
               <TPMappingEditor
-                key={`tp-${effectiveClassId}-${effectiveSubjectId}`}
+                key={`tp-${effectiveClassId}-${effectiveSubjectId}-${termId}`}
                 classId={effectiveClassId}
                 subjectId={effectiveSubjectId}
+                termId={termId || undefined}
               />
             ) : (
-              gradebookPanel
+              <EmptyState
+                icon={<domainIcons.grades aria-hidden="true" />}
+                title={t("tpReadOnlyTitle")}
+                description={t("tpReadOnlyBody")}
+              />
             )}
           </TabsContent>
         )}
         {showEraporTab && (
           <TabsContent value="erapor" className="pt-0">
-            <EraporExport />
+            <EraporExport
+              canPublish={canManageGrades}
+              onOpenGradebook={() => {
+                changeScope(() => {
+                  setTab("gradebook");
+                });
+              }}
+            />
           </TabsContent>
         )}
         {showSettingsTab && (

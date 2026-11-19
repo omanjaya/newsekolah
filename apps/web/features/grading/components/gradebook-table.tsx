@@ -23,6 +23,7 @@ import {
   isScoreOutOfRange,
   mergeStudentScores,
 } from "../lib/gradebook-scores";
+import type { StarBalances } from "../lib/star-balances";
 import { useGradebookSave } from "../lib/use-gradebook-save";
 
 import { GradebookDesktopTable } from "./gradebook-desktop-table";
@@ -39,7 +40,7 @@ export interface GradebookTableProps {
   onSearchChange: (search: string) => void;
   onEditComponent: (component: AssessmentComponent) => void;
   onManualOverride: (student: GradebookStudent) => void;
-  starBalances: Map<string, number>;
+  starBalances: StarBalances;
   onGiveStar: (student: GradebookStudent) => void;
   /** Opens the new-component dialog from the phone's component picker. */
   onAddComponent: () => void;

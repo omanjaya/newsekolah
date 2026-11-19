@@ -3,8 +3,13 @@
 import { ApiError } from "@newsekolah/api-client";
 import {
   Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Field,
   Input,
-  Select,
+  NumberInput,
   Skeleton,
   Table,
   TableBody,
@@ -12,14 +17,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  useMediaQuery,
   useToast,
-  Field,
-  NumberInput,
 } from "@newsekolah/ui";
 import { Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
@@ -29,7 +33,6 @@ import {
   useGradebookQuery,
   useSaveTPMappingMutation,
   useTPMappingsQuery,
-  useTermsQuery,
 } from "../api";
 import { fromText, toText } from "../lib/number-text";
 
@@ -60,50 +63,40 @@ function fromMapping(mapping: TPMapping): RowState {
  * tenant's configured TP kind) to e-Rapor export codes with their R and T
  * ranges, so exportErapor and exportEraporLegacy know how to fill those
  * columns. A component keeps no mapping until one is saved for it.
+ *
+ * The term is the page's own term picker (`termId`, empty for the active
+ * term): the mapping never keeps a second picker that could disagree.
  */
 export function TPMappingEditor({
   classId,
   subjectId,
+  termId,
 }: {
   classId: string;
   subjectId: string;
+  termId?: string;
 }): ReactElement {
   const t = useTranslations("app.grading.tpMapping");
-  const terms = useTermsQuery();
-  const [termId, setTermId] = useState("");
-  const effectiveTermId = termId || (terms.data?.data[0]?.id ?? "");
 
-  const gradebook = useGradebookQuery({ classId, subjectId, termId: effectiveTermId });
-  const mappings = useTPMappingsQuery(classId, subjectId, effectiveTermId);
+  const gradebook = useGradebookQuery({ classId, subjectId, termId });
+  const mappings = useTPMappingsQuery(classId, subjectId, termId);
 
   const tpKind = gradebook.data?.scale.tp_kind;
   const eligibleComponents = (gradebook.data?.components ?? []).filter(
     (c) => c.kind === "formative" || (tpKind !== undefined && c.kind === tpKind),
   );
 
-  const termOptions = (terms.data?.data ?? []).map((term) => ({
-    value: term.id,
-    label: term.name,
-  }));
-
   return (
     <div className="flex flex-col gap-4">
-      <Field label={t("pickTerm")}>
-        <Select
-          options={termOptions}
-          value={effectiveTermId}
-          onValueChange={setTermId}
-          className="w-full md:w-56"
-        />
-      </Field>
+      <p className="max-w-prose text-body-sm text-fg-muted">{t("description")}</p>
 
       {gradebook.isLoading || mappings.isLoading ? (
         <Skeleton className="h-40 w-full" aria-busy="true" />
       ) : eligibleComponents.length === 0 ? (
         <p className="text-body-sm text-fg-muted">{t("noComponents")}</p>
       ) : (
-        <TPMappingTable
-          key={`${classId}-${subjectId}-${effectiveTermId}`}
+        <TPMappingRows
+          key={`${classId}-${subjectId}-${gradebook.data?.term_id ?? ""}`}
           components={eligibleComponents}
           mappings={mappings.data?.data ?? []}
         />
@@ -112,12 +105,26 @@ export function TPMappingEditor({
   );
 }
 
+interface RowProps {
+  component: AssessmentComponent;
+  row: RowState;
+  hasMapping: boolean;
+  saving: boolean;
+  removing: boolean;
+  onChange: (patch: Partial<RowState>) => void;
+  onSave: () => void;
+  onRemove: () => void;
+}
+
 /**
  * Owns the row inputs for one class-subject-term. Keyed by that scope at
  * the call site, so switching term remounts it with a fresh initial state
  * instead of an effect resynchronizing local state from the loaded data.
+ * A wide screen gets one table row per component; a phone gets one card
+ * per component, so the T range and the row's own Simpan never sit behind
+ * a sideways scroll.
  */
-function TPMappingTable({
+function TPMappingRows({
   components,
   mappings,
 }: {
@@ -129,6 +136,7 @@ function TPMappingTable({
   const apiErrorMessage = useApiErrorMessage();
   const save = useSaveTPMappingMutation();
   const remove = useDeleteTPMappingMutation();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const mappingByComponent = new Map(mappings.map((m) => [m.component_id, m]));
   const [rows, setRows] = useState<Record<string, RowState>>(() => {
@@ -147,6 +155,12 @@ function TPMappingTable({
     }));
   }
 
+  function showError(error: unknown) {
+    toast.error(
+      error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+    );
+  }
+
   function saveRow(componentId: string) {
     const row = rows[componentId];
     if (!row?.export_code.trim()) return;
@@ -163,11 +177,7 @@ function TPMappingTable({
         onSuccess: () => {
           toast.success(t("saved"));
         },
-        onError: (error) => {
-          toast.error(
-            error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-          );
-        },
+        onError: showError,
       },
     );
   }
@@ -183,12 +193,35 @@ function TPMappingTable({
         toast.success(t("deleted"));
         updateRow(componentId, emptyRow());
       },
-      onError: (error) => {
-        toast.error(
-          error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-        );
-      },
+      onError: showError,
     });
+  }
+
+  const rowProps = (component: AssessmentComponent): RowProps => ({
+    component,
+    row: rows[component.id] ?? emptyRow(),
+    hasMapping: mappingByComponent.has(component.id),
+    saving: save.isPending,
+    removing: remove.isPending,
+    onChange: (patch) => {
+      updateRow(component.id, patch);
+    },
+    onSave: () => {
+      saveRow(component.id);
+    },
+    onRemove: () => {
+      deleteRow(component.id);
+    },
+  });
+
+  if (!isDesktop) {
+    return (
+      <div className="flex flex-col gap-3">
+        {components.map((component) => (
+          <TPMappingCard key={component.id} {...rowProps(component)} />
+        ))}
+      </div>
+    );
   }
 
   return (
@@ -203,95 +236,154 @@ function TPMappingTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {components.map((component) => {
-          const row = rows[component.id] ?? emptyRow();
-          const hasMapping = mappingByComponent.has(component.id);
-          return (
-            <TableRow key={component.id}>
-              <TableCell>{component.code}</TableCell>
-              <TableCell>
-                <Input
-                  className="w-28"
-                  value={row.export_code}
-                  maxLength={32}
-                  onChange={(e) => {
-                    updateRow(component.id, { export_code: e.target.value });
-                  }}
-                />
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1">
-                  <NumberInput
-                    className="w-16"
-                    aria-label={t("columns.rMin")}
-                    value={fromText(row.r_min)}
-                    onChange={(value) => {
-                      updateRow(component.id, { r_min: toText(value) });
-                    }}
-                  />
-                  <span className="text-fg-muted">-</span>
-                  <NumberInput
-                    className="w-16"
-                    aria-label={t("columns.rMax")}
-                    value={fromText(row.r_max)}
-                    onChange={(value) => {
-                      updateRow(component.id, { r_max: toText(value) });
-                    }}
-                  />
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1">
-                  <NumberInput
-                    className="w-16"
-                    aria-label={t("columns.tMin")}
-                    value={fromText(row.t_min)}
-                    onChange={(value) => {
-                      updateRow(component.id, { t_min: toText(value) });
-                    }}
-                  />
-                  <span className="text-fg-muted">-</span>
-                  <NumberInput
-                    className="w-16"
-                    aria-label={t("columns.tMax")}
-                    value={fromText(row.t_max)}
-                    onChange={(value) => {
-                      updateRow(component.id, { t_max: toText(value) });
-                    }}
-                  />
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    loading={save.isPending}
-                    disabled={!row.export_code.trim()}
-                    onClick={() => {
-                      saveRow(component.id);
-                    }}
-                  >
-                    {t("save")}
-                  </Button>
-                  {hasMapping && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      icon={<Trash2 />}
-                      loading={remove.isPending}
-                      onClick={() => {
-                        deleteRow(component.id);
-                      }}
-                    >
-                      {t("remove")}
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          );
-        })}
+        {components.map((component) => (
+          <TPMappingTableRow key={component.id} {...rowProps(component)} />
+        ))}
       </TableBody>
     </Table>
+  );
+}
+
+/** The min and max of one range (R or T), each labelled for assistive tech. */
+function RangeInputs({
+  range,
+  row,
+  onChange,
+  inputClassName,
+}: {
+  range: "r" | "t";
+  row: RowState;
+  onChange: (patch: Partial<RowState>) => void;
+  inputClassName: string;
+}): ReactElement {
+  const t = useTranslations("app.grading.tpMapping");
+  const minKey = range === "r" ? "r_min" : "t_min";
+  const maxKey = range === "r" ? "r_max" : "t_max";
+  return (
+    <div className="flex items-center gap-1">
+      <NumberInput
+        className={inputClassName}
+        aria-label={t(range === "r" ? "columns.rMin" : "columns.tMin")}
+        value={fromText(row[minKey])}
+        onChange={(value) => {
+          onChange({ [minKey]: toText(value) });
+        }}
+      />
+      <span className="text-fg-muted">-</span>
+      <NumberInput
+        className={inputClassName}
+        aria-label={t(range === "r" ? "columns.rMax" : "columns.tMax")}
+        value={fromText(row[maxKey])}
+        onChange={(value) => {
+          onChange({ [maxKey]: toText(value) });
+        }}
+      />
+    </div>
+  );
+}
+
+function RowActions({
+  row,
+  hasMapping,
+  saving,
+  removing,
+  onSave,
+  onRemove,
+  fullWidth,
+}: RowProps & { fullWidth: boolean }): ReactElement {
+  const t = useTranslations("app.grading.tpMapping");
+  return (
+    <div className={fullWidth ? "flex flex-col gap-2" : "flex items-center gap-2"}>
+      <Button
+        size={fullWidth ? "md" : "sm"}
+        className={fullWidth ? "w-full" : undefined}
+        loading={saving}
+        disabled={!row.export_code.trim()}
+        onClick={onSave}
+      >
+        {t("save")}
+      </Button>
+      {hasMapping && (
+        <Button
+          size={fullWidth ? "md" : "sm"}
+          variant="secondary"
+          className={fullWidth ? "w-full" : undefined}
+          icon={<Trash2 />}
+          loading={removing}
+          onClick={onRemove}
+        >
+          {t("remove")}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function TPMappingTableRow(props: RowProps): ReactElement {
+  const t = useTranslations("app.grading.tpMapping");
+  const { component, row, onChange } = props;
+  return (
+    <TableRow>
+      <TableCell>{component.code}</TableCell>
+      <TableCell>
+        <Input
+          className="w-28"
+          aria-label={t("columns.exportCode")}
+          value={row.export_code}
+          maxLength={32}
+          onChange={(e) => {
+            onChange({ export_code: e.target.value });
+          }}
+        />
+      </TableCell>
+      <TableCell>
+        <RangeInputs range="r" row={row} onChange={onChange} inputClassName="w-16" />
+      </TableCell>
+      <TableCell>
+        <RangeInputs range="t" row={row} onChange={onChange} inputClassName="w-16" />
+      </TableCell>
+      <TableCell>
+        <RowActions {...props} fullWidth={false} />
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function TPMappingCard(props: RowProps): ReactElement {
+  const t = useTranslations("app.grading.tpMapping");
+  const { component, row, onChange } = props;
+  const rLabelId = useId();
+  const tLabelId = useId();
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{component.code}</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4 pt-0">
+        <Field label={t("columns.exportCode")}>
+          <Input
+            className="w-full"
+            value={row.export_code}
+            maxLength={32}
+            onChange={(e) => {
+              onChange({ export_code: e.target.value });
+            }}
+          />
+        </Field>
+        <div role="group" aria-labelledby={rLabelId} className="flex flex-col gap-2">
+          <span id={rLabelId} className="text-label text-fg">
+            {t("columns.rRange")}
+          </span>
+          <RangeInputs range="r" row={row} onChange={onChange} inputClassName="min-w-0 flex-1" />
+        </div>
+        <div role="group" aria-labelledby={tLabelId} className="flex flex-col gap-2">
+          <span id={tLabelId} className="text-label text-fg">
+            {t("columns.tRange")}
+          </span>
+          <RangeInputs range="t" row={row} onChange={onChange} inputClassName="min-w-0 flex-1" />
+        </div>
+        <RowActions {...props} fullWidth />
+      </CardContent>
+    </Card>
   );
 }

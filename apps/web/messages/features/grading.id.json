@@ -118,6 +118,7 @@
   "starDialog": {
     "title": "Bintang untuk {name}",
     "currentBalance": "Saldo saat ini: {count} bintang",
+    "currentBalanceUnknown": "Saldo saat ini belum diketahui",
     "action": "Tindakan",
     "give": "Beri",
     "take": "Ambil",
@@ -234,16 +235,23 @@
     "legacyHint": "Lembar per mapel format lama (No / NIS / Nama / Nilai Rapor / satu kolom per kode TP yang dipetakan / Validasi), untuk alat impor yang masih memakai format ini.",
     "legacySubject": "Mapel",
     "legacyDownload": "Unduh lembar format lama",
-    "pickClass": "Kelas"
+    "pickClass": "Kelas",
+    "retry": "Coba lagi",
+    "notPublishedTitle": "Belum ada nilai terbit untuk kelas ini",
+    "notPublishedBodyManage": "Terbitkan nilai mapel Anda di tab Nilai, lalu kembali ke sini.",
+    "notPublishedBodyRead": "Guru mapel belum menerbitkan nilai kelas ini untuk semester ini.",
+    "openGradebook": "Buka tab Nilai",
+    "noSubjectsTitle": "Kelas ini belum punya mapel",
+    "noSubjectsBody": "Ekspor e-Rapor terbuka setelah kelas ini punya mapel dengan komponen nilai."
   },
   "tpMapping": {
-    "pickTerm": "Pilih semester",
+    "description": "Pemetaan TP mengisi kolom tujuan pembelajaran di lembar e-Rapor format lama. Untuk setiap komponen, tulis kode TP-nya lalu rentang nilai: nilai di rentang T ditandai Tuntas, nilai di rentang R ditandai Remedial.",
     "noComponents": "Belum ada komponen formatif (atau jenis TP yang dikonfigurasi sekolah) untuk kelas, mapel, dan semester ini.",
     "columns": {
       "component": "Komponen",
       "exportCode": "Kode ekspor",
-      "rRange": "Rentang R",
-      "tRange": "Rentang T",
+      "rRange": "Rentang remedial (R)",
+      "tRange": "Rentang tuntas (T)",
       "rMin": "R minimum",
       "rMax": "R maksimum",
       "tMin": "T minimum",
@@ -268,5 +276,7 @@
     "tuntas": "Tuntas KKTP",
     "ungraded": "Belum dinilai",
     "filled": "Nilai terisi"
-  }
+  },
+  "tpReadOnlyTitle": "Pemetaan TP diatur guru mapel",
+  "tpReadOnlyBody": "Hanya guru yang mengajar kelas dan mapel ini yang memetakan TP-nya. Anda tetap bisa melihat nilainya di tab Nilai."
 }
