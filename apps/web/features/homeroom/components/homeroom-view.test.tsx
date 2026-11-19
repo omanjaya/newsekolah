@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   rememberedSearch: "",
   date: "2026-09-29",
   setDate: vi.fn(),
+  attentionRows: [] as unknown[],
 }));
 
 vi.mock("next-intl", () => ({
@@ -56,7 +57,12 @@ vi.mock("../../attendance/lib/status-tokens", () => ({ statusToken: () => undefi
 vi.mock("../../permits/api", () => ({
   useLeaveReviewQueueQuery: () => ({ data: { data: [] }, isLoading: false }),
 }));
-vi.mock("./homeroom-dashboard", () => ({ HomeroomDashboard: () => null }));
+vi.mock("./homeroom-dashboard", () => ({
+  HomeroomDashboard: ({ attentionRows }: { attentionRows: unknown[] }) => {
+    mocks.attentionRows = attentionRows;
+    return null;
+  },
+}));
 vi.mock("./homeroom-permits-tab", () => ({ HomeroomPermitsTab: () => <div>permits-panel</div> }));
 vi.mock("./homeroom-discipline-tab", () => ({
   HomeroomDisciplineTab: () => <div>discipline-panel</div>,
@@ -388,6 +394,40 @@ describe("HomeroomView overview", () => {
 
     expect(screen.getByText("noLessonsMetaOn")).toBeInTheDocument();
     expect(screen.queryByText("noLessonsMeta")).not.toBeInTheDocument();
+  });
+
+  // The API reports a day still to come as INCOMPLETE: its sessions are
+  // not submitted because they have not happened (audit r6-n4).
+  it("lists nobody for a guardian call on a day still to come", async () => {
+    mocks.date = "2026-09-30";
+    mocks.useHomeroomAttendanceQuery.mockReturnValue({
+      data: {
+        data: [
+          {
+            student_user_id: "s1",
+            name: "Siswa Satu",
+            status_code: "INCOMPLETE",
+            complete: false,
+            submitted_sessions: 0,
+            expected_sessions: 2,
+          },
+        ],
+        total: 1,
+        status_counts: { INCOMPLETE: 1 },
+      },
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<HomeroomView />);
+
+    expect(screen.getByRole("heading", { name: "upcomingTitle" })).toBeInTheDocument();
+    expect(screen.queryByText("attentionTitleOn")).not.toBeInTheDocument();
+    // No guardian to call: the contact card gets nobody.
+    expect(mocks.attentionRows).toEqual([]);
+
+    await user.click(screen.getByRole("tab", { name: "tabs.attendance" }));
+    expect(screen.getAllByText("upcomingCode").length).toBeGreaterThan(0);
+    expect(screen.queryByText("codes.INCOMPLETE")).not.toBeInTheDocument();
   });
 
   it("names the chosen day instead of 'today' on another date", () => {

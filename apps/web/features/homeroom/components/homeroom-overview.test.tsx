@@ -78,3 +78,46 @@ describe("HomeroomOverview outside the homeroom term", () => {
     expect(refetch).toHaveBeenCalled();
   });
 });
+
+// A day still to come has had no lessons: its unrecorded sessions are not
+// "incomplete" and nobody needs a call (audit r6-n4).
+describe("HomeroomOverview on a day still to come", () => {
+  const loaded: OverviewRead = {
+    isLoading: false,
+    isFetching: false,
+    isError: false,
+    error: null,
+    refetch: vi.fn(),
+  };
+
+  it("says the lessons have not happened instead of counting them as needing attention", async () => {
+    const onShowToday = vi.fn();
+    render(
+      <HomeroomOverview
+        date="2026-11-21"
+        today="2026-11-20"
+        dashboard={loaded}
+        leaveQueue={loaded}
+        counts={{ INCOMPLETE: 2 }}
+        attentionRows={[]}
+        disciplineRows={[]}
+        pendingLeave={[]}
+        showLeave={false}
+        showDiscipline={false}
+        onShowStatus={vi.fn()}
+        onShowToday={onShowToday}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "upcomingTitle" })).toBeInTheDocument();
+    expect(screen.queryByText("attentionNoneTitle")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "attentionOpen" })).not.toBeInTheDocument();
+    // The alpha and incomplete cells read "-", not 0 and 2, and open no list.
+    const stats = screen.getByRole("group", { name: "statsLabel" });
+    expect(stats).toHaveTextContent("statTotal2statAbsent-statIncomplete-");
+    expect(stats.querySelectorAll("button")).toHaveLength(0);
+
+    await userEvent.setup().click(screen.getByRole("button", { name: "upcomingAction" }));
+    expect(onShowToday).toHaveBeenCalled();
+  });
+});

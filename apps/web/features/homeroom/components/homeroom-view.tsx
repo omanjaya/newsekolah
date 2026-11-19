@@ -148,9 +148,16 @@ export function HomeroomView(): ReactElement {
     },
   ];
 
+  // A day still to come has had no lessons (ISO dates compare as
+  // strings): its unrecorded sessions are "not yet", so nobody needs
+  // attention and no guardian a call (audit r6-n4).
+  const upcoming = date > today;
   const attentionRows = useMemo(
-    () => (dashboard.data?.data ?? []).filter((row) => ATTENTION_CODES.has(row.status_code)),
-    [dashboard.data],
+    () =>
+      upcoming
+        ? []
+        : (dashboard.data?.data ?? []).filter((row) => ATTENTION_CODES.has(row.status_code)),
+    [dashboard.data, upcoming],
   );
   const disciplineRows = useMemo(
     () => (dashboard.data?.data ?? []).filter((row) => (row.violation_count ?? 0) > 0),
@@ -188,6 +195,9 @@ export function HomeroomView(): ReactElement {
         meta: { card: "meta" },
         cell: ({ row }) => {
           const code = row.original.status_code;
+          if (upcoming && code === "INCOMPLETE") {
+            return <Badge tone="neutral">{t("upcomingCode")}</Badge>;
+          }
           const token = statusToken(code);
           return token ? (
             <StatusBadge status={token} label={t(`codes.${code}`)} />
@@ -201,7 +211,7 @@ export function HomeroomView(): ReactElement {
         header: t("columns.sessions"),
         enableSorting: false,
         cell: ({ row }) => (
-          <span className={row.original.complete ? undefined : "text-warning"}>
+          <span className={row.original.complete || upcoming ? undefined : "text-warning"}>
             {row.original.submitted_sessions}/{row.original.expected_sessions}
           </span>
         ),
@@ -248,7 +258,7 @@ export function HomeroomView(): ReactElement {
           ]
         : []),
     ],
-    [t, disciplineOn],
+    [t, disciplineOn, upcoming],
   );
 
   const access = navAccessFromMe(me);

@@ -29,9 +29,12 @@ export interface OverviewRead {
 /** The status codes a stat cell or the hero opens in class attendance. */
 export type AttentionCode = "A" | "INCOMPLETE";
 
-/** "-" while a figure's read failed, so a failure never reads as zero. */
-function figure(value: number, failed: boolean): number | string {
-  return failed ? "-" : value;
+/**
+ * "-" while a figure is missing (its read failed, or the day is still to
+ * come), so it never reads as zero.
+ */
+function figure(value: number, missing: boolean): number | string {
+  return missing ? "-" : value;
 }
 
 /**
@@ -41,7 +44,9 @@ function figure(value: number, failed: boolean): number | string {
  * figures read "-" and the cards show the error instead of an all-clear
  * (audit r3-n18). On another day than today the copy names that day
  * (audit r3-n21). A day outside the reader's homeroom term says so, with
- * no retry that could never succeed (audit r5-n5).
+ * no retry that could never succeed (audit r5-n5). A day still to come
+ * says its lessons have not happened yet: their unrecorded attendance is
+ * not "incomplete" and no guardian needs a call (audit r6-n4).
  */
 export function HomeroomOverview({
   date,
@@ -90,8 +95,12 @@ export function HomeroomOverview({
   };
 
   const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
-  const absent = counts.A ?? 0;
-  const incomplete = counts.INCOMPLETE ?? 0;
+  // ISO dates compare as strings. A day still to come has had no lessons,
+  // so its unrecorded sessions are "not yet": no alpha or incomplete
+  // figure to act on, which the cells show as "-" (audit r6-n4).
+  const upcoming = date > today;
+  const absent = upcoming ? 0 : (counts.A ?? 0);
+  const incomplete = upcoming ? 0 : (counts.INCOMPLETE ?? 0);
   const attention = attentionRows.length;
   // A weekend or holiday: nobody needs attention because there was nothing
   // to record, which must not read as everyone accounted for (audit r4-n4).
@@ -148,6 +157,20 @@ export function HomeroomOverview({
               </Button>
             }
           />
+        ) : upcoming && !noLessons ? (
+          <HeroCard
+            tone="neutral"
+            eyebrow={calmEyebrow}
+            title={t("upcomingTitle")}
+            meta={t("upcomingMeta", { date: longDayLabel })}
+            action={
+              onShowToday ? (
+                <Button variant="secondary" onClick={onShowToday}>
+                  {t("upcomingAction")}
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <HeroCard
             tone={dashboard.isLoading || attention === 0 ? "accent-soft" : "warning"}
@@ -198,7 +221,7 @@ export function HomeroomOverview({
           <Stat
             icon={<UserX />}
             tone="red"
-            value={figure(absent, failed)}
+            value={figure(absent, failed || upcoming)}
             label={t("statAbsent")}
             onClick={
               absent > 0
@@ -211,7 +234,7 @@ export function HomeroomOverview({
           <Stat
             icon={<CircleDashed />}
             tone="amber"
-            value={figure(incomplete, failed)}
+            value={figure(incomplete, failed || upcoming)}
             label={t("statIncomplete")}
             onClick={
               incomplete > 0
