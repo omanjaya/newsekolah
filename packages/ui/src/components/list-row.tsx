@@ -21,7 +21,8 @@ export interface ListRowProps extends Omit<ComponentPropsWithRef<"li">, "title" 
   /**
    * The secondary line under the title, up to two lines. An array is a
    * list of short facts (a day, "keluar 15.49", a count) joined with " · ":
-   * the line wraps only between facts, never inside one.
+   * the line wraps only between facts, never inside one, and a fact wider
+   * than the row ends in an ellipsis instead of being cut mid-word.
    */
   meta?: ReactNode | readonly ReactNode[];
   /**
@@ -113,12 +114,17 @@ function presentSegments(segments: readonly ReactNode[]): ReactNode[] {
   );
 }
 
+/**
+ * Each fact is its own one-line box: the line wraps between facts, and a
+ * fact wider than the row shrinks to it and ends in an ellipsis
+ * (inline-block so `truncate` applies, bottom-aligned to sit on the line).
+ */
 function MetaSegments({ segments }: { segments: readonly ReactNode[] }) {
   return presentSegments(segments).map((segment, index) => (
     // The facts are a fixed, ordered list for this row; the index is their identity.
     <Fragment key={index}>
       {index > 0 && " · "}
-      <span className="whitespace-nowrap">{segment}</span>
+      <span className="inline-block max-w-full truncate align-bottom">{segment}</span>
     </Fragment>
   ));
 }
