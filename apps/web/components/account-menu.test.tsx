@@ -6,6 +6,10 @@ import { AccountMenu } from "./account-menu";
 
 const mutateAsync = vi.hoisted(() => vi.fn());
 const replace = vi.hoisted(() => vi.fn());
+const viewport = vi.hoisted(() => ({ desktop: false }));
+const reader = vi.hoisted(() => ({ currentClass: undefined as { name: string } | undefined }));
+
+vi.mock("./use-is-desktop", () => ({ useIsDesktop: () => viewport.desktop }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 vi.mock("next-intl", () => ({
@@ -34,6 +38,7 @@ vi.mock("../lib/session/session-provider", () => ({
       duties: [],
       disabled_modules: [],
       active_academic_year: { id: "y1", label: "2026/2027" },
+      current_class: reader.currentClass,
       tenant: { tenant_id: "t1", timezone: "Asia/Makassar" },
     },
   }),
@@ -42,6 +47,8 @@ vi.mock("../lib/session/session-provider", () => ({
 beforeEach(() => {
   mutateAsync.mockReset().mockResolvedValue(undefined);
   replace.mockReset();
+  viewport.desktop = false;
+  reader.currentClass = undefined;
 });
 
 describe("AccountMenu", () => {
@@ -57,6 +64,21 @@ describe("AccountMenu", () => {
     const links = within(sheet).getAllByRole("link");
     expect(links[0]).toHaveAttribute("href", "/profile");
     expect(within(sheet).getByRole("radiogroup", { name: "theme" })).toBeInTheDocument();
+  });
+
+  // A student's line ran "SMA Contoh · Kelas X-A · Tahun ajara..." in the
+  // 304px dropdown: the year, the part that changes, was the part cut off.
+  it("keeps a student's class and year whole on their own line in the dropdown", async () => {
+    viewport.desktop = true;
+    reader.currentClass = { name: "X-A" };
+    const user = userEvent.setup();
+    render(<AccountMenu />);
+    await user.click(screen.getByRole("button", { name: "profileMenu.label" }));
+
+    const menu = screen.getByRole("menu");
+    expect(within(menu).getByText("SMA Contoh")).toHaveClass("truncate");
+    const term = within(menu).getByText("className:X-A · schoolYear:2026/2027");
+    expect(term).not.toHaveClass("truncate");
   });
 
   // A long name and role ("Wakil Kepala Sekolah ...") used to truncate at

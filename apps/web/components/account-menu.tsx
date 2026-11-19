@@ -51,15 +51,19 @@ function useAccount() {
     .filter((item) => item.accountMenu)
     .sort((a, b) => rank(a) - rank(b));
   const role = me?.roles.find((entry) => entry.is_primary)?.name ?? me?.roles[0]?.name ?? "";
-  const context = [
-    // Never the product name in the school's place.
-    brandingUnknown ? null : displayName,
+  // Never the product name in the school's place.
+  const school = brandingUnknown ? "" : displayName;
+  // The class and year: the part that changes, kept whole on its own line.
+  const term = [
     me?.current_class ? t("className", { name: me.current_class.name }) : null,
     me?.active_academic_year
       ? t("schoolYear", { label: me.active_academic_year.label })
       : t("noSchoolYear"),
-  ].filter(Boolean);
-  return { me, items, role, context: context.join(" · ") };
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const context = [school, term].filter(Boolean).join(" · ");
+  return { me, items, role, school, term, context };
 }
 
 function useLogout() {
@@ -122,18 +126,25 @@ const AccountTrigger = forwardRef<
   );
 });
 
-/** Avatar, name, username and role, then the school and year in one quiet line. */
+/**
+ * Avatar, name, username and role, then the school and, on a line of its
+ * own, the class and year. One joined line cut the year off for a student
+ * ("SMA Contoh · Kelas X-A · Tahun ajara..."), and the year is the part
+ * that changes, so that line wraps rather than truncates.
+ */
 function Identity({
   name,
   username,
   role,
-  context,
+  school,
+  term,
   avatarUrl,
 }: {
   name: string;
   username: string;
   role: string;
-  context: string;
+  school: string;
+  term: string;
   avatarUrl?: string;
 }): ReactElement {
   return (
@@ -144,7 +155,8 @@ function Identity({
         <span className="truncate text-caption text-fg-muted">
           {[username, role].filter(Boolean).join(" · ")}
         </span>
-        <span className="truncate text-caption text-fg-muted">{context}</span>
+        {school && <span className="truncate text-caption text-fg-muted">{school}</span>}
+        <span className="text-caption text-fg-muted">{term}</span>
       </div>
     </div>
   );
@@ -159,7 +171,7 @@ function Identity({
  */
 export function AccountMenu(): ReactElement {
   const desktop = useIsDesktop();
-  const { me, items, role, context } = useAccount();
+  const { me, items, role, school, term, context } = useAccount();
   const t = useTranslations();
   const tShell = useTranslations("app.shell");
   const logout = useLogout();
@@ -177,7 +189,8 @@ export function AccountMenu(): ReactElement {
               name={name}
               username={me?.username ?? ""}
               role={role}
-              context={context}
+              school={school}
+              term={term}
               avatarUrl={me?.avatar_url}
             />
           </DropdownMenuLabel>
