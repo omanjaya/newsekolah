@@ -149,6 +149,11 @@ export function ArrearsReportView(): ReactElement {
     return <SkeletonCards count={3} className="grid-cols-1 sm:grid-cols-3" />;
   }
   if (isError && !data) return <QueryError retry={() => refetch()} error={error} />;
+  // Without the bill check the view cannot tell "not billed yet" from "all
+  // paid", so a failed check is shown as such rather than as all paid.
+  if (nothingOwed && firstBill.isError) {
+    return <QueryError retry={() => firstBill.refetch()} error={firstBill.error} />;
+  }
 
   if (nothingOwed && firstBill.data?.data.length === 0) {
     // A school that has not started billing: no bill is not "all paid".

@@ -6,6 +6,7 @@ import { ArrearsReportView } from "./arrears-report-view";
 const state = vi.hoisted(() => ({
   arrears: { by_student: [] as unknown[], by_class: [] as unknown[] },
   bills: [] as unknown[],
+  billsFailed: false,
   canGenerate: true,
 }));
 
@@ -31,13 +32,23 @@ vi.mock("../lib/use-billing-format", () => ({
 }));
 vi.mock("../api", () => ({
   useArrearsReportQuery: () => ({ data: state.arrears, isLoading: false, isError: false }),
-  useBillsQuery: () => ({ data: { data: state.bills }, isLoading: false }),
+  useBillsQuery: () =>
+    state.billsFailed
+      ? {
+          data: undefined,
+          isLoading: false,
+          isError: true,
+          error: new Error("boom"),
+          refetch: vi.fn(),
+        }
+      : { data: { data: state.bills }, isLoading: false, isError: false },
 }));
 
 afterEach(cleanup);
 beforeEach(() => {
   state.arrears = { by_student: [], by_class: [] };
   state.bills = [];
+  state.billsFailed = false;
   state.canGenerate = true;
 });
 
@@ -64,5 +75,13 @@ describe("ArrearsReportView", () => {
     render(<ArrearsReportView />);
     expect(screen.getByText("emptyTitle")).toBeInTheDocument();
     expect(screen.queryByText("noBillsTitle")).not.toBeInTheDocument();
+  });
+
+  it("shows the failed bill check as an error, not as all paid", () => {
+    state.billsFailed = true;
+    render(<ArrearsReportView />);
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+    expect(screen.queryByText("noBillsTitle")).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
   });
 });
