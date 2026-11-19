@@ -22,6 +22,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  domainIcons,
   useToast,
 } from "@newsekolah/ui";
 import { Download } from "lucide-react";
@@ -42,13 +43,30 @@ import {
 const MAX_ROWS_SHOWN = 10;
 
 /**
+ * Preview codes that describe the class's normal state before anything can
+ * be exported, not a failure: they get an explanation, never a red alert.
+ */
+const EMPTY_STATE_CODES = new Set(["GRADES_NOT_PUBLISHED", "NO_GRADABLE_SUBJECTS"]);
+
+export interface EraporExportProps {
+  /**
+   * Whether the viewer can publish grades themselves (manage_grades). A
+   * reader is told the subject teachers have not published yet instead
+   * of being sent to do something they cannot.
+   */
+  canPublish: boolean;
+  /** Opens the gradebook tab, owned by the page's URL state. */
+  onOpenGradebook: () => void;
+}
+
+/**
  * Lets a teacher or curriculum lead see what an e-Rapor export for one
  * class and term would contain -- and what it would leave out -- before
  * downloading it. The download itself carries the same skip report as a
  * second sheet (or CSV section), so nothing here is lost once the file
  * lands on disk.
  */
-export function EraporExport(): ReactElement {
+export function EraporExport({ canPublish, onOpenGradebook }: EraporExportProps): ReactElement {
   const t = useTranslations("app.grading.erapor");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -119,7 +137,7 @@ export function EraporExport(): ReactElement {
             className="w-full md:w-56"
           />
         </Field>
-        <Field label={t("formatLabel")}>
+        <Field label={t("formatLabel")} className="w-full md:w-auto">
           <Select
             options={formatOptions}
             value={format}
@@ -149,6 +167,27 @@ export function EraporExport(): ReactElement {
 
       {preview.isLoading ? (
         <SkeletonList rows={4} leading={false} />
+      ) : preview.error instanceof ApiError && EMPTY_STATE_CODES.has(preview.error.code) ? (
+        preview.error.code === "NO_GRADABLE_SUBJECTS" ? (
+          <EmptyState
+            icon={<domainIcons.grades aria-hidden="true" />}
+            title={t("noSubjectsTitle")}
+            description={t("noSubjectsBody")}
+          />
+        ) : (
+          <EmptyState
+            icon={<domainIcons.grades aria-hidden="true" />}
+            title={t("notPublishedTitle")}
+            description={canPublish ? t("notPublishedBodyManage") : t("notPublishedBodyRead")}
+            action={
+              canPublish && (
+                <Button variant="secondary" onClick={onOpenGradebook}>
+                  {t("openGradebook")}
+                </Button>
+              )
+            }
+          />
+        )
       ) : preview.isError ? (
         <Alert
           variant="danger"
@@ -156,6 +195,18 @@ export function EraporExport(): ReactElement {
             preview.error instanceof ApiError
               ? apiErrorMessage(preview.error.code)
               : apiErrorMessage("UNKNOWN")
+          }
+          action={
+            <Button
+              size="sm"
+              variant="secondary"
+              loading={preview.isRefetching}
+              onClick={() => {
+                void preview.refetch();
+              }}
+            >
+              {t("retry")}
+            </Button>
           }
         >
           {t("previewError")}

@@ -14,44 +14,82 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/hooks/use-active-year", () => ({ useActiveYear: () => ({ id: "year-1" }) }));
+// The actor's own teaching assignments. A teacher (canOpenAny=false) is
+// scoped to them; a school-wide reader who also holds manage_grades (a
+// counselor) loads them to know which sheets it may edit; a reader
+// without manage_grades skips the query (grading-view.tsx passes empty
+// args, which disables it -- the stub returns nothing then, like the
+// real disabled query).
+const assignmentsFixture = vi.hoisted(() => ({
+  current: [{ class_id: "class-1", subject_id: "subject-1", is_active: true }],
+}));
 vi.mock("../../academic/api-offerings", () => ({
-  // A teacher (canOpenAny=false) is scoped to their own assignments; a
-  // school-wide reader (canOpenAny=true, via view_reports or
-  // manage_master_data) ignores this query entirely (grading-view.tsx
-  // passes empty args), so this fixture only has to cover the teacher
-  // case -- one active assignment for class-1/subject-1, matching the
-  // fixed classes/subjects mocked below.
-  useTeachingAssignmentsForTeacherQuery: () => ({
-    data: { data: [{ class_id: "class-1", subject_id: "subject-1", is_active: true }] },
-    isLoading: false,
-  }),
+  useTeachingAssignmentsForTeacherQuery: (yearId: string, teacherId: string) =>
+    yearId && teacherId
+      ? { data: { data: assignmentsFixture.current }, isLoading: false }
+      : { data: undefined, isLoading: false },
 }));
 vi.mock("../../reference/api", () => ({
   useClassesQuery: () => ({
-    data: { data: [{ id: "class-1", name: "X-A" }] },
+    data: {
+      data: [
+        { id: "class-1", name: "X-A" },
+        { id: "class-2", name: "X-B" },
+      ],
+    },
     isLoading: false,
   }),
   useSubjectsQuery: () => ({
-    data: { data: [{ id: "subject-1", name: "Matematika" }] },
+    data: {
+      data: [
+        { id: "subject-1", name: "Matematika" },
+        { id: "subject-2", name: "Biologi" },
+      ],
+    },
     isLoading: false,
   }),
 }));
-vi.mock("./erapor-export", () => ({ EraporExport: () => <div data-testid="erapor-export" /> }));
+vi.mock("./erapor-export", () => ({
+  EraporExport: ({
+    canPublish,
+    onOpenGradebook,
+  }: {
+    canPublish: boolean;
+    onOpenGradebook: () => void;
+  }) => (
+    <div data-testid="erapor-export" data-can-publish={String(canPublish)}>
+      <button type="button" onClick={onOpenGradebook}>
+        open-gradebook
+      </button>
+    </div>
+  ),
+}));
 vi.mock("./grading-settings", () => ({
   GradingSettings: () => <div data-testid="grading-settings" />,
 }));
 vi.mock("./tp-mapping-editor", () => ({
-  TPMappingEditor: () => <div data-testid="tp-mapping-editor" />,
+  TPMappingEditor: ({ termId }: { termId?: string }) => (
+    <div data-testid="tp-mapping-editor" data-term-id={termId ?? ""} />
+  ),
 }));
 vi.mock("./gradebook-sheet", () => ({
   GradebookSheet: ({
+    classId,
+    subjectId,
     canManage,
     onPendingChangesChange,
   }: {
+    classId: string;
+    subjectId: string;
     canManage: boolean;
     onPendingChangesChange: (count: number) => void;
   }) => (
-    <div data-testid="gradebook-sheet" data-can-manage={String(canManage)}>
+    <div
+      data-testid="gradebook-sheet"
+      data-class-id={classId}
+      data-subject-id={subjectId}
+      data-can-manage={String(canManage)}
+    >
       <button
         type="button"
         onClick={() => {
@@ -64,7 +102,10 @@ vi.mock("./gradebook-sheet", () => ({
   ),
 }));
 vi.mock("../api", () => ({
-  useTermsQuery: () => ({ data: { data: [] }, isLoading: false }),
+  useTermsQuery: () => ({
+    data: { data: [{ id: "term-2", name: "Semester 2" }] },
+    isLoading: false,
+  }),
 }));
 
 const canFn = vi.hoisted(() => vi.fn<(permission: string) => boolean>());
@@ -78,6 +119,7 @@ import { GradingView } from "./grading-view";
 afterEach(() => {
   cleanup();
   canFn.mockReset();
+  assignmentsFixture.current = [{ class_id: "class-1", subject_id: "subject-1", is_active: true }];
   // The tab lives in the address; start every test on the default panel.
   window.history.replaceState(null, "", "/");
 });
@@ -88,6 +130,18 @@ afterEach(() => {
 function grantViewGradesOnly() {
   canFn.mockImplementation(
     (permission: string) => permission === "view_grades" || permission === "view_reports",
+  );
+}
+
+/** Permission holder: manage_grades plus the school-wide view_reports read,
+ * without manage_master_data -- a counselor (Guru BK) who reads every
+ * sheet but may only write the ones they teach. */
+function grantCounselor() {
+  canFn.mockImplementation(
+    (permission: string) =>
+      permission === "manage_grades" ||
+      permission === "view_grades" ||
+      permission === "view_reports",
   );
 }
 
@@ -176,6 +230,96 @@ describe("GradingView read-only rendering for view_grades", () => {
     // GradingView's own rendering degrades safely (read-only) rather than
     // crashing if it were ever reached.
     expect(screen.getByTestId("gradebook-sheet")).toHaveAttribute("data-can-manage", "false");
+  });
+});
+
+describe("GradingView edit scope for a school-wide reader who also teaches", () => {
+  it("starts on a sheet the counselor teaches, editable there", () => {
+    grantCounselor();
+    assignmentsFixture.current = [
+      { class_id: "class-2", subject_id: "subject-2", is_active: true },
+    ];
+    render(<GradingView />);
+
+    const sheet = screen.getByTestId("gradebook-sheet");
+    expect(sheet).toHaveAttribute("data-class-id", "class-2");
+    expect(sheet).toHaveAttribute("data-subject-id", "subject-2");
+    expect(sheet).toHaveAttribute("data-can-manage", "true");
+  });
+
+  it("shows any other class's sheet read-only, like a principal's", () => {
+    grantCounselor();
+    assignmentsFixture.current = [
+      { class_id: "class-2", subject_id: "subject-2", is_active: true },
+    ];
+    window.history.replaceState(null, "", "/?class=class-1&subject=subject-1");
+    render(<GradingView />);
+
+    const sheet = screen.getByTestId("gradebook-sheet");
+    expect(sheet).toHaveAttribute("data-class-id", "class-1");
+    expect(sheet).toHaveAttribute("data-can-manage", "false");
+  });
+
+  it("explains on the TP tab that an untaught sheet's TP belongs to its teacher", () => {
+    grantCounselor();
+    assignmentsFixture.current = [
+      { class_id: "class-2", subject_id: "subject-2", is_active: true },
+    ];
+    window.history.replaceState(null, "", "/?tab=tp&class=class-1&subject=subject-1");
+    render(<GradingView />);
+
+    expect(screen.getByText("tpReadOnlyTitle")).toBeInTheDocument();
+    expect(screen.queryByTestId("tp-mapping-editor")).not.toBeInTheDocument();
+  });
+
+  it("keeps the TP editor on a sheet the counselor teaches", () => {
+    grantCounselor();
+    assignmentsFixture.current = [
+      { class_id: "class-2", subject_id: "subject-2", is_active: true },
+    ];
+    window.history.replaceState(null, "", "/?tab=tp");
+    render(<GradingView />);
+
+    expect(screen.getByTestId("tp-mapping-editor")).toBeInTheDocument();
+  });
+
+  it("keeps every sheet editable for manage_master_data, which the server lets write anywhere", () => {
+    canFn.mockImplementation(
+      (permission: string) => permission === "manage_grades" || permission === "manage_master_data",
+    );
+    window.history.replaceState(null, "", "/?class=class-2&subject=subject-2");
+    render(<GradingView />);
+
+    expect(screen.getByTestId("gradebook-sheet")).toHaveAttribute("data-can-manage", "true");
+  });
+});
+
+describe("GradingView TP and e-Rapor panels", () => {
+  it("drives the TP mapping by the header's term picker, not a second picker", () => {
+    grantManageGrades();
+    window.history.replaceState(null, "", "/?tab=tp&term=term-2");
+    render(<GradingView />);
+
+    expect(screen.getByTestId("tp-mapping-editor")).toHaveAttribute("data-term-id", "term-2");
+  });
+
+  it("tells the e-Rapor panel whether the viewer can publish, and lets it open the gradebook", async () => {
+    grantManageGrades();
+    window.history.replaceState(null, "", "/?tab=erapor");
+    const user = userEvent.setup();
+    render(<GradingView />);
+
+    expect(screen.getByTestId("erapor-export")).toHaveAttribute("data-can-publish", "true");
+    await user.click(screen.getByRole("button", { name: "open-gradebook" }));
+    expect(screen.getByTestId("gradebook-sheet")).toBeVisible();
+  });
+
+  it("marks a view_grades-only reader on the e-Rapor panel as unable to publish", () => {
+    grantViewGradesOnly();
+    window.history.replaceState(null, "", "/?tab=erapor");
+    render(<GradingView />);
+
+    expect(screen.getByTestId("erapor-export")).toHaveAttribute("data-can-publish", "false");
   });
 });
 
