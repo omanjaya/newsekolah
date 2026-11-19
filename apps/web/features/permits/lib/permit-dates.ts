@@ -29,11 +29,13 @@ export function countDays(startsOn: string, endsOn: string): number {
 }
 
 /**
- * A moment's day, short and with the weekday, in the school's time zone:
- * "Kam, 25 Sep" within the school's current year (`today`, "YYYY-MM-DD"),
- * "Kam, 25 Sep 2025" outside it or without `today`. The year is dropped
- * where it says nothing, as the shared formatShortDate does, so the day
- * fits a narrow phone row whole.
+ * A moment's day, short, in the school's time zone: "Kam, 25 Sep" within
+ * the school's current year (`today`, "YYYY-MM-DD"), "25 Sep 2025"
+ * outside it or without `today`. The year is dropped where it says
+ * nothing, as the shared formatShortDate does, and the weekday where the
+ * year is shown: a day months back is placed by its year, not its weekday,
+ * and either way the date stays as short as "Kam, 25 Sep", so it fits a
+ * 320px phone row whole instead of losing its year to an ellipsis.
  */
 export function formatShortWeekdayDate(
   value: string,
@@ -48,7 +50,7 @@ export function formatShortWeekdayDate(
   const sameYear =
     today !== undefined && yearOf(date) === yearOf(new Date(`${today.slice(0, 10)}T12:00:00Z`));
   return new Intl.DateTimeFormat(INTL_LOCALE[locale], {
-    weekday: "short",
+    weekday: sameYear ? "short" : undefined,
     day: "numeric",
     month: "short",
     year: sameYear ? undefined : "numeric",
