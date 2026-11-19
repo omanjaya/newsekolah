@@ -36,7 +36,6 @@
       "bodyHint": "Select text and use the format buttons above the box, or insert automatic data with the buttons below it.",
       "placeholdersLabel": "Automatic data in use",
       "noPlaceholders": "This template uses no automatic data yet.",
-      "knownPlaceholdersLabel": "Placeholders available for this kind",
       "knownPlaceholdersEmpty": "The system does not fill in automatic data for this document kind yet.",
       "previewLabel": "Preview",
       "previewHint": "Automatic data shows as its name in square brackets, for example [Issue date].",

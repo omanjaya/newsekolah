@@ -159,7 +159,6 @@
     "title": "Warning letters",
     "tabs": {
       "issued": "Issued letters",
-      "atRisk": "Students nearing threshold",
       "template": "Letter template"
     },
     "filters": {
@@ -200,18 +199,25 @@
       },
       "issue": "Issue {level}",
       "issued": "{level} issued",
-      "emptyTitle": "No students nearing the threshold",
-      "emptyBody": "Students who reached the first warning-letter level will appear here.",
+      "emptyTitle": "No warning-letter candidates yet",
+      "emptyBody": "Students whose points reach a warning-letter threshold appear here.",
       "noPolicyTitle": "Warning-letter policy not set up",
-      "noPolicyBody": "Set up the policy on the Violations page before issuing letters."
+      "noPolicyBody": "Set it up under Warning-letter policy at the top of this page before issuing letters."
     },
     "template": {
       "description": "The warning letter's numbering pattern and wording. Changes apply to letters issued after saving.",
       "patternLabel": "Letter number pattern",
-      "patternHint": "Accepted placeholders: {{seq}}, {{sp_level_number}}, {{month_roman}}, {{year}}.",
-      "missingSeqError": "The pattern must include {{seq}} so every letter gets a different number.",
+      "patternHint": "Type the number pattern, then insert automatic data at the cursor.",
+      "insertLabel": "Automatic data you can use",
+      "tokens": {
+        "seq": "Sequence number",
+        "sp_level_number": "Warning level",
+        "month_roman": "Month (Roman)",
+        "year": "Year"
+      },
+      "missingSeqError": "The pattern must include Sequence number so every letter gets a different number.",
       "seqPadLabel": "Sequence number length",
-      "seqPadHint": "Digits in {{seq}}, zero-padded. Example: 3 produces 001.",
+      "seqPadHint": "Digits in Sequence number, zero-padded. Example: 3 produces 001.",
       "seqPadRangeError": "The sequence length must be between {min} and {max}.",
       "previewLabel": "Sample number with the current pattern",
       "openingLabel": "Opening text",
@@ -301,7 +307,7 @@
       "followUpPlanPlaceholder": "Optional",
       "visibility": "Visibility",
       "visibilityOptions": {
-        "counselor": "Counselor",
+        "counselor": "Only me",
         "bk_team": "Counseling team",
         "leadership": "Leadership"
       },

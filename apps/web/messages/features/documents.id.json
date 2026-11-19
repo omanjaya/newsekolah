@@ -36,7 +36,6 @@
       "bodyHint": "Pilih teks lalu pakai tombol format di atas kotak, atau sisipkan data otomatis dari tombol di bawahnya.",
       "placeholdersLabel": "Data otomatis yang dipakai",
       "noPlaceholders": "Templat ini belum memakai data otomatis.",
-      "knownPlaceholdersLabel": "Placeholder yang tersedia untuk jenis ini",
       "knownPlaceholdersEmpty": "Sistem belum mengisi data otomatis untuk jenis dokumen ini.",
       "previewLabel": "Pratinjau",
       "previewHint": "Data otomatis tampil sebagai namanya dalam kurung siku, misalnya [Tanggal terbit].",
