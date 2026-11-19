@@ -217,6 +217,12 @@ export function Field({
         data-invalid={hasError || undefined}
         className={cn(
           "flex min-w-0 flex-col gap-2",
+          // Scrolled to (the first invalid field on submit, see
+          // useSubmitValidation), the label stays below the page's sticky
+          // header and the error above its fixed bottom bars, with room
+          // for the focus ring. The app shell sets both insets on its
+          // scrolling page; a dialog, portalled outside it, keeps the air.
+          "scroll-mt-[calc(var(--scroll-inset-top,0px)+var(--space-2))] scroll-mb-[calc(var(--scroll-inset-bottom,0px)+var(--space-2))]",
           horizontal &&
             "sm:grid sm:grid-cols-[minmax(8rem,14rem)_minmax(0,1fr)] sm:gap-x-6 sm:gap-y-1",
           inline && "flex-row flex-wrap items-center gap-x-3 gap-y-1",

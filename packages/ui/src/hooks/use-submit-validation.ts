@@ -20,20 +20,28 @@ export interface SubmitValidation<T extends HTMLElement> {
 
 const CLIPS = new Set(["auto", "scroll", "hidden", "clip"]);
 
+/** A computed length in px; anything unset or unparsable counts as 0. */
+function px(value: string): number {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 /**
- * The vertical band of the page where `element` can be seen: the viewport,
- * narrowed by every ancestor that clips its content (a dialog's scroll
- * area, an overflow-hidden layout).
+ * The vertical band of the page where content can be seen: the viewport,
+ * narrowed by every ancestor of `element` that clips its content (a
+ * dialog's scroll area, an overflow-hidden layout), less the scroll
+ * padding that area keeps for its own sticky footer.
  */
 function visibleBand(element: HTMLElement): { top: number; bottom: number } {
   let top = 0;
   let bottom = window.innerHeight || document.documentElement.clientHeight;
   for (let node = element.parentElement; node; node = node.parentElement) {
     if (node === document.body || node === document.documentElement) break;
-    if (!CLIPS.has(getComputedStyle(node).overflowY)) continue;
-    const rect = node.getBoundingClientRect();
-    top = Math.max(top, rect.top + node.clientTop);
-    bottom = Math.min(bottom, rect.top + node.clientTop + node.clientHeight);
+    const style = getComputedStyle(node);
+    if (!CLIPS.has(style.overflowY)) continue;
+    const inner = node.getBoundingClientRect().top + node.clientTop;
+    top = Math.max(top, inner + px(style.scrollPaddingTop));
+    bottom = Math.min(bottom, inner + node.clientHeight - px(style.scrollPaddingBottom));
   }
   return { top, bottom };
 }
@@ -42,10 +50,16 @@ function visibleBand(element: HTMLElement): { top: number; bottom: number } {
  * Focuses the first control marked invalid inside `root` and makes sure
  * its whole Field (label, control and error) can be seen. A bare
  * `focus()` scrolls only as far as the control, which leaves its label cut
- * off above it. A Field already in full view is left where it is, so a
- * short form does not jump; one out of view is centred in its scroll area,
- * or, when it is taller than that area, brought in from its top, label
- * first. Returns whether a control was found.
+ * off above it.
+ *
+ * The Field's scroll margins (field.tsx) hold what the page's sticky
+ * header and fixed bottom bars (a floating save bar, the phone's tab bar)
+ * cover, plus a little air, so the Field counts as in view only when its
+ * margin box is, and `scrollIntoView` lands its label below the header
+ * and its error above the bars. A Field already in full view is left where
+ * it is, so a short form does not jump; one out of view is centred in what
+ * is left of its scroll area, or, when it is taller than that, brought in
+ * from its top, label first. Returns whether a control was found.
  */
 function focusFirstInvalid(root: HTMLElement | null): boolean {
   const control = root?.querySelector<HTMLElement>('[aria-invalid="true"]');
@@ -55,9 +69,12 @@ function focusFirstInvalid(root: HTMLElement | null): boolean {
   // Not every environment lays out (jsdom has no scrollIntoView).
   if (typeof field.scrollIntoView !== "function") return true;
   const rect = field.getBoundingClientRect();
+  const margins = getComputedStyle(field);
+  const above = px(margins.scrollMarginTop);
+  const below = px(margins.scrollMarginBottom);
   const band = visibleBand(field);
-  if (rect.top >= band.top && rect.bottom <= band.bottom) return true;
-  const fits = rect.height <= band.bottom - band.top;
+  if (rect.top - above >= band.top && rect.bottom + below <= band.bottom) return true;
+  const fits = rect.height + above + below <= band.bottom - band.top;
   field.scrollIntoView({ block: fits ? "center" : "start", inline: "nearest" });
   return true;
 }

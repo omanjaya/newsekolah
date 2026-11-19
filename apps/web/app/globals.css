@@ -177,6 +177,32 @@ body {
 }
 
 /*
+ * How much of the scrolling page the shell's fixed bars cover: the sticky
+ * header stack at the top (its measured --shell-header-height), and at the
+ * bottom a StickySaveBar (--sticky-save-bar-height) beside the sidebar
+ * or, on a phone, the tab bar with the centre button's rise or a save bar
+ * docked on it, whichever reaches higher. A Field (packages/ui) takes
+ * these as its scroll margins, so focusing the first invalid one on
+ * submit brings its label out from under the header and its error out
+ * from under the bars. Only the app shell's <main> carries
+ * data-scroll-insets (the auth and kiosk layouts have neither bar), and
+ * dialogs are portalled outside it, so both keep 0 there.
+ */
+main[data-scroll-insets] {
+  --scroll-inset-top: var(--shell-header-height, 3.5rem);
+  --scroll-inset-bottom: var(--sticky-save-bar-height, 0px);
+}
+
+@media (width < 48rem) {
+  main[data-scroll-insets] {
+    --scroll-inset-bottom: calc(
+      var(--shell-mobile-tab-bar) + env(safe-area-inset-bottom) +
+        max(var(--shell-mobile-tab-raise), var(--sticky-save-bar-height, 0px))
+    );
+  }
+}
+
+/*
  * A form's own sticky action row (FormActions `sticky`) docks on the
  * phone's tab bar instead of sliding under it, with the centre button's
  * rise as padding (the tab bar paints its button over that padding, as

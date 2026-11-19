@@ -171,6 +171,20 @@ describe("Scanner", () => {
     expect(screen.queryByText("Ketik atau tempel kode lebih dulu.")).not.toBeInTheDocument();
   });
 
+  // The field shares its row with the send button: a placeholder longer
+  // than what is left ends in an ellipsis rather than being cut mid-word.
+  it("ends a manual placeholder too long for its row in an ellipsis", () => {
+    render(
+      <Scanner
+        onScan={vi.fn()}
+        camera={false}
+        manualEntry="open"
+        manualPlaceholder="Tempel kode QR"
+      />,
+    );
+    expect(screen.getByPlaceholderText("Tempel kode QR")).toHaveClass("text-ellipsis");
+  });
+
   it("disables the manual send button only while the scanner is busy", () => {
     render(<Scanner onScan={vi.fn()} disabled />);
     expect(screen.getByRole("button", { name: "Kirim" })).toBeDisabled();

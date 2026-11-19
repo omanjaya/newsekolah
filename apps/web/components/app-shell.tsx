@@ -138,6 +138,8 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
           </div>
           <main
             id="main-content"
+            // What the header and bottom bars cover, for scroll margins (globals.css).
+            data-scroll-insets=""
             className="flex-1 pb-[calc(var(--shell-mobile-tab-offset)+1rem)] md:pb-0"
           >
             {routeAccess === "ok" ? (
