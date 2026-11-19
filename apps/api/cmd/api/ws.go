@@ -177,7 +177,7 @@ func watchDutySubscriptions(client *realtime.Client, mux *realtime.Multiplexer, 
 // never be more than a compile-time stub. chi's routing tree lets the last
 // registration for a given method+pattern win with no error (unlike
 // net/http's ServeMux, which panics on a duplicate pattern), so mounting
-// these two routes after api.HandlerFromMux(strict, router) in wire.go
+// these two routes after api.HandlerWithOptions(strict, ...) in wire.go
 // simply replaces its generated GET /ws/me and GET /ws/monitor stubs with
 // the real upgrade -- no double registration, and the routes still run
 // behind every middleware already attached to router (tenant resolution

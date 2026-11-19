@@ -19,6 +19,16 @@ describe("isNotFoundError", () => {
     ).toBe(true);
   });
 
+  // The envelope the API's route binding answers /leave-requests/abc and
+  // /supervision/observations/abc with (paramErrorHandler in cmd/api).
+  it("treats a malformed UUID path parameter as not found", () => {
+    for (const field of ["instanceId", "observationId"]) {
+      expect(
+        isNotFoundError(apiError(400, "VALIDATION_FAILED", [{ field, code: "INVALID_FORMAT" }])),
+      ).toBe(true);
+    }
+  });
+
   it("keeps other failures as load failures", () => {
     expect(isNotFoundError(apiError(500, "INTERNAL"))).toBe(false);
     expect(isNotFoundError(apiError(400, "VALIDATION_FAILED"))).toBe(false);
