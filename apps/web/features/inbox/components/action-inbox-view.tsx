@@ -18,6 +18,18 @@ import { useActionInboxSummary } from "../use-action-inbox-count";
 
 import { WarningLetterCandidatesSection } from "./warning-letter-candidates-section";
 
+const PERMITS_HEADING_ID = "inbox-permits";
+const ALL_CLEAR_ID = "inbox-all-clear";
+
+/**
+ * Where focus goes when a permit sheet closes after its row, and the button
+ * that opened it, left the queue with no row left in its place: the permits
+ * heading, or the all-clear that replaced the queue once nothing waits.
+ */
+function focusAfterPermitSheet(): HTMLElement | null {
+  return document.getElementById(PERMITS_HEADING_ID) ?? document.getElementById(ALL_CLEAR_ID);
+}
+
 /** What decides whether an all-clear reader is offered one of the ways on. */
 interface HistoryContext {
   canSubmitPermit: boolean;
@@ -120,6 +132,7 @@ export function ActionInboxView(): ReactElement {
       )}
       {!nothingToShow && allClear && (
         <EmptyState
+          id={ALL_CLEAR_ID}
           tone="success"
           icon={<CheckCheck aria-hidden="true" />}
           title={t("emptyTitle")}
@@ -137,11 +150,14 @@ export function ActionInboxView(): ReactElement {
         <>
           {showPermits && (
             <InboxSection
-              id="inbox-permits"
+              id={PERMITS_HEADING_ID}
               title={t("permits")}
               count={summary.leave + summary.exit + summary.late}
             >
-              <PermitUnifiedQueue onSheetOpenChange={setPermitSheetOpen} />
+              <PermitUnifiedQueue
+                onSheetOpenChange={setPermitSheetOpen}
+                returnFocusFallback={focusAfterPermitSheet}
+              />
             </InboxSection>
           )}
           {access.warningLetters && (

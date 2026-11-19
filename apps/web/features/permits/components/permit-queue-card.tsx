@@ -150,7 +150,7 @@ export function PermitQueueCard({
             </Popover>
           </>
         )}
-        <Button size="sm" variant="secondary" onClick={onOpenDetail}>
+        <Button size="sm" variant="secondary" onClick={onOpenDetail} data-queue-open="">
           {t("open")}
         </Button>
       </div>
