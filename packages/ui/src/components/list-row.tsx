@@ -117,16 +117,25 @@ function presentSegments(segments: readonly ReactNode[]): ReactNode[] {
 /**
  * Each fact is its own one-line box: the line wraps between facts, and a
  * fact wider than the row shrinks to it and ends in an ellipsis
- * (inline-block so `truncate` applies, bottom-aligned to sit on the line).
+ * (`truncate` on the fact, bottom-aligned to sit on the line). The " ·"
+ * after a fact rides in the fact's box and never shrinks, so a wrapped
+ * line ends in the separator instead of the next line opening with it.
  */
 function MetaSegments({ segments }: { segments: readonly ReactNode[] }) {
-  return presentSegments(segments).map((segment, index) => (
-    // The facts are a fixed, ordered list for this row; the index is their identity.
-    <Fragment key={index}>
-      {index > 0 && " · "}
-      <span className="inline-block max-w-full truncate align-bottom">{segment}</span>
-    </Fragment>
-  ));
+  const present = presentSegments(segments);
+  return present.map((segment, index) => {
+    const last = index === present.length - 1;
+    return (
+      // The facts are a fixed, ordered list for this row; the index is their identity.
+      <Fragment key={index}>
+        <span className="inline-flex max-w-full align-bottom">
+          <span className="min-w-0 truncate">{segment}</span>
+          {!last && <span className="shrink-0 whitespace-pre"> ·</span>}
+        </span>
+        {!last && " "}
+      </Fragment>
+    );
+  });
 }
 
 /**

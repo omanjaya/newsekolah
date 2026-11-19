@@ -39,7 +39,7 @@ describe("List and ListRow", () => {
     );
     const time = screen.getByText("keluar 15.49");
     expect(time).toHaveClass("truncate");
-    expect(time.parentElement).toHaveTextContent(/^Kam, 19 Nov 2026 · keluar 15\.49$/);
+    expect(time.closest("div")).toHaveTextContent(/^Kam, 19 Nov 2026 · keluar 15\.49$/);
     // Nothing to say: no empty meta line under the title.
     const [, empty] = screen.getAllByRole("listitem");
     expect(empty?.querySelector(".text-fg-muted")).toBeNull();
@@ -54,7 +54,27 @@ describe("List and ListRow", () => {
     );
     // Shrinks to the row (max-w-full) and ends in an ellipsis (truncate),
     // as a box of its own so the clamp of the meta line cannot cut it.
-    expect(screen.getByText(long)).toHaveClass("inline-block", "max-w-full", "truncate");
+    const fact = screen.getByText(long);
+    expect(fact).toHaveClass("min-w-0", "truncate");
+    expect(fact.parentElement).toHaveClass("inline-flex", "max-w-full");
+  });
+
+  // At 320px a wrapped line opened with an orphan "·".
+  it("keeps the separator at the end of a fact, so a wrapped line never opens with it", () => {
+    render(
+      <List>
+        <ListRow title="Apotek" meta={["Kam, 19 Nov", "keluar 15.49"]} />
+      </List>,
+    );
+    const first = screen.getByText("Kam, 19 Nov");
+    const box = first.parentElement;
+    // The separator shares the first fact's unbreakable box and does not shrink.
+    expect(box).toHaveTextContent(/^Kam, 19 Nov ·$/);
+    expect(box?.lastElementChild).toHaveClass("shrink-0");
+    // The only break opportunity is the plain space after it.
+    expect(box?.nextSibling?.textContent).toBe(" ");
+    // The last fact has no trailing separator.
+    expect(screen.getByText("keluar 15.49").parentElement).toHaveTextContent(/^keluar 15\.49$/);
   });
 
   it("truncates the title to one line unless it may take two", () => {
