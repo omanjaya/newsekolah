@@ -235,7 +235,9 @@ describe("useTeacherBlock", () => {
     expect(result.current.hero).toBeUndefined();
   });
 
-  it("fails the block, with no titleless hero, when the class or subject names cannot be read", () => {
+  // A failed name read hid the lesson that waited for attendance behind the
+  // home's notice and the card's error box (audit r4-n3).
+  it("fails the block but keeps the lesson's hero and rows when the class or subject names cannot be read", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-26T01:50:00Z"));
     sessionsQuery.mockReturnValue({
@@ -268,17 +270,22 @@ describe("useTeacherBlock", () => {
     const { result } = renderHook(() => useTeacherBlock(me, true));
 
     expect(result.current.failed).toBe(true);
-    expect(result.current.hero).toBeUndefined();
+    // The hero still asks for the running lesson, named by what is known.
+    expect(result.current.hero?.priority).toBe(HERO_PRIORITY.teacherNowPending);
+    expect(result.current.hero?.title).toBe("Matematika");
+    expect(result.current.hero?.action?.href).toBe("/attendance/s1");
     // The tile stands on the sessions alone, so it stays.
     expect(result.current.tiles.map((tile) => tile.key)).toEqual(["teacher.pending"]);
 
-    // The card says the read failed instead of listing rows without a class.
+    // The card says the names failed and still lists the session, named
+    // by its period.
     render(<>{result.current.main[0]?.node}</>);
     expect(screen.getByRole("alert")).toBeInTheDocument();
     const sessionLinks = screen
       .queryAllByRole("link")
       .filter((link) => link.getAttribute("href")?.startsWith("/attendance/"));
-    expect(sessionLinks).toHaveLength(0);
+    expect(sessionLinks).toHaveLength(1);
+    expect(sessionLinks[0]).toHaveTextContent("Jam 2");
     fireEvent.click(screen.getByRole("button"));
     expect(refetchClasses).toHaveBeenCalledTimes(1);
   });

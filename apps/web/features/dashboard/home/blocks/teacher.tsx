@@ -100,16 +100,17 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
     ),
   );
 
-  // Every read the hero, the tile and the card stand on: a failed class or
-  // subject read would leave the hero without a title and the card's rows
-  // without a class, so it fails the block like the sessions themselves
-  // (audit r3-n19). A name read that never runs (no permission, or the
-  // classes list waiting on an active school year) is not a failure: the
-  // hero then names the lesson by what is known.
+  // Every read the hero, the tile and the card stand on. A failed class or
+  // subject read fails the block, so the home says so with its one retry
+  // (audit r3-n19), but it only takes the names away: the lesson that waits
+  // for attendance keeps its hero and its row, named by its period, rather
+  // than hiding behind the notice (audit r4-n3). A name read that never
+  // runs (no permission, or the classes list waiting on an active school
+  // year) is not a failure: the lesson is named by what is known.
   const nameReads = canReadNames ? [classes, subjects] : [];
   const reads = [sessions, periods, ...nameReads];
-  const readError: unknown = reads.find((read) => read.isError)?.error ?? null;
-  const namesFailed = nameReads.some((read) => read.isError);
+  const dayError: unknown = [sessions, periods].find((read) => read.isError)?.error ?? null;
+  const namesError: unknown = nameReads.find((read) => read.isError)?.error ?? null;
   const block: PersonaBlock = {
     tiles: [],
     main: [],
@@ -156,10 +157,9 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
     );
     const picked = pickCurrentOrNext(eligible, now);
 
-    // A failed name read leaves no hero: the home shows its failure notice
-    // in its place. Otherwise the hero names the lesson with whichever of
-    // the subject and class is known, and with its period when neither is.
-    if (!namesFailed && picked) {
+    // The hero names the lesson with whichever of the subject and class is
+    // known, and with its period when neither is.
+    if (picked) {
       const { session, start } = picked.item;
       const startPeriod = periodMap.get(session.start_period_id);
       const subjectName = subjectMap.get(session.subject_id)?.name ?? "";
@@ -200,7 +200,7 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
           secondaryAction: { label: t("hero.scheduleAction"), href: SCHEDULE_HREF },
         };
       }
-    } else if (!namesFailed) {
+    } else {
       const allDone = todaySessions.length > 0;
       block.hero = {
         key: "teacher.idle",
@@ -227,7 +227,8 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
       node: (
         <TeacherTodayCard
           isLoading={block.pending === true}
-          error={readError}
+          error={dayError}
+          namesError={namesError}
           onRetry={retryFailed}
           sessions={ordered}
           classMap={classMap}
@@ -246,6 +247,7 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
 function TeacherTodayCard({
   isLoading,
   error,
+  namesError,
   onRetry,
   sessions,
   classMap,
@@ -255,7 +257,10 @@ function TeacherTodayCard({
   clock,
 }: {
   isLoading: boolean;
+  /** Today's sessions or periods failed: there are no rows to show. */
   error: unknown;
+  /** The class or subject names failed: the rows show, named by period. */
+  namesError: unknown;
   onRetry: () => void;
   sessions: Session[];
   classMap: Map<string, ClassRef>;
@@ -283,44 +288,52 @@ function TeacherTodayCard({
           <EmptyState variant="compact" icon={<CalendarX2 />} title={t("card.empty")} />
         </div>
       ) : (
-        <List>
-          {sessions.map((session) => {
-            const running = session.id === runningId;
-            const subject = subjectMap.get(session.subject_id)?.name;
-            return (
-              <ListRow
-                key={session.id}
-                href={`${ATTENDANCE_HREF}/${session.id}`}
-                leading={
-                  <span
-                    className={cn(
-                      "w-12 text-label tabular-nums",
-                      running ? "text-accent" : "text-fg-muted",
-                    )}
-                  >
-                    {clock(periodMap.get(session.start_period_id)?.starts_at)}
-                  </span>
-                }
-                title={classMap.get(session.class_id)?.name ?? "-"}
-                meta={
-                  running && subject ? t("card.runningMeta", { subject }) : (subject ?? undefined)
-                }
-                selected={running}
-                trailing={
-                  session.submitted_at ? (
-                    <Badge tone="success" size="sm">
-                      {t("card.statusSubmitted")}
-                    </Badge>
-                  ) : (
-                    <Badge tone="warning" size="sm">
-                      {t("card.statusPending")}
-                    </Badge>
-                  )
-                }
-              />
-            );
-          })}
-        </List>
+        <>
+          {namesError ? (
+            <div className="px-5 pb-3">
+              <QueryError retry={onRetry} error={namesError} />
+            </div>
+          ) : null}
+          <List>
+            {sessions.map((session) => {
+              const running = session.id === runningId;
+              const subject = subjectMap.get(session.subject_id)?.name;
+              const startPeriod = periodMap.get(session.start_period_id);
+              return (
+                <ListRow
+                  key={session.id}
+                  href={`${ATTENDANCE_HREF}/${session.id}`}
+                  leading={
+                    <span
+                      className={cn(
+                        "w-12 text-label tabular-nums",
+                        running ? "text-accent" : "text-fg-muted",
+                      )}
+                    >
+                      {clock(startPeriod?.starts_at)}
+                    </span>
+                  }
+                  title={classMap.get(session.class_id)?.name ?? startPeriod?.name ?? "-"}
+                  meta={
+                    running && subject ? t("card.runningMeta", { subject }) : (subject ?? undefined)
+                  }
+                  selected={running}
+                  trailing={
+                    session.submitted_at ? (
+                      <Badge tone="success" size="sm">
+                        {t("card.statusSubmitted")}
+                      </Badge>
+                    ) : (
+                      <Badge tone="warning" size="sm">
+                        {t("card.statusPending")}
+                      </Badge>
+                    )
+                  }
+                />
+              );
+            })}
+          </List>
+        </>
       )}
     </Card>
   );
