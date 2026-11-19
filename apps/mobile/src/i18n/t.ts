@@ -11,6 +11,7 @@ import {
   type MessageKey,
   type MessageValues,
 } from "@newsekolah/i18n";
+import { validationValues } from "@newsekolah/schemas";
 import id from "@/i18n/id.json";
 import en from "@/i18n/en.json";
 
@@ -45,4 +46,11 @@ export function t(key: MobileMessageKey): string {
  * validation.*, auth.*, errors.*, ...) for the active locale. */
 export function tShared(key: MessageKey, values?: MessageValues): string {
   return translate(activeLocale, key, values);
+}
+
+/** Translates a zod issue message from @newsekolah/schemas (a
+ * `validation.*` key) with the `{min}` / `{max}` its schema enforces, so a
+ * length message never renders without its number. */
+export function tValidation(message: string): string {
+  return tShared(message as MessageKey, validationValues[message]);
 }

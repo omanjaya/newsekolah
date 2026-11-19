@@ -59,7 +59,12 @@
     "passwordMin": "Password must be at least {min, number} characters",
     "passwordMax": "Password must be at most {max, number} characters",
     "passwordMismatch": "Confirmation does not match the new password",
-    "tenantQueryMin": "Type at least {min, number} characters"
+    "tenantQueryMin": "Type at least {min, number} characters",
+    "usernameMax": "Username must be at most {max, number} characters",
+    "usernameOrEmailMax": "Username or email must be at most {max, number} characters",
+    "deviceIdMax": "Device ID must be at most {max, number} characters",
+    "deviceNameMax": "Device name must be at most {max, number} characters",
+    "tenantQueryMax": "Type at most {max, number} characters"
   },
   "auth": {
     "login": {
@@ -93,7 +98,7 @@
       "confirmLabel": "Confirm new password",
       "submit": "Change password",
       "success": "Password changed, other sessions were ended",
-      "newHint": "At least 8 characters."
+      "newHint": "At least {min, number} characters."
     },
     "sessions": {
       "title": "Active sessions",

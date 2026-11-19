@@ -59,7 +59,12 @@
     "passwordMin": "Kata sandi minimal {min, number} karakter",
     "passwordMax": "Kata sandi maksimal {max, number} karakter",
     "passwordMismatch": "Konfirmasi kata sandi tidak sama dengan kata sandi baru",
-    "tenantQueryMin": "Ketik minimal {min, number} karakter"
+    "tenantQueryMin": "Ketik minimal {min, number} karakter",
+    "usernameMax": "Nama pengguna maksimal {max, number} karakter",
+    "usernameOrEmailMax": "Nama pengguna atau email maksimal {max, number} karakter",
+    "deviceIdMax": "ID perangkat maksimal {max, number} karakter",
+    "deviceNameMax": "Nama perangkat maksimal {max, number} karakter",
+    "tenantQueryMax": "Ketik maksimal {max, number} karakter"
   },
   "auth": {
     "login": {
@@ -93,7 +98,7 @@
       "confirmLabel": "Konfirmasi kata sandi baru",
       "submit": "Ubah kata sandi",
       "success": "Kata sandi berhasil diubah, sesi lain diakhiri",
-      "newHint": "Minimal 8 karakter."
+      "newHint": "Minimal {min, number} karakter."
     },
     "sessions": {
       "title": "Sesi aktif",

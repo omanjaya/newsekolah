@@ -19,6 +19,6 @@
     "invalidTitle": "Tautan tidak berlaku",
     "invalidBody": "Tautan tidak valid, sudah dipakai, atau sudah kedaluwarsa.",
     "requestNew": "Minta tautan baru",
-    "newHint": "Minimal 8 karakter."
+    "newHint": "Minimal {min, number} karakter."
   }
 }

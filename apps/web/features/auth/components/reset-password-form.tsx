@@ -3,7 +3,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
-import { resetPasswordSchema, type ResetPasswordInput } from "@newsekolah/schemas";
+import {
+  PASSWORD_MIN_LENGTH,
+  resetPasswordSchema,
+  type ResetPasswordInput,
+} from "@newsekolah/schemas";
 import { Alert, Button, Field, Form, FormField, PasswordInput, useHydrated } from "@newsekolah/ui";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
@@ -97,7 +101,7 @@ export function ResetPasswordForm({
         control={form.control}
         name="new_password"
         render={({ field }) => (
-          <Field label={t("newLabel")} hint={t("newHint")}>
+          <Field label={t("newLabel")} hint={t("newHint", { min: PASSWORD_MIN_LENGTH })}>
             <PasswordInput autoComplete="new-password" {...field} />
           </Field>
         )}

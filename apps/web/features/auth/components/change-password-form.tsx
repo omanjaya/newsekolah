@@ -5,6 +5,7 @@ import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import {
   changePasswordSchema,
+  PASSWORD_MIN_LENGTH,
   toChangePasswordRequest,
   type ChangePasswordInput,
 } from "@newsekolah/schemas";
@@ -103,7 +104,7 @@ export function ChangePasswordForm({
         control={form.control}
         name="new_password"
         render={({ field }) => (
-          <Field label={t("newLabel")} hint={t("newHint")}>
+          <Field label={t("newLabel")} hint={t("newHint", { min: PASSWORD_MIN_LENGTH })}>
             <PasswordInput autoComplete="new-password" {...field} />
           </Field>
         )}

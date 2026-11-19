@@ -2,10 +2,18 @@ import { describe, expect, it } from "vitest";
 
 import {
   changePasswordSchema,
+  DEVICE_ID_MAX_LENGTH,
+  DEVICE_NAME_MAX_LENGTH,
   forgotPasswordSchema,
   loginSchema,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
   resetPasswordSchema,
+  TENANT_QUERY_MAX_LENGTH,
   tenantLookupQuerySchema,
+  USERNAME_MAX_LENGTH,
+  USERNAME_OR_EMAIL_MAX_LENGTH,
+  validationValues,
 } from "./auth.js";
 
 describe("loginSchema", () => {
@@ -138,5 +146,63 @@ describe("tenantLookupQuerySchema", () => {
 
   it("accepts a query of 2 or more characters", () => {
     expect(tenantLookupQuerySchema.safeParse({ q: "sm" }).success).toBe(true);
+  });
+});
+
+describe("validationValues", () => {
+  const tooLong = (limit: number) => "x".repeat(limit + 1);
+
+  // Every length issue the auth schemas can raise, too short and too long.
+  const failures = [
+    loginSchema.safeParse({
+      username: tooLong(USERNAME_MAX_LENGTH),
+      password: tooLong(PASSWORD_MAX_LENGTH),
+      client: "web",
+      device_id: tooLong(DEVICE_ID_MAX_LENGTH),
+      device_name: tooLong(DEVICE_NAME_MAX_LENGTH),
+    }),
+    changePasswordSchema.safeParse({
+      current_password: "old",
+      new_password: "abc",
+      confirm_password: "abc",
+    }),
+    changePasswordSchema.safeParse({
+      current_password: "old",
+      new_password: tooLong(PASSWORD_MAX_LENGTH),
+      confirm_password: tooLong(PASSWORD_MAX_LENGTH),
+    }),
+    resetPasswordSchema.safeParse({ new_password: "abc", confirm_password: "abc" }),
+    tenantLookupQuerySchema.safeParse({ q: "a" }),
+    tenantLookupQuerySchema.safeParse({ q: tooLong(TENANT_QUERY_MAX_LENGTH) }),
+    forgotPasswordSchema.safeParse({ username_or_email: tooLong(USERNAME_OR_EMAIL_MAX_LENGTH) }),
+  ];
+  const lengthIssues = failures.flatMap((result) =>
+    result.success
+      ? []
+      : result.error.issues.filter(
+          (issue) =>
+            (issue.code === "too_small" && Number(issue.minimum) > 1) || issue.code === "too_big",
+        ),
+  );
+
+  it("covers every length issue under test", () => {
+    expect(lengthIssues).toHaveLength(10);
+  });
+
+  it("gives each length message the limit its schema enforces", () => {
+    for (const issue of lengthIssues) {
+      const expected =
+        issue.code === "too_small"
+          ? { min: Number(issue.minimum) }
+          : issue.code === "too_big"
+            ? { max: Number(issue.maximum) }
+            : undefined;
+      expect(validationValues[issue.message], issue.message).toEqual(expected);
+    }
+  });
+
+  it("keeps the password minimum at 8 characters", () => {
+    expect(validationValues["validation.passwordMin"]).toEqual({ min: 8 });
+    expect(PASSWORD_MIN_LENGTH).toBe(8);
   });
 });

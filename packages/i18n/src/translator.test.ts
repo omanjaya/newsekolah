@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createTranslator, translate } from "./translator.js";
 
@@ -35,5 +35,29 @@ describe("translate", () => {
   it("createTranslator binds the locale", () => {
     const t = createTranslator("en");
     expect(t("common.actions.cancel")).toBe("Cancel");
+  });
+});
+
+describe("translate with values a pattern needs but did not get", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("does not throw when an ICU variable is missing", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    expect(() => translate("id", "validation.passwordMin")).not.toThrow();
+    expect(() => translate("en", "validation.maxLength", {})).not.toThrow();
+  });
+
+  it("degrades to the key and reports it in development", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    expect(translate("id", "validation.passwordMin")).toBe("validation.passwordMin");
+    expect(warn).toHaveBeenCalled();
+  });
+
+  it("still formats the same key once the values are given", () => {
+    expect(translate("id", "validation.passwordMin", { min: 8 })).toBe(
+      "Kata sandi minimal 8 karakter",
+    );
   });
 });

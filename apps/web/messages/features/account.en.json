@@ -19,6 +19,6 @@
     "invalidTitle": "This link no longer works",
     "invalidBody": "The link is invalid, already used, or has expired.",
     "requestNew": "Request a new link",
-    "newHint": "At least 8 characters."
+    "newHint": "At least {min, number} characters."
   }
 }

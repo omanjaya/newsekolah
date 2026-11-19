@@ -272,6 +272,8 @@ export type MessageKey =
   | "nav.visitors.items.incidents"
   | "nav.visitors.items.reports"
   | "nav.visitors.label"
+  | "validation.deviceIdMax"
+  | "validation.deviceNameMax"
   | "validation.email"
   | "validation.maxLength"
   | "validation.minLength"
@@ -280,7 +282,10 @@ export type MessageKey =
   | "validation.passwordMismatch"
   | "validation.passwordRequired"
   | "validation.required"
+  | "validation.tenantQueryMax"
   | "validation.tenantQueryMin"
+  | "validation.usernameMax"
+  | "validation.usernameOrEmailMax"
   | "validation.usernameRequired";
 
 export const MESSAGE_KEYS: readonly MessageKey[] = [
@@ -555,6 +560,8 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "nav.visitors.items.incidents",
   "nav.visitors.items.reports",
   "nav.visitors.label",
+  "validation.deviceIdMax",
+  "validation.deviceNameMax",
   "validation.email",
   "validation.maxLength",
   "validation.minLength",
@@ -563,6 +570,9 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "validation.passwordMismatch",
   "validation.passwordRequired",
   "validation.required",
+  "validation.tenantQueryMax",
   "validation.tenantQueryMin",
+  "validation.usernameMax",
+  "validation.usernameOrEmailMax",
   "validation.usernameRequired",
 ];

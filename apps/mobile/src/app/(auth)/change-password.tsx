@@ -3,16 +3,17 @@ import { ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
 import { useChangePassword } from "@newsekolah/api-client/react";
 import { ApiError } from "@newsekolah/api-client";
-import { changePasswordSchema, toChangePasswordRequest } from "@newsekolah/schemas";
-import type { MessageKey } from "@newsekolah/i18n";
+import {
+  changePasswordSchema,
+  PASSWORD_MIN_LENGTH,
+  toChangePasswordRequest,
+} from "@newsekolah/schemas";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { getApiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { t, tShared } from "@/i18n/t";
-
-const MIN_PASSWORD_LENGTH = 8;
+import { t, tShared, tValidation } from "@/i18n/t";
 
 export default function ChangePassword(): React.JSX.Element {
   const { refreshMe } = useAuth();
@@ -29,7 +30,7 @@ export default function ChangePassword(): React.JSX.Element {
   });
 
   const canSubmit =
-    currentPassword.length > 0 && newPassword.length >= MIN_PASSWORD_LENGTH && !submitting;
+    currentPassword.length > 0 && newPassword.length >= PASSWORD_MIN_LENGTH && !submitting;
 
   async function handleSubmit(): Promise<void> {
     setErrorMessage(null);
@@ -45,9 +46,7 @@ export default function ChangePassword(): React.JSX.Element {
     });
     if (!validation.success) {
       const [firstIssue] = validation.error.issues;
-      setErrorMessage(
-        firstIssue ? tShared(firstIssue.message as MessageKey) : t("error.generic_action"),
-      );
+      setErrorMessage(firstIssue ? tValidation(firstIssue.message) : t("error.generic_action"));
       return;
     }
 

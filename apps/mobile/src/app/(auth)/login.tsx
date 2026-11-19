@@ -5,13 +5,12 @@ import { KeyboardAvoidingView, Platform } from "react-native";
 import { useTenantBranding } from "@newsekolah/api-client/react";
 import { ApiError } from "@newsekolah/api-client";
 import { loginSchema } from "@newsekolah/schemas";
-import type { MessageKey } from "@newsekolah/i18n";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { getApiClient } from "@/lib/api/client";
 import { getTenantSlug } from "@/lib/tenant/tenant-store";
-import { t, tShared } from "@/i18n/t";
+import { t, tShared, tValidation } from "@/i18n/t";
 
 export default function Login(): React.JSX.Element {
   const { signIn } = useAuth();
@@ -36,9 +35,7 @@ export default function Login(): React.JSX.Element {
     });
     if (!validation.success) {
       const [firstIssue] = validation.error.issues;
-      setErrorMessage(
-        firstIssue ? tShared(firstIssue.message as MessageKey) : t("login.error_generic"),
-      );
+      setErrorMessage(firstIssue ? tValidation(firstIssue.message) : t("login.error_generic"));
       return;
     }
 

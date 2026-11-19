@@ -28,18 +28,53 @@ function compile(locale: Locale, key: string, pattern: string): IntlMessageForma
   return formatter;
 }
 
+function isDevelopment(): boolean {
+  return typeof process !== "undefined" && process.env.NODE_ENV !== "production";
+}
+
+function format(
+  locale: Locale,
+  key: string,
+  pattern: string,
+  values: MessageValues | undefined,
+): string | undefined {
+  try {
+    const formatted = compile(locale, key, pattern).format(values);
+    return Array.isArray(formatted) ? formatted.join("") : String(formatted);
+  } catch (error) {
+    if (isDevelopment()) {
+      console.warn(`[i18n] could not format "${key}" (${locale})`, error);
+    }
+    return undefined;
+  }
+}
+
 /**
  * Resolves a message key for a locale, falling back to the default locale
  * (id) when missing, and finally to the raw key so a broken translation
  * fails loudly in the UI instead of throwing.
+ *
+ * Formatting never throws either. A pattern that cannot be formatted (most
+ * often an ICU variable such as `{min}` the caller did not pass) is retried
+ * with the default-locale pattern and then degrades to the key. Messages are
+ * formatted during render, so a throw here would replace the whole screen
+ * with an error boundary, losing a form the user was filling in.
  */
 export function translate(locale: Locale, key: MessageKey, values?: MessageValues): string {
-  const pattern = catalogs[locale][key] ?? catalogs[DEFAULT_LOCALE][key];
+  const localized = catalogs[locale][key];
+  const fallback = catalogs[DEFAULT_LOCALE][key];
+  const pattern = localized ?? fallback;
   if (pattern === undefined) {
     return key;
   }
-  const formatted = compile(locale, key, pattern).format(values);
-  return Array.isArray(formatted) ? formatted.join("") : String(formatted);
+  const formatted = format(locale, key, pattern, values);
+  if (formatted !== undefined) {
+    return formatted;
+  }
+  if (localized !== undefined && fallback !== undefined && locale !== DEFAULT_LOCALE) {
+    return format(DEFAULT_LOCALE, key, fallback, values) ?? key;
+  }
+  return key;
 }
 
 /** Binds a locale so callers can write `t(key, values)` without repeating it. */
