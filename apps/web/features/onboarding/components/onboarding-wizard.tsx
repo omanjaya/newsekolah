@@ -162,7 +162,9 @@ export function OnboardingWizard({
 
       <Stepper
         variant="compact"
-        currentIndex={step === "later" ? STEP_ORDER.indexOf("done") : STEP_ORDER.indexOf(step)}
+        // A skipped upload leaves the wizard on that step: nothing was
+        // imported, so review and done are not reached.
+        currentIndex={STEP_ORDER.indexOf(step === "later" ? "upload" : step)}
         steps={STEP_ORDER.map((key) => ({ id: key, label: t(`steps.${key}`) }))}
       />
 

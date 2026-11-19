@@ -51,6 +51,9 @@ describe("OnboardingWizard", () => {
     render(<OnboardingWizard templateDone />);
     await user.click(screen.getByRole("button", { name: "skip" }));
     expect(screen.getByText("laterBody")).toBeInTheDocument();
+    // Nothing was imported: the progress stays on the upload step.
+    expect(screen.getByText("steps.upload").closest("li")).toHaveAttribute("aria-current", "step");
+    expect(screen.getByText("steps.done").closest("li")).not.toHaveAttribute("aria-current");
     expect(screen.getByRole("link", { name: "laterImport" })).toHaveAttribute(
       "href",
       "/academic/enrollment-import",
