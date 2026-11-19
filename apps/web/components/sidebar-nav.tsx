@@ -14,7 +14,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import type { PointerEvent, ReactElement, ReactNode } from "react";
+import type { PointerEvent, ReactElement, ReactNode, SyntheticEvent } from "react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { navGroupIcons, navGroupLabelKey, type NavItem } from "../lib/navigation";
@@ -40,6 +40,16 @@ const ROW_IDLE_NESTED = "text-fg-muted hover:bg-state-hover hover:text-fg active
 export const ROW_ACTIVE = "bg-accent-soft font-semibold text-accent-soft-fg";
 
 /**
+ * Stops a hidden label's trigger from asking to open. Radix still reports
+ * an open request while the controlled prop says closed, and that report
+ * closes every other tooltip and skips the provider's delay for the next.
+ * Its handlers skip their own work for an event already prevented.
+ */
+function keepLabelClosed(event: SyntheticEvent) {
+  event.preventDefault();
+}
+
+/**
  * Shows the label as a tooltip only while the sidebar is a rail and the text
  * is hidden. The tooltip wraps the row at either width, so switching width
  * keeps the same element: wrapping it only on the rail remounted it, and
@@ -55,9 +65,12 @@ export function RailLabel({
   children: ReactNode;
 }): ReactElement {
   const [open, setOpen] = useState(false);
+  const quiet = enabled ? undefined : keepLabelClosed;
   return (
     <Tooltip open={enabled && open} onOpenChange={setOpen}>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipTrigger asChild onPointerMove={quiet} onFocus={quiet}>
+        {children}
+      </TooltipTrigger>
       {enabled && (
         <TooltipContent side="right" sideOffset={10}>
           {label}

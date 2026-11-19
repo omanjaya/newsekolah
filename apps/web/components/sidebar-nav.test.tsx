@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { NavItem } from "../lib/navigation";
 import { NAV_GROUP } from "../lib/navigation-groups";
 
-import { GroupFlyout } from "./sidebar-nav";
+import { GroupFlyout, RailLabel } from "./sidebar-nav";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/dashboard" }));
 vi.mock("next-intl", () => ({
@@ -160,5 +160,41 @@ describe("GroupFlyout", () => {
 
     await user.hover(trigger);
     expect(screen.getByRole("link", { name: "nav.schedule" })).not.toHaveClass("outline-none");
+  });
+});
+
+describe("RailLabel", () => {
+  function renderLabel(enabled: boolean) {
+    render(
+      <TooltipProvider delayDuration={0}>
+        <RailLabel label="Jadwal" enabled={enabled}>
+          <button type="button">row</button>
+        </RailLabel>
+      </TooltipProvider>,
+    );
+    return screen.getByRole("button", { name: "row" });
+  }
+
+  // A hidden label still asked Radix to open, which closed every other
+  // tooltip on the page and skipped the next one's delay.
+  it("does not ask to open while the label is hidden", async () => {
+    const user = userEvent.setup();
+    const opened = vi.fn();
+    document.addEventListener("tooltip.open", opened);
+    try {
+      const row = renderLabel(false);
+      await user.hover(row);
+      row.focus();
+      expect(opened).not.toHaveBeenCalled();
+      expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    } finally {
+      document.removeEventListener("tooltip.open", opened);
+    }
+  });
+
+  it("shows the label on the rail when the row takes focus", async () => {
+    const row = renderLabel(true);
+    row.focus();
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Jadwal");
   });
 });
