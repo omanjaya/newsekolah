@@ -61,7 +61,8 @@
     "tabs": {
       "members": "Anggota",
       "notes": "Catatan pertemuan"
-    }
+    },
+    "tabsLabel": "Bagian kelompok"
   },
   "members": {
     "columns": {

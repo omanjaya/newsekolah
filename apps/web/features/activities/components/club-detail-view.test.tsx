@@ -84,6 +84,11 @@ describe("ClubDetailView", () => {
     expect(screen.getByText("Lapangan", { exact: false })).toBeInTheDocument();
   });
 
+  it("names its tab strip, as the other detail pages do", () => {
+    render(<ClubDetailView clubId="club-1" />);
+    expect(screen.getByRole("tablist", { name: "tabsLabel" })).toBeInTheDocument();
+  });
+
   it("enrolls a member from the header's action, not an inline form", async () => {
     const user = userEvent.setup();
     render(<ClubDetailView clubId="club-1" />);

@@ -134,7 +134,7 @@ export function ClubDetailView({ clubId }: { clubId: string }): ReactElement {
       primaryAction={primaryAction}
     >
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
+        <TabsList variant="underline" aria-label={t("tabsLabel")}>
           <TabsTrigger value="members">{t("tabs.members")}</TabsTrigger>
           {canRecordAttendance && <TabsTrigger value="meetings">{t("tabs.meetings")}</TabsTrigger>}
         </TabsList>
