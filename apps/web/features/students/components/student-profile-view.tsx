@@ -134,7 +134,7 @@ export function StudentProfileView({ studentId }: { studentId: string }): ReactE
   // A student the school does not have (an unknown or malformed id in the
   // address) is not found: no tabs whose every panel would fail to load.
   if (
-    personRecordStatus(lookup, studentId) === "missing" ||
+    personRecordStatus(lookup, studentId, "student") === "missing" ||
     (!user.data && isNotFoundError(user.error))
   ) {
     return (

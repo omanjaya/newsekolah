@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 
 interface Lookup {
-  names: Map<string, { id: string; name: string; nis?: string }>;
+  names: Map<string, { id: string; name: string; nis?: string; profile_kind?: string }>;
   isLoading: boolean;
   isError: boolean;
   isSuccess: boolean;
@@ -14,7 +14,7 @@ interface Lookup {
 
 const mocks = vi.hoisted<{ lookup: Lookup }>(() => ({
   lookup: {
-    names: new Map<string, { id: string; name: string; nis?: string }>(),
+    names: new Map<string, { id: string; name: string; nis?: string; profile_kind?: string }>(),
     isLoading: false,
     isError: false,
     isSuccess: true,
@@ -55,7 +55,12 @@ it("does not call the student unknown while the name is still loading", () => {
 });
 
 it("titles the page with the student's name once it loads", () => {
-  mocks.lookup.names.set("s1", { id: "s1", name: "Ayu Lestari", nis: "1001" });
+  mocks.lookup.names.set("s1", {
+    id: "s1",
+    name: "Ayu Lestari",
+    nis: "1001",
+    profile_kind: "student",
+  });
   render(<StudentDisciplineView studentId="s1" />);
 
   expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Ayu Lestari");
@@ -70,6 +75,15 @@ it("shows the not-found page once the lookup settles without the student", () =>
     "/discipline/violations",
   );
   expect(screen.queryByText("nameLoadError")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "printReport" })).not.toBeInTheDocument();
+});
+
+it("shows the not-found page for a staff member's id, with no actions", () => {
+  mocks.lookup.names.set("staff-1", { id: "staff-1", name: "Admin Contoh", profile_kind: "staff" });
+  render(<StudentDisciplineView studentId="staff-1" />);
+
+  expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
+  expect(screen.queryByText("Admin Contoh")).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "printReport" })).not.toBeInTheDocument();
 });
 

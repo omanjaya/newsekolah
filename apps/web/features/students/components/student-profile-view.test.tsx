@@ -28,7 +28,10 @@ vi.mock("./student-overview", () => ({
 }));
 vi.mock("../../reference/directory-names", async () => {
   const { directoryNamesStub } = await import("../../../test/directory-names-stub");
-  return directoryNamesStub([{ id: "s1", name: "Siswa Satu" }]);
+  return directoryNamesStub([
+    { id: "s1", name: "Siswa Satu", profile_kind: "student" },
+    { id: "staff-1", name: "Admin Contoh", profile_kind: "staff" },
+  ]);
 });
 vi.mock("../../school/api", () => ({ useUserQuery: () => ({ data: undefined }) }));
 vi.mock("../../mentoring/api", () => ({
@@ -67,6 +70,15 @@ describe("StudentProfileView tab visibility", () => {
     render(<StudentProfileView studentId="00000000-0000-0000-0000-000000000000" />);
     expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "backHome" })).toHaveAttribute("href", "/dashboard");
+    expect(tabNames()).toEqual([]);
+  });
+
+  it("shows the not-found page for a staff member's id, not a student profile", () => {
+    mocks.permissions = ["view_discipline", "view_reports", "manage_counseling"];
+    render(<StudentProfileView studentId="staff-1" />);
+    expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
+    expect(screen.queryByText("Admin Contoh")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "printReport" })).toBeNull();
     expect(tabNames()).toEqual([]);
   });
 

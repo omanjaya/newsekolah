@@ -29,6 +29,23 @@ describe("personRecordStatus", () => {
     expect(personRecordStatus(lookup({ names, isSuccess: true }), "s1")).toBe("found");
   });
 
+  it("is found for a person of the kind the route expects", () => {
+    const names = new Map([["s1", { ...person, profile_kind: "student" as const }]]);
+    expect(personRecordStatus(lookup({ names, isSuccess: true }), "s1", "student")).toBe("found");
+  });
+
+  it("is missing for a person of another kind than the route expects", () => {
+    const staff = new Map([["s1", { ...person, profile_kind: "staff" as const }]]);
+    expect(personRecordStatus(lookup({ names: staff, isSuccess: true }), "s1", "student")).toBe(
+      "missing",
+    );
+    // A user with no profile at all (a platform administrator) is no student either.
+    const bare = new Map([["s1", person]]);
+    expect(personRecordStatus(lookup({ names: bare, isSuccess: true }), "s1", "student")).toBe(
+      "missing",
+    );
+  });
+
   it("is missing when the directory answers without the id", () => {
     expect(personRecordStatus(lookup({ isSuccess: true }), "s1")).toBe("missing");
   });
