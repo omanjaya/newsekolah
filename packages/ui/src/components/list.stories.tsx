@@ -2,7 +2,8 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { Bell, BookOpen, FileText, MoreHorizontal } from "lucide-react";
 import { useState } from "react";
 
-import { phoneViewport } from "../stories/phone-viewport.js";
+import { domainIcons } from "../icons.js";
+import { phoneViewport, phoneViewportsAt } from "../stories/phone-viewport.js";
 
 import { Avatar } from "./avatar.js";
 import { Button } from "./button.js";
@@ -13,7 +14,7 @@ import { IconCircle } from "./icon-circle.js";
 import { ListRow } from "./list-row.js";
 import { List } from "./list.js";
 import { SectionHeader } from "./section-header.js";
-import { SemanticStatusBadge } from "./semantic-status.js";
+import { SemanticStatusBadge, type SemanticStatus } from "./semantic-status.js";
 import { TextLink } from "./text-link.js";
 
 const meta: Meta<typeof List> = {
@@ -262,4 +263,104 @@ export const Phone: Story = {
   parameters: { layout: "fullscreen" },
   decorators: [phoneViewport],
   render: () => <Gallery />,
+};
+
+const ExitPermitIcon = domainIcons.exitPermit;
+
+/** An exit history row: where to, the day, the gate or request time, the status. */
+const HISTORY: readonly {
+  destination: string;
+  day: string;
+  time: string;
+  status: SemanticStatus;
+  label: string;
+}[] = [
+  // Never through the gate: the longest second fact beside the longest statuses.
+  {
+    destination: "Apotek",
+    day: "Kam, 19 Nov",
+    time: "Diajukan pukul 15.49",
+    status: "rejected",
+    label: "Ditolak",
+  },
+  {
+    destination: "Rumah",
+    day: "Kam, 19 Nov",
+    time: "Diajukan pukul 15.49",
+    status: "expired",
+    label: "Kedaluwarsa",
+  },
+  {
+    destination: "Puskesmas",
+    day: "28 Agu 2025",
+    time: "Diajukan pukul 07.05",
+    status: "cancelled",
+    label: "Dibatalkan",
+  },
+  {
+    destination: "Bank",
+    day: "Rab, 18 Nov",
+    time: "keluar 10.20",
+    status: "completed",
+    label: "Selesai",
+  },
+  // An English school: the widest dates and the widest status.
+  {
+    destination: "Pharmacy",
+    day: "30 Sept 2025",
+    time: "left at 15:49",
+    status: "completed",
+    label: "Completed",
+  },
+  {
+    destination: "Home",
+    day: "Thu, 19 Nov",
+    time: "Requested at 15:49",
+    status: "expired",
+    label: "Expired",
+  },
+  {
+    destination: "Clinic",
+    day: "Wed, 30 Sept",
+    time: "Requested at 09:12",
+    status: "in_progress",
+    label: "In progress",
+  },
+];
+
+/**
+ * `keepMetaWhole` on the exit history at 320 and 390px: the day and the
+ * status are never cut. Where both do not fit on one line beside the
+ * title's column (320px, "Kedaluwarsa", "Completed"), the status moves
+ * under the text, whole; the request time may still end in an ellipsis.
+ */
+function ExitHistory() {
+  return (
+    <section className="flex flex-col gap-3">
+      <SectionHeader title="Riwayat izin keluar" count={HISTORY.length} />
+      <List framed>
+        {HISTORY.map((row) => (
+          <ListRow
+            key={row.destination}
+            leading={
+              <IconCircle tone="neutral">
+                <ExitPermitIcon />
+              </IconCircle>
+            }
+            title={row.destination}
+            meta={[row.day, row.time]}
+            keepMetaWhole
+            trailing={<SemanticStatusBadge status={row.status} label={row.label} />}
+            onClick={() => undefined}
+          />
+        ))}
+      </List>
+    </section>
+  );
+}
+
+export const KeepMetaWholeAtPhoneWidths: Story = {
+  parameters: { layout: "fullscreen" },
+  decorators: [phoneViewportsAt([320, 390])],
+  render: () => <ExitHistory />,
 };

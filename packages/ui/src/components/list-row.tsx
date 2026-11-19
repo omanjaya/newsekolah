@@ -26,19 +26,19 @@ export interface ListRowProps extends Omit<ComponentPropsWithRef<"li">, "title" 
    */
   meta?: ReactNode | readonly ReactNode[];
   /**
-   * Gives each fact of an array `meta` the room it needs before the
-   * trailing Badge: on a narrow row the badge shrinks (its label ends in an
-   * ellipsis) instead of a fact such as a date being cut, whatever the
-   * locale makes of its length. The row's text never narrows below its
-   * widest fact, so set it only where every fact is short by design (a
-   * date, a time) and the trailing slot holds a Badge.
+   * Keeps the first fact of an array `meta` (a date) whole, whatever the
+   * locale makes of its length: the row's text never narrows below it, and
+   * when that fact and the trailing slot (a status Badge) cannot both have
+   * their width on one line, the trailing slot moves under the text
+   * instead of either being cut. The other facts and the title take no
+   * part in that width: they wrap or end in an ellipsis as before.
    */
   keepMetaWhole?: boolean;
   /**
    * A value, date or Badge at the end of the row. A child hidden at some
-   * width (`hidden sm:inline`) leaves no gap behind there. A Badge there
-   * may shrink, ending its label in an ellipsis, when the row has no room
-   * left for it (see `keepMetaWhole`).
+   * width (`hidden sm:inline`) leaves no gap behind there. It keeps its
+   * width; with `keepMetaWhole` it moves under the text when the row is
+   * out of room.
    */
   trailing?: ReactNode;
   /** A separate control (a menu, a button); it stays its own target above the row's. */
@@ -132,21 +132,43 @@ function presentSegments(segments: readonly ReactNode[]): ReactNode[] {
 }
 
 /**
+ * The box of one fact. Plain, it shrinks to the row and ends in an
+ * ellipsis. `kept` (the first fact under `keepMetaWhole`) never shrinks,
+ * so its width is the text column's floor. `sized` (the other facts
+ * there) is a grid whose text track is `minmax(0, max-content)`: as wide
+ * as its text where that fits, cut to the row where not, yet zero in the
+ * column's min-content, so it never claims that floor.
+ */
+const FACT_BOX = {
+  plain: "inline-flex max-w-full",
+  kept: "inline-flex",
+  sized: "inline-grid max-w-full grid-cols-[minmax(0,max-content)_auto]",
+} as const;
+
+/**
  * Each fact is its own one-line box: the line wraps between facts, and a
  * fact wider than the row shrinks to it and ends in an ellipsis
  * (`truncate` on the fact, bottom-aligned to sit on the line). The " ·"
  * after a fact rides in the fact's box and never shrinks, so a wrapped
  * line ends in the separator instead of the next line opening with it.
  */
-function MetaSegments({ segments }: { segments: readonly ReactNode[] }) {
+function MetaSegments({
+  segments,
+  keepFirstWhole,
+}: {
+  segments: readonly ReactNode[];
+  keepFirstWhole: boolean;
+}) {
   const present = presentSegments(segments);
   return present.map((segment, index) => {
     const last = index === present.length - 1;
+    const kept = keepFirstWhole && index === 0;
+    const box = kept ? "kept" : keepFirstWhole ? "sized" : "plain";
     return (
       // The facts are a fixed, ordered list for this row; the index is their identity.
       <Fragment key={index}>
-        <span className="inline-flex max-w-full align-bottom">
-          <span className="min-w-0 truncate">{segment}</span>
+        <span data-meta-fact={box} className={cn(FACT_BOX[box], "align-bottom")}>
+          <span className={kept ? "whitespace-nowrap" : "min-w-0 truncate"}>{segment}</span>
           {!last && <span className="shrink-0 whitespace-pre"> ·</span>}
         </span>
         {!last && " "}
@@ -183,6 +205,66 @@ export function ListRow({
   const interactive = href !== undefined || onClick !== undefined;
   const showChevron = chevron ?? (interactive && !action && !disabled);
   const rule = "border-b border-line";
+  // Only a list of facts has a first fact to keep.
+  const keepFirstFact = keepMetaWhole && Array.isArray(meta) && hasMeta;
+
+  const text = (
+    // With `keepMetaWhole` the text is at least as wide as its first fact
+    // (min-content), and that fact alone sets it: the title takes no part
+    // (zero width, stretched to the column), nor do the other facts (see
+    // FACT_BOX), or a long one would claim the row instead.
+    <div className={cn("flex flex-1 flex-col gap-0.5", keepFirstFact ? "min-w-min" : "min-w-0")}>
+      <p
+        className={cn(
+          "text-fg",
+          titleLines === 2 ? "line-clamp-2 [overflow-wrap:anywhere]" : "truncate",
+          dense ? "text-label" : "text-body font-semibold",
+          keepFirstFact && "w-0 min-w-full",
+        )}
+      >
+        {interactive ? (
+          <RowTarget
+            href={href}
+            onClick={onClick}
+            selected={selected}
+            disabled={disabled}
+            describedBy={hasMeta ? metaId : undefined}
+            titleLines={titleLines}
+          >
+            {title}
+          </RowTarget>
+        ) : (
+          title
+        )}
+      </p>
+      {hasMeta && (
+        <div
+          id={metaId}
+          className={cn("line-clamp-2 text-fg-muted", dense ? "text-caption" : "text-body-sm")}
+        >
+          {Array.isArray(meta) ? (
+            <MetaSegments segments={meta} keepFirstWhole={keepFirstFact} />
+          ) : (
+            meta
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  const trailingSlot = trailing && (
+    // No box of its own (display: contents): each child is an item of the
+    // row, so one hidden at some width (`hidden sm:inline`) takes the row's
+    // gap away with it instead of leaving an empty 12px box. Text styles
+    // still inherit; the children keep their width (a status Badge is never
+    // cut) and sit 8px apart, as they did inside a box.
+    <div
+      data-slot="list-row-trailing"
+      className="contents text-caption whitespace-nowrap text-fg-muted tabular-nums *:shrink-0 [&>*+*]:-ml-1"
+    >
+      {trailing}
+    </div>
+  );
 
   return (
     <li
@@ -211,62 +293,21 @@ export function ListRow({
           variant === "inset" && cn(rule, "group-last/row:border-b-0"),
         )}
       >
-        {/* With `keepMetaWhole` the text is at least as wide as its widest
-            fact (min-content), so the trailing Badge gives way first. The
-            title takes no part in that width (zero width, stretched to the
-            column), or a long title would claim the row instead. */}
-        <div
-          className={cn(
-            "flex min-w-0 flex-1 flex-col gap-0.5",
-            keepMetaWhole && hasMeta && "min-w-min",
-          )}
-        >
-          <p
-            className={cn(
-              "text-fg",
-              titleLines === 2 ? "line-clamp-2 [overflow-wrap:anywhere]" : "truncate",
-              dense ? "text-label" : "text-body font-semibold",
-              keepMetaWhole && hasMeta && "w-0 min-w-full",
-            )}
-          >
-            {interactive ? (
-              <RowTarget
-                href={href}
-                onClick={onClick}
-                selected={selected}
-                disabled={disabled}
-                describedBy={hasMeta ? metaId : undefined}
-                titleLines={titleLines}
-              >
-                {title}
-              </RowTarget>
-            ) : (
-              title
-            )}
-          </p>
-          {hasMeta && (
-            <div
-              id={metaId}
-              className={cn("line-clamp-2 text-fg-muted", dense ? "text-caption" : "text-body-sm")}
-            >
-              {Array.isArray(meta) ? <MetaSegments segments={meta} /> : meta}
-            </div>
-          )}
-        </div>
-        {trailing && (
-          // No box of its own (display: contents): each child is an item
-          // of the row, so one hidden at some width (`hidden sm:inline`)
-          // takes the row's gap away with it instead of leaving an empty
-          // 12px box. Text styles still inherit; the children keep their
-          // width and sit 8px apart, as they did inside a box. A Badge is
-          // the one child that may shrink (its label ends in an ellipsis),
-          // so a row out of room cuts the status pill, not the row.
+        {keepMetaWhole ? (
+          // The text and the trailing slot share a line while both fit;
+          // otherwise the trailing slot wraps under the text, whole.
           <div
-            data-slot="list-row-trailing"
-            className="contents text-caption whitespace-nowrap text-fg-muted tabular-nums *:shrink-0 [&>*+*]:-ml-1 [&>[data-slot=badge]]:min-w-0 [&>[data-slot=badge]]:shrink"
+            data-slot="list-row-body"
+            className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1"
           >
-            {trailing}
+            {text}
+            {trailingSlot}
           </div>
+        ) : (
+          <>
+            {text}
+            {trailingSlot}
+          </>
         )}
         {action && (
           <div

@@ -227,21 +227,38 @@ describe("ExitPermitsView history rows", () => {
     expect(cancelled).toHaveTextContent("openedAt 10.00");
   });
 
-  it("gives the day the room before the status badge, in any locale's wording", () => {
-    mocks.items = [
-      permit("p0", "completed", {
-        destination: "Apotek",
-        exited_at: "2026-11-18T07:49:00Z",
-      }),
-    ];
-    render(<ExitPermitsView />);
+  // A permit that never reached the gate carries the longest second fact
+  // ("Diajukan pukul 15.49") beside the longest statuses ("Kedaluwarsa",
+  // "Dibatalkan"). Neither the day nor the status may be cut at 320px:
+  // out of room, the status moves under the text (ListRow keepMetaWhole).
+  it.each(["rejected", "expired"] as const)(
+    "keeps the day and the %s status whole on a row with the request time",
+    (status) => {
+      mocks.items = [permit("p0", status, { destination: "Apotek" })];
+      render(<ExitPermitsView />);
 
-    // The row's text never narrows below its widest fact (the day), and the
-    // status badge is what shrinks on a narrow phone (ListRow keepMetaWhole).
-    const [row] = screen.getAllByRole("listitem");
-    const title = row?.querySelector("p");
-    expect(title?.parentElement).toHaveClass("min-w-min");
-    const badge = row?.querySelector("[data-slot=list-row-trailing] > [data-slot=badge]");
-    expect(badge).not.toBeNull();
-  });
+      const [row] = screen.getAllByRole("listitem");
+      expect(row).toHaveTextContent("openedAt 10.00");
+      const body = row?.querySelector("[data-slot=list-row-body]");
+      expect(body).toHaveClass("flex-wrap");
+
+      // Only the day sets the text's floor; the request time does not.
+      const day = screen.getByText("Rab, 18 Nov");
+      expect(day).toHaveClass("whitespace-nowrap");
+      expect(day.parentElement).toHaveAttribute("data-meta-fact", "kept");
+      expect(screen.getByText("openedAt 10.00").parentElement).toHaveAttribute(
+        "data-meta-fact",
+        "sized",
+      );
+
+      // The status badge sits in the wrapping line and has no leave to shrink.
+      const badge = row?.querySelector<HTMLElement>(
+        "[data-slot=list-row-trailing] > [data-slot=badge]",
+      );
+      expect(badge).toHaveAttribute("data-status", status);
+      expect(badge?.parentElement?.parentElement).toBe(body);
+      expect(badge?.parentElement).toHaveClass("*:shrink-0");
+      expect(badge?.parentElement?.className).not.toMatch(/badge\]\]:(shrink|min-w-0)/);
+    },
+  );
 });

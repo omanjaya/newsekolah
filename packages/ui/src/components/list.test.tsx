@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Ellipsis } from "lucide-react";
 import { createRef } from "react";
@@ -79,49 +79,73 @@ describe("List and ListRow", () => {
   });
 
   // At 320px in English "19 Nov 2025" was cut to "19 Nov…" beside a
-  // "Completed" badge: the date must win the width, not the badge.
-  it("with keepMetaWhole, keeps the text as wide as its widest fact and lets the badge give way", () => {
-    const { container } = render(
+  // "Completed" badge; giving the badge leave to shrink then cut
+  // "Kedaluwarsa" to its dot beside a long second fact. Neither the date
+  // nor the status may be cut: the badge moves under the text instead.
+  it("with keepMetaWhole, keeps the first fact and the badge whole, wrapping the badge", () => {
+    render(
       <List>
         <ListRow
           title="Apotek Kimia Farma di seberang sekolah"
-          meta={["19 Nov 2025", "keluar 15.49"]}
+          meta={["Kam, 19 Nov", "Diajukan pukul 15.49"]}
           keepMetaWhole
-          trailing={<Badge dot>Completed</Badge>}
+          trailing={<Badge dot>Kedaluwarsa</Badge>}
           onClick={() => undefined}
         />
         <ListRow
           title="Rumah"
-          meta={["19 Nov 2025"]}
+          meta={["19 Nov 2025", "keluar 15.49"]}
           trailing={<Badge dot>Completed</Badge>}
           onClick={() => undefined}
         />
       </List>,
     );
     const [kept, plain] = screen.getAllByRole("listitem");
-    const keptTitle = kept?.querySelector("p");
-    // The text column's floor is its min-content, which the title (zero
-    // width, stretched back to the column) takes no part in: the floor is
-    // the widest fact, not the title.
+    if (!kept || !plain) throw new Error("two rows expected");
+
+    // The text and the badge share a wrapping line: out of room, the badge
+    // moves under the text rather than shrinking.
+    const body = kept.querySelector("[data-slot=list-row-body]");
+    expect(body).toHaveClass("flex", "flex-wrap", "min-w-0", "flex-1");
+    const keptTitle = kept.querySelector("p");
+    expect(keptTitle?.parentElement?.parentElement).toBe(body);
+
+    // The text column's floor is its min-content, which only the first
+    // fact sets: the title is zero width, stretched back to the column ...
     expect(keptTitle?.parentElement).toHaveClass("min-w-min", "flex-1");
     expect(keptTitle?.parentElement).not.toHaveClass("min-w-0");
     expect(keptTitle).toHaveClass("w-0", "min-w-full", "truncate");
-    // Without it the text still yields to the trailing slot, as before.
-    const plainTitle = plain?.querySelector("p");
+    // ... the date's box never shrinks or ends in an ellipsis ...
+    const date = within(kept).getByText("Kam, 19 Nov");
+    expect(date).toHaveClass("whitespace-nowrap");
+    expect(date).not.toHaveClass("truncate");
+    expect(date.parentElement).toHaveAttribute("data-meta-fact", "kept");
+    expect(date.parentElement).not.toHaveClass("max-w-full");
+    // ... and a later fact is zero in min-content (a 0-minimum text track),
+    // still cut to the row with an ellipsis when it is wider.
+    const opened = within(kept).getByText("Diajukan pukul 15.49");
+    expect(opened).toHaveClass("min-w-0", "truncate");
+    expect(opened.parentElement).toHaveAttribute("data-meta-fact", "sized");
+    expect(opened.parentElement).toHaveClass(
+      "inline-grid",
+      "max-w-full",
+      "grid-cols-[minmax(0,max-content)_auto]",
+    );
+
+    // The badge keeps its width: nothing lets it shrink.
+    const trailing = kept.querySelector("[data-slot=list-row-trailing]");
+    expect(trailing).toHaveClass("*:shrink-0");
+    expect(trailing?.className).not.toMatch(/data-slot=badge\]\]:(shrink|min-w-0)/);
+    expect(trailing?.parentElement).toBe(body);
+
+    // Without it the row is as before: no wrapping body, every fact may shrink.
+    expect(plain.querySelector("[data-slot=list-row-body]")).toBeNull();
+    const plainTitle = plain.querySelector("p");
     expect(plainTitle?.parentElement).toHaveClass("min-w-0");
     expect(plainTitle).not.toHaveClass("w-0");
-
-    // A badge in the trailing slot is the one child that may shrink, and its
-    // label ends in an ellipsis when it does.
-    const trailing = container.querySelector("[data-slot=list-row-trailing]");
-    expect(trailing).toHaveClass(
-      "*:shrink-0",
-      "[&>[data-slot=badge]]:min-w-0",
-      "[&>[data-slot=badge]]:shrink",
-    );
-    const badge = trailing?.querySelector(":scope > [data-slot=badge]");
-    expect(badge).not.toBeNull();
-    expect(screen.getAllByText("Completed")[0]).toHaveClass("min-w-0", "truncate");
+    const plainDate = within(plain).getByText("19 Nov 2025");
+    expect(plainDate).toHaveClass("min-w-0", "truncate");
+    expect(plainDate.parentElement).toHaveAttribute("data-meta-fact", "plain");
   });
 
   it("truncates the title to one line unless it may take two", () => {
