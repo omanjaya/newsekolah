@@ -30,6 +30,7 @@
   "credentialsTitle": "Kredensial Google",
   "credentialsHint": "Dari proyek Google Cloud milik sekolah, bagian OAuth 2.0.",
   "clientIdRequired": "Client ID wajib diisi.",
+  "clientSecretRequired": "Client secret wajib diisi.",
   "hostedDomainRequired": "Domain Google Workspace wajib diisi.",
   "saveAndEnable": "Simpan dan aktifkan"
 }

@@ -98,4 +98,37 @@ describe("SsoView status", () => {
     expect(saveMock).not.toHaveBeenCalled();
     expect(screen.getByText("hostedDomainRequired")).toBeInTheDocument();
   });
+
+  it("requires the client secret on the first setup, on its own field", async () => {
+    configQuery.mockReturnValue({
+      data: { configured: false, enabled: false },
+      isLoading: false,
+      isError: false,
+    });
+    const user = userEvent.setup();
+    render(<SsoView />);
+    await user.type(screen.getByRole("textbox", { name: /clientIdLabel/ }), "abc");
+    await user.type(screen.getByRole("textbox", { name: /hostedDomainLabel/ }), "school.id");
+    await user.click(screen.getByRole("button", { name: "saveAndEnable" }));
+    expect(saveMock).not.toHaveBeenCalled();
+    expect(screen.getByText("clientSecretRequired")).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(/clientSecretLabel/), "s3cret");
+    await user.click(screen.getByRole("button", { name: "saveAndEnable" }));
+    expect(saveMock).toHaveBeenCalledWith(expect.objectContaining({ client_secret: "s3cret" }));
+  });
+
+  it("keeps the stored secret when the field is left empty once configured", async () => {
+    configQuery.mockReturnValue({
+      data: { configured: true, enabled: true, client_id: "id", hosted_domain: "school.id" },
+      isLoading: false,
+      isError: false,
+    });
+    const user = userEvent.setup();
+    render(<SsoView />);
+    await user.click(screen.getByRole("switch"));
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(screen.queryByText("clientSecretRequired")).not.toBeInTheDocument();
+    expect(saveMock).toHaveBeenCalledWith(expect.objectContaining({ client_secret: undefined }));
+  });
 });
