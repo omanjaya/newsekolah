@@ -64,7 +64,7 @@ describe("MyLibraryHistoryTable", () => {
       />,
     );
 
-    expect(screen.getByText("1 Sep - 10 Sep")).toBeInTheDocument();
+    expect(screen.getByText("1 Sep – 10 Sep")).toBeInTheDocument();
   });
 
   it("caps the table to the 10 most recent loans", () => {

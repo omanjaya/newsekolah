@@ -13,7 +13,7 @@
       "pendingHint": "dari {total} sesi hari ini"
     },
     "hero": {
-      "nowEyebrow": "Sekarang",
+      "nowEyebrow": "Sedang berlangsung",
       "nowMeta": "{start}–{end} · presensi belum dikirim",
       "nowChip": "berjalan {hours, plural, =0 {{minutes} menit} other {{minutes, plural, =0 {{hours} jam} other {{hours} jam {minutes} menit}}}}",
       "nowAction": "Isi presensi",

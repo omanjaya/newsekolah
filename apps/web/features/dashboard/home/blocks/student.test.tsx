@@ -15,10 +15,6 @@ vi.mock("next-intl", () => ({
   }),
 }));
 
-vi.mock("@newsekolah/i18n", () => ({
-  formatDate: (value: string) => value,
-}));
-
 const mocks = vi.hoisted(() => ({
   schedules: vi.fn(),
   periods: vi.fn(),
@@ -563,6 +559,44 @@ describe("useStudentBlock", () => {
 
     expect(screen.getByText("Matematika Dasar")).toBeInTheDocument();
     expect(screen.queryByText("11111111-1111-1111-1111-111111111111")).not.toBeInTheDocument();
+  });
+
+  // "Jatuh tempo 1 Oktober 2026" wrapped to three lines in a half-width
+  // stat cell; a hint and a card row carry the short date, the year only
+  // outside the current one.
+  it("gives the loans tile and the library card the short due date", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-26T01:30:00Z"));
+    mocks.library.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: {
+        active_loans: [
+          {
+            id: "loan1",
+            copy_id: "copy1",
+            title_id: "11111111-1111-1111-1111-111111111111",
+            title_name: "Matematika Dasar",
+            member_user_id: "u1",
+            borrowed_at: "2026-09-01T00:00:00Z",
+            due_on: "2026-10-01",
+            renewal_count: 0,
+            status: "active",
+            fine_amount: 0,
+          },
+        ],
+        history: [],
+        reservations: [],
+        violations: [],
+      },
+    });
+
+    const { result } = renderHook(() => useStudentBlock(me(), true));
+    const tile = result.current.tiles.find((item) => item.key === "student.loans");
+    expect(tile?.hint).toBe('loansHint:{"date":"1 Okt"}');
+    const libraryNode = result.current.side.find((slot) => slot.key === "student.library")?.node;
+    render(<>{libraryNode}</>);
+    expect(screen.getByText('loanDue:{"date":"1 Okt"}')).toBeInTheDocument();
   });
 
   it("shows no tiles while the tile data sources are still loading", () => {

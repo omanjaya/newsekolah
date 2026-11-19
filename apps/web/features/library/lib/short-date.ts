@@ -29,12 +29,12 @@ export function formatShortDate(
     .replace(/\.$/, "");
 }
 
-/** "25 Sep - 2 Okt 2026": a loan's span, the year once at the end. */
+/** "25 Sep – 2 Okt": a loan's span, joined by an en dash like every range. */
 export function formatShortDateRange(
   from: string,
   to: string,
   locale: Locale,
   options: { timeZone?: string; today?: string } = {},
 ): string {
-  return `${formatShortDate(from, locale, options)} - ${formatShortDate(to, locale, options)}`;
+  return `${formatShortDate(from, locale, options)} – ${formatShortDate(to, locale, options)}`;
 }

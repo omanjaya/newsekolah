@@ -1,7 +1,7 @@
 "use client";
 
 import type { Locale } from "@newsekolah/i18n";
-import { formatDate } from "@newsekolah/i18n";
+import { formatShortDate } from "@newsekolah/i18n";
 import {
   Badge,
   Card,
@@ -169,7 +169,7 @@ function OverdueCard({
               <ListRow
                 key={loan.id}
                 title={<LibraryTitleName titleId={loan.title_id} />}
-                meta={t("due", { date: formatDate(loan.due_on, { locale }) })}
+                meta={t("due", { date: formatShortDate(loan.due_on, { locale }) })}
                 trailing={
                   lateDays > 0 ? (
                     <Badge tone="danger" size="sm">

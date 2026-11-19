@@ -13,7 +13,7 @@
       "pendingHint": "out of {total} sessions today"
     },
     "hero": {
-      "nowEyebrow": "Now",
+      "nowEyebrow": "In progress",
       "nowMeta": "{start}–{end} · attendance not submitted yet",
       "nowChip": "running {hours, plural, =0 {{minutes} min} other {{minutes, plural, =0 {{hours} h} other {{hours} h {minutes} min}}}}",
       "nowAction": "Fill in attendance",
