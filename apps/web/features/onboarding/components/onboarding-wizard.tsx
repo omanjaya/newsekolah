@@ -17,11 +17,13 @@ import {
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CheckCircle2, FileUp, Layers, Upload } from "lucide-react";
+import { ArrowLeft, CheckCircle2, FileUp, Layers, Upload } from "lucide-react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { ImportFileField } from "../../school/components/import-layout";
 import {
@@ -37,19 +39,50 @@ type WizardStep = "template" | "upload" | "review" | "done";
 const STEP_ORDER: WizardStep[] = ["template", "upload", "review", "done"];
 
 /**
+ * The steps kept in the URL, so a reload lands where the admin left off.
+ * "later" is the upload step skipped: the import stays one link away.
+ * Review and done hold the uploaded file and its report, which a reload
+ * cannot bring back, so they live in component state only.
+ */
+type UrlStep = "template" | "upload" | "later";
+const URL_STEPS: readonly UrlStep[] = ["template", "upload", "later"];
+
+/**
  * The onboarding wizard: pick a level template and apply it, upload a
  * Dapodik student-export CSV, review the dry-run report, then commit it.
- * Each step's own mutation invalidates the setup checklist on success, so
- * the checklist below this card (SetupView renders both) reflects progress
- * without the wizard needing to know its shape.
+ * Every step can be skipped and revisited (docs/07-ui-ux.md, onboarding
+ * sekolah). Each step's own mutation invalidates the setup checklist on
+ * success, so the checklist below this card (SetupView renders both)
+ * reflects progress without the wizard needing to know its shape.
+ *
+ * `templateDone` (the checklist's grade levels are in place) starts the
+ * wizard at the upload step, since the template has already been applied.
  */
-export function OnboardingWizard(): ReactElement {
+export function OnboardingWizard({
+  templateDone = false,
+}: {
+  templateDone?: boolean;
+}): ReactElement {
   const t = useTranslations("app.onboarding.wizard");
   const locale = useLocale();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const [step, setStep] = useState<WizardStep>("template");
+  const [urlStep, setUrlStep] = useUrlState<UrlStep>(
+    "wizard",
+    URL_STEPS,
+    templateDone ? "upload" : "template",
+  );
+  const [phase, setPhase] = useState<"review" | "done" | null>(null);
+  const step: WizardStep | "later" = phase ?? urlStep;
+  const setStep = (next: WizardStep | "later") => {
+    if (next === "review" || next === "done") {
+      setPhase(next);
+      return;
+    }
+    setPhase(null);
+    setUrlStep(next);
+  };
   const [file, setFile] = useState<File | null>(null);
   const [uploadPercent, setUploadPercent] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -129,7 +162,7 @@ export function OnboardingWizard(): ReactElement {
 
       <Stepper
         variant="compact"
-        currentIndex={STEP_ORDER.indexOf(step)}
+        currentIndex={step === "later" ? STEP_ORDER.indexOf("done") : STEP_ORDER.indexOf(step)}
         steps={STEP_ORDER.map((key) => ({ id: key, label: t(`steps.${key}`) }))}
       />
 
@@ -188,7 +221,18 @@ export function OnboardingWizard(): ReactElement {
           {isUploading && (
             <Progress value={uploadPercent} label={t("uploading", { percent: uploadPercent })} />
           )}
-          <div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={<ArrowLeft />}
+              disabled={isUploading}
+              onClick={() => {
+                setStep("template");
+              }}
+            >
+              {t("back")}
+            </Button>
             <Button
               size="sm"
               icon={<Upload />}
@@ -199,6 +243,37 @@ export function OnboardingWizard(): ReactElement {
               }}
             >
               {t("previewAction")}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={isUploading}
+              onClick={() => {
+                setStep("later");
+              }}
+            >
+              {t("skip")}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {step === "later" && (
+        <div className="flex flex-col items-start gap-3">
+          <p className="text-body-sm text-fg-muted">{t("laterBody")}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={<ArrowLeft />}
+              onClick={() => {
+                setStep("upload");
+              }}
+            >
+              {t("laterBack")}
+            </Button>
+            <Button asChild size="sm" variant="ghost" icon={<FileUp />}>
+              <Link href="/academic/enrollment-import">{t("laterImport")}</Link>
             </Button>
           </div>
         </div>

@@ -153,6 +153,10 @@
     },
     "commitAction": "Simpan data siswa",
     "doneTitle": "{count} siswa berhasil disimpan",
-    "doneBody": "Data siswa sudah masuk. Lihat kelengkapan data di bawah untuk langkah berikutnya."
+    "doneBody": "Data siswa sudah masuk. Lihat kelengkapan data di bawah untuk langkah berikutnya.",
+    "back": "Kembali",
+    "laterBody": "Impor data siswa dilewati. Unggah berkas Dapodik kapan saja dari sini, atau impor siswa per rombel dari halaman impor.",
+    "laterBack": "Unggah Dapodik sekarang",
+    "laterImport": "Buka impor siswa"
   }
 }
