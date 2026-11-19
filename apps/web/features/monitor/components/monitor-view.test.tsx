@@ -15,7 +15,11 @@ let snapshot: SnapshotState = { isError: false, isLoading: false, error: null, d
 vi.mock("next-intl", () => ({
   useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
 }));
+const session = vi.hoisted(() => ({ schoolAdmin: false }));
 vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => false }));
+vi.mock("../../../lib/session/school-admin", () => ({
+  useIsSchoolAdmin: () => session.schoolAdmin,
+}));
 vi.mock("../api", () => ({
   useMonitorSocket: () => "live",
   useMonitorSnapshotQuery: () => ({ ...snapshot, refetch: vi.fn() }),
@@ -27,6 +31,30 @@ const apiError = (status: number) =>
 
 beforeEach(() => {
   localStorage.setItem("newsekolah.monitor.display-token", "tok");
+  session.schoolAdmin = false;
+});
+
+describe("MonitorView token copy", () => {
+  it("sends other readers to the school admin for the token", () => {
+    localStorage.removeItem("newsekolah.monitor.display-token");
+    render(<MonitorView />);
+    expect(screen.getByText("tokenHint")).toBeInTheDocument();
+  });
+
+  it("does not send the school admin to themselves", () => {
+    session.schoolAdmin = true;
+    localStorage.removeItem("newsekolah.monitor.display-token");
+    render(<MonitorView />);
+    expect(screen.getByText("tokenHintAdmin")).toBeInTheDocument();
+    expect(screen.queryByText("tokenHint")).not.toBeInTheDocument();
+  });
+
+  it("tells the school admin who sets a refused token", () => {
+    session.schoolAdmin = true;
+    snapshot = { isError: true, isLoading: false, error: apiError(401), data: undefined };
+    render(<MonitorView />);
+    expect(screen.getByText("tokenInvalidBodyAdmin")).toBeInTheDocument();
+  });
 });
 
 describe("MonitorView display", () => {

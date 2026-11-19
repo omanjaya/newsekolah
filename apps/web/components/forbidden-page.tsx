@@ -9,15 +9,12 @@ import type { ReactElement } from "react";
 
 import { permissionForPath } from "../lib/navigation-permissions";
 import { useDocumentTitle } from "../lib/page-title";
-import { useSession } from "../lib/session/session-provider";
+import { useIsSchoolAdmin } from "../lib/session/school-admin";
 
 import { HistoryBackButton } from "./history-back-button";
 
 /** Every platform operator permission carries this prefix (lib/navigation-settings.ts). */
 const PLATFORM_PERMISSION_PREFIX = "platform_";
-
-/** Readers who are the school's admin: "ask the school admin" would point back at them. */
-const SCHOOL_ADMIN_ROLES: ReadonlySet<string> = new Set(["admin", "super_admin"]);
 
 export interface ForbiddenPageProps {
   /** Fills the viewport, for a route without the app shell (a kiosk). */
@@ -40,13 +37,12 @@ export interface ForbiddenPageProps {
 export function ForbiddenPage({ fullScreen = false, reason }: ForbiddenPageProps): ReactElement {
   const t = useTranslations("app.forbidden");
   const pathname = usePathname();
-  const { me } = useSession();
+  const schoolAdmin = useIsSchoolAdmin();
   useDocumentTitle(t("title"));
 
   const platform =
     reason === "platform" ||
     (permissionForPath(pathname)?.startsWith(PLATFORM_PERMISSION_PREFIX) ?? false);
-  const schoolAdmin = me?.roles.some((role) => SCHOOL_ADMIN_ROLES.has(role.slug)) ?? false;
   const body = platform ? t("platformBody") : schoolAdmin ? t("bodyAdmin") : t("body");
 
   const state = (
