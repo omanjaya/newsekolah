@@ -69,15 +69,21 @@ function RowTarget({
   selected,
   disabled,
   describedBy,
-  clamp,
+  titleLines,
   children,
 }: Pick<ListRowProps, "href" | "onClick" | "selected" | "disabled"> & {
   describedBy: string | undefined;
-  /** Clamps the title inside the target itself (a button is its own box). */
-  clamp: boolean;
+  titleLines: 1 | 2;
   children: ReactNode;
 }) {
   const current = selected ? ("true" as const) : undefined;
+  // The title is cut inside the target itself. The truncating paragraph
+  // around it cannot draw the ellipsis: a link or button there is one
+  // inline box that is clipped whole, mid-word ("Puskesmas, k"). As a
+  // block of the row's width the target ends its own line in the ellipsis
+  // (or its second line, for two). Its ::after hangs off the row, not the
+  // target, so the clipping leaves the row-wide hit area intact.
+  const fit = titleLines === 2 ? "line-clamp-2" : "block w-full truncate";
   if (href !== undefined && !disabled) {
     return (
       <UiLink
@@ -86,7 +92,7 @@ function RowTarget({
         data-list-row-target=""
         aria-current={current}
         aria-describedby={describedBy}
-        className={cn(TARGET_CLASS, clamp && "line-clamp-2")}
+        className={cn(TARGET_CLASS, fit)}
       >
         {children}
       </UiLink>
@@ -100,7 +106,7 @@ function RowTarget({
       aria-describedby={describedBy}
       disabled={disabled}
       onClick={onClick}
-      className={cn(TARGET_CLASS, "text-left", clamp && "line-clamp-2")}
+      className={cn(TARGET_CLASS, "text-left", fit)}
     >
       {children}
     </button>
@@ -208,7 +214,7 @@ export function ListRow({
                 selected={selected}
                 disabled={disabled}
                 describedBy={hasMeta ? metaId : undefined}
-                clamp={titleLines === 2}
+                titleLines={titleLines}
               >
                 {title}
               </RowTarget>
