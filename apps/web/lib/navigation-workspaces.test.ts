@@ -36,6 +36,15 @@ describe("consolidated workspaces", () => {
     expect(mobileNavigation(items, "student").map((item) => item.key)).toContain("scan");
   });
 
+  it("offers the announcements page to authors and publishers, not to plain readers", () => {
+    const has = (permissions: string[]) =>
+      menu(permissions, "teacher").some((item) => item.key === "announcements");
+    expect(has(["view_announcements"])).toBe(false);
+    expect(has(["view_announcements", "create_announcements"])).toBe(true);
+    // The principal publishes what staff draft and cannot draft themselves.
+    expect(has(["view_announcements", "publish_announcements"])).toBe(true);
+  });
+
   it("adds the homeroom workspace only for an actual homeroom assignment", () => {
     expect(menu(["view_attendance"], "teacher").some((item) => item.key === "homeroom")).toBe(
       false,

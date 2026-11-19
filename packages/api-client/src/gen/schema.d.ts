@@ -7393,7 +7393,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Planned visits to one teacher within a cycle */
+        /**
+         * Planned visits to one teacher within a cycle
+         * @description With only view_own_supervision the caller reads their own visits; another teacher's id returns 403.
+         */
         get: operations["listScheduledObservationsForTeacher"];
         put?: never;
         post?: never;
@@ -7427,7 +7430,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One completed observation; a teacher can always read their own */
+        /**
+         * One completed observation; a teacher can always read their own
+         * @description With only view_own_supervision the caller reads observations of their own lessons; any other returns 403.
+         */
         get: operations["getObservation"];
         put?: never;
         post?: never;
@@ -7461,7 +7467,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One teacher's observations within a cycle, averaged per criterion */
+        /**
+         * One teacher's observations within a cycle, averaged per criterion
+         * @description With only view_own_supervision the caller reads their own report; another teacher's id returns 403.
+         */
         get: operations["getTeacherSupervisionReport"];
         put?: never;
         post?: never;
@@ -7478,7 +7487,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The same report as an XLSX workbook or a formal PDF report with a supervisor/principal signature block */
+        /**
+         * The same report as an XLSX workbook or a formal PDF report with a supervisor/principal signature block
+         * @description With only view_own_supervision the caller exports their own report; another teacher's id returns 403.
+         */
         get: operations["exportTeacherSupervisionReport"];
         put?: never;
         post?: never;

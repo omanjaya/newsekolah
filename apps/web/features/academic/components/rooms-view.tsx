@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogFooter,
   EmptyState,
+  FirstUseEmptyState,
   Field,
   Input,
   NumberInput,
@@ -185,23 +186,25 @@ export function RoomsView({ page }: { page: HubPageProps }): ReactElement {
         retrying={isRefetching}
         getRowId={(r) => r.id}
         emptyState={
-          <EmptyState
-            icon={<DoorOpen aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-            action={
-              canManage ? (
-                <Button
-                  icon={<Plus />}
-                  onClick={() => {
-                    open("new");
-                  }}
-                >
-                  {t("add")}
-                </Button>
-              ) : undefined
-            }
-          />
+          // The header already carries the filled add button, so the empty
+          // state offers the outline one (one filled button per action).
+          canManage ? (
+            <FirstUseEmptyState
+              icon={<DoorOpen aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+              actionLabel={t("add")}
+              onAction={() => {
+                open("new");
+              }}
+            />
+          ) : (
+            <EmptyState
+              icon={<DoorOpen aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          )
         }
       />
 

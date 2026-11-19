@@ -18,7 +18,8 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
-  useCan: () => mocks.canCreate,
+  // Every other permission is held; only drafting varies between tests.
+  useCan: (code: string) => (code === "create_announcements" ? mocks.canCreate : true),
   useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
 }));
 vi.mock("../api", () => ({
@@ -141,6 +142,18 @@ describe("AnnouncementsManage empty and row states", () => {
     });
     render(<AnnouncementsManage creating={false} onCreatingChange={vi.fn()} />);
     expect(screen.getByText("manageEmptyTitle")).toBeInTheDocument();
+  });
+
+  it("does not ask a publisher who cannot draft to write one", () => {
+    mocks.canCreate = false;
+    mocks.useAnnouncementsQuery.mockReturnValue({
+      data: { data: [], page: { next_cursor: "" } },
+      isLoading: false,
+    });
+    render(<AnnouncementsManage creating={false} onCreatingChange={vi.fn()} />);
+    expect(screen.getByText("publishEmptyTitle")).toBeInTheDocument();
+    expect(screen.getByText("publishEmptyBody")).toBeInTheDocument();
+    expect(screen.queryByText("manageEmptyBody")).not.toBeInTheDocument();
   });
 
   it("names each row's menu after its announcement, with delete set apart", async () => {

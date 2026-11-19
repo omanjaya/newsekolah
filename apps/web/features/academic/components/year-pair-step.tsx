@@ -18,6 +18,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { ADD_ACADEMIC_YEAR_HREF } from "../../../lib/quick-actions";
 import { useCan } from "../../../lib/session/session-provider";
 import type { AcademicYear } from "../api";
 
@@ -95,6 +96,15 @@ export function YearPairStep({
   const canAddYear = useCan("manage_master_data");
   const options = years.map((year) => ({ value: year.id, label: year.label }));
   const same = fromYearId !== "" && fromYearId === toYearId;
+  // Each select leaves out the year already chosen in the other, so the
+  // source is never offered as its own destination. A pair that came in
+  // equal through the URL keeps both, and says so (sameYearError).
+  const sourceOptions = same ? options : options.filter((o) => o.value !== toYearId);
+  const targetOptions = same ? options : options.filter((o) => o.value !== fromYearId);
+  // With a single year there is nothing to move to: the alert below says
+  // what to do, so the destination and the preview stay out of the way
+  // instead of showing an empty list and a greyed-out button.
+  const enoughYears = years.length >= 2;
   return (
     <Card padding="md">
       {title !== undefined && (
@@ -103,31 +113,41 @@ export function YearPairStep({
           {description !== undefined && <CardDescription>{description}</CardDescription>}
         </CardHeader>
       )}
-      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-end">
+      <div
+        className={
+          enoughYears
+            ? "grid gap-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-end"
+            : "grid gap-4 md:grid-cols-2"
+        }
+      >
         <Field label={t("fromYear")} hint={t("fromYearHint")}>
           <Select
-            options={options}
+            options={sourceOptions}
             value={fromYearId}
             onValueChange={onFromChange}
             placeholder={t("pickYear")}
           />
         </Field>
-        <ArrowRight
-          aria-hidden="true"
-          className="hidden size-5 text-fg-muted md:mb-[calc(var(--space-6)+0.375rem)] md:block"
-        />
-        <Field
-          label={t("toYear")}
-          hint={same ? undefined : t("toYearHint")}
-          error={same ? t("sameYearError") : undefined}
-        >
-          <Select
-            options={options}
-            value={toYearId}
-            onValueChange={onToChange}
-            placeholder={t("pickYear")}
-          />
-        </Field>
+        {enoughYears && (
+          <>
+            <ArrowRight
+              aria-hidden="true"
+              className="hidden size-5 text-fg-muted md:mb-[calc(var(--space-6)+0.375rem)] md:block"
+            />
+            <Field
+              label={t("toYear")}
+              hint={same ? undefined : t("toYearHint")}
+              error={same ? t("sameYearError") : undefined}
+            >
+              <Select
+                options={targetOptions}
+                value={toYearId}
+                onValueChange={onToChange}
+                placeholder={t("pickYear")}
+              />
+            </Field>
+          </>
+        )}
       </div>
       {children}
       {years.length < 2 && (
@@ -138,22 +158,24 @@ export function YearPairStep({
           action={
             canAddYear ? (
               <Button asChild size="sm" variant="secondary" icon={<Plus />}>
-                <Link href="/academic/years">{t("addYear")}</Link>
+                <Link href={ADD_ACADEMIC_YEAR_HREF}>{t("addYear")}</Link>
               </Button>
             ) : undefined
           }
         />
       )}
-      <div className="flex justify-end">
-        <Button
-          className="max-sm:w-full"
-          onClick={onPreview}
-          loading={previewing}
-          disabled={!fromYearId || !toYearId || same}
-        >
-          {previewLabel}
-        </Button>
-      </div>
+      {enoughYears && (
+        <div className="flex justify-end">
+          <Button
+            className="max-sm:w-full"
+            onClick={onPreview}
+            loading={previewing}
+            disabled={!fromYearId || !toYearId || same}
+          >
+            {previewLabel}
+          </Button>
+        </div>
+      )}
     </Card>
   );
 }

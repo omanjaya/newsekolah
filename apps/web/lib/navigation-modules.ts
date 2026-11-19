@@ -118,8 +118,10 @@ export const moduleNavItems: NavItem[] = [
     href: "/supervision/observations",
     module: "supervision",
     icon: domainIcons.supervision,
-    // Reached from a cycle or a report, never browsed. It only carries the
-    // module; the page keeps its own permission checks.
+    // Reached from a cycle or a report, never browsed. Open to the
+    // school-wide reader and to the observed teacher (view_own_supervision,
+    // scoped to their own observations by the API).
+    anyPermission: ["view_supervision", "view_own_supervision"],
     sidebarPlacement: "hidden",
     routeOnly: true,
     group: NAV_GROUP.staff,
@@ -130,7 +132,10 @@ export const moduleNavItems: NavItem[] = [
     href: "/supervision/my-report",
     module: "supervision",
     icon: domainIcons.supervision,
-    permission: "view_supervision",
+    // The observed teacher's own results: view_own_supervision (the
+    // teacher's default) or view_supervision. Same Kepegawaian group as the
+    // cycles, so the sidebar order from docs/17 stays as it is.
+    anyPermission: ["view_supervision", "view_own_supervision"],
     group: NAV_GROUP.staff,
   },
 ];

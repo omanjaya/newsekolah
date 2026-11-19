@@ -44,9 +44,51 @@ func TestLoadOperationPermissions_PublicAndPermissioned(t *testing.T) {
 	if !ops.IsPublic("getPublic") {
 		t.Error("expected getPublic to be public")
 	}
-	perm, ok := ops.Permission("getProtected")
-	if !ok || perm != "view_dashboard" {
-		t.Errorf("expected getProtected to require view_dashboard, got %q (found=%v)", perm, ok)
+	perms, ok := ops.Permissions("getProtected")
+	if !ok || len(perms) != 1 || perms[0] != "view_dashboard" {
+		t.Errorf("expected getProtected to require view_dashboard, got %q (found=%v)", perms, ok)
+	}
+}
+
+func TestLoadOperationPermissions_ListOfAlternatives(t *testing.T) {
+	doc := loadDoc(t, specHeader+`
+  /either:
+    get:
+      operationId: getEither
+      x-permission: [view_supervision, view_own_supervision]
+      responses: { "200": { description: ok } }
+`)
+
+	ops, err := LoadOperationPermissions(doc)
+	if err != nil {
+		t.Fatalf("LoadOperationPermissions: %v", err)
+	}
+	perms, ok := ops.Permissions("getEither")
+	if !ok || len(perms) != 2 || perms[0] != "view_supervision" || perms[1] != "view_own_supervision" {
+		t.Errorf("expected both alternatives, got %q (found=%v)", perms, ok)
+	}
+}
+
+func TestLoadOperationPermissions_RejectsInvalidLists(t *testing.T) {
+	cases := map[string]string{
+		"empty list":                 `[]`,
+		"empty entry":                `[view_supervision, ""]`,
+		"authenticated as an option": `[authenticated, view_supervision]`,
+		"non-string entry":           `[view_supervision, 3]`,
+	}
+	for name, value := range cases {
+		t.Run(name, func(t *testing.T) {
+			doc := loadDoc(t, specHeader+`
+  /bad:
+    get:
+      operationId: getBad
+      x-permission: `+value+`
+      responses: { "200": { description: ok } }
+`)
+			if _, err := LoadOperationPermissions(doc); err == nil {
+				t.Fatalf("expected %s to fail startup", name)
+			}
+		})
 	}
 }
 

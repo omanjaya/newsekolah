@@ -824,6 +824,8 @@
       "unread": "Baru",
       "manageEmptyTitle": "Belum ada pengumuman dibuat",
       "manageEmptyBody": "Buat draf, pilih penerima, lalu terbitkan atau jadwalkan.",
+      "publishEmptyTitle": "Belum ada pengumuman untuk diterbitkan",
+      "publishEmptyBody": "Draf dari guru dan staf muncul di sini untuk diterbitkan atau dijadwalkan.",
       "columns": {
         "title": "Judul",
         "status": "Status",
@@ -1751,7 +1753,7 @@
     },
     "school": {
       "users": {
-        "searchPlaceholder": "Cari nama, nama pengguna, NIS, atau NIP",
+        "searchPlaceholder": "Cari nama, NIS, atau NIP",
         "eyebrow": "Data sekolah",
         "title": "Guru, pegawai, dan siswa",
         "columns": {
@@ -2084,6 +2086,8 @@
         "since": "sejak {date}",
         "showEnded": "Tampilkan yang sudah berakhir",
         "end": "Akhiri",
+        "endAction": "Akhiri tugas",
+        "rowActions": "Aksi untuk {name}, {duty}",
         "endBody": "Akhiri penugasan {duty}. Riwayat penugasan tetap tersimpan dan bisa diaktifkan kembali.",
         "endsOn": "Berakhir pada",
         "ended": "Tugas diakhiri",
@@ -2127,6 +2131,8 @@
           "deleted": "Jenis tugas dihapus",
           "permissionsTitle": "Izin selama bertugas",
           "permissionsBody": "Diberikan hanya kepada pemegang tugas ini, di luar izin dari perannya, dan hanya selama penugasan aktif.",
+          "permissionsReadOnly": "Hanya pengguna yang dapat mengelola peran dan izin yang bisa mengubah daftar ini.",
+          "noPermissions": "Tidak ada izin tambahan.",
           "form": {
             "nameError": "Nama wajib diisi dan harus mengandung minimal 2 huruf atau angka.",
             "nameTaken": "Nama ini sudah dipakai jenis tugas lain. Pilih nama yang berbeda."
@@ -2508,6 +2514,10 @@
         "view_own_library_loans": {
           "label": "Lihat pinjaman sendiri",
           "description": "Lihat pinjaman, reservasi, dan denda sendiri"
+        },
+        "view_own_supervision": {
+          "label": "Lihat supervisi sendiri",
+          "description": "Guru yang disupervisi melihat siklus serta laporan dan observasinya sendiri"
         },
         "view_reports": {
           "label": "Lihat laporan",

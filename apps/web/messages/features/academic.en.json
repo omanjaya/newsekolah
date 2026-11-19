@@ -1,14 +1,12 @@
 {
   "assignments": {
     "title": "Duty assignments",
-    "description": "Manage teaching assignments and additional staff duties.",
     "teaching": "Teaching",
     "duties": "Additional duties",
     "types": "Duty types"
   },
   "learning": {
     "title": "Subjects",
-    "description": "Manage subjects, academic-year offerings, and lesson periods.",
     "subjects": "Subjects",
     "offerings": "Subjects per academic year",
     "periods": "Lesson periods"
@@ -54,7 +52,8 @@
       "cancel": "Cancel",
       "save": "Save",
       "period": "Period",
-      "periodHint": "Pick the first day, then the last."
+      "periodHint": "Pick the first day, then the last.",
+      "periodRequired": "Choose the start and end dates."
     },
     "editTitle": "Edit academic year",
     "rowActions": "More actions for {label}"
@@ -173,18 +172,18 @@
   "subjectOfferings": {
     "searchPlaceholder": "Search subject or grade level",
     "eyebrow": "School data",
-    "title": "Subject offerings",
+    "title": "Subjects per academic year",
     "year": "Academic year",
-    "add": "Add offering",
+    "add": "Add subject to the year",
     "edit": "Edit",
     "delete": "Delete",
     "cancel": "Cancel",
     "save": "Save",
-    "saved": "Subject offering saved",
-    "deleted": "Subject offering deleted",
+    "saved": "Subject saved for the academic year",
+    "deleted": "Subject removed from this academic year",
     "rowActions": "More actions for {name}",
-    "deleteTitle": "Delete this subject offering?",
-    "deleteBody": "The offering for \"{name}\" will be deleted.",
+    "deleteTitle": "Remove this subject from the academic year?",
+    "deleteBody": "\"{name}\" will be removed from this academic year.",
     "pickSubject": "Pick a subject",
     "allGrades": "All grade levels",
     "columns": {
@@ -193,7 +192,7 @@
       "hoursPerWeek": "Hours per week",
       "actions": "Actions"
     },
-    "emptyTitle": "No subject offerings yet",
+    "emptyTitle": "No subjects for this academic year yet",
     "emptyBody": "Add the subjects taught in this academic year."
   },
   "teachingAssignments": {
@@ -259,7 +258,7 @@
   "newYearSetup": {
     "eyebrow": "School data",
     "title": "New academic year",
-    "description": "Copy subject offerings and classes from one academic year into another that does not have them yet.",
+    "description": "Copy subjects and classes from one academic year into another that does not have them yet.",
     "fromYear": "From academic year",
     "toYear": "To academic year",
     "preview": "Show plan",
@@ -267,17 +266,17 @@
     "idleTitle": "Pick the academic years",
     "idleBody": "Pick the source and destination academic years, then show the plan to see what will be copied.",
     "emptyTitle": "Nothing to copy",
-    "emptyBody": "The destination academic year already has every subject offering and class the source year has.",
-    "offeringsTitle": "Subject offerings ({n} new)",
+    "emptyBody": "The destination academic year already has every subject and class the source year has.",
+    "offeringsTitle": "Subjects of the year ({n} new)",
     "classesTitle": "Classes ({n} new)",
-    "noOfferings": "No subject offerings in the source academic year.",
+    "noOfferings": "No subjects in the source academic year.",
     "noClasses": "No classes in the source academic year.",
     "alreadyExists": "Already exists",
     "willCopy": "Will be copied",
     "commit": "Copy into the destination year",
     "confirmTitle": "Copy into {year}?",
-    "confirmBody": "{offerings} subject offerings and {classes} classes will be copied.",
-    "committed": "{offerings} subject offerings and {classes} classes copied.",
+    "confirmBody": "{offerings} subjects and {classes} classes will be copied.",
+    "committed": "{offerings} subjects and {classes} classes copied.",
     "offeringsLabel": "Subjects to copy",
     "classesLabel": "Classes to copy",
     "ofTotal": "of {n} in the source year",
@@ -322,7 +321,8 @@
     "subjectsTab": "Subjects",
     "periodsTab": "Lesson periods",
     "teachingTab": "Teaching assignments",
-    "dutiesTab": "Additional duties"
+    "dutiesTab": "Additional duties",
+    "learningDescription": "Manage subjects, lesson periods, teaching assignments and additional duties."
   },
   "yearFlow": {
     "fromYear": "From academic year",

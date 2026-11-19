@@ -166,9 +166,15 @@ export interface NavigationContext {
 
 function relevant(item: NavItem, context: NavigationContext): boolean {
   if (item.routePermission && context.can && !context.can(item.routePermission)) return false;
-  // Readers find announcements in the header bell; only an author needs the
+  // Readers find announcements in the header bell; only an author or a
+  // publisher (the principal, who publishes what staff draft) needs the
   // page as a destination of its own.
-  if (item.key === "announcements" && context.can && !context.can("create_announcements"))
+  if (
+    item.key === "announcements" &&
+    context.can &&
+    !context.can("create_announcements") &&
+    !context.can("publish_announcements")
+  )
     return false;
   if (item.key === "homeroom")
     return context.duties?.some((duty) => duty.slug === "homeroom") ?? false;

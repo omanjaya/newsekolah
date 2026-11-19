@@ -6,7 +6,6 @@ import {
   Button,
   Card,
   CardTitle,
-  Checkbox,
   ConfirmDialog,
   Dialog,
   DialogContent,
@@ -29,7 +28,6 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { usePermissionsQuery } from "../../roles/api";
-import { usePermissionText } from "../../roles/lib/use-permission-text";
 import { type DutyType } from "../api";
 import {
   useCreateDutyTypeMutation,
@@ -38,6 +36,8 @@ import {
   useReplaceDutyPermissionsMutation,
   useUpdateDutyTypeMutation,
 } from "../duties-api";
+
+import { DutyPermissionGroups } from "./duty-permission-groups";
 
 const SCOPE_KINDS: DutyType["scope_kind"][] = ["school", "class", "student"];
 
@@ -213,8 +213,6 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
 
 function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolean }): ReactElement {
   const t = useTranslations("app.school.duties");
-  const tGroups = useTranslations("app.roles");
-  const permissionText = usePermissionText();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const permissions = usePermissionsQuery();
@@ -307,7 +305,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
             }}
           />
         </Field>
-        <Field label={t("types.active")} orientation="horizontal">
+        <Field label={t("types.active")}>
           <Switch checked={isActive} disabled={!canManage} onCheckedChange={setIsActive} />
         </Field>
       </div>
@@ -337,36 +335,19 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
         {permissions.isLoading ? (
           <SkeletonList rows={4} />
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {(permissions.data?.groups ?? []).map((group) => (
-              <fieldset
-                key={group.name}
-                className="flex flex-col gap-2 rounded-md bg-surface-sunken p-3"
-              >
-                <legend className="px-1 text-label text-fg">
-                  {tGroups.has(`groups.${group.name}`)
-                    ? tGroups(`groups.${group.name}`)
-                    : group.name}
-                </legend>
-                {group.permissions.map((p) => (
-                  <Checkbox
-                    key={p.code}
-                    {...permissionText(p.code, p.description)}
-                    checked={granted.has(p.code)}
-                    disabled={!canManage}
-                    onCheckedChange={(v) => {
-                      setGranted((prev) => {
-                        const next = new Set(prev);
-                        if (v === true) next.add(p.code);
-                        else next.delete(p.code);
-                        return next;
-                      });
-                    }}
-                  />
-                ))}
-              </fieldset>
-            ))}
-          </div>
+          <DutyPermissionGroups
+            groups={permissions.data?.groups ?? []}
+            granted={granted}
+            canManage={canManage}
+            onToggle={(code, on) => {
+              setGranted((prev) => {
+                const next = new Set(prev);
+                if (on) next.add(code);
+                else next.delete(code);
+                return next;
+              });
+            }}
+          />
         )}
       </div>
 

@@ -7,6 +7,7 @@ import {
   ConfirmDialog,
   DataTable,
   EmptyState,
+  FirstUseEmptyState,
   RowActionsMenu,
   useToast,
   type DataTableFilterDef,
@@ -19,8 +20,10 @@ import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { formatCalendarDateRange } from "../../../lib/format-calendar-date";
+import { useQuickAction } from "../../../lib/hooks/use-quick-action";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { ADD_ACADEMIC_YEAR_ACTION } from "../../../lib/quick-actions";
 import { useCan } from "../../../lib/session/session-provider";
 import {
   type AcademicYear,
@@ -62,6 +65,15 @@ export function YearsView(): ReactElement {
   const archive = useArchiveAcademicYearMutation();
 
   const [editing, setEditing] = useState<AcademicYear | "new" | null>(null);
+  // The year-pair step's "Tambah tahun ajaran" link opens the add dialog
+  // straight away, so the reader does not have to find it again.
+  useQuickAction(
+    ADD_ACADEMIC_YEAR_ACTION,
+    () => {
+      setEditing("new");
+    },
+    canManage,
+  );
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [managingTerms, setManagingTerms] = useState<AcademicYear | null>(null);
 
@@ -236,23 +248,25 @@ export function YearsView(): ReactElement {
         retrying={isRefetching}
         getRowId={(y) => y.id}
         emptyState={
-          <EmptyState
-            icon={<CalendarRange aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-            action={
-              canManage ? (
-                <Button
-                  icon={<Plus />}
-                  onClick={() => {
-                    setEditing("new");
-                  }}
-                >
-                  {t("add")}
-                </Button>
-              ) : undefined
-            }
-          />
+          // The header already carries the filled add button, so the empty
+          // state offers the outline one (one filled button per action).
+          canManage ? (
+            <FirstUseEmptyState
+              icon={<CalendarRange aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+              actionLabel={t("add")}
+              onAction={() => {
+                setEditing("new");
+              }}
+            />
+          ) : (
+            <EmptyState
+              icon={<CalendarRange aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          )
         }
       />
 

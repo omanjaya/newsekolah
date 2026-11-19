@@ -824,6 +824,8 @@
       "unread": "New",
       "manageEmptyTitle": "No announcements created yet",
       "manageEmptyBody": "Create a draft, pick the audience, then publish or schedule it.",
+      "publishEmptyTitle": "No announcements to publish yet",
+      "publishEmptyBody": "Drafts from teachers and staff appear here to publish or schedule.",
       "columns": {
         "title": "Title",
         "status": "Status",
@@ -1751,7 +1753,7 @@
     },
     "school": {
       "users": {
-        "searchPlaceholder": "Search name, username, NIS, or NIP",
+        "searchPlaceholder": "Search name, NIS, or NIP",
         "eyebrow": "School data",
         "title": "Teachers, staff and students",
         "columns": {
@@ -2084,6 +2086,8 @@
         "since": "since {date}",
         "showEnded": "Show ended",
         "end": "End",
+        "endAction": "End duty",
+        "rowActions": "Actions for {name}, {duty}",
         "endBody": "End the {duty} assignment. Its history is kept and it can be reactivated later.",
         "endsOn": "Ends on",
         "ended": "Duty ended",
@@ -2127,6 +2131,8 @@
           "deleted": "Duty type deleted",
           "permissionsTitle": "Permissions while active",
           "permissionsBody": "Granted only to whoever holds this duty, on top of their role, and only while the assignment is active.",
+          "permissionsReadOnly": "Only users who can manage roles and permissions can change this list.",
+          "noPermissions": "No additional permissions.",
           "form": {
             "nameError": "Name is required and must contain at least 2 letters or digits.",
             "nameTaken": "Another duty type already uses this name. Choose a different name."
@@ -2508,6 +2514,10 @@
         "view_own_library_loans": {
           "label": "View own loans",
           "description": "See own loans, reservations and fines"
+        },
+        "view_own_supervision": {
+          "label": "View own supervision",
+          "description": "The observed teacher sees the cycles and their own report and observations"
         },
         "view_reports": {
           "label": "View reports",

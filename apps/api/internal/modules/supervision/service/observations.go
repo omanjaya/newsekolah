@@ -58,7 +58,12 @@ func (s *Service) ListScheduledForCycle(ctx context.Context, tenantID, cycleID u
 	return out, err
 }
 
-func (s *Service) ListScheduledForTeacher(ctx context.Context, tenantID, cycleID, teacherUserID uuid.UUID) ([]domain.ScheduledObservation, error) {
+// ListScheduledForTeacher lists one teacher's planned visits in a cycle; a
+// reader limited to their own records only gets their own list.
+func (s *Service) ListScheduledForTeacher(ctx context.Context, tenantID, cycleID, teacherUserID uuid.UUID, reader domain.Reader) ([]domain.ScheduledObservation, error) {
+	if !reader.MayRead(teacherUserID) {
+		return nil, domain.ErrObservationForbidden
+	}
 	var out []domain.ScheduledObservation
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
@@ -149,8 +154,9 @@ func (s *Service) RecordTeacherResponse(ctx context.Context, tenantID, id, teach
 
 // GetObservation returns the completed record for a reader the fixed rule
 // allows: the observer, leadership, or the observed teacher reading their
-// own, per the brief.
-func (s *Service) GetObservation(ctx context.Context, tenantID, id, readerUserID uuid.UUID) (domain.Observation, error) {
+// own, per the brief. A reader limited to their own records
+// (view_own_supervision) only ever reads an observation of their own lesson.
+func (s *Service) GetObservation(ctx context.Context, tenantID, id uuid.UUID, reader domain.Reader) (domain.Observation, error) {
 	var out domain.Observation
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		obs, ok, err := s.repo.GetObservation(ctx, tenantID, id)
@@ -160,11 +166,14 @@ func (s *Service) GetObservation(ctx context.Context, tenantID, id, readerUserID
 		if !ok {
 			return domain.ErrObservationNotFound
 		}
+		if !reader.MayRead(obs.TeacherUserID) {
+			return domain.ErrObservationForbidden
+		}
 		yearID, err := s.activeYear(ctx, tenantID)
 		if err != nil {
 			return err
 		}
-		role, err := s.observationReaderRole(ctx, tenantID, yearID, readerUserID, obs.ObserverUserID, obs.TeacherUserID)
+		role, err := s.observationReaderRole(ctx, tenantID, yearID, reader.UserID, obs.ObserverUserID, obs.TeacherUserID)
 		if err != nil {
 			return err
 		}

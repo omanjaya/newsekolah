@@ -3,7 +3,7 @@ paths:
     get:
       tags: [supervision]
       operationId: listSupervisionCycles
-      x-permission: view_supervision
+      x-permission: [view_supervision, view_own_supervision]
       summary: Supervision cycles this academic year
       responses:
         "200":
@@ -41,7 +41,7 @@ paths:
     get:
       tags: [supervision]
       operationId: getSupervisionCycle
-      x-permission: view_supervision
+      x-permission: [view_supervision, view_own_supervision]
       summary: One cycle and its instrument
       parameters:
         - { name: cycleId, in: path, required: true, schema: { type: string, format: uuid } }
@@ -125,8 +125,9 @@ paths:
     get:
       tags: [supervision]
       operationId: listScheduledObservationsForTeacher
-      x-permission: view_supervision
+      x-permission: [view_supervision, view_own_supervision]
       summary: Planned visits to one teacher within a cycle
+      description: With only view_own_supervision the caller reads their own visits; another teacher's id returns 403.
       parameters:
         - { name: cycleId, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: teacherId, in: path, required: true, schema: { type: string, format: uuid } }
@@ -171,8 +172,9 @@ paths:
     get:
       tags: [supervision]
       operationId: getObservation
-      x-permission: view_supervision
+      x-permission: [view_supervision, view_own_supervision]
       summary: One completed observation; a teacher can always read their own
+      description: With only view_own_supervision the caller reads observations of their own lessons; any other returns 403.
       parameters:
         - { name: observationId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
@@ -216,8 +218,9 @@ paths:
     get:
       tags: [supervision]
       operationId: getTeacherSupervisionReport
-      x-permission: view_supervision
+      x-permission: [view_supervision, view_own_supervision]
       summary: One teacher's observations within a cycle, averaged per criterion
+      description: With only view_own_supervision the caller reads their own report; another teacher's id returns 403.
       parameters:
         - { name: cycleId, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: teacherId, in: path, required: true, schema: { type: string, format: uuid } }
@@ -235,8 +238,9 @@ paths:
     get:
       tags: [supervision]
       operationId: exportTeacherSupervisionReport
-      x-permission: view_supervision
+      x-permission: [view_supervision, view_own_supervision]
       summary: The same report as an XLSX workbook or a formal PDF report with a supervisor/principal signature block
+      description: With only view_own_supervision the caller exports their own report; another teacher's id returns 403.
       parameters:
         - { name: cycleId, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: teacherId, in: path, required: true, schema: { type: string, format: uuid } }

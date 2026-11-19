@@ -203,6 +203,8 @@
     "cycle": "Cycle",
     "cyclePlaceholder": "Select a cycle",
     "noCyclesTitle": "No supervision cycles yet",
-    "noCyclesBody": "Your observation results appear here once school leadership creates a supervision cycle."
+    "noCyclesBody": "Your observation results appear here once school leadership creates a supervision cycle.",
+    "noCyclesManagerBody": "There is no cycle for this academic year yet. Create one on the Supervision cycles tab, and your observation results appear here.",
+    "openCycles": "Open supervision cycles"
   }
 }

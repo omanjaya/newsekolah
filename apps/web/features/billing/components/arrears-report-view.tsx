@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Button,
   DataTable,
   EmptyState,
   SegmentedControl,
@@ -9,7 +10,8 @@ import {
   StatGrid,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CircleCheck, School, UsersRound, Wallet } from "lucide-react";
+import { CircleCheck, FilePlus2, School, UsersRound, Wallet } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -17,15 +19,24 @@ import { useMemo } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { useCan } from "../../../lib/session/session-provider";
 import { useClassesQuery, useLookup } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
-import { type ArrearsClassLine, type ArrearsStudentLine, useArrearsReportQuery } from "../api";
+import {
+  type ArrearsClassLine,
+  type ArrearsStudentLine,
+  useArrearsReportQuery,
+  useBillsQuery,
+} from "../api";
 import { useBillingFormat } from "../lib/use-billing-format";
 
 /** The arrears report carries no currency; every bill in the module is in rupiah today. */
 const ARREARS_CURRENCY = "IDR";
 
 const VIEWS = ["students", "classes"] as const;
+
+const ANY_BILL = { period: "", status: "", classId: "" } as const;
+const FIRST_BILL = { limit: 1, offset: 0 } as const;
 type ArrearsView = (typeof VIEWS)[number];
 
 /**
@@ -45,6 +56,11 @@ export function ArrearsReportView(): ReactElement {
 
   const byStudent = data?.by_student ?? [];
   const byClass = data?.by_class ?? [];
+  // Nothing owed can mean everything is paid or that no bill was issued
+  // yet; one bill of the year (if any) tells the two apart.
+  const nothingOwed = data !== undefined && byStudent.length === 0;
+  const firstBill = useBillsQuery(ANY_BILL, FIRST_BILL, nothingOwed);
+  const canGenerate = useCan("generate_bills");
   const studentMap = useDirectoryNames(byStudent.map((item) => item.student_user_id));
   const className = (classId?: string) =>
     classId ? (classMap.get(classId)?.name ?? t("noClass")) : t("noClass");
@@ -129,8 +145,33 @@ export function ArrearsReportView(): ReactElement {
     [t, money, classMap],
   );
 
-  if (isLoading) return <SkeletonCards count={3} className="grid-cols-1 sm:grid-cols-3" />;
+  if (isLoading || (nothingOwed && firstBill.isLoading)) {
+    return <SkeletonCards count={3} className="grid-cols-1 sm:grid-cols-3" />;
+  }
   if (isError && !data) return <QueryError retry={() => refetch()} error={error} />;
+  // Without the bill check the view cannot tell "not billed yet" from "all
+  // paid", so a failed check is shown as such rather than as all paid.
+  if (nothingOwed && firstBill.isError) {
+    return <QueryError retry={() => firstBill.refetch()} error={firstBill.error} />;
+  }
+
+  if (nothingOwed && firstBill.data?.data.length === 0) {
+    // A school that has not started billing: no bill is not "all paid".
+    return (
+      <EmptyState
+        icon={<Wallet />}
+        title={t("noBillsTitle")}
+        description={canGenerate ? t("noBillsGenerateBody") : t("noBillsBody")}
+        action={
+          canGenerate ? (
+            <Button asChild variant="secondary" icon={<FilePlus2 />}>
+              <Link href="/billing?tab=generate">{t("goToGenerate")}</Link>
+            </Button>
+          ) : undefined
+        }
+      />
+    );
+  }
 
   if (byStudent.length === 0) {
     return (

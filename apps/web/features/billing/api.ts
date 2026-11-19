@@ -199,9 +199,10 @@ export interface BillPage {
   offset: number;
 }
 
-export function useBillsQuery(filters: BillFilters, page: BillPage) {
+export function useBillsQuery(filters: BillFilters, page: BillPage, enabled = true) {
   const client = useApiClient();
   return useQuery({
+    enabled,
     queryKey: keys.bills(filters, page),
     queryFn: () =>
       client.GET("/v1/billing/bills", {

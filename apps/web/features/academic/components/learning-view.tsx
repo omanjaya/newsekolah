@@ -46,6 +46,7 @@ const sectionGroups: readonly (readonly Section[])[] = [["subjects", "offerings"
  */
 export function LearningView(): ReactElement {
   const t = useTranslations("app.academic.learning");
+  const tWorkspace = useTranslations("app.academic.workspace");
   const tSubjects = useTranslations("app.school.subjects");
   // "Tambah mapel" is the page header's primary action; the subjects list
   // only owns the dialog it opens.
@@ -56,7 +57,9 @@ export function LearningView(): ReactElement {
   const siblings = sectionGroups.find((group) => group.includes(active.value)) ?? [active.value];
 
   const page: HubPageProps = {
-    description: t("description"),
+    // One subtitle for the whole Pembelajaran area (its four tabs span
+    // this page and Penugasan), so the header does not change per tab.
+    description: tWorkspace("learningDescription"),
     nav: <LearningWorkspaceNav />,
     toolbar:
       siblings.length > 1 ? (

@@ -220,6 +220,8 @@ describe("mobile centre action", () => {
     "view_discipline",
     "record_violations",
     "view_early_warning",
+    "view_own_supervision",
+    "respond_to_supervision",
   ];
   const STUDENT = [
     "view_dashboard",

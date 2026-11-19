@@ -1,6 +1,27 @@
 package domain
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/uuid"
+)
+
+func TestReaderMayRead(t *testing.T) {
+	self, other := uuid.New(), uuid.New()
+	own := Reader{UserID: self}
+	if !own.MayRead(self) {
+		t.Fatal("an own-only reader must read their own records")
+	}
+	if own.MayRead(other) {
+		t.Fatal("an own-only reader must not read another teacher's records")
+	}
+	if (Reader{}).MayRead(uuid.Nil) {
+		t.Fatal("a reader without a user must not match a nil teacher id")
+	}
+	if !(Reader{UserID: self, AllTeachers: true}).MayRead(other) {
+		t.Fatal("a school-wide reader reads every teacher's records")
+	}
+}
 
 func sampleInstrument() Instrument {
 	return Instrument{

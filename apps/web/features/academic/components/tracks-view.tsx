@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogFooter,
   EmptyState,
+  FirstUseEmptyState,
   Field,
   Input,
   RowActionsMenu,
@@ -180,23 +181,25 @@ export function TracksView({ page }: { page: HubPageProps }): ReactElement {
         retrying={isRefetching}
         getRowId={(x) => x.id}
         emptyState={
-          <EmptyState
-            icon={<Compass aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-            action={
-              canManage ? (
-                <Button
-                  icon={<Plus />}
-                  onClick={() => {
-                    open("new");
-                  }}
-                >
-                  {t("add")}
-                </Button>
-              ) : undefined
-            }
-          />
+          // The header already carries the filled add button, so the empty
+          // state offers the outline one (one filled button per action).
+          canManage ? (
+            <FirstUseEmptyState
+              icon={<Compass aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+              actionLabel={t("add")}
+              onAction={() => {
+                open("new");
+              }}
+            />
+          ) : (
+            <EmptyState
+              icon={<Compass aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          )
         }
       />
 
