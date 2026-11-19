@@ -49,16 +49,27 @@ vi.mock("../../reference/api", () => ({
     isLoading: false,
   }),
 }));
+// The stub exports class-2, the class the counselor fixtures teach in, so
+// a test can tell "publishes there" from "publishes somewhere".
 vi.mock("./erapor-export", () => ({
   EraporExport: ({
-    canPublish,
+    canPublishIn,
     onOpenGradebook,
   }: {
-    canPublish: boolean;
-    onOpenGradebook: () => void;
+    canPublishIn: (classId: string) => boolean;
+    onOpenGradebook: (classId: string) => void;
   }) => (
-    <div data-testid="erapor-export" data-can-publish={String(canPublish)}>
-      <button type="button" onClick={onOpenGradebook}>
+    <div
+      data-testid="erapor-export"
+      data-can-publish={String(canPublishIn("class-2"))}
+      data-can-publish-class-1={String(canPublishIn("class-1"))}
+    >
+      <button
+        type="button"
+        onClick={() => {
+          onOpenGradebook("class-2");
+        }}
+      >
         open-gradebook
       </button>
     </div>
@@ -305,13 +316,62 @@ describe("GradingView TP and e-Rapor panels", () => {
 
   it("tells the e-Rapor panel whether the viewer can publish, and lets it open the gradebook", async () => {
     grantManageGrades();
+    assignmentsFixture.current = [
+      { class_id: "class-1", subject_id: "subject-1", is_active: true },
+      { class_id: "class-2", subject_id: "subject-2", is_active: true },
+    ];
     window.history.replaceState(null, "", "/?tab=erapor");
     const user = userEvent.setup();
     render(<GradingView />);
 
     expect(screen.getByTestId("erapor-export")).toHaveAttribute("data-can-publish", "true");
     await user.click(screen.getByRole("button", { name: "open-gradebook" }));
-    expect(screen.getByTestId("gradebook-sheet")).toBeVisible();
+    // The sheet opens on the exported class, on a subject taught there.
+    const sheet = screen.getByTestId("gradebook-sheet");
+    expect(sheet).toBeVisible();
+    expect(sheet).toHaveAttribute("data-class-id", "class-2");
+    expect(sheet).toHaveAttribute("data-subject-id", "subject-2");
+    expect(sheet).toHaveAttribute("data-can-manage", "true");
+  });
+
+  it("does not send a counselor with no teaching assignment to publish", () => {
+    grantCounselor();
+    assignmentsFixture.current = [];
+    window.history.replaceState(null, "", "/?tab=erapor");
+    render(<GradingView />);
+
+    const panel = screen.getByTestId("erapor-export");
+    expect(panel).toHaveAttribute("data-can-publish", "false");
+    expect(panel).toHaveAttribute("data-can-publish-class-1", "false");
+  });
+
+  it("lets a counselor publish only in the class they teach", async () => {
+    grantCounselor();
+    assignmentsFixture.current = [
+      { class_id: "class-2", subject_id: "subject-2", is_active: true },
+    ];
+    window.history.replaceState(null, "", "/?tab=erapor&class=class-1&subject=subject-1");
+    const user = userEvent.setup();
+    render(<GradingView />);
+
+    const panel = screen.getByTestId("erapor-export");
+    expect(panel).toHaveAttribute("data-can-publish", "true");
+    expect(panel).toHaveAttribute("data-can-publish-class-1", "false");
+    await user.click(screen.getByRole("button", { name: "open-gradebook" }));
+    const sheet = screen.getByTestId("gradebook-sheet");
+    expect(sheet).toHaveAttribute("data-class-id", "class-2");
+    expect(sheet).toHaveAttribute("data-subject-id", "subject-2");
+    expect(sheet).toHaveAttribute("data-can-manage", "true");
+  });
+
+  it("lets manage_master_data publish in any class", () => {
+    canFn.mockImplementation(
+      (permission: string) => permission === "manage_grades" || permission === "manage_master_data",
+    );
+    window.history.replaceState(null, "", "/?tab=erapor");
+    render(<GradingView />);
+
+    expect(screen.getByTestId("erapor-export")).toHaveAttribute("data-can-publish-class-1", "true");
   });
 
   it("marks a view_grades-only reader on the e-Rapor panel as unable to publish", () => {

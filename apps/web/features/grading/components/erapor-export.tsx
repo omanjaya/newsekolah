@@ -51,13 +51,17 @@ const EMPTY_STATE_CODES = new Set(["GRADES_NOT_PUBLISHED", "NO_GRADABLE_SUBJECTS
 
 export interface EraporExportProps {
   /**
-   * Whether the viewer can publish grades themselves (manage_grades). A
-   * reader is told the subject teachers have not published yet instead
-   * of being sent to do something they cannot.
+   * Whether the viewer can publish grades of the given class themselves:
+   * manage_grades and a teaching assignment in it (or manage_master_data).
+   * Anyone else is told the subject teachers have not published yet
+   * instead of being sent to do something they cannot.
    */
-  canPublish: boolean;
-  /** Opens the gradebook tab, owned by the page's URL state. */
-  onOpenGradebook: () => void;
+  canPublishIn: (classId: string) => boolean;
+  /**
+   * Opens the gradebook tab on the exported class, owned by the page's
+   * URL state.
+   */
+  onOpenGradebook: (classId: string) => void;
 }
 
 /**
@@ -67,7 +71,7 @@ export interface EraporExportProps {
  * second sheet (or CSV section), so nothing here is lost once the file
  * lands on disk.
  */
-export function EraporExport({ canPublish, onOpenGradebook }: EraporExportProps): ReactElement {
+export function EraporExport({ canPublishIn, onOpenGradebook }: EraporExportProps): ReactElement {
   const t = useTranslations("app.grading.erapor");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -84,6 +88,7 @@ export function EraporExport({ canPublish, onOpenGradebook }: EraporExportProps)
 
   const effectiveClassId = classId || (classes.data?.data[0]?.id ?? "");
   const preview = useEraporPreviewQuery(effectiveClassId, termId || undefined);
+  const canPublish = effectiveClassId !== "" && canPublishIn(effectiveClassId);
 
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
   const subjectOptions = (subjects.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }));
@@ -182,7 +187,12 @@ export function EraporExport({ canPublish, onOpenGradebook }: EraporExportProps)
             description={canPublish ? t("notPublishedBodyManage") : t("notPublishedBodyRead")}
             action={
               canPublish && (
-                <Button variant="secondary" onClick={onOpenGradebook}>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    onOpenGradebook(effectiveClassId);
+                  }}
+                >
                   {t("openGradebook")}
                 </Button>
               )

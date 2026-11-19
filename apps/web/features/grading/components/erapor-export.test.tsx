@@ -48,18 +48,29 @@ describe("EraporExport preview states", () => {
     failWith("GRADES_NOT_PUBLISHED");
     const onOpenGradebook = vi.fn();
     const user = userEvent.setup();
-    render(<EraporExport canPublish onOpenGradebook={onOpenGradebook} />);
+    render(<EraporExport canPublishIn={() => true} onOpenGradebook={onOpenGradebook} />);
 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.getByText("notPublishedTitle")).toBeInTheDocument();
     expect(screen.getByText("notPublishedBodyManage")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "openGradebook" }));
-    expect(onOpenGradebook).toHaveBeenCalledOnce();
+    expect(onOpenGradebook).toHaveBeenCalledExactlyOnceWith("class-1");
+  });
+
+  it("asks about the exported class, so a manage_grades holder who teaches nothing there only reads", () => {
+    failWith("GRADES_NOT_PUBLISHED");
+    const canPublishIn = vi.fn(() => false);
+    render(<EraporExport canPublishIn={canPublishIn} onOpenGradebook={vi.fn()} />);
+
+    expect(canPublishIn).toHaveBeenCalledWith("class-1");
+    expect(screen.getByText("notPublishedBodyRead")).toBeInTheDocument();
+    expect(screen.queryByText("notPublishedBodyManage")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "openGradebook" })).not.toBeInTheDocument();
   });
 
   it("tells a reader who cannot publish that the teachers have not published, with no action", () => {
     failWith("GRADES_NOT_PUBLISHED");
-    render(<EraporExport canPublish={false} onOpenGradebook={vi.fn()} />);
+    render(<EraporExport canPublishIn={() => false} onOpenGradebook={vi.fn()} />);
 
     expect(screen.getByText("notPublishedBodyRead")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "openGradebook" })).not.toBeInTheDocument();
@@ -67,7 +78,7 @@ describe("EraporExport preview states", () => {
 
   it("explains a class without subjects as an empty state too", () => {
     failWith("NO_GRADABLE_SUBJECTS");
-    render(<EraporExport canPublish onOpenGradebook={vi.fn()} />);
+    render(<EraporExport canPublishIn={() => true} onOpenGradebook={vi.fn()} />);
 
     expect(screen.getByText("noSubjectsTitle")).toBeInTheDocument();
     expect(screen.queryByText("previewError")).not.toBeInTheDocument();
@@ -76,7 +87,7 @@ describe("EraporExport preview states", () => {
   it("keeps a real failure as an error with a retry", async () => {
     failWith("INTERNAL_ERROR", 500);
     const user = userEvent.setup();
-    render(<EraporExport canPublish onOpenGradebook={vi.fn()} />);
+    render(<EraporExport canPublishIn={() => true} onOpenGradebook={vi.fn()} />);
 
     expect(screen.getByText("error.INTERNAL_ERROR")).toBeInTheDocument();
     expect(screen.getByText("previewError")).toBeInTheDocument();
@@ -86,7 +97,7 @@ describe("EraporExport preview states", () => {
 
   it("offers no retry for a refusal a retry cannot change", () => {
     failWith("NOT_TEACHING_THIS_CLASS");
-    render(<EraporExport canPublish={false} onOpenGradebook={vi.fn()} />);
+    render(<EraporExport canPublishIn={() => false} onOpenGradebook={vi.fn()} />);
 
     expect(screen.getByText("error.NOT_TEACHING_THIS_CLASS")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "retry" })).not.toBeInTheDocument();
@@ -100,7 +111,7 @@ describe("EraporExport preview states", () => {
       error: null,
       refetch,
     });
-    render(<EraporExport canPublish onOpenGradebook={vi.fn()} />);
+    render(<EraporExport canPublishIn={() => true} onOpenGradebook={vi.fn()} />);
 
     // Field renders the label in the same wrapper it gives the className.
     const formatField = screen.getByText("formatLabel").closest(".w-full");
