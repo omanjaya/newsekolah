@@ -142,6 +142,11 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
     await expectQr(picket.page, DESK_APPROVE_QR);
 
     await scanStage(student.page, "Guru piket", picketCode, "Menunggu: Guru BK");
+    // The desk QR named nobody: the server tells the picket teacher who it
+    // approved, and the desk lists the student under its QR.
+    await expect(
+      picket.page.getByRole("listitem").filter({ hasText: newcomer.name }),
+    ).toContainText("Izin keluar disetujui", { timeout: 20_000 });
 
     // Stage 2: counselor. Listed in the counselor's inbox; following it up
     // opens this permit's own stage QR.
@@ -314,11 +319,6 @@ async function signInFirstTime(
   }
 }
 
-/**
- * The code typed under a QR (packages/ui QrPanel), read from the panel the
- * QR's own label names: minting is async, so this waits for that panel
- * instead of reading whatever was on screen the instant after the click.
- */
 /**
  * The raw token the response to `action` minted (POST `pathPart`): the QR
  * prints none under it, and a headless browser has no camera picture.

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 interface Registration {
   eventTypes: readonly string[];
   queryKeys: readonly unknown[][];
+  onEvent?: (envelope: { type: string; payload?: unknown }) => void;
 }
 
 /**
@@ -32,8 +33,12 @@ const state = vi.hoisted<TestState>(() => ({
 }));
 
 vi.mock("../../lib/realtime/use-live-invalidate", () => ({
-  useLiveInvalidate: (eventTypes: readonly string[], queryKeys: readonly unknown[][]) => {
-    state.registrations.push({ eventTypes, queryKeys });
+  useLiveInvalidate: (
+    eventTypes: readonly string[],
+    queryKeys: readonly unknown[][],
+    options?: { onEvent?: Registration["onEvent"] },
+  ) => {
+    state.registrations.push({ eventTypes, queryKeys, onEvent: options?.onEvent });
   },
 }));
 
@@ -52,6 +57,7 @@ vi.mock("../../lib/session/session-provider", () => ({
 }));
 
 import {
+  useDeskApprovals,
   useExitPermitDetailLive,
   useExitPermitReviewQueueLive,
   useLateArrivalQueueLive,
@@ -236,5 +242,36 @@ describe("useMyLeaveRequestsLive and useLeaveRequestDetailLive", () => {
       "leave-request",
       "leave-1",
     ]);
+  });
+});
+
+describe("useDeskApprovals", () => {
+  it("hands each desk approval to the desk, read from the push's ids", () => {
+    const onApproved = vi.fn();
+    renderHook(() => {
+      useDeskApprovals(onApproved);
+    });
+
+    const registration = state.registrations[0];
+    expect(registration?.eventTypes).toEqual(["exit_permit.desk_approved"]);
+    registration?.onEvent?.({
+      type: "exit_permit.desk_approved",
+      payload: { instance_id: "permit-1", stage: "duty_teacher", student_user_id: "student-1" },
+    });
+    expect(onApproved).toHaveBeenCalledWith({
+      instanceId: "permit-1",
+      stage: "duty_teacher",
+      studentUserId: "student-1",
+    });
+  });
+
+  it("ignores a push it cannot read", () => {
+    const onApproved = vi.fn();
+    renderHook(() => {
+      useDeskApprovals(onApproved);
+    });
+
+    state.registrations[0]?.onEvent?.({ type: "exit_permit.desk_approved", payload: { stage: 1 } });
+    expect(onApproved).not.toHaveBeenCalled();
   });
 });

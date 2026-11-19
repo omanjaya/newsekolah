@@ -70,6 +70,45 @@ export function useExitPermitReviewQueueLive(enabled: boolean): void {
   useLiveInvalidate(EXIT_PERMIT_QUEUE_EVENTS, [queryKeys.exitPermitReviewQueue()]);
 }
 
+/** Sent to the teacher whose desk QR a student just scanned (their own user topic). */
+export const DESK_APPROVED_EVENT = "exit_permit.desk_approved";
+
+/** One picket-stage approval made with a desk QR: ids only, like every live payload. */
+export interface DeskApproval {
+  instanceId: string;
+  stage: string;
+  studentUserId: string;
+}
+
+function parseDeskApproval(payload: unknown): DeskApproval | null {
+  if (typeof payload !== "object" || payload === null) return null;
+  const { instance_id, stage, student_user_id } = payload as Record<string, unknown>;
+  if (
+    typeof instance_id !== "string" ||
+    typeof stage !== "string" ||
+    typeof student_user_id !== "string"
+  ) {
+    return null;
+  }
+  return { instanceId: instance_id, stage, studentUserId: student_user_id };
+}
+
+/**
+ * The picket desk's approval QR is bound to no student, so the teacher
+ * showing it learns who it approved only from this push, on their own user
+ * topic (auto-subscribed, no topic to ask for). Pass `undefined` to ignore
+ * it, for a desk QR of another purpose. Never fired on resync: an approval
+ * missed while offline is not replayed, the desk just renews on expiry.
+ */
+export function useDeskApprovals(onApproved: ((approval: DeskApproval) => void) | undefined): void {
+  useLiveInvalidate([DESK_APPROVED_EVENT], [], {
+    onEvent: (envelope) => {
+      const approval = parseDeskApproval(envelope.payload);
+      if (approval) onApproved?.(approval);
+    },
+  });
+}
+
 /** The student's own exit permit list: `user:<tenant>:<student>` is auto-subscribed, no topic needed. */
 export function useMyExitPermitsLive(): void {
   useLiveInvalidate(EXIT_PERMIT_SELF_EVENTS, [queryKeys.exitPermits()]);

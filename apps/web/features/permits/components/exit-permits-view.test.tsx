@@ -1,14 +1,22 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkflowInstance } from "../api";
 
 import { ExitPermitsView } from "./exit-permits-view";
 
+interface DeskApproval {
+  instanceId: string;
+  stage: string;
+  studentUserId: string;
+}
+
 const mocks = vi.hoisted(() => ({
   items: [] as WorkflowInstance[],
   canSubmit: true,
   permissions: [] as string[],
+  profileKind: "student",
+  onDeskApproved: undefined as ((approval: DeskApproval) => void) | undefined,
 }));
 
 vi.mock("next-intl", () => ({
@@ -21,7 +29,9 @@ vi.mock("../../../components/query-error", () => ({
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: (permission: string) => mocks.permissions.includes(permission),
-  useSession: () => ({ me: { profile_kind: "student", tenant: { timezone: "Asia/Makassar" } } }),
+  useSession: () => ({
+    me: { profile_kind: mocks.profileKind, tenant: { timezone: "Asia/Makassar" } },
+  }),
 }));
 vi.mock("../lib/use-can-submit-permit", () => ({ useCanSubmitPermit: () => mocks.canSubmit }));
 vi.mock("next/navigation", () => ({
@@ -44,7 +54,24 @@ vi.mock("./exit-permit-detail", () => ({
 }));
 vi.mock("./exit-permit-panels", () => ({ GatePanel: () => <div data-testid="gate-panel" /> }));
 vi.mock("./desk-qr-panel", () => ({
-  DeskQrPanel: ({ purpose }: { purpose: string }) => <div data-testid="desk-qr">{purpose}</div>,
+  DeskQrPanel: ({
+    purpose,
+    onApproved,
+  }: {
+    purpose: string;
+    onApproved?: (approval: DeskApproval) => void;
+  }) => {
+    mocks.onDeskApproved = onApproved;
+    return <div data-testid="desk-qr">{purpose}</div>;
+  },
+}));
+vi.mock("../../reference/directory-names", () => ({
+  useDirectoryNames: (ids: readonly (string | undefined)[]) =>
+    new Map(
+      ids
+        .filter((id): id is string => typeof id === "string")
+        .map((id) => [id, { id, name: `Nama ${id}` }]),
+    ),
 }));
 vi.mock("./review-inbox-banner", () => ({ ReviewInboxBanner: () => null }));
 
@@ -64,16 +91,60 @@ beforeEach(() => {
   mocks.items = [];
   mocks.canSubmit = true;
   mocks.permissions = [];
+  mocks.profileKind = "student";
+  mocks.onDeskApproved = undefined;
 });
 
 describe("ExitPermitsView for an approving teacher", () => {
-  it("approves the picket stage with the desk's rotating QR instead of a typed permit code", () => {
+  beforeEach(() => {
     mocks.canSubmit = false;
+    mocks.profileKind = "teacher";
     mocks.permissions = ["issue_scan_tokens"];
+  });
+
+  it("approves the picket stage with the desk's rotating QR instead of a typed permit code", () => {
     render(<ExitPermitsView />);
     expect(screen.getByTestId("desk-qr")).toHaveTextContent("approve_stage");
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.queryByTestId("gate-panel")).not.toBeInTheDocument();
+  });
+
+  it("lists each student the desk QR approved, by name", () => {
+    render(<ExitPermitsView />);
+    expect(screen.getByText("empty")).toBeInTheDocument();
+
+    act(() => {
+      mocks.onDeskApproved?.({
+        instanceId: "permit-1",
+        stage: "duty_teacher",
+        studentUserId: "siswa-1",
+      });
+    });
+
+    expect(screen.getByText("Nama siswa-1")).toBeInTheDocument();
+    expect(screen.getByText("kinds.exitApproved")).toBeInTheDocument();
+  });
+});
+
+describe("ExitPermitsView for staff", () => {
+  beforeEach(() => {
+    mocks.canSubmit = false;
+    mocks.profileKind = "staff";
+  });
+
+  it("offers no approval QR to staff without a gate duty, only the no-access page", () => {
+    mocks.permissions = ["issue_scan_tokens"];
+    render(<ExitPermitsView />);
+    expect(screen.getByText("noAccessTitle")).toBeInTheDocument();
+    expect(screen.queryByTestId("desk-qr")).not.toBeInTheDocument();
+  });
+
+  it("gives staff on the gate duty the gate scanner and no approve tab", () => {
+    mocks.permissions = ["issue_scan_tokens", "scan_exit_permits"];
+    render(<ExitPermitsView />);
+    expect(screen.getByTestId("gate-panel")).toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: "tabApprove" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("desk-qr")).not.toBeInTheDocument();
   });
 });
 

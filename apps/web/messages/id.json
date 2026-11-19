@@ -915,7 +915,7 @@
       "help": {
         "classroom_entry": "Siswa memindai kode ini saat masuk kelas untuk mencatat kehadirannya di sesi yang sedang berjalan. Kode diperbarui sendiri saat habis.",
         "late_arrival": "Siswa yang datang terlambat memindai kode ini. Namanya langsung masuk antrean terlambat di halaman ini.",
-        "exit": "Siswa yang mengajukan izin keluar memindai kode ini dari tombol Pindai QR di layar izinnya. Tahap BK dan pimpinan disetujui dari Perlu tindakan."
+        "exit": "Siswa yang mengajukan izin keluar memindai kode ini dari tombol Pindai QR di layar izinnya. Siswa yang disetujui tercatat di Dicatat hari ini. Tahap BK dan pimpinan disetujui dari Perlu tindakan."
       },
       "manualForm": {
         "intro": "Untuk siswa yang tidak membawa HP: pilih jenisnya, cari siswanya, lalu catat langsung di sini.",
@@ -960,12 +960,13 @@
       },
       "log": {
         "title": "Dicatat hari ini",
-        "description": "Catatan manual dan tinjauan dari layar ini sejak dibuka.",
+        "description": "Catatan manual, tinjauan, dan persetujuan dari layar ini sejak dibuka.",
         "empty": "Belum ada catatan dari layar ini",
         "kinds": {
           "exit": "Izin keluar dicatat",
           "late": "Keterlambatan dicatat",
-          "review": "Keterlambatan ditinjau"
+          "review": "Keterlambatan ditinjau",
+          "exitApproved": "Izin keluar disetujui"
         }
       }
     },
@@ -1480,7 +1481,7 @@
           "title": "Setujui tahap piket",
           "hint": "Siswa memindai QR ini dari tombol Pindai QR di layar izinnya. Tahap BK dan pimpinan disetujui dari Perlu tindakan.",
           "qrLabel": "Kode QR persetujuan piket izin keluar",
-          "help": "Satu kode untuk satu siswa. Kode diperbarui sendiri saat habis."
+          "help": "Satu kode untuk satu siswa. Kode diperbarui sendiri setelah dipindai atau saat habis, dan siswa yang disetujui tercatat di bawah."
         },
         "gate": {
           "hint": "Arahkan kamera ke QR gerbang di HP siswa. Hasilnya muncul di bawah kamera.",

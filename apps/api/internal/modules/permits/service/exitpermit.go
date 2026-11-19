@@ -133,6 +133,10 @@ func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scan
 	var updated domain.Instance
 	var isLast bool
 	var nextStageKey string
+	// deskApproval is set when an unbound desk token approved the stage:
+	// its issuer has no other way to learn who it approved.
+	var deskApproval *deskApprovedPayload
+	var deskIssuer uuid.UUID
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		inst, ok, err := s.repo.GetInstance(ctx, tenantID, instanceID)
 		if err != nil {
@@ -166,6 +170,14 @@ func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scan
 		if err != nil {
 			return err
 		}
+		if !token.ContextID.Valid {
+			approved, stageErr := def.StageAt(inst.CurrentStageIndex)
+			if stageErr != nil {
+				return stageErr
+			}
+			deskIssuer = token.IssuedByUserID
+			deskApproval = &deskApprovedPayload{InstanceID: instanceID, Stage: approved.Key, StudentUserID: inst.SubjectUserID}
+		}
 
 		if isLast {
 			_, err = s.repo.MarkExitPermitIssued(ctx, tenantID, instanceID, clock.Now(ctx, s.clock))
@@ -189,6 +201,12 @@ func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scan
 		s.publish(ctx, ExitPermitStageChanged{TenantID: tenantID, InstanceID: instanceID, StudentUserID: updated.SubjectUserID, StageKey: nextStageKey})
 		s.publishToUserTopic(ctx, tenantID, updated.SubjectUserID, "exit_permit.stage_changed", instanceStageEventPayload{InstanceID: instanceID, Stage: nextStageKey})
 		s.publishToDutyStage(ctx, tenantID, uuid.NullUUID{}, nextStageKey, "exit_permit.stage_changed", instanceStageEventPayload{InstanceID: instanceID, Stage: nextStageKey})
+	}
+	if deskApproval != nil {
+		// The desk QR is single use and bound to nobody: tell the teacher
+		// who showed it which student it just approved, so their desk logs
+		// the approval and shows the next student a fresh code at once.
+		s.publishToUserTopic(ctx, tenantID, deskIssuer, "exit_permit.desk_approved", *deskApproval)
 	}
 	return updated, nil
 }

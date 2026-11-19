@@ -915,7 +915,7 @@
       "help": {
         "classroom_entry": "Students scan this code when entering class to record their presence in the running session. The code renews itself when it runs out.",
         "late_arrival": "Students who arrive late scan this code. Their names go straight into the late queue on this page.",
-        "exit": "Students with an exit permit scan this code from the Scan QR button on their permit. Counselor and leadership stages are approved from Needs action."
+        "exit": "Students with an exit permit scan this code from the Scan QR button on their permit. Each approved student is listed under Recorded today. Counselor and leadership stages are approved from Needs action."
       },
       "manualForm": {
         "intro": "For a student with no phone on hand: pick the kind, find the student, and record it here.",
@@ -960,12 +960,13 @@
       },
       "log": {
         "title": "Recorded today",
-        "description": "Manual records and reviews from this screen since it opened.",
+        "description": "Manual records, reviews and approvals from this screen since it opened.",
         "empty": "Nothing recorded from this screen yet",
         "kinds": {
           "exit": "Exit permit recorded",
           "late": "Late arrival recorded",
-          "review": "Late arrival reviewed"
+          "review": "Late arrival reviewed",
+          "exitApproved": "Exit permit approved"
         }
       }
     },
@@ -1480,7 +1481,7 @@
           "title": "Approve the duty stage",
           "hint": "Students scan this QR from the Scan QR button on their permit. Counselor and leadership stages are approved from Needs action.",
           "qrLabel": "Exit permit duty approval QR code",
-          "help": "One code per student. It renews itself when it runs out."
+          "help": "One code per student. It renews itself once scanned or when it runs out, and each approved student is listed below."
         },
         "gate": {
           "hint": "Point the camera at the gate QR on the student's phone. The result shows under the camera.",

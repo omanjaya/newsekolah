@@ -35,6 +35,7 @@ import { useDirectoryNames } from "../../reference/directory-names";
 import { type LateArrivalSummary, useLateArrivalQueueQuery } from "../api";
 
 import { ApprovePanel } from "./approve-panel";
+import { DeskLog, useDeskLog } from "./desk-log";
 import { type DeskPurpose, DeskQrPanel } from "./desk-qr-panel";
 import { type ManualRecord, DutyManualRecordPanel } from "./duty-manual-record-panel";
 import { LateArrivalReviewForm } from "./late-arrivals-view";
@@ -51,13 +52,6 @@ const MODE_PURPOSE: Record<DutyMode, DeskPurpose> = {
   late_arrival: "late_arrival",
   exit: "approve_stage",
 };
-
-interface DeskLogEntry {
-  key: string;
-  kind: "exit" | "late" | "review";
-  studentName: string;
-  at: string;
-}
 
 /**
  * Piket hari ini (docs/07-ui-ux.md section 4, "Guru piket"): one screen, no
@@ -76,10 +70,14 @@ export function DutyView(): ReactElement {
   const { me } = useSession();
   const canMonitor = useCan("view_monitor_presence");
   const [urlMode, setMode] = useUrlState<UrlMode>("mode", URL_MODES, "classroom_entry");
-  const mode: DutyMode = urlMode === "manual" ? "classroom_entry" : urlMode;
+  // The exit mode's QR approves an any_teacher stage, so the server mints it
+  // only for an active teacher; anyone else at the desk is not offered it.
+  const modes = me?.profile_kind === "teacher" ? MODES : MODES.filter((m) => m !== "exit");
+  const mode: DutyMode =
+    urlMode === "manual" || !modes.some((m) => m === urlMode) ? "classroom_entry" : urlMode;
   const [manualRequested, setManualRequested] = useState(false);
   const manualOpen = manualRequested || urlMode === "manual";
-  const [log, setLog] = useState<DeskLogEntry[]>([]);
+  const { entries: log, remember } = useDeskLog();
   const today = new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-GB", {
     weekday: "long",
     day: "numeric",
@@ -87,15 +85,6 @@ export function DutyView(): ReactElement {
     year: "numeric",
     timeZone: me?.tenant.timezone,
   }).format(businessNow());
-
-  function remember(kind: DeskLogEntry["kind"], studentName: string) {
-    setLog((prev) =>
-      [
-        { key: `${kind}:${Date.now()}`, kind, studentName, at: businessNow().toISOString() },
-        ...prev,
-      ].slice(0, 30),
-    );
-  }
 
   function closeManual() {
     setManualRequested(false);
@@ -136,7 +125,7 @@ export function DutyView(): ReactElement {
       toolbar={
         <SegmentedControl
           aria-label={t("modeLabel")}
-          options={MODES.map((value) => ({ value, label: t(`purposes.${value}`) }))}
+          options={modes.map((value) => ({ value, label: t(`purposes.${value}`) }))}
           value={mode}
           onValueChange={setMode}
           fullWidth="phone"
@@ -150,15 +139,22 @@ export function DutyView(): ReactElement {
             purpose={MODE_PURPOSE[mode]}
             label={t(`qrLabel.${mode}`)}
             help={t(`help.${mode}`)}
+            onApproved={(approval) => {
+              remember({
+                key: `exitApproved:${approval.instanceId}`,
+                kind: "exitApproved",
+                studentUserId: approval.studentUserId,
+              });
+            }}
           />
         </div>
         <div className="flex min-w-0 flex-col gap-6">
           <LateQueue
             onReviewed={(name) => {
-              remember("review", name);
+              remember({ kind: "review", studentName: name });
             }}
           />
-          <DeskLog entries={log} locale={locale} timeZone={me?.tenant.timezone} />
+          <DeskLog entries={log} />
         </div>
       </div>
 
@@ -172,7 +168,7 @@ export function DutyView(): ReactElement {
           <DutyManualRecordPanel
             layout="dialog"
             onRecorded={(record: ManualRecord) => {
-              remember(record.kind, record.studentName);
+              remember({ kind: record.kind, studentName: record.studentName });
               closeManual();
             }}
           />
@@ -302,49 +298,6 @@ function LateQueue({ onReviewed }: { onReviewed: (studentName: string) => void }
             ))}
         </DialogContent>
       </Dialog>
-    </Card>
-  );
-}
-
-/** What was recorded or reviewed at this desk since the page opened. */
-function DeskLog({
-  entries,
-  locale,
-  timeZone,
-}: {
-  entries: DeskLogEntry[];
-  locale: Locale;
-  timeZone: string | undefined;
-}): ReactElement {
-  const t = useTranslations("app.duty.log");
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle as="h2">{t("title")}</CardTitle>
-        <CardDescription>{t("description")}</CardDescription>
-      </CardHeader>
-      {entries.length === 0 ? (
-        <CardContent>
-          <EmptyState
-            variant="compact"
-            icon={<domainIcons.document aria-hidden="true" />}
-            title={t("empty")}
-          />
-        </CardContent>
-      ) : (
-        <List dense>
-          {entries.map((entry) => (
-            <ListRow
-              key={entry.key}
-              leading={<Avatar size={32} name={entry.studentName} decorative />}
-              title={entry.studentName}
-              titleLines={2}
-              meta={t(`kinds.${entry.kind}`)}
-              trailing={formatTime(entry.at, { locale, timeZone })}
-            />
-          ))}
-        </List>
-      )}
     </Card>
   );
 }

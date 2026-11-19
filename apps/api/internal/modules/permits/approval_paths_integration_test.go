@@ -2,6 +2,7 @@ package permits
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -270,6 +271,61 @@ func TestLateArrivalQueueFollowsTheCurrentStage(t *testing.T) {
 	// the test world has none (noSchedule), so nobody is listed for it.
 	require.Empty(t, queue(leadershipID))
 	require.Empty(t, queue(w.dutyTeacherID))
+}
+
+// TestDeskTokenTellsItsIssuer: the desk QR is bound to nobody, so the
+// teacher who showed it learns which student it approved only from the
+// "exit_permit.desk_approved" push to their own topic (the permit, the
+// stage it approved and the student, by id). A bound stage QR, whose
+// approver already chose the student, sends no such push.
+func TestDeskTokenTellsItsIssuer(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	w := seedRealtimeWorld(t, ctx, pg.AdminPool, "desk-issuer-"+uuid.NewString())
+	hub := &fakeRealtimeHub{}
+	svc := buildRealtimeTestService(pg.AppPool, hub)
+	_, err := svc.ReplaceDefinition(ctx, w.tenantID, domain.KindExitPermit, exitPermitDefinitionStages(), map[string]any{}, w.dutyTeacherID)
+	require.NoError(t, err)
+	inst := createExitPermit(t, ctx, svc, w)
+
+	_, err = svc.ExitPermitScan(ctx, w.tenantID, inst.ID, w.studentID, issueDeskToken(t, ctx, svc, w, w.dutyTeacherID).RawValue)
+	require.NoError(t, err)
+
+	desk := deskApprovals(hub)
+	require.Len(t, desk, 1)
+	require.Equal(t, w.tenantID, desk[0].tenantID)
+	require.Equal(t, w.dutyTeacherID, desk[0].userID, "the push goes to the teacher whose desk showed the QR")
+	raw, err := json.Marshal(desk[0].payload)
+	require.NoError(t, err)
+	var got struct {
+		InstanceID    uuid.UUID `json:"instance_id"`
+		Stage         string    `json:"stage"`
+		StudentUserID uuid.UUID `json:"student_user_id"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &got))
+	require.Equal(t, inst.ID, got.InstanceID)
+	require.Equal(t, "duty_teacher", got.Stage, "the stage the desk approved, not the next one")
+	require.Equal(t, w.studentID, got.StudentUserID)
+
+	bound, err := svc.IssueScanToken(ctx, service.IssueScanTokenInput{
+		TenantID: w.tenantID, Purpose: domain.PurposeApproveStage, ContextID: uuid.NullUUID{UUID: inst.ID, Valid: true}, IssuedByUserID: w.counselorID,
+	})
+	require.NoError(t, err)
+	_, err = svc.ExitPermitScan(ctx, w.tenantID, inst.ID, w.studentID, bound.RawValue)
+	require.NoError(t, err)
+	require.Len(t, deskApprovals(hub), 1, "a bound stage QR sends no desk push")
+}
+
+func deskApprovals(hub *fakeRealtimeHub) []recordedUserPublish {
+	hub.mu.Lock()
+	defer hub.mu.Unlock()
+	var out []recordedUserPublish
+	for _, p := range hub.userPublishes {
+		if p.eventType == "exit_permit.desk_approved" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // TestLateArrivalQueueIsEmptyForAStudent: a student can pass no approver
