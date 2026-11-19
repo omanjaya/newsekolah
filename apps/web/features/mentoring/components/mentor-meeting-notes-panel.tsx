@@ -20,7 +20,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useDirectoryNames } from "../../reference/directory-names";
 import {
@@ -51,6 +51,8 @@ export function MentorMeetingNotesPanel({
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_mentoring");
+  const { me } = useSession();
+  const timeZone = me?.tenant.timezone;
 
   const { data, isLoading } = useMentorMeetingNotesQuery(groupId);
   const studentMap = useDirectoryNames(members.map((member) => member.student_user_id));
@@ -72,7 +74,8 @@ export function MentorMeetingNotesPanel({
         id: "metAt",
         header: t("columns.metAt"),
         enableSorting: false,
-        cell: ({ row }) => formatDate(row.original.met_at, { locale }),
+        // A moment, read in the school's zone as its detail dialog does.
+        cell: ({ row }) => formatDate(row.original.met_at, { locale, timeZone }),
       },
       {
         id: "kind",
@@ -82,28 +85,28 @@ export function MentorMeetingNotesPanel({
       },
       { accessorKey: "topic", header: t("columns.topic"), enableSorting: false },
     ],
-    [t, locale],
+    [t, locale, timeZone],
   );
+
+  // Placed as the members tab places its own: in the table's toolbar, so
+  // the empty state below never repeats it.
+  const addButton = canManage ? (
+    <Button
+      icon={<Plus />}
+      onClick={() => {
+        setEditing("new");
+      }}
+    >
+      {t("add")}
+    </Button>
+  ) : undefined;
 
   return (
     <div className="flex flex-col gap-4">
-      {canManage && (
-        <div className="flex justify-end">
-          <Button
-            size="sm"
-            icon={<Plus />}
-            onClick={() => {
-              setEditing("new");
-            }}
-          >
-            {t("add")}
-          </Button>
-        </div>
-      )}
-
       <DataTable
         stateKey="features/mentoring/components/mentor-meeting-notes-panel:1"
         mode="local"
+        searchable={false}
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -112,6 +115,7 @@ export function MentorMeetingNotesPanel({
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
+        toolbarActions={addButton}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         onRowActivate={(item) => {
@@ -122,19 +126,6 @@ export function MentorMeetingNotesPanel({
             icon={<domainIcons.mentoring aria-hidden="true" />}
             title={t("emptyTitle")}
             description={t("emptyBody")}
-            action={
-              canManage && (
-                <Button
-                  size="sm"
-                  icon={<Plus />}
-                  onClick={() => {
-                    setEditing("new");
-                  }}
-                >
-                  {t("add")}
-                </Button>
-              )
-            }
           />
         }
       />
