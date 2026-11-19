@@ -266,6 +266,10 @@
     "noClass": "Tanpa kelas",
     "emptyTitle": "Tidak ada tunggakan",
     "emptyBody": "Semua tagihan tahun ajaran ini sudah lunas.",
+    "noBillsTitle": "Belum ada tagihan tahun ini",
+    "noBillsBody": "Tunggakan muncul di sini setelah tagihan tahun ajaran ini diterbitkan.",
+    "noBillsGenerateBody": "Terbitkan tagihan tahun ajaran ini, lalu tunggakan muncul di sini.",
+    "goToGenerate": "Buka Penerbitan",
     "columns": {
       "student": "Siswa",
       "class": "Kelas",

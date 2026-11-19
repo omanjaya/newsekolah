@@ -266,6 +266,10 @@
     "noClass": "No class",
     "emptyTitle": "No arrears",
     "emptyBody": "Every bill this school year is paid.",
+    "noBillsTitle": "No bills this year yet",
+    "noBillsBody": "Arrears appear here once this academic year's bills are issued.",
+    "noBillsGenerateBody": "Issue this academic year's bills, and arrears appear here.",
+    "goToGenerate": "Open Issuing",
     "columns": {
       "student": "Student",
       "class": "Class",
