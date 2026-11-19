@@ -30,6 +30,33 @@ describe("List and ListRow", () => {
     await expectNoAxeViolations(container);
   });
 
+  it("keeps each fact of a meta list whole, joined with a middle dot", () => {
+    render(
+      <List>
+        <ListRow title="Apotek" meta={["Kam, 19 Nov 2026", "keluar 15.49", undefined, ""]} />
+        <ListRow title="Rumah" meta={[undefined, ""]} />
+      </List>,
+    );
+    const time = screen.getByText("keluar 15.49");
+    expect(time).toHaveClass("truncate");
+    expect(time.parentElement).toHaveTextContent(/^Kam, 19 Nov 2026 · keluar 15\.49$/);
+    // Nothing to say: no empty meta line under the title.
+    const [, empty] = screen.getAllByRole("listitem");
+    expect(empty?.querySelector(".text-fg-muted")).toBeNull();
+  });
+
+  it("ends a fact wider than the row in an ellipsis instead of clipping it", () => {
+    const long = "Dijemput oleh wali murid di gerbang depan sekolah setelah jam pelajaran";
+    render(
+      <List>
+        <ListRow title="Apotek" meta={["Kam, 19 Nov 2026", long]} />
+      </List>,
+    );
+    // Shrinks to the row (max-w-full) and ends in an ellipsis (truncate),
+    // as a box of its own so the clamp of the meta line cannot cut it.
+    expect(screen.getByText(long)).toHaveClass("inline-block", "max-w-full", "truncate");
+  });
+
   it("truncates the title to one line unless it may take two", () => {
     render(
       <List>

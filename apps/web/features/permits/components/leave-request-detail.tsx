@@ -23,6 +23,7 @@ import type { ReactElement, ReactNode } from "react";
 import { useRef, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import { isNotFoundError } from "../../../lib/api/not-found";
 import { useStuckToBottom } from "../../../lib/hooks/use-stuck-to-bottom";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { compressImage } from "../../../lib/media/compress-image";
@@ -70,7 +71,9 @@ export function LeaveRequestDetail({
   const [note, setNote] = useState("");
 
   if (isLoading) return <SkeletonDetail rows={4} />;
-  if (error instanceof ApiError && (error.status === 404 || error.status === 403)) {
+  // A malformed id (a truncated link) is as missing as an unknown one, and
+  // a request the viewer may not see reads the same, so no id is confirmed.
+  if (isNotFoundError(error) || (error instanceof ApiError && error.status === 403)) {
     // The full page offers a way on: a reviewer to the leave queue, anyone
     // else to their own requests. The inbox dialog just closes.
     const reviewer = canReview || canIssue;

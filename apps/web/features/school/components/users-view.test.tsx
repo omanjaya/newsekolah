@@ -133,7 +133,7 @@ describe("UsersView filters", () => {
     expect(mocks.useUsersQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ profile_kind: undefined }),
     );
-    expect(new URLSearchParams(window.location.search).get("kind")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("kind")).toBeNull();
   });
 });
 

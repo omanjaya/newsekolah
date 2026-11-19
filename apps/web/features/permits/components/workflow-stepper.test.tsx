@@ -13,6 +13,7 @@ vi.mock("next-intl", () => ({
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
 }));
+vi.mock("../../../lib/tenant-date", () => ({ todayInZone: () => "2026-11-19" }));
 
 /** The track's steps in order, as `[label, state]` read from the shared Stepper's markup. */
 function steps(): [string, string][] {
@@ -87,6 +88,29 @@ describe("WorkflowSteps", () => {
     expect(first).toHaveTextContent("09.14");
     expect(second).toHaveAttribute("aria-current", "step");
     expect(second).not.toHaveTextContent("09.14");
+  });
+
+  it("prints the time in the app's shared short form, with the year only outside this one", () => {
+    const lastYear: WorkflowInstance = {
+      ...instance,
+      events: [
+        {
+          id: "e1",
+          stage_key: "duty",
+          to_status: "in_progress",
+          verification: "qr_scan",
+          occurred_at: "2025-09-25T02:14:00Z",
+        },
+      ],
+    };
+    const { unmount } = render(<WorkflowSteps instance={instance} />);
+    // "14 Nov 09.14": no comma, and no year within the school's current one.
+    expect(screen.getAllByRole("listitem")[0]).toHaveTextContent("14 Nov 09.14");
+    expect(screen.getAllByRole("listitem")[0]).not.toHaveTextContent("2026");
+    unmount();
+
+    render(<WorkflowSteps instance={lastYear} />);
+    expect(screen.getAllByRole("listitem")[0]).toHaveTextContent("25 Sep 2025 09.14");
   });
 
   // A finished stage read "Ditinjau langsung", how it is verified, instead

@@ -205,6 +205,9 @@ describe("MyLibraryView", () => {
 
     expect(screen.getByTestId("my-library-hero")).toHaveTextContent("idleTitle");
     expect(screen.getByRole("link", { name: /browseCatalogue/ })).toHaveAttribute("href", "/opac");
+    // The hero already says nothing is out: no second "nothing borrowed" block under it.
+    expect(screen.queryByText("activeLoans")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("my-library-loan-cards")).not.toBeInTheDocument();
   });
 
   it("lists every current loan, soonest due first", () => {

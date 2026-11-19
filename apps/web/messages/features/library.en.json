@@ -894,7 +894,7 @@
   "readInPlace": {
     "title": "Read in place",
     "member": "Member",
-    "memberPlaceholder": "Choose a member (optional)",
+    "memberPlaceholder": "Choose a member",
     "visitorName": "Visitor name",
     "start": "Log",
     "started": "Read-in-place session logged",
@@ -1539,8 +1539,6 @@
       "other": "Other"
     },
     "activeLoans": "Currently borrowed",
-    "noActiveLoans": "No books on loan right now",
-    "noActiveLoansBody": "Books you borrow at the library appear here with their due dates.",
     "history": "Loan history",
     "noHistory": "No loan history yet",
     "noHistoryBody": "Books you have returned are listed here.",

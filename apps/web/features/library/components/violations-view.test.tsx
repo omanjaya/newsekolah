@@ -92,6 +92,6 @@ describe("ViolationsView filters", () => {
       expect.objectContaining({ kind: "" }),
       true,
     );
-    expect(new URLSearchParams(window.location.search).get("kind")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("kind")).toBeNull();
   });
 });

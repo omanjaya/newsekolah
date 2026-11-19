@@ -102,7 +102,7 @@ describe("BillsListView filters", () => {
       expect.objectContaining({ classId: "" }),
       expect.anything(),
     );
-    expect(new URLSearchParams(window.location.search).get("class_id")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("class_id")).toBeNull();
   });
 
   it("filters by month from the period pill and writes period to the URL", async () => {

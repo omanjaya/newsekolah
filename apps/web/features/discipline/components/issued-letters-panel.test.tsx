@@ -86,7 +86,7 @@ describe("IssuedLettersPanel filters", () => {
       offset: 0,
       search: "",
     });
-    expect(new URLSearchParams(window.location.search).get("class_id")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("class_id")).toBeNull();
   });
 });
 

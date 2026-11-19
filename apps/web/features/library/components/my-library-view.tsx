@@ -5,7 +5,6 @@ import type { Locale } from "@newsekolah/i18n";
 import {
   Alert,
   Button,
-  Card,
   DataList,
   DataListItem,
   EmptyState,
@@ -137,27 +136,19 @@ export function MyLibraryView(): ReactElement {
         </Alert>
       )}
 
-      <section className="flex flex-col gap-3">
-        <SectionHeader
-          title={t("activeLoans")}
-          count={activeLoans.length > 0 ? activeLoans.length : undefined}
-        />
-        {activeLoans.length === 0 ? (
-          <Card>
-            <EmptyState
-              icon={<domainIcons.library aria-hidden="true" />}
-              title={t("noActiveLoans")}
-              description={t("noActiveLoansBody")}
-            />
-          </Card>
-        ) : (
+      {/* With nothing out, the hero already says so ("Belum ada buku yang
+          dipinjam") and points at the catalogue; a second empty card for
+          the same fact would only push the history down. */}
+      {activeLoans.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <SectionHeader title={t("activeLoans")} count={activeLoans.length} />
           <ul className="flex flex-col gap-3" data-testid="my-library-loan-cards">
             {activeLoans.map((loan) => (
               <MyLibraryLoanRow key={loan.id} loan={loan} today={today} locale={locale} />
             ))}
           </ul>
-        )}
-      </section>
+        </section>
+      )}
 
       <MyLibraryHistoryTable history={data.history} locale={locale} today={today} />
 

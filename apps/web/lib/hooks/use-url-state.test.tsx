@@ -79,4 +79,17 @@ describe("useUrlState", () => {
     rerender();
     expect(result.current[0]).toBe("teachers");
   });
+
+  it("drops an emptied key whose default is empty instead of writing `key=`", () => {
+    window.history.replaceState(null, "", "/settings/audit-logs?from=2026-11-10&to=2026-11-12");
+    const anyDate = (value: string) => value === "" || /^\d{4}-\d{2}-\d{2}$/.test(value);
+    const { result } = renderHook(() => useUrlState("to", anyDate, ""));
+
+    act(() => {
+      result.current[1]("");
+    });
+
+    expect(window.location.search).toBe("?from=2026-11-10");
+    expect(result.current[0]).toBe("");
+  });
 });

@@ -894,7 +894,7 @@
   "readInPlace": {
     "title": "Baca di tempat",
     "member": "Anggota",
-    "memberPlaceholder": "Pilih anggota (opsional)",
+    "memberPlaceholder": "Pilih anggota",
     "visitorName": "Nama pengunjung",
     "start": "Catat",
     "started": "Sesi baca di tempat dicatat",
@@ -1539,8 +1539,6 @@
       "other": "Lainnya"
     },
     "activeLoans": "Sedang dipinjam",
-    "noActiveLoans": "Tidak ada buku yang sedang dipinjam",
-    "noActiveLoansBody": "Buku yang Anda pinjam di perpustakaan muncul di sini beserta tanggal kembalinya.",
     "history": "Riwayat peminjaman",
     "noHistory": "Belum ada riwayat peminjaman",
     "noHistoryBody": "Buku yang sudah Anda kembalikan tercatat di sini.",

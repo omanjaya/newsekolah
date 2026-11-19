@@ -74,6 +74,6 @@ describe("CounselingBKTeamPanel filters", () => {
       offset: 0,
       search: "",
     });
-    expect(new URLSearchParams(window.location.search).get("topic")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("topic")).toBeNull();
   });
 });

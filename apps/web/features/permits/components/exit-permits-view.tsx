@@ -229,7 +229,8 @@ function MyExitPermits(): ReactElement {
                       </IconCircle>
                     }
                     // Where the student went names the row; the day and the
-                    // gate time (or, before the gate, the request time) say when.
+                    // gate time (or, before the gate, the request time) say when;
+                    // each wraps whole on a phone, never "keluar" / "15.49".
                     title={inst.destination}
                     meta={[
                       formatShortWeekdayDate(inst.opened_at, locale, timeZone),
@@ -240,7 +241,7 @@ function MyExitPermits(): ReactElement {
                         : t("openedAt", {
                             time: formatTime(inst.opened_at, { locale, timeZone }),
                           }),
-                    ].join(" · ")}
+                    ]}
                     trailing={<WorkflowStatusBadge status={inst.status} />}
                     onClick={() => {
                       setOpenId(inst.id);

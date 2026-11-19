@@ -58,7 +58,7 @@ describe("ViolationCatalogView filters", () => {
 
     await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useViolationTypesQuery).toHaveBeenLastCalledWith(false);
-    expect(new URLSearchParams(window.location.search).get("include_inactive")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("include_inactive")).toBeNull();
   });
 });
 

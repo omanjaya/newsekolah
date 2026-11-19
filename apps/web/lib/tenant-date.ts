@@ -117,6 +117,21 @@ function instantInZone(date: string, time: string, timeZone: string | undefined)
   return new Date(guess.getTime() - (asIfUtc - guess.getTime()));
 }
 
+/** The ISO instant the school's day `date` ("YYYY-MM-DD") starts at in `timeZone`. */
+export function startOfDayInZone(date: string, timeZone?: string): string {
+  return instantInZone(date, "00:00:00", timeZone).toISOString();
+}
+
+/**
+ * The last millisecond of the school's day `date` ("YYYY-MM-DD") in
+ * `timeZone`: one before the next day starts, so an inclusive `<=` filter
+ * keeps events stamped in the day's final second.
+ */
+export function endOfDayInZone(date: string, timeZone?: string): string {
+  const nextStart = instantInZone(shiftIsoDate(date, 1), "00:00:00", timeZone);
+  return new Date(nextStart.getTime() - 1).toISOString();
+}
+
 /**
  * ISO range covering whole calendar days `from`..`to` ("YYYY-MM-DD") as the
  * school lives them, for APIs that filter on a timestamp. Plain `T00:00:00Z`
@@ -127,8 +142,5 @@ export function dayRangeInZone(
   to: string,
   timeZone?: string,
 ): { from: string; to: string } {
-  return {
-    from: instantInZone(from, "00:00:00", timeZone).toISOString(),
-    to: instantInZone(to, "23:59:59", timeZone).toISOString(),
-  };
+  return { from: startOfDayInZone(from, timeZone), to: endOfDayInZone(to, timeZone) };
 }

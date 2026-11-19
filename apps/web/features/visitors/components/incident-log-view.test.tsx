@@ -91,7 +91,7 @@ describe("IncidentLogView filters", () => {
       expect.any(String),
       true,
     );
-    expect(new URLSearchParams(window.location.search).get("only_open")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("only_open")).toBeNull();
   });
 
   it("sets a date range from the two date pickers and writes both bounds to the URL", async () => {
@@ -104,7 +104,7 @@ describe("IncidentLogView filters", () => {
 
     expect(mocks.useIncidentsQuery).toHaveBeenLastCalledWith(
       "2026-08-31T17:00:00.000Z",
-      "2026-09-15T16:59:59.000Z",
+      "2026-09-15T16:59:59.999Z",
       true,
     );
     expect(new URLSearchParams(window.location.search).get("from")).toBe("2026-09-01");

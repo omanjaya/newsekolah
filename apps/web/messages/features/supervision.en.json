@@ -180,6 +180,10 @@
     }
   },
   "observationDetail": {
+    "notFoundTitle": "Observation not found",
+    "notFoundBody": "This link may be wrong, or the observation was removed. Go back to the list to find it.",
+    "backToCycles": "Back to supervision",
+    "backToMyReport": "Back to my supervision",
     "title": "Observation result",
     "scale": "Scale {min}–{max}",
     "averageOfScale": "Average {average} on a {min}–{max} scale",

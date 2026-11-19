@@ -1,3 +1,4 @@
+import { ApiError } from "@newsekolah/api-client";
 import { useUiLabels, type UiLabels } from "@newsekolah/ui";
 import { renderHook } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
@@ -73,5 +74,16 @@ describe("UiLocaleProvider", () => {
     expect(english.toastClose).toBe("Close notification");
     expect(english.commandPaletteHintMove).toBe("Move");
     expect(english.avatarGroupMore(1)).toBe("1 more person");
+  });
+
+  it("blames the connection only for a network failure in a table's error", () => {
+    const labels = labelsIn("id");
+    const validation = new ApiError({ status: 400, code: "VALIDATION_FAILED", message: "x" });
+    expect(labels.tableErrorReason(validation)).toBe("Data yang dikirim tidak valid");
+    expect(
+      labels.tableErrorReason(new ApiError({ status: 0, code: "NETWORK", message: "x" })),
+    ).toBe(undefined);
+    expect(labels.tableErrorReason(new TypeError("Failed to fetch"))).toBe(undefined);
+    expect(labels.tableErrorReason(new Error("boom"))).toBe("Terjadi kesalahan, coba lagi");
   });
 });

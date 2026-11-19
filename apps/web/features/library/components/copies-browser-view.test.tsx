@@ -111,7 +111,7 @@ describe("CopiesBrowserView filters", () => {
     expect(mocks.useLibraryCopiesFilteredQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ categoryId: "" }),
     );
-    expect(new URLSearchParams(window.location.search).get("category_id")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("category_id")).toBeNull();
   });
 
   it("hides row selection and the label print bar from roles that cannot manage the catalogue", () => {

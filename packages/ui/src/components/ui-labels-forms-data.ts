@@ -45,7 +45,15 @@ export interface FormsDataUiLabels {
   tableNoResultsDescription: string;
   tableClearSearch: string;
   tableErrorTitle: string;
+  /** What a failed load says when nothing more specific is known: a connection hint. */
   tableErrorDescription: string;
+  /**
+   * The failure's own reason, from the error a table was given (an API
+   * error code mapped to the app's catalog), or undefined to fall back to
+   * `tableErrorDescription`. The app answers undefined for a network
+   * failure, so only a lost connection is told to check the connection.
+   */
+  tableErrorReason: (error: unknown) => string | undefined;
   tableRetry: string;
   /** Small support line under a failed load, e.g. "Kode galat: NETWORK". */
   tableErrorCode: (code: string) => string;
@@ -132,6 +140,7 @@ export const DEFAULT_FORMS_DATA_UI_LABELS: FormsDataUiLabels = {
   tableClearSearch: "Hapus pencarian",
   tableErrorTitle: "Data gagal dimuat",
   tableErrorDescription: "Periksa koneksi internet, lalu coba lagi.",
+  tableErrorReason: () => undefined,
   tableRetry: "Coba lagi",
   tableErrorCode: (code) => `Kode galat: ${code}`,
   tablePageOf: (current, total) => `Halaman ${current} dari ${total}`,

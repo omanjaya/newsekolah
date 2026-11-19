@@ -16,9 +16,12 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import { todayInZone } from "../../../lib/tenant-date";
 import { useDirectoryNames } from "../../reference/directory-names";
 import type { LibraryTitle } from "../api";
+import { formatShortDate } from "../lib/short-date";
 import { RESERVATION_STATUS_TONE, toneOf } from "../lib/status-tones";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 
 import { OpacCover } from "./opac-cover";
 
@@ -90,6 +93,8 @@ export function ReservationQueue({
   const t = useTranslations("app.library.titleDetail");
   const tReserve = useTranslations("app.library.me.reserve");
   const locale = useLocale() as Locale;
+  const timeZone = useTenantTimeZone();
+  const today = todayInZone(timeZone);
   const names = useDirectoryNames(reservations.map((r) => r.member_user_id));
   if (error) return <QueryError retry={onRetry} error={error} />;
   if (isLoading) return <SkeletonDetail />;
@@ -111,10 +116,7 @@ export function ReservationQueue({
           key={reservation.id}
           title={names.get(reservation.member_user_id)?.name ?? t("unknownMember")}
           meta={t("requestedOn", {
-            date: new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "id-ID", {
-              day: "numeric",
-              month: "short",
-            }).format(new Date(reservation.requested_at)),
+            date: formatShortDate(reservation.requested_at, locale, { timeZone, today }),
           })}
           href={`/library/members/${encodeURIComponent(reservation.member_user_id)}`}
           trailing={

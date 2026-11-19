@@ -70,6 +70,6 @@ describe("FeeTypesView filters", () => {
 
     await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useFeeTypesQuery).toHaveBeenLastCalledWith(false);
-    expect(new URLSearchParams(window.location.search).get("include_inactive")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("include_inactive")).toBeNull();
   });
 });

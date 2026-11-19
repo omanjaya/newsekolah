@@ -125,10 +125,10 @@ describe("AuditLogsView filters", () => {
     expect(mocks.useAuditLogsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ entityType: undefined }),
     );
-    expect(new URLSearchParams(window.location.search).get("entity_type")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("entity_type")).toBeNull();
   });
 
-  it("sets a date range from the two date pickers and writes both bounds to the URL", async () => {
+  it("sends the picked days as the school's day bounds and writes both dates to the URL", async () => {
     const user = userEvent.setup();
     render(<AuditLogsView />);
 
@@ -137,7 +137,12 @@ describe("AuditLogsView filters", () => {
     await pickDate(user, "filters.to", "2026-09-15");
 
     expect(mocks.useAuditLogsQuery).toHaveBeenLastCalledWith(
-      expect.objectContaining({ from: "2026-09-01", to: "2026-09-15" }),
+      // Asia/Jakarta (UTC+7): the API takes date-time, so a bare
+      // YYYY-MM-DD fails with INVALID_FORMAT.
+      expect.objectContaining({
+        from: "2026-08-31T17:00:00.000Z",
+        to: "2026-09-15T16:59:59.999Z",
+      }),
     );
     expect(new URLSearchParams(window.location.search).get("from")).toBe("2026-09-01");
     expect(new URLSearchParams(window.location.search).get("to")).toBe("2026-09-15");
@@ -155,6 +160,19 @@ describe("AuditLogsView filters", () => {
       .getAllByRole("gridcell")
       .filter((cell) => cell.getAttribute("aria-current") === "date");
     expect(marked.map((cell) => cell.dataset.date)).toEqual(["2020-02-14"]);
+  });
+
+  it("leaves the open end out of the URL and the request when only one bound is set", async () => {
+    const user = userEvent.setup();
+    render(<AuditLogsView />);
+
+    await user.click(screen.getByRole("button", { name: "filters.dateRange" }));
+    await pickDate(user, "filters.from", "2026-09-01");
+
+    expect(mocks.useAuditLogsQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ from: "2026-08-31T17:00:00.000Z", to: undefined }),
+    );
+    expect(window.location.search).not.toContain("to=");
   });
 
   it("clears both bounds from the date range chip's remove control", async () => {

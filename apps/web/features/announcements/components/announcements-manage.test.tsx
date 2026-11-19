@@ -69,7 +69,7 @@ describe("AnnouncementsManage filters", () => {
 
     await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useAnnouncementsQuery).toHaveBeenLastCalledWith("", "");
-    expect(new URLSearchParams(window.location.search).get("status")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("status")).toBeNull();
   });
 });
 

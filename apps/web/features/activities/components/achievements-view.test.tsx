@@ -75,7 +75,7 @@ describe("AchievementsView filters", () => {
 
     await user.click(screen.getByRole("button", { name: /^Hapus filter / }));
     expect(mocks.useAchievementsQuery).toHaveBeenLastCalledWith(undefined, undefined);
-    expect(new URLSearchParams(window.location.search).get("class_id")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("class_id")).toBeNull();
   });
 
   it("writes the date as a date and keeps edit and delete in the row's menu", () => {
@@ -170,6 +170,6 @@ describe("AchievementsView search and empty states", () => {
     const reset = resets.at(-1);
     if (!reset) throw new Error("no reset");
     await user.click(reset);
-    expect(new URLSearchParams(window.location.search).get("class_id")).toBe("");
+    expect(new URLSearchParams(window.location.search).get("class_id")).toBeNull();
   });
 });
