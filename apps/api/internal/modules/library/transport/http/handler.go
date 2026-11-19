@@ -5,6 +5,7 @@ package http
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -114,6 +115,22 @@ func errorCode(err error) string {
 		return appErr.Code
 	}
 	return httpx.Internal(err).Code
+}
+
+// rowError renders a per-item failure of a batch response as its stable
+// code plus a human-readable reason. A domain error keeps its own text. An
+// unexpected error is logged with its cause, the way the response error
+// handler logs a 500, and its reason is the generic localized
+// INTERNAL_ERROR message: raw driver or wrapping text never reaches the
+// client.
+func rowError(ctx context.Context, err error) (code, reason string) {
+	code = errorCode(err)
+	if code != httpx.ErrInternal.Code {
+		return code, err.Error()
+	}
+	slog.ErrorContext(ctx, "library batch row failed",
+		"error", err, "request_id", httpx.RequestIDFromContext(ctx))
+	return code, i18n.Message(code, tenantLocale(ctx))
 }
 
 func strOr(p *string) string {

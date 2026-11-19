@@ -139,11 +139,16 @@ func (h *LibraryHandler) BulkRegisterLibraryMembers(ctx context.Context, request
 	for i, m := range result.Registered {
 		registered[i] = toAPIMember(m)
 	}
-	failed := make([]api.LibraryBulkRegisterFailure, len(result.Failed))
-	for i, f := range result.Failed {
-		failed[i] = api.LibraryBulkRegisterFailure{UserId: f.UserID, UserName: f.UserName, Code: errorCode(f.Err), Reason: f.Err.Error()}
+	return api.BulkRegisterLibraryMembers200JSONResponse{Registered: registered, Failed: toAPIBulkRegisterFailures(ctx, result.Failed)}, nil
+}
+
+func toAPIBulkRegisterFailures(ctx context.Context, failures []service.FailedRegistration) []api.LibraryBulkRegisterFailure {
+	out := make([]api.LibraryBulkRegisterFailure, len(failures))
+	for i, f := range failures {
+		code, reason := rowError(ctx, f.Err)
+		out[i] = api.LibraryBulkRegisterFailure{UserId: f.UserID, UserName: f.UserName, Code: code, Reason: reason}
 	}
-	return api.BulkRegisterLibraryMembers200JSONResponse{Registered: registered, Failed: failed}, nil
+	return out
 }
 
 func (h *LibraryHandler) GetLibraryMember(ctx context.Context, request api.GetLibraryMemberRequestObject) (api.GetLibraryMemberResponseObject, error) {

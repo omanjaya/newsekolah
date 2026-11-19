@@ -46,7 +46,7 @@ func (h *LibraryHandler) BatchBorrowLibraryLoans(ctx context.Context, request ap
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return api.BatchBorrowLibraryLoans200JSONResponse(toAPIBatchResult(result)), nil
+	return api.BatchBorrowLibraryLoans200JSONResponse(toAPIBatchResult(ctx, result)), nil
 }
 
 func (h *LibraryHandler) ReturnLibraryLoan(ctx context.Context, request api.ReturnLibraryLoanRequestObject) (api.ReturnLibraryLoanResponseObject, error) {
@@ -178,14 +178,15 @@ func (h *LibraryHandler) ListMemberLoanHistory(ctx context.Context, request api.
 	return api.ListMemberLoanHistory200JSONResponse{Data: data}, nil
 }
 
-func toAPIBatchResult(r service.BatchBorrowResult) api.LibraryBatchBorrowResult {
+func toAPIBatchResult(ctx context.Context, r service.BatchBorrowResult) api.LibraryBatchBorrowResult {
 	loans := make([]api.LibraryLoan, len(r.Loans))
 	for i, l := range r.Loans {
 		loans[i] = toAPILoan(l)
 	}
 	rejected := make([]api.LibraryRejectedBarcode, len(r.Rejected))
 	for i, rej := range r.Rejected {
-		rejected[i] = api.LibraryRejectedBarcode{Barcode: rej.Barcode, Code: errorCode(rej.Err), Reason: rej.Err.Error()}
+		code, reason := rowError(ctx, rej.Err)
+		rejected[i] = api.LibraryRejectedBarcode{Barcode: rej.Barcode, Code: code, Reason: reason}
 	}
 	return api.LibraryBatchBorrowResult{Loans: loans, Rejected: rejected}
 }

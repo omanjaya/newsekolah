@@ -102,13 +102,35 @@ func (r *Repository) CountMembersByType(ctx context.Context, tenantID, memberTyp
 // being a member, so the caller can retry with the next sequence number
 // only on the former (old app: 5 retries on duplicate member_no,
 // library_common.go:596-614).
+// CreateMember inserts one member. Inside a caller's transaction the
+// insert runs under a savepoint: a member_no collision is an expected
+// outcome the service retries with the next number (and bulk registration
+// records and moves past), so the unique violation must not abort the
+// whole transaction and fail every statement after it.
 func (r *Repository) CreateMember(ctx context.Context, m domain.Member) (domain.Member, error) {
-	row, err := r.queries(ctx).CreateMember(ctx, db.CreateMemberParams{
+	params := db.CreateMemberParams{
 		UserID: m.UserID, TenantID: m.TenantID, MemberNo: m.MemberNo, MemberTypeID: m.MemberTypeID,
 		RegisteredOn: pdatabase.Date(m.RegisteredOn), ValidUntil: nullableDate(m.ValidUntil), Status: string(m.Status), Notes: m.Notes,
-	})
+	}
+	tx, ok := pdatabase.TxFromContext(ctx)
+	if !ok {
+		row, err := r.queries(ctx).CreateMember(ctx, params)
+		if err != nil {
+			return domain.Member{}, mapMemberInsertError(err)
+		}
+		return toMember(row), nil
+	}
+	savepoint, err := tx.Begin(ctx)
 	if err != nil {
+		return domain.Member{}, fmt.Errorf("create member savepoint: %w", err)
+	}
+	row, err := db.New(savepoint).CreateMember(ctx, params)
+	if err != nil {
+		_ = savepoint.Rollback(ctx)
 		return domain.Member{}, mapMemberInsertError(err)
+	}
+	if err := savepoint.Commit(ctx); err != nil {
+		return domain.Member{}, fmt.Errorf("release create member savepoint: %w", err)
 	}
 	return toMember(row), nil
 }
