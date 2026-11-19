@@ -361,8 +361,22 @@ describe("Scanner", () => {
 
     it("does not open an on-screen keyboard on a touch screen", () => {
       installPointer(false);
-      render(<Scanner onScan={vi.fn()} focusEntryOnMount />);
+      const { container } = render(<Scanner onScan={vi.fn()} focusEntryOnMount />);
       expect(screen.getByLabelText("Kode")).not.toHaveFocus();
+      // Nothing to toggle: focus stays in the scanner, not on the page.
+      expect(document.activeElement).not.toBe(document.body);
+      expect(container.querySelector("[data-slot='scanner']")).toContainElement(
+        document.activeElement as HTMLElement,
+      );
+    });
+
+    it("keeps focus off the page on a touch screen when the field is always open", () => {
+      installPointer(false);
+      installCamera(() => Promise.resolve({ getTracks: () => [] }));
+      render(<Scanner onScan={vi.fn()} autoStart={false} manualEntry="open" focusEntryOnMount />);
+      expect(screen.getByLabelText("Kode")).not.toHaveFocus();
+      expect(document.activeElement).not.toBe(document.body);
+      expect(document.activeElement?.tagName).not.toBe("BUTTON");
     });
 
     it("leaves focus alone unless asked", () => {

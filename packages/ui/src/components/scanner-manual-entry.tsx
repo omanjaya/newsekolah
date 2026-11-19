@@ -68,7 +68,12 @@ export function ScannerManualEntry({
   useEffect(() => {
     if (!focusOnMount) return;
     if (open && hasFinePointer()) inputRef.current?.focus();
-    else toggleRef.current?.focus();
+    else if (collapsible) toggleRef.current?.focus();
+    // A touch screen with the field shown and no toggle: hold focus on the
+    // field's wrapper, which opens no on-screen keyboard and, unlike its
+    // submit button, does not turn a hardware scanner's Enter into a click
+    // on an empty field. Focus never drops to the page.
+    else entryRef.current?.focus();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- on mount only: the host remounts the scanner to ask again
   }, []);
   // Opening the fallback (from the toggle or a camera that cannot be used)
@@ -101,7 +106,11 @@ export function ScannerManualEntry({
         // The field and its button share one row inside the Field at every
         // width, so the message under the field sits right below it, never
         // under a button stacked between them.
-        <div ref={entryRef} className={cn(collapsible && "animate-enter")}>
+        <div
+          ref={entryRef}
+          tabIndex={-1}
+          className={cn("outline-none", collapsible && "animate-enter")}
+        >
           <Field
             label={label}
             error={attempted && empty ? labels.scannerManualRequired : undefined}
