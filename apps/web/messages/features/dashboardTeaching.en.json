@@ -37,6 +37,7 @@
       "titleFallback": "Homeroom",
       "action": "Review leave requests",
       "empty": "No leave requests waiting",
+      "noLessons": "No lessons today",
       "noStatus": "No attendance data yet today",
       "statusTitle": "{className} attendance today",
       "statusTitleFallback": "Class attendance today",

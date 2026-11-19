@@ -177,7 +177,11 @@ function HomeroomClassCard({
   // duplicating those labels in this new catalog.
   const categoryT = useTranslations("app.permits.leave");
   const statusT = useTranslations("app.homeroom");
-  const codes = Object.entries(counts).filter(([, count]) => count > 0);
+  // NONE is not an attendance status: a day without lessons gets one line
+  // saying so, like the rate tile, not a "Tidak ada jadwal: 2 siswa" count
+  // (audit r5-n2).
+  const noLessons = isNoLessonDay(counts);
+  const codes = Object.entries(counts).filter(([code, count]) => count > 0 && code !== "NONE");
 
   return (
     <Card>
@@ -196,6 +200,8 @@ function HomeroomClassCard({
           <Skeleton className="h-6 w-2/3" aria-busy="true" />
         ) : countsError ? (
           <QueryError retry={onRetry} error={countsError} />
+        ) : noLessons ? (
+          <p className="text-body-sm text-fg-muted">{t("card.noLessons")}</p>
         ) : codes.length === 0 ? (
           <p className="text-body-sm text-fg-muted">{t("card.noStatus")}</p>
         ) : (

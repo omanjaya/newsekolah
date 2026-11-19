@@ -240,4 +240,39 @@ describe("useHomeroomBlock", () => {
     ).toBeInTheDocument();
     expect(screen.getByText('card.statusChip:{"label":"codes.H","count":28}')).toBeInTheDocument();
   });
+
+  // "Tidak ada jadwal: 2 siswa" counted students against no schedule
+  // (audit r5-n2).
+  it("says the class has no lessons today instead of counting students against NONE", () => {
+    attendanceQuery.mockReturnValue({
+      data: { data: [], total: 2, status_counts: { NONE: 2 } },
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      refetch: vi.fn(),
+    });
+
+    const { result } = renderHook(() => useHomeroomBlock(meWithHomeroom(), true));
+    render(<>{result.current.main.map((slot) => slot.node)}</>);
+
+    expect(screen.getByText("card.noLessons")).toBeInTheDocument();
+    expect(screen.queryByText(/codes\.NONE/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "card.statusLabel" })).not.toBeInTheDocument();
+  });
+
+  it("leaves NONE out of the counts on a day some students have lessons", () => {
+    attendanceQuery.mockReturnValue({
+      data: { data: [], total: 3, status_counts: { H: 2, NONE: 1 } },
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      refetch: vi.fn(),
+    });
+
+    const { result } = renderHook(() => useHomeroomBlock(meWithHomeroom(), true));
+    render(<>{result.current.main.map((slot) => slot.node)}</>);
+
+    expect(screen.getByText('card.statusChip:{"label":"codes.H","count":2}')).toBeInTheDocument();
+    expect(screen.queryByText(/codes\.NONE/)).not.toBeInTheDocument();
+  });
 });
