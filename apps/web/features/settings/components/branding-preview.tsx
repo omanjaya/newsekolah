@@ -14,6 +14,7 @@ import { House, Megaphone } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { CSSProperties, ReactElement } from "react";
 
+import { ROW, ROW_ACTIVE, ROW_IDLE_TOP } from "../../../components/sidebar-nav";
 import { resolveTenantAccents } from "../../../lib/tenant/accent";
 import { initialsFor } from "../../../lib/tenant/initials";
 import { useTheme } from "../../../lib/theme/theme-provider";
@@ -34,14 +35,12 @@ export interface BrandingPreviewProps {
 }
 
 /**
- * The sidebar's row styles (components/sidebar-nav.tsx: ROW, ROW_ACTIVE and
- * ROW_IDLE_TOP), so the preview shows the menu as the app draws it. The
- * active row is the system's accent-soft, which a school's colour does not
- * repaint (docs/07-ui-ux.md): the preview must not suggest it does.
+ * The preview reuses the sidebar's own row styles, so the menu looks as the
+ * app draws it. The active row is the system's accent-soft, which a school's
+ * colour does not repaint (docs/07-ui-ux.md): the preview must not suggest it
+ * does. Only the icon gap and inset are the preview's own.
  */
-const PREVIEW_ROW = "flex h-9 items-center gap-2.5 rounded-md px-2.5 text-body-sm font-medium";
-const PREVIEW_ROW_ACTIVE = "bg-accent-soft font-semibold text-accent-soft-fg";
-const PREVIEW_ROW_IDLE = "text-fg";
+const PREVIEW_ROW_LAYOUT = "gap-2.5 px-2.5";
 
 function Mark({
   name,
@@ -159,11 +158,11 @@ export function BrandingPreview({
             </span>
           </div>
           <div className="flex flex-col gap-1">
-            <span className={cn(PREVIEW_ROW, PREVIEW_ROW_ACTIVE)}>
+            <span className={cn(ROW, PREVIEW_ROW_LAYOUT, ROW_ACTIVE)}>
               <House className="size-4" aria-hidden="true" />
               {t("homePage")}
             </span>
-            <span className={cn(PREVIEW_ROW, PREVIEW_ROW_IDLE)}>
+            <span className={cn(ROW, PREVIEW_ROW_LAYOUT, ROW_IDLE_TOP)}>
               <Megaphone className="size-4" aria-hidden="true" />
               {t("announcements")}
             </span>
