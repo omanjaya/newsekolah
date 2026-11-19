@@ -1,9 +1,32 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import { HomeroomQueueCard } from "./homeroom-queue-card";
 
+vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+
 describe("HomeroomQueueCard", () => {
+  it("says its read failed instead of the all-clear, without a count", () => {
+    const retry = vi.fn();
+    render(
+      <HomeroomQueueCard
+        title="Izin menunggu"
+        count={0}
+        loading={false}
+        failure={{ error: new Error("500"), retry }}
+        empty="Tidak ada izin"
+      >
+        {null}
+      </HomeroomQueueCard>,
+    );
+
+    expect(screen.queryByText("Tidak ada izin")).not.toBeInTheDocument();
+    expect(screen.queryByText("0")).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "actions.retry" }));
+    expect(retry).toHaveBeenCalledTimes(1);
+  });
+
   it("shows the all-clear line with a success check when nothing is listed", () => {
     const { container } = render(
       <HomeroomQueueCard title="Izin menunggu" count={0} loading={false} empty="Tidak ada izin">

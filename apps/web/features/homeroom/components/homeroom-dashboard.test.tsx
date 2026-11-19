@@ -34,6 +34,28 @@ describe("HomeroomDashboard", () => {
     expect(cards[0]?.parentElement).not.toHaveClass("items-start");
   });
 
+  it("shows the failed reads in their cards instead of a green all-clear", () => {
+    const failure = { error: new Error("500"), retry: vi.fn() };
+    render(
+      <HomeroomDashboard
+        attentionRows={[]}
+        disciplineRows={[]}
+        pendingLeave={[]}
+        dashboardLoading={false}
+        leaveLoading={false}
+        dashboardFailure={failure}
+        leaveFailure={failure}
+        showLeave
+        showDiscipline
+      />,
+    );
+
+    expect(screen.getAllByRole("alert")).toHaveLength(3);
+    for (const empty of ["contactEmpty", "pendingLeaveEmpty", "disciplineEmpty"]) {
+      expect(screen.queryByText(empty)).not.toBeInTheDocument();
+    }
+  });
+
   it("gives the waiting cards the accent count and the discipline tally the neutral one", () => {
     const entry = (id: string, status: string, violations = 0) =>
       ({

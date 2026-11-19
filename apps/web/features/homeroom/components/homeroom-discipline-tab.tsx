@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { CursorPagination } from "../../../components/cursor-pagination";
+import { QueryError } from "../../../components/query-error";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useViolationsQuery } from "../../discipline/api";
 import { useDirectoryNames } from "../../reference/directory-names";
@@ -20,7 +21,7 @@ export function HomeroomDisciplineTab({ classId }: { classId: string }): ReactEl
   const t = useTranslations("app.homeroom");
   const locale = useLocale() as Locale;
   const paging = useOffsetPage(PAGE_SIZE, "discipline_page");
-  const { data, isLoading } = useViolationsQuery(
+  const { data, isLoading, isError, error, refetch } = useViolationsQuery(
     { classId, from: "", to: "", includeVoided: false },
     { limit: paging.limit, offset: paging.offset },
   );
@@ -28,6 +29,8 @@ export function HomeroomDisciplineTab({ classId }: { classId: string }): ReactEl
   const studentMap = useDirectoryNames(items.map((item) => item.student_user_id));
 
   if (isLoading) return <SkeletonList rows={4} />;
+  // A failed read is not a clean record (audit r3-n18).
+  if (isError) return <QueryError retry={() => refetch()} error={error} />;
   if (items.length === 0 && !paging.hasPrevious) {
     return (
       <EmptyState

@@ -10,7 +10,7 @@ import { statusToken } from "../../attendance/lib/status-tokens";
 import { studentProfileHref } from "../../students/href";
 
 import { GuardianContactActions } from "./guardian-contact-actions";
-import { HomeroomQueueCard } from "./homeroom-queue-card";
+import { HomeroomQueueCard, type ReadFailure } from "./homeroom-queue-card";
 
 type Entry = components["schemas"]["AttendanceHomeroomEntry"];
 type LeaveRequestSummary = components["schemas"]["LeaveRequestSummary"];
@@ -28,6 +28,8 @@ export function HomeroomDashboard({
   pendingLeave,
   dashboardLoading,
   leaveLoading,
+  dashboardFailure = null,
+  leaveFailure = null,
   showLeave,
   showDiscipline,
 }: {
@@ -36,6 +38,10 @@ export function HomeroomDashboard({
   pendingLeave: LeaveRequestSummary[];
   dashboardLoading: boolean;
   leaveLoading: boolean;
+  /** The day's class read failed: the contact and discipline cards say so. */
+  dashboardFailure?: ReadFailure | null;
+  /** The leave review queue failed: its card says so. */
+  leaveFailure?: ReadFailure | null;
   /** False when the school switched permits off: the pending-leave card goes away. */
   showLeave: boolean;
   /** False when the school switched discipline off: the discipline card goes away. */
@@ -55,6 +61,7 @@ export function HomeroomDashboard({
         // on the journal's "Perlu diisi" and the permits tab.
         countTone="accent"
         loading={dashboardLoading}
+        failure={dashboardFailure}
         // Its own line: the hero above already says everyone is recorded.
         empty={t("contactEmpty")}
       >
@@ -95,6 +102,7 @@ export function HomeroomDashboard({
           count={pendingLeave.length}
           countTone="accent"
           loading={leaveLoading}
+          failure={leaveFailure}
           empty={t("pendingLeaveEmpty")}
         >
           {pendingLeave.map((item) => (
@@ -124,6 +132,7 @@ export function HomeroomDashboard({
           title={t("disciplineTitle")}
           count={disciplineRows.length}
           loading={dashboardLoading}
+          failure={dashboardFailure}
           empty={t("disciplineEmpty")}
         >
           {disciplineRows.map((row) => (

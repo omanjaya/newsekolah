@@ -6,9 +6,6 @@ import {
   Button,
   DataTable,
   EmptyState,
-  HeroCard,
-  Stat,
-  StatGrid,
   StatusBadge,
   Tabs,
   TabsContent,
@@ -17,11 +14,11 @@ import {
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
-import { CircleDashed, ClipboardList, UserX, UsersRound } from "lucide-react";
+import { UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
@@ -39,10 +36,11 @@ import { useLeaveReviewQueueQuery } from "../../permits/api";
 import { useClassesQuery } from "../../reference/api";
 import { StudentLink } from "../../students/components/student-link";
 
-import { HomeroomDashboard } from "./homeroom-dashboard";
 import { HomeroomDisciplineTab } from "./homeroom-discipline-tab";
+import { HomeroomOverview, type AttentionCode } from "./homeroom-overview";
 import { HomeroomParentsTab } from "./homeroom-parents-tab";
 import { HomeroomPermitsTab } from "./homeroom-permits-tab";
+import { readFailure } from "./homeroom-queue-card";
 
 type Entry = components["schemas"]["AttendanceHomeroomEntry"];
 
@@ -111,6 +109,14 @@ export function HomeroomView(): ReactElement {
     Boolean(homeroom),
   );
   const leaveQueue = useLeaveReviewQueueQuery(Boolean(homeroom) && permitsOn);
+
+  const attendancePanel = useRef<HTMLDivElement>(null);
+  const focusAttendance = useRef(false);
+  useEffect(() => {
+    if (tab !== "attendance" || !focusAttendance.current) return;
+    focusAttendance.current = false;
+    attendancePanel.current?.focus();
+  }, [tab]);
 
   const rows = data?.data ?? [];
   const isFiltered = search !== "" || statusCode !== "";
@@ -253,12 +259,6 @@ export function HomeroomView(): ReactElement {
     );
   }
 
-  // The day's figures come from the unfiltered dashboard read: the table's
-  // own read counts only the rows its search and status filter keep.
-  const counts = dashboard.data?.status_counts ?? {};
-  const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
-  const absent = counts.A ?? 0;
-  const incomplete = counts.INCOMPLETE ?? 0;
   // The duty names its class; an older assignment without the label falls
   // back to the class list.
   const className =
@@ -274,19 +274,14 @@ export function HomeroomView(): ReactElement {
    * name still typed in its search from an earlier visit is dropped, or the
    * list could come up empty although students have that status.
    */
-  function showStatus(code: (typeof STATUS_VALUES)[number]) {
+  function showStatus(code: AttentionCode) {
     setSearch("");
     setStatusCode(code);
     setPagination((p) => ({ ...p, pageIndex: 0 }));
+    // The control that opened the list goes away with the tab: focus moves
+    // to the list's panel rather than falling to <body> (audit r3-n22).
+    focusAttendance.current = true;
     setTab("attendance");
-  }
-
-  // The status filter matches one code, so the hero opens the list that has
-  // rows: alpha first (the guardian needs a call), else the students whose
-  // attendance is not complete yet. The two stat cells below open each list
-  // on its own (audit teaching-1).
-  function showAttention() {
-    showStatus(absent > 0 ? "A" : "INCOMPLETE");
   }
 
   return (
@@ -323,80 +318,23 @@ export function HomeroomView(): ReactElement {
           </TabsList>
         }
       >
-        <TabsContent value="overview" className="flex flex-col gap-6 pt-0">
-          {/* Who needs the homeroom teacher today, first. */}
-          <HeroCard
-            tone={dashboard.isLoading || attentionRows.length === 0 ? "accent-soft" : "warning"}
-            // A calm day gets a neutral eyebrow, not "Perlu perhatian".
-            eyebrow={attentionRows.length > 0 ? t("attentionTitle") : t("today")}
-            title={
-              attentionRows.length > 0
-                ? t("attentionCount", { count: attentionRows.length })
-                : t("attentionNoneTitle")
-            }
-            meta={
-              attentionRows.length > 0
-                ? t("attentionBreakdown", { absent, incomplete })
-                : t("attentionEmpty")
-            }
-            action={
-              attentionRows.length > 0 ? (
-                <Button variant="secondary" onClick={showAttention}>
-                  {t("attentionOpen")}
-                </Button>
-              ) : undefined
-            }
-          />
-
-          <StatGrid variant="strip" aria-label={t("statsLabel")}>
-            <Stat icon={<UsersRound />} tone="blue" value={total} label={t("statTotal")} />
-            <Stat
-              icon={<UserX />}
-              tone="red"
-              value={absent}
-              label={t("statAbsent")}
-              onClick={
-                absent > 0
-                  ? () => {
-                      showStatus("A");
-                    }
-                  : undefined
-              }
-            />
-            <Stat
-              icon={<CircleDashed />}
-              tone="amber"
-              value={incomplete}
-              label={t("statIncomplete")}
-              onClick={
-                incomplete > 0
-                  ? () => {
-                      showStatus("INCOMPLETE");
-                    }
-                  : undefined
-              }
-            />
-            {permitsOn && (
-              <Stat
-                icon={<ClipboardList />}
-                tone="purple"
-                value={pendingLeave.length}
-                label={t("statPendingLeave")}
-              />
-            )}
-          </StatGrid>
-
-          <HomeroomDashboard
+        <TabsContent value="overview" className="pt-0">
+          {/* Who needs the homeroom teacher on the chosen day, first. */}
+          <HomeroomOverview
+            date={date}
+            today={today}
+            dashboard={dashboard}
+            leaveQueue={leaveQueue}
+            counts={dashboard.data?.status_counts ?? {}}
             attentionRows={attentionRows}
             disciplineRows={disciplineRows}
             pendingLeave={pendingLeave}
-            dashboardLoading={dashboard.isLoading}
-            leaveLoading={leaveQueue.isLoading}
             showLeave={permitsOn}
             showDiscipline={disciplineOn}
+            onShowStatus={showStatus}
           />
         </TabsContent>
-        <TabsContent value="attendance" className="pt-0">
+        <TabsContent ref={attendancePanel} value="attendance" className="pt-0">
           <DataTable
             stateKey="features/homeroom/components/homeroom-view:1"
             data={rows}
@@ -439,7 +377,11 @@ export function HomeroomView(): ReactElement {
           </TabsContent>
         )}
         <TabsContent value="parents" className="pt-0">
-          <HomeroomParentsTab rows={dashboard.data?.data ?? []} isLoading={dashboard.isLoading} />
+          <HomeroomParentsTab
+            rows={dashboard.data?.data ?? []}
+            isLoading={dashboard.isLoading}
+            failure={readFailure(dashboard)}
+          />
         </TabsContent>
       </AppPage>
     </Tabs>

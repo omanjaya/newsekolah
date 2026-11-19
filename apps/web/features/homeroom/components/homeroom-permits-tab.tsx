@@ -9,12 +9,13 @@ import type { ReactElement } from "react";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useExitPermitReviewQueueQuery, useLeaveReviewQueueQuery } from "../../permits/api";
 
-import { HomeroomQueueCard } from "./homeroom-queue-card";
+import { HomeroomQueueCard, readFailure } from "./homeroom-queue-card";
 
 /**
  * Pending leave requests and exit permits for the students of one
  * homeroom class. Both review queues are scoped to the caller's own
  * approval stage by the API; this narrows them to the class by `class_id`.
+ * A queue that failed to load says so in its card, never "nothing waiting".
  */
 export function HomeroomPermitsTab({
   classId,
@@ -43,6 +44,7 @@ export function HomeroomPermitsTab({
         count={leave.length}
         countTone="accent"
         loading={leaveQueue.isLoading}
+        failure={readFailure(leaveQueue)}
         empty={t("pendingLeaveEmpty")}
       >
         {leave.map((item) => (
@@ -61,6 +63,7 @@ export function HomeroomPermitsTab({
         count={exits.length}
         countTone="accent"
         loading={exitQueue.isLoading}
+        failure={readFailure(exitQueue)}
         empty={t("exitPermitsEmpty")}
       >
         {exits.map((item) => (
