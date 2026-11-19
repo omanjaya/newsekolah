@@ -33,4 +33,31 @@ describe("HomeroomDashboard", () => {
     for (const card of cards) expect(card).toHaveClass("h-full");
     expect(cards[0]?.parentElement).not.toHaveClass("items-start");
   });
+
+  it("gives the waiting cards the accent count and the discipline tally the neutral one", () => {
+    const entry = (id: string, status: string, violations = 0) =>
+      ({
+        student_user_id: id,
+        name: id,
+        status_code: status,
+        violation_count: violations,
+        violation_points: violations * 5,
+      }) as Parameters<typeof HomeroomDashboard>[0]["attentionRows"][number];
+    render(
+      <HomeroomDashboard
+        attentionRows={[entry("a1", "A"), entry("a2", "A")]}
+        disciplineRows={[entry("d1", "H", 1), entry("d2", "H", 2), entry("d3", "H", 1)]}
+        pendingLeave={[]}
+        dashboardLoading={false}
+        leaveLoading={false}
+        showLeave
+        showDiscipline
+      />,
+    );
+
+    const count = (title: string) =>
+      screen.getByRole("heading", { name: new RegExp(`^${title}`) }).querySelector("span");
+    expect(count("attentionListTitle")).toHaveClass("bg-accent");
+    expect(count("disciplineTitle")).toHaveClass("bg-neutral-soft");
+  });
 });

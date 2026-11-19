@@ -2,23 +2,14 @@
 
 import type { Locale } from "@newsekolah/i18n";
 import { formatDateRange } from "@newsekolah/i18n";
-import {
-  Badge,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CountBadge,
-  EmptyState,
-  List,
-  ListRow,
-  SkeletonList,
-} from "@newsekolah/ui";
+import { Badge, ListRow } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactElement, ReactNode } from "react";
+import type { ReactElement } from "react";
 
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useExitPermitReviewQueueQuery, useLeaveReviewQueueQuery } from "../../permits/api";
+
+import { HomeroomQueueCard } from "./homeroom-queue-card";
 
 /**
  * Pending leave requests and exit permits for the students of one
@@ -47,9 +38,10 @@ export function HomeroomPermitsTab({
 
   return (
     <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-      <QueueCard
+      <HomeroomQueueCard
         title={t("pendingLeaveTitle")}
         count={leave.length}
+        countTone="accent"
         loading={leaveQueue.isLoading}
         empty={t("pendingLeaveEmpty")}
       >
@@ -62,11 +54,12 @@ export function HomeroomPermitsTab({
             href={`/leave-requests/${item.instance_id}`}
           />
         ))}
-      </QueueCard>
+      </HomeroomQueueCard>
 
-      <QueueCard
+      <HomeroomQueueCard
         title={t("exitPermitsTitle")}
         count={exits.length}
+        countTone="accent"
         loading={exitQueue.isLoading}
         empty={t("exitPermitsEmpty")}
       >
@@ -79,43 +72,7 @@ export function HomeroomPermitsTab({
             href="/exit-permits"
           />
         ))}
-      </QueueCard>
+      </HomeroomQueueCard>
     </div>
-  );
-}
-
-function QueueCard({
-  title,
-  count,
-  loading,
-  empty,
-  children,
-}: {
-  title: string;
-  count: number;
-  loading: boolean;
-  empty: string;
-  children: ReactNode;
-}): ReactElement {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle as="h2" className="flex items-center gap-2">
-          {title}
-          {!loading && <CountBadge count={count} tone="accent" />}
-        </CardTitle>
-      </CardHeader>
-      {loading ? (
-        <CardContent className="pt-0">
-          <SkeletonList rows={2} framed={false} />
-        </CardContent>
-      ) : count === 0 ? (
-        <CardContent className="pt-0">
-          <EmptyState variant="compact" title={empty} />
-        </CardContent>
-      ) : (
-        <List>{children}</List>
-      )}
-    </Card>
   );
 }

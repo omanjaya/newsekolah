@@ -66,4 +66,12 @@ describe("HomeroomDisciplineTab paging", () => {
 
     expect(screen.getByRole("button", { name: "previous" })).toBeEnabled();
   });
+
+  it("explains an empty class record instead of a bare title", () => {
+    mocks.useViolationsQuery.mockReturnValue({ data: { data: [] }, isLoading: false });
+    render(<HomeroomDisciplineTab classId="class-7a" />);
+
+    expect(screen.getByText("disciplineEmpty")).toBeInTheDocument();
+    expect(screen.getByText("disciplineEmptyBody")).toBeInTheDocument();
+  });
 });

@@ -1302,10 +1302,11 @@
       "contactCall": "Telepon wali {name}",
       "contactWhatsapp": "WhatsApp wali {name}",
       "pendingLeaveTitle": "Izin menunggu persetujuan",
-      "pendingLeaveEmpty": "Tidak ada izin yang menunggu persetujuan.",
+      "pendingLeaveEmpty": "Tidak ada izin yang menunggu persetujuan",
       "pendingLeaveReview": "Tinjau",
       "disciplineTitle": "Catatan pelanggaran",
-      "disciplineEmpty": "Tidak ada pelanggaran tercatat.",
+      "disciplineEmpty": "Tidak ada pelanggaran tercatat",
+      "disciplineEmptyBody": "Pelanggaran siswa kelas ini akan muncul di sini.",
       "columns": {
         "name": "Nama",
         "status": "Status harian",
@@ -1335,7 +1336,7 @@
         "parents": "Orang tua"
       },
       "exitPermitsTitle": "Izin keluar menunggu",
-      "exitPermitsEmpty": "Tidak ada izin keluar yang menunggu.",
+      "exitPermitsEmpty": "Tidak ada izin keluar yang menunggu",
       "unknownStudent": "Siswa",
       "pointsBadge": "{points} poin",
       "tabsLabel": "Bagian wali kelas",
@@ -1348,7 +1349,7 @@
       "attentionBreakdown": "{absent} alpha · {incomplete} presensi belum lengkap",
       "attentionOpen": "Lihat di presensi kelas",
       "attentionListTitle": "Perlu dihubungi",
-      "contactEmpty": "Tidak ada wali yang perlu dihubungi.",
+      "contactEmpty": "Tidak ada wali yang perlu dihubungi",
       "noHomeroomAdminBody": "Halaman ini menampilkan rekap harian kelas binaan. Wali kelas diatur di penugasan.",
       "openAssignments": "Buka penugasan"
     },
