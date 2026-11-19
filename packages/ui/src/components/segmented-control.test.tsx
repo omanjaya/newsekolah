@@ -89,6 +89,21 @@ describe("SegmentedControl", () => {
     expect(group).toHaveAccessibleDescription("Pilih status yang ditampilkan");
   });
 
+  it("names a segment by its ariaLabel so a count is read with its meaning", () => {
+    render(
+      <SegmentedControl
+        aria-label="Komponen"
+        options={[
+          { value: "tg1", label: "TG1", count: 2, ariaLabel: "TG1, 2 kosong" },
+          { value: "uh1", label: "UH1" },
+        ]}
+        defaultValue="tg1"
+      />,
+    );
+    expect(screen.getByRole("radio", { name: "TG1, 2 kosong" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "UH1" })).not.toBeChecked();
+  });
+
   it("trims the side padding in the dense size and keeps the touch height", () => {
     const days = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"].map((label, index) => ({
       value: String(index + 1),

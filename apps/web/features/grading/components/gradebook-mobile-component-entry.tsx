@@ -40,8 +40,9 @@ export interface GradebookMobileComponentEntryProps {
  * front of the class scoring 36 students on the same quiz one after
  * another. The component picker is a segmented control whose count shows
  * how many scores each component still misses; the caption under it names
- * that number for the active component, and the picker's description says
- * it for every component, so a screen reader never hears a bare "TG1 2".
+ * that number for the active component, each segment is named with it
+ * ("TG1, 2 kosong") and the picker's description lists it for every
+ * component, so a screen reader never hears a bare "TG1 2".
  * Saving goes through the sticky bar alone, so there is one way to save
  * on a phone.
  */
@@ -92,11 +93,14 @@ export function GradebookMobileComponentEntry({
           className="min-w-0"
           options={components.map((component) => {
             const componentMissing = missingByComponent.get(component.id) ?? 0;
-            return {
-              value: component.id,
-              label: component.code,
-              count: componentMissing > 0 ? componentMissing : undefined,
-            };
+            return componentMissing > 0
+              ? {
+                  value: component.id,
+                  label: component.code,
+                  count: componentMissing,
+                  ariaLabel: `${component.code}, ${t("missingCount", { count: componentMissing })}`,
+                }
+              : { value: component.id, label: component.code };
           })}
         />
         <IconButton

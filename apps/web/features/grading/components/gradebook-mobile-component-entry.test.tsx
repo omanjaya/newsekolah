@@ -56,6 +56,19 @@ describe("GradebookMobileComponentEntry", () => {
     );
   });
 
+  it("names each segment with its missing count", () => {
+    renderEntry(
+      new Map([
+        ["c1", 2],
+        ["c3", 5],
+      ]),
+    );
+
+    expect(screen.getByRole("radio", { name: "TG1, 2 kosong" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "PTS, 5 kosong" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "UH1" })).toBeInTheDocument();
+  });
+
   it("leaves the picker undescribed when no score is missing", () => {
     renderEntry(new Map());
 
