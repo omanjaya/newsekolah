@@ -175,6 +175,14 @@ export function GradingView(): ReactElement {
         (pair) => pair.classId === effectiveClassId && pair.subjectId === effectiveSubjectId,
       ));
 
+  // Publishing writes the actor's own sheets, so the e-Rapor panel may send
+  // only someone who teaches in the exported class (or manage_master_data,
+  // which writes anywhere) to publish. A counselor or vice principal with
+  // manage_grades but no teaching assignment there only reads.
+  const canPublishIn = (exportClassId: string) =>
+    canManageGrades &&
+    (canManageAny || assignmentPairs.some((pair) => pair.classId === exportClassId));
+
   // A scope change (class, subject, term, tab) would drop unsaved scores, so
   // it waits behind a confirmation when there are any.
   const [pendingScopeChange, setPendingScopeChange] = useState<(() => void) | null>(null);
@@ -363,9 +371,19 @@ export function GradingView(): ReactElement {
         {showEraporTab && (
           <TabsContent value="erapor" className="pt-0">
             <EraporExport
-              canPublish={canManageGrades}
-              onOpenGradebook={() => {
+              canPublishIn={canPublishIn}
+              onOpenGradebook={(exportClassId) => {
                 changeScope(() => {
+                  // Land on a sheet of the exported class the actor can
+                  // publish, not whichever sheet the gradebook last showed.
+                  setClassId(exportClassId);
+                  const taught = assignmentPairs.filter((pair) => pair.classId === exportClassId);
+                  if (
+                    taught.length > 0 &&
+                    !taught.some((p) => p.subjectId === effectiveSubjectId)
+                  ) {
+                    setSubjectId(taught[0]?.subjectId ?? "");
+                  }
                   setTab("gradebook");
                 });
               }}

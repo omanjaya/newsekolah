@@ -18,9 +18,15 @@ vi.mock("../api", () => ({
   useDeleteTPMappingMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
-const desktop = vi.hoisted(() => ({ matches: true }));
+// jsdom has no layout: every element reports this width, so a test sets
+// how much room the editor has, independent of the viewport.
+const layout = vi.hoisted(() => ({ width: 960 }));
+vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+  () => ({ width: layout.width }) as DOMRect,
+);
+// Even a desktop viewport must not pick the table when the editor is narrow.
 vi.stubGlobal("matchMedia", (query: string) => ({
-  matches: desktop.matches,
+  matches: true,
   media: query,
   addEventListener: () => undefined,
   removeEventListener: () => undefined,
@@ -62,7 +68,7 @@ afterEach(() => {
   cleanup();
   gradebookQuery.mockReset();
   mappingsQuery.mockReset();
-  desktop.matches = true;
+  layout.width = 960;
 });
 
 describe("TPMappingEditor", () => {
@@ -86,7 +92,7 @@ describe("TPMappingEditor", () => {
     expect(screen.getByText("description")).toBeInTheDocument();
   });
 
-  it("keeps the table on a wide screen", () => {
+  it("keeps the table when the editor has room for it", () => {
     load();
     render(<TPMappingEditor classId="class-1" subjectId="subject-1" />);
 
@@ -95,8 +101,28 @@ describe("TPMappingEditor", () => {
     expect(screen.getAllByRole("row")).toHaveLength(2);
   });
 
+  it("keeps the table with a saved row's remove in view once the editor fits its widest row", () => {
+    layout.width = 800;
+    load();
+    render(<TPMappingEditor classId="class-1" subjectId="subject-1" />);
+
+    const table = screen.getByRole("table");
+    expect(within(table).getByRole("button", { name: "remove" })).toBeInTheDocument();
+  });
+
+  it("switches to cards when a saved row's remove would push the table past the editor", () => {
+    // Wide enough for a row without a mapping (about 690px), not for one
+    // whose actions cell also holds the remove button (about 790px).
+    layout.width = 780;
+    load();
+    render(<TPMappingEditor classId="class-1" subjectId="subject-1" />);
+
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "remove" })).toHaveClass("w-full");
+  });
+
   it("gives each component its own card on a phone, with both ranges and its save in view", () => {
-    desktop.matches = false;
+    layout.width = 358;
     load();
     render(<TPMappingEditor classId="class-1" subjectId="subject-1" />);
 
@@ -107,5 +133,16 @@ describe("TPMappingEditor", () => {
     expect(within(tRange).getByLabelText("columns.tMax")).toHaveValue("100");
     expect(screen.getByRole("textbox", { name: "columns.exportCode" })).toHaveValue("TP-A");
     expect(screen.getByRole("button", { name: "save" })).toHaveClass("w-full");
+  });
+
+  it("switches to cards when the sidebar leaves a tablet-width window too little room", () => {
+    // An 800px window beside the desktop sidebar leaves the card about 510px.
+    layout.width = 510;
+    load();
+    render(<TPMappingEditor classId="class-1" subjectId="subject-1" />);
+
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "columns.tRange" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "save" })).toBeInTheDocument();
   });
 });

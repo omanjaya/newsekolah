@@ -67,8 +67,14 @@ describe("PolicyDialog", () => {
     const weights = screen.getByRole("group", { name: "groups.weights" });
     expect(within(weights).getAllByRole("spinbutton")).toHaveLength(4);
 
+    // Each group's name is a section heading, not one more field label.
+    expect(screen.getByRole("heading", { level: 3, name: "groups.attendance" })).toHaveClass(
+      "text-heading",
+    );
+    expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(6);
+
     // The school-day window stands alone, outside every group.
     const window = screen.getByLabelText(/fields\.window_days/);
-    expect(window.closest("fieldset")).toBeNull();
+    expect(window.closest('[role="group"]')).toBeNull();
   });
 });

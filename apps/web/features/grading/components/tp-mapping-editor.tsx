@@ -17,7 +17,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-  useMediaQuery,
+  useContainerMinWidth,
   useToast,
 } from "@newsekolah/ui";
 import { Trash2 } from "lucide-react";
@@ -43,6 +43,15 @@ interface RowState {
   t_min: string;
   t_max: string;
 }
+
+/**
+ * The editor width (CSS px) from which the five-column table fits without
+ * a sideways scroll, measured on its widest row: one with a saved mapping,
+ * whose actions cell holds Hapus (icon and label) beside Simpan. That row
+ * is about 790px wide with the fixed-width inputs; a row without a mapping
+ * is about 690px. Narrower, each component gets its own card.
+ */
+const TABLE_MIN_WIDTH = 800;
 
 function emptyRow(): RowState {
   return { export_code: "", r_min: "", r_max: "", t_min: "", t_max: "" };
@@ -120,9 +129,10 @@ interface RowProps {
  * Owns the row inputs for one class-subject-term. Keyed by that scope at
  * the call site, so switching term remounts it with a fresh initial state
  * instead of an effect resynchronizing local state from the loaded data.
- * A wide screen gets one table row per component; a phone gets one card
- * per component, so the T range and the row's own Simpan never sit behind
- * a sideways scroll.
+ * A wide editor gets one table row per component; a narrow one (a phone,
+ * or a tablet-width window beside the sidebar) gets one card per
+ * component, so the T range and the row's own Simpan never sit behind a
+ * sideways scroll. The switch follows the editor's own width.
  */
 function TPMappingRows({
   components,
@@ -136,7 +146,10 @@ function TPMappingRows({
   const apiErrorMessage = useApiErrorMessage();
   const save = useSaveTPMappingMutation();
   const remove = useDeleteTPMappingMutation();
-  const isDesktop = useMediaQuery("(min-width: 768px)");
+  // The table switches on the room the editor really has, not the
+  // viewport: with the desktop sidebar an 800px window leaves the card
+  // about 510px, well short of the table's natural width.
+  const [containerRef, isWide] = useContainerMinWidth(TABLE_MIN_WIDTH);
 
   const mappingByComponent = new Map(mappings.map((m) => [m.component_id, m]));
   const [rows, setRows] = useState<Record<string, RowState>>(() => {
@@ -214,33 +227,33 @@ function TPMappingRows({
     },
   });
 
-  if (!isDesktop) {
-    return (
-      <div className="flex flex-col gap-3">
-        {components.map((component) => (
-          <TPMappingCard key={component.id} {...rowProps(component)} />
-        ))}
-      </div>
-    );
-  }
-
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>{t("columns.component")}</TableHead>
-          <TableHead>{t("columns.exportCode")}</TableHead>
-          <TableHead>{t("columns.rRange")}</TableHead>
-          <TableHead>{t("columns.tRange")}</TableHead>
-          <TableHead>{t("columns.actions")}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {components.map((component) => (
-          <TPMappingTableRow key={component.id} {...rowProps(component)} />
-        ))}
-      </TableBody>
-    </Table>
+    <div ref={containerRef} className="w-full min-w-0">
+      {isWide ? (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("columns.component")}</TableHead>
+              <TableHead>{t("columns.exportCode")}</TableHead>
+              <TableHead>{t("columns.rRange")}</TableHead>
+              <TableHead>{t("columns.tRange")}</TableHead>
+              <TableHead>{t("columns.actions")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {components.map((component) => (
+              <TPMappingTableRow key={component.id} {...rowProps(component)} />
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {components.map((component) => (
+            <TPMappingCard key={component.id} {...rowProps(component)} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
