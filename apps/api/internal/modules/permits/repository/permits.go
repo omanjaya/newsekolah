@@ -661,6 +661,10 @@ func (r *Repository) ListExitPermitsForApproval(ctx context.Context, tenantID, c
 	}
 	out := make([]service.ExitPermitReviewItem, len(rows))
 	for i, row := range rows {
+		stage, err := optionalStage(row.CurrentStage)
+		if err != nil {
+			return nil, fmt.Errorf("decode exit permit current stage: %w", err)
+		}
 		out[i] = service.ExitPermitReviewItem{
 			ExitPermit: domain.ExitPermit{
 				InstanceID: row.InstanceID, TenantID: row.TenantID, Destination: row.Destination,
@@ -669,10 +673,24 @@ func (r *Repository) ListExitPermitsForApproval(ctx context.Context, tenantID, c
 				SecurityUserID: pdatabase.UUIDOrNil(row.SecurityUserID), StudentNameSnapshot: row.StudentNameSnapshot, ClassNameSnapshot: row.ClassNameSnapshot,
 			},
 			SubjectUserID: row.SubjectUserID, ClassID: pdatabase.UUIDOrNil(row.ClassID),
-			CurrentStageIndex: int(row.CurrentStageIndex), Status: domain.Status(row.Status), OpenedAt: pdatabase.TimeOrZero(row.OpenedAt),
+			CurrentStageIndex: int(row.CurrentStageIndex), CurrentStage: stage,
+			Status: domain.Status(row.Status), OpenedAt: pdatabase.TimeOrZero(row.OpenedAt),
 		}
 	}
 	return out, nil
+}
+
+// optionalStage decodes a `stages -> index` lookup, which is SQL null when
+// the index is past the last stage.
+func optionalStage(raw []byte) (*domain.Stage, error) {
+	if len(raw) == 0 || string(raw) == "null" {
+		return nil, nil
+	}
+	var stage domain.Stage
+	if err := jsonUnmarshal(raw, &stage); err != nil {
+		return nil, err
+	}
+	return &stage, nil
 }
 
 func (r *Repository) ListExitPermitsForYear(ctx context.Context, tenantID, academicYearID uuid.UUID) ([]service.ExitPermitReportRow, error) {

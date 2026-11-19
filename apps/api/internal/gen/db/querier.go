@@ -1123,6 +1123,8 @@ type Querier interface {
 	// plus security, who see every 'approved' permit awaiting their gate scan.
 	// sqlc.arg('today') is the tenant-local date (s.tenantNow), not
 	// current_date: the Postgres session timezone is never set per tenant.
+	// current_stage is null once every stage has passed (an approved permit
+	// waiting at the gate): the index is then past the last stage.
 	ListExitPermitsForApproval(ctx context.Context, arg ListExitPermitsForApprovalParams) ([]ListExitPermitsForApprovalRow, error)
 	ListExitPermitsForReport(ctx context.Context, arg ListExitPermitsForReportParams) ([]ListExitPermitsForReportRow, error)
 	// The guard's lookup list: everyone expected on a given day, soonest first.

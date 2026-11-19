@@ -233,8 +233,14 @@ func toAPILateArrival(d service.LateArrivalDetail) api.LateArrivalDetail {
 }
 
 func toAPIExitPermitSummary(i service.ExitPermitReviewItem) api.ExitPermitSummary {
+	var stage *api.WorkflowStage
+	if i.CurrentStage != nil {
+		s := toAPIStage(*i.CurrentStage)
+		stage = &s
+	}
 	return api.ExitPermitSummary{
-		InstanceId: i.InstanceID, StudentUserId: i.SubjectUserID, ClassId: uuidPtr(i.ClassID), Status: api.WorkflowStatus(i.Status),
+		CurrentStage: stage,
+		InstanceId:   i.InstanceID, StudentUserId: i.SubjectUserID, ClassId: uuidPtr(i.ClassID), Status: api.WorkflowStatus(i.Status),
 		CurrentStageIndex: i.CurrentStageIndex, Destination: i.Destination, OpenedAt: i.OpenedAt,
 		StudentName: strPtr(i.StudentNameSnapshot), ClassName: strPtr(i.ClassNameSnapshot),
 	}

@@ -92,8 +92,11 @@ type ExitPermitReviewItem struct {
 	SubjectUserID     uuid.UUID
 	ClassID           uuid.NullUUID
 	CurrentStageIndex int
-	Status            domain.Status
-	OpenedAt          time.Time
+	// CurrentStage is the stage the permit waits at, so an approver's
+	// sheet can name it; nil once every stage has passed.
+	CurrentStage *domain.Stage
+	Status       domain.Status
+	OpenedAt     time.Time
 }
 
 // LeaveRequestItem is a leave request joined with its workflow state.

@@ -26245,6 +26245,8 @@ components:
           $ref: "#/components/schemas/WorkflowStatus"
         current_stage_index:
           type: integer
+        current_stage:
+          $ref: "#/components/schemas/WorkflowStage"
         destination:
           type: string
         student_name:

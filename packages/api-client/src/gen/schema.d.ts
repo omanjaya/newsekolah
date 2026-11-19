@@ -11229,6 +11229,7 @@ export interface components {
             class_id?: string;
             status: components["schemas"]["WorkflowStatus"];
             current_stage_index: number;
+            current_stage?: components["schemas"]["WorkflowStage"];
             destination: string;
             student_name?: string;
             class_name?: string;

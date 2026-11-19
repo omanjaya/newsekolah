@@ -150,7 +150,8 @@ func (q *Queries) GetExitPermit(ctx context.Context, arg GetExitPermitParams) (E
 }
 
 const listExitPermitsForApproval = `-- name: ListExitPermitsForApproval :many
-select ep.instance_id, ep.tenant_id, ep.destination, ep.start_period_id, ep.end_period_id, ep.issued_at, ep.gate_token_id, ep.exited_at, ep.security_user_id, ep.student_name_snapshot, ep.class_name_snapshot, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id
+select ep.instance_id, ep.tenant_id, ep.destination, ep.start_period_id, ep.end_period_id, ep.issued_at, ep.gate_token_id, ep.exited_at, ep.security_user_id, ep.student_name_snapshot, ep.class_name_snapshot, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id,
+  (wd.stages -> wi.current_stage_index)::jsonb as current_stage
 from exit_permits ep
 join workflow_instances wi on wi.id = ep.instance_id
 join workflow_definitions wd on wd.id = wi.definition_id
@@ -222,6 +223,7 @@ type ListExitPermitsForApprovalRow struct {
 	CurrentStageIndex   int32              `json:"current_stage_index"`
 	ClassID             pgtype.UUID        `json:"class_id"`
 	SubjectUserID       uuid.UUID          `json:"subject_user_id"`
+	CurrentStage        []byte             `json:"current_stage"`
 }
 
 // Missing feature (docs/analysis/backend-inventory.md 1.15): a queue for
@@ -230,6 +232,8 @@ type ListExitPermitsForApprovalRow struct {
 // plus security, who see every 'approved' permit awaiting their gate scan.
 // sqlc.arg('today') is the tenant-local date (s.tenantNow), not
 // current_date: the Postgres session timezone is never set per tenant.
+// current_stage is null once every stage has passed (an approved permit
+// waiting at the gate): the index is then past the last stage.
 func (q *Queries) ListExitPermitsForApproval(ctx context.Context, arg ListExitPermitsForApprovalParams) ([]ListExitPermitsForApprovalRow, error) {
 	rows, err := q.db.Query(ctx, listExitPermitsForApproval, arg.TenantID, arg.UserID, arg.Today)
 	if err != nil {
@@ -256,6 +260,7 @@ func (q *Queries) ListExitPermitsForApproval(ctx context.Context, arg ListExitPe
 			&i.CurrentStageIndex,
 			&i.ClassID,
 			&i.SubjectUserID,
+			&i.CurrentStage,
 		); err != nil {
 			return nil, err
 		}
