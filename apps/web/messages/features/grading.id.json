@@ -88,6 +88,7 @@
       "component": "Per komponen",
       "student": "Per siswa",
       "componentPicker": "Pilih komponen penilaian",
+      "componentPickerMissing": "Nilai kosong per komponen: {list}",
       "componentShort": "Komponen",
       "studentShort": "Siswa"
     },

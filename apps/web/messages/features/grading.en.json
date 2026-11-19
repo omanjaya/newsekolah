@@ -88,6 +88,7 @@
       "component": "By component",
       "student": "By student",
       "componentPicker": "Choose an assessment component",
+      "componentPickerMissing": "Missing scores per component: {list}",
       "componentShort": "Component",
       "studentShort": "Student"
     },
