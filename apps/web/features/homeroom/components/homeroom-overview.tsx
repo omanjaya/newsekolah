@@ -231,10 +231,11 @@ export function HomeroomOverview({
           )}
         </StatGrid>
 
-        {/* Out of term the cards could only repeat the refusal, worded as
-            "only homeroom teachers can see this", which is wrong for this
-            reader. */}
-        {!outOfTerm && (
+        {/* Out of term the day's cards could only repeat the refusal,
+            worded as "only homeroom teachers can see this", which is wrong
+            for this reader. The leave queue does not depend on the day, so
+            its card stays, with its own retry when it fails. */}
+        {(!outOfTerm || showLeave) && (
           <HomeroomDashboard
             attentionRows={attentionRows}
             disciplineRows={disciplineRows}
@@ -245,6 +246,7 @@ export function HomeroomOverview({
             leaveFailure={showLeave ? readFailure(leaveQueue) : null}
             showLeave={showLeave}
             showDiscipline={showDiscipline}
+            datedHidden={outOfTerm}
           />
         )}
       </div>
