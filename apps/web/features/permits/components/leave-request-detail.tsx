@@ -17,13 +17,11 @@ import {
   useToast,
 } from "@newsekolah/ui";
 import { Download, Upload } from "lucide-react";
-import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 import { useRef, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
-import { isNotFoundError } from "../../../lib/api/not-found";
 import { useStuckToBottom } from "../../../lib/hooks/use-stuck-to-bottom";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { compressImage } from "../../../lib/media/compress-image";
@@ -39,6 +37,7 @@ import {
 } from "../api";
 import { countDays, formatDayRange } from "../lib/permit-dates";
 
+import { isLeaveRequestMissing } from "./leave-request-not-found";
 import { WorkflowStepper } from "./workflow-stepper";
 
 /**
@@ -73,24 +72,14 @@ export function LeaveRequestDetail({
   if (isLoading) return <SkeletonDetail rows={4} />;
   // A malformed id (a truncated link) is as missing as an unknown one, and
   // a request the viewer may not see reads the same, so no id is confirmed.
-  if (isNotFoundError(error) || (error instanceof ApiError && error.status === 403)) {
-    // The full page offers a way on: a reviewer to the leave queue, anyone
-    // else to their own requests. The inbox dialog just closes.
-    const reviewer = canReview || canIssue;
+  // On the full page, LeaveRequestPageView shows the shared not-found page
+  // before this renders; a dialog says so in place and just closes.
+  if (isLeaveRequestMissing(error)) {
     return (
       <EmptyState
         icon={<domainIcons.leave aria-hidden="true" />}
         title={t("notFoundTitle")}
         description={t("notFoundBody")}
-        action={
-          layout === "page" ? (
-            <Button asChild variant="secondary">
-              <Link href={reviewer ? "/inbox?type=leave" : "/leave-requests"}>
-                {reviewer ? t("issuerOpenInbox") : t("notFoundBackToMine")}
-              </Link>
-            </Button>
-          ) : undefined
-        }
       />
     );
   }

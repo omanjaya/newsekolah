@@ -10,23 +10,21 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  EmptyState,
   Field,
   FormActions,
   Progress,
   SkeletonDetail,
   Textarea,
-  domainIcons,
   useToast,
 } from "@newsekolah/ui";
 import { Pencil } from "lucide-react";
-import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { RecordNotFoundPage } from "../../../components/record-not-found";
 import { isNotFoundError } from "../../../lib/api/not-found";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
@@ -104,23 +102,16 @@ export function ObservationDetailView({ observationId }: { observationId: string
   const pendingTrail = [canViewAll ? trail.root : ownRoot, { label: t("title") }];
 
   // An unknown or malformed id is a missing record, not a failure to
-  // retry: say so and lead back to where observations are listed.
+  // retry: the shared not-found page (its title is also the tab's), leading
+  // back to where observations are listed.
   if (observation.isError && !observation.data && isNotFoundError(observation.error)) {
     return (
-      <AppPage variant="narrow" nav={false} breadcrumb={pendingTrail} title={t("title")}>
-        <EmptyState
-          icon={<domainIcons.supervision aria-hidden="true" />}
-          title={t("notFoundTitle")}
-          description={t("notFoundBody")}
-          action={
-            <Button asChild variant="secondary">
-              <Link href={canViewAll ? CYCLES_HREF : ownRoot.href}>
-                {canViewAll ? t("backToCycles") : t("backToMyReport")}
-              </Link>
-            </Button>
-          }
-        />
-      </AppPage>
+      <RecordNotFoundPage
+        title={t("notFoundTitle")}
+        description={t("notFoundBody")}
+        backHref={canViewAll ? CYCLES_HREF : ownRoot.href}
+        backLabel={canViewAll ? t("backToCycles") : t("backToMyReport")}
+      />
     );
   }
 

@@ -128,6 +128,6 @@ describe("BillsListView paging", () => {
       expect.objectContaining({ status: "paid" }),
       { limit: 50, offset: 0 },
     );
-    expect(new URLSearchParams(window.location.search).get("page")).toBe("1");
+    expect(new URLSearchParams(window.location.search).get("page")).toBeNull();
   });
 });

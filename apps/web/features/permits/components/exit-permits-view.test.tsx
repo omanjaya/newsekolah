@@ -229,12 +229,13 @@ describe("ExitPermitsView history rows", () => {
 
   // A permit that never reached the gate carries the longest second fact
   // ("Diajukan pukul 15.49") beside the longest statuses ("Kedaluwarsa",
-  // "Dibatalkan"). Neither the day nor the status may be cut at 320px:
-  // out of room, the status moves under the text (ListRow keepMetaWhole).
+  // "Dibatalkan"). Neither the day, the request time nor the status may be
+  // cut at 320-390px: out of room, the status moves under the text
+  // (ListRow keepMetaWhole), and the destination takes up to two lines.
   it.each(["rejected", "expired"] as const)(
-    "keeps the day and the %s status whole on a row with the request time",
+    "keeps the day, the request time and the %s status whole",
     (status) => {
-      mocks.items = [permit("p0", status, { destination: "Apotek" })];
+      mocks.items = [permit("p0", status, { destination: "Puskesmas, kontrol gigi" })];
       render(<ExitPermitsView />);
 
       const [row] = screen.getAllByRole("listitem");
@@ -242,14 +243,20 @@ describe("ExitPermitsView history rows", () => {
       const body = row?.querySelector("[data-slot=list-row-body]");
       expect(body).toHaveClass("flex-wrap");
 
-      // Only the day sets the text's floor; the request time does not.
-      const day = screen.getByText("Rab, 18 Nov");
-      expect(day).toHaveClass("whitespace-nowrap");
-      expect(day.parentElement).toHaveAttribute("data-meta-fact", "kept");
-      expect(screen.getByText("openedAt 10.00").parentElement).toHaveAttribute(
-        "data-meta-fact",
-        "sized",
-      );
+      // The destination may wrap to a second line instead of "Puskesmas…".
+      const title = screen.getByRole("button", { name: "Puskesmas, kontrol gigi" });
+      expect(title).toHaveClass("line-clamp-2");
+
+      // Both facts set the text's floor: each is one whole box, so the
+      // column is never narrower than the request time beside the badge.
+      const column = title.closest("p")?.parentElement;
+      expect(column).toHaveClass("w-min", "grow");
+      for (const fact of ["Rab, 18 Nov", "openedAt 10.00"]) {
+        const box = screen.getByText(fact).parentElement;
+        expect(box).toHaveAttribute("data-meta-fact");
+        expect(box).toHaveClass("inline-flex");
+        expect(box?.className).not.toMatch(/grid/);
+      }
 
       // The status badge sits in the wrapping line and has no leave to shrink.
       const badge = row?.querySelector<HTMLElement>(

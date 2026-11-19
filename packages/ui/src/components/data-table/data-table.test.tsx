@@ -508,6 +508,83 @@ describe("DataTable", () => {
     });
   });
 
+  // A server-mode page (/school/users) clears its own search state from the
+  // empty state's "Hapus semua filter": every row came back while the box
+  // still read "zzzqqq", and the keyboard's focus was handed into it.
+  describe("a search set from outside the box", () => {
+    /** Search in the address: a value lands a moment after it is set. */
+    function ServerSearchHarness() {
+      const [search, setSearch] = useState("");
+      const setSearchLater = (value: string) => {
+        setTimeout(() => {
+          setSearch(value);
+        }, 0);
+      };
+      const rows = ROWS.filter((row) => row.name.toLowerCase().includes(search.toLowerCase()));
+      return (
+        <DataTable
+          data={rows}
+          columns={columns}
+          rowCount={rows.length}
+          pagination={{ pageIndex: 0, pageSize: 10 }}
+          onPaginationChange={() => undefined}
+          globalFilter={search}
+          onGlobalFilterChange={setSearchLater}
+          emptyState={
+            <FilteredEmptyState
+              searchable
+              onReset={() => {
+                setSearchLater("");
+              }}
+            />
+          }
+        />
+      );
+    }
+
+    async function settle(ms: number) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, ms));
+      });
+    }
+
+    it("clears the box when the page clears its search, keeping focus in it", async () => {
+      const user = userEvent.setup();
+      const { container } = render(<ServerSearchHarness />);
+      const search = screen.getByRole("searchbox", { name: "Cari" });
+      await user.type(search, "zzzqqq");
+      await settle(350);
+      const slot = container.querySelector<HTMLElement>("[data-slot=data-table-empty]");
+      if (!slot) throw new Error("no empty state");
+      within(slot).getByRole("button", { name: "Hapus semua filter" }).focus();
+      await user.keyboard("{Enter}");
+      await settle(0);
+
+      expect(container.querySelector("[data-slot=data-table-empty]")).toBeNull();
+      expect(screen.getAllByText("Siti Aminah").length).toBeGreaterThan(0);
+      // The same box, emptied in place, with the keyboard's focus in it.
+      expect(screen.getByRole("searchbox", { name: "Cari" })).toBe(search);
+      expect(search).toHaveValue("");
+      expect(search).toHaveFocus();
+    });
+
+    it("leaves what is typed alone when its own applied search comes back late", async () => {
+      const user = userEvent.setup();
+      render(<ServerSearchHarness />);
+      const search = screen.getByRole("searchbox", { name: "Cari" });
+      await user.type(search, "sit");
+      // The debounce applies "sit"; before the address echoes it back, the
+      // reader has typed on.
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        fireEvent.change(search, { target: { value: "siti" } });
+      });
+      await settle(0);
+
+      expect(search).toHaveValue("siti");
+    });
+  });
+
   it("provides select all for mobile cards", () => {
     render(<SelectionHarness />);
     expect(screen.getAllByLabelText("Pilih semua baris").length).toBeGreaterThan(1);

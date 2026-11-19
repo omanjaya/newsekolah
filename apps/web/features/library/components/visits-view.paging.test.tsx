@@ -100,6 +100,22 @@ describe("VisitsView paging", () => {
       limit: 50,
       offset: 0,
     });
-    expect(new URLSearchParams(window.location.search).get("page")).toBe("1");
+    // Back on the first page the param is gone, not `?page=1`.
+    expect(new URLSearchParams(window.location.search).has("page")).toBe(false);
+  });
+
+  // Removing the date pill ended on /library/visits?page=1, not a clean URL.
+  it("leaves a clean URL when the date range is cleared back to the page's period", async () => {
+    window.history.replaceState(null, "", "/library/visits?from=2026-09-05&to=2026-09-10");
+    const user = userEvent.setup();
+    render(<VisitsView />);
+    expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith("2026-09-05", "2026-09-10", {
+      limit: 50,
+      offset: 0,
+    });
+
+    await user.click(screen.getByRole("button", { name: "Hapus filter dateRange" }));
+
+    expect(window.location.pathname + window.location.search).toBe("/library/visits");
   });
 });

@@ -28,7 +28,20 @@ vi.mock("../api", () => ({
           refetch: vi.fn(),
         }
       : { data: report(), isLoading: false, isError: false, error: null, refetch: vi.fn() },
+  useSupervisionCycleQuery: (cycleId: string, enabled: boolean) => {
+    cycleCheck.calls.push({ cycleId, enabled });
+    return enabled ? cycleCheck.result : { isPending: true, isError: false, error: null };
+  },
   downloadTeacherSupervisionReport: vi.fn(),
+}));
+
+/** The cycle read the not-found branch makes when the report never looked at the cycle. */
+const cycleCheck = vi.hoisted<{
+  result: { isPending: boolean; isError: boolean; error: unknown };
+  calls: { cycleId: string; enabled: boolean }[];
+}>(() => ({
+  result: { isPending: false, isError: false, error: null },
+  calls: [],
 }));
 
 const cycle = {
@@ -48,6 +61,8 @@ const cycle = {
 afterEach(() => {
   cleanup();
   reportError.current = null;
+  cycleCheck.result = { isPending: false, isError: false, error: null };
+  cycleCheck.calls = [];
 });
 
 describe("TeacherSupervisionReportView", () => {
@@ -65,6 +80,48 @@ describe("TeacherSupervisionReportView", () => {
       "/supervision/cycles/c1/report",
     );
     expect(screen.queryByRole("button", { name: "actions.retry" })).not.toBeInTheDocument();
+    // The cycle was read first, since the 400 never looked at it.
+    expect(cycleCheck.calls).toContainEqual({ cycleId: "c1", enabled: true });
+  });
+
+  // The API rejects a malformed teacher id before it looks the cycle up, so
+  // an unknown cycle with "abc" as the teacher read as the teacher's
+  // not-found page, linking back to a cycle that does not exist.
+  it("shows the cycle's not-found page for a malformed teacher id under an unknown cycle", () => {
+    const unknownCycle = "3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d";
+    reportError.current = new ApiError({
+      status: 400,
+      code: "VALIDATION_FAILED",
+      message: "invalid",
+      details: [{ field: "teacherId", code: "INVALID_FORMAT" }],
+    });
+
+    // While the cycle is read, neither page (nor a retry) is shown yet.
+    cycleCheck.result = { isPending: true, isError: false, error: null };
+    render(<TeacherSupervisionReportView cycleId={unknownCycle} teacherId="abc" />);
+    expect(cycleCheck.calls).toContainEqual({ cycleId: unknownCycle, enabled: true });
+    expect(screen.queryByRole("heading", { name: "notFoundTitle" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "actions.retry" })).not.toBeInTheDocument();
+
+    cleanup();
+    cycleCheck.result = {
+      isPending: false,
+      isError: true,
+      error: new ApiError({ status: 404, code: "SUPERVISION_CYCLE_NOT_FOUND", message: "nf" }),
+    };
+    render(<TeacherSupervisionReportView cycleId={unknownCycle} teacherId="abc" />);
+    expect(screen.getByRole("link", { name: "backToCycles" })).toHaveAttribute(
+      "href",
+      "/supervision/cycles",
+    );
+    expect(screen.queryByRole("link", { name: "backToResults" })).not.toBeInTheDocument();
+  });
+
+  it("does not read the cycle again when a 404 for the teacher already found it", () => {
+    reportError.current = new ApiError({ status: 404, code: "NOT_FOUND", message: "nf" });
+    render(<TeacherSupervisionReportView cycleId="c1" teacherId="t9" />);
+    expect(screen.getByRole("link", { name: "backToResults" })).toBeInTheDocument();
+    expect(cycleCheck.calls.every((call) => !call.enabled)).toBe(true);
   });
 
   it("shows the cycle's not-found page when the cycle is what is missing", () => {

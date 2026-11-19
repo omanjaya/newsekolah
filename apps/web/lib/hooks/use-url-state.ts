@@ -14,11 +14,16 @@ import { writeUrlHistory } from "./url-history";
  * browser still holds the old query during that render. Writes go through
  * the history API, which Next patches to feed `useSearchParams()`, and the
  * router's own popstate handling covers back and forward.
+ *
+ * `omitDefault` drops the key whenever the default is written (a page
+ * number back at 1), so the URL stays clean; leave it off where the
+ * default can change under a shared link (the current cycle or year).
  */
 export function useUrlState<T extends string>(
   key: string,
   values: readonly T[] | ((value: string) => boolean),
   defaultValue: T,
+  { omitDefault = false }: { omitDefault?: boolean } = {},
 ): readonly [T, (value: SetStateAction<T>) => void, (value: SetStateAction<T>) => void] {
   const searchParams = useSearchParams();
   // Next applies a history write to `useSearchParams()` in a transition;
@@ -40,13 +45,14 @@ export function useUrlState<T extends string>(
       if (!isValid(next)) return;
       // An empty choice with an empty default is the unset filter: drop the
       // key instead of leaving a bare `key=` in a shared link.
-      if (next === "" && defaultValue === "") url.searchParams.delete(key);
-      else url.searchParams.set(key, next);
+      if (next === defaultValue && (defaultValue === "" || omitDefault)) {
+        url.searchParams.delete(key);
+      } else url.searchParams.set(key, next);
       if (url.href === window.location.href) return;
       writeUrlHistory(url.href, replace ? "replace" : "push");
       refresh((version) => version + 1);
     },
-    [key, values, defaultValue],
+    [key, values, defaultValue, omitDefault],
   );
 
   const setValue = useCallback(

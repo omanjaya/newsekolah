@@ -40,6 +40,7 @@ import { useSession } from "../../../lib/session/session-provider";
 import {
   type TeacherSupervisionReport,
   downloadTeacherSupervisionReport,
+  useSupervisionCycleQuery,
   useTeacherSupervisionReportQuery,
 } from "../api";
 import { averageScore, formatScore } from "../lib/score-format";
@@ -52,6 +53,16 @@ function cycleIsMissing(error: unknown): boolean {
   if (!(error instanceof ApiError)) return false;
   if (error.code === "SUPERVISION_CYCLE_NOT_FOUND") return true;
   return (error.details ?? []).some((detail) => detail.field === "cycleId");
+}
+
+/**
+ * Whether a not-found report read says nothing about the cycle: the API
+ * rejects a malformed teacher id (a 400) before it looks the cycle up, so a
+ * well-formed but unknown cycle id passes unnoticed there. A 404 for the
+ * teacher comes after the cycle was found.
+ */
+function cycleUnchecked(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 400 && !cycleIsMissing(error);
 }
 
 /**
@@ -184,12 +195,22 @@ export function TeacherSupervisionReportView({
     teacherId,
   );
   const [dialogOpen, setDialogOpen] = useState(false);
+  const notFound = !hideHeader && isError && !data && isNotFoundError(error);
+  // The teacher's not-found page leads back to the cycle's results, so the
+  // cycle must exist first: when the report read never looked at it, the
+  // cycle itself is read before either page is chosen.
+  const checkCycle = notFound && cycleUnchecked(error);
+  const cycleCheck = useSupervisionCycleQuery(cycleId, checkCycle);
+  const cycleChecking = checkCycle && cycleCheck.isPending;
+  const cycleMissing =
+    cycleIsMissing(error) ||
+    (checkCycle && cycleCheck.isError && isNotFoundError(cycleCheck.error));
 
   // On its own route, an unknown or malformed id is a missing record, not a
   // failure to retry: the cycle's not-found page when the cycle is what is
   // missing, otherwise this teacher's, leading back to the cycle's results.
-  if (!hideHeader && isError && !data && isNotFoundError(error)) {
-    return cycleIsMissing(error) ? (
+  if (notFound && !cycleChecking) {
+    return cycleMissing ? (
       <CycleNotFoundPage />
     ) : (
       <RecordNotFoundPage
@@ -201,7 +222,7 @@ export function TeacherSupervisionReportView({
   }
 
   let content: ReactElement;
-  if (isError && !data) {
+  if (isError && !data && !cycleChecking) {
     content = <QueryError retry={() => refetch()} error={error} />;
   } else if (isLoading || !data) {
     content = (

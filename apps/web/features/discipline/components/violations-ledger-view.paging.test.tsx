@@ -87,7 +87,7 @@ describe("ViolationsLedgerView paging", () => {
       expect.objectContaining({ classId: "class-7a" }),
       { limit: 50, offset: 0, search: "" },
     );
-    expect(new URLSearchParams(window.location.search).get("ledger_page")).toBe("1");
+    expect(new URLSearchParams(window.location.search).get("ledger_page")).toBeNull();
   });
 
   it("sends the debounced search and returns to the first page", async () => {
@@ -106,6 +106,6 @@ describe("ViolationsLedgerView paging", () => {
     });
     const params = new URLSearchParams(window.location.search);
     expect(params.get("ledger_q")).toBe("bud");
-    expect(params.get("ledger_page")).toBe("1");
+    expect(params.get("ledger_page")).toBeNull();
   });
 });

@@ -26,12 +26,14 @@ export interface ListRowProps extends Omit<ComponentPropsWithRef<"li">, "title" 
    */
   meta?: ReactNode | readonly ReactNode[];
   /**
-   * Keeps the first fact of an array `meta` (a date) whole, whatever the
-   * locale makes of its length: the row's text never narrows below it, and
-   * when that fact and the trailing slot (a status Badge) cannot both have
-   * their width on one line, the trailing slot moves under the text
-   * instead of either being cut. The other facts and the title take no
-   * part in that width: they wrap or end in an ellipsis as before.
+   * Keeps every fact of an array `meta` (a date, a request time) whole,
+   * whatever the locale makes of their length: the row's text never
+   * narrows below its widest fact (up to the row's own width), and when
+   * that width and the trailing slot (a status Badge) do not fit on one
+   * line, the trailing slot moves under the text instead of a fact or the
+   * badge being cut. The title asks for 8rem there, never for its whole
+   * length: pair it with `titleLines={2}` for a long name. Meant for two or
+   * three short facts: the meta line still holds two lines.
    */
   keepMetaWhole?: boolean;
   /**
@@ -132,43 +134,21 @@ function presentSegments(segments: readonly ReactNode[]): ReactNode[] {
 }
 
 /**
- * The box of one fact. Plain, it shrinks to the row and ends in an
- * ellipsis. `kept` (the first fact under `keepMetaWhole`) never shrinks,
- * so its width is the text column's floor. `sized` (the other facts
- * there) is a grid whose text track is `minmax(0, max-content)`: as wide
- * as its text where that fits, cut to the row where not, yet zero in the
- * column's min-content, so it never claims that floor.
- */
-const FACT_BOX = {
-  plain: "inline-flex max-w-full",
-  kept: "inline-flex",
-  sized: "inline-grid max-w-full grid-cols-[minmax(0,max-content)_auto]",
-} as const;
-
-/**
  * Each fact is its own one-line box: the line wraps between facts, and a
  * fact wider than the row shrinks to it and ends in an ellipsis
  * (`truncate` on the fact, bottom-aligned to sit on the line). The " ·"
  * after a fact rides in the fact's box and never shrinks, so a wrapped
  * line ends in the separator instead of the next line opening with it.
  */
-function MetaSegments({
-  segments,
-  keepFirstWhole,
-}: {
-  segments: readonly ReactNode[];
-  keepFirstWhole: boolean;
-}) {
+function MetaSegments({ segments }: { segments: readonly ReactNode[] }) {
   const present = presentSegments(segments);
   return present.map((segment, index) => {
     const last = index === present.length - 1;
-    const kept = keepFirstWhole && index === 0;
-    const box = kept ? "kept" : keepFirstWhole ? "sized" : "plain";
     return (
       // The facts are a fixed, ordered list for this row; the index is their identity.
       <Fragment key={index}>
-        <span data-meta-fact={box} className={cn(FACT_BOX[box], "align-bottom")}>
-          <span className={kept ? "whitespace-nowrap" : "min-w-0 truncate"}>{segment}</span>
+        <span data-meta-fact="" className="inline-flex max-w-full align-bottom">
+          <span className="min-w-0 truncate">{segment}</span>
           {!last && <span className="shrink-0 whitespace-pre"> ·</span>}
         </span>
         {!last && " "}
@@ -205,21 +185,30 @@ export function ListRow({
   const interactive = href !== undefined || onClick !== undefined;
   const showChevron = chevron ?? (interactive && !action && !disabled);
   const rule = "border-b border-line";
-  // Only a list of facts has a first fact to keep.
-  const keepFirstFact = keepMetaWhole && Array.isArray(meta) && hasMeta;
+  // Only a list of facts has facts to keep whole.
+  const keepFacts = keepMetaWhole && Array.isArray(meta) && hasMeta;
 
   const text = (
-    // With `keepMetaWhole` the text is at least as wide as its first fact
-    // (min-content), and that fact alone sets it: the title takes no part
-    // (zero width, stretched to the column), nor do the other facts (see
-    // FACT_BOX), or a long one would claim the row instead.
-    <div className={cn("flex flex-1 flex-col gap-0.5", keepFirstFact ? "min-w-min" : "min-w-0")}>
+    // With `keepMetaWhole` the text asks for its min-content width but
+    // never more than the row, then grows into the rest of its line; where
+    // that width and the trailing slot do not fit side by side, the slot
+    // wraps under the text. The min-content is the widest fact (each fact
+    // is one unbreakable box) or the title's 8rem, whichever is wider: the
+    // title asks for room for a short name (two lines of it with
+    // `titleLines={2}`), never for its whole length, and is stretched back
+    // to the column.
+    <div
+      className={cn(
+        "flex min-w-0 flex-col gap-0.5",
+        keepFacts ? "w-min max-w-full grow" : "flex-1",
+      )}
+    >
       <p
         className={cn(
           "text-fg",
           titleLines === 2 ? "line-clamp-2 [overflow-wrap:anywhere]" : "truncate",
           dense ? "text-label" : "text-body font-semibold",
-          keepFirstFact && "w-0 min-w-full",
+          keepFacts && "w-32 max-w-full min-w-full",
         )}
       >
         {interactive ? (
@@ -242,11 +231,7 @@ export function ListRow({
           id={metaId}
           className={cn("line-clamp-2 text-fg-muted", dense ? "text-caption" : "text-body-sm")}
         >
-          {Array.isArray(meta) ? (
-            <MetaSegments segments={meta} keepFirstWhole={keepFirstFact} />
-          ) : (
-            meta
-          )}
+          {Array.isArray(meta) ? <MetaSegments segments={meta} /> : meta}
         </div>
       )}
     </div>

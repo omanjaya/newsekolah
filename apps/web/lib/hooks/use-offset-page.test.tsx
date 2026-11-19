@@ -31,6 +31,32 @@ describe("useOffsetPage", () => {
       result.current.goPrevious();
     });
     expect(result.current.page).toBe(1);
+    // Page 1 is the list itself: no `?page=1` left behind.
+    expect(window.location.search).toBe("");
+  });
+
+  // Clearing the visits date filter reset the paging and ended on
+  // /library/visits?page=1 instead of a clean /library/visits.
+  it("resets without writing page=1 when no page was in the address", () => {
+    window.history.replaceState(null, "", "/library/visits?from=2026-11-05");
+    const { result } = renderHook(() => useOffsetPage(50));
+
+    act(() => {
+      result.current.resetPage();
+    });
+    expect(window.location.search).toBe("?from=2026-11-05");
+    expect(result.current.page).toBe(1);
+  });
+
+  it("removes the page param when a reset leaves a later page", () => {
+    window.history.replaceState(null, "", "/library/visits?from=2026-11-05&page=3");
+    const { result } = renderHook(() => useOffsetPage(50));
+
+    act(() => {
+      result.current.resetPage();
+    });
+    expect(window.location.search).toBe("?from=2026-11-05");
+    expect(result.current.page).toBe(1);
   });
 
   it("ignores an invalid page param", () => {

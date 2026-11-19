@@ -90,7 +90,7 @@ describe("IssuedLettersPanel paging", () => {
       offset: 0,
       search: "",
     });
-    expect(new URLSearchParams(window.location.search).get("letters_page")).toBe("1");
+    expect(new URLSearchParams(window.location.search).get("letters_page")).toBeNull();
   });
 
   it("sends the debounced search and returns to the first page", async () => {
@@ -109,6 +109,6 @@ describe("IssuedLettersPanel paging", () => {
     });
     const params = new URLSearchParams(window.location.search);
     expect(params.get("letters_q")).toBe("bud");
-    expect(params.get("letters_page")).toBe("1");
+    expect(params.get("letters_page")).toBeNull();
   });
 });

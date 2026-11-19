@@ -92,4 +92,25 @@ describe("useUrlState", () => {
     expect(window.location.search).toBe("?from=2026-11-10");
     expect(result.current[0]).toBe("");
   });
+
+  it("with omitDefault, drops the key when its non-empty default is written", () => {
+    window.history.replaceState(null, "", "/library/visits?page=3&q=ani");
+    const isPage = (value: string) => /^[1-9]\d*$/.test(value);
+    const { result } = renderHook(() => useUrlState("page", isPage, "1", { omitDefault: true }));
+
+    act(() => {
+      result.current[2]("1");
+    });
+    expect(window.location.search).toBe("?q=ani");
+    expect(result.current[0]).toBe("1");
+  });
+
+  it("keeps writing a non-empty default without omitDefault", () => {
+    const { result } = renderHook(() => useUrlState("tab", tabs, "students"));
+
+    act(() => {
+      result.current[1]("students");
+    });
+    expect(window.location.search).toBe("?view=compact&tab=students");
+  });
 });

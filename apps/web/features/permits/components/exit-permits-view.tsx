@@ -231,10 +231,12 @@ function MyExitPermits(): ReactElement {
                         <domainIcons.exitPermit />
                       </IconCircle>
                     }
-                    // Where the student went names the row; the day and the
-                    // gate time (or, before the gate, the request time) say when;
-                    // each wraps whole on a phone, never "keluar" / "15.49".
+                    // Where the student went names the row, on up to two lines
+                    // ("Puskesmas, kontrol gigi" on a 320px phone); the day and
+                    // the gate time (or, before the gate, the request time) say
+                    // when; each wraps whole on a phone, never "keluar" / "15.49".
                     title={inst.destination}
+                    titleLines={2}
                     meta={[
                       formatShortWeekdayDate(inst.opened_at, locale, timeZone, today),
                       inst.exited_at
@@ -245,9 +247,10 @@ function MyExitPermits(): ReactElement {
                             time: formatTime(inst.opened_at, { locale, timeZone }),
                           }),
                     ]}
-                    // The day and the status both stay whole on a 320px phone
-                    // in every locale ("19 Nov 2025" beside "Completed",
-                    // "Kedaluwarsa"): out of room, the status moves under the text.
+                    // The day, the time and the status all stay whole on a
+                    // 320-390px phone in every locale ("Diajukan pukul 15.49"
+                    // beside "Kedaluwarsa"): out of room, the status moves under
+                    // the text instead of a fact ending in an ellipsis.
                     keepMetaWhole
                     trailing={<WorkflowStatusBadge status={inst.status} />}
                     onClick={() => {
