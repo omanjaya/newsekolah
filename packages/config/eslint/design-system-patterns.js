@@ -48,21 +48,25 @@ export const ARBITRARY_FONT_SIZE_SOURCE = String.raw`\btext-\[(?:length:)?(?:\d*
 export const PANEL_RADIUS_SOURCE = String.raw`^(?=[\s\S]*(?:^|[\s:])border(?:\s|$))(?=[\s\S]*(?:^|[\s:])rounded-(?:xs|sm)(?:\s|$))`;
 
 /**
- * `outline-none`, `outline-hidden`, `focus:outline-none`: a class that
- * switches off the base `:focus-visible` ring (packages/ui/src/styles.css).
- * Tailwind's utilities layer beats that base rule, so the control is left
- * with no visible focus at all (WCAG 2.4.7).
+ * `outline-none`, `outline-hidden`, `outline-0`, `focus:outline-none`,
+ * `md:outline-none`, `focus-visible:outline-none`: a class that switches
+ * off the base `:focus-visible` ring (packages/ui/src/styles.css) under any
+ * variant chain. Tailwind's utilities layer beats that base rule, so the
+ * control is left with no visible focus at all (WCAG 2.4.7).
  */
-export const HIDDEN_FOCUS_OUTLINE_SOURCE = String.raw`(?:^|\s)(?:focus:)?outline-(?:none|hidden)(?=\s|$)`;
+export const HIDDEN_FOCUS_OUTLINE_SOURCE = String.raw`(?:^|\s)!?(?:[\w-]+(?:-\[[^\]]*\])?:)*!?outline-(?:none|hidden|0)!?(?=\s|$)`;
 
 /**
  * `focus-visible:outline-2`, `focus-visible:outline-focus-ring`,
- * `has-[input:focus-visible]:outline-2`, `focus-visible:outline-none`: the
- * same class string decides what keyboard focus looks like itself, so a
- * hidden outline next to it is deliberate. An offset alone
- * (`focus-visible:-outline-offset-2`) draws nothing and does not count.
+ * `md:focus-visible:outline-2`, `has-[input:focus-visible]:outline-2`: the
+ * element's own focus-visible (or has-[...]) variant draws a ring, so a
+ * hidden outline next to it is deliberate. It must start the class (after
+ * any plain variants), so `group-focus-visible:outline-2` or
+ * `peer-focus-visible:outline-2`, which style a different element, do not
+ * count. Neither do an offset alone (`focus-visible:-outline-offset-2`) nor
+ * a second hidden outline (`focus-visible:outline-none`), which draw nothing.
  */
-export const FOCUS_OUTLINE_STYLE_SOURCE = String.raw`(?:focus-visible|has-\[[^\]]*\]):outline-(?!offset)`;
+export const FOCUS_OUTLINE_STYLE_SOURCE = String.raw`(?:^|\s)(?:[\w-]+:)*(?:focus-visible|has-\[[^\]]*\]):!?outline-(?!offset|none|hidden|0(?=!|\s|$))`;
 
 /**
  * @param {string} source regex source, no forward slashes

@@ -72,6 +72,14 @@ describe("design-system plugin", () => {
       'const a = "outline-hidden transition-colors";',
       "const a = `rounded-full outline-none ${b}`;",
       'const a = "px-3 focus:outline-none";',
+      'const a = "flex md:outline-none";',
+      'const a = "focus-visible:outline-none px-2";',
+      'const a = "rounded-md outline-0";',
+      'const a = "data-[state=open]:outline-hidden";',
+      'const a = "outline-none peer-focus-visible:outline-2";',
+      'const a = "outline-none group-focus-visible:outline-focus-ring";',
+      'const a = "outline-none focus-visible:outline-none";',
+      'const a = "outline-none focus-visible:outline-0";',
     ])("rejects %s", (code) => {
       expect(ruleIds(code, only("no-hidden-focus-outline"))).toEqual([
         "design-system/no-hidden-focus-outline",
@@ -82,7 +90,9 @@ describe("design-system plugin", () => {
       'const a = <a className="flex rounded-md focus-visible:-outline-offset-2" />;',
       'const a = "outline-none focus-visible:outline-2 focus-visible:outline-focus-ring";',
       'const a = "outline-none has-[input:focus-visible]:outline-2";',
-      'const a = "group pb-2 focus-visible:outline-none";',
+      'const a = "outline-none md:focus-visible:outline-2";',
+      'const a = "outline-0 focus-visible:outline-focus-ring";',
+      'const a = "outline-offset-0 outline-2";',
       'const a = "outline-offset-2 outline-focus-ring";',
     ])("allows %s", (code) => {
       expect(ruleIds(code, only("no-hidden-focus-outline"))).toEqual([]);

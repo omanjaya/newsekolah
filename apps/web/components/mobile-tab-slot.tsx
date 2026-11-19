@@ -146,6 +146,7 @@ export function TabLink({
  * the raised accent button already makes the centre the loudest thing in
  * the bar, and a heavier, darker label read as the selected tab.
  */
+// eslint-disable-next-line design-system/no-hidden-focus-outline -- CENTRE_BUTTON draws the ring through group-focus-visible:outline-*.
 const CENTRE_SLOT = cn(SLOT_BASE, "group justify-end pb-2 focus-visible:outline-none");
 
 const CENTRE_BUTTON =
