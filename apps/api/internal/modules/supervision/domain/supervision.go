@@ -19,6 +19,7 @@ var (
 	ErrScheduledAlreadyDone = errors.New("scheduled observation already completed")
 	ErrObservationNotFound  = errors.New("observation not found")
 	ErrObservationForbidden = errors.New("observation not visible to this user")
+	ErrTeacherNotFound      = errors.New("teacher not found")
 	ErrScoreCountMismatch   = errors.New("scores must cover every criterion exactly once")
 	ErrScoreOutOfRange      = errors.New("score outside the instrument's scale")
 	ErrLessonNotResolved    = errors.New("scheduled lesson could not be resolved")

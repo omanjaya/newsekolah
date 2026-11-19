@@ -92,4 +92,9 @@ func TestOwnReaderReadsOnlyOwnSupervision(t *testing.T) {
 	require.NoError(t, err)
 	_, err = svc.GetObservation(ctx, tenantID, observationID, schoolWide)
 	require.NoError(t, err)
+
+	// A teacher id the school does not have is a missing record (a 404 the
+	// web shows as its not-found page), not an internal error.
+	_, err = svc.TeacherReport(ctx, tenantID, cycleID, uuid.New(), schoolWide)
+	require.ErrorIs(t, err, domain.ErrTeacherNotFound)
 }

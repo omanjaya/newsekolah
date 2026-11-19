@@ -37,6 +37,8 @@ type Repository interface {
 	ListObservationsForCycle(ctx context.Context, tenantID, cycleID uuid.UUID) ([]domain.Observation, error)
 
 	HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string, today time.Time) (bool, error)
+	// TeacherName returns domain.ErrTeacherNotFound for a user id the
+	// tenant does not have.
 	TeacherName(ctx context.Context, tenantID, teacherUserID uuid.UUID) (string, error)
 	// GetTenantTimezone resolves the tenant's configured IANA timezone, for
 	// HasActiveDuty's tenant-local "today" (tenantNow, see tenant.go).

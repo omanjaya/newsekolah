@@ -232,6 +232,9 @@ func (r *Repository) GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) 
 
 func (r *Repository) TeacherName(ctx context.Context, tenantID, teacherUserID uuid.UUID) (string, error) {
 	name, err := r.queries(ctx).SupervisionTeacherName(ctx, db.SupervisionTeacherNameParams{TenantID: tenantID, ID: teacherUserID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", domain.ErrTeacherNotFound
+	}
 	if err != nil {
 		return "", fmt.Errorf("teacher name: %w", err)
 	}

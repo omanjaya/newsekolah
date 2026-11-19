@@ -79,6 +79,7 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrScheduledAlreadyDone: httpx.ErrSupervisionScheduledAlreadyDone,
 	domain.ErrObservationNotFound:  httpx.ErrSupervisionObservationNotFound,
 	domain.ErrObservationForbidden: httpx.ErrSupervisionObservationForbidden,
+	domain.ErrTeacherNotFound:      httpx.ErrNotFound,
 	domain.ErrScoreCountMismatch:   httpx.ErrSupervisionScoreMismatch,
 	domain.ErrScoreOutOfRange:      httpx.ErrSupervisionScoreOutOfRange,
 	domain.ErrLessonNotResolved:    httpx.ErrSupervisionLessonNotResolved,
