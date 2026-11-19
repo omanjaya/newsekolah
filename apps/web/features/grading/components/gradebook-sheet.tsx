@@ -41,7 +41,7 @@ import {
   gradebookTuntasRate,
   gradebookUngradedCount,
 } from "../lib/gradebook-stats";
-import type { StarBalances } from "../lib/star-balances";
+import { type StarBalances, starBalanceOf } from "../lib/star-balances";
 
 import { ComponentDialog } from "./component-dialog";
 import { GradebookExportScopePicker } from "./gradebook-export-scope-picker";
@@ -366,7 +366,7 @@ export function GradebookSheet({
           studentName={starTarget.name}
           classId={sheet.class_id}
           subjectId={sheet.subject_id}
-          currentBalance={starBalances?.get(starTarget.student_user_id) ?? 0}
+          currentBalance={starBalanceOf(starBalances, starTarget.student_user_id)}
         />
       )}
 

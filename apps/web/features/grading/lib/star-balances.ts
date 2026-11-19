@@ -5,8 +5,16 @@
  */
 export type StarBalances = ReadonlyMap<string, number> | null;
 
+/**
+ * One student's star balance, or `null` while the class's balances are
+ * unknown. A student missing from loaded balances has no stars yet.
+ */
+export function starBalanceOf(balances: StarBalances, studentId: string): number | null {
+  if (balances === null) return null;
+  return balances.get(studentId) ?? 0;
+}
+
 /** The star count a gradebook row shows for one student. */
 export function starBalanceLabel(balances: StarBalances, studentId: string): string {
-  if (balances === null) return "-";
-  return String(balances.get(studentId) ?? 0);
+  return String(starBalanceOf(balances, studentId) ?? "-");
 }

@@ -118,6 +118,7 @@
   "starDialog": {
     "title": "Stars for {name}",
     "currentBalance": "Current balance: {count} stars",
+    "currentBalanceUnknown": "Current balance unknown",
     "action": "Action",
     "give": "Give",
     "take": "Take",

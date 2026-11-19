@@ -118,6 +118,7 @@
   "starDialog": {
     "title": "Bintang untuk {name}",
     "currentBalance": "Saldo saat ini: {count} bintang",
+    "currentBalanceUnknown": "Saldo saat ini belum diketahui",
     "action": "Tindakan",
     "give": "Beri",
     "take": "Ambil",
