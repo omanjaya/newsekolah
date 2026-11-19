@@ -46,7 +46,8 @@
     "tiles": {
       "leaveLabel": "Class leave requests waiting",
       "rateLabel": "Class attendance",
-      "rateHint": "present in {className} today"
+      "rateHint": "present in {className} today",
+      "rateNotRecordedHint": "not recorded yet today"
     },
     "hero": {
       "eyebrow": "Homeroom {className}",

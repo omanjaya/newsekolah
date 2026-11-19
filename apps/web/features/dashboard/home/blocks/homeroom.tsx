@@ -22,6 +22,7 @@ import type { ReactElement } from "react";
 import { QueryError } from "../../../../components/query-error";
 import { isModuleEnabled } from "../../../../lib/modules/feature-modules";
 import { todayInZone, useHomeroomAttendanceQuery } from "../../../attendance/api";
+import { presentRateOfCounts } from "../../../attendance/lib/attendance-stats";
 import { useLeaveReviewQueueQuery, type LeaveRequestSummary } from "../../../permits/api";
 import { EMPTY_BLOCK, HERO_PRIORITY, type Me, type PersonaBlock } from "../types";
 
@@ -101,13 +102,21 @@ export function useHomeroomBlock(me: Me, active: boolean): PersonaBlock {
   const counts = attendance.data?.status_counts ?? {};
   const total = attendance.data?.total ?? 0;
   if (attendance.isSuccess && total > 0) {
-    const rate = Math.round(((counts.H ?? 0) / total) * 100);
+    // The attendance page's own rule: only recorded students count, so a
+    // morning before anyone filled attendance in reads "not recorded yet",
+    // not "0%" (audit r3-n15).
+    const rate = presentRateOfCounts(counts);
     block.tiles.push({
       key: "homeroom.rate",
       priority: 70,
       label: t("tiles.rateLabel"),
-      value: `${rate}%`,
-      hint: className ? t("tiles.rateHint", { className }) : undefined,
+      value: rate === undefined ? "-" : `${rate}%`,
+      hint:
+        rate === undefined
+          ? t("tiles.rateNotRecordedHint")
+          : className
+            ? t("tiles.rateHint", { className })
+            : undefined,
       icon: Users,
       tone: "blue",
       href: "/homeroom",

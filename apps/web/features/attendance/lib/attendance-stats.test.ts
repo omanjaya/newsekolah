@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { monthAttendanceStats } from "./attendance-stats";
+import { monthAttendanceStats, presentRateOfCounts } from "./attendance-stats";
 
 const TODAY = "2026-09-25";
 
@@ -69,5 +69,16 @@ describe("monthAttendanceStats", () => {
       day("2026-09-04", "MIXED"),
     ];
     expect(monthAttendanceStats(days, TODAY).presentRate).toBe(50);
+  });
+});
+
+describe("presentRateOfCounts", () => {
+  it("leaves students not recorded yet out of the rate", () => {
+    expect(presentRateOfCounts({ H: 3, A: 1, INCOMPLETE: 4 })).toBe(75);
+  });
+
+  it("is undefined while nobody in the class is recorded", () => {
+    expect(presentRateOfCounts({ INCOMPLETE: 2 })).toBeUndefined();
+    expect(presentRateOfCounts({})).toBeUndefined();
   });
 });

@@ -46,7 +46,8 @@
     "tiles": {
       "leaveLabel": "Izin kelas menunggu",
       "rateLabel": "Presensi kelas",
-      "rateHint": "hadir {className} hari ini"
+      "rateHint": "hadir {className} hari ini",
+      "rateNotRecordedHint": "belum tercatat hari ini"
     },
     "hero": {
       "eyebrow": "Wali kelas {className}",

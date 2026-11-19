@@ -39,6 +39,20 @@ export function presentRate(statuses: readonly string[]): number | undefined {
 }
 
 /**
+ * {@link presentRate} over a tally of statuses (code to how many), such as
+ * a homeroom class's day: students whose attendance is not filled in yet
+ * ("INCOMPLETE") are left out, so a class nobody has recorded reads "not
+ * recorded yet", never "0%" (audit r3-n15).
+ */
+export function presentRateOfCounts(counts: Readonly<Record<string, number>>): number | undefined {
+  return presentRate(
+    Object.entries(counts).flatMap(([code, count]) =>
+      Array.from({ length: Math.max(0, count) }, () => code),
+    ),
+  );
+}
+
+/**
  * Tallies a student's month calendar into the home-screen attendance stats:
  * the four tiles (hadir%, sakit, izin, alpha) come straight out of `counts`,
  * plus the fuller legend (also INCOMPLETE, MIXED, and D for dispensasi,
