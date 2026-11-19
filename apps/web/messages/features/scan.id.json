@@ -30,6 +30,6 @@
     "bare": "Kode tidak dikenali. Pindai QR langsung, atau tempel kode lengkap yang diawali \"sion:\".",
     "unsupported": "Jenis kode QR ini tidak didukung.",
     "missing_instance": "Kode QR tidak lengkap. Minta kode QR yang baru.",
-    "unavailable": "Kode QR ini untuk fitur yang tidak aktif di sekolah Anda."
+    "unavailable": "Kode QR ini untuk fitur yang nonaktif di sekolah Anda."
   }
 }
