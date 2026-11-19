@@ -58,11 +58,10 @@ describe("VisitsView filters", () => {
     await pickDate(user, "fromLabel", "2026-08-01");
     await pickDate(user, "toLabel", "2026-08-15");
 
-    expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith(
-      "2026-08-01T00:00:00Z",
-      "2026-08-15T23:59:59Z",
-      { limit: 50, offset: 0 },
-    );
+    expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith("2026-08-01", "2026-08-15", {
+      limit: 50,
+      offset: 0,
+    });
     expect(new URLSearchParams(window.location.search).get("from")).toBe("2026-08-01");
     expect(new URLSearchParams(window.location.search).get("to")).toBe("2026-08-15");
   });
@@ -74,21 +73,19 @@ describe("VisitsView filters", () => {
     await user.click(screen.getByRole("button", { name: /^dateRange/ }));
     await user.click(await screen.findByRole("button", { name: "today" }));
 
-    expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith(
-      "2026-09-15T00:00:00Z",
-      "2026-09-15T23:59:59Z",
-      { limit: 50, offset: 0 },
-    );
+    expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith("2026-09-15", "2026-09-15", {
+      limit: 50,
+      offset: 0,
+    });
   });
 
   it("defaults the range to the first of the school's month through today, not the previous day", () => {
     render(<VisitsView />);
 
-    expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith(
-      "2026-09-01T00:00:00Z",
-      "2026-09-15T23:59:59Z",
-      { limit: 50, offset: 0 },
-    );
+    expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith("2026-09-01", "2026-09-15", {
+      limit: 50,
+      offset: 0,
+    });
   });
 
   it("uses the school's calendar day when it differs from the UTC day", () => {
@@ -96,11 +93,10 @@ describe("VisitsView filters", () => {
     mocks.now = new Date("2026-08-31T17:30:00Z");
     render(<VisitsView />);
 
-    expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith(
-      "2026-09-01T00:00:00Z",
-      "2026-09-01T23:59:59Z",
-      { limit: 50, offset: 0 },
-    );
+    expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith("2026-09-01", "2026-09-01", {
+      limit: 50,
+      offset: 0,
+    });
   });
 });
 

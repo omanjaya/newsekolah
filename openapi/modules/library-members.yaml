@@ -682,10 +682,13 @@ paths:
       tags: [library]
       operationId: listLibraryVisits
       x-permission: manage_library_circulation
-      summary: Guest-book entries in a date range
+      summary: Guest-book entries on a range of the school's calendar days
+      description: >
+        `from` and `to` are calendar days, both inclusive, read in the tenant's
+        time zone: a visit at 07:30 in a UTC+8 school is on that local day.
       parameters:
-        - { name: from, in: query, required: true, schema: { type: string, format: date-time } }
-        - { name: to, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
         - {
             name: limit,
             in: query,
@@ -702,6 +705,7 @@ paths:
                 required: [data]
                 properties:
                   data: { type: array, items: { $ref: "#/components/schemas/LibraryVisit" } }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
     post:

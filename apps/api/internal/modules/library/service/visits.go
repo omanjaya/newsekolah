@@ -77,11 +77,19 @@ func (s *Service) TodayVisitSummary(ctx context.Context, tenantID uuid.UUID) (Vi
 	return summary, err
 }
 
-func (s *Service) ListVisits(ctx context.Context, tenantID uuid.UUID, from, to time.Time, limit, offset int) ([]domain.Visit, error) {
+// ListVisits is the guest book for the calendar days fromDay..toDay
+// (inclusive, only their dates are read), on the school's own calendar:
+// a visit at 07:30 in a UTC+8 school belongs to that local day, as in
+// TodayVisitSummary.
+func (s *Service) ListVisits(ctx context.Context, tenantID uuid.UUID, fromDay, toDay time.Time, limit, offset int) ([]domain.Visit, error) {
+	if toDay.Before(fromDay) {
+		return nil, domain.ErrInvalidInput
+	}
+	loc := s.tenantLocation(ctx, tenantID)
 	var visits []domain.Visit
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		visits, err = s.repo.ListVisitsForRange(ctx, tenantID, from, to, clampLimit(limit), max(offset, 0))
+		visits, err = s.repo.ListVisitsForRange(ctx, tenantID, fromDay, toDay, loc, clampLimit(limit), max(offset, 0))
 		return err
 	})
 	return visits, err

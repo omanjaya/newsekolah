@@ -38,8 +38,13 @@ func (r *Repository) GetLastVisitForMember(ctx context.Context, tenantID, member
 	return toVisit(row), true, nil
 }
 
-func (r *Repository) ListVisitsForRange(ctx context.Context, tenantID uuid.UUID, from, to time.Time, limit, offset int) ([]domain.Visit, error) {
-	rows, err := r.queries(ctx).ListVisitsForRange(ctx, db.ListVisitsForRangeParams{TenantID: tenantID, VisitedAt: pdatabase.Timestamptz(from), VisitedAt_2: pdatabase.Timestamptz(to), Limit: int32(limit), Offset: int32(offset)}) //nolint:gosec // clamped
+// ListVisitsForRange lists the visits on the calendar days fromDay..toDay
+// (inclusive) in loc, the tenant's zone.
+func (r *Repository) ListVisitsForRange(ctx context.Context, tenantID uuid.UUID, fromDay, toDay time.Time, loc *time.Location, limit, offset int) ([]domain.Visit, error) {
+	rows, err := r.queries(ctx).ListVisitsForRange(ctx, db.ListVisitsForRangeParams{
+		TenantID: tenantID, FromDay: pdatabase.Date(fromDay), ToDay: pdatabase.Date(toDay), Tz: loc.String(),
+		RowLimit: int32(limit), RowOffset: int32(offset), //nolint:gosec // clamped
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list visits for range: %w", err)
 	}
