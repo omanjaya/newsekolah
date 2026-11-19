@@ -96,11 +96,10 @@ describe("VisitsView paging", () => {
     await user.click(screen.getByRole("button", { name: /^dateRange/ }));
     await user.click(await screen.findByRole("button", { name: "today" }));
 
-    expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith(
-      "2026-09-15T00:00:00Z",
-      "2026-09-15T23:59:59Z",
-      { limit: 50, offset: 0 },
-    );
+    expect(mocks.useLibraryVisitsQuery).toHaveBeenLastCalledWith("2026-09-15", "2026-09-15", {
+      limit: 50,
+      offset: 0,
+    });
     expect(new URLSearchParams(window.location.search).get("page")).toBe("1");
   });
 });

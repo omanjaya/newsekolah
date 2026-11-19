@@ -4598,7 +4598,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Guest-book entries in a date range */
+        /**
+         * Guest-book entries on a range of the school's calendar days
+         * @description `from` and `to` are calendar days, both inclusive, read in the tenant's time zone: a visit at 07:30 in a UTC+8 school is on that local day.
+         */
         get: operations["listLibraryVisits"];
         put?: never;
         /** Log a visit manually (member, non-member, or group) */
@@ -21851,6 +21854,7 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };

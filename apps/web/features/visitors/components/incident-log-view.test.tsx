@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { dayRangeInZone, shiftIsoDate, todayInZone } from "../../../lib/tenant-date";
 import { pickDate } from "../../../test/pick-date";
 
 const mocks = vi.hoisted(() => ({
@@ -80,12 +81,10 @@ describe("IncidentLogView filters", () => {
     const user = userEvent.setup();
     render(<IncidentLogView />);
 
-    // The date range filter defaults to a non-empty 30-day window, so it is
-    // always "active" too; its own remove button uses the same (untranslated,
-    // mocked) label. The only-open pill is the first one in the bar.
-    const onlyOpenRemove = screen.getAllByRole("button", { name: /^Hapus filter / })[0];
-    if (!onlyOpenRemove) throw new Error("Missing only-open filter's remove control");
-    await user.click(onlyOpenRemove);
+    // The default 30-day window is the page's own period, not a filter, so
+    // the only-open pill carries the bar's one remove control.
+    expect(screen.getAllByRole("button", { name: /^Hapus filter / })).toHaveLength(1);
+    await user.click(screen.getByRole("button", { name: "Hapus filter filters.onlyOpen" }));
     expect(mocks.useIncidentsQuery).toHaveBeenLastCalledWith(
       expect.any(String),
       expect.any(String),
@@ -109,6 +108,76 @@ describe("IncidentLogView filters", () => {
     );
     expect(new URLSearchParams(window.location.search).get("from")).toBe("2026-09-01");
     expect(new URLSearchParams(window.location.search).get("to")).toBe("2026-09-15");
+  });
+});
+
+describe("IncidentLogView default period", () => {
+  const query = () => new URLSearchParams(window.location.search);
+
+  beforeEach(() => {
+    mocks.canManage = true;
+    mocks.useIncidentsQuery.mockReset();
+    mocks.useIncidentsQuery.mockReturnValue({
+      data: { data: [] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+  });
+
+  // The pill used to show the last 30 days as an applied filter, with a
+  // remove control and a toolbar Reset that did nothing.
+  it("shows the last 30 days as the page's period, with nothing to clear", () => {
+    window.history.replaceState(null, "", "/visitors/incidents");
+    render(<IncidentLogView />);
+
+    expect(screen.getByRole("button", { name: /^filters\.dateRange/ })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Hapus filter filters.dateRange" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Hapus semua filter" })).not.toBeInTheDocument();
+  });
+
+  it("returns to the default period from the toolbar's Reset", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/visitors/incidents?from=2026-11-01&to=2026-11-10&only_open=true",
+    );
+    const user = userEvent.setup();
+    render(<IncidentLogView />);
+    const today = todayInZone("Asia/Jakarta");
+    const period = dayRangeInZone(shiftIsoDate(today, -30), today, "Asia/Jakarta");
+    const historyLength = window.history.length;
+
+    // The toolbar's Reset comes before the filtered empty state's own.
+    const [toolbarReset] = screen.getAllByRole("button", { name: "Hapus semua filter" });
+    if (!toolbarReset) throw new Error("Missing the toolbar's Reset");
+    await user.click(toolbarReset);
+
+    expect(window.location.search).toBe("");
+    expect(window.history.length).toBe(historyLength + 1);
+    expect(mocks.useIncidentsQuery).toHaveBeenLastCalledWith(period.from, period.to, true);
+    expect(screen.queryByRole("button", { name: "Hapus semua filter" })).not.toBeInTheDocument();
+  });
+
+  it("returns to the default period from the date pill's remove control", async () => {
+    window.history.replaceState(null, "", "/visitors/incidents?from=2030-01-01");
+    const user = userEvent.setup();
+    render(<IncidentLogView />);
+    expect(mocks.useIncidentsQuery).toHaveBeenLastCalledWith(
+      "2029-12-31T17:00:00.000Z",
+      "2030-01-01T16:59:59.999Z",
+      true,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Hapus filter filters.dateRange" }));
+
+    expect(query().has("from")).toBe(false);
+    expect(query().has("to")).toBe(false);
+    expect(
+      screen.queryByRole("button", { name: "Hapus filter filters.dateRange" }),
+    ).not.toBeInTheDocument();
   });
 });
 

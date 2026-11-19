@@ -88,6 +88,31 @@ describe("EmployeeRecapView filters", () => {
     expect(new URLSearchParams(window.location.search).get("to")).toBe("2026-08-15");
   });
 
+  // The month so far used to read as an applied filter whose remove
+  // control did nothing.
+  it("treats the month so far as the page's period and clears back to it", async () => {
+    render(<EmployeeRecapView employees={EMPLOYEES} />);
+    const user = await selectEmployee();
+    expect(
+      screen.queryByRole("button", { name: "Hapus filter history.dateRange" }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^history\.dateRange/ }));
+    await pickDate(user, "history.from", "2026-08-01");
+    await pickDate(user, "history.to", "2026-08-15");
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: "Hapus filter history.dateRange" }));
+
+    const query = new URLSearchParams(window.location.search);
+    expect(query.has("from")).toBe(false);
+    expect(query.has("to")).toBe(false);
+    expect(mocks.useStaffAttendanceHistoryQuery).toHaveBeenLastCalledWith(
+      "emp-1",
+      "2026-09-01",
+      "2026-09-15",
+    );
+  });
+
   it("applies a preset and closes the popover", async () => {
     render(<EmployeeRecapView employees={EMPLOYEES} />);
     const user = await selectEmployee();

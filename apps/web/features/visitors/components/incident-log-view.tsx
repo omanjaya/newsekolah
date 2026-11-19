@@ -54,7 +54,10 @@ export function IncidentLogView(): ReactElement {
   const today = todayInZone(timeZone);
   const defaultFrom = shiftIsoDate(today, -30);
 
-  const [{ from, to }, setRange] = useDateRangeFilter({ defaultFrom, defaultTo: today });
+  const [{ from, to }, setRange, rangeFilter] = useDateRangeFilter({
+    defaultFrom,
+    defaultTo: today,
+  });
   const presets = useDateRangePresets();
   const [onlyOpen, setOnlyOpen] = useUrlState<"" | "true">("only_open", ["", "true"], "");
   const [creating, setCreating] = useState(false);
@@ -86,9 +89,8 @@ export function IncidentLogView(): ReactElement {
       id: "period",
       label: t("filters.dateRange"),
       type: "dateRange",
-      from,
-      to,
-      onChangeRange: setRange,
+      // The last 30 days are the page's own period, not a filter the reader set.
+      ...rangeFilter,
       presets,
       today,
     },

@@ -46,7 +46,7 @@ export function VisitsView(): ReactElement {
   const canRecord = useCan("manage_library_circulation");
   const canViewMembers = useCan("manage_library_members");
 
-  const [{ from, to }, setRange] = useDateRangeFilter({
+  const [{ from, to }, setRange, rangeFilter] = useDateRangeFilter({
     defaultFrom: startOfIsoMonth(today),
     defaultTo: today,
   });
@@ -55,14 +55,11 @@ export function VisitsView(): ReactElement {
 
   const paging = useOffsetPage(VISITS_PAGE_SIZE);
   const shortcuts = useLibraryShortcuts(["visitKiosk", { report: "visits" }]);
-  const { data, isLoading, error, refetch, isRefetching } = useLibraryVisitsQuery(
-    `${from}T00:00:00Z`,
-    `${to}T23:59:59Z`,
-    {
-      limit: paging.limit,
-      offset: paging.offset,
-    },
-  );
+  // Calendar days: the API reads them on the school's own calendar.
+  const { data, isLoading, error, refetch, isRefetching } = useLibraryVisitsQuery(from, to, {
+    limit: paging.limit,
+    offset: paging.offset,
+  });
   const summary = useLibraryVisitSummaryQuery();
 
   const items = data?.data ?? [];
@@ -73,11 +70,8 @@ export function VisitsView(): ReactElement {
       id: "period",
       label: t("dateRange"),
       type: "dateRange",
-      from,
-      to,
       // The month so far is the page's own period, not a filter the reader set.
-      defaultFrom: startOfIsoMonth(today),
-      defaultTo: today,
+      ...rangeFilter,
       onChangeRange: (range) => {
         setRange(range);
         paging.resetPage();

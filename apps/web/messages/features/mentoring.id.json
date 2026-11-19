@@ -142,6 +142,7 @@
   "studentView": {
     "eyebrow": "Mentoring",
     "backToGroup": "Kembali ke kelompok",
+    "notFoundTitle": "Siswa tidak ditemukan",
     "attendance": {
       "title": "Presensi bulan ini",
       "empty": "Belum ada data presensi bulan ini.",

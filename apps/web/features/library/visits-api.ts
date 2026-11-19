@@ -12,6 +12,10 @@ export type LibraryVisitSummary = components["schemas"]["LibraryVisitSummary"];
 export type LibraryKioskToken = components["schemas"]["LibraryKioskToken"];
 export type LibraryReadInPlace = components["schemas"]["LibraryReadInPlace"];
 
+/**
+ * The guest book for the calendar days `from`..`to` ("YYYY-MM-DD",
+ * inclusive); the API reads them in the school's time zone.
+ */
 export function useLibraryVisitsQuery(
   from: string,
   to: string,

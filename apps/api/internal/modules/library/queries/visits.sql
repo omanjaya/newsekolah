@@ -7,9 +7,17 @@ returning *;
 select * from library_visits where tenant_id = $1 and member_user_id = $2 order by visited_at desc limit 1;
 
 -- name: ListVisitsForRange :many
+-- from_day..to_day are whole calendar days (inclusive) as the school lives
+-- them, tz its IANA zone: the bounds are that zone's midnights, so a visit
+-- at 07:30 in UTC+8 sits on its own local day, not the previous UTC one.
 -- Paged: the range comes straight from the client, so a year-wide range
 -- is walked a page at a time instead of returned whole.
-select * from library_visits where tenant_id = $1 and visited_at >= $2 and visited_at < $3 order by visited_at desc, id desc limit $4 offset $5;
+select * from library_visits
+where tenant_id = sqlc.arg(tenant_id)
+  and visited_at >= (sqlc.arg(from_day)::date::timestamp at time zone sqlc.arg(tz)::text)
+  and visited_at < ((sqlc.arg(to_day)::date + 1)::timestamp at time zone sqlc.arg(tz)::text)
+order by visited_at desc, id desc
+limit sqlc.arg(row_limit)::int offset sqlc.arg(row_offset)::int;
 
 -- name: TodayVisitSummary :one
 select
