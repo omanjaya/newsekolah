@@ -5,8 +5,11 @@ import { useState } from "react";
 
 /**
  * Refetches every active query that failed, for the home's one retry. A
- * refetch after an error keeps the query's status at "error" until it
- * settles, so `retrying` tracks the run itself to show the button is busy.
+ * refetch keeps a failed query's status at "error" only when it once had
+ * data; one that never loaded goes back to "pending" until the run
+ * settles. Neither says the reader asked for it, so `retrying` tracks the
+ * run itself, to show the button is busy and to hold the home's failed
+ * state in place meanwhile (components/dashboard-view.tsx).
  */
 export function useRetryFailedQueries(): { retrying: boolean; retry: () => void } {
   const queryClient = useQueryClient();

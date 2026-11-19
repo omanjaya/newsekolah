@@ -369,6 +369,66 @@ describe("DashboardView", () => {
     expect(screen.getByRole("link", { name: "Isi presensi" })).toHaveFocus();
   });
 
+  // A refetch puts a query that never loaded back to pending, which swapped
+  // the hero for the skeleton for the length of the run: the hero flashed
+  // away and focus fell to <body> (audit r4-n2, r4-r3-n22).
+  it("keeps the failed hero and its busy retry in place while the refetch runs", async () => {
+    let settle: () => void = () => undefined;
+    refetchQueries.mockReset().mockReturnValue(
+      new Promise<void>((resolve) => {
+        settle = resolve;
+      }),
+    );
+    teacherBlock.mockReturnValue({ ...emptyBlock(), failed: true });
+    const { rerender } = render(<DashboardView />);
+
+    const hero = screen.getByTestId("dashboard-hero");
+    const retry = within(hero).getByRole("button", { name: "failed.action" });
+    await userEvent.click(retry);
+
+    // The refetched block reads as loading now, not failed.
+    teacherBlock.mockReturnValue({ ...emptyBlock(), pending: true });
+    rerender(<DashboardView />);
+
+    expect(screen.queryByTestId("dashboard-skeleton")).not.toBeInTheDocument();
+    expect(screen.getByTestId("dashboard-hero")).toBe(hero);
+    expect(retry).toBeInTheDocument();
+    expect(retry).toHaveAttribute("aria-busy", "true");
+
+    teacherBlock.mockReturnValue({ ...emptyBlock(), hero: urgentHero() });
+    await act(async () => {
+      settle();
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByRole("button", { name: "failed.action" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Isi presensi" })).toHaveFocus();
+  });
+
+  it("keeps an urgent hero and the notice's busy retry in place while the refetch runs", async () => {
+    refetchQueries.mockReset().mockReturnValue(new Promise<void>(() => undefined));
+    teacherBlock.mockReturnValue({ ...emptyBlock(), hero: urgentHero() });
+    studentBlock.mockReturnValue({ ...emptyBlock(), failed: true });
+    const { rerender } = render(<DashboardView />);
+
+    const notice = screen.getByTestId("dashboard-failed-notice");
+    await userEvent.click(within(notice).getByRole("button", { name: "failed.action" }));
+    studentBlock.mockReturnValue({ ...emptyBlock(), pending: true });
+    rerender(<DashboardView />);
+
+    expect(screen.queryByTestId("dashboard-skeleton")).not.toBeInTheDocument();
+    expect(screen.getByTestId("dashboard-failed-notice")).toBe(notice);
+    expect(within(notice).getByRole("button", { name: "failed.action" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+    expect(
+      within(screen.getByTestId("dashboard-hero")).getByRole("heading", {
+        name: "Matematika · X-A",
+      }),
+    ).toBeInTheDocument();
+  });
+
   it("shows the failure notice when the action inbox count failed and nothing else is due", () => {
     inboxSummary.mockReturnValue({ total: 0, isLoading: false, isError: true });
     render(<DashboardView />);

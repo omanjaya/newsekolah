@@ -15,7 +15,7 @@ import {
 } from "@newsekolah/ui";
 import { Bell } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError, SharedRetry } from "../../../components/query-error";
@@ -104,6 +104,13 @@ export function DashboardView(): ReactElement {
   const isDesktop = useIsDesktop();
   const twoColumn = useIsWideTwoColumn();
   const { retrying, retry } = useRetryFailedQueries();
+  // Where the home's retry sat when the reader pressed it. A refetch puts a
+  // query that never loaded back to pending, so for the length of the run
+  // the blocks it feeds read as loading, not failed: the home holds the
+  // retry where it was instead of swapping the hero for its skeleton,
+  // which flashed the hero away and dropped keyboard focus to <body>
+  // (audit r4-n2, r4-r3-n22).
+  const [retriedAt, setRetriedAt] = useState<RetryAt>(null);
 
   const personas = me ? resolvePersonas(me) : new Set<PersonaKey>();
   const active = (key: PersonaKey) => personas.has(key);
@@ -236,7 +243,15 @@ export function DashboardView(): ReactElement {
   // takes its place, else a notice under the urgent hero that stayed, so
   // a failed read never just drops its tile without a word (audit
   // shell-home-3). Every card's own error box then leaves its retry out.
-  const retryAt: RetryAt = !failed ? null : calm ? "hero" : "notice";
+  const holding = retrying && retriedAt !== null;
+  const retryAt: RetryAt = holding ? retriedAt : !failed ? null : calm ? "hero" : "notice";
+  const startRetry = () => {
+    setRetriedAt(retryAt);
+    retry();
+  };
+  // The hero and tiles wait as a skeleton for the first answers, not for a
+  // retry the reader asked for.
+  const topPending = collected.pending && !holding;
   const hero: ShownHero =
     retryAt === "hero"
       ? {
@@ -249,7 +264,7 @@ export function DashboardView(): ReactElement {
           action: {
             label: t("failed.action"),
             loading: retrying,
-            onClick: retry,
+            onClick: startRetry,
           },
         }
       : guardHero(candidate, canOpen);
@@ -298,10 +313,10 @@ export function DashboardView(): ReactElement {
       {/* The cards keep their own retry until the home's one is on screen:
           while a slow read holds the hero as a skeleton, a card that already
           failed would otherwise have no retry anywhere. */}
-      <SharedRetry active={retryAt !== null && !collected.pending}>
+      <SharedRetry active={retryAt !== null && !topPending}>
         <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem] xl:gap-6">
           <div className="flex min-w-0 flex-col gap-4" data-testid="dashboard-main">
-            {collected.pending ? (
+            {topPending ? (
               <HomeSkeleton tiles={Math.max(tiles.length, 2)} strip={!isDesktop} />
             ) : (
               <>
@@ -309,7 +324,7 @@ export function DashboardView(): ReactElement {
                   hero={hero}
                   retryAt={retryAt}
                   retrying={retrying}
-                  onRetry={retry}
+                  onRetry={startRetry}
                   enter={firstEntrance}
                 />
                 {tiles.length > 0 && (
