@@ -68,6 +68,7 @@ export function AnnouncementsManage({
   const t = useTranslations("app.announcements");
   const locale = useLocale() as Locale;
   const { me } = useSession();
+  const canCreate = useCan("create_announcements");
   const canEdit = useCan("edit_announcements");
   const canPublish = useCan("publish_announcements");
   const canDelete = useCan("delete_announcements");
@@ -285,10 +286,12 @@ export function AnnouncementsManage({
               }}
             />
           ) : (
+            // A publisher who cannot draft (the principal) waits for what
+            // teachers and staff write, so the copy does not ask them to.
             <EmptyState
               icon={<domainIcons.announcement aria-hidden="true" />}
-              title={t("manageEmptyTitle")}
-              description={t("manageEmptyBody")}
+              title={canCreate ? t("manageEmptyTitle") : t("publishEmptyTitle")}
+              description={canCreate ? t("manageEmptyBody") : t("publishEmptyBody")}
             />
           )
         }

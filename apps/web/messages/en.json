@@ -815,6 +815,8 @@
       "unread": "New",
       "manageEmptyTitle": "No announcements created yet",
       "manageEmptyBody": "Create a draft, pick the audience, then publish or schedule it.",
+      "publishEmptyTitle": "No announcements to publish yet",
+      "publishEmptyBody": "Drafts from teachers and staff appear here to publish or schedule.",
       "columns": {
         "title": "Title",
         "status": "Status",

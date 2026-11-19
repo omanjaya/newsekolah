@@ -29,7 +29,7 @@ Susunan yang berlaku (17 November 2026), dengan nama menu persis seperti di apli
 Beranda
 Perlu tindakan       angka antrean
 Pindai               siswa, satpam, guru piket
-Pengumuman           hanya pembuat pengumuman
+Pengumuman           hanya pembuat atau penerbit pengumuman
 Laporan              pusat laporan, laporan perpustakaan, rekap kunjungan
 
 AKADEMIK             Jadwal dan kalender, Presensi dan jurnal, Nilai, Wali kelas
@@ -78,22 +78,22 @@ Aturan tambahan:
 
 ## Penggabungan fitur
 
-| No  | Penggabungan                                                                                                | Menu yang hilang dari sidebar                  |
-| --- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| 1   | Satu halaman **Scan** (`/scan`) membaca semua QR dan memilih aksi dari tujuan token                         | Scan Masuk Kelas dan layar scan lain           |
-| 2   | Satu kotak **Perlu Tindakan** (`/inbox`) untuk izin, izin keluar, terlambat, dan SP                         | Antrean per jenis                              |
-| 3   | Pengumuman dan Notifikasi masuk ke lonceng                                                                  | Pengumuman (kecuali bagi pembuat pengumuman)   |
-| 4   | Laporan satu pintu, dengan tombol Ekspor di tiap modul                                                      | Laporan per modul                              |
-| 5   | Jurnal menjadi bagian bawah layar presensi sesi                                                             | -                                              |
-| 6   | Layar kiosk dibuka dari halaman induknya                                                                    | Kiosk Perpustakaan, Kiosk Kunjungan, Monitor   |
-| 7   | **Pengaturan Perpustakaan** (`/library/settings`): aturan pinjam, jenis anggota, data                       | Aturan Peminjaman, Jenis Anggota, Data Pustaka |
-| 8   | **Pengaturan Sekolah** (`/settings`) dengan empat bagian dan pencarian                                      | Sub-halaman pengaturan                         |
-| 9   | Presensi pegawai menjadi kartu di beranda dan entri menu avatar                                             | Presensi saya                                  |
-| 10  | **Wali Kelas** menjadi pusat kerja wali kelas, dengan tab presensi, izin, tata tertib, nilai, dan orang tua | -                                              |
-| 11  | Kandidat dan riwayat **Surat Peringatan** masuk ke halaman Tata Tertib                                      | Surat Peringatan                               |
-| 12  | Siswa berisiko dan kehadiran hari ini menjadi kartu beranda                                                 | -                                              |
-| 13  | **Profil Siswa** (`/students/[id]`) menggantikan tiga halaman detail siswa                                  | -                                              |
-| 14  | Orang tua tidak memakai sidebar, cukup beranda per anak                                                     | -                                              |
+| No  | Penggabungan                                                                                                | Menu yang hilang dari sidebar                              |
+| --- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| 1   | Satu halaman **Scan** (`/scan`) membaca semua QR dan memilih aksi dari tujuan token                         | Scan Masuk Kelas dan layar scan lain                       |
+| 2   | Satu kotak **Perlu Tindakan** (`/inbox`) untuk izin, izin keluar, terlambat, dan SP                         | Antrean per jenis                                          |
+| 3   | Pengumuman dan Notifikasi masuk ke lonceng                                                                  | Pengumuman (kecuali bagi pembuat atau penerbit pengumuman) |
+| 4   | Laporan satu pintu, dengan tombol Ekspor di tiap modul                                                      | Laporan per modul                                          |
+| 5   | Jurnal menjadi bagian bawah layar presensi sesi                                                             | -                                                          |
+| 6   | Layar kiosk dibuka dari halaman induknya                                                                    | Kiosk Perpustakaan, Kiosk Kunjungan, Monitor               |
+| 7   | **Pengaturan Perpustakaan** (`/library/settings`): aturan pinjam, jenis anggota, data                       | Aturan Peminjaman, Jenis Anggota, Data Pustaka             |
+| 8   | **Pengaturan Sekolah** (`/settings`) dengan empat bagian dan pencarian                                      | Sub-halaman pengaturan                                     |
+| 9   | Presensi pegawai menjadi kartu di beranda dan entri menu avatar                                             | Presensi saya                                              |
+| 10  | **Wali Kelas** menjadi pusat kerja wali kelas, dengan tab presensi, izin, tata tertib, nilai, dan orang tua | -                                                          |
+| 11  | Kandidat dan riwayat **Surat Peringatan** masuk ke halaman Tata Tertib                                      | Surat Peringatan                                           |
+| 12  | Siswa berisiko dan kehadiran hari ini menjadi kartu beranda                                                 | -                                                          |
+| 13  | **Profil Siswa** (`/students/[id]`) menggantikan tiga halaman detail siswa                                  | -                                                          |
+| 14  | Orang tua tidak memakai sidebar, cukup beranda per anak                                                     | -                                                          |
 
 ## Profil Siswa
 
@@ -113,7 +113,7 @@ Data Sekolah dibuka serius sekali di awal tahun ajaran, lalu sesekali saja. Grup
 | Profil Siswa (`/students/[id]`); nama siswa di daftar staf menaut ke profil                     | Selesai                                                                                                        |
 | `Ctrl+K`: cari siswa dan aksi cepat; tombol tengah di tab bawah HP (menggantikan tombol "+")    | Selesai                                                                                                        |
 | Pengaturan Sekolah (`/settings`) dan Pengaturan Perpustakaan (`/library/settings`)              | Selesai                                                                                                        |
-| Lonceng dengan tab Pengumuman; menu Pengumuman hanya untuk pembuat pengumuman                   | Selesai                                                                                                        |
+| Lonceng dengan tab Pengumuman; menu Pengumuman hanya untuk pembuat atau penerbit pengumuman     | Selesai                                                                                                        |
 | Kartu beranda: absen masuk/pulang, siswa berisiko (BK), kehadiran hari ini (pimpinan)           | Selesai                                                                                                        |
 | Kandidat dan riwayat SP sebagai tab di Tata Tertib; Wali Kelas sebagai hub bertab               | Selesai                                                                                                        |
 | Pembelajaran (mapel + pembagian tugas) dan Kegiatan Siswa (ekskul + pendampingan) satu menu     | Selesai                                                                                                        |
