@@ -8,17 +8,13 @@ import {
   DataTable,
   Dialog,
   DialogContent,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   EmptyState,
-  IconButton,
+  RowActionsMenu,
   Switch,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CalendarClock, History, MoreHorizontal, Plus } from "lucide-react";
+import { CalendarClock, History, Pencil, Plus, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useCallback, useMemo, useState } from "react";
@@ -50,7 +46,7 @@ export function SchedulesView(): ReactElement {
   const locale = useLocale() as Locale;
   const timeZone = useSession().me?.tenant.timezone;
 
-  const { data, isLoading } = useReportSchedulesQuery();
+  const { data, isLoading, isError, error, refetch, isRefetching } = useReportSchedulesQuery();
   const setEnabled = useSetReportScheduleEnabledMutation();
   const remove = useDeleteReportScheduleMutation();
 
@@ -90,6 +86,17 @@ export function SchedulesView(): ReactElement {
     [t],
   );
 
+  // Names one schedule for the row's controls, so a screen reader can tell
+  // the rows' switches and menus apart.
+  const scheduleName = useCallback(
+    (schedule: ReportSchedule): string =>
+      t("scheduleName", {
+        report: reportKindLabel(schedule.report_kind),
+        cadence: cadenceLabel(schedule),
+      }),
+    [t, reportKindLabel, cadenceLabel],
+  );
+
   const columns = useMemo<ColumnDef<ReportSchedule>[]>(
     () => [
       {
@@ -123,7 +130,7 @@ export function SchedulesView(): ReactElement {
         cell: ({ row }) => (
           <Switch
             checked={row.original.enabled}
-            aria-label={t("columns.enabled")}
+            aria-label={t("enabledFor", { name: scheduleName(row.original) })}
             onCheckedChange={(checked) => {
               setEnabled.mutate(
                 { id: row.original.id, enabled: checked },
@@ -145,44 +152,52 @@ export function SchedulesView(): ReactElement {
         id: "actions",
         header: t("columns.actions"),
         enableSorting: false,
+        meta: { align: "end" },
         cell: ({ row }) => {
           const item = row.original;
           return (
-            <div className="flex items-center gap-1">
-              <IconButton
-                icon={<History />}
-                aria-label={t("viewHistory")}
-                onClick={() => {
-                  setHistoryFor(item.id);
-                }}
-              />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <IconButton icon={<MoreHorizontal />} aria-label={t("columns.actions")} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      setEditing(item);
-                    }}
-                  >
-                    {t("edit")}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      setPendingDelete(item);
-                    }}
-                  >
-                    {t("delete")}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <RowActionsMenu
+              ariaLabel={t("rowActions", { name: scheduleName(item) })}
+              items={[
+                {
+                  label: t("viewHistory"),
+                  icon: <History />,
+                  onClick: () => {
+                    setHistoryFor(item.id);
+                  },
+                },
+                {
+                  label: t("edit"),
+                  icon: <Pencil />,
+                  onClick: () => {
+                    setEditing(item);
+                  },
+                },
+                {
+                  label: t("delete"),
+                  icon: <Trash2 />,
+                  tone: "danger",
+                  onClick: () => {
+                    setPendingDelete(item);
+                  },
+                },
+              ]}
+            />
           );
         },
       },
     ],
-    [t, apiErrorMessage, toast, setEnabled, reportKindLabel, cadenceLabel, locale, timeZone],
+    [
+      t,
+      apiErrorMessage,
+      toast,
+      setEnabled,
+      reportKindLabel,
+      cadenceLabel,
+      scheduleName,
+      locale,
+      timeZone,
+    ],
   );
 
   return (
@@ -212,6 +227,9 @@ export function SchedulesView(): ReactElement {
         onSortingChange={() => undefined}
         globalFilter=""
         isLoading={isLoading}
+        error={isError ? error : undefined}
+        onRetry={() => void refetch()}
+        retrying={isRefetching}
         getRowId={(item) => item.id}
         emptyState={
           <EmptyState
