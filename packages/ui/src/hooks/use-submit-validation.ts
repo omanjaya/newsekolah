@@ -11,11 +11,30 @@ export interface SubmitValidation<T extends HTMLElement> {
    * Call first thing in the submit handler with whether the form is valid.
    * When it is not, the attempt is recorded (so every Field shows its
    * error) and, once the errors render, the first invalid control takes
-   * focus. Returns `valid`, so a handler can `if (!check(ok)) return;`.
+   * focus with its Field scrolled into view. Returns `valid`, so a handler can `if (!check(ok)) return;`.
    */
   check: (valid: boolean) => boolean;
   /** Back to untouched (a dialog that keeps its state while closed calls it on reset). */
   reset: () => void;
+}
+
+/**
+ * Focuses the first control marked invalid inside `root` and brings its
+ * whole Field (label, control and error) into view, centred in the
+ * nearest scroll area. A bare `focus()` scrolls only as far as the
+ * control, which leaves its label cut off above it. Returns whether a
+ * control was found.
+ */
+function focusFirstInvalid(root: HTMLElement | null): boolean {
+  const control = root?.querySelector<HTMLElement>('[aria-invalid="true"]');
+  if (!control) return false;
+  control.focus({ preventScroll: true });
+  const field = control.closest<HTMLElement>('[data-slot="field"]') ?? control;
+  // Not every environment lays out (jsdom has no scrollIntoView).
+  if (typeof field.scrollIntoView === "function") {
+    field.scrollIntoView({ block: "center", inline: "nearest" });
+  }
+  return true;
 }
 
 /**
@@ -46,7 +65,15 @@ export function useSubmitValidation<
 
   useEffect(() => {
     if (attempts === 0) return;
-    ref.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+    if (focusFirstInvalid(ref.current)) return;
+    // The first invalid field can mount a moment after the errors do: a
+    // tab the submit switched back to renders its content in a later pass.
+    const frame = requestAnimationFrame(() => {
+      focusFirstInvalid(ref.current);
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+    };
   }, [attempts]);
 
   const check = useCallback((valid: boolean) => {
