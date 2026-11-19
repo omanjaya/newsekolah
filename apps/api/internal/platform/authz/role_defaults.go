@@ -44,6 +44,14 @@ func RoleDefaults() []RoleDefault {
 			PermManageGrades, PermViewGrades, PermViewLibrary, PermViewOwnLibraryLoans, PermIssueScanTokens,
 			PermCreateAnnouncements, PermEditAnnouncements, PermPublishAnnouncements,
 			PermViewDiscipline, PermRecordViolations, PermViewEarlyWarning,
+			// Supervision as the observed teacher: read their own report
+			// and observations (view_own_supervision, scoped to the caller
+			// in the supervision service) and respond to them
+			// (respond_to_supervision, owner-checked in
+			// RecordTeacherResponse). Never view_supervision, which reads
+			// every teacher's results. Backfilled for existing tenants by
+			// 0128_teacher_own_supervision.up.sql.
+			PermViewOwnSupervision, PermRespondSupervised,
 		}},
 		{RoleSlugStaff, "Pegawai", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewLibrary, PermViewOwnLibraryLoans, PermViewAcademicData, PermIssueScanTokens,

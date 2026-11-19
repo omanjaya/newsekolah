@@ -13,18 +13,53 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/i18n"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
-type SupervisionHandler struct{ service *service.Service }
+// PermissionChecker resolves the caller's effective permissions, so a read
+// route open to both view_supervision and view_own_supervision can tell
+// the school-wide reader from the teacher reading their own records.
+type PermissionChecker interface {
+	EffectivePermissions(ctx context.Context, tenantID, userID uuid.UUID) (authz.Set, error)
+}
 
-func New(svc *service.Service) *SupervisionHandler { return &SupervisionHandler{service: svc} }
+type SupervisionHandler struct {
+	service *service.Service
+	perms   PermissionChecker
+}
+
+// New wires the handler. perms may be nil, which limits every reader to
+// their own records: the safe side for a read the spec opens to
+// view_own_supervision.
+func New(svc *service.Service, perms PermissionChecker) *SupervisionHandler {
+	return &SupervisionHandler{service: svc, perms: perms}
+}
 
 func tenantID(ctx context.Context) uuid.UUID { id, _ := httpx.TenantIDFromContext(ctx); return id }
 func userID(ctx context.Context) uuid.UUID   { id, _ := httpx.UserIDFromContext(ctx); return id }
+
+// reader resolves how far the caller reads: every teacher with
+// view_supervision (held by the user and, for an API key, granted to the
+// key too), otherwise only their own records (view_own_supervision, which
+// authz.Authorize already required as the alternative).
+func (h *SupervisionHandler) reader(ctx context.Context) (domain.Reader, error) {
+	reader := domain.Reader{UserID: userID(ctx)}
+	if h.perms == nil {
+		return reader, nil
+	}
+	set, err := h.perms.EffectivePermissions(ctx, tenantID(ctx), reader.UserID)
+	if err != nil {
+		return domain.Reader{}, err
+	}
+	key := authz.IdentityFromContext(ctx).KeyPermissions
+	reader.AllTeachers = set.Has(authz.PermViewSupervision) &&
+		(key == nil || key.Has(authz.PermViewSupervision))
+	return reader, nil
+}
 
 // tenantLocale resolves the current request's tenant to a locale
 // reportdoc's FormatDate/PageLabel/EmptyRowsLabelFor understand,
@@ -182,7 +217,11 @@ func (h *SupervisionHandler) ListScheduledObservations(ctx context.Context, requ
 }
 
 func (h *SupervisionHandler) ListScheduledObservationsForTeacher(ctx context.Context, request api.ListScheduledObservationsForTeacherRequestObject) (api.ListScheduledObservationsForTeacherResponseObject, error) {
-	scheduled, err := h.service.ListScheduledForTeacher(ctx, tenantID(ctx), request.CycleId, request.TeacherId)
+	reader, err := h.reader(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	scheduled, err := h.service.ListScheduledForTeacher(ctx, tenantID(ctx), request.CycleId, request.TeacherId, reader)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -219,7 +258,11 @@ func (h *SupervisionHandler) CompleteObservation(ctx context.Context, request ap
 }
 
 func (h *SupervisionHandler) GetObservation(ctx context.Context, request api.GetObservationRequestObject) (api.GetObservationResponseObject, error) {
-	obs, err := h.service.GetObservation(ctx, tenantID(ctx), request.ObservationId, userID(ctx))
+	reader, err := h.reader(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	obs, err := h.service.GetObservation(ctx, tenantID(ctx), request.ObservationId, reader)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -238,7 +281,11 @@ func (h *SupervisionHandler) RespondToObservation(ctx context.Context, request a
 // Reports.
 
 func (h *SupervisionHandler) GetTeacherSupervisionReport(ctx context.Context, request api.GetTeacherSupervisionReportRequestObject) (api.GetTeacherSupervisionReportResponseObject, error) {
-	report, err := h.service.TeacherReport(ctx, tenantID(ctx), request.CycleId, request.TeacherId)
+	reader, err := h.reader(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	report, err := h.service.TeacherReport(ctx, tenantID(ctx), request.CycleId, request.TeacherId, reader)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -275,7 +322,11 @@ func (h *SupervisionHandler) ExportTeacherSupervisionReport(ctx context.Context,
 		}
 	}
 
-	body, err := h.service.ExportTeacherReport(ctx, tenantID(ctx), request.CycleId, request.TeacherId, tenantLocale(ctx), opts)
+	reader, err := h.reader(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	body, err := h.service.ExportTeacherReport(ctx, tenantID(ctx), request.CycleId, request.TeacherId, reader, tenantLocale(ctx), opts)
 	if err != nil {
 		if errors.Is(err, reportdoc.ErrUnknownColumn) {
 			return nil, httpx.ErrValidation

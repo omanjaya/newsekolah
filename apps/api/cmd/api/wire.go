@@ -333,6 +333,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Schedules:  wiring.SupervisionSchedule{Reader: schedulingModule.ScheduleReader},
 		Flags:      wiring.PlatformFlags{Svc: platformModule.Service},
 		Letterhead: wiring.ReportHeaderReports{Svc: schoolModule.Service},
+		Perms:      identityModule.Service,
 		Clock:      clock.Real{},
 	})
 	visitorsModule := visitors.Register(visitors.Dependencies{

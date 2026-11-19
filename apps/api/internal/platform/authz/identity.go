@@ -60,7 +60,7 @@ func Authorize(ctx context.Context, ops OperationPermissions, provider Permissio
 		return nil
 	}
 
-	perm, ok := ops.Permission(operationID)
+	required, ok := ops.Permissions(operationID)
 	if !ok {
 		return httpx.WrapError(500, "AUTHZ_NOT_CONFIGURED", errUnconfigured(operationID))
 	}
@@ -71,7 +71,7 @@ func Authorize(ctx context.Context, ops OperationPermissions, provider Permissio
 	if !id.Authenticated {
 		return httpx.ErrTokenInvalid
 	}
-	if perm == "authenticated" {
+	if len(required) == 1 && required[0] == permAuthenticated {
 		return nil
 	}
 
@@ -79,13 +79,15 @@ func Authorize(ctx context.Context, ops OperationPermissions, provider Permissio
 	if err != nil {
 		return err
 	}
-	if !perms.Has(perm) {
-		return httpx.ErrForbidden
+	// Any one alternative is enough, but it must be one the user holds and,
+	// for an API key, one the key was granted as well: a key never borrows
+	// an alternative its owner holds but the key itself does not.
+	for _, perm := range required {
+		if perms.Has(perm) && (id.KeyPermissions == nil || id.KeyPermissions.Has(perm)) {
+			return nil
+		}
 	}
-	if id.KeyPermissions != nil && !id.KeyPermissions.Has(perm) {
-		return httpx.ErrForbidden
-	}
-	return nil
+	return httpx.ErrForbidden
 }
 
 type unconfiguredError string

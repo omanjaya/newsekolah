@@ -74,13 +74,13 @@ func TestSimulatedFutureDutyHonoredWithinSimulatedWindow(t *testing.T) {
 	// Without a simulation header, the real wall-clock date is still
 	// before starts_on, so the duty is not yet active and readerID (not
 	// the observer or the observed teacher) cannot open the observation.
-	_, err = svc.GetObservation(ctx, tenantID, observationID, readerID)
+	_, err = svc.GetObservation(ctx, tenantID, observationID, domain.Reader{UserID: readerID, AllTeachers: true})
 	require.ErrorIs(t, err, domain.ErrObservationForbidden,
 		"the duty starts in the future, so without simulation it must not be active yet")
 
 	// A simulated date inside the (open-ended) window starting at
 	// futureStart must honor the duty.
 	simCtx := clock.WithTime(ctx, futureStart.AddDate(0, 0, 2))
-	_, err = svc.GetObservation(simCtx, tenantID, observationID, readerID)
+	_, err = svc.GetObservation(simCtx, tenantID, observationID, domain.Reader{UserID: readerID, AllTeachers: true})
 	require.NoError(t, err, "a simulated date inside the duty's window must be honored")
 }

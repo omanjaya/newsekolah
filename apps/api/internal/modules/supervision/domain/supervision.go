@@ -165,6 +165,21 @@ func (s ScheduledObservation) Validate() error {
 	return nil
 }
 
+// Reader is who reads supervision records and how far their permissions
+// reach: view_supervision covers every teacher's report, scheduled visits
+// and observations (AllTeachers); view_own_supervision covers only the
+// reader's own, as the observed teacher. The handler resolves it from the
+// caller's permissions; the service enforces it.
+type Reader struct {
+	UserID      uuid.UUID
+	AllTeachers bool
+}
+
+// MayRead reports whether the reader may see records about teacherUserID.
+func (r Reader) MayRead(teacherUserID uuid.UUID) bool {
+	return r.AllTeachers || (r.UserID != uuid.Nil && r.UserID == teacherUserID)
+}
+
 // ObservationReader is what the service resolves about the caller before
 // applying the read rule: the observer who wrote it and leadership always
 // read it; the observed teacher always reads their own, per the brief.

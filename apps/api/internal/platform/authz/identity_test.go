@@ -20,7 +20,7 @@ func (f fakeProvider) EffectivePermissions(context.Context, uuid.UUID, uuid.UUID
 }
 
 func opsWith(operationID, perm string) OperationPermissions {
-	return OperationPermissions{byOperation: map[string]string{operationID: perm}, publicOps: map[string]bool{}}
+	return OperationPermissions{byOperation: map[string][]string{operationID: {perm}}, publicOps: map[string]bool{}}
 }
 
 func TestAuthorize_KeyPermissionsNeverExceedUserPermissions(t *testing.T) {
@@ -59,6 +59,42 @@ func TestAuthorize_KeyPermissionsNeverExceedUserPermissions(t *testing.T) {
 		granted := NewSet("manage_integrations")
 		keyID.KeyPermissions = &granted
 		err := Authorize(context.Background(), ops, limitedProvider, "createAPIKey", keyID)
+		if !errors.Is(err, httpx.ErrForbidden) {
+			t.Fatalf("expected ErrForbidden, got %v", err)
+		}
+	})
+}
+
+func TestAuthorize_AnyOfAlternatives(t *testing.T) {
+	ops := OperationPermissions{
+		byOperation: map[string][]string{"getReport": {"view_supervision", "view_own_supervision"}},
+		publicOps:   map[string]bool{},
+	}
+	id := Identity{Authenticated: true, UserID: uuid.New(), TenantID: uuid.New()}
+
+	t.Run("either alternative is enough", func(t *testing.T) {
+		for _, perm := range []string{"view_supervision", "view_own_supervision"} {
+			provider := fakeProvider{perms: NewSet(perm)}
+			if err := Authorize(context.Background(), ops, provider, "getReport", id); err != nil {
+				t.Fatalf("%s: expected allow, got %v", perm, err)
+			}
+		}
+	})
+
+	t.Run("neither alternative is forbidden", func(t *testing.T) {
+		provider := fakeProvider{perms: NewSet("view_dashboard")}
+		err := Authorize(context.Background(), ops, provider, "getReport", id)
+		if !errors.Is(err, httpx.ErrForbidden) {
+			t.Fatalf("expected ErrForbidden, got %v", err)
+		}
+	})
+
+	t.Run("a key must hold the same alternative its owner holds", func(t *testing.T) {
+		provider := fakeProvider{perms: NewSet("view_own_supervision")}
+		keyID := id
+		granted := NewSet("view_supervision")
+		keyID.KeyPermissions = &granted
+		err := Authorize(context.Background(), ops, provider, "getReport", keyID)
 		if !errors.Is(err, httpx.ErrForbidden) {
 			t.Fatalf("expected ErrForbidden, got %v", err)
 		}

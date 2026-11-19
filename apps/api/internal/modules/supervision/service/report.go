@@ -22,7 +22,12 @@ type TeacherCycleReport struct {
 	CriterionAvg   map[string]float64
 }
 
-func (s *Service) TeacherReport(ctx context.Context, tenantID, cycleID, teacherUserID uuid.UUID) (TeacherCycleReport, error) {
+// TeacherReport is one teacher's results in a cycle. A reader limited to
+// their own records (view_own_supervision) only gets their own report.
+func (s *Service) TeacherReport(ctx context.Context, tenantID, cycleID, teacherUserID uuid.UUID, reader domain.Reader) (TeacherCycleReport, error) {
+	if !reader.MayRead(teacherUserID) {
+		return TeacherCycleReport{}, domain.ErrObservationForbidden
+	}
 	var out TeacherCycleReport
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		cycle, ok, err := s.repo.GetCycle(ctx, tenantID, cycleID)
@@ -135,13 +140,20 @@ func (s *Service) lastObserverName(ctx context.Context, tenantID uuid.UUID, obse
 // supervision report: the tenant's kop laporan (when configured), the
 // observation table, and a two-signer signature block for the supervisor
 // who conducted the observations and the principal.
-func (s *Service) ExportTeacherReport(ctx context.Context, tenantID, cycleID, teacherUserID uuid.UUID, locale string, opts reportdoc.Options) ([]byte, error) {
-	report, err := s.TeacherReport(ctx, tenantID, cycleID, teacherUserID)
+func (s *Service) ExportTeacherReport(ctx context.Context, tenantID, cycleID, teacherUserID uuid.UUID, reader domain.Reader, locale string, opts reportdoc.Options) ([]byte, error) {
+	report, err := s.TeacherReport(ctx, tenantID, cycleID, teacherUserID, reader)
 	if err != nil {
 		return nil, err
 	}
-	supervisorName, err := s.lastObserverName(ctx, tenantID, report.Observations)
-	if err != nil {
+	// The observer's name is read inside a tenant transaction like every
+	// other lookup: outside one, row level security hides the users row
+	// and the export of any report with an observation failed.
+	var supervisorName string
+	if err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		supervisorName, err = s.lastObserverName(ctx, tenantID, report.Observations)
+		return err
+	}); err != nil {
 		return nil, err
 	}
 

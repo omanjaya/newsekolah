@@ -3,21 +3,32 @@ package authz
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
-// OperationPermissions maps an OpenAPI operationId to the permission code
-// required to call it. "authenticated" means any valid session; publicOps
-// lists operations explicitly marked x-public: true (no auth required).
+// permAuthenticated is the x-permission value meaning "any valid session".
+const permAuthenticated = "authenticated"
+
+// OperationPermissions maps an OpenAPI operationId to the permission codes
+// that may call it. An operation declares either one code
+// (`x-permission: view_supervision`) or a list of alternatives, any one of
+// which is enough (`x-permission: [view_supervision, view_own_supervision]`;
+// the service then scopes the narrower one to the caller's own records).
+// "authenticated" means any valid session and is only valid on its own;
+// publicOps lists operations explicitly marked x-public: true (no auth
+// required).
 type OperationPermissions struct {
-	byOperation map[string]string
+	byOperation map[string][]string
 	publicOps   map[string]bool
 }
 
-func (p OperationPermissions) Permission(operationID string) (string, bool) {
-	perm, ok := p.byOperation[operationID]
-	return perm, ok
+// Permissions returns the codes that may call operationID; holding any one
+// of them is enough.
+func (p OperationPermissions) Permissions(operationID string) ([]string, bool) {
+	perms, ok := p.byOperation[operationID]
+	return perms, ok
 }
 
 func (p OperationPermissions) IsPublic(operationID string) bool {
@@ -31,7 +42,7 @@ func (p OperationPermissions) IsPublic(operationID string) bool {
 // other.
 func LoadOperationPermissions(doc *openapi3.T) (OperationPermissions, error) {
 	result := OperationPermissions{
-		byOperation: map[string]string{},
+		byOperation: map[string][]string{},
 		publicOps:   map[string]bool{},
 	}
 
@@ -46,13 +57,19 @@ func LoadOperationPermissions(doc *openapi3.T) (OperationPermissions, error) {
 				continue
 			}
 
-			perm, ok := stringExtension(op.Extensions, "x-permission")
-			if !ok || perm == "" {
+			perms, ok := permissionExtension(op.Extensions)
+			if !ok {
 				return OperationPermissions{}, fmt.Errorf(
 					"authz: operation %q (%s %s) has neither x-permission nor x-public: true", op.OperationID, method, path,
 				)
 			}
-			result.byOperation[op.OperationID] = perm
+			if len(perms) > 1 && slices.Contains(perms, permAuthenticated) {
+				return OperationPermissions{}, fmt.Errorf(
+					"authz: operation %q (%s %s) lists %q among alternatives; it is only valid on its own",
+					op.OperationID, method, path, permAuthenticated,
+				)
+			}
+			result.byOperation[op.OperationID] = perms
 		}
 	}
 
@@ -74,6 +91,42 @@ func isPublic(extensions map[string]any) bool {
 	default:
 		return false
 	}
+}
+
+// permissionExtension reads x-permission as either one code or a non-empty
+// list of codes. An empty or non-string entry makes the whole declaration
+// invalid, so a typo fails startup instead of silently changing who may
+// call the operation.
+func permissionExtension(extensions map[string]any) ([]string, bool) {
+	if perm, ok := stringExtension(extensions, "x-permission"); ok {
+		if perm == "" {
+			return nil, false
+		}
+		return []string{perm}, true
+	}
+	var perms []string
+	switch v := extensions["x-permission"].(type) {
+	case []any:
+		for _, item := range v {
+			code, ok := item.(string)
+			if !ok {
+				return nil, false
+			}
+			perms = append(perms, code)
+		}
+	case []string:
+		perms = v
+	case json.RawMessage:
+		if err := json.Unmarshal(v, &perms); err != nil {
+			return nil, false
+		}
+	default:
+		return nil, false
+	}
+	if len(perms) == 0 || slices.Contains(perms, "") {
+		return nil, false
+	}
+	return perms, true
 }
 
 func stringExtension(extensions map[string]any, key string) (string, bool) {

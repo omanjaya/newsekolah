@@ -141,7 +141,7 @@ func TestListScheduledCarriesObservation(t *testing.T) {
 	forCycle, err := svc.ListScheduledForCycle(ctx, tenant, cycle)
 	require.NoError(t, err)
 	check(forCycle)
-	forTeacher, err := svc.ListScheduledForTeacher(ctx, tenant, cycle, teacher)
+	forTeacher, err := svc.ListScheduledForTeacher(ctx, tenant, cycle, teacher, domain.Reader{UserID: teacher})
 	require.NoError(t, err)
 	check(forTeacher)
 }
