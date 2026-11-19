@@ -1189,6 +1189,7 @@
         "daySentence": "Status for this day: {status}.",
         "dayAriaLabel": "{date}, status {status}",
         "legendLabel": "This month's status summary",
+        "statsLabel": "This month's attendance summary",
         "statPresentLabel": "Present",
         "statSickLabel": "Sick",
         "statExcusedLabel": "Excused",
@@ -1269,7 +1270,10 @@
         "openReports": "Open attendance reports",
         "openMonitor": "Open the monitor",
         "bodyReportsOnly": "See each class's record in the reports.",
-        "openReportsHub": "Open the reports centre"
+        "openReportsHub": "Open the reports centre",
+        "dayEyebrow": "School attendance on {date}",
+        "dayTitle": "Each class's record is in the reports",
+        "dayBody": "Live progress is only shown for today."
       },
       "openSchedule": "Open schedule",
       "leaveLetterNote": "Leave letter {number}"

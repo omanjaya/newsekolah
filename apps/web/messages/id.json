@@ -1189,6 +1189,7 @@
         "daySentence": "Status hari ini: {status}.",
         "dayAriaLabel": "{date}, status {status}",
         "legendLabel": "Ringkasan status bulan ini",
+        "statsLabel": "Ringkasan presensi bulan ini",
         "statPresentLabel": "Hadir",
         "statSickLabel": "Sakit",
         "statExcusedLabel": "Izin",
@@ -1269,7 +1270,10 @@
         "openReports": "Buka laporan presensi",
         "openMonitor": "Buka monitor",
         "bodyReportsOnly": "Lihat rekap per kelas di laporan.",
-        "openReportsHub": "Buka pusat laporan"
+        "openReportsHub": "Buka pusat laporan",
+        "dayEyebrow": "Presensi sekolah {date}",
+        "dayTitle": "Rekap per kelas ada di laporan",
+        "dayBody": "Progres langsung hanya tersedia untuk hari ini."
       },
       "openSchedule": "Buka jadwal",
       "leaveLetterNote": "Surat izin {number}"
