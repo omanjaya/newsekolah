@@ -19,6 +19,7 @@ import { useMemo, useState, type ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { type AdminRole, usePermissionsQuery } from "../api";
+import { usePermissionText } from "../lib/use-permission-text";
 
 import { PermissionGroup, type PermissionRow } from "./permission-group";
 
@@ -73,14 +74,8 @@ export function RolePermissionsPanel({
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const editable = canManage && !role.is_system;
 
+  const text = usePermissionText();
   const groups = useMemo(() => {
-    const text = (code: string, fallback: string) =>
-      t.has(`permissions.${code}.label`)
-        ? {
-            label: t(`permissions.${code}.label`),
-            description: t(`permissions.${code}.description`),
-          }
-        : { label: code, description: fallback };
     return (permissions.data?.groups ?? [])
       .map((group) => ({
         name: group.name,
@@ -92,7 +87,7 @@ export function RolePermissionsPanel({
         })),
       }))
       .sort((a, b) => a.label.localeCompare(b.label));
-  }, [permissions.data, role.slug, t]);
+  }, [permissions.data, role.slug, t, text]);
 
   const total = groups.reduce((sum, group) => sum + group.rows.length, 0);
   const grantedTotal = groups.reduce(

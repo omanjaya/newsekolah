@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { usePermissionText } from "../../roles/lib/use-permission-text";
 
 /**
  * The human label of a permission code, from the roles catalog that already
@@ -8,9 +8,6 @@ import { useTranslations } from "next-intl";
  * catalog does not know yet falls back to the raw code.
  */
 export function usePermissionLabel(): (code: string) => string {
-  const t = useTranslations("app.roles");
-  return (code) => {
-    const key = `permissions.${code}.label`;
-    return t.has(key) ? t(key) : code;
-  };
+  const text = usePermissionText();
+  return (code) => text(code).label;
 }

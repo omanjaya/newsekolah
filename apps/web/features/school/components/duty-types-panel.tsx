@@ -29,6 +29,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { usePermissionsQuery } from "../../roles/api";
+import { usePermissionText } from "../../roles/lib/use-permission-text";
 import { type DutyType } from "../api";
 import {
   useCreateDutyTypeMutation,
@@ -213,6 +214,7 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
 function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolean }): ReactElement {
   const t = useTranslations("app.school.duties");
   const tGroups = useTranslations("app.roles");
+  const permissionText = usePermissionText();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const permissions = usePermissionsQuery();
@@ -349,8 +351,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
                 {group.permissions.map((p) => (
                   <Checkbox
                     key={p.code}
-                    label={p.code}
-                    description={p.description}
+                    {...permissionText(p.code, p.description)}
                     checked={granted.has(p.code)}
                     disabled={!canManage}
                     onCheckedChange={(v) => {
