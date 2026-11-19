@@ -21959,6 +21959,10 @@ components:
       properties:
         code:
           type: string
+        description:
+          type: string
+          description: 'What the assessment was, as the teacher wrote it on the component ("Kuis bab 3: pecahan"). Omitted when
+            the teacher left it empty, so the code alone names the component.'
         kind:
           $ref: "#/components/schemas/AssessmentComponentKind"
         kktp:

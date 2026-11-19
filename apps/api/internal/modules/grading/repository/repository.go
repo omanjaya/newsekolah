@@ -150,8 +150,9 @@ func (r *Repository) ListGradesForStudent(ctx context.Context, tenantID, student
 	out := make([]service.StudentGradeRow, len(rows))
 	for i, row := range rows {
 		out[i] = service.StudentGradeRow{
-			ComponentID: row.ComponentID, Code: row.Code, Kind: domain.ComponentKind(row.Kind), Weight: pdatabase.FloatOrZero(row.Weight),
-			KKTP: pdatabase.FloatPtr(row.Kktp), SubjectID: row.SubjectID, ClassID: row.ClassID, TermID: row.TermID,
+			ComponentID: row.ComponentID, Code: row.Code, Kind: domain.ComponentKind(row.Kind), Description: row.Description,
+			Weight: pdatabase.FloatOrZero(row.Weight), KKTP: pdatabase.FloatPtr(row.Kktp),
+			SubjectID: row.SubjectID, ClassID: row.ClassID, TermID: row.TermID,
 			Score: pdatabase.FloatOrZero(row.Score), UpdatedAt: pdatabase.TimeOrZero(row.UpdatedAt),
 		}
 	}

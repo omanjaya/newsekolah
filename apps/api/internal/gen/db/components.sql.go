@@ -274,7 +274,7 @@ func (q *Queries) ListGradesForComponents(ctx context.Context, arg ListGradesFor
 }
 
 const listGradesForStudent = `-- name: ListGradesForStudent :many
-select g.score, g.updated_at, c.id as component_id, c.code, c.kind, c.weight, c.kktp, c.subject_id, c.class_id, c.term_id
+select g.score, g.updated_at, c.id as component_id, c.code, c.kind, c.description, c.weight, c.kktp, c.subject_id, c.class_id, c.term_id
 from grades g
 join assessment_components c on c.id = g.component_id
 where g.tenant_id = $1 and g.student_user_id = $2 and c.term_id = $3
@@ -293,6 +293,7 @@ type ListGradesForStudentRow struct {
 	ComponentID uuid.UUID          `json:"component_id"`
 	Code        string             `json:"code"`
 	Kind        string             `json:"kind"`
+	Description string             `json:"description"`
 	Weight      pgtype.Numeric     `json:"weight"`
 	Kktp        pgtype.Numeric     `json:"kktp"`
 	SubjectID   uuid.UUID          `json:"subject_id"`
@@ -317,6 +318,7 @@ func (q *Queries) ListGradesForStudent(ctx context.Context, arg ListGradesForStu
 			&i.ComponentID,
 			&i.Code,
 			&i.Kind,
+			&i.Description,
 			&i.Weight,
 			&i.Kktp,
 			&i.SubjectID,

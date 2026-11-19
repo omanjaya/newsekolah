@@ -410,11 +410,15 @@ type MySubjectGrade struct {
 	ReportScore *float64
 }
 
+// MyComponentScore is one graded component as a student sees it. The
+// description is the teacher's own note on what the assessment was; it
+// is empty when they wrote none.
 type MyComponentScore struct {
-	Code  string
-	Kind  domain.ComponentKind
-	KKTP  *float64
-	Score float64
+	Code        string
+	Kind        domain.ComponentKind
+	Description string
+	KKTP        *float64
+	Score       float64
 }
 
 type MyGrades struct {
@@ -511,7 +515,9 @@ func groupStudentGrades(rows []StudentGradeRow, published map[uuid.UUID]bool, fi
 			bySubject[row.SubjectID] = subject
 			order = append(order, row.SubjectID)
 		}
-		subject.Components = append(subject.Components, MyComponentScore{Code: row.Code, Kind: row.Kind, KKTP: row.KKTP, Score: row.Score})
+		subject.Components = append(subject.Components, MyComponentScore{
+			Code: row.Code, Kind: row.Kind, Description: row.Description, KKTP: row.KKTP, Score: row.Score,
+		})
 		acc := weighted[row.SubjectID]
 		weighted[row.SubjectID] = [2]float64{acc[0] + row.Score*row.Weight, acc[1] + row.Weight}
 	}

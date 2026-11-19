@@ -117,6 +117,7 @@ type StudentGradeRow struct {
 	ComponentID uuid.UUID
 	Code        string
 	Kind        domain.ComponentKind
+	Description string
 	Weight      float64
 	KKTP        *float64
 	SubjectID   uuid.UUID
