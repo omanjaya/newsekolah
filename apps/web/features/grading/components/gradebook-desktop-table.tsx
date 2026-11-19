@@ -215,7 +215,14 @@ export function GradebookDesktopTable({
                   />
                 </TableCell>
               ))}
-              <TableCell className="border-l border-line text-right text-fg tabular-nums">
+              {/* An empty average is the muted "-" of the empty score and
+                  report-score cells beside it, not a value. */}
+              <TableCell
+                className={cn(
+                  "border-l border-line text-right tabular-nums",
+                  live?.average !== undefined ? "text-fg" : "text-fg-muted",
+                )}
+              >
                 {live?.average !== undefined ? formatScore(live.average, locale) : "-"}
               </TableCell>
               <TableCell className="border-l border-line text-right tabular-nums">

@@ -215,13 +215,22 @@ export function GradingView(): ReactElement {
 
   // "Open the gradebook" from the e-Rapor panel unmounts the button that
   // was pressed; focus follows the reader into the sheet panel instead of
-  // falling back to the top of the page.
+  // falling back to the top of the page. Radix renders the chosen panel
+  // `hidden` in the commit where the tab changes and shows it only in the
+  // render its Presence schedules next, and a browser does not focus a
+  // hidden element: focusing it in this effect left focus on <body>
+  // (audit r5-r4-n10). A frame later the panel is shown.
   const gradebookPanelRef = useRef<HTMLDivElement>(null);
   const focusGradebookOnOpen = useRef(false);
   useEffect(() => {
     if (tab !== "gradebook" || !focusGradebookOnOpen.current) return;
-    focusGradebookOnOpen.current = false;
-    gradebookPanelRef.current?.focus();
+    const frame = requestAnimationFrame(() => {
+      focusGradebookOnOpen.current = false;
+      gradebookPanelRef.current?.focus();
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+    };
   }, [tab]);
 
   const classNameOf = (id: string) => classes.data?.data.find((c) => c.id === id)?.name ?? "";

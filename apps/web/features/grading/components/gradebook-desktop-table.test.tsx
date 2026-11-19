@@ -115,6 +115,24 @@ describe("GradebookDesktopTable", () => {
     expect(within(citra).getAllByText("-")[0]).toHaveClass("text-fg-muted");
   });
 
+  it("mutes an empty average like the empty score and report-score cells beside it", () => {
+    renderTable({
+      canManage: false,
+      liveByStudent: new Map([
+        ["s1", { average: 88, missing: 0 }],
+        ["s2", { average: undefined, missing: 1 }],
+      ]),
+    });
+    const budiCells = within(screen.getByRole("row", { name: /Budi/ })).getAllByRole("cell");
+    const citraCells = within(screen.getByRole("row", { name: /Citra/ })).getAllByRole("cell");
+    // Columns: TG1, Rata-rata, Nilai rapor, stars.
+    expect(budiCells[1]).toHaveTextContent("88,0");
+    expect(budiCells[1]).toHaveClass("text-fg");
+    expect(citraCells[1]).toHaveTextContent("-");
+    expect(citraCells[1]).toHaveClass("text-fg-muted");
+    expect(citraCells[1]).not.toHaveClass("text-fg");
+  });
+
   it("keeps editable score inputs for a manager", () => {
     renderTable();
     expect(screen.getAllByRole("spinbutton")).toHaveLength(2);
