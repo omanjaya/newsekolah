@@ -182,6 +182,8 @@ function ActiveLateArrival({ detail }: { detail: LateArrivalDetail }): ReactElem
   const inst = detail.instance;
   const stage = inst.current_stage;
   const scanStage = inst.status === "in_progress" && stage?.verification === "qr_scan";
+  // A student sent home must not be told to go to class at the end.
+  const sendHome = (action: LateArrivalDetail["required_action"]) => action === "send_home";
 
   return (
     <div className="flex w-full max-w-2xl flex-col gap-4">
@@ -218,7 +220,9 @@ function ActiveLateArrival({ detail }: { detail: LateArrivalDetail }): ReactElem
             <p className="text-body-sm text-fg-muted">{t("waitManual", { stage: stage.label })}</p>
           )}
           {inst.status === "completed" && (
-            <p className="text-body-sm text-fg-muted">{t("completedBody")}</p>
+            <p className="text-body-sm text-fg-muted">
+              {sendHome(detail.required_action) ? t("completedBodySendHome") : t("completedBody")}
+            </p>
           )}
         </Card>
       </HeroCard>
@@ -242,7 +246,9 @@ function ActiveLateArrival({ detail }: { detail: LateArrivalDetail }): ReactElem
           successMessage={(result) =>
             result.instance.status === "in_progress"
               ? tScan("stageApproved", { stage: stage.label })
-              : t("finished")
+              : sendHome(result.required_action)
+                ? t("finishedSendHome")
+                : t("finished")
           }
           pending={scan.isPending}
           onToken={(token: string) => scan.mutateAsync({ id: inst.id, token })}

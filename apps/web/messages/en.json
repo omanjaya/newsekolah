@@ -1582,7 +1582,9 @@
         "cannotScanHint": "Can't scan? Ask the duty teacher to record you with Manual record.",
         "showQr": "Show QR",
         "completedBody": "Every stage is approved. You may go to class.",
-        "finished": "Late arrival complete. You may go to class."
+        "finished": "Late arrival complete. You may go to class.",
+        "completedBodySendHome": "Every stage is approved. Follow the duty teacher's directions for going home.",
+        "finishedSendHome": "Late arrival complete. Follow the duty teacher's directions for going home."
       },
       "leave": {
         "eyebrow": "Student affairs",

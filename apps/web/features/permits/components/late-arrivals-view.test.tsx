@@ -55,7 +55,7 @@ const leadership = {
   verification: "qr_scan",
 };
 
-function detail(status: string) {
+function detail(status: string, requiredAction = "none") {
   return {
     instance: {
       id: "late-1",
@@ -68,7 +68,7 @@ function detail(status: string) {
     },
     reason: "Macet",
     occurrence_number: 1,
-    required_action: "none",
+    required_action: requiredAction,
     homeroom_reported: false,
   };
 }
@@ -132,11 +132,40 @@ describe("LateArrivalsView for a student", () => {
     render(<LateArrivalsView />);
 
     const props = mocks.scanDialog.mock.calls.at(-1)?.[0] as {
-      successMessage: (result: { instance: { status: string } }) => string;
+      successMessage: (result: {
+        instance: { status: string };
+        required_action?: string;
+      }) => string;
     };
     expect(props.successMessage({ instance: { status: "in_progress" } })).toBe(
       "stageApproved:Pimpinan",
     );
-    expect(props.successMessage({ instance: { status: "completed" } })).toBe("finished");
+    expect(
+      props.successMessage({ instance: { status: "completed" }, required_action: "none" }),
+    ).toBe("finished");
+  });
+
+  it("does not send a student who is sent home to class when the flow completes", () => {
+    mocks.current = { ...mocks.current, data: detail("in_progress", "send_home") };
+    const { rerender } = render(<LateArrivalsView />);
+
+    const props = mocks.scanDialog.mock.calls.at(-1)?.[0] as {
+      successMessage: (result: { instance: { status: string }; required_action: string }) => string;
+    };
+    expect(
+      props.successMessage({ instance: { status: "completed" }, required_action: "send_home" }),
+    ).toBe("finishedSendHome");
+
+    mocks.current = { ...mocks.current, data: null };
+    mocks.byId = {
+      data: detail("completed", "send_home"),
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    };
+    rerender(<LateArrivalsView />);
+
+    expect(screen.getByText("completedBodySendHome")).toBeInTheDocument();
+    expect(screen.queryByText("completedBody")).not.toBeInTheDocument();
   });
 });

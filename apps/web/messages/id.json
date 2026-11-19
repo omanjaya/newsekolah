@@ -1582,7 +1582,9 @@
         "cannotScanHint": "Tidak bisa memindai? Minta guru piket mencatat Anda lewat Catat manual.",
         "showQr": "Tampilkan QR",
         "completedBody": "Semua tahap disetujui. Silakan masuk kelas.",
-        "finished": "Keterlambatan selesai. Silakan masuk kelas."
+        "finished": "Keterlambatan selesai. Silakan masuk kelas.",
+        "completedBodySendHome": "Semua tahap disetujui. Ikuti arahan guru piket untuk pulang.",
+        "finishedSendHome": "Keterlambatan selesai. Ikuti arahan guru piket untuk pulang."
       },
       "leave": {
         "eyebrow": "Kesiswaan",
