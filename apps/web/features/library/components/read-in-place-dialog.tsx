@@ -63,8 +63,11 @@ export function ReadInPlaceDialog({
     >
       <DialogContent title={t("title")}>
         <div className="flex flex-col gap-4">
+          {/* Stacked: side by side in the dialog's column, "Nama pengunjung
+              (opsional)" wrapped to two lines beside a one-line "Anggota"
+              label and squeezed its input against the button. */}
           <form
-            className="flex flex-wrap items-end gap-2"
+            className="flex flex-col gap-3"
             onSubmit={(e) => {
               e.preventDefault();
               start.mutate(
@@ -88,7 +91,7 @@ export function ReadInPlaceDialog({
               );
             }}
           >
-            <Field label={t("member")} optional className="flex-1">
+            <Field label={t("member")} optional>
               <DirectoryPicker
                 value={memberUserId}
                 onValueChange={setMemberUserId}
@@ -96,7 +99,7 @@ export function ReadInPlaceDialog({
                 showUsername
               />
             </Field>
-            <Field label={t("visitorName")} optional className="flex-1">
+            <Field label={t("visitorName")} optional>
               <Input
                 value={visitorName}
                 onChange={(e) => {
@@ -106,7 +109,7 @@ export function ReadInPlaceDialog({
                 maxLength={150}
               />
             </Field>
-            <Button type="submit" loading={start.isPending}>
+            <Button type="submit" loading={start.isPending} className="self-end">
               {t("start")}
             </Button>
           </form>
