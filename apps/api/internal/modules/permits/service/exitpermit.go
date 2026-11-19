@@ -121,6 +121,14 @@ func (s *Service) validatePeriodRange(ctx context.Context, tenantID, startPeriod
 // stage's approving teacher's QR code. The token's issuer (the teacher who
 // displayed the code), not the scanning student, is who the approver rule
 // is evaluated against -- see docs/02-system-design.md section 6.2.
+//
+// The token is either bound to this permit (a counselor's or leadership's
+// QR, minted from their queue) or unbound: the picket desk's rotating QR,
+// minted for no permit at all. An unbound token binds to the permit the
+// student's scan names, and only for a stage domain.AcceptsUnboundApproval
+// allows (the any_teacher duty_teacher stage); the approver rule and
+// DistinctFrom are checked against its issuer exactly as for a bound one,
+// and it is consumed once, here, like every other token.
 func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scannerUserID uuid.UUID, rawToken string) (domain.Instance, error) {
 	var updated domain.Instance
 	var isLast bool
@@ -133,6 +141,9 @@ func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scan
 		if !ok {
 			return domain.ErrInstanceNotFound
 		}
+		if inst.Kind != domain.KindExitPermit {
+			return domain.ErrInstanceNotFound
+		}
 		if inst.SubjectUserID != scannerUserID {
 			return domain.ErrNotWorkflowSubject
 		}
@@ -140,6 +151,7 @@ func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scan
 		token, err := s.ConsumeScanToken(ctx, ConsumeScanTokenInput{
 			TenantID: tenantID, RawValue: rawToken, Purpose: domain.PurposeApproveStage,
 			ContextID: uuid.NullUUID{UUID: instanceID, Valid: true}, ConsumedByUserID: scannerUserID,
+			AllowUnbound: true,
 		})
 		if err != nil {
 			return err
@@ -149,6 +161,7 @@ func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scan
 		updated, def, isLast, err = s.approveCurrentStage(ctx, stageTransitionInput{
 			tenantID: tenantID, instanceID: instanceID, actorUserID: token.IssuedByUserID,
 			scanTokenID: uuid.NullUUID{UUID: token.ID, Valid: true}, onLastStageStatus: domain.StatusApproved,
+			verification: domain.VerificationQRScan, unboundToken: !token.ContextID.Valid,
 		})
 		if err != nil {
 			return err

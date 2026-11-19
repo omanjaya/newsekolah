@@ -21,3 +21,10 @@ func TestMapErrorTemplateInvalid(t *testing.T) {
 	require.Equal(t, http.StatusUnprocessableEntity, appErr.Status)
 	require.Equal(t, "TEMPLATE_INVALID", appErr.Code)
 }
+
+func TestMapErrorStageVerificationMismatch(t *testing.T) {
+	var appErr *httpx.Error
+	require.True(t, errors.As(mapError(domain.ErrStageVerificationMismatch), &appErr))
+	require.Equal(t, http.StatusConflict, appErr.Status)
+	require.Equal(t, "WORKFLOW_STAGE_MISMATCH", appErr.Code)
+}

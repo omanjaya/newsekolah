@@ -340,11 +340,18 @@ func TestReviewLateArrivalPublishesToDutyTeacherTopic(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.Len(t, hub.dutyPublishes, 2)
+	require.Len(t, hub.dutyPublishes, 3)
 	got := hub.dutyPublishes[1]
 	require.Equal(t, "picket", got.dutySlug)
 	require.Equal(t, "late_arrival.updated", got.eventType)
 	requireInstancePayload(t, got.payload, opened.Instance.ID)
+
+	// The flow now waits at the default chain's leadership stage, whose
+	// approvers' queue gains it.
+	next := hub.dutyPublishes[2]
+	require.Equal(t, "leadership", next.dutySlug)
+	require.Equal(t, "late_arrival.updated", next.eventType)
+	requireInstancePayload(t, next.payload, opened.Instance.ID)
 }
 
 // exitPermitDefinitionStages is a 2-stage exit-permit definition

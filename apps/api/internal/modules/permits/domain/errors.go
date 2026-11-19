@@ -15,6 +15,12 @@ var (
 	ErrAcademicYearRequired  = errors.New("tenant has no active academic year")
 	ErrEnrollmentNotFound    = errors.New("student has no active enrollment")
 	ErrPeriodRangeInvalid    = errors.New("end period must be after start period")
+	// ErrStageVerificationMismatch is an attempt to satisfy the current
+	// stage in a way its Verification does not allow: a scan on a manual
+	// stage, a manual review on a qr_scan stage, or the picket desk's
+	// unbound token on a stage that needs a bound one
+	// (AcceptsUnboundApproval).
+	ErrStageVerificationMismatch = errors.New("the current stage cannot be satisfied this way")
 
 	ErrTokenNotFound        = errors.New("scan token not found")
 	ErrTokenExpired         = errors.New("scan token expired")

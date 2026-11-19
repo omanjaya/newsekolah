@@ -17,7 +17,12 @@ paths:
                 context_id:
                   type: string
                   format: uuid
-                  description: Workflow instance the token approves (required for approve_stage).
+                  description: >-
+                    Workflow instance the token approves. An approve_stage token without
+                    one is the picket desk's exit-permit QR: only an active teacher may mint
+                    it, it lives 30 seconds, it is single use, and it can only approve an
+                    exit permit's any_teacher qr_scan stage (duty_teacher), binding to the
+                    permit the student's scan names.
       responses:
         "201":
           description: Token issued
@@ -241,6 +246,10 @@ paths:
       operationId: scanExitPermitStage
       x-permission: authenticated
       summary: Student scans the current approver's token to advance a stage
+      description: >-
+        Accepts a token bound to this permit, or the picket desk's unbound token while
+        the permit waits at its any_teacher qr_scan stage. A stage the token cannot
+        satisfy answers 409 WORKFLOW_STAGE_MISMATCH.
       parameters:
         - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -416,7 +425,12 @@ paths:
       tags: [permits]
       operationId: listLateArrivalsForReview
       x-permission: authenticated
-      summary: Open late arrivals awaiting the duty teacher's review
+      summary: Open late arrivals waiting on the caller
+      description: >-
+        Flows at a manual stage the caller reviews (the teacher whose token opened them,
+        or a role-granted manage_attendance holder), plus flows at a qr_scan stage whose
+        approver rule the caller satisfies now (leadership, the class teacher), who
+        approve them by showing a stage QR. current_stage tells the two apart.
       responses:
         "200":
           description: Queue
@@ -453,6 +467,7 @@ paths:
       operationId: reviewLateArrival
       x-permission: authenticated
       summary: Duty teacher records the review and moves the flow to leadership
+      description: Only a manual stage can be reviewed; any other answers 409 WORKFLOW_STAGE_MISMATCH.
       parameters:
         - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -1005,6 +1020,7 @@ components:
           student_user_id,
           status,
           current_stage_index,
+          current_stage,
           reason,
           occurrence_number,
           required_action,
@@ -1016,6 +1032,7 @@ components:
         class_id: { type: string, format: uuid }
         status: { $ref: "#/components/schemas/WorkflowStatus" }
         current_stage_index: { type: integer }
+        current_stage: { $ref: "#/components/schemas/WorkflowStage" }
         reason: { type: string }
         occurrence_number: { type: integer }
         required_action: { $ref: "#/components/schemas/RequiredAction" }

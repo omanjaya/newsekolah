@@ -39,9 +39,9 @@ func (h *PermitsHandler) IssueScanToken(ctx context.Context, request api.IssueSc
 	if request.Body.ContextId != nil {
 		in.ContextID = uuid.NullUUID{UUID: *request.Body.ContextId, Valid: true}
 	}
-	if in.Purpose == domain.PurposeApproveStage && !in.ContextID.Valid {
-		return nil, httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "context_id", Code: "REQUIRED"})
-	}
+	// approve_stage without context_id is the picket desk's exit-permit QR;
+	// the service only mints it for an active teacher, and only the stage
+	// domain.AcceptsUnboundApproval allows can consume it.
 	if in.Purpose == domain.PurposeGateExit {
 		return nil, httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "purpose", Code: "USE_GATE_TOKEN_ENDPOINT"})
 	}

@@ -47,14 +47,29 @@ type LeaveDocumentInfo struct {
 	CreatedAt time.Time
 }
 
-// LateArrivalReviewItem is an open late arrival joined with its workflow state.
+// LateArrivalReviewItem is an open late arrival joined with its workflow
+// state. CurrentStage tells a queue what the caller does next: a manual
+// stage is reviewed with the form, a qr_scan stage is approved by showing
+// the student a stage QR.
 type LateArrivalReviewItem struct {
 	domain.LateArrival
 	SubjectUserID     uuid.UUID
 	ClassID           uuid.NullUUID
+	AcademicYearID    uuid.UUID
 	CurrentStageIndex int
+	CurrentStage      domain.Stage
 	Status            domain.Status
 	OpenedAt          time.Time
+}
+
+// instance is the slice of the workflow instance the approver rules read
+// (evaluateApproverRule), rebuilt from the queue row so narrowing a queue
+// does not reload every instance.
+func (i LateArrivalReviewItem) instance() domain.Instance {
+	return domain.Instance{
+		ID: i.InstanceID, TenantID: i.TenantID, AcademicYearID: i.AcademicYearID, Kind: domain.KindLateArrival,
+		SubjectUserID: i.SubjectUserID, ClassID: i.ClassID, CurrentStageIndex: i.CurrentStageIndex, Status: i.Status,
+	}
 }
 
 // ExitPermitReportRow is one exit_permits row for the counselor's yearly

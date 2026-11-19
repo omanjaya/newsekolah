@@ -41,6 +41,7 @@ var (
 	errScanConsumerStudent = httpx.NewError(http.StatusForbidden, "SCAN_TOKEN_CONSUMER_NOT_STUDENT")
 	errReasonTooLong       = httpx.NewError(http.StatusBadRequest, "REASON_TOO_LONG")
 	errTemplateInvalid     = httpx.NewError(http.StatusUnprocessableEntity, "TEMPLATE_INVALID")
+	errStageMismatch       = httpx.NewError(http.StatusConflict, "WORKFLOW_STAGE_MISMATCH")
 )
 
 var permitErrorMap = map[error]error{
@@ -49,6 +50,7 @@ var permitErrorMap = map[error]error{
 	domain.ErrInstanceNotFound:             httpx.ErrNotFound,
 	domain.ErrInstanceNotInProgress:        errNotInProgress,
 	domain.ErrStageIndexOutOfRange:         errNotInProgress,
+	domain.ErrStageVerificationMismatch:    errStageMismatch,
 	domain.ErrApproverNotEligible:          errApproverNotEligible,
 	domain.ErrApproverNotDistinct:          errApproverNotEligible,
 	domain.ErrAlreadyInProgress:            errAlreadyInProgress,
@@ -241,7 +243,7 @@ func toAPILateArrivalSummary(i service.LateArrivalReviewItem) api.LateArrivalSum
 	reported := i.HomeroomReported
 	return api.LateArrivalSummary{
 		InstanceId: i.InstanceID, StudentUserId: i.SubjectUserID, ClassId: uuidPtr(i.ClassID), Status: api.WorkflowStatus(i.Status),
-		CurrentStageIndex: i.CurrentStageIndex, Reason: i.Reason, OccurrenceNumber: i.OccurrenceNumber,
+		CurrentStageIndex: i.CurrentStageIndex, CurrentStage: toAPIStage(i.CurrentStage), Reason: i.Reason, OccurrenceNumber: i.OccurrenceNumber,
 		RequiredAction: api.RequiredAction(i.RequiredAction), HomeroomReported: &reported, OpenedAt: i.OpenedAt,
 	}
 }

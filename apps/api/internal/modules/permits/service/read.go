@@ -245,8 +245,33 @@ func (s *Service) RequireCanViewLateArrival(ctx context.Context, tenantID, insta
 		} else if ok {
 			return nil
 		}
+		// Whoever may approve the stage the flow waits at now (the class
+		// teacher, for teacher_of_class_now) reads it too: their queue
+		// lists it and their approval QR shows who it is for.
+		if ok, err := s.isCurrentStageApprover(ctx, inst, userID); err != nil {
+			return err
+		} else if ok {
+			return nil
+		}
 		return domain.ErrNotWorkflowSubject
 	})
+}
+
+// isCurrentStageApprover reports whether userID may approve the stage an
+// in-progress inst waits at.
+func (s *Service) isCurrentStageApprover(ctx context.Context, inst domain.Instance, userID uuid.UUID) (bool, error) {
+	if !inst.CanTransition() {
+		return false, nil
+	}
+	def, ok, err := s.repo.GetDefinitionByID(ctx, inst.TenantID, inst.DefinitionID)
+	if err != nil || !ok {
+		return false, err
+	}
+	stage, err := def.StageAt(inst.CurrentStageIndex)
+	if err != nil {
+		return false, nil
+	}
+	return s.isStageApprover(ctx, inst, stage, userID)
 }
 
 // LeaveOverride reports the attendance status an issued leave letter forces

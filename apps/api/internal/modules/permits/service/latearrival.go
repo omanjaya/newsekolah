@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/google/uuid"
 
@@ -161,9 +163,13 @@ func (s *Service) ReviewLateArrival(ctx context.Context, in ReviewLateArrivalInp
 		if err := s.requireLateArrivalReviewer(ctx, in.TenantID, in.ReviewerUserID, late); err != nil {
 			return err
 		}
+		// Manual only: the review form records the picket teacher's
+		// judgement, and must never stand in for a later stage (leadership,
+		// class teacher) whose approver has to show their own QR.
 		inst, def, isLast, err := s.approveCurrentStage(ctx, stageTransitionInput{
 			tenantID: in.TenantID, instanceID: in.InstanceID, actorUserID: in.ReviewerUserID,
 			note: "reviewed by duty teacher", onLastStageStatus: domain.StatusCompleted,
+			verification: domain.VerificationManual,
 		})
 		if err != nil {
 			return err
@@ -192,7 +198,24 @@ func (s *Service) ReviewLateArrival(ctx context.Context, in ReviewLateArrivalInp
 	}
 	s.publish(ctx, LateArrivalUpdated{TenantID: in.TenantID, InstanceID: in.InstanceID, StudentUserID: detail.Instance.SubjectUserID, Status: string(detail.Instance.Status)})
 	s.publishToDutyStage(ctx, in.TenantID, uuid.NullUUID{}, "duty_teacher", "late_arrival.updated", instanceEventPayload{InstanceID: in.InstanceID})
+	s.publishToNextLateStage(ctx, in.TenantID, detail)
 	return detail, nil
+}
+
+// publishToNextLateStage tells the holders of the stage a late arrival now
+// waits at (leadership, after the picket review) that their queue gained
+// it, so the approver's inbox lists the student before they walk up. A
+// stage with no duty group (class_teacher) is skipped by
+// publishToDutyStage; that teacher's queue picks the flow up on its poll.
+func (s *Service) publishToNextLateStage(ctx context.Context, tenantID uuid.UUID, detail LateArrivalDetail) {
+	if detail.Instance.Status != domain.StatusInProgress {
+		return
+	}
+	stage, err := detail.Definition.StageAt(detail.Instance.CurrentStageIndex)
+	if err != nil || stage.Key == "duty_teacher" {
+		return
+	}
+	s.publishToDutyStage(ctx, tenantID, detail.Instance.ClassID, stage.Key, "late_arrival.updated", instanceEventPayload{InstanceID: detail.Instance.ID})
 }
 
 // recordReviewedViolations records each reviewed violation in discipline
@@ -226,7 +249,7 @@ func (s *Service) LateArrivalScan(ctx context.Context, tenantID, instanceID, stu
 		if err != nil {
 			return err
 		}
-		if !ok {
+		if !ok || inst.Kind != domain.KindLateArrival {
 			return domain.ErrInstanceNotFound
 		}
 		if inst.SubjectUserID != studentUserID {
@@ -242,6 +265,7 @@ func (s *Service) LateArrivalScan(ctx context.Context, tenantID, instanceID, stu
 		updated, def, isLast, err := s.approveCurrentStage(ctx, stageTransitionInput{
 			tenantID: tenantID, instanceID: instanceID, actorUserID: token.IssuedByUserID,
 			scanTokenID: uuid.NullUUID{UUID: token.ID, Valid: true}, onLastStageStatus: domain.StatusCompleted,
+			verification: domain.VerificationQRScan,
 		})
 		if err != nil {
 			return err
@@ -263,6 +287,7 @@ func (s *Service) LateArrivalScan(ctx context.Context, tenantID, instanceID, stu
 	}
 	s.publish(ctx, LateArrivalUpdated{TenantID: tenantID, InstanceID: instanceID, StudentUserID: studentUserID, Status: string(detail.Instance.Status)})
 	s.publishToDutyStage(ctx, tenantID, uuid.NullUUID{}, "duty_teacher", "late_arrival.updated", instanceEventPayload{InstanceID: instanceID})
+	s.publishToNextLateStage(ctx, tenantID, detail)
 	return detail, nil
 }
 
@@ -328,29 +353,70 @@ func (s *Service) CurrentLateArrival(ctx context.Context, tenantID, studentUserI
 }
 
 // CountLateArrivalsForReview is ListLateArrivalsForReview's queue size for
-// the same caller, for the action inbox badge.
+// the same caller, for the action inbox badge. It counts the list itself,
+// so the badge can never disagree with the queue it opens.
 func (s *Service) CountLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) (int, error) {
-	var n int
-	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
-		n, err = s.repo.CountLateArrivalsForReview(ctx, tenantID, callerUserID)
-		return err
-	})
+	items, err := s.ListLateArrivalsForReview(ctx, tenantID, callerUserID)
 	if err != nil {
 		return 0, fmt.Errorf("count late arrivals: %w", err)
 	}
-	return n, nil
+	return len(items), nil
 }
 
+// ListLateArrivalsForReview is every open late arrival waiting on the
+// caller, oldest first, in two kinds:
+//
+//   - at a manual stage (the picket review), for the teacher whose token
+//     opened it or a role-granted manage_attendance holder (queries/
+//     late_arrivals.sql); the caller reviews it with the form;
+//   - at a qr_scan stage (leadership, the class teacher) whose approver
+//     rule and DistinctFrom the caller satisfies right now -- the same
+//     evaluation LateArrivalScan runs on the scan, so the queue lists a
+//     flow exactly when the caller's stage QR would be accepted. The
+//     caller approves it by showing the student that QR.
+//
+// Each item carries its CurrentStage so the client can tell the two apart.
 func (s *Service) ListLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]LateArrivalReviewItem, error) {
 	var out []LateArrivalReviewItem
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
-		out, err = s.repo.ListLateArrivalsForReview(ctx, tenantID, callerUserID)
-		return err
+		review, err := s.repo.ListLateArrivalsForReview(ctx, tenantID, callerUserID)
+		if err != nil {
+			return err
+		}
+		atScan, err := s.repo.ListLateArrivalsAtScanStage(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		out = review
+		for _, item := range atScan {
+			eligible, err := s.isStageApprover(ctx, item.instance(), item.CurrentStage, callerUserID)
+			if err != nil {
+				return err
+			}
+			if eligible {
+				out = append(out, item)
+			}
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list late arrivals: %w", err)
 	}
+	sort.SliceStable(out, func(i, j int) bool { return out[i].OpenedAt.Before(out[j].OpenedAt) })
 	return out, nil
+}
+
+// isStageApprover reports whether actorUserID would pass stage's approver
+// rule and DistinctFrom on inst right now, turning the rule's own refusal
+// into false instead of an error.
+func (s *Service) isStageApprover(ctx context.Context, inst domain.Instance, stage domain.Stage, actorUserID uuid.UUID) (bool, error) {
+	err := s.evaluateApproverRule(ctx, domain.Definition{}, inst, stage, actorUserID)
+	switch {
+	case err == nil:
+		return true, nil
+	case errors.Is(err, domain.ErrApproverNotEligible), errors.Is(err, domain.ErrApproverNotDistinct), errors.Is(err, domain.ErrDefinitionInvalid):
+		return false, nil
+	default:
+		return false, err
+	}
 }

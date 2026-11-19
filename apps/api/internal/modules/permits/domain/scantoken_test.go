@@ -35,6 +35,41 @@ func TestPurposeValid(t *testing.T) {
 	require.False(t, Purpose("unknown").Valid())
 }
 
+func TestAcceptsUnboundApproval(t *testing.T) {
+	exitStages := DefaultStages(KindExitPermit)
+	lateStages := DefaultStages(KindLateArrival)
+	leaveStages := DefaultStages(KindLeaveRequest)
+
+	tests := []struct {
+		name  string
+		kind  Kind
+		stage Stage
+		want  bool
+	}{
+		{"exit permit duty_teacher stage", KindExitPermit, exitStages[0], true},
+		{"exit permit class_teacher stage", KindExitPermit, exitStages[1], false},
+		{"exit permit counselor stage", KindExitPermit, exitStages[2], false},
+		{"exit permit leadership stage", KindExitPermit, exitStages[3], false},
+		{"late arrival manual duty_teacher stage", KindLateArrival, lateStages[0], false},
+		{"late arrival leadership stage", KindLateArrival, lateStages[1], false},
+		{"late arrival class_teacher stage", KindLateArrival, lateStages[2], false},
+		{"leave request homeroom stage", KindLeaveRequest, leaveStages[0], false},
+		{
+			"exit permit any_teacher stage verified by hand", KindExitPermit,
+			Stage{Key: "duty_teacher", ApproverRule: RuleAnyTeacher, Verification: VerificationManual}, false,
+		},
+		{
+			"late arrival any_teacher qr stage", KindLateArrival,
+			Stage{Key: "duty_teacher", ApproverRule: RuleAnyTeacher, Verification: VerificationQRScan}, false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, AcceptsUnboundApproval(tt.kind, tt.stage))
+		})
+	}
+}
+
 func TestScanTokenState(t *testing.T) {
 	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
 

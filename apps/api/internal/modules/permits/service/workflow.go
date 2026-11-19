@@ -211,6 +211,18 @@ type stageTransitionInput struct {
 	scanTokenID       uuid.NullUUID
 	note              string
 	onLastStageStatus domain.Status
+	// verification, when set, is how the caller satisfies the stage: a
+	// scan (qr_scan) or a reviewer's form (manual). A stage configured the
+	// other way is refused with domain.ErrStageVerificationMismatch, so a
+	// scan can never skip a manual review and a review form can never
+	// stand in for a stage that needs the approver's QR.
+	verification domain.Verification
+	// unboundToken marks a scan whose approve_stage token was minted with
+	// no instance (the picket desk's QR). The current stage must then pass
+	// domain.AcceptsUnboundApproval, checked here under the instance's row
+	// lock so a concurrent transition cannot slip a different stage in
+	// between the check and the advance.
+	unboundToken bool
 }
 
 // approveCurrentStage loads the instance and its definition for update,
@@ -243,6 +255,12 @@ func (s *Service) approveCurrentStage(ctx context.Context, in stageTransitionInp
 	stage, err := def.StageAt(inst.CurrentStageIndex)
 	if err != nil {
 		return domain.Instance{}, domain.Definition{}, false, err
+	}
+	if in.verification != "" && stage.Verification != in.verification {
+		return domain.Instance{}, domain.Definition{}, false, domain.ErrStageVerificationMismatch
+	}
+	if in.unboundToken && !domain.AcceptsUnboundApproval(inst.Kind, stage) {
+		return domain.Instance{}, domain.Definition{}, false, domain.ErrStageVerificationMismatch
 	}
 	if err := s.evaluateApproverRule(ctx, def, inst, stage, in.actorUserID); err != nil {
 		return domain.Instance{}, domain.Definition{}, false, err
