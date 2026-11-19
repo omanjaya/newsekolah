@@ -1463,7 +1463,7 @@
         "detailTitle": "Exit permit",
         "student": "Student",
         "scanStageLabel": "{stage} QR code (barcode scanner)",
-        "stageDone": "Stage approved",
+        "approvedAwaitGate": "Every stage is approved. Show the gate QR to security.",
         "showGateQr": "Show gate QR",
         "exitedTitle": "Left through the gate",
         "cancel": "Cancel permit",

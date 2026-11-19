@@ -179,6 +179,7 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
   const t = useTranslations("app.permits.exit");
   const tWorkflow = useTranslations("app.permits.workflow");
   const tQr = useTranslations("app.permits.qr");
+  const tScan = useTranslations("app.permits.scan");
   const locale = useLocale() as Locale;
   const { me } = useSession();
   const toast = useToast();
@@ -298,9 +299,14 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
           title={t("hero.scanStage", { stage: stage.label })}
           description={t("hero.scanHint", { stage: stage.label })}
           manualLabel={t("scanStageLabel", { stage: stage.label })}
-          successMessage={t("stageDone")}
+          // The last stage approves the permit: point to the gate QR next.
+          successMessage={(result) =>
+            result.instance.status === "in_progress"
+              ? tScan("stageApproved", { stage: stage.label })
+              : t("approvedAwaitGate")
+          }
           pending={scan.isPending}
-          onToken={(token) => scan.mutateAsync({ id, token })}
+          onToken={(token: string) => scan.mutateAsync({ id, token })}
         />
       )}
       <ConfirmDialog

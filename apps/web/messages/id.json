@@ -1463,7 +1463,7 @@
         "detailTitle": "Detail izin keluar",
         "student": "Siswa",
         "scanStageLabel": "Kode QR {stage} (alat pemindai)",
-        "stageDone": "Tahap disetujui",
+        "approvedAwaitGate": "Semua tahap disetujui. Tunjukkan QR gerbang ke satpam.",
         "showGateQr": "Tampilkan QR gerbang",
         "exitedTitle": "Sudah keluar gerbang",
         "cancel": "Batalkan izin",
