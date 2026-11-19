@@ -42,6 +42,8 @@ import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { RecordNotFoundPage } from "../../../components/record-not-found";
+import { isNotFoundError } from "../../../lib/api/not-found";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryNames } from "../../reference/directory-names";
 import {
@@ -151,6 +153,17 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
     ],
     [t, locale, people, canManage, cycleId],
   );
+
+  // An unknown or malformed id is a missing cycle, not a failure to retry.
+  if (cycle.isError && !cycle.data && isNotFoundError(cycle.error)) {
+    return (
+      <RecordNotFoundPage
+        title={t("notFoundTitle")}
+        backHref="/supervision/cycles"
+        backLabel={t("backToCycles")}
+      />
+    );
+  }
 
   if (cycle.isError && !cycle.data) {
     return (

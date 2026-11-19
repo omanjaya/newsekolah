@@ -16,7 +16,6 @@ import {
   DialogContent,
   EmptyState,
   SkeletonDetail,
-  StatePage,
   Tabs,
   TabsContent,
   TabsList,
@@ -26,13 +25,14 @@ import {
   type PageHeaderAction,
 } from "@newsekolah/ui";
 import { BadgeCheck, FileText, Pencil, Printer, Scale } from "lucide-react";
-import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { RecordNotFoundPage } from "../../../components/record-not-found";
+import { isNotFoundError } from "../../../lib/api/not-found";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
@@ -40,7 +40,7 @@ import { todayInZone } from "../../../lib/tenant-date";
 import { useLookup } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { printMemberCard, useMemberLoanHistoryQuery, useMemberReservationsQuery } from "../api";
-import { formatShortDate } from "../lib/short-date";
+import { formatShortDay } from "../lib/short-date";
 import { MEMBER_STATUS_TONE, toneOf } from "../lib/status-tones";
 import {
   printLibraryClearanceLetter,
@@ -77,7 +77,8 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_library_members");
   const canCirculate = useCan("manage_library_circulation");
-  const today = todayInZone(useTenantTimeZone());
+  const timeZone = useTenantTimeZone();
+  const today = todayInZone(timeZone);
 
   const member = useLibraryMemberQuery(userId);
   const memberTypes = useLibraryMemberTypesQuery();
@@ -117,26 +118,21 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
       </AppPage>
     );
   }
-  if (member.isError) {
+  // An unknown or malformed id is a missing member, not a failure to retry.
+  if (!member.data && (!member.isError || isNotFoundError(member.error))) {
     return (
-      <AppPage title={t("loadErrorTitle")} nav={false}>
-        <QueryError retry={() => member.refetch()} error={member.error} />
-      </AppPage>
+      <RecordNotFoundPage
+        title={t("notFoundTitle")}
+        description={t("notFoundBody")}
+        backHref="/library/members"
+        backLabel={t("backToList")}
+      />
     );
   }
   if (!member.data) {
     return (
-      <AppPage title={t("notFoundTitle")} nav={false} header={false}>
-        <StatePage
-          kind="not-found"
-          title={t("notFoundTitle")}
-          description={t("notFoundBody")}
-          action={
-            <Button asChild>
-              <Link href="/library/members">{t("backToList")}</Link>
-            </Button>
-          }
-        />
+      <AppPage title={t("loadErrorTitle")} nav={false}>
+        <QueryError retry={() => member.refetch()} error={member.error} />
       </AppPage>
     );
   }
@@ -216,7 +212,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
           </DataListItem>
           <DataListItem label={t("memberType")}>{typeName}</DataListItem>
           <DataListItem label={t("validUntil")}>
-            {data.valid_until ? formatShortDate(data.valid_until, locale, { today }) : undefined}
+            {data.valid_until ? formatShortDay(data.valid_until, locale, { today }) : undefined}
           </DataListItem>
         </DataList>
         <div className="flex flex-wrap items-center gap-3">
@@ -307,7 +303,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
         </TabsContent>
 
         <TabsContent value="history">
-          <MemberPastLoans loans={pastLoans} locale={locale} today={today} />
+          <MemberPastLoans loans={pastLoans} locale={locale} timeZone={timeZone} today={today} />
         </TabsContent>
 
         <TabsContent value="fines">

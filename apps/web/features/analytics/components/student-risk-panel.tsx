@@ -15,6 +15,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import { isNotFoundError } from "../../../lib/api/not-found";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useSession } from "../../../lib/session/session-provider";
 import { useStudentRiskQuery } from "../api";
@@ -41,6 +42,18 @@ export function StudentRiskPanel({ studentId }: { studentId: string }): ReactEle
   const { data, isLoading, error, refetch } = useStudentRiskQuery(studentId);
 
   if (isLoading) return <SkeletonDetail rows={4} />;
+
+  // No stored result for this student this year (not computed yet, or
+  // outside the reader's class): an answer, not a failure to retry.
+  if (!data && isNotFoundError(error)) {
+    return (
+      <EmptyState
+        icon={<ShieldCheck aria-hidden="true" />}
+        title={t("noResultTitle")}
+        description={t("noResultBody")}
+      />
+    );
+  }
 
   if (error || !data) {
     return <QueryError retry={() => refetch()} error={error} />;

@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { classifyDueDate, overdueDays, type DueUrgency } from "../lib/due-date";
-import { formatShortDate } from "../lib/short-date";
+import { formatShortDay } from "../lib/short-date";
 
 const URGENCY_TONE: Record<DueUrgency, BadgeTone> = {
   ok: "neutral",
@@ -37,7 +37,7 @@ export function DueBadge({
 }): ReactElement {
   const t = useTranslations("app.library.dueBadge");
   const urgency = classifyDueDate(dueOn, today);
-  const date = formatShortDate(dueOn, locale, { today });
+  const date = formatShortDay(dueOn, locale, { today });
   const days = overdueDays(dueOn, today);
   const label =
     urgency !== "overdue"

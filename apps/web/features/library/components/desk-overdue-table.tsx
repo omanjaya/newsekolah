@@ -26,7 +26,7 @@ import {
   useOverdueLoansDetailedQuery,
   useSendLibraryDueRemindersMutation,
 } from "../desk-api";
-import { formatShortDate } from "../lib/short-date";
+import { formatShortDay } from "../lib/short-date";
 import { useTenantTimeZone } from "../use-tenant-timezone";
 
 import { DueBadge } from "./due-badge";
@@ -119,7 +119,7 @@ export function DeskOverdueTable(): ReactElement {
             <DueBadge compact dueOn={row.original.loan.due_on} today={today} locale={locale} />
             <span className="text-caption whitespace-nowrap text-fg-muted">
               {t("dueDate", {
-                date: formatShortDate(row.original.loan.due_on, locale, { today }),
+                date: formatShortDay(row.original.loan.due_on, locale, { today }),
               })}
             </span>
           </div>

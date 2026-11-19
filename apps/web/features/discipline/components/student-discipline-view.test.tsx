@@ -1,13 +1,24 @@
+import { ApiError } from "@newsekolah/api-client";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({
+interface Lookup {
+  names: Map<string, { id: string; name: string; nis?: string }>;
+  isLoading: boolean;
+  isError: boolean;
+  isSuccess: boolean;
+  error: unknown;
+  refetch: ReturnType<typeof vi.fn>;
+}
+
+const mocks = vi.hoisted<{ lookup: Lookup }>(() => ({
   lookup: {
     names: new Map<string, { id: string; name: string; nis?: string }>(),
     isLoading: false,
     isError: false,
     isSuccess: true,
+    error: undefined,
     refetch: vi.fn(),
   },
 }));
@@ -30,6 +41,7 @@ beforeEach(() => {
     isLoading: false,
     isError: false,
     isSuccess: true,
+    error: undefined,
     refetch: vi.fn(),
   };
 });
@@ -49,11 +61,31 @@ it("titles the page with the student's name once it loads", () => {
   expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Ayu Lestari");
 });
 
-it("says the student is unknown only after the lookup settles without them", () => {
-  render(<StudentDisciplineView studentId="s1" />);
+it("shows the not-found page once the lookup settles without the student", () => {
+  render(<StudentDisciplineView studentId="00000000-0000-0000-0000-000000000000" />);
 
-  expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("unknownStudent");
+  expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "backToViolations" })).toHaveAttribute(
+    "href",
+    "/discipline/violations",
+  );
   expect(screen.queryByText("nameLoadError")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "printReport" })).not.toBeInTheDocument();
+});
+
+it("treats a malformed id as a missing student, not a failed lookup", () => {
+  mocks.lookup.isError = true;
+  mocks.lookup.isSuccess = false;
+  mocks.lookup.error = new ApiError({
+    status: 400,
+    code: "VALIDATION_FAILED",
+    message: "invalid",
+    details: [{ field: "ids", code: "INVALID_FORMAT" }],
+  });
+  render(<StudentDisciplineView studentId="abc" />);
+
+  expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "retry" })).not.toBeInTheDocument();
 });
 
 it("offers a retry when the name lookup fails", async () => {

@@ -29,6 +29,7 @@ import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { formatShortDate } from "../lib/short-date";
 import { VIOLATION_STATUS_TONE, toneOf } from "../lib/status-tones";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 import {
   type LibraryViolation,
   type LibraryViolationKind,
@@ -51,6 +52,7 @@ const VIOLATIONS_PAGE_SIZE = 50;
 export function ViolationsView({ memberUserId }: { memberUserId?: string }): ReactElement {
   const t = useTranslations("app.library.violations");
   const locale = useLocale() as Locale;
+  const timeZone = useTenantTimeZone();
   const canRecord = useCan("manage_library_circulation");
 
   const toast = useToast();
@@ -163,7 +165,9 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         header: t("columns.createdAt"),
         enableSorting: false,
         cell: ({ row }) =>
-          row.original.created_at ? formatShortDate(row.original.created_at, locale) : "-",
+          row.original.created_at
+            ? formatShortDate(row.original.created_at, locale, { timeZone })
+            : "-",
       },
       {
         id: "status",
@@ -194,7 +198,7 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
           ) : null,
       },
     ],
-    [t, locale, directoryMap, canRecord],
+    [t, locale, timeZone, directoryMap, canRecord],
   );
 
   const recordButton = canRecord ? (

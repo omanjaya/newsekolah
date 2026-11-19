@@ -1213,6 +1213,7 @@
         "title": "Presensi",
         "back": "Presensi",
         "backToList": "Kembali ke daftar presensi",
+        "notFoundTitle": "Sesi presensi tidak ditemukan",
         "correctionMode": "Mode koreksi",
         "searchPlaceholder": "Cari siswa",
         "filterByStatus": "Filter berdasarkan status",

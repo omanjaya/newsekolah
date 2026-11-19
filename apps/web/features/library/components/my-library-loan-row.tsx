@@ -10,7 +10,7 @@ import type { ReactElement } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import type { LibraryLoan } from "../api";
 import { classifyDueDate } from "../lib/due-date";
-import { formatShortDate } from "../lib/short-date";
+import { formatShortDay } from "../lib/short-date";
 import { useRenewMyLoanMutation } from "../me-api";
 
 import { DueBadge } from "./due-badge";
@@ -65,7 +65,7 @@ export function MyLibraryLoanRow({
                 renew.mutate(loan.id, {
                   onSuccess: (result) => {
                     toast.success(
-                      t("renewed", { date: formatShortDate(result.due_on, locale, { today }) }),
+                      t("renewed", { date: formatShortDay(result.due_on, locale, { today }) }),
                     );
                   },
                   onError: (error) => {

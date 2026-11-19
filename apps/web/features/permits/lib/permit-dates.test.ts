@@ -11,11 +11,18 @@ describe("formatShortWeekdayDate", () => {
     expect(formatShortWeekdayDate(at, "id", "Asia/Makassar", "2026-11-19")).toBe("Rab, 18 Nov");
   });
 
-  it("keeps the year outside the current year or without a today", () => {
-    expect(formatShortWeekdayDate(at, "id", "Asia/Makassar", "2027-01-04")).toBe(
-      "Rab, 18 Nov 2026",
-    );
-    expect(formatShortWeekdayDate(at, "id", "Asia/Makassar")).toBe("Rab, 18 Nov 2026");
+  // A permit from last year (January to June, the first half of the school
+  // year) read "Kam, 19 Nov..." at 320px: weekday and year do not both fit.
+  it("keeps the year and drops the weekday outside the current year or without a today", () => {
+    expect(formatShortWeekdayDate(at, "id", "Asia/Makassar", "2027-01-04")).toBe("18 Nov 2026");
+    expect(formatShortWeekdayDate(at, "id", "Asia/Makassar")).toBe("18 Nov 2026");
+    expect(formatShortWeekdayDate(at, "en", "Asia/Makassar", "2027-01-04")).toBe("18 Nov 2026");
+  });
+
+  it("is never longer with the year than the current-year form", () => {
+    const current = formatShortWeekdayDate(at, "id", "Asia/Makassar", "2026-11-19");
+    const prior = formatShortWeekdayDate(at, "id", "Asia/Makassar", "2027-03-01");
+    expect(prior.length).toBeLessThanOrEqual(current.length);
   });
 
   it("reads the year in the school's zone, not UTC", () => {

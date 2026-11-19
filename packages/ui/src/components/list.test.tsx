@@ -95,6 +95,25 @@ describe("List and ListRow", () => {
     );
   });
 
+  it("ends a one-line row target in an ellipsis instead of clipping it mid-word", () => {
+    render(
+      <List>
+        <ListRow onClick={() => undefined} title="Puskesmas, kontrol gigi" />
+        <ListRow href="/opac/1" title="Laskar Pelangi" />
+      </List>,
+    );
+    // The paragraph's ellipsis cannot reach into an inline link or button
+    // (the browser clips that box whole), so the target is a block of the
+    // row's width that truncates its own text.
+    for (const target of [
+      screen.getByRole("button", { name: "Puskesmas, kontrol gigi" }),
+      screen.getByRole("link", { name: "Laskar Pelangi" }),
+    ]) {
+      expect(target).toHaveClass("block", "w-full", "truncate");
+      expect(target).not.toHaveClass("line-clamp-2");
+    }
+  });
+
   it("gives the trailing slot no box, so a child hidden at some width leaves no gap", () => {
     const { container } = render(
       <List>

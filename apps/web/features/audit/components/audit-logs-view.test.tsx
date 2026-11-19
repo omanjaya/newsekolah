@@ -187,6 +187,26 @@ describe("AuditLogsView filters", () => {
     );
   });
 
+  // Each filter used to push its own entry, so one Back landed on a
+  // half-cleared state (only the date range) nobody had chosen.
+  it("clears every filter in one history entry", async () => {
+    window.history.replaceState(null, "", "/audit?entity_type=user&from=2030-01-01");
+    const user = userEvent.setup();
+    render(<AuditLogsView />);
+    const push = vi.spyOn(window.history, "pushState");
+
+    const [reset] = screen.getAllByRole("button", { name: "Hapus semua filter" });
+    if (!reset) throw new Error("no reset control");
+    await user.click(reset);
+
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(window.location.search).toBe("");
+    expect(mocks.useAuditLogsQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ entityType: undefined, from: undefined, to: undefined }),
+    );
+    push.mockRestore();
+  });
+
   it("adds one history entry for a picked preset, so Back never leaves half a range", async () => {
     const user = userEvent.setup();
     render(<AuditLogsView />);
@@ -212,7 +232,7 @@ describe("AuditLogsView filters", () => {
       }),
     );
     expect(
-      screen.getByRole("button", { name: "filters.dateRange: 1-19 Nov 2026" }),
+      screen.getByRole("button", { name: "filters.dateRange: 1–19 Nov 2026" }),
     ).toBeInTheDocument();
   });
 

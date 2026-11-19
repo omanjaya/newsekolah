@@ -78,7 +78,11 @@
       "grade_drop_at_risk": "Rata-rata nilai rapor turun dari {previous_average} ke {current_average}",
       "unknown": "Sinyal tidak dikenal"
     },
-    "openProfile": "Lihat profil siswa"
+    "openProfile": "Lihat profil siswa",
+    "notFoundTitle": "Siswa tidak ditemukan",
+    "backToList": "Kembali ke peringatan dini",
+    "noResultTitle": "Belum ada hasil peringatan dini",
+    "noResultBody": "Sinyal siswa ini belum dihitung tahun ajaran ini, atau siswa ini di luar kelas yang bisa Anda lihat."
   },
   "policy": {
     "title": "Kebijakan peringatan dini",

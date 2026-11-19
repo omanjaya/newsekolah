@@ -1,10 +1,13 @@
 "use client";
 
 import { SkeletonList } from "@newsekolah/ui";
+import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { RecordNotFoundPage } from "../../../components/record-not-found";
+import { isNotFoundError } from "../../../lib/api/not-found";
 import { useSessionQuery } from "../api";
 
 import { SessionEditor } from "./session-editor";
@@ -30,6 +33,7 @@ export function SessionView({
    */
   openedInCorrection?: boolean;
 }): ReactElement {
+  const t = useTranslations("app.attendance.session");
   const { data, isLoading, error, isRefetchError, refetch } = useSessionQuery(sessionId);
 
   // Loading and a failed load keep the page frame and its way back.
@@ -38,6 +42,16 @@ export function SessionView({
       <AppPage>
         <SkeletonList rows={8} />
       </AppPage>
+    );
+  }
+  // An unknown or malformed id is a missing session, not a failure to retry.
+  if (!data && isNotFoundError(error)) {
+    return (
+      <RecordNotFoundPage
+        title={t("notFoundTitle")}
+        backHref="/attendance"
+        backLabel={t("backToList")}
+      />
     );
   }
   if ((error && !isRefetchError) || !data) {

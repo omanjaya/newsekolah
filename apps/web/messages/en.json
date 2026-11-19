@@ -1213,6 +1213,7 @@
         "title": "Attendance",
         "back": "Attendance",
         "backToList": "Back to attendance list",
+        "notFoundTitle": "Attendance session not found",
         "correctionMode": "Correction mode",
         "searchPlaceholder": "Search students",
         "filterByStatus": "Filter by status",

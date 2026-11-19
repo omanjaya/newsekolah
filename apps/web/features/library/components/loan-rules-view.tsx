@@ -31,7 +31,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
-import { formatShortDateRange } from "../lib/short-date";
+import { formatShortDayRange } from "../lib/short-date";
 import {
   type LibraryLoanRule,
   type LibraryLoanRuleWrite,
@@ -86,7 +86,7 @@ export function LoanRulesView(): ReactElement {
         enableSorting: false,
         meta: { card: "subtitle" },
         cell: ({ row }) =>
-          formatShortDateRange(row.original.starts_on, row.original.ends_on, locale),
+          formatShortDayRange(row.original.starts_on, row.original.ends_on, locale),
       },
       {
         id: "allowLoans",

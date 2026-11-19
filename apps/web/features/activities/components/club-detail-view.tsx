@@ -20,6 +20,7 @@ import {
   ListRow,
   RowActionsMenu,
   SearchInput,
+  SkeletonDetail,
   Tabs,
   TabsContent,
   TabsList,
@@ -32,6 +33,9 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
+import { QueryError } from "../../../components/query-error";
+import { RecordNotFoundPage } from "../../../components/record-not-found";
+import { isNotFoundError } from "../../../lib/api/not-found";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
@@ -77,7 +81,8 @@ function useClubFacts(club: Extracurricular | undefined): string[] {
  */
 export function ClubDetailView({ clubId }: { clubId: string }): ReactElement {
   const t = useTranslations("app.activities.clubDetail");
-  const { data: club } = useExtracurricularQuery(clubId);
+  const clubQuery = useExtracurricularQuery(clubId);
+  const club = clubQuery.data;
   const facts = useClubFacts(club);
   const canManage = useCan("manage_extracurriculars");
   const canRecordAttendance = useCan("record_extracurricular_attendance");
@@ -110,26 +115,48 @@ export function ClubDetailView({ clubId }: { clubId: string }): ReactElement {
       </Button>
     ) : undefined;
 
+  // Without the club there is nothing to enrol into or schedule: an unknown
+  // or malformed id is a missing club, any other failure offers a retry,
+  // and the tabs wait for the club rather than show an empty roster.
+  if (!club) {
+    if (clubQuery.isError && isNotFoundError(clubQuery.error)) {
+      return (
+        <RecordNotFoundPage
+          title={t("notFoundTitle")}
+          backHref="/activities/clubs"
+          backLabel={t("backToClubs")}
+        />
+      );
+    }
+    return (
+      <AppPage nav={false}>
+        {clubQuery.isError ? (
+          <QueryError retry={() => clubQuery.refetch()} error={clubQuery.error} />
+        ) : (
+          <SkeletonDetail />
+        )}
+      </AppPage>
+    );
+  }
+
   return (
     <AppPage
-      title={club?.name}
+      title={club.name}
       description={
-        club ? (
-          <>
-            {club.description && <p>{club.description}</p>}
-            {facts.length > 0 && (
-              // Each fact stays whole: a wrap starts a new fact, never strands a dot.
-              <p className="mt-1 flex flex-wrap gap-x-1.5 text-body-sm">
-                {facts.map((fact, index) => (
-                  <span key={fact} className="whitespace-nowrap">
-                    {index > 0 && <span aria-hidden="true">· </span>}
-                    {fact}
-                  </span>
-                ))}
-              </p>
-            )}
-          </>
-        ) : undefined
+        <>
+          {club.description && <p>{club.description}</p>}
+          {facts.length > 0 && (
+            // Each fact stays whole: a wrap starts a new fact, never strands a dot.
+            <p className="mt-1 flex flex-wrap gap-x-1.5 text-body-sm">
+              {facts.map((fact, index) => (
+                <span key={fact} className="whitespace-nowrap">
+                  {index > 0 && <span aria-hidden="true">· </span>}
+                  {fact}
+                </span>
+              ))}
+            </p>
+          )}
+        </>
       }
       primaryAction={primaryAction}
     >
@@ -149,7 +176,7 @@ export function ClubDetailView({ clubId }: { clubId: string }): ReactElement {
       </Tabs>
 
       <Dialog open={joining} onOpenChange={setJoining}>
-        <DialogContent title={t("members.add")} description={club?.name}>
+        <DialogContent title={t("members.add")} description={club.name}>
           {joining && (
             <JoinMemberForm
               clubId={clubId}
@@ -161,7 +188,7 @@ export function ClubDetailView({ clubId }: { clubId: string }): ReactElement {
         </DialogContent>
       </Dialog>
       <Dialog open={scheduling} onOpenChange={setScheduling}>
-        <DialogContent title={t("meetings.add")} description={club?.name}>
+        <DialogContent title={t("meetings.add")} description={club.name}>
           {scheduling && (
             <ScheduleMeetingForm
               clubId={clubId}

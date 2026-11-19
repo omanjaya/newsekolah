@@ -1,9 +1,11 @@
+import { ApiError } from "@newsekolah/api-client";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { StocktakeSessionView } from "./stocktake-session-view";
 
+const sessionFailure = vi.hoisted<{ current: unknown }>(() => ({ current: null }));
 const mocks = vi.hoisted(() => ({
   status: "open",
   scan: vi.fn(),
@@ -33,10 +35,19 @@ vi.mock("./stocktake-results", () => ({
 }));
 vi.mock("../stocktake-api", () => ({
   downloadLibraryStocktakeReportXlsx: vi.fn(),
-  useLibraryStocktakeQuery: () => ({
-    data: { id: "st-1", name: "Opname semester 1", status: mocks.status },
-    isLoading: false,
-  }),
+  useLibraryStocktakeQuery: () =>
+    sessionFailure.current
+      ? {
+          data: undefined,
+          isLoading: false,
+          isError: true,
+          error: sessionFailure.current,
+          refetch: vi.fn(),
+        }
+      : {
+          data: { id: "st-1", name: "Opname semester 1", status: mocks.status },
+          isLoading: false,
+        },
   useLibraryStocktakeProgressQuery: () => ({
     data: { expected_count: 10, scanned_count: 3, missing_count: 7, misplaced_count: 0 },
     isLoading: false,
@@ -57,6 +68,7 @@ vi.mock("../stocktake-api", () => ({
 describe("StocktakeSessionView", () => {
   beforeEach(() => {
     mocks.status = "open";
+    sessionFailure.current = null;
     mocks.scan.mockReset();
     mocks.close.mockReset();
     mocks.findCopy.mockReset().mockResolvedValue({ title_id: "title-1" });
@@ -112,6 +124,22 @@ describe("StocktakeSessionView", () => {
       expect(live).toHaveTextContent("scan.recent.rejected");
     });
     expect(mocks.findCopy).not.toHaveBeenCalled();
+  });
+
+  it("shows the not-found page for an unknown session, without a retry", () => {
+    sessionFailure.current = new ApiError({
+      status: 404,
+      code: "LIBRARY_STOCKTAKE_NOT_FOUND",
+      message: "missing",
+    });
+    render(<StocktakeSessionView stocktakeId="00000000-0000-0000-0000-000000000000" />);
+
+    expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "backToList" })).toHaveAttribute(
+      "href",
+      "/library/stocktake",
+    );
+    expect(screen.queryByRole("textbox", { name: "scan.label" })).not.toBeInTheDocument();
   });
 
   it("offers closing the session from the header only while it runs", () => {

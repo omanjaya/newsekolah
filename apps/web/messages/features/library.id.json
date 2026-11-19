@@ -970,7 +970,9 @@
     "emptyBody": "Mulai sesi untuk mencocokkan buku di rak dengan katalog. Pindai setiap eksemplar, lalu tutup sesi untuk melihat yang hilang atau salah tempat.",
     "continueScan": "Lanjutkan pindai",
     "loadErrorTitle": "Sesi opname tidak bisa dimuat",
-    "downloading": "Mengunduh laporan"
+    "downloading": "Mengunduh laporan",
+    "notFoundTitle": "Sesi opname tidak ditemukan",
+    "backToList": "Kembali ke stok opname"
   },
   "masterData": {
     "eyebrow": "Perpustakaan",
@@ -1671,6 +1673,8 @@
       "language": "Bahasa",
       "subjects": "Subjek",
       "abstract": "Ringkasan"
-    }
+    },
+    "missingTitle": "Judul tidak ditemukan",
+    "backToCatalogue": "Kembali ke katalog"
   }
 }

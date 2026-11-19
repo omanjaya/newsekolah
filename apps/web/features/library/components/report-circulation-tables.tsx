@@ -16,8 +16,9 @@ import {
   useMostBorrowedReportQuery,
   useOverdueMembersReportQuery,
 } from "../api";
-import { formatShortDate } from "../lib/short-date";
+import { formatShortDate, formatShortDay } from "../lib/short-date";
 import { LOAN_STATUS_TONE, toneOf } from "../lib/status-tones";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 
 /*
  * The library reports' circulation tabs: loans in a period, members with
@@ -41,6 +42,7 @@ export function LoansReportTable({
   const t = useTranslations("app.library.reports.loans");
   const tStatus = useTranslations("app.library.memberHistory.status");
   const locale = useLocale() as Locale;
+  const timeZone = useTenantTimeZone();
   const { data, isLoading, error, refetch } = useLoansReportQuery(from, to);
   const loans = data?.data ?? [];
 
@@ -69,13 +71,13 @@ export function LoansReportTable({
         id: "borrowedAt",
         header: t("columns.borrowedAt"),
         enableSorting: false,
-        cell: ({ row }) => formatShortDate(row.original.loan.borrowed_at, locale),
+        cell: ({ row }) => formatShortDate(row.original.loan.borrowed_at, locale, { timeZone }),
       },
       {
         id: "dueOn",
         header: t("columns.dueOn"),
         enableSorting: false,
-        cell: ({ row }) => formatShortDate(row.original.loan.due_on, locale),
+        cell: ({ row }) => formatShortDay(row.original.loan.due_on, locale),
       },
       {
         id: "status",
@@ -91,7 +93,7 @@ export function LoansReportTable({
         ),
       },
     ],
-    [t, tStatus, locale],
+    [t, tStatus, locale, timeZone],
   );
 
   return (

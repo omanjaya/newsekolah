@@ -15,7 +15,7 @@ import type { ReactElement } from "react";
 
 import type { KioskMemberSession } from "../kiosk-session";
 import { classifyDueDate, overdueDays } from "../lib/due-date";
-import { formatShortDate } from "../lib/short-date";
+import { formatShortDay } from "../lib/short-date";
 
 export interface KioskMemberPanelProps {
   session: KioskMemberSession;
@@ -70,7 +70,7 @@ export function KioskMemberPanel({
                   <Badge tone={overdue ? "danger" : "neutral"} size="md">
                     {overdue
                       ? overdueLabel(overdueDays(loan.due_on, today))
-                      : dueOnLabel(formatShortDate(loan.due_on, locale, { today }))}
+                      : dueOnLabel(formatShortDay(loan.due_on, locale, { today }))}
                   </Badge>
                 }
               />

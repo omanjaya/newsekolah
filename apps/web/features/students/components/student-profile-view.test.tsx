@@ -28,7 +28,7 @@ vi.mock("./student-overview", () => ({
 }));
 vi.mock("../../reference/directory-names", async () => {
   const { directoryNamesStub } = await import("../../../test/directory-names-stub");
-  return directoryNamesStub([]);
+  return directoryNamesStub([{ id: "s1", name: "Siswa Satu" }]);
 });
 vi.mock("../../school/api", () => ({ useUserQuery: () => ({ data: undefined }) }));
 vi.mock("../../mentoring/api", () => ({
@@ -60,6 +60,14 @@ describe("StudentProfileView tab visibility", () => {
   beforeEach(() => {
     mocks.permissions = [];
     window.history.replaceState(null, "", "/students/s1");
+  });
+
+  it("shows the not-found page for a student the school does not have, with no tabs", () => {
+    mocks.permissions = ["view_discipline", "view_reports"];
+    render(<StudentProfileView studentId="00000000-0000-0000-0000-000000000000" />);
+    expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "backHome" })).toHaveAttribute("href", "/dashboard");
+    expect(tabNames()).toEqual([]);
   });
 
   it("renders no tabs and an access message without any data permission", () => {

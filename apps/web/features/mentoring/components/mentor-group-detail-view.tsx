@@ -6,6 +6,8 @@ import type { ReactElement } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { RecordNotFoundPage } from "../../../components/record-not-found";
+import { isNotFoundError } from "../../../lib/api/not-found";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
@@ -33,6 +35,17 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
   const group = useMentorGroupQuery(groupId);
   const members = useMentorGroupMembersQuery(groupId);
   const teacherMap = useDirectoryNames([group.data?.mentor_user_id]);
+
+  // An unknown or malformed id is a missing group, not a failure to retry.
+  if (group.isError && !group.data && isNotFoundError(group.error)) {
+    return (
+      <RecordNotFoundPage
+        title={t("notFoundTitle")}
+        backHref="/mentoring/groups"
+        backLabel={t("backToGroups")}
+      />
+    );
+  }
 
   if (group.isError && !group.data) {
     return (

@@ -19,10 +19,13 @@ import { formatShortDateRange } from "../lib/short-date";
 export function MyLibraryHistoryTable({
   history,
   locale,
+  timeZone,
   today,
 }: {
   history: LibraryLoan[];
   locale: Locale;
+  /** The school's zone: a borrow or return time is a day on its calendar, not the device's. */
+  timeZone: string | undefined;
   today?: string;
 }): ReactElement {
   const t = useTranslations("app.library.me");
@@ -45,6 +48,7 @@ export function MyLibraryHistoryTable({
                 key={loan.id}
                 title={loan.title_name ?? t("titleUnavailable")}
                 meta={formatShortDateRange(loan.borrowed_at, loan.returned_at ?? "", locale, {
+                  timeZone,
                   today,
                 })}
               />

@@ -5,6 +5,13 @@
  */
 
 /**
+ * The en dash between the bounds of a span, as every other range in the
+ * app is written ("1–19 Nov 2026", "20 Nov 2026 – 1 Jan 2030"): closed up
+ * between two days of one month, spaced between two full dates.
+ */
+const RANGE_DASH = "–";
+
+/**
  * "YYYY-MM-DD" -> "6 Sep" / "6 Sep 2026". The month name comes from `Intl`
  * in the page's language (so it is never a hardcoded locale's spelling), but the
  * day-month-year order is fixed here rather than left to a full `Intl`
@@ -27,7 +34,7 @@ function formatDayMonth(value: string, withYear: boolean): string {
 /**
  * The pill's value: one date for a single day, a compact span for two
  * bounds (in calendar order, so a reversed pair from a hand-edited link
- * still reads "1-19 Nov 2026"), and an open-ended bound worded as such, so
+ * still reads "1–19 Nov 2026"), and an open-ended bound worded as such, so
  * "from 19 Nov on" never reads like the single day 19 Nov.
  */
 export function formatDateRange(
@@ -43,8 +50,8 @@ export function formatDateRange(
     const endDate = new Date(`${end}T00:00:00`);
     const sameYear = startDate.getFullYear() === endDate.getFullYear();
     const sameMonth = sameYear && startDate.getMonth() === endDate.getMonth();
-    if (sameMonth) return `${startDate.getDate()}-${formatDayMonth(end, true)}`;
-    return `${formatDayMonth(start, !sameYear)} - ${formatDayMonth(end, true)}`;
+    if (sameMonth) return `${startDate.getDate()}${RANGE_DASH}${formatDayMonth(end, true)}`;
+    return `${formatDayMonth(start, !sameYear)} ${RANGE_DASH} ${formatDayMonth(end, true)}`;
   }
   if (from) return since(formatDayMonth(from, true));
   return until(formatDayMonth(to, true));

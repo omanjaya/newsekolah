@@ -94,7 +94,9 @@
       "scheduled": "Terjadwal",
       "observed": "Selesai"
     },
-    "viewResult": "Lihat hasil"
+    "viewResult": "Lihat hasil",
+    "notFoundTitle": "Siklus supervisi tidak ditemukan",
+    "backToCycles": "Kembali ke supervisi"
   },
   "completeObservation": {
     "breadcrumb": "Isi hasil observasi",

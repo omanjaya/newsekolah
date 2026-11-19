@@ -1,7 +1,9 @@
+import { ApiError } from "@newsekolah/api-client";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const disabled = vi.hoisted(() => new Set<string>());
+const failure = vi.hoisted<{ error: unknown }>(() => ({ error: null }));
 const risk = vi.hoisted(() => ({
   computed_at: "2026-11-13T00:00:00Z",
   has_grade_trend: false,
@@ -25,33 +27,53 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
 }));
 vi.mock("./reason-text", () => ({ useReasonText: () => () => "" }));
 vi.mock("../api", () => ({
-  useStudentRiskQuery: () => ({
-    data: {
-      level: "watch",
-      score: 20,
-      computed_at: risk.computed_at,
-      reasons: [],
-      signals: {
-        has_attendance: false,
-        absent_days: 0,
-        considered_days: 0,
-        discipline_points: 0,
-        active_violation_count: 0,
-        warning_letter_count: 0,
-        has_grade_trend: risk.has_grade_trend,
-        previous_average: risk.previous_average,
-        current_average: risk.current_average,
-      },
-    },
-    isLoading: false,
-    error: null,
-  }),
+  useStudentRiskQuery: () =>
+    failure.error
+      ? { data: undefined, isLoading: false, error: failure.error, refetch: () => undefined }
+      : {
+          data: {
+            level: "watch",
+            score: 20,
+            computed_at: risk.computed_at,
+            reasons: [],
+            signals: {
+              has_attendance: false,
+              absent_days: 0,
+              considered_days: 0,
+              discipline_points: 0,
+              active_violation_count: 0,
+              warning_letter_count: 0,
+              has_grade_trend: risk.has_grade_trend,
+              previous_average: risk.previous_average,
+              current_average: risk.current_average,
+            },
+          },
+          isLoading: false,
+          error: null,
+        },
 }));
+
+describe("StudentRiskPanel without a stored result", () => {
+  beforeEach(() => {
+    failure.error = new ApiError({
+      status: 404,
+      code: "ANALYTICS_RESULT_NOT_FOUND",
+      message: "not found",
+    });
+  });
+
+  it("says there is no result yet instead of a load failure with a retry", () => {
+    render(<StudentRiskPanel studentId="s1" />);
+    expect(screen.getByText("noResultTitle")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /retry/ })).not.toBeInTheDocument();
+  });
+});
 
 import { StudentRiskPanel } from "./student-risk-panel";
 
 describe("StudentRiskPanel signals with switched-off modules", () => {
   beforeEach(() => {
+    failure.error = null;
     disabled.clear();
     risk.computed_at = "2026-11-13T00:00:00Z";
     risk.has_grade_trend = false;

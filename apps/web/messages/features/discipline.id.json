@@ -364,7 +364,9 @@
     "nis": "NIS {nis}",
     "openProfile": "Lihat profil siswa",
     "nameLoadError": "Nama siswa gagal dimuat.",
-    "retry": "Coba lagi"
+    "retry": "Coba lagi",
+    "notFoundTitle": "Siswa tidak ditemukan",
+    "backToViolations": "Kembali ke pelanggaran"
   },
   "pointsMeter": {
     "label": "{points} poin terhadap ambang surat peringatan",

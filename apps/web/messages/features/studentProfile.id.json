@@ -76,5 +76,8 @@
     "counseling": "Konseling",
     "emptyTitle": "Belum ada catatan",
     "emptyBody": "Pelanggaran, surat peringatan, dan konseling siswa ini akan muncul di sini."
-  }
+  },
+  "notFoundTitle": "Siswa tidak ditemukan",
+  "backToClasses": "Kembali ke daftar kelas",
+  "backHome": "Kembali ke beranda"
 }

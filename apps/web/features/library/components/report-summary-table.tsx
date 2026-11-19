@@ -7,7 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
-import { formatShortDate } from "../lib/short-date";
+import { formatShortDay } from "../lib/short-date";
 import { useLibraryCatalogueSummaryReportQuery } from "../reports-api";
 
 import { ReportBreakdown } from "./report-breakdown";
@@ -58,7 +58,7 @@ export function ReportSummaryTable({ from, to }: { from: string; to: string }): 
         <Alert
           title={t("lastStocktake", {
             name: data.last_stocktake.name,
-            date: formatShortDate(data.last_stocktake.started_on, locale),
+            date: formatShortDay(data.last_stocktake.started_on, locale),
           })}
         />
       )}

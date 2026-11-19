@@ -22,6 +22,7 @@ export function directoryNamesStub(people: StubPerson[] = []) {
       isLoading: false,
       isError: false,
       isSuccess: true,
+      error: undefined,
       refetch: () => undefined,
     }),
     useDirectoryName: (id: string | null | undefined) => byId.get(id ?? ""),

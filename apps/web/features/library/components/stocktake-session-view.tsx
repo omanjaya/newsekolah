@@ -39,6 +39,8 @@ import { useRef, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { RecordNotFoundPage } from "../../../components/record-not-found";
+import { isNotFoundError } from "../../../lib/api/not-found";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useFindLibraryCopyByCodeMutation, useLibraryTitleNameMutation } from "../desk-api";
@@ -166,6 +168,16 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
       <AppPage header={false} nav={false}>
         <SkeletonDetail />
       </AppPage>
+    );
+  }
+  // An unknown or malformed id is a missing session, not a failure to retry.
+  if (!session.data && isNotFoundError(session.error)) {
+    return (
+      <RecordNotFoundPage
+        title={t("notFoundTitle")}
+        backHref="/library/stocktake"
+        backLabel={t("backToList")}
+      />
     );
   }
   if (!session.data) {

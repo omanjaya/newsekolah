@@ -138,7 +138,9 @@
           "A": "Alpha"
         }
       }
-    }
+    },
+    "notFoundTitle": "Ekstrakurikuler tidak ditemukan",
+    "backToClubs": "Kembali ke daftar ekstrakurikuler"
   },
   "events": {
     "searchPlaceholder": "Cari nama atau lokasi kegiatan",
