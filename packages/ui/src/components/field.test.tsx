@@ -285,6 +285,30 @@ describe("Field", () => {
     expect(input).toHaveAccessibleDescription("Wajib diisi");
   });
 
+  it("centres a short control in a horizontal field's row, level with its label", () => {
+    render(
+      <Field label="Sematkan di atas" orientation="horizontal">
+        <Switch />
+      </Field>,
+    );
+    const label = screen.getByText("Sematkan di atas");
+    const cell = screen.getByRole("switch", { name: "Sematkan di atas" }).parentElement;
+    // The label row and the control cell are equally tall, both centring
+    // what they hold, so a 20px Switch sits on the label's centre line.
+    expect(label.parentElement).toHaveClass(
+      "sm:min-h-11",
+      "sm:items-center",
+      "md:pointer-fine:min-h-9",
+    );
+    expect(cell).toHaveClass(
+      "sm:col-start-2",
+      "sm:grid",
+      "sm:min-h-11",
+      "sm:items-center",
+      "md:pointer-fine:min-h-9",
+    );
+  });
+
   it("has no accessibility violations", async () => {
     const { container } = render(
       <div>
