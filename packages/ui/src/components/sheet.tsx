@@ -3,7 +3,7 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
 
-import { useReturnFocus } from "../hooks/use-return-focus.js";
+import { type ReturnFocusFallback, useReturnFocus } from "../hooks/use-return-focus.js";
 import { cn } from "../utils/cn.js";
 
 import {
@@ -48,6 +48,11 @@ export interface SheetContentProps extends ComponentPropsWithoutRef<
   closeDisabled?: boolean;
   /** Actions under the scrolling body, always visible (or end a form with `SheetFooter`). */
   footer?: ReactNode;
+  /**
+   * Where focus goes on closing when the element that opened the dialog
+   * has left the page meanwhile (see `useReturnFocus`).
+   */
+  returnFocusFallback?: ReturnFocusFallback;
   /** Shown before the title. */
   icon?: ReactNode;
   /**
@@ -84,13 +89,18 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
     size = "md",
     onOpenAutoFocus,
     onCloseAutoFocus,
+    returnFocusFallback,
     children,
     ...props
   },
   ref,
 ) {
   const labels = useUiLabels();
-  const returnFocus = useReturnFocus(focusOnOpen(onOpenAutoFocus), onCloseAutoFocus);
+  const returnFocus = useReturnFocus(
+    focusOnOpen(onOpenAutoFocus),
+    onCloseAutoFocus,
+    returnFocusFallback,
+  );
   const drawer = side === "right";
   // Drag down to close wherever it is a bottom sheet (a drawer is one only
   // below 640px), unless it cannot be dismissed right now.

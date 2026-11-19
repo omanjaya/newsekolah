@@ -3,7 +3,7 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from "react";
 
-import { useReturnFocus } from "../hooks/use-return-focus.js";
+import { type ReturnFocusFallback, useReturnFocus } from "../hooks/use-return-focus.js";
 import { cn } from "../utils/cn.js";
 
 import {
@@ -59,6 +59,11 @@ export interface DialogContentProps extends ComponentPropsWithoutRef<
    * `DialogFooter` instead; it draws the same row.
    */
   footer?: ReactNode;
+  /**
+   * Where focus goes on closing when the element that opened the dialog
+   * has left the page meanwhile (see `useReturnFocus`).
+   */
+  returnFocusFallback?: ReturnFocusFallback;
   /** Shown before the title, e.g. a warning icon in a soft circle. */
   icon?: ReactNode;
   /** Width from 640px up; below that the dialog is a full-width bottom sheet. */
@@ -96,13 +101,18 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
     size = "md",
     onOpenAutoFocus,
     onCloseAutoFocus,
+    returnFocusFallback,
     children,
     ...props
   },
   ref,
 ) {
   const labels = useUiLabels();
-  const returnFocus = useReturnFocus(focusOnOpen(onOpenAutoFocus), onCloseAutoFocus);
+  const returnFocus = useReturnFocus(
+    focusOnOpen(onOpenAutoFocus),
+    onCloseAutoFocus,
+    returnFocusFallback,
+  );
   // A bottom sheet below 640px, which can then be dragged down to close
   // (not while it cannot be dismissed).
   const contentRef = useOverlayContentRef(ref, closeDisabled ? "off" : "phone");
