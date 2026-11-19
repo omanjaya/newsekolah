@@ -5,7 +5,22 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { CompleteObservationView } from "./complete-observation-view";
 
 const observationId = vi.fn<() => string | null>();
-const cycleError = vi.hoisted<{ current: unknown }>(() => ({ current: null }));
+// Each query's state: "ok" (its data), "loading", or the error it failed with.
+const queries = vi.hoisted<{
+  cycle: unknown;
+  list: unknown;
+  result: (mode: unknown, data: unknown) => Record<string, unknown>;
+}>(() => ({
+  cycle: "ok",
+  list: "ok",
+  result(mode: unknown, data: unknown) {
+    if (mode === "ok") return { data, isLoading: false, isPending: false, isError: false };
+    if (mode === "loading") {
+      return { data: undefined, isLoading: true, isPending: true, isError: false };
+    }
+    return { data: undefined, isLoading: false, isPending: false, isError: true, error: mode };
+  },
+}));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -27,15 +42,9 @@ vi.mock("./complete-observation-form", () => ({
 }));
 vi.mock("../api", () => ({
   useSupervisionCycleQuery: () =>
-    cycleError.current
-      ? { data: undefined, isLoading: false, isError: true, error: cycleError.current }
-      : {
-          data: { id: "c1", name: "Siklus", instrument: { criteria: [] } },
-          isLoading: false,
-          isError: false,
-        },
-  useScheduledObservationsQuery: () => ({
-    data: {
+    queries.result(queries.cycle, { id: "c1", name: "Siklus", instrument: { criteria: [] } }),
+  useScheduledObservationsQuery: () =>
+    queries.result(queries.list, {
       data: [
         {
           id: "s1",
@@ -45,25 +54,27 @@ vi.mock("../api", () => ({
           observation_id: observationId(),
         },
       ],
-    },
-    isLoading: false,
-    isError: false,
-  }),
+    }),
 }));
+
+const malformedId = (field: string) =>
+  new ApiError({
+    status: 400,
+    code: "VALIDATION_FAILED",
+    message: "invalid",
+    details: [{ field, code: "INVALID_FORMAT" }],
+  });
 
 afterEach(() => {
   cleanup();
-  cycleError.current = null;
+  queries.cycle = "ok";
+  queries.list = "ok";
 });
 
 describe("CompleteObservationView", () => {
   it("shows the cycle's not-found page, with no retry, for a malformed cycle id", () => {
-    cycleError.current = new ApiError({
-      status: 400,
-      code: "VALIDATION_FAILED",
-      message: "invalid",
-      details: [{ field: "cycleId", code: "INVALID_FORMAT" }],
-    });
+    queries.cycle = malformedId("cycleId");
+    queries.list = malformedId("cycleId");
     render(<CompleteObservationView cycleId="abc" scheduledId="abc" />);
     expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "backToCycles" })).toHaveAttribute(
@@ -71,6 +82,28 @@ describe("CompleteObservationView", () => {
       "/supervision/cycles",
     );
     expect(screen.queryByRole("button", { name: "actions.retry" })).not.toBeInTheDocument();
+  });
+
+  // Both requests fail for the same id in parallel; whichever lands first,
+  // no retryable failure shows on the way to the not-found page.
+  it("never offers a retry for a malformed cycle id while the cycle is still loading", () => {
+    queries.cycle = "loading";
+    queries.list = malformedId("cycleId");
+    render(<CompleteObservationView cycleId="abc" scheduledId="abc" />);
+    expect(screen.queryByRole("button", { name: "actions.retry" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
+  });
+
+  it("waits for the cycle before telling a failed list as a failure to retry", () => {
+    queries.cycle = "loading";
+    queries.list = new ApiError({ status: 500, code: "INTERNAL", message: "boom" });
+    const { unmount } = render(<CompleteObservationView cycleId="c1" scheduledId="s1" />);
+    expect(screen.queryByRole("button", { name: "actions.retry" })).not.toBeInTheDocument();
+    unmount();
+
+    queries.cycle = "ok";
+    render(<CompleteObservationView cycleId="c1" scheduledId="s1" />);
+    expect(screen.getByRole("button", { name: "actions.retry" })).toBeInTheDocument();
   });
 
   it("opens the form for a visit still to be observed", () => {

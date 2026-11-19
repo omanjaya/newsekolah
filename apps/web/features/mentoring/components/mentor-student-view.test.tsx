@@ -4,9 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { MentorStudentView } from "./mentor-student-view";
 
-const errors = vi.hoisted<{ group: unknown; snapshot: unknown }>(() => ({
+const errors = vi.hoisted<{ group: unknown; snapshot: unknown; groupLoading: boolean }>(() => ({
   group: null,
   snapshot: null,
+  groupLoading: false,
 }));
 
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
@@ -21,14 +22,32 @@ vi.mock("./student-snapshot-sections", () => ({
   SnapshotGradesSection: () => null,
 }));
 
-function result(data: unknown, error: unknown) {
+function result(data: unknown, error: unknown, loading = false) {
+  if (loading) {
+    return {
+      data: undefined,
+      isLoading: true,
+      isPending: true,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    };
+  }
   return error
-    ? { data: undefined, isLoading: false, isError: true, error, refetch: vi.fn() }
-    : { data, isLoading: false, isError: false, error: null, refetch: vi.fn() };
+    ? {
+        data: undefined,
+        isLoading: false,
+        isPending: false,
+        isError: true,
+        error,
+        refetch: vi.fn(),
+      }
+    : { data, isLoading: false, isPending: false, isError: false, error: null, refetch: vi.fn() };
 }
 
 vi.mock("../api", () => ({
-  useMentorGroupQuery: () => result({ id: "g1", name: "Kelompok A" }, errors.group),
+  useMentorGroupQuery: () =>
+    result({ id: "g1", name: "Kelompok A" }, errors.group, errors.groupLoading),
   useMentorStudentSnapshotQuery: () =>
     result({ student_name: "Siswa Satu", class_name: "X-1" }, errors.snapshot),
 }));
@@ -45,6 +64,7 @@ afterEach(() => {
   cleanup();
   errors.group = null;
   errors.snapshot = null;
+  errors.groupLoading = false;
 });
 
 describe("MentorStudentView", () => {
@@ -73,6 +93,21 @@ describe("MentorStudentView", () => {
       "href",
       "/mentoring/groups/g1",
     );
+    expect(screen.queryByRole("button", { name: "actions.retry" })).not.toBeInTheDocument();
+  });
+
+  // Both requests fail for a malformed link in parallel; while the group's
+  // answer is still out, neither the student's page nor a retry shows.
+  it("waits for the group before telling a failed snapshot", () => {
+    errors.groupLoading = true;
+    errors.snapshot = malformed("studentId");
+    const { unmount } = render(<MentorStudentView groupId="abc" studentId="abc" />);
+    expect(screen.queryByText("notFoundTitle")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "actions.retry" })).not.toBeInTheDocument();
+    unmount();
+
+    errors.snapshot = new ApiError({ status: 503, code: "UNAVAILABLE", message: "down" });
+    render(<MentorStudentView groupId="g1" studentId="s1" />);
     expect(screen.queryByRole("button", { name: "actions.retry" })).not.toBeInTheDocument();
   });
 

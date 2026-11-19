@@ -51,7 +51,12 @@ export function MentorStudentView({
       />
     );
   }
-  if (snapshot.isError && !snapshot.data && isNotFoundError(snapshot.error)) {
+  // Both requests fail for a malformed link in parallel. A failed snapshot
+  // waits for the group's answer (the skeleton below), which may still
+  // turn out to be the group's not-found page, so neither the student's
+  // page nor a retry flashes on the way there.
+  const snapshotFailed = snapshot.isError && !snapshot.data;
+  if (snapshotFailed && !group.isPending && isNotFoundError(snapshot.error)) {
     return (
       <RecordNotFoundPage
         title={t("notFoundTitle")}
@@ -61,7 +66,7 @@ export function MentorStudentView({
     );
   }
 
-  if (snapshot.isError && !snapshot.data) {
+  if (snapshotFailed && !group.isPending) {
     return (
       <AppPage>
         <QueryError retry={() => snapshot.refetch()} error={snapshot.error} />
@@ -69,7 +74,7 @@ export function MentorStudentView({
     );
   }
 
-  if (snapshot.isLoading || !snapshot.data) {
+  if (snapshotFailed || snapshot.isLoading || !snapshot.data) {
     return (
       <AppPage>
         <SkeletonDetail rows={6} />

@@ -53,13 +53,22 @@ export function CompleteObservationView({
   const breadcrumb = trail.within(cycleId, cycle.data?.name, { label: t("breadcrumb") });
 
   // An unknown or malformed cycle id is a missing cycle, not a failure to
-  // retry. (A scheduled id the cycle does not have is told below, once the
+  // retry. Both requests carry nothing but that id and fail for it in
+  // parallel, so either one's answer is enough, whichever lands first.
+  // (A scheduled id the cycle does not have is told below, once the
   // cycle's list has loaded.)
-  if (cycle.isError && !cycle.data && isNotFoundError(cycle.error)) {
+  const cycleMissing =
+    (cycle.isError && !cycle.data && isNotFoundError(cycle.error)) ||
+    (scheduledList.isError && !scheduledList.data && isNotFoundError(scheduledList.error));
+  if (cycleMissing) {
     return <CycleNotFoundPage />;
   }
 
-  const failed = (cycle.isError && !cycle.data) || (scheduledList.isError && !scheduledList.data);
+  // A failed list waits for the cycle's own answer, which may still turn
+  // out to be its not-found page rather than a failure to retry.
+  const failed =
+    (cycle.isError && !cycle.data) ||
+    (scheduledList.isError && !scheduledList.data && !cycle.isPending);
   if (failed) {
     return (
       <AppPage variant="narrow" nav={false} breadcrumb={breadcrumb} title={t("breadcrumb")}>
