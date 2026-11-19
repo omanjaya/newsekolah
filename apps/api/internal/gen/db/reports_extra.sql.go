@@ -63,17 +63,28 @@ func (q *Queries) CountCopiesAddedInPeriod(ctx context.Context, arg CountCopiesA
 
 const countLateReturnsBetween = `-- name: CountLateReturnsBetween :one
 select count(*)::int from library_loans
-where tenant_id = $1 and returned_at >= $2 and returned_at < $3 and returned_at::date > due_on
+where tenant_id = $1
+  and returned_at >= $2 and returned_at < $3
+  and (returned_at at time zone $4::text)::date > due_on
 `
 
 type CountLateReturnsBetweenParams struct {
-	TenantID     uuid.UUID          `json:"tenant_id"`
-	ReturnedAt   pgtype.Timestamptz `json:"returned_at"`
-	ReturnedAt_2 pgtype.Timestamptz `json:"returned_at_2"`
+	TenantID uuid.UUID          `json:"tenant_id"`
+	FromAt   pgtype.Timestamptz `json:"from_at"`
+	ToAt     pgtype.Timestamptz `json:"to_at"`
+	Tz       string             `json:"tz"`
 }
 
+// due_on is a date on the school's calendar, so the return is compared on
+// the tenant's own day (tz is its IANA zone): a return at 07:30 in UTC+8
+// on the due date is on time, not a day late by the previous UTC date.
 func (q *Queries) CountLateReturnsBetween(ctx context.Context, arg CountLateReturnsBetweenParams) (int32, error) {
-	row := q.db.QueryRow(ctx, countLateReturnsBetween, arg.TenantID, arg.ReturnedAt, arg.ReturnedAt_2)
+	row := q.db.QueryRow(ctx, countLateReturnsBetween,
+		arg.TenantID,
+		arg.FromAt,
+		arg.ToAt,
+		arg.Tz,
+	)
 	var column_1 int32
 	err := row.Scan(&column_1)
 	return column_1, err
@@ -301,17 +312,18 @@ func (q *Queries) VisitsPerClass(ctx context.Context, arg VisitsPerClassParams) 
 }
 
 const visitsPerDay = `-- name: VisitsPerDay :many
-select date(visited_at) as day, count(*)::int as visit_count
+select (visited_at at time zone $1::text)::date as day, count(*)::int as visit_count
 from library_visits
-where tenant_id = $1 and visited_at >= $2 and visited_at < $3
+where tenant_id = $2 and visited_at >= $3 and visited_at < $4
 group by day
 order by day
 `
 
 type VisitsPerDayParams struct {
-	TenantID    uuid.UUID          `json:"tenant_id"`
-	VisitedAt   pgtype.Timestamptz `json:"visited_at"`
-	VisitedAt_2 pgtype.Timestamptz `json:"visited_at_2"`
+	Tz       string             `json:"tz"`
+	TenantID uuid.UUID          `json:"tenant_id"`
+	FromAt   pgtype.Timestamptz `json:"from_at"`
+	ToAt     pgtype.Timestamptz `json:"to_at"`
 }
 
 type VisitsPerDayRow struct {
@@ -319,8 +331,15 @@ type VisitsPerDayRow struct {
 	VisitCount int32       `json:"visit_count"`
 }
 
+// Days are the tenant's own calendar days (tz is its IANA zone), as in
+// DailyLoansSeries: a visit at 07:30 in UTC+8 lands on that local day.
 func (q *Queries) VisitsPerDay(ctx context.Context, arg VisitsPerDayParams) ([]VisitsPerDayRow, error) {
-	rows, err := q.db.Query(ctx, visitsPerDay, arg.TenantID, arg.VisitedAt, arg.VisitedAt_2)
+	rows, err := q.db.Query(ctx, visitsPerDay,
+		arg.Tz,
+		arg.TenantID,
+		arg.FromAt,
+		arg.ToAt,
+	)
 	if err != nil {
 		return nil, err
 	}

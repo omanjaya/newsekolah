@@ -292,6 +292,9 @@ type Querier interface {
 	CountInProgressWorkflowInstances(ctx context.Context, arg CountInProgressWorkflowInstancesParams) (int64, error)
 	CountIncidentsBySeverityInRange(ctx context.Context, arg CountIncidentsBySeverityInRangeParams) ([]CountIncidentsBySeverityInRangeRow, error)
 	CountJournalsFiltered(ctx context.Context, arg CountJournalsFilteredParams) (int64, error)
+	// due_on is a date on the school's calendar, so the return is compared on
+	// the tenant's own day (tz is its IANA zone): a return at 07:30 in UTC+8
+	// on the due date is on time, not a day late by the previous UTC date.
 	CountLateReturnsBetween(ctx context.Context, arg CountLateReturnsBetweenParams) (int32, error)
 	// Size of ListLeaveRequestsForReview's queue (no class filter). Keep the
 	// where clause identical to that query.
@@ -1755,6 +1758,8 @@ type Querier interface {
 	// a member at all -- a walk-in guest) is applied by the service layer,
 	// which is where every other report's display labels are resolved.
 	VisitsPerClass(ctx context.Context, arg VisitsPerClassParams) ([]VisitsPerClassRow, error)
+	// Days are the tenant's own calendar days (tz is its IANA zone), as in
+	// DailyLoansSeries: a visit at 07:30 in UTC+8 lands on that local day.
 	VisitsPerDay(ctx context.Context, arg VisitsPerDayParams) ([]VisitsPerDayRow, error)
 	VoidPayment(ctx context.Context, arg VoidPaymentParams) (Payment, error)
 	VoidViolationRecord(ctx context.Context, arg VoidViolationRecordParams) (ViolationRecord, error)

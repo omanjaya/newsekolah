@@ -38,13 +38,15 @@ type MonthlyReport struct {
 }
 
 // parseReportMonth turns a "YYYY-MM" string into the half-open [from, to)
-// range that month covers, defaulting to the tenant clock's current month
-// when month is empty (old app: parseLibraryReportMonth).
-func parseReportMonth(month string, now time.Time) (time.Time, time.Time, error) {
+// range that month covers on the tenant's calendar (loc), defaulting to
+// the school's current month when month is empty (old app:
+// parseLibraryReportMonth). The bounds are loc's midnights, so activity
+// early on the 1st in a UTC+8 school belongs to that month.
+func parseReportMonth(month string, now time.Time, loc *time.Location) (time.Time, time.Time, error) {
 	if month == "" {
-		month = now.Format("2006-01")
+		month = now.In(loc).Format("2006-01")
 	}
-	from, err := time.Parse("2006-01", month)
+	from, err := time.ParseInLocation("2006-01", month, loc)
 	if err != nil {
 		return time.Time{}, time.Time{}, domain.ErrInvalidInput
 	}
@@ -61,7 +63,8 @@ func (s *Service) MonthlyReport(ctx context.Context, tenantID uuid.UUID, month s
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return MonthlyReport{}, err
 	}
-	from, to, err := parseReportMonth(month, clock.Now(ctx, s.clock))
+	loc := s.tenantLocation(ctx, tenantID)
+	from, to, err := parseReportMonth(month, clock.Now(ctx, s.clock), loc)
 	if err != nil {
 		return MonthlyReport{}, err
 	}
@@ -100,7 +103,7 @@ func (s *Service) MonthlyReport(ctx context.Context, tenantID uuid.UUID, month s
 		if err != nil {
 			return err
 		}
-		lateReturns, err := s.repo.CountLateReturnsBetween(ctx, tenantID, from, to)
+		lateReturns, err := s.repo.CountLateReturnsBetween(ctx, tenantID, from, to, loc)
 		if err != nil {
 			return err
 		}

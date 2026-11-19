@@ -24,17 +24,24 @@ select count(*)::int from library_visits where tenant_id = $1 and visited_at >= 
 select count(*)::int from library_copies where tenant_id = $1 and created_at >= $2 and created_at < $3;
 
 -- name: CountLateReturnsBetween :one
+-- due_on is a date on the school's calendar, so the return is compared on
+-- the tenant's own day (tz is its IANA zone): a return at 07:30 in UTC+8
+-- on the due date is on time, not a day late by the previous UTC date.
 select count(*)::int from library_loans
-where tenant_id = $1 and returned_at >= $2 and returned_at < $3 and returned_at::date > due_on;
+where tenant_id = sqlc.arg(tenant_id)
+  and returned_at >= sqlc.arg(from_at) and returned_at < sqlc.arg(to_at)
+  and (returned_at at time zone sqlc.arg(tz)::text)::date > due_on;
 
 -- name: SumFinesRecordedBetween :one
 select coalesce(sum(fine_amount), 0)::int from library_loans
 where tenant_id = $1 and returned_at >= $2 and returned_at < $3 and fine_amount > 0;
 
 -- name: VisitsPerDay :many
-select date(visited_at) as day, count(*)::int as visit_count
+-- Days are the tenant's own calendar days (tz is its IANA zone), as in
+-- DailyLoansSeries: a visit at 07:30 in UTC+8 lands on that local day.
+select (visited_at at time zone sqlc.arg(tz)::text)::date as day, count(*)::int as visit_count
 from library_visits
-where tenant_id = $1 and visited_at >= $2 and visited_at < $3
+where tenant_id = sqlc.arg(tenant_id) and visited_at >= sqlc.arg(from_at) and visited_at < sqlc.arg(to_at)
 group by day
 order by day;
 
