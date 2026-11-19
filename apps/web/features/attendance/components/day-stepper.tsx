@@ -2,7 +2,7 @@
 
 import { Button, DatePicker, IconButton } from "@newsekolah/ui";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { ReactElement } from "react";
+import { useRef, type ReactElement } from "react";
 
 /** "YYYY-MM-DD" shifted by `delta` days, staying in UTC so DST never skips a day. */
 export function shiftDate(date: string, delta: number): string {
@@ -25,8 +25,12 @@ export interface DayStepperProps {
  * the attendance day list and the homeroom summary. On a phone it spans
  * its row, the picker taking the width the arrows leave; from 640px it
  * keeps its own size.
+ *
+ * "Hari ini" removes itself once it is pressed, so it hands focus to the
+ * date first: otherwise a keyboard user would land on `<body>`.
  */
 export function DayStepper({ value, onChange, today, labels }: DayStepperProps): ReactElement {
+  const dateRef = useRef<HTMLButtonElement>(null);
   return (
     <div className="flex w-full items-center gap-1.5 sm:w-auto">
       <IconButton
@@ -38,6 +42,7 @@ export function DayStepper({ value, onChange, today, labels }: DayStepperProps):
         }}
       />
       <DatePicker
+        ref={dateRef}
         value={value}
         onChange={(next) => {
           if (next) onChange(next);
@@ -61,6 +66,7 @@ export function DayStepper({ value, onChange, today, labels }: DayStepperProps):
           variant="ghost"
           size="sm"
           onClick={() => {
+            dateRef.current?.focus();
             onChange(today);
           }}
         >
