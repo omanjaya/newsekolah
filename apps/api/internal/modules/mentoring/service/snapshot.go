@@ -12,7 +12,8 @@ import (
 // StudentSnapshot combines what the platform already knows about one
 // student -- attendance, discipline points, and published grades -- read
 // through adapters over those modules, never by mentoring querying their
-// tables directly.
+// tables directly. An id the tenant has no user for is
+// domain.ErrStudentNotFound (a 404), not a server error.
 func (s *Service) StudentSnapshot(ctx context.Context, tenantID, studentUserID uuid.UUID) (domain.StudentSnapshot, error) {
 	var out domain.StudentSnapshot
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {

@@ -270,6 +270,9 @@ func (r *Repository) StudentInfo(ctx context.Context, tenantID, yearID, studentU
 	row, err := r.queries(ctx).MentoringStudentInfo(ctx, db.MentoringStudentInfoParams{
 		TenantID: tenantID, AcademicYearID: yearID, ID: studentUserID,
 	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return service.StudentInfo{}, domain.ErrStudentNotFound
+	}
 	if err != nil {
 		return service.StudentInfo{}, fmt.Errorf("student info: %w", err)
 	}

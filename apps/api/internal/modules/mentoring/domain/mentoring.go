@@ -21,6 +21,7 @@ var (
 	ErrNoteNotFound         = errors.New("meeting note not found")
 	ErrNoteForbidden        = errors.New("meeting note not visible to this user")
 	ErrSummaryNotFound      = errors.New("term summary not found")
+	ErrStudentNotFound      = errors.New("student not found")
 	ErrNoActiveAcademicYear = errors.New("no active academic year")
 	ErrInvalidInput         = errors.New("invalid input")
 	ErrModuleDisabled       = errors.New("mentoring module is disabled for this tenant")
