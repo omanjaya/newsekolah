@@ -46,21 +46,31 @@ export function stripTrackClass(variant: StripVariant, fullWidth?: boolean | "ph
  * from the screen's edge instead of ending flush with the column. A pill
  * strip keeps its capsule.
  *
- * Each faded edge starts with a 20px clear band under its chevron
- * (StripEdgeCues), so the chevron never covers a label: the text under it
- * is fully masked out, whatever surface the strip sits on. The fade then
- * runs to 40px (pill) or 48px (underline), the same on both edges.
+ * A strip that renders StripEdgeCues (`edgeCues`) starts each faded edge
+ * with a 20px clear band under its chevron, so the chevron never covers a
+ * label: the text under it is fully masked out, whatever surface the strip
+ * sits on. The fade then runs to 40px (pill) or 48px (underline), the same
+ * on both edges. A strip without cues (SegmentedControl) keeps the plain
+ * 24px fade, so none of its labels sit in an empty band.
  */
-export function stripScrollerClass(variant: StripVariant): string {
+export function stripScrollerClass(
+  variant: StripVariant,
+  { edgeCues = false }: { edgeCues?: boolean } = {},
+): string {
   return cn(
     "peer/strip relative flex min-w-0 flex-1 flex-nowrap overflow-x-auto overscroll-x-contain scrollbar-none scroll-fade-x",
-    "[--scroll-fade-clear:var(--space-5)]",
+    edgeCues && "[--scroll-fade-clear:var(--space-5)]",
     variant === "pill"
-      ? "p-1 [--scroll-fade-start-size:var(--space-10)] [--scroll-fade-end-size:var(--space-10)]"
+      ? cn(
+          "p-1",
+          edgeCues &&
+            "[--scroll-fade-start-size:var(--space-10)] [--scroll-fade-end-size:var(--space-10)]",
+        )
       : cn(
           "gap-1 shadow-[inset_0_-1px_0_var(--color-line)]",
           "max-sm:-mx-4 max-sm:scroll-px-4 max-sm:px-4",
-          "[--scroll-fade-start-size:var(--space-12)] [--scroll-fade-end-size:var(--space-12)]",
+          edgeCues &&
+            "[--scroll-fade-start-size:var(--space-12)] [--scroll-fade-end-size:var(--space-12)]",
         ),
   );
 }

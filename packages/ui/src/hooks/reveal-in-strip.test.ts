@@ -62,9 +62,27 @@ describe("revealInStrip", () => {
     const active = tabs[1];
     if (!active) throw new Error("no active tab");
     revealInStrip(container, active);
-    // 6px of the last tab showed; it now shows 56, enough for its label to
-    // clear the 48px end fade past the tab's own padding.
-    expect(scrollLeft()).toBe(50);
+    // 6px of the last tab showed; it now shows 54, its label clear of most
+    // of the 48px end fade. The peek stops 2px short of 56 because the
+    // active tab (at 96) must stay 48px clear of the start fade.
+    expect(scrollLeft()).toBe(48);
+  });
+
+  // The edges have a 20px clear band and a fade to 48px; an active tab
+  // revealed 24px from the edge sat half faded beside the chevron.
+  it("reveals the active tab clear of the longest edge fade", () => {
+    const { container, tabs, scrollLeft } = strip(390, [
+      [16, 140],
+      [140, 300],
+      [300, 420],
+      [420, 560],
+      [560, 700],
+    ]);
+    const active = tabs[3];
+    if (!active) throw new Error("no active tab");
+    revealInStrip(container, active);
+    // Its end (560) lands 48px inside the viewport's end.
+    expect(scrollLeft()).toBeGreaterThanOrEqual(560 + 48 - 390);
   });
 
   it("never moves the active tab under the start fade for a peek", () => {
