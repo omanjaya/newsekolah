@@ -47,11 +47,13 @@ type BatchBorrowInput struct {
 }
 
 // RejectedBarcode is one barcode BatchBorrow could not issue, with the
-// reason -- the batch never aborts on a partial failure, it reports what
-// worked and what did not (old app: {loan, rejected[]}).
+// domain error that stopped it -- the batch never aborts on a partial
+// failure, it reports what worked and what did not (old app: {loan,
+// rejected[]}). Err stays an error, not its text, so the transport can map
+// it to the same stable code a single borrow call returns.
 type RejectedBarcode struct {
 	Barcode string
-	Reason  string
+	Err     error
 }
 
 // BatchBorrowResult is BatchBorrow's outcome.
@@ -76,7 +78,7 @@ func (s *Service) BatchBorrow(ctx context.Context, tenantID uuid.UUID, in BatchB
 				Barcode: barcode, MemberUserID: in.MemberUserID, CheckedOutBy: in.CheckedOutBy, Channel: in.Channel,
 			}, now)
 			if err != nil {
-				result.Rejected = append(result.Rejected, RejectedBarcode{Barcode: barcode, Reason: err.Error()})
+				result.Rejected = append(result.Rejected, RejectedBarcode{Barcode: barcode, Err: err})
 				continue
 			}
 			result.Loans = append(result.Loans, loan)

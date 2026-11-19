@@ -19,11 +19,12 @@ type ClassLoanPair struct {
 	Barcode       string
 }
 
-// ClassLoanRejected is one student the auto-pairing could not include.
+// ClassLoanRejected is one student the auto-pairing could not include,
+// with the domain error explaining why.
 type ClassLoanRejected struct {
 	StudentUserID uuid.UUID
 	StudentName   string
-	Reason        string
+	Err           error
 }
 
 // ClassLoanPreview is PreviewClassLoans' result: the pairing a librarian
@@ -38,7 +39,7 @@ type ClassLoanPreview struct {
 // (library_circulation_v2.go:241-250): student i gets copy i. A student
 // with no member profile, one that is not active, or one who already has
 // the title on loan is rejected instead of paired; running out of copies
-// before the roster does rejects the rest as "no copy available". The
+// before the roster does rejects the rest with ErrNoCopyForClassLoan. The
 // active-loan quota is bypassed entirely for class loans, same as the old
 // app ("melewati kuota").
 func (s *Service) PreviewClassLoans(ctx context.Context, tenantID, classID, titleID uuid.UUID) (ClassLoanPreview, error) {
@@ -64,12 +65,12 @@ func (s *Service) PreviewClassLoans(ctx context.Context, tenantID, classID, titl
 
 		copyIdx := 0
 		for _, student := range roster {
-			if reason, skip := s.classLoanRejectReason(ctx, tenantID, titleID, student.UserID); skip {
-				out.Rejected = append(out.Rejected, ClassLoanRejected{StudentUserID: student.UserID, StudentName: student.UserName, Reason: reason})
+			if reason := s.classLoanRejectReason(ctx, tenantID, titleID, student.UserID); reason != nil {
+				out.Rejected = append(out.Rejected, ClassLoanRejected{StudentUserID: student.UserID, StudentName: student.UserName, Err: reason})
 				continue
 			}
 			if copyIdx >= len(available) {
-				out.Rejected = append(out.Rejected, ClassLoanRejected{StudentUserID: student.UserID, StudentName: student.UserName, Reason: "no copy available"})
+				out.Rejected = append(out.Rejected, ClassLoanRejected{StudentUserID: student.UserID, StudentName: student.UserName, Err: domain.ErrNoCopyForClassLoan})
 				continue
 			}
 			cp := available[copyIdx]
@@ -86,16 +87,23 @@ func (s *Service) PreviewClassLoans(ctx context.Context, tenantID, classID, titl
 	return out, nil
 }
 
-func (s *Service) classLoanRejectReason(ctx context.Context, tenantID, titleID, studentID uuid.UUID) (string, bool) {
+// classLoanRejectReason is the domain error that keeps a student out of
+// the pairing, or nil when the student can be paired. A suspended member
+// gets ErrMemberSuspended; inactive and cleared members get
+// ErrMemberNotActive, the same codes a single desk borrow returns.
+func (s *Service) classLoanRejectReason(ctx context.Context, tenantID, titleID, studentID uuid.UUID) error {
 	member, found, err := s.repo.GetMember(ctx, tenantID, studentID)
 	if err == nil && found && member.Status != domain.MemberActive && member.Status != domain.MemberPending {
-		return "member is " + string(member.Status), true
+		if member.Status == domain.MemberSuspended {
+			return domain.ErrMemberSuspended
+		}
+		return domain.ErrMemberNotActive
 	}
 	hasLoan, err := s.repo.HasActiveLoanForMemberAndTitle(ctx, tenantID, titleID, studentID)
 	if err == nil && hasLoan {
-		return "already has this title", true
+		return domain.ErrMemberHasTitle
 	}
-	return "", false
+	return nil
 }
 
 // CommitClassLoans issues the confirmed pairs (from PreviewClassLoans, or
@@ -115,7 +123,7 @@ func (s *Service) CommitClassLoans(ctx context.Context, tenantID uuid.UUID, pair
 				Barcode: pair.Barcode, MemberUserID: pair.StudentUserID, CheckedOutBy: checkedOutBy, Channel: domain.ChannelDesk,
 			}, now, false)
 			if err != nil {
-				result.Rejected = append(result.Rejected, RejectedBarcode{Barcode: pair.Barcode, Reason: err.Error()})
+				result.Rejected = append(result.Rejected, RejectedBarcode{Barcode: pair.Barcode, Err: err})
 				continue
 			}
 			result.Loans = append(result.Loans, loan)
@@ -156,7 +164,7 @@ func (s *Service) ClassReturns(ctx context.Context, tenantID, classID, titleID, 
 			}
 			loan, err := s.Return(ctx, tenantID, ReturnInput{LoanID: uuid.NullUUID{UUID: active.ID, Valid: true}, CheckedInBy: checkedInBy})
 			if err != nil {
-				result.Rejected = append(result.Rejected, RejectedBarcode{Barcode: student.UserName, Reason: err.Error()})
+				result.Rejected = append(result.Rejected, RejectedBarcode{Barcode: student.UserName, Err: err})
 				continue
 			}
 			result.Loans = append(result.Loans, loan)

@@ -98,39 +98,6 @@ export function classifyBorrowCopy(copy: {
   return { blocked: false };
 }
 
-/**
- * `LibraryBatchBorrowResult.rejected[].reason` is the server's raw Go
- * `error.Error()` text (apps/api/internal/modules/library/service/loans.go's
- * `BatchBorrow`), not an `ApiError.code` -- a single rejected barcode does
- * not fail the whole batch request, so it never goes through the usual
- * `mapError` -> code -> `errors.*` i18n translation that a single borrow,
- * return, or renewal call gets. This maps that fixed, finite set of
- * domain error strings (apps/api/internal/modules/library/domain/library.go)
- * back to the same `errors.*` codes the rest of the app already
- * translates, so a rejected barcode reads in the user's language instead
- * of raw English. An unrecognized string (a future error this list has
- * not caught up with yet) falls back to showing the raw reason rather
- * than hiding it.
- */
-const BORROW_REJECT_REASON_CODES: Record<string, string> = {
-  "copy not found": "LIBRARY_COPY_NOT_FOUND",
-  "copy is not available": "LIBRARY_COPY_NOT_AVAILABLE",
-  "copy is already on loan": "LIBRARY_COPY_ON_LOAN",
-  "library member not found": "LIBRARY_MEMBER_NOT_FOUND",
-  "library member is not active": "LIBRARY_MEMBER_NOT_ACTIVE",
-  "library member is suspended": "LIBRARY_MEMBER_SUSPENDED",
-  "library membership has expired": "LIBRARY_MEMBER_EXPIRED",
-  "member has an unpaid fine": "LIBRARY_UNPAID_FINE",
-  "member has reached the active loan limit": "LIBRARY_LOAN_LIMIT_REACHED",
-  "lending is closed for this date": "LIBRARY_LOANS_CLOSED",
-};
-
-/** The `errors.*` i18n code for a rejected barcode's raw reason, or the reason itself when unrecognized. */
-export function borrowRejectReasonCode(reason: string): { code: string } | { raw: string } {
-  const code = BORROW_REJECT_REASON_CODES[reason];
-  return code ? { code } : { raw: reason };
-}
-
 /** Alt+1/2/3 switches mode, Alt+Z undoes the last scan -- combinations a hardware scanner never emits (it only ever sends plain characters plus Enter). */
 export function matchDeskShortcut(event: {
   altKey: boolean;

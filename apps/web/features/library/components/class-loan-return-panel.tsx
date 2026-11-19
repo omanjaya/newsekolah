@@ -22,6 +22,7 @@ import type { LibraryTitle } from "../api";
 import { type LibraryBatchBorrowResult, useCommitClassReturnsMutation } from "../class-loans-api";
 
 import { ClassTitlePicker } from "./class-title-picker";
+import { RejectedReasonList } from "./rejected-reason-list";
 
 /** Hands back every roster student's active loan of one title in a single pass. */
 export function ClassLoanReturnPanel(): ReactElement {
@@ -103,13 +104,14 @@ export function ClassLoanReturnPanel(): ReactElement {
 
       {result && result.rejected.length > 0 && (
         <Alert tone="danger" title={t("rejectedTitle")} className="mx-5 mb-5">
-          <ul className="flex flex-col gap-1">
-            {result.rejected.map((item) => (
-              <li key={item.barcode}>
-                {item.barcode}: {item.reason}
-              </li>
-            ))}
-          </ul>
+          <RejectedReasonList
+            items={result.rejected.map((item) => ({
+              key: item.barcode,
+              label: item.barcode,
+              code: item.code,
+              reason: item.reason,
+            }))}
+          />
         </Alert>
       )}
     </Card>

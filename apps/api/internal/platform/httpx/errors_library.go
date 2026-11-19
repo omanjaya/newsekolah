@@ -43,6 +43,8 @@ var (
 	ErrLibraryMemberTypeInUse     = NewError(http.StatusConflict, "LIBRARY_MEMBER_TYPE_IN_USE")
 	ErrLibraryMemberNoExhausted   = NewError(http.StatusConflict, "LIBRARY_MEMBER_NO_EXHAUSTED")
 	ErrLibraryMemberNoCollision   = NewError(http.StatusConflict, "LIBRARY_MEMBER_NO_COLLISION")
+	ErrLibraryAlreadyHasTitle     = NewError(http.StatusConflict, "LIBRARY_ALREADY_HAS_TITLE")
+	ErrLibraryNoCopyAvailable     = NewError(http.StatusConflict, "LIBRARY_NO_COPY_AVAILABLE")
 
 	ErrLibraryViolationNotFound       = NewError(http.StatusNotFound, "LIBRARY_VIOLATION_NOT_FOUND")
 	ErrLibraryViolationAlreadySettled = NewError(http.StatusConflict, "LIBRARY_VIOLATION_ALREADY_SETTLED")

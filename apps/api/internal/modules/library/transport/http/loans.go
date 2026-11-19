@@ -185,7 +185,7 @@ func toAPIBatchResult(r service.BatchBorrowResult) api.LibraryBatchBorrowResult 
 	}
 	rejected := make([]api.LibraryRejectedBarcode, len(r.Rejected))
 	for i, rej := range r.Rejected {
-		rejected[i] = api.LibraryRejectedBarcode{Barcode: rej.Barcode, Reason: rej.Reason}
+		rejected[i] = api.LibraryRejectedBarcode{Barcode: rej.Barcode, Code: errorCode(rej.Err), Reason: rej.Err.Error()}
 	}
 	return api.LibraryBatchBorrowResult{Loans: loans, Rejected: rejected}
 }

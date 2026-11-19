@@ -23874,15 +23874,26 @@ components:
         failed:
           type: array
           items:
-            type: object
-            required:
-              - user_id
-              - reason
-            properties:
-              user_id:
-                type: string
-              reason:
-                type: string
+            $ref: "#/components/schemas/LibraryBulkRegisterFailure"
+    LibraryBulkRegisterFailure:
+      type: object
+      description: One candidate the bulk registration could not register. `code` is the stable error code (the same one a
+        single registration returns), for the client to translate; `reason` is the server's text, a fallback only.
+      required:
+        - user_id
+        - user_name
+        - code
+        - reason
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        user_name:
+          type: string
+        code:
+          type: string
+        reason:
+          type: string
     LibraryFineType:
       type: string
       enum:
@@ -24173,11 +24184,16 @@ components:
           maxLength: 500
     LibraryRejectedBarcode:
       type: object
+      description: One barcode (or, for a class return, one student) a batch could not process. `code` is the stable error
+        code a single call would return, for the client to translate; `reason` is the server's text, a fallback only.
       required:
         - barcode
+        - code
         - reason
       properties:
         barcode:
+          type: string
+        code:
           type: string
         reason:
           type: string
@@ -24260,15 +24276,21 @@ components:
           type: string
     LibraryClassLoanRejected:
       type: object
+      description: One student the class-loan pairing left out. `code` is the stable error code (for example
+        LIBRARY_MEMBER_SUSPENDED or LIBRARY_NO_COPY_AVAILABLE) for the client to translate; `reason` is the server's
+        text, a fallback only.
       required:
         - student_user_id
         - student_name
+        - code
         - reason
       properties:
         student_user_id:
           type: string
           format: uuid
         student_name:
+          type: string
+        code:
           type: string
         reason:
           type: string

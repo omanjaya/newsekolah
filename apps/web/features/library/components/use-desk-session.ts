@@ -21,7 +21,6 @@ import {
   type DeskBasketItem,
   type DeskMode,
   addBasketItem,
-  borrowRejectReasonCode,
   classifyBorrowCopy,
   confirmableItems,
   matchDeskShortcut,
@@ -254,8 +253,7 @@ export function useDeskSession() {
       setBasket((prev) => {
         let next = prev.borrow;
         for (const rejected of result.rejected) {
-          const reason = borrowRejectReasonCode(rejected.reason);
-          const detail = "code" in reason ? apiErrorMessage(reason.code) : reason.raw;
+          const detail = apiErrorMessage(rejected.code, rejected.reason);
           next = updateBasketItem(next, rejected.barcode, { state: "failed", detail });
         }
         // `result.loans` preserves the relative order `borrowOne` processed

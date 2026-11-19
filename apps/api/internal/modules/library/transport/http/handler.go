@@ -78,6 +78,8 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrMemberTypeInUse:     httpx.ErrLibraryMemberTypeInUse,
 	domain.ErrMemberNoExhausted:   httpx.ErrLibraryMemberNoExhausted,
 	domain.ErrMemberNoCollision:   httpx.ErrLibraryMemberNoCollision,
+	domain.ErrMemberHasTitle:      httpx.ErrLibraryAlreadyHasTitle,
+	domain.ErrNoCopyForClassLoan:  httpx.ErrLibraryNoCopyAvailable,
 
 	domain.ErrViolationNotFound:       httpx.ErrLibraryViolationNotFound,
 	domain.ErrViolationAlreadySettled: httpx.ErrLibraryViolationAlreadySettled,
@@ -100,6 +102,18 @@ func mapError(err error) error {
 		return appErr
 	}
 	return httpx.Internal(err)
+}
+
+// errorCode is the stable httpx code a domain error maps to, for a batch
+// row that reports a per-item failure inside a 200 response instead of
+// failing the whole request. The client translates the code exactly as it
+// would the same error from a single call.
+func errorCode(err error) string {
+	var appErr *httpx.Error
+	if errors.As(mapError(err), &appErr) {
+		return appErr.Code
+	}
+	return httpx.Internal(err).Code
 }
 
 func strOr(p *string) string {

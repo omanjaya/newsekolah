@@ -24,6 +24,8 @@ import {
   useLibraryMemberTypesQuery,
 } from "../members-api";
 
+import { RejectedReasonList } from "./rejected-reason-list";
+
 const ROLES = ["student", "teacher", "staff"] as const;
 type Role = (typeof ROLES)[number];
 
@@ -85,13 +87,15 @@ export function MemberBulkRegisterDialog({
               })}
             >
               {result.failed.length > 0 && (
-                <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto">
-                  {result.failed.map((f) => (
-                    <li key={f.user_id}>
-                      {f.user_id}: {f.reason}
-                    </li>
-                  ))}
-                </ul>
+                <RejectedReasonList
+                  className="flex max-h-48 flex-col gap-1 overflow-y-auto"
+                  items={result.failed.map((f) => ({
+                    key: f.user_id,
+                    label: f.user_name,
+                    code: f.code,
+                    reason: f.reason,
+                  }))}
+                />
               )}
             </Alert>
             <DialogFooter>

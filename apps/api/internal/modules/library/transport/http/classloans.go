@@ -21,7 +21,9 @@ func (h *LibraryHandler) PreviewLibraryClassLoans(ctx context.Context, request a
 	}
 	rejected := make([]api.LibraryClassLoanRejected, len(preview.Rejected))
 	for i, r := range preview.Rejected {
-		rejected[i] = api.LibraryClassLoanRejected{StudentUserId: r.StudentUserID, StudentName: r.StudentName, Reason: r.Reason}
+		rejected[i] = api.LibraryClassLoanRejected{
+			StudentUserId: r.StudentUserID, StudentName: r.StudentName, Code: errorCode(r.Err), Reason: r.Err.Error(),
+		}
 	}
 	return api.PreviewLibraryClassLoans200JSONResponse{Pairs: pairs, Rejected: rejected}, nil
 }

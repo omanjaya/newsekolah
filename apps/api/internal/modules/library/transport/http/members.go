@@ -139,13 +139,9 @@ func (h *LibraryHandler) BulkRegisterLibraryMembers(ctx context.Context, request
 	for i, m := range result.Registered {
 		registered[i] = toAPIMember(m)
 	}
-	failed := make([]struct {
-		Reason string `json:"reason"`
-		UserId string `json:"user_id"`
-	}, len(result.Failed))
+	failed := make([]api.LibraryBulkRegisterFailure, len(result.Failed))
 	for i, f := range result.Failed {
-		failed[i].UserId = f.Barcode
-		failed[i].Reason = f.Reason
+		failed[i] = api.LibraryBulkRegisterFailure{UserId: f.UserID, UserName: f.UserName, Code: errorCode(f.Err), Reason: f.Err.Error()}
 	}
 	return api.BulkRegisterLibraryMembers200JSONResponse{Registered: registered, Failed: failed}, nil
 }

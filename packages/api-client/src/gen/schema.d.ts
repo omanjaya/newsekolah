@@ -10233,10 +10233,15 @@ export interface components {
         };
         LibraryBulkRegisterResult: {
             registered: components["schemas"]["LibraryMember"][];
-            failed: {
-                user_id: string;
-                reason: string;
-            }[];
+            failed: components["schemas"]["LibraryBulkRegisterFailure"][];
+        };
+        /** @description One candidate the bulk registration could not register. `code` is the stable error code (the same one a single registration returns), for the client to translate; `reason` is the server's text, a fallback only. */
+        LibraryBulkRegisterFailure: {
+            /** Format: uuid */
+            user_id: string;
+            user_name: string;
+            code: string;
+            reason: string;
         };
         /** @enum {string} */
         LibraryFineType: "constant" | "per_tenor";
@@ -10355,8 +10360,10 @@ export interface components {
             suspend_days?: number;
             notes?: string;
         };
+        /** @description One barcode (or, for a class return, one student) a batch could not process. `code` is the stable error code a single call would return, for the client to translate; `reason` is the server's text, a fallback only. */
         LibraryRejectedBarcode: {
             barcode: string;
+            code: string;
             reason: string;
         };
         LibraryBatchBorrowResult: {
@@ -10392,10 +10399,12 @@ export interface components {
             copy_id: string;
             barcode: string;
         };
+        /** @description One student the class-loan pairing left out. `code` is the stable error code (for example LIBRARY_MEMBER_SUSPENDED or LIBRARY_NO_COPY_AVAILABLE) for the client to translate; `reason` is the server's text, a fallback only. */
         LibraryClassLoanRejected: {
             /** Format: uuid */
             student_user_id: string;
             student_name: string;
+            code: string;
             reason: string;
         };
         LibraryClassLoanPreview: {
