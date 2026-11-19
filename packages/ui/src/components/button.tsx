@@ -85,16 +85,23 @@ export interface ButtonProps
   /** Renders the props onto the single child element instead of a `<button>` (e.g. a `Link`). */
   asChild?: boolean;
   /**
-   * Shows a spinner and disables the button, whatever `disabled` says;
-   * content stays mounted for a stable width. Unlike a disabled button it
-   * keeps its full fill.
+   * Shows a spinner and makes the button inactive, whatever `disabled`
+   * says; content stays mounted for a stable width. Unlike a disabled
+   * button it keeps its full fill, and it keeps keyboard focus: it is
+   * marked `aria-disabled` and ignores activation instead of taking the
+   * `disabled` attribute, which would drop focus to `<body>` for the
+   * whole run.
    */
   loading?: boolean;
   /** Leading icon, sized and colored automatically. */
   icon?: ReactNode;
 }
 
-/** A disabled link keeps its `href`; this stops Enter (and any click that gets through) from following it. */
+/**
+ * A disabled link keeps its `href`, and a busy button keeps its place in
+ * the tab order; this stops Enter, Space (and any click that gets through)
+ * from following the link, submitting the form or running the action again.
+ */
 function preventActivation(event: ReactMouseEvent<HTMLButtonElement>) {
   event.preventDefault();
 }
@@ -102,16 +109,22 @@ function preventActivation(event: ReactMouseEvent<HTMLButtonElement>) {
 /**
  * The one button. Defaults to `type="button"`, so a button inside a form
  * never submits it by accident; pass `type="submit"` for the one that
- * should. A loading button is always disabled, even when the caller also
- * passes `disabled={false}` (a valid form that is already saving).
+ * should. A loading button is always inactive, even when the caller also
+ * passes `disabled={false}` (a valid form that is already saving), and it
+ * stays focusable so focus does not fall to `<body>` while it runs.
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   { className, variant, size, asChild, loading, icon, disabled, type, onClick, children, ...props },
   ref,
 ) {
   const Comp = asChild ? Slot : "button";
-  const inactive = Boolean(disabled) || Boolean(loading);
+  const busy = Boolean(loading);
+  const inactive = Boolean(disabled) || busy;
   const inactiveLink = asChild && inactive;
+  // A busy `<button>` holds focus: ARIA says it is unavailable, the
+  // matching classes stop the pointer, and the click guard below stops
+  // the keyboard (and a form's implicit submission, which clicks it).
+  const busyButton = !asChild && busy;
   const leading = Boolean(loading) || Boolean(icon);
   const iconSize = size === "lg" ? "size-5 [&>svg]:size-5" : "size-4 [&>svg]:size-4";
   return (
@@ -133,10 +146,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       // the tab order and ignores activation from the keyboard.
       {...(asChild
         ? { "aria-disabled": inactive || undefined }
-        : { type: type ?? "button", disabled: inactive })}
+        : busyButton
+          ? { type: type ?? "button", "aria-disabled": true }
+          : { type: type ?? "button", disabled: inactive })}
       aria-busy={loading ?? undefined}
       {...props}
-      {...(inactiveLink ? { tabIndex: -1, onClick: preventActivation } : { onClick })}
+      {...(inactiveLink
+        ? { tabIndex: -1, onClick: preventActivation }
+        : busyButton
+          ? { onClick: preventActivation }
+          : { onClick })}
     >
       {loading ? (
         <Loader2 className={cn(iconSize, "shrink-0 animate-spin")} aria-hidden="true" />

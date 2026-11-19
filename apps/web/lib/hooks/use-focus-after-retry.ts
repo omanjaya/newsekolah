@@ -12,11 +12,11 @@ const RETRY_BUTTON = `[${RETRY_FOCUS_ATTRIBUTE}]:not([disabled])`;
 const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
- * Keeps keyboard focus in `region` across a retry. The retry button is
- * disabled while it runs, and once the reads load it is replaced (by the
- * hero's own action, or the notice goes away), so focus would fall to
- * `<body>` and a keyboard user would start again from the skip link (audit
- * r3-n22). Call the returned function as the retry starts: when the run
+ * Keeps keyboard focus in `region` across a retry. The shared Button keeps
+ * focus while it is busy (audit r6-n2), but once the reads load the retry
+ * is replaced (by the hero's own action, or the notice goes away), so focus
+ * would fall to `<body>` and a keyboard user would start again from the
+ * skip link (audit r3-n22). Call the returned function as the retry starts: when the run
  * settles with focus lost, it goes back to the retry button if one is
  * still there, else to the region's first control (the hero's action).
  * Focus the reader moved elsewhere in the meantime is left alone.

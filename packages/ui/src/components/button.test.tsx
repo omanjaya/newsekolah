@@ -14,24 +14,69 @@ describe("Button", () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  it("disables the button and marks it busy while loading", () => {
+  it("marks the button unavailable and busy while loading, without the disabled attribute", () => {
     render(<Button loading>Menyimpan</Button>);
     const button = screen.getByRole("button", { name: "Menyimpan" });
-    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("aria-disabled", "true");
     expect(button).toHaveAttribute("aria-busy", "true");
+    // `disabled` would drop focus to <body> for the whole run (audit r6-n2).
+    expect(button).not.toHaveAttribute("disabled");
   });
 
-  it("stays disabled while loading even when the caller passes disabled={false}", async () => {
+  it("stays inactive while loading even when the caller passes disabled", async () => {
     const onClick = vi.fn();
     render(
-      <Button loading disabled={false} onClick={onClick}>
-        Menyimpan
+      <>
+        <Button loading disabled={false} onClick={onClick}>
+          Menyimpan
+        </Button>
+        <Button loading disabled onClick={onClick}>
+          Mengirim
+        </Button>
+      </>,
+    );
+    for (const name of ["Menyimpan", "Mengirim"]) {
+      const button = screen.getByRole("button", { name });
+      expect(button).toHaveAttribute("aria-disabled", "true");
+      await userEvent.click(button);
+    }
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it("keeps focus on a button that turns busy, and ignores Enter and Space while busy", async () => {
+    const onClick = vi.fn();
+    const { rerender } = render(<Button onClick={onClick}>Coba lagi</Button>);
+    const button = screen.getByRole("button", { name: "Coba lagi" });
+    button.focus();
+    rerender(
+      <Button loading onClick={onClick}>
+        Coba lagi
       </Button>,
     );
-    const button = screen.getByRole("button", { name: "Menyimpan" });
-    expect(button).toBeDisabled();
-    await userEvent.click(button);
+    // A real browser blurs an element the moment it gains `disabled`;
+    // jsdom does not, so the attribute itself is what this guards.
+    expect(button).not.toHaveAttribute("disabled");
+    expect(button).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await userEvent.keyboard(" ");
     expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it("does not submit its form while busy, by click or by Enter in a field", async () => {
+    const onSubmit = vi.fn((event: { preventDefault: () => void }) => {
+      event.preventDefault();
+    });
+    render(
+      <form onSubmit={onSubmit}>
+        <input aria-label="Nama" />
+        <Button type="submit" loading>
+          Simpan
+        </Button>
+      </form>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Simpan" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "Nama" }), "Budi{Enter}");
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it("defaults to type=button so it never submits a form by accident", async () => {
@@ -175,10 +220,10 @@ describe("Button", () => {
       </>,
     );
     const saving = screen.getByRole("button", { name: "Menyimpan" });
-    expect(saving).toBeDisabled();
+    expect(saving).toHaveAttribute("aria-disabled", "true");
     expect(saving).toHaveAttribute("aria-busy", "true");
-    expect(saving).toHaveClass("disabled:opacity-100", "disabled:pointer-events-none");
-    expect(saving).not.toHaveClass("disabled:opacity-50");
+    expect(saving).toHaveClass("aria-disabled:opacity-100", "aria-disabled:pointer-events-none");
+    expect(saving).not.toHaveClass("aria-disabled:opacity-50");
 
     expect(screen.getByRole("button", { name: "Nonaktif" })).toHaveClass("disabled:opacity-50");
 

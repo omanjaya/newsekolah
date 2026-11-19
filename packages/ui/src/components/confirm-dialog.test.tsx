@@ -200,7 +200,8 @@ describe("ConfirmDialog", () => {
         onConfirm={vi.fn()}
       />,
     );
-    expect(screen.getByRole("button", { name: "Hapus" })).toBeDisabled();
+    // The running action keeps focus, so it is unavailable through ARIA.
+    expect(screen.getByRole("button", { name: "Hapus" })).toHaveAttribute("aria-disabled", "true");
     expect(screen.getByRole("button", { name: "Batal" })).toBeDisabled();
     // The header's X would do nothing either, so it does not look clickable.
     expect(screen.getByRole("button", { name: "Tutup dialog" })).toBeDisabled();

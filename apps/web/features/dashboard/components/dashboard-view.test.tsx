@@ -242,13 +242,18 @@ describe("DashboardView", () => {
     await userEvent.click(retry);
 
     expect(retry).toHaveAttribute("aria-busy", "true");
-    expect(retry).toBeDisabled();
+    expect(retry).toHaveAttribute("aria-disabled", "true");
+    // Busy, not disabled: a browser blurs a disabled button, which left
+    // focus on <body> for the whole retry (audit r6-n2).
+    expect(retry).not.toHaveAttribute("disabled");
+    expect(retry).toHaveFocus();
 
     await act(async () => {
       settle();
       await Promise.resolve();
     });
     expect(retry).not.toHaveAttribute("aria-busy", "true");
+    expect(retry).not.toHaveAttribute("aria-disabled");
     expect(retry).toBeEnabled();
   });
 

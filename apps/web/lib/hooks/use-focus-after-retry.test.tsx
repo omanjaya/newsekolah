@@ -1,3 +1,4 @@
+import { Button } from "@newsekolah/ui";
 import { act, render, screen } from "@testing-library/react";
 import { useRef, type ReactElement } from "react";
 import { describe, expect, it } from "vitest";
@@ -79,5 +80,35 @@ describe("useFocusAfterRetry", () => {
     rerender(false, null);
     expect(outside).toHaveFocus();
     outside.remove();
+  });
+
+  it("keeps focus on the shared Button while its retry runs", () => {
+    // A real browser blurs a button the moment it gains `disabled`, which
+    // left focus on <body> for the whole run (audit r6-n2). The busy
+    // Button must stay focusable instead.
+    function HeroRetry({ retrying }: { retrying: boolean }): ReactElement {
+      const region = useRef<HTMLDivElement>(null);
+      const arm = useFocusAfterRetry(region, retrying, "hero");
+      return (
+        <div ref={region}>
+          <Button loading={retrying} onClick={arm} data-retry-focus="">
+            Coba lagi
+          </Button>
+        </div>
+      );
+    }
+    const view = render(<HeroRetry retrying={false} />);
+    const button = screen.getByRole("button", { name: "Coba lagi" });
+    button.focus();
+    act(() => {
+      button.click();
+    });
+    view.rerender(<HeroRetry retrying />);
+    expect(button).not.toHaveAttribute("disabled");
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button).toHaveFocus();
+
+    view.rerender(<HeroRetry retrying={false} />);
+    expect(button).toHaveFocus();
   });
 });

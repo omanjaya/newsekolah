@@ -16,7 +16,10 @@ describe("StickySaveBar", () => {
     expect(onSave).toHaveBeenCalledTimes(1);
 
     rerender(<StickySaveBar leadingSlot="3 perubahan" saveLabel="Simpan" saving onSave={onSave} />);
-    expect(screen.getByRole("button", { name: "Simpan" })).toBeDisabled();
+    const saving = screen.getByRole("button", { name: "Simpan" });
+    expect(saving).toHaveAttribute("aria-disabled", "true");
+    await userEvent.click(saving);
+    expect(onSave).toHaveBeenCalledTimes(1);
   });
 
   it("lines up with the page gutter and slides up as it appears", () => {
