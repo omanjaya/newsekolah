@@ -431,24 +431,33 @@
  * there is more content past that edge; only then does the strip get a
  * mask, so a strip that fits pays nothing. The mask is alpha only: the
  * colour in the gradient is never painted.
+ *
+ * A strip may ask for longer fades (`--scroll-fade-start-size`,
+ * `--scroll-fade-end-size`) and for a clear band at each faded edge
+ * (`--scroll-fade-clear`): content inside the band is fully transparent,
+ * so an edge cue drawn over it (a tab strip's chevron) never sits on top
+ * of a label. The band counts toward the fade's length.
  */
 @utility scroll-fade-x {
   --scroll-fade-start: 0px;
+  --scroll-fade-start-clear: 0px;
   --scroll-fade-end: 0px;
+  --scroll-fade-end-clear: 0px;
   &[data-overflow-start] {
-    --scroll-fade-start: var(--space-6);
+    --scroll-fade-start: var(--scroll-fade-start-size, var(--space-6));
+    --scroll-fade-start-clear: var(--scroll-fade-clear, 0px);
   }
   &[data-overflow-end] {
-    /* A strip may ask for a longer end fade (an underline tab strip does). */
     --scroll-fade-end: var(--scroll-fade-end-size, var(--space-6));
+    --scroll-fade-end-clear: var(--scroll-fade-clear, 0px);
   }
   &:is([data-overflow-start], [data-overflow-end]) {
     mask-image: linear-gradient(
       to right,
-      transparent,
+      transparent var(--scroll-fade-start-clear),
       #000 var(--scroll-fade-start),
       #000 calc(100% - var(--scroll-fade-end)),
-      transparent
+      transparent calc(100% - var(--scroll-fade-end-clear))
     );
   }
 }
