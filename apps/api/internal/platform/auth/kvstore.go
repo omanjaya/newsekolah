@@ -17,7 +17,10 @@ import (
 // still boots (per the Phase 0 requirement) when Redis is not configured.
 type KVStore interface {
 	// Incr increments key and returns the new count. On the first increment
-	// (count becomes 1) it also sets the key to expire after ttl.
+	// (count becomes 1) it also sets the key to expire after ttl; later
+	// increments leave that expiry alone, so a counter is a fixed window
+	// that starts at its first hit and always runs out, however steady the
+	// traffic behind it.
 	Incr(ctx context.Context, key string, ttl time.Duration) (int64, error)
 	Get(ctx context.Context, key string) (string, bool, error)
 	Set(ctx context.Context, key, value string, ttl time.Duration) error
@@ -37,14 +40,22 @@ func NewRedisStore(client *redis.Client) *RedisStore {
 	return &RedisStore{client: client}
 }
 
+// incrFixedWindow increments KEYS[1] and gives it ARGV[1] milliseconds to
+// live only when it has no expiry yet: its first hit, or a key an earlier
+// failure left without one. Re-applying EXPIRE on every hit, as this once
+// did, slid the window forward with each request (rejected ones too), so a
+// school behind one NAT address that kept loading pages never got its
+// budget back.
+var incrFixedWindow = redis.NewScript(`
+local count = redis.call("INCR", KEYS[1])
+if redis.call("PTTL", KEYS[1]) < 0 then
+  redis.call("PEXPIRE", KEYS[1], ARGV[1])
+end
+return count
+`)
+
 func (s *RedisStore) Incr(ctx context.Context, key string, ttl time.Duration) (int64, error) {
-	pipe := s.client.TxPipeline()
-	incr := pipe.Incr(ctx, key)
-	pipe.Expire(ctx, key, ttl)
-	if _, err := pipe.Exec(ctx); err != nil {
-		return 0, err
-	}
-	return incr.Val(), nil
+	return incrFixedWindow.Run(ctx, s.client, []string{key}, ttl.Milliseconds()).Int64()
 }
 
 func (s *RedisStore) Get(ctx context.Context, key string) (string, bool, error) {
