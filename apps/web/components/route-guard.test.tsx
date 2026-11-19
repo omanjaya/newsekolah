@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import { markAuthRedirect } from "../lib/session/auth-redirect-flag";
 import { useSession } from "../lib/session/session-provider";
 
 import { RouteGuard } from "./route-guard";
@@ -40,6 +41,27 @@ describe("RouteGuard", () => {
 
     expect(replace).toHaveBeenCalledWith("/login?next=%2Fdashboard");
     expect(screen.queryByText("protected")).not.toBeInTheDocument();
+  });
+
+  // A link clicked as the session ended can win the race against the
+  // session-ended redirect; this page then sends the reader to sign-in and
+  // must keep the notice (audit r3-n9).
+  it("keeps the session-ended reason while that redirect is under way", () => {
+    try {
+      markAuthRedirect({ sessionEnded: true });
+      mockedUseSession.mockReturnValue({ status: "anonymous", me: undefined, isReady: true });
+
+      render(
+        <RouteGuard>
+          <p>protected</p>
+        </RouteGuard>,
+      );
+
+      expect(replace).toHaveBeenLastCalledWith("/login?next=%2Fdashboard&reason=session-ended");
+    } finally {
+      // Leaves a redirect with no reason, so the other cases see none.
+      markAuthRedirect();
+    }
   });
 
   it("redirects to /change-password when must_change_password is set", () => {

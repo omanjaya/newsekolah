@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { isAuthRedirecting, markAuthRedirect } from "./auth-redirect-flag";
+import { isAuthRedirecting, isSessionEndedRedirect, markAuthRedirect } from "./auth-redirect-flag";
 
 describe("auth-redirect-flag", () => {
   beforeEach(() => {
@@ -32,5 +32,19 @@ describe("auth-redirect-flag", () => {
     expect(isAuthRedirecting()).toBe(true);
     vi.advanceTimersByTime(1500);
     expect(isAuthRedirecting()).toBe(false);
+  });
+
+  it("remembers a session-ended redirect only for the window", () => {
+    markAuthRedirect({ sessionEnded: true });
+    expect(isSessionEndedRedirect()).toBe(true);
+    vi.advanceTimersByTime(2001);
+    expect(isSessionEndedRedirect()).toBe(false);
+  });
+
+  it("does not report session-ended for a redirect that chose no reason", () => {
+    markAuthRedirect({ sessionEnded: true });
+    markAuthRedirect();
+    expect(isAuthRedirecting()).toBe(true);
+    expect(isSessionEndedRedirect()).toBe(false);
   });
 });

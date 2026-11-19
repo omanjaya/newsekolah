@@ -65,13 +65,13 @@ export function AppProviders({
         endSession(client, queryClient);
         return;
       }
-      // Marked before the mutations in flight at the moment the session died
-      // reject and hit the mutation cache's default error toast (see
-      // auth-redirect-flag.ts) -- must happen before router.replace, not after.
-      markAuthRedirect();
       // Read before endSession empties the cache: a tab that knew who was
       // signed in lost a session mid-visit, and the sign-in page says so.
       const sessionEnded = queryClient.getQueryData(queryKeys.me()) !== undefined;
+      // Marked before the mutations in flight at the moment the session died
+      // reject and hit the mutation cache's default error toast (see
+      // auth-redirect-flag.ts) -- must happen before router.replace, not after.
+      markAuthRedirect({ sessionEnded });
       // The session is over: with its `me` left in the cache the sign-in
       // page would read the tab as signed in and send it straight back.
       endSession(client, queryClient);
