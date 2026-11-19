@@ -27,19 +27,11 @@ type ruleContext struct {
 // those earlier stage keys. Returns domain.ErrApproverNotEligible or
 // domain.ErrApproverNotDistinct on failure.
 func (s *Service) evaluateApproverRule(ctx context.Context, _ domain.Definition, inst domain.Instance, stage domain.Stage, actorUserID uuid.UUID) error {
-	rc := ruleContext{
-		tenantID:       inst.TenantID,
-		academicYearID: inst.AcademicYearID,
-		classID:        inst.ClassID,
-		subjectUserID:  inst.SubjectUserID,
-		actorUserID:    actorUserID,
-		// Tenant-local, not s.clock.Now() directly: "teacher_of_class_now"
-		// reads date's weekday and hour/minute to match against a
-		// schedule, which is always expressed in the tenant's own
-		// timezone (docs/analysis/backend-inventory.md 1.15/1.16).
-		date:           s.tenantNow(ctx, inst.TenantID),
-		lookaheadSlots: stage.LookaheadSlots,
-	}
+	// Tenant-local, not s.clock.Now() directly: "teacher_of_class_now"
+	// reads date's weekday and hour/minute to match against a schedule,
+	// which is always expressed in the tenant's own timezone
+	// (docs/analysis/backend-inventory.md 1.15/1.16).
+	rc := newRuleContext(inst, stage, actorUserID, s.tenantNow(ctx, inst.TenantID))
 
 	eligible, err := s.checkApproverRule(ctx, stage.ApproverRule, rc)
 	if err != nil {
@@ -48,7 +40,27 @@ func (s *Service) evaluateApproverRule(ctx context.Context, _ domain.Definition,
 	if !eligible {
 		return domain.ErrApproverNotEligible
 	}
+	return s.checkDistinctFrom(ctx, inst, stage, actorUserID)
+}
 
+// newRuleContext is the rule input for actorUserID acting on stage of
+// inst at date (the tenant-local business time).
+func newRuleContext(inst domain.Instance, stage domain.Stage, actorUserID uuid.UUID, date time.Time) ruleContext {
+	return ruleContext{
+		tenantID:       inst.TenantID,
+		academicYearID: inst.AcademicYearID,
+		classID:        inst.ClassID,
+		subjectUserID:  inst.SubjectUserID,
+		actorUserID:    actorUserID,
+		date:           date,
+		lookaheadSlots: stage.LookaheadSlots,
+	}
+}
+
+// checkDistinctFrom refuses actorUserID when they already approved one of
+// the earlier stages stage.DistinctFrom names on inst
+// (domain.ErrApproverNotDistinct).
+func (s *Service) checkDistinctFrom(ctx context.Context, inst domain.Instance, stage domain.Stage, actorUserID uuid.UUID) error {
 	for _, priorKey := range stage.DistinctFrom {
 		priorEvent, ok, err := s.repo.GetEventByStage(ctx, inst.TenantID, inst.ID, priorKey)
 		if err != nil {

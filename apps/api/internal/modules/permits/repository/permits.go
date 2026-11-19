@@ -145,7 +145,9 @@ func (r *Repository) ListLateArrivalsForReview(ctx context.Context, tenantID, ca
 	}
 	out := make([]service.LateArrivalReviewItem, len(rows))
 	for i, row := range rows {
-		out[i] = toLateArrivalReviewItem(row)
+		if out[i], err = toLateArrivalReviewItem(row); err != nil {
+			return nil, err
+		}
 	}
 	return out, nil
 }
@@ -160,14 +162,21 @@ func (r *Repository) ListLateArrivalsAtScanStage(ctx context.Context, tenantID u
 	out := make([]service.LateArrivalReviewItem, len(rows))
 	for i, row := range rows {
 		// Both queries select the same columns, so sqlc emits identical rows.
-		out[i] = toLateArrivalReviewItem(db.ListLateArrivalsForReviewRow(row))
+		if out[i], err = toLateArrivalReviewItem(db.ListLateArrivalsForReviewRow(row)); err != nil {
+			return nil, err
+		}
 	}
 	return out, nil
 }
 
-func toLateArrivalReviewItem(row db.ListLateArrivalsForReviewRow) service.LateArrivalReviewItem {
+// toLateArrivalReviewItem refuses a row whose current stage does not
+// decode: a zero Stage would read as neither manual nor qr_scan and drop
+// the flow from every approver's queue without a trace.
+func toLateArrivalReviewItem(row db.ListLateArrivalsForReviewRow) (service.LateArrivalReviewItem, error) {
 	var stage domain.Stage
-	_ = jsonUnmarshal(row.CurrentStage, &stage)
+	if err := jsonUnmarshal(row.CurrentStage, &stage); err != nil {
+		return service.LateArrivalReviewItem{}, fmt.Errorf("decode late arrival current stage: %w", err)
+	}
 	return service.LateArrivalReviewItem{
 		LateArrival: domain.LateArrival{
 			InstanceID: row.InstanceID, TenantID: row.TenantID, Reason: row.Reason, OccurrenceNumber: int(row.OccurrenceNumber),
@@ -177,7 +186,7 @@ func toLateArrivalReviewItem(row db.ListLateArrivalsForReviewRow) service.LateAr
 		SubjectUserID: row.SubjectUserID, ClassID: pdatabase.UUIDOrNil(row.ClassID), AcademicYearID: row.AcademicYearID,
 		CurrentStageIndex: int(row.CurrentStageIndex), CurrentStage: stage,
 		Status: domain.Status(row.Status), OpenedAt: pdatabase.TimeOrZero(row.OpenedAt),
-	}
+	}, nil
 }
 
 // Leave requests.

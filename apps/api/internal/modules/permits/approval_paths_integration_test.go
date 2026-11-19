@@ -271,3 +271,34 @@ func TestLateArrivalQueueFollowsTheCurrentStage(t *testing.T) {
 	require.Empty(t, queue(leadershipID))
 	require.Empty(t, queue(w.dutyTeacherID))
 }
+
+// TestLateArrivalQueueIsEmptyForAStudent: a student can pass no approver
+// rule, so the queue the inbox badge polls for them stays empty even while
+// flows wait at a qr_scan stage any teacher could approve.
+func TestLateArrivalQueueIsEmptyForAStudent(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	w := seedRealtimeWorld(t, ctx, pg.AdminPool, "late-student-"+uuid.NewString())
+	_, err := pg.AdminPool.Exec(ctx, `insert into student_profiles (tenant_id, user_id) values ($1, $2)`, w.tenantID, w.studentID)
+	require.NoError(t, err)
+	svc := buildRealtimeTestService(pg.AppPool, &fakeRealtimeHub{})
+	stages := []domain.Stage{
+		{Key: "duty_teacher", Label: "Guru piket", ApproverRule: domain.RuleAnyTeacher, Verification: domain.VerificationManual},
+		{Key: "any_teacher_qr", Label: "Guru", ApproverRule: domain.RuleAnyTeacher, Verification: domain.VerificationQRScan},
+	}
+	_, err = svc.ReplaceDefinition(ctx, w.tenantID, domain.KindLateArrival, stages, map[string]any{}, w.dutyTeacherID)
+	require.NoError(t, err)
+	opened := openLateArrival(t, ctx, svc, w)
+	_, err = svc.ReviewLateArrival(ctx, service.ReviewLateArrivalInput{
+		TenantID: w.tenantID, InstanceID: opened.Instance.ID, ReviewerUserID: w.dutyTeacherID,
+	})
+	require.NoError(t, err)
+
+	teacherQueue, err := svc.ListLateArrivalsForReview(ctx, w.tenantID, w.dutyTeacherID)
+	require.NoError(t, err)
+	require.Len(t, teacherQueue, 1, "an active teacher passes the any_teacher stage")
+
+	count, err := svc.CountLateArrivalsForReview(ctx, w.tenantID, w.studentID)
+	require.NoError(t, err)
+	require.Zero(t, count)
+}

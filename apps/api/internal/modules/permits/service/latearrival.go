@@ -354,7 +354,9 @@ func (s *Service) CurrentLateArrival(ctx context.Context, tenantID, studentUserI
 
 // CountLateArrivalsForReview is ListLateArrivalsForReview's queue size for
 // the same caller, for the action inbox badge. It counts the list itself,
-// so the badge can never disagree with the queue it opens.
+// so the badge can never disagree with the queue it opens. The inbox polls
+// it for every signed-in user, so the list keeps its cost low for callers
+// who approve nothing (see ListLateArrivalsForReview).
 func (s *Service) CountLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) (int, error) {
 	items, err := s.ListLateArrivalsForReview(ctx, tenantID, callerUserID)
 	if err != nil {
@@ -376,6 +378,14 @@ func (s *Service) CountLateArrivalsForReview(ctx context.Context, tenantID, call
 //     caller approves it by showing the student that QR.
 //
 // Each item carries its CurrentStage so the client can tell the two apart.
+//
+// The badge polls this for every user, so the qr_scan half is kept cheap:
+// a student (who can pass no approver rule) skips it outright, and for
+// everyone else each distinct rule input is evaluated once per call
+// rather than once per flow -- a day's late arrivals mostly wait at the
+// same duty stage, so a caller who is not its holder costs one lookup, not
+// one per student. DistinctFrom, which reads that flow's own history, only
+// runs for a flow whose rule the caller passed.
 func (s *Service) ListLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]LateArrivalReviewItem, error) {
 	var out []LateArrivalReviewItem
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -383,26 +393,70 @@ func (s *Service) ListLateArrivalsForReview(ctx context.Context, tenantID, calle
 		if err != nil {
 			return err
 		}
+		out = review
+		student, err := s.repo.IsStudentProfile(ctx, tenantID, callerUserID)
+		if err != nil || student {
+			return err
+		}
 		atScan, err := s.repo.ListLateArrivalsAtScanStage(ctx, tenantID)
+		if err != nil || len(atScan) == 0 {
+			return err
+		}
+		approvable, err := s.scanStagesApprovableBy(ctx, tenantID, callerUserID, atScan)
 		if err != nil {
 			return err
 		}
-		out = review
-		for _, item := range atScan {
-			eligible, err := s.isStageApprover(ctx, item.instance(), item.CurrentStage, callerUserID)
-			if err != nil {
-				return err
-			}
-			if eligible {
-				out = append(out, item)
-			}
-		}
+		out = append(out, approvable...)
 		return nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list late arrivals: %w", err)
 	}
 	sort.SliceStable(out, func(i, j int) bool { return out[i].OpenedAt.Before(out[j].OpenedAt) })
+	return out, nil
+}
+
+// approverRuleInput is everything checkApproverRule reads besides the
+// actor and the time, so flows that share it share one evaluation.
+type approverRuleInput struct {
+	rule           string
+	academicYearID uuid.UUID
+	classID        uuid.NullUUID
+	lookaheadSlots int
+}
+
+// scanStagesApprovableBy narrows items (each waiting at a qr_scan stage)
+// to those whose approver rule and DistinctFrom actorUserID passes right
+// now. A rule the caller fails, or one a hand-edited definition names but
+// the engine does not know (ErrDefinitionInvalid), drops the flow rather
+// than failing the whole queue.
+func (s *Service) scanStagesApprovableBy(ctx context.Context, tenantID, actorUserID uuid.UUID, items []LateArrivalReviewItem) ([]LateArrivalReviewItem, error) {
+	now := s.tenantNow(ctx, tenantID)
+	passed := make(map[approverRuleInput]bool)
+	var out []LateArrivalReviewItem
+	for _, item := range items {
+		inst, stage := item.instance(), item.CurrentStage
+		key := approverRuleInput{rule: stage.ApproverRule, academicYearID: inst.AcademicYearID, classID: inst.ClassID, lookaheadSlots: stage.LookaheadSlots}
+		eligible, seen := passed[key]
+		if !seen {
+			var err error
+			eligible, err = s.checkApproverRule(ctx, stage.ApproverRule, newRuleContext(inst, stage, actorUserID, now))
+			if err != nil && !errors.Is(err, domain.ErrDefinitionInvalid) {
+				return nil, err
+			}
+			passed[key] = eligible
+		}
+		if !eligible {
+			continue
+		}
+		switch err := s.checkDistinctFrom(ctx, inst, stage, actorUserID); {
+		case err == nil:
+			out = append(out, item)
+		case errors.Is(err, domain.ErrApproverNotDistinct):
+		default:
+			return nil, err
+		}
+	}
 	return out, nil
 }
 
