@@ -1435,10 +1435,14 @@ type Querier interface {
 	// against the hours staff actually work, and UTC is 7-9 hours off for
 	// every Indonesian timezone.
 	LoginHistogramByHour(ctx context.Context, arg LoginHistogramByHourParams) ([]LoginHistogramByHourRow, error)
+	// exact_only matches the barcode exactly instead of searching barcodes and
+	// titles by substring, as for LookupLibraryMembers.
 	LookupLibraryCopies(ctx context.Context, arg LookupLibraryCopiesParams) ([]LookupLibraryCopiesRow, error)
 	// A member whose number, NIS or username equals the query comes first: the
 	// substring match is capped, and a short code (a hand-set member number
 	// such as "12") must not lose its holder behind names that only contain it.
+	// exact_only drops the substring match altogether, for a query too short
+	// for a useful fuzzy search (a one-character member number such as "7").
 	LookupLibraryMembers(ctx context.Context, arg LookupLibraryMembersParams) ([]LookupLibraryMembersRow, error)
 	MarkAllNotificationsRead(ctx context.Context, arg MarkAllNotificationsReadParams) error
 	MarkAnnouncementRead(ctx context.Context, arg MarkAnnouncementReadParams) error

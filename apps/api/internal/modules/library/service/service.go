@@ -323,8 +323,10 @@ type Repository interface {
 	ListReadInPlaceForCopy(ctx context.Context, tenantID, copyID uuid.UUID) ([]domain.ReadInPlace, error)
 
 	HolidayDates(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (map[string]bool, error)
-	LookupMembers(ctx context.Context, tenantID uuid.UUID, query string, limit int) ([]MemberLookupResult, error)
-	LookupCopies(ctx context.Context, tenantID uuid.UUID, query string, limit int) ([]CopyLookupResult, error)
+	// LookupMembers and LookupCopies list exact code matches first; with
+	// exactOnly they list nothing else.
+	LookupMembers(ctx context.Context, tenantID uuid.UUID, query string, exactOnly bool, limit int) ([]MemberLookupResult, error)
+	LookupCopies(ctx context.Context, tenantID uuid.UUID, query string, exactOnly bool, limit int) ([]CopyLookupResult, error)
 	ListClassRoster(ctx context.Context, tenantID, classID uuid.UUID) ([]ClassRosterEntry, error)
 	HasActiveLoanForMemberAndTitle(ctx context.Context, tenantID, titleID, memberID uuid.UUID) (bool, error)
 	ListOverdueLoansDetailed(ctx context.Context, tenantID uuid.UUID, asOf time.Time) ([]OverdueLoanDetail, error)

@@ -1045,15 +1045,19 @@ const lookupLibraryCopies = `-- name: LookupLibraryCopies :many
 select c.id as copy_id, c.barcode, c.status, t.id as title_id, t.title
 from library_copies c
 join library_titles t on t.id = c.title_id and t.deleted_at is null
-where c.tenant_id = $1 and (c.barcode ilike '%' || $3::text || '%' or t.title ilike '%' || $3::text || '%')
+where c.tenant_id = $1
+  and (lower(c.barcode) = lower($3::text)
+    or (not $4::boolean
+      and (c.barcode ilike '%' || $3::text || '%' or t.title ilike '%' || $3::text || '%')))
 order by t.title
 limit $2
 `
 
 type LookupLibraryCopiesParams struct {
-	TenantID uuid.UUID `json:"tenant_id"`
-	Limit    int32     `json:"limit"`
-	Query    string    `json:"query"`
+	TenantID  uuid.UUID `json:"tenant_id"`
+	Limit     int32     `json:"limit"`
+	Query     string    `json:"query"`
+	ExactOnly bool      `json:"exact_only"`
 }
 
 type LookupLibraryCopiesRow struct {
@@ -1064,8 +1068,15 @@ type LookupLibraryCopiesRow struct {
 	Title   string    `json:"title"`
 }
 
+// exact_only matches the barcode exactly instead of searching barcodes and
+// titles by substring, as for LookupLibraryMembers.
 func (q *Queries) LookupLibraryCopies(ctx context.Context, arg LookupLibraryCopiesParams) ([]LookupLibraryCopiesRow, error) {
-	rows, err := q.db.Query(ctx, lookupLibraryCopies, arg.TenantID, arg.Limit, arg.Query)
+	rows, err := q.db.Query(ctx, lookupLibraryCopies,
+		arg.TenantID,
+		arg.Limit,
+		arg.Query,
+		arg.ExactOnly,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1096,8 +1107,12 @@ from users u
 left join student_profiles sp on sp.user_id = u.id
 left join library_members lm on lm.user_id = u.id and lm.tenant_id = u.tenant_id
 where u.tenant_id = $1 and u.deleted_at is null
-  and (u.name ilike '%' || $3::text || '%' or u.username ilike '%' || $3::text || '%'
-    or sp.nis ilike '%' || $3::text || '%' or lm.member_no ilike '%' || $3::text || '%')
+  and (lower(lm.member_no) = lower($3::text)
+    or lower(sp.nis) = lower($3::text)
+    or lower(u.username) = lower($3::text)
+    or (not $4::boolean and (
+      u.name ilike '%' || $3::text || '%' or u.username ilike '%' || $3::text || '%'
+      or sp.nis ilike '%' || $3::text || '%' or lm.member_no ilike '%' || $3::text || '%')))
 order by coalesce(lower(lm.member_no) = lower($3::text)
     or lower(sp.nis) = lower($3::text)
     or lower(u.username) = lower($3::text), false) desc,
@@ -1106,9 +1121,10 @@ limit $2
 `
 
 type LookupLibraryMembersParams struct {
-	TenantID uuid.UUID `json:"tenant_id"`
-	Limit    int32     `json:"limit"`
-	Query    string    `json:"query"`
+	TenantID  uuid.UUID `json:"tenant_id"`
+	Limit     int32     `json:"limit"`
+	Query     string    `json:"query"`
+	ExactOnly bool      `json:"exact_only"`
 }
 
 type LookupLibraryMembersRow struct {
@@ -1122,8 +1138,15 @@ type LookupLibraryMembersRow struct {
 // A member whose number, NIS or username equals the query comes first: the
 // substring match is capped, and a short code (a hand-set member number
 // such as "12") must not lose its holder behind names that only contain it.
+// exact_only drops the substring match altogether, for a query too short
+// for a useful fuzzy search (a one-character member number such as "7").
 func (q *Queries) LookupLibraryMembers(ctx context.Context, arg LookupLibraryMembersParams) ([]LookupLibraryMembersRow, error) {
-	rows, err := q.db.Query(ctx, lookupLibraryMembers, arg.TenantID, arg.Limit, arg.Query)
+	rows, err := q.db.Query(ctx, lookupLibraryMembers,
+		arg.TenantID,
+		arg.Limit,
+		arg.Query,
+		arg.ExactOnly,
+	)
 	if err != nil {
 		return nil, err
 	}

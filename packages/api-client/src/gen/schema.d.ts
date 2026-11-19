@@ -21690,7 +21690,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Matches (at most 8, members and copies combined), a member whose member_no, NIS or username equals q first */
+            /** @description Matches (at most 8, members and copies combined), a member whose member_no, NIS or username equals q first. A one-character q matches an exact member_no, NIS, username or barcode only. */
             200: {
                 headers: {
                     [name: string]: unknown;
