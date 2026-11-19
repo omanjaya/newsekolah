@@ -1,5 +1,5 @@
 import type * as UiModule from "@newsekolah/ui";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -80,4 +80,36 @@ it("asks for a name on save instead of sending an empty one", async () => {
   await user.click(screen.getByRole("button", { name: "save" }));
   expect(mutate).not.toHaveBeenCalled();
   expect(screen.getByText("nameRequiredError")).toBeInTheDocument();
+});
+
+it("keeps the swatch on the saved colour while a hex code is still being typed", async () => {
+  const user = userEvent.setup();
+  branding.accent_color = "#1F3A5F";
+  try {
+    render(<BrandingView />);
+    const field = screen.getByRole("textbox", { name: /accentColorLabel/ });
+    await user.clear(field);
+    await user.type(field, "#12");
+    expect(screen.getByLabelText("accentColorPicker")).toHaveValue("#1f3a5f");
+  } finally {
+    branding.accent_color = "#0F7A5F";
+  }
+});
+
+it("draws the preview's active menu row in the sidebar's own style", () => {
+  render(<BrandingView />);
+  const rows = screen
+    .getAllByText("homePage", { selector: "span" })
+    .filter((row) => row.querySelector("svg"));
+  expect(rows.length).toBeGreaterThan(0);
+  for (const row of rows) expect(row).toHaveClass("bg-accent-soft", "text-accent-soft-fg");
+});
+
+it("names the phone preview once, in the sheet, not again on a card inside it", async () => {
+  const user = userEvent.setup();
+  render(<BrandingView />);
+  await user.click(screen.getByRole("button", { name: "preview.title" }));
+  const sheet = screen.getByRole("dialog", { name: "preview.title" });
+  expect(within(sheet).queryByRole("heading", { name: "title" })).not.toBeInTheDocument();
+  expect(within(sheet).getAllByText("homePage").length).toBeGreaterThan(0);
 });

@@ -342,11 +342,8 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
             {/* The first thing in the card, not the section's aside: beside
                 the title it squeezed the hint into a narrow column on a
                 phone. */}
-            <PreviewSheet label={t("previewLabel")}>
-              <div className="flex flex-col gap-4">
-                <p className="text-body-sm text-fg-muted">{t("previewHint")}</p>
-                {preview}
-              </div>
+            <PreviewSheet label={t("previewLabel")} description={t("previewHint")}>
+              {preview}
             </PreviewSheet>
             {legacy.length > 0 && (
               <Alert

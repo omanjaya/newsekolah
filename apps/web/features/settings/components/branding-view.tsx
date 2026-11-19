@@ -19,6 +19,8 @@ import { SettingsPage } from "./settings-page";
 import { SettingsSaveBar } from "./settings-save-bar";
 
 const ACCENT_PATTERN = /^#[0-9A-Fa-f]{6}$/;
+/** The platform accent, for the rare saved colour that is not a full hex code. */
+const PLATFORM_ACCENT = "#0F7A5F";
 const NAV_KEY = "settings-branding";
 
 /**
@@ -93,6 +95,13 @@ function BrandingForm({ initial }: { initial: TenantBranding }): ReactElement {
     values.accentColor.toUpperCase() !== saved.accentColor.toUpperCase();
   const nameError = submitted && !values.name.trim() ? t("nameRequiredError") : undefined;
   const accentValid = ACCENT_PATTERN.test(values.accentColor);
+  // What the swatch and the previews paint while a hex code is being typed:
+  // the saved colour until the code is complete, so the two never disagree.
+  const shownAccent = accentValid
+    ? values.accentColor
+    : ACCENT_PATTERN.test(saved.accentColor)
+      ? saved.accentColor
+      : PLATFORM_ACCENT;
   const accentError =
     values.accentColor !== "" && !accentValid && (submitted || values.accentColor.length >= 7)
       ? t("accentColorError")
@@ -146,12 +155,13 @@ function BrandingForm({ initial }: { initial: TenantBranding }): ReactElement {
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="flex min-w-0 flex-col gap-6">
           {error && <FormError>{error}</FormError>}
-          <PreviewSheet label={t("preview.title")}>
+          <PreviewSheet label={t("preview.title")} description={t("preview.description")}>
             <BrandingPreview
+              bare
               name={values.name}
               shortName={values.shortName}
               tagline={values.tagline}
-              accent={accentValid ? values.accentColor : saved.accentColor}
+              accent={shownAccent}
               logoUrl={initial.logo_url}
               faviconUrl={initial.favicon_url}
             />
@@ -207,7 +217,7 @@ function BrandingForm({ initial }: { initial: TenantBranding }): ReactElement {
                   <input
                     type="color"
                     aria-label={t("accentColorPicker")}
-                    value={accentValid ? values.accentColor.toLowerCase() : "#0f7a5f"}
+                    value={shownAccent.toLowerCase()}
                     onChange={(e) => {
                       set("accentColor", e.target.value.toUpperCase());
                     }}
@@ -234,7 +244,7 @@ function BrandingForm({ initial }: { initial: TenantBranding }): ReactElement {
             name={values.name}
             shortName={values.shortName}
             tagline={values.tagline}
-            accent={accentValid ? values.accentColor : saved.accentColor}
+            accent={shownAccent}
             logoUrl={initial.logo_url}
             faviconUrl={initial.favicon_url}
           />
