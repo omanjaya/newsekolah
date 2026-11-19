@@ -228,6 +228,50 @@ describe("PageHeader", () => {
     expect(actions).toHaveClass("hidden", "sm:flex");
   });
 
+  // A menu of one item hid the only way to a sibling page behind "...".
+  it("shows a single secondary action with an icon as its own button on a phone", async () => {
+    const onPrint = vi.fn();
+    const { container, rerender } = render(
+      <PageHeader
+        title="Presensi kerja"
+        secondaryActions={[{ label: "Presensi pegawai", icon: <Printer />, href: "/staff" }]}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Aksi lainnya" })).not.toBeInTheDocument();
+    const block = screen.getByRole("heading", { level: 1, name: "Presensi kerja" }).parentElement;
+    const [phone, wide] = screen.getAllByRole("link", { name: "Presensi pegawai" });
+    expect(phone?.closest("[data-slot=page-header-heading]")).toBe(block);
+    expect(phone?.parentElement).toHaveClass("sm:hidden");
+    expect(phone).toHaveAttribute("href", "/staff");
+    expect(wide?.closest("[data-slot=page-header-actions]")).toHaveClass("hidden", "sm:flex");
+    await expectNoAxeViolations(container);
+
+    rerender(
+      <PageHeader
+        title="Presensi kerja"
+        secondaryActions={[{ label: "Cetak", icon: <Printer />, onSelect: onPrint }]}
+      />,
+    );
+    const [phoneButton] = screen.getAllByRole("button", { name: "Cetak" });
+    if (!phoneButton) throw new Error("expected the phone's action button");
+    await userEvent.click(phoneButton);
+    expect(onPrint).toHaveBeenCalledOnce();
+  });
+
+  it("keeps a lone destructive or icon-less action in the overflow menu", () => {
+    const { rerender } = render(
+      <PageHeader
+        title="X-A"
+        secondaryActions={[
+          { label: "Arsipkan", icon: <Trash2 />, onSelect: () => undefined, destructive: true },
+        ]}
+      />,
+    );
+    expect(screen.getAllByRole("button", { name: "Aksi lainnya" }).length).toBeGreaterThan(0);
+    rerender(<PageHeader title="X-A" secondaryActions={[{ label: "Riwayat", href: "/h" }]} />);
+    expect(screen.getAllByRole("button", { name: "Aksi lainnya" })).toHaveLength(1);
+  });
+
   it("keeps the actions row on a phone for a primary action", () => {
     render(
       <PageHeader

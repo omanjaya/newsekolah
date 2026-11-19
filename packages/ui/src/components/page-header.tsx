@@ -67,7 +67,10 @@ export interface PageHeaderProps extends Omit<ComponentPropsWithRef<"div">, "tit
    * clear from its icon ("Tambah" with a plus).
    */
   primaryActionCompact?: PageHeaderCompactAction;
-  /** Further actions: buttons from 640px up, one overflow menu on a phone. */
+  /**
+   * Further actions: buttons from 640px up, one overflow menu on a phone
+   * (a single action with an icon is an icon button there instead).
+   */
   secondaryActions?: PageHeaderAction[];
   /** A rule under the header; off by default, as in the artboard (sections are set apart by space). */
   divider?: boolean;
@@ -151,6 +154,44 @@ function OverflowMenu({ actions, className }: { actions: PageHeaderAction[]; cla
           })}
         </DropdownMenuContent>
       </DropdownMenu>
+    </div>
+  );
+}
+
+/**
+ * The phone's secondary actions on the title's line: the overflow menu,
+ * or, for a single action with an icon of its own, that action as an icon
+ * button. A menu of one item hides the only way to a sibling page behind
+ * an ellipsis; the action's own icon (and its label as name and tooltip)
+ * says where it goes. A lone destructive action stays in the menu, a
+ * deliberate second tap away.
+ */
+function PhoneSecondary({
+  actions,
+  className,
+}: {
+  actions: PageHeaderAction[];
+  className: string;
+}) {
+  const only = actions.length === 1 ? actions[0] : undefined;
+  if (!only?.icon || only.destructive) {
+    return <OverflowMenu actions={actions} className={className} />;
+  }
+  return (
+    <div className={className}>
+      {only.href && !only.disabled ? (
+        <IconButton asChild variant="surface" icon={only.icon} aria-label={only.label}>
+          <UiLink href={only.href} onClick={only.onSelect} />
+        </IconButton>
+      ) : (
+        <IconButton
+          variant="surface"
+          icon={only.icon}
+          aria-label={only.label}
+          disabled={only.disabled}
+          onClick={only.onSelect}
+        />
+      )}
     </div>
   );
 }
@@ -291,11 +332,11 @@ export function PageHeader({
                 >
                   <CompactPrimary action={primaryActionCompact} />
                   {secondaryActions.length > 0 && (
-                    <OverflowMenu actions={secondaryActions} className="flex" />
+                    <PhoneSecondary actions={secondaryActions} className="flex" />
                   )}
                 </div>
               ) : (
-                <OverflowMenu
+                <PhoneSecondary
                   actions={secondaryActions}
                   className={cn(
                     "-my-1 self-start pointer-coarse:-my-2 sm:hidden",
