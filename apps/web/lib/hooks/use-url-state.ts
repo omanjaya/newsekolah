@@ -3,6 +3,8 @@
 import { useSearchParams } from "next/navigation";
 import { useCallback, useState, type SetStateAction } from "react";
 
+import { writeUrlHistory } from "./url-history";
+
 /**
  * Keeps a small, validated UI choice in the URL without navigating the Next route.
  *
@@ -41,11 +43,7 @@ export function useUrlState<T extends string>(
       if (next === "" && defaultValue === "") url.searchParams.delete(key);
       else url.searchParams.set(key, next);
       if (url.href === window.location.href) return;
-      // A string, not the URL object. Serwist's navigation cache
-      // (cacheOnNavigation, now off in next.config.ts) wraps the history
-      // API and posts this argument to a Worker, which cannot clone a URL;
-      // a string keeps every write safe if it is ever switched back on.
-      window.history[replace ? "replaceState" : "pushState"](null, "", url.href);
+      writeUrlHistory(url.href, replace ? "replace" : "push");
       refresh((version) => version + 1);
     },
     [key, values, defaultValue],

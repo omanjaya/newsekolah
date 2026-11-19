@@ -72,6 +72,27 @@ describe("useDateRangeFilter", () => {
     expect(result.current[0]).toEqual({ from: "2026-11-01", to: "2026-11-19" });
   });
 
+  it("never swaps a lone bound with the page's default other bound", () => {
+    const defaults = { defaultFrom: "2026-11-01", defaultTo: "2026-11-20" };
+
+    // A start after the default end: the default end meets it.
+    window.history.replaceState(null, "", "/library/visits?from=2030-01-01");
+    const later = renderHook(() => useDateRangeFilter(defaults));
+    expect(later.result.current[0]).toEqual({ from: "2030-01-01", to: "2030-01-01" });
+    later.unmount();
+
+    // An end before the default start: the default start meets it.
+    window.history.replaceState(null, "", "/library/visits?to=2020-01-10");
+    const earlier = renderHook(() => useDateRangeFilter(defaults));
+    expect(earlier.result.current[0]).toEqual({ from: "2020-01-10", to: "2020-01-10" });
+    earlier.unmount();
+
+    // Both bounds named and reversed: still read in calendar order.
+    window.history.replaceState(null, "", "/library/visits?from=2030-01-01&to=2026-11-20");
+    const both = renderHook(() => useDateRangeFilter(defaults));
+    expect(both.result.current[0]).toEqual({ from: "2026-11-20", to: "2030-01-01" });
+  });
+
   it("falls back to the page's default period for a missing or invalid bound", () => {
     window.history.replaceState(null, "", "/x?from=2026-02-31");
     const { result } = renderHook(() =>
