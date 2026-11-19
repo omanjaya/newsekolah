@@ -119,10 +119,12 @@ export function KioskView(): ReactElement {
   const [memberUserId, setMemberUserIdState] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<KioskFeedback | null>(null);
   const [countdown, setCountdown] = useState<Countdown | null>(null);
-  // A session started or ended by the reader swaps the scanner (and the
-  // control they used goes with it): keep their focus on the next scan
-  // field. One that runs out by itself leaves focus alone.
+  // A session that starts or ends swaps the scanner (and the control in
+  // use goes with it): keep focus on the next scan field. One that runs
+  // out by itself takes focus only from inside the kiosk (or the page
+  // body), so focus never falls to the page, nor is pulled from elsewhere.
   const [focusScanner, setFocusScanner] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedbackCount = useRef(0);
   // Read synchronously by the card handler: a scan queued behind a lookup
@@ -151,10 +153,15 @@ export function KioskView(): ReactElement {
     const startedAt = Date.now();
     setCountdown({ startedAt, deadline: startedAt + IDLE_RESET_MS });
     resetTimer.current = setTimeout(() => {
+      const focused = document.activeElement;
       setMemberUserId(null);
       setFeedback(null);
       setCountdown(null);
-      setFocusScanner(false);
+      setFocusScanner(
+        focused === null ||
+          focused === document.body ||
+          (rootRef.current?.contains(focused) ?? false),
+      );
     }, IDLE_RESET_MS);
   }, [setMemberUserId]);
 
@@ -259,7 +266,7 @@ export function KioskView(): ReactElement {
   const wide = useIsWide();
 
   return (
-    <div className="flex flex-1 flex-col items-center px-4 py-6 sm:px-8">
+    <div ref={rootRef} className="flex flex-1 flex-col items-center px-4 py-6 sm:px-8">
       <div className="flex w-full max-w-6xl flex-col gap-6 md:gap-8">
         {active ? (
           <HeroCard
