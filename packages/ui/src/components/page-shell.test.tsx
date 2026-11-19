@@ -124,10 +124,26 @@ describe("PageShell", () => {
       );
       const root = container.firstElementChild as HTMLElement;
       expect(root).toHaveAttribute("data-variant", variant);
-      expect(root).toHaveClass("px-4", "py-4", "md:px-6", "md:py-6");
+      expect(root).toHaveClass("px-4", "pt-4", "md:px-6", "md:pt-6");
       expect(root.firstElementChild).toHaveClass(width, "mx-auto", "gap-6");
       unmount();
     }
+  });
+
+  // With unsaved changes the fixed save bar covered the last fields, and
+  // the page could not scroll them back into view.
+  it("pads its bottom clear of a shown sticky save bar", () => {
+    const { container } = render(
+      <PageShell floating={<div>bar</div>}>
+        <p>Isi</p>
+      </PageShell>,
+    );
+    const root = container.firstElementChild as HTMLElement;
+    expect(root).toHaveClass(
+      "pb-[calc(var(--space-4)+var(--sticky-save-bar-height,0px))]",
+      "md:pb-[calc(var(--space-6)+var(--sticky-save-bar-height,0px))]",
+    );
+    expect(root).not.toHaveClass("py-4");
   });
 
   // A narrow page centred its whole column, so its title, trail and tabs

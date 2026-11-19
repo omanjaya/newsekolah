@@ -36,7 +36,9 @@ const CONTAINER_CLASS = {
 /**
  * Publishes the bar's height as `--sticky-save-bar-height` on the root
  * while it is shown, so the Toaster lifts its toasts above it instead of
- * covering the save button.
+ * covering the save button, and `PageShell` pads its bottom by the same
+ * amount so the end of the page scrolls clear of the bar. A feature inside
+ * a `PageShell` therefore adds no space of its own for the bar.
  */
 function usePublishedHeight(ref: RefObject<HTMLDivElement | null>) {
   useEffect(() => {
