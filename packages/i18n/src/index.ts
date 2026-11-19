@@ -13,9 +13,11 @@ export {
 export {
   formatCurrency,
   formatDate,
+  formatDateRange,
   formatDateTime,
   formatNumber,
   formatRelative,
+  formatShortDate,
   formatTime,
   type FormatOptions,
 } from "./format.js";
