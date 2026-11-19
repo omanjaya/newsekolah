@@ -102,6 +102,19 @@ describe("forgotPasswordSchema", () => {
       expect(result.error.issues[0]?.message).toBe("validation.usernameOrEmailRequired");
     }
   });
+
+  it("rejects a value of only whitespace as empty", () => {
+    const result = forgotPasswordSchema.safeParse({ username_or_email: "   " });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe("validation.usernameOrEmailRequired");
+    }
+  });
+
+  it("sends the value without surrounding whitespace", () => {
+    const result = forgotPasswordSchema.safeParse({ username_or_email: "  guru01 " });
+    expect(result.success && result.data.username_or_email).toBe("guru01");
+  });
 });
 
 describe("resetPasswordSchema", () => {
