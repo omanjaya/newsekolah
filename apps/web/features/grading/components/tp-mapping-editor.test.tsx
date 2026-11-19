@@ -101,6 +101,19 @@ describe("TPMappingEditor", () => {
     expect(screen.getAllByRole("row")).toHaveLength(2);
   });
 
+  it("lets the table's export code take the spare width instead of a fixed narrow box", () => {
+    load();
+    render(<TPMappingEditor classId="class-1" subjectId="subject-1" />);
+
+    const table = screen.getByRole("table");
+    expect(within(table).getByRole("columnheader", { name: "columns.exportCode" })).toHaveClass(
+      "w-full",
+    );
+    const code = within(table).getByRole("textbox", { name: "columns.exportCode" });
+    expect(code).toHaveClass("w-full", "min-w-28");
+    expect(code).not.toHaveClass("w-28");
+  });
+
   it("keeps the table with a saved row's remove in view once the editor fits its widest row", () => {
     layout.width = 800;
     load();

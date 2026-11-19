@@ -48,8 +48,9 @@ interface RowState {
  * The editor width (CSS px) from which the five-column table fits without
  * a sideways scroll, measured on its widest row: one with a saved mapping,
  * whose actions cell holds Hapus (icon and label) beside Simpan. That row
- * is about 790px wide with the fixed-width inputs; a row without a mapping
- * is about 690px. Narrower, each component gets its own card.
+ * is about 790px wide with the range inputs and the export code at its
+ * 112px minimum; a row without a mapping is about 690px. Narrower, each
+ * component gets its own card. Wider, the export code takes the spare room.
  */
 const TABLE_MIN_WIDTH = 800;
 
@@ -234,7 +235,9 @@ function TPMappingRows({
           <TableHeader>
             <TableRow>
               <TableHead>{t("columns.component")}</TableHead>
-              <TableHead>{t("columns.exportCode")}</TableHead>
+              {/* The code column takes the table's spare width, so a long code
+                  (up to 32 characters) shows whole instead of clipping. */}
+              <TableHead className="w-full">{t("columns.exportCode")}</TableHead>
               <TableHead>{t("columns.rRange")}</TableHead>
               <TableHead>{t("columns.tRange")}</TableHead>
               <TableHead>{t("columns.actions")}</TableHead>
@@ -340,7 +343,7 @@ function TPMappingTableRow(props: RowProps): ReactElement {
       <TableCell>{component.code}</TableCell>
       <TableCell>
         <Input
-          className="w-28"
+          className="w-full max-w-xs min-w-28"
           aria-label={t("columns.exportCode")}
           value={row.export_code}
           maxLength={32}
