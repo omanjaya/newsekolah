@@ -91,6 +91,21 @@ where s.tenant_id = $1 and s.academic_year_id = $2 and s.day_of_week = $3
   and sp.starts_at <= $5 and ep.ends_at >= $5
 order by c.name;
 
+-- name: GetCurrentBellPeriodForAttendance :one
+-- The bell-schedule period running at now_time on day_of_week: the period
+-- template assigned to that weekday, and its period whose [starts_at,
+-- ends_at) window contains now_time -- the same rule academic's
+-- PeriodsToday applies through domain.CurrentPeriod. The monitor snapshot
+-- falls back to this when no schedule occurrence supplies the governing
+-- period (bell times set, timetables not entered yet).
+select p.name, p.starts_at, p.ends_at
+from period_day_assignments pda
+join periods p on p.tenant_id = pda.tenant_id and p.template_id = pda.template_id
+where pda.tenant_id = $1 and pda.academic_year_id = $2 and pda.day_of_week = $3
+  and p.starts_at <= sqlc.arg(now_time)::time and p.ends_at > sqlc.arg(now_time)::time
+order by p.sequence
+limit 1;
+
 -- name: ListClassesWithoutCurrentPeriodScheduleForAttendance :many
 -- Every non-deleted class of the academic year that has no schedule row
 -- straddling now_time on day_of_week -- the monitor snapshot shows these

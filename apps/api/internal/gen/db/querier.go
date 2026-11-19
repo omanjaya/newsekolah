@@ -615,6 +615,13 @@ type Querier interface {
 	GetCopyByBarcode(ctx context.Context, arg GetCopyByBarcodeParams) (LibraryCopy, error)
 	GetCounseling(ctx context.Context, arg GetCounselingParams) (Counseling, error)
 	GetCounselingAttachment(ctx context.Context, arg GetCounselingAttachmentParams) (CounselingAttachment, error)
+	// The bell-schedule period running at now_time on day_of_week: the period
+	// template assigned to that weekday, and its period whose [starts_at,
+	// ends_at) window contains now_time -- the same rule academic's
+	// PeriodsToday applies through domain.CurrentPeriod. The monitor snapshot
+	// falls back to this when no schedule occurrence supplies the governing
+	// period (bell times set, timetables not entered yet).
+	GetCurrentBellPeriodForAttendance(ctx context.Context, arg GetCurrentBellPeriodForAttendanceParams) (GetCurrentBellPeriodForAttendanceRow, error)
 	GetDefaultDocumentTemplate(ctx context.Context, arg GetDefaultDocumentTemplateParams) (DocumentTemplate, error)
 	GetDiscount(ctx context.Context, arg GetDiscountParams) (FeeDiscount, error)
 	GetDocumentTemplateByID(ctx context.Context, arg GetDocumentTemplateByIDParams) (DocumentTemplate, error)

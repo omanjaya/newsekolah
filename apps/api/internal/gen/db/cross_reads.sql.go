@@ -108,6 +108,47 @@ func (q *Queries) GetClassNameForAttendance(ctx context.Context, arg GetClassNam
 	return name, err
 }
 
+const getCurrentBellPeriodForAttendance = `-- name: GetCurrentBellPeriodForAttendance :one
+select p.name, p.starts_at, p.ends_at
+from period_day_assignments pda
+join periods p on p.tenant_id = pda.tenant_id and p.template_id = pda.template_id
+where pda.tenant_id = $1 and pda.academic_year_id = $2 and pda.day_of_week = $3
+  and p.starts_at <= $4::time and p.ends_at > $4::time
+order by p.sequence
+limit 1
+`
+
+type GetCurrentBellPeriodForAttendanceParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	DayOfWeek      int16       `json:"day_of_week"`
+	NowTime        pgtype.Time `json:"now_time"`
+}
+
+type GetCurrentBellPeriodForAttendanceRow struct {
+	Name     string      `json:"name"`
+	StartsAt pgtype.Time `json:"starts_at"`
+	EndsAt   pgtype.Time `json:"ends_at"`
+}
+
+// The bell-schedule period running at now_time on day_of_week: the period
+// template assigned to that weekday, and its period whose [starts_at,
+// ends_at) window contains now_time -- the same rule academic's
+// PeriodsToday applies through domain.CurrentPeriod. The monitor snapshot
+// falls back to this when no schedule occurrence supplies the governing
+// period (bell times set, timetables not entered yet).
+func (q *Queries) GetCurrentBellPeriodForAttendance(ctx context.Context, arg GetCurrentBellPeriodForAttendanceParams) (GetCurrentBellPeriodForAttendanceRow, error) {
+	row := q.db.QueryRow(ctx, getCurrentBellPeriodForAttendance,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.DayOfWeek,
+		arg.NowTime,
+	)
+	var i GetCurrentBellPeriodForAttendanceRow
+	err := row.Scan(&i.Name, &i.StartsAt, &i.EndsAt)
+	return i, err
+}
+
 const getEnrolledClassForAttendance = `-- name: GetEnrolledClassForAttendance :one
 select class_id
 from enrollments
