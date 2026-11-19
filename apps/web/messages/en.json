@@ -934,7 +934,7 @@
         "reasonPlaceholder": "E.g. traffic, overslept",
         "homeroomReported": "Homeroom teacher already notified",
         "requiredError": "Required.",
-        "recordedHint": "Recorded as entered by the duty teacher, not the student's own request.",
+        "recordedHint": "Recorded on behalf of the duty teacher, not submitted by the student.",
         "recordedExit": "Exit permit recorded for {student}",
         "recordedLate": "Late arrival recorded for {student}",
         "submit": "Record",
@@ -957,7 +957,7 @@
         "occurrence": "Late #{n}, {time}"
       },
       "log": {
-        "title": "Recorded today",
+        "title": "Recorded on this screen",
         "description": "Manual records and reviews from this screen since it opened.",
         "empty": "Nothing recorded from this screen yet",
         "kinds": {
@@ -1478,7 +1478,7 @@
           "from": "From period",
           "to": "To period",
           "pick": "Pick",
-          "stagesHint": "After submitting, ask the duty teacher and then your class teacher to scan and approve. The gate QR appears after the last stage.",
+          "stagesHint": "After submitting, ask each listed teacher to scan the approval QR. The gate QR appears after the last stage.",
           "requiredError": "Destination and period range are required.",
           "created": "Exit permit requested",
           "submit": "Submit",
@@ -1633,7 +1633,7 @@
         "reject": "Reject",
         "approve": "Approve",
         "rejected": "Request rejected",
-        "approved": "Request approved and forwarded to the counselor",
+        "approved": "Request approved and forwarded to the next stage",
         "issueLetter": "Issue letter",
         "issued": "Leave letter issued",
         "issuedTitle": "Leave letter issued",
@@ -1671,7 +1671,7 @@
           "reasonRequired": "Write a short explanation.",
           "reasonPlaceholder": "For example: fever since last night",
           "evidencePreview": "Evidence photo preview",
-          "stagesHint": "After you send it, your homeroom teacher reviews the request and the counselor issues the leave letter."
+          "stagesHint": "After you send it, each approval stage reviews the request. The leave letter is issued after the last stage."
         },
         "hero": {
           "eyebrow": "Request in progress",
