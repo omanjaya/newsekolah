@@ -15,7 +15,8 @@ import (
 // TestTitleSearchMatchesAWordTypedHalfway proves the catalogue list (also
 // the reservation and class-loan pickers) and the public OPAC find a title
 // from the first letters of its words, not only from whole words: a
-// search-as-you-type field must not lose "Laskar Pelangi" at "Lask".
+// search-as-you-type field must not lose "Laskar Pelangi" at "Lask", nor
+// an author typed with initials or an academic title ("J.K. Row", "M.Pd").
 func TestTitleSearchMatchesAWordTypedHalfway(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx := context.Background()
@@ -24,6 +25,9 @@ func TestTitleSearchMatchesAWordTypedHalfway(t *testing.T) {
 		{"Laskar Pelangi", "Andrea Hirata"},
 		{"Sapiens", "Yuval Noah Harari"},
 		{"Bumi Manusia", "Pramoedya Ananta Toer"},
+		{"Harry Potter 2.0", "J.K. Rowling"},
+		{"Bahasa Inggris 10/2", "Dr. Ani, M.Pd."},
+		{"Matematika Dasar", "Budi Santoso, S.Pd"},
 	} {
 		_, err := pg.AdminPool.Exec(ctx, `insert into library_titles (tenant_id, title, author) values ($1, $2, $3)`,
 			w.tenantID, title[0], title[1])
@@ -42,6 +46,17 @@ func TestTitleSearchMatchesAWordTypedHalfway(t *testing.T) {
 		"La":         {"Laskar Pelangi"},
 		"Lask zzz":   nil,
 		"!!!":        nil,
+		// Initials, academic titles, editions and class numbers keep their
+		// dots and slashes as one lexeme in search_vector, so the query must
+		// not split them into separate words.
+		"J.K. Row":   {"Harry Potter 2.0"},
+		"j.k.":       {"Harry Potter 2.0"},
+		"M.Pd":       {"Bahasa Inggris 10/2"},
+		"S.Pd":       {"Matematika Dasar"},
+		"2.0":        {"Harry Potter 2.0"},
+		"Potter 2.0": {"Harry Potter 2.0"},
+		"10/2":       {"Bahasa Inggris 10/2"},
+		"o'brien &":  nil,
 	}
 	for search, want := range cases {
 		titles, err := svc.ListTitles(ctx, w.tenantID, service.TitleSearch{Search: search, Limit: 50})

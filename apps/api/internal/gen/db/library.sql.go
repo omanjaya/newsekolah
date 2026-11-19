@@ -2300,7 +2300,7 @@ where t.tenant_id = $1 and t.deleted_at is null
     $6::bool is not true
     or exists (select 1 from library_copies c where c.tenant_id = t.tenant_id and c.title_id = t.id and c.status = 'available')
   )
-  -- search_tsquery is a prefix tsquery ("lask:*") built by the repository
+  -- search_tsquery is a prefix tsquery ("'lask':*") built by the repository
   -- for a query of 3+ characters, so a word typed halfway still matches;
   -- search_like is the plain substring for shorter queries.
   and (
