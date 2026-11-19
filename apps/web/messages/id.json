@@ -2486,6 +2486,10 @@
           "label": "Lihat pinjaman sendiri",
           "description": "Lihat pinjaman, reservasi, dan denda sendiri"
         },
+        "view_own_supervision": {
+          "label": "Lihat supervisi sendiri",
+          "description": "Guru yang disupervisi melihat siklus serta laporan dan observasinya sendiri"
+        },
         "view_reports": {
           "label": "Lihat laporan",
           "description": "Lihat laporan lintas modul"

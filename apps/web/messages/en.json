@@ -2486,6 +2486,10 @@
           "label": "View own loans",
           "description": "See own loans, reservations and fines"
         },
+        "view_own_supervision": {
+          "label": "View own supervision",
+          "description": "The observed teacher sees the cycles and their own report and observations"
+        },
         "view_reports": {
           "label": "View reports",
           "description": "View cross-module reports"

@@ -112,4 +112,37 @@ describe("RouteGuard", () => {
     expect(screen.getByText("platformBody")).toBeInTheDocument();
     expect(screen.queryByText("body")).not.toBeInTheDocument();
   });
+
+  it("lets in a reader holding any one of the alternative permissions", () => {
+    mockedUseSession.mockReturnValue({
+      status: "authenticated",
+      me: { must_change_password: false, permissions: ["view_own_supervision"] } as never,
+      isReady: true,
+    });
+
+    render(
+      <RouteGuard anyPermission={["view_supervision", "view_own_supervision"]}>
+        <p>protected</p>
+      </RouteGuard>,
+    );
+
+    expect(screen.getByText("protected")).toBeInTheDocument();
+  });
+
+  it("refuses a reader holding none of the alternative permissions", () => {
+    mockedUseSession.mockReturnValue({
+      status: "authenticated",
+      me: { must_change_password: false, permissions: ["view_dashboard"], roles: [] } as never,
+      isReady: true,
+    });
+
+    render(
+      <RouteGuard anyPermission={["view_supervision", "view_own_supervision"]}>
+        <p>protected</p>
+      </RouteGuard>,
+    );
+
+    expect(screen.queryByText("protected")).not.toBeInTheDocument();
+    expect(screen.getByText("body")).toBeInTheDocument();
+  });
 });

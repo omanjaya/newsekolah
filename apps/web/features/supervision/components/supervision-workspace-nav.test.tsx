@@ -37,6 +37,13 @@ describe("supervision workspace access", () => {
     expect(screen.getByRole("link", { name: CYCLES })).toBeInTheDocument();
   });
 
+  it("offers a teacher with only their own supervision their results, not the cycles", () => {
+    session.permissions = ["view_own_supervision", "respond_to_supervision"];
+    render(<SupervisionWorkspaceNav />);
+    expect(screen.getByRole("link", { name: MY_SUPERVISION })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: CYCLES })).not.toBeInTheDocument();
+  });
+
   it("requires supervision permission even for a teacher", () => {
     session.permissions = [];
     render(<SupervisionWorkspaceNav />);

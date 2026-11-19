@@ -203,6 +203,8 @@
     "cycle": "Siklus",
     "cyclePlaceholder": "Pilih siklus",
     "noCyclesTitle": "Belum ada siklus supervisi",
-    "noCyclesBody": "Hasil observasi Anda muncul di sini setelah pimpinan sekolah membuat siklus supervisi."
+    "noCyclesBody": "Hasil observasi Anda muncul di sini setelah pimpinan sekolah membuat siklus supervisi.",
+    "noCyclesManagerBody": "Belum ada siklus untuk tahun ajaran ini. Buat siklus di tab Siklus supervisi, lalu hasil observasi Anda muncul di sini.",
+    "openCycles": "Buka siklus supervisi"
   }
 }

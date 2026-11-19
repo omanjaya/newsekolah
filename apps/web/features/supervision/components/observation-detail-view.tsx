@@ -87,7 +87,17 @@ export function ObservationDetailView({ observationId }: { observationId: string
   const [editingResponse, setEditingResponse] = useState(false);
 
   const trail = useCycleTrail();
-  const pendingTrail = [trail.root, { label: t("title") }];
+  // A teacher reading their own observation without the school-wide view
+  // (view_own_supervision only) cannot open the cycles, so their trail
+  // goes back through "Supervisi saya" instead.
+  const canViewAll = useCan("view_supervision");
+  const ownRoot = {
+    label: tRoot("navLabelMyReport"),
+    href: observation.data
+      ? `/supervision/my-report?cycle=${encodeURIComponent(observation.data.cycle_id)}`
+      : "/supervision/my-report",
+  };
+  const pendingTrail = [canViewAll ? trail.root : ownRoot, { label: t("title") }];
 
   if ((observation.isError && !observation.data) || (cycle.isError && !cycle.data)) {
     return (
@@ -152,10 +162,14 @@ export function ObservationDetailView({ observationId }: { observationId: string
       documentTitle={`${t("title")} · ${teacherName}`}
       description={details}
       nav={false}
-      breadcrumb={trail.within(cycle.data.id, cycle.data.name, trail.results(cycle.data.id), {
-        label: teacherName,
-        href: `${cycleHref(cycle.data.id)}/teachers/${encodeURIComponent(obs.teacher_user_id)}/report`,
-      })}
+      breadcrumb={
+        canViewAll
+          ? trail.within(cycle.data.id, cycle.data.name, trail.results(cycle.data.id), {
+              label: teacherName,
+              href: `${cycleHref(cycle.data.id)}/teachers/${encodeURIComponent(obs.teacher_user_id)}/report`,
+            })
+          : [ownRoot, { label: t("title") }]
+      }
     >
       <Card>
         <CardHeader>

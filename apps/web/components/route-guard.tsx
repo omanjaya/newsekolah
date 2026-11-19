@@ -16,6 +16,12 @@ export interface RouteGuardProps {
   children: ReactNode;
   /** Permission code required for this page; omitted means "any signed-in user". */
   requiredPermission?: string;
+  /**
+   * Alternative permission codes, any one of which opens the page (the
+   * API's `x-permission` list, e.g. view_supervision or the self-scoped
+   * view_own_supervision). Checked on top of `requiredPermission`.
+   */
+  anyPermission?: readonly string[];
   /** Feature module the page belongs to; while the school has it off, the page is replaced by the unavailable state. */
   module?: FeatureModule;
 }
@@ -30,6 +36,7 @@ export interface RouteGuardProps {
 export function RouteGuard({
   children,
   requiredPermission,
+  anyPermission,
   module,
 }: RouteGuardProps): ReactElement {
   const { status, me, isReady } = useSession();
@@ -57,6 +64,10 @@ export function RouteGuard({
     return (
       <ForbiddenPage reason={requiredPermission.startsWith("platform_") ? "platform" : undefined} />
     );
+  }
+
+  if (anyPermission && !anyPermission.some((code) => me?.permissions.includes(code))) {
+    return <ForbiddenPage />;
   }
 
   if (module && !isModuleEnabled(me, module)) {

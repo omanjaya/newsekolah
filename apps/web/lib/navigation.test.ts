@@ -232,6 +232,8 @@ describe("navigation registry: per-role audiences", () => {
       "view_discipline",
       "record_violations",
       "view_early_warning",
+      "view_own_supervision",
+      "respond_to_supervision",
     );
     const keys = filterNavigationFixture(navigation, can, "teacher").map((item) => item.key);
     expect(keys).not.toContain("leave-requests");
@@ -239,6 +241,9 @@ describe("navigation registry: per-role audiences", () => {
     expect(keys).not.toContain("late-arrivals");
     expect(keys).toContain("school-classes");
     expect(keys).toContain("academic-years");
+    // Their own supervision results, never every teacher's cycles.
+    expect(keys).toContain("supervision-my-report");
+    expect(keys).not.toContain("supervision-cycles");
   });
 
   it("gives a homeroom-duty teacher (wali kelas) the leave review queue", () => {
