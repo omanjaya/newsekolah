@@ -8,11 +8,12 @@ import { useGoogleSSOAvailabilityQuery, useLoginMutation } from "../api";
 import { LoginForm } from "./login-form";
 
 const replace = vi.fn();
+const search = vi.hoisted(() => ({ query: "" }));
 const mutateAsync = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => new URLSearchParams(search.query),
 }));
 
 vi.mock("next-intl", () => ({
@@ -45,6 +46,30 @@ describe("LoginForm auth affordances", () => {
     mockedGoogle.mockReturnValue({ data: { enabled: false } } as never);
     mockedLoginMutation.mockReturnValue({ mutateAsync, isPending: false } as never);
     mutateAsync.mockResolvedValue(undefined);
+    search.query = "";
+  });
+
+  it("says why it is showing when the session ran out mid-visit", async () => {
+    search.query = "next=%2Fdashboard&reason=session-ended";
+    mutateAsync.mockRejectedValue(
+      new ApiError({ status: 401, code: "AUTH_INVALID_CREDENTIALS", message: "wrong" }),
+    );
+    const user = userEvent.setup();
+    render(<LoginForm />);
+    expect(screen.getByRole("status")).toHaveTextContent("sessionEnded");
+
+    // A failed attempt's error takes its place: one message at a time.
+    await user.type(screen.getByLabelText("usernameLabel"), "teacher");
+    await user.type(screen.getByLabelText("passwordLabel"), "wrong-value");
+    await user.click(screen.getByRole("button", { name: "submit" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("AUTH_INVALID_CREDENTIALS");
+    expect(screen.queryByText("sessionEnded")).not.toBeInTheDocument();
+  });
+
+  it("shows no notice on a plain visit to the sign-in page", () => {
+    search.query = "next=%2Fdashboard";
+    render(<LoginForm />);
+    expect(screen.queryByText("sessionEnded")).not.toBeInTheDocument();
   });
 
   it("toggles password visibility without losing the entered value", async () => {

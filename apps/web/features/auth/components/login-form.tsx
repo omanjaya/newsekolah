@@ -23,6 +23,7 @@ import { useForm } from "react-hook-form";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { translateFormMessage } from "../../../lib/i18n/translate-message";
+import { SESSION_ENDED_REASON } from "../../../lib/session/sign-in-path";
 import { usePasskeySupported } from "../../../lib/webauthn";
 import { useGoogleSSOAvailabilityQuery, useLoginMutation } from "../api";
 
@@ -90,6 +91,10 @@ export function LoginForm(): ReactElement {
   }
 
   const rootError = form.formState.errors.root?.message;
+  // Sent by the app when the session in use ran out mid-visit, so the
+  // reader knows why they are here. A failed attempt's error replaces it:
+  // one message above the form at a time.
+  const sessionEnded = searchParams.get("reason") === SESSION_ENDED_REASON;
   const showAlternatives = !otpRequired && (googleSSO.data?.enabled === true || passkeySupported);
 
   return (
@@ -99,7 +104,11 @@ export function LoginForm(): ReactElement {
       onSubmit={onSubmit}
       className="flex flex-col gap-5"
     >
-      {rootError && <Alert tone="danger" title={rootError} />}
+      {rootError ? (
+        <Alert tone="danger" title={rootError} />
+      ) : (
+        sessionEnded && <Alert tone="info" title={tLogin("sessionEnded")} />
+      )}
       <FormField
         control={form.control}
         name="username"

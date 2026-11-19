@@ -116,7 +116,7 @@ describe("QueryError", () => {
       expect(forgetAccessToken).toHaveBeenCalledTimes(1);
       expect(getAccessToken()).toBeNull();
       expect(queryClient.getQueryData(["me"])).toBeUndefined();
-      expect(replace).toHaveBeenCalledWith("/login?next=%2Fdashboard");
+      expect(replace).toHaveBeenCalledWith("/login?next=%2Fdashboard&reason=session-ended");
     });
   });
 });

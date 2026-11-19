@@ -9,6 +9,8 @@ import { setAccessToken } from "../api/access-token";
 import { useApiClient } from "../api/client";
 import { clearSimulation } from "../simulation/clock";
 
+import { signInPath } from "./sign-in-path";
+
 /**
  * Drops what lets this tab act for a session that is over: the simulated
  * clock, the app's access token, and the one the API client kept from its
@@ -56,8 +58,9 @@ export function useEndSession(): () => void {
 }
 
 /**
- * endSession, then the sign-in page with a way back to the current page:
- * the same exit app/providers.tsx takes when a session runs out mid-visit.
+ * endSession, then the sign-in page with a way back to the current page
+ * and a word on why it is showing: the same exit app/providers.tsx takes
+ * when a session runs out mid-visit.
  * For a screen that still shows a 401 it was handed. A plain link to
  * /login would bounce straight back, since the cached `me` reads the tab
  * as signed in.
@@ -68,6 +71,6 @@ export function useSignInAgain(): () => void {
   const pathname = usePathname();
   return () => {
     end();
-    router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+    router.replace(signInPath(pathname, { sessionEnded: true }));
   };
 }

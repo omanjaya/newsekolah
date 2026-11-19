@@ -1,5 +1,6 @@
 "use client";
 
+import { queryKeys } from "@newsekolah/api-client";
 import { Toaster, TooltipProvider, UiLinkProvider } from "@newsekolah/ui";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -16,6 +17,7 @@ import { AccountBoundary } from "../lib/session/account-boundary";
 import { markAuthRedirect } from "../lib/session/auth-redirect-flag";
 import { endSession } from "../lib/session/end-session";
 import { SessionProvider } from "../lib/session/session-provider";
+import { signInPath } from "../lib/session/sign-in-path";
 import { SimulationSync } from "../lib/simulation/simulation-sync";
 import { TenantProvider, type TenantBranding } from "../lib/tenant/tenant-provider";
 import { ThemeProvider } from "../lib/theme/theme-provider";
@@ -58,10 +60,13 @@ export function AppProviders({
       // reject and hit the mutation cache's default error toast (see
       // auth-redirect-flag.ts) -- must happen before router.replace, not after.
       markAuthRedirect();
+      // Read before endSession empties the cache: a tab that knew who was
+      // signed in lost a session mid-visit, and the sign-in page says so.
+      const sessionEnded = queryClient.getQueryData(queryKeys.me()) !== undefined;
       // The session is over: with its `me` left in the cache the sign-in
       // page would read the tab as signed in and send it straight back.
       endSession(client, queryClient);
-      router.replace(`/login?next=${encodeURIComponent(current)}`);
+      router.replace(signInPath(current, { sessionEnded }));
     },
     [router],
   );

@@ -397,7 +397,8 @@
       "showPassword": "Tampilkan kata sandi",
       "hidePassword": "Sembunyikan kata sandi",
       "rateLimitRetry": "Terlalu banyak percobaan, coba lagi dalam {seconds, number} detik",
-      "genericError": "Masuk gagal, periksa nama pengguna dan kata sandi lalu coba lagi"
+      "genericError": "Masuk gagal, periksa nama pengguna dan kata sandi lalu coba lagi",
+      "sessionEnded": "Sesi Anda sudah berakhir. Masuk lagi untuk melanjutkan."
     },
     "changePassword": {
       "forcedTitle": "Ubah kata sandi sebelum melanjutkan",

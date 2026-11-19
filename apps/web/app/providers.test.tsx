@@ -94,7 +94,7 @@ describe("a session that runs out mid-visit", () => {
   const BRANDING_KEY = ["tenant", "branding", "default"];
   const UNREAD_KEY = ["notifications", "unread-count"];
 
-  function expireOn(pathname: string) {
+  function expireOn(pathname: string, { signedIn = true } = {}) {
     navigation.pathname = pathname;
     render(
       <AppProviders locale="id">
@@ -102,7 +102,7 @@ describe("a session that runs out mid-visit", () => {
       </AppProviders>,
     );
     const queryClient = new QueryClient();
-    queryClient.setQueryData(["me"], { id: "teacher" });
+    if (signedIn) queryClient.setQueryData(["me"], { id: "teacher" });
     queryClient.setQueryData(UNREAD_KEY, { count: 2 });
     queryClient.setQueryData(BRANDING_KEY, { name: "School" });
     const forgetAccessToken = vi.fn();
@@ -120,6 +120,17 @@ describe("a session that runs out mid-visit", () => {
     expect(queryClient.getQueryData(BRANDING_KEY)).toEqual({ name: "School" });
     expect(forgetAccessToken).toHaveBeenCalledTimes(1);
     expect(getAccessToken()).toBeNull();
+    // The tab knew who was signed in, so the sign-in page says the session ended.
+    expect(navigation.replace).toHaveBeenCalledWith(
+      "/login?next=%2Fdashboard&reason=session-ended",
+    );
+  });
+
+  // Nobody was known to be signed in (the boot refresh failed before `me`
+  // loaded): the sign-in page has nothing to explain.
+  it("names no reason when no signed-in reader was cached", () => {
+    expireOn("/dashboard", { signedIn: false });
+
     expect(navigation.replace).toHaveBeenCalledWith("/login?next=%2Fdashboard");
   });
 
