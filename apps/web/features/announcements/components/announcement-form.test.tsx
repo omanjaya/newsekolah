@@ -63,6 +63,14 @@ it("groups the editor into content, audience and schedule sections", () => {
   expect(screen.getByText("sectionSchedule")).toBeInTheDocument();
 });
 
+it("gives each date and time pair of the schedule a row of its own", () => {
+  render(<AnnouncementForm onSaved={vi.fn()} onCancel={vi.fn()} />);
+  const section = screen.getByRole("region", { name: "sectionSchedule" });
+  // Two pairs in one row left the time picker too narrow for "Pilih jam".
+  const grid = section.querySelector(":scope > div:last-child");
+  expect(grid).not.toHaveClass("@lg:grid-cols-2");
+});
+
 it("still creates a draft from the restructured compose tab", async () => {
   const onSaved = vi.fn();
   const user = userEvent.setup();

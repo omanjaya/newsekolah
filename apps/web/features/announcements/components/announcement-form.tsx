@@ -263,7 +263,10 @@ export function AnnouncementForm({
             )}
           </FormSection>
 
-          <FormSection title={t("sectionSchedule")}>
+          {/* One column: each start and end is a date and a time side by
+              side, and two such pairs in a row left the time picker too
+              narrow for its placeholder. */}
+          <FormSection title={t("sectionSchedule")} columns={1}>
             <DateTimeField
               label={t("startsAt")}
               hint={t("startsAtHint")}
