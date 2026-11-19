@@ -5,9 +5,6 @@ import { useSyncExternalStore } from "react";
 /** The shell's own breakpoint: the sidebar and header from here, the phone frame below (Tailwind `md`). */
 const DESKTOP_QUERY = "(min-width: 768px)";
 
-/** Where a page's main and side columns sit side by side (Tailwind `lg`); one column below. */
-const TWO_COLUMN_QUERY = "(min-width: 1024px)";
-
 function mediaQuery(query: string): MediaQueryList | null {
   return typeof window !== "undefined" && typeof window.matchMedia === "function"
     ? window.matchMedia(query)
@@ -41,15 +38,6 @@ function useMatches(query: string): boolean {
  */
 export function useIsDesktop(): boolean {
   return useMatches(DESKTOP_QUERY);
-}
-
-/**
- * True from the `lg` breakpoint, where a page's main and side columns sit
- * side by side; below it they stack in one column, so a card that leads
- * the side column may need to move up. Server: `false`.
- */
-export function useIsTwoColumn(): boolean {
-  return useMatches(TWO_COLUMN_QUERY);
 }
 
 /** Where a page that needs a roomier side column splits in two (Tailwind `xl`). */
