@@ -135,3 +135,20 @@ func TestSimulatedFutureDutyHonoredWithinSimulatedWindow(t *testing.T) {
 	_, err = mod.Service.GetMeetingNote(simCtx, fx.tenantID, note.ID, fx.counselorID)
 	require.NoError(t, err, "a simulated date inside the duty's window must be honored")
 }
+
+// TestStudentSnapshotOfUnknownStudentIsNotFound proves a student id the
+// school does not have is a missing record (a 404 the web shows as its
+// not-found page), not an internal error the web would offer to retry.
+func TestStudentSnapshotOfUnknownStudentIsNotFound(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	fx := seedMentoringFixture(t, pg.AdminPool)
+	mod := newTestMentoringModule(t, pg.AppPool)
+
+	snapshot, err := mod.Service.StudentSnapshot(ctx, fx.tenantID, fx.studentID)
+	require.NoError(t, err)
+	require.Equal(t, "Siswa Test", snapshot.StudentName)
+
+	_, err = mod.Service.StudentSnapshot(ctx, fx.tenantID, uuid.New())
+	require.ErrorIs(t, err, domain.ErrStudentNotFound)
+}

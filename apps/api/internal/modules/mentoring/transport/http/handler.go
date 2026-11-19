@@ -29,6 +29,7 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrNoteNotFound:         httpx.ErrMentorNoteNotFound,
 	domain.ErrNoteForbidden:        httpx.ErrMentorNoteForbidden,
 	domain.ErrSummaryNotFound:      httpx.ErrMentorSummaryNotFound,
+	domain.ErrStudentNotFound:      httpx.ErrNotFound,
 	domain.ErrModuleDisabled:       httpx.ErrMentoringModuleDisabled,
 	domain.ErrInvalidInput:         httpx.ErrValidation,
 	domain.ErrGroupSizeLimitBelow:  httpx.ErrValidation,

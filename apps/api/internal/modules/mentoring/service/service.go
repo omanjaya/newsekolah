@@ -46,6 +46,8 @@ type Repository interface {
 	ListTermSummariesForGroup(ctx context.Context, tenantID, termID, groupID uuid.UUID) ([]domain.TermSummary, error)
 
 	HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string, today time.Time) (bool, error)
+	// StudentInfo returns domain.ErrStudentNotFound for a user id the
+	// tenant does not have.
 	StudentInfo(ctx context.Context, tenantID, yearID, studentUserID uuid.UUID) (StudentInfo, error)
 	// GetTenantTimezone resolves the tenant's configured IANA timezone, for
 	// HasActiveDuty's tenant-local "today" (tenantNow, see tenant.go).
