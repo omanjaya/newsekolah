@@ -97,6 +97,7 @@
     "pointsValue": "{points} pts"
   },
   "catalog": {
+    "searchPlaceholder": "Search violation code or name",
     "includeInactive": "Show inactive",
     "add": "Add type",
     "columns": {

@@ -141,6 +141,7 @@ export function PartnersTab(): ReactElement {
         }}
       />
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/library/components/partners-tab:1"
         mode="local"
         data={items}

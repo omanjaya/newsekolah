@@ -93,10 +93,11 @@ export function SchedulesView(): ReactElement {
   const columns = useMemo<ColumnDef<ReportSchedule>[]>(
     () => [
       {
-        accessorKey: "report_kind",
+        // Values the reader sees, so the search box matches them.
+        id: "report_kind",
+        accessorFn: (schedule) => reportKindLabel(schedule.report_kind),
         header: t("columns.report"),
         enableSorting: false,
-        cell: ({ row }) => reportKindLabel(row.original.report_kind),
       },
       {
         id: "cadence",
@@ -105,10 +106,10 @@ export function SchedulesView(): ReactElement {
         cell: ({ row }) => cadenceLabel(row.original),
       },
       {
-        accessorKey: "recipients",
+        id: "recipients",
+        accessorFn: (schedule) => schedule.recipients.join(", "),
         header: t("columns.recipients"),
         enableSorting: false,
-        cell: ({ row }) => row.original.recipients.join(", "),
       },
       {
         id: "next_run_at",
@@ -201,6 +202,7 @@ export function SchedulesView(): ReactElement {
       </div>
 
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/reports/components/schedules-view:1"
         mode="local"
         data={items}

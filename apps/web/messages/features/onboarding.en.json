@@ -119,6 +119,7 @@
     "success": "Grade levels from the template were saved."
   },
   "wizard": {
+    "searchPlaceholder": "Search name, NISN, or class",
     "title": "Onboarding wizard",
     "body": "Set up grade levels, subjects, and lesson periods, then import student data from Dapodik.",
     "steps": {

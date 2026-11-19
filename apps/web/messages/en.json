@@ -1699,6 +1699,7 @@
     },
     "school": {
       "users": {
+        "searchPlaceholder": "Search name, username, NIS, or NIP",
         "eyebrow": "School data",
         "title": "Teachers, staff and students",
         "columns": {
@@ -1772,6 +1773,7 @@
           "noCustomRoles": "No custom roles yet. Create one under Settings > Roles and access."
         },
         "import": {
+          "searchPlaceholder": "Search name or username",
           "title": "Import users",
           "description": "Download the template, fill it in outside the system, upload it back, then check the outcome before anything is actually created.",
           "step1Body": "The template includes an example row and a Referensi sheet listing the accepted codes for each column (gender, blood type, role, and so on).",
@@ -1955,6 +1957,7 @@
         }
       },
       "subjects": {
+        "searchPlaceholder": "Search subject name or code",
         "eyebrow": "School data",
         "title": "Subjects",
         "add": "Add subject",

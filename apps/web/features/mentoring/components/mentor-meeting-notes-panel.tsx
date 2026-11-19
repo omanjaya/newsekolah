@@ -102,6 +102,7 @@ export function MentorMeetingNotesPanel({
       )}
 
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/mentoring/components/mentor-meeting-notes-panel:1"
         mode="local"
         data={items}

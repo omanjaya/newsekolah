@@ -1699,6 +1699,7 @@
     },
     "school": {
       "users": {
+        "searchPlaceholder": "Cari nama, nama pengguna, NIS, atau NIP",
         "eyebrow": "Data sekolah",
         "title": "Guru, pegawai, dan siswa",
         "columns": {
@@ -1772,6 +1773,7 @@
           "noCustomRoles": "Belum ada peran khusus. Buat di Pengaturan > Peran dan akses."
         },
         "import": {
+          "searchPlaceholder": "Cari nama atau nama pengguna",
           "title": "Impor pengguna",
           "description": "Unduh templat, isi di luar sistem, unggah kembali, lalu periksa hasilnya sebelum benar-benar dibuat.",
           "step1Body": "Templat berisi contoh baris dan lembar Referensi berisi kode yang diterima untuk setiap kolom (jenis kelamin, golongan darah, peran, dan sejenisnya).",
@@ -1955,6 +1957,7 @@
         }
       },
       "subjects": {
+        "searchPlaceholder": "Cari nama atau kode mapel",
         "eyebrow": "Data sekolah",
         "title": "Mata pelajaran",
         "add": "Tambah mapel",

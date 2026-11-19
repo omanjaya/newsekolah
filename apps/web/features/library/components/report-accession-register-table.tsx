@@ -68,6 +68,7 @@ export function ReportAccessionRegisterTable({
 
   return (
     <DataTable
+      toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
       stateKey="features/library/components/report-accession-register-table:1"
       mode="local"
       data={copies}

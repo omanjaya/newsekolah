@@ -203,6 +203,7 @@ export function GradeLevelsView({ page }: { page: HubPageProps }): ReactElement 
       }
     >
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/academic/components/grade-levels-view:1"
         mode="local"
         data={rows}

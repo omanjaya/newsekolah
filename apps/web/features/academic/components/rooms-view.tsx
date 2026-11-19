@@ -168,6 +168,7 @@ export function RoomsView({ page }: { page: HubPageProps }): ReactElement {
       }
     >
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/academic/components/rooms-view:1"
         data={rows}
         columns={columns}

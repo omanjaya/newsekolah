@@ -119,6 +119,7 @@
     "success": "Jenjang kelas dari templat tersimpan."
   },
   "wizard": {
+    "searchPlaceholder": "Cari nama, NISN, atau kelas",
     "title": "Wizard onboarding",
     "body": "Siapkan jenjang, mata pelajaran, dan jam pelajaran, lalu impor data siswa dari Dapodik.",
     "steps": {

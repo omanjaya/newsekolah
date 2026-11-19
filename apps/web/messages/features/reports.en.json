@@ -11,6 +11,7 @@
     "schedules": "Scheduled sends"
   },
   "schedules": {
+    "searchPlaceholder": "Search report or recipient",
     "description": "Recurring exports emailed automatically on a cadence you choose.",
     "add": "New schedule",
     "edit": "Edit",

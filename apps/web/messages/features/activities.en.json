@@ -4,6 +4,7 @@
   "navLabelEvents": "Activity agenda",
   "navLabelAchievements": "Achievements",
   "clubs": {
+    "searchPlaceholder": "Search club name",
     "eyebrow": "Activities",
     "title": "Extracurriculars",
     "includeInactive": "Show inactive",
@@ -139,6 +140,7 @@
     }
   },
   "events": {
+    "searchPlaceholder": "Search event name or location",
     "eyebrow": "Activities",
     "title": "Activity agenda",
     "add": "Add activity",
@@ -193,6 +195,7 @@
     }
   },
   "achievements": {
+    "searchPlaceholder": "Search competition name",
     "eyebrow": "Activities",
     "title": "Student achievements",
     "filters": {

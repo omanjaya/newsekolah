@@ -163,6 +163,7 @@ export function TracksView({ page }: { page: HubPageProps }): ReactElement {
     >
       <p className="text-body-sm text-fg-muted">{t("description")}</p>
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/academic/components/tracks-view:1"
         data={rows}
         columns={columns}

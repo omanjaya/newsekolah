@@ -173,6 +173,7 @@ export function MasterEntryTab({
         }}
       />
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey={stateKey}
         mode="local"
         data={items}

@@ -86,6 +86,7 @@
     "activateBody": "\"{name}\" menjadi semester aktif; semester lain di tahun ajaran ini otomatis nonaktif."
   },
   "gradeLevels": {
+    "searchPlaceholder": "Cari nama atau kode tingkat",
     "eyebrow": "Data sekolah",
     "title": "Tingkat kelas",
     "add": "Tambah tingkat",
@@ -120,6 +121,7 @@
     "emptyBody": "Tambahkan tingkat kelas satu per satu, atau pakai templat jenjang sekolah."
   },
   "tracks": {
+    "searchPlaceholder": "Cari nama atau kode peminatan",
     "eyebrow": "Data sekolah",
     "title": "Peminatan",
     "description": "Jurusan atau peminatan siswa, misalnya IPA, IPS, atau Bahasa di SMA.",
@@ -144,6 +146,7 @@
     "emptyBody": "Tambahkan peminatan jika sekolah memiliki jurusan, misalnya IPA atau IPS."
   },
   "rooms": {
+    "searchPlaceholder": "Cari nama atau kode ruang",
     "eyebrow": "Data sekolah",
     "title": "Ruang kelas",
     "add": "Tambah ruang",
@@ -168,6 +171,7 @@
     "emptyBody": "Tambahkan ruang kelas untuk dipasangkan ke kelas."
   },
   "subjectOfferings": {
+    "searchPlaceholder": "Cari mapel atau tingkat",
     "eyebrow": "Data sekolah",
     "title": "Mapel per tahun ajaran",
     "year": "Tahun ajaran",
@@ -212,6 +216,7 @@
     "emptyBody": "Pilih tahun ajaran dan guru untuk melihat dan mengatur penugasan mengajarnya."
   },
   "enrollmentImport": {
+    "searchPlaceholder": "Cari siswa, kelas, atau keterangan",
     "title": "Impor penempatan kelas",
     "description": "Unduh templat, isi penempatan siswa ke kelas, lalu unggah untuk ditinjau sebelum diterapkan.",
     "year": "Tahun ajaran",

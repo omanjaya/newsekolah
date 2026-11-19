@@ -1,5 +1,6 @@
 {
   "tenants": {
+    "searchPlaceholder": "Cari nama sekolah",
     "eyebrow": "Platform",
     "title": "Konsol platform",
     "subtitle": "Semua sekolah di penyebaran ini, kesehatannya, dan modul yang aktif.",

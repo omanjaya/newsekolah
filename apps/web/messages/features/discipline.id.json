@@ -97,6 +97,7 @@
     "pointsValue": "{points} poin"
   },
   "catalog": {
+    "searchPlaceholder": "Cari kode atau nama pelanggaran",
     "includeInactive": "Tampilkan yang nonaktif",
     "add": "Tambah jenis",
     "columns": {

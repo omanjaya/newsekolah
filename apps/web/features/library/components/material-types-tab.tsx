@@ -144,6 +144,7 @@ export function MaterialTypesTab(): ReactElement {
         }}
       />
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/library/components/material-types-tab:1"
         mode="local"
         data={items}

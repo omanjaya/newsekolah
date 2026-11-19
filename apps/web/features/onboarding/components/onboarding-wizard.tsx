@@ -214,6 +214,7 @@ export function OnboardingWizard(): ReactElement {
             })}
           </p>
           <DataTable
+            toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
             stateKey="features/onboarding/components/onboarding-wizard:1"
             mode="local"
             data={report.data}

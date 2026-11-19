@@ -126,6 +126,7 @@ export function SubjectsView({ adding, onAddingChange }: SubjectsViewProps = {})
     // md:h-full: fills the tab panel's height so only the table rows scroll.
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         toolbarActions={
           controlled ? undefined : (
             <Button

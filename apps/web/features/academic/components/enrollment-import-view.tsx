@@ -297,6 +297,7 @@ export function EnrollmentImportView(): ReactElement {
             />
           )}
           <DataTable
+            toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
             mode="local"
             stateKey="features/academic/components/enrollment-import-view:1"
             data={visible}

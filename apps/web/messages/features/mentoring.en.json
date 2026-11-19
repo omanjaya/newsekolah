@@ -88,6 +88,7 @@
     "unknownStudent": "Unknown student"
   },
   "notes": {
+    "searchPlaceholder": "Search meeting topic",
     "add": "Record a meeting",
     "columns": {
       "metAt": "Date",

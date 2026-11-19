@@ -88,6 +88,7 @@
     "unknownStudent": "Siswa tidak diketahui"
   },
   "notes": {
+    "searchPlaceholder": "Cari topik pertemuan",
     "add": "Catat pertemuan",
     "columns": {
       "metAt": "Tanggal",

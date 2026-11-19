@@ -11,6 +11,7 @@
     "schedules": "Jadwal kirim"
   },
   "schedules": {
+    "searchPlaceholder": "Cari laporan atau penerima",
     "description": "Laporan berulang yang dikirim otomatis lewat email sesuai jadwal yang dipilih.",
     "add": "Jadwal baru",
     "edit": "Ubah",

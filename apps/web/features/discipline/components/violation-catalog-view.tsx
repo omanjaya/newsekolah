@@ -124,6 +124,7 @@ export function ViolationCatalogView(): ReactElement {
   return (
     <>
       <DataTable
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/discipline/components/violation-catalog-view:1"
         mode="local"
         data={items}

@@ -4,6 +4,7 @@
   "navLabelEvents": "Agenda kegiatan",
   "navLabelAchievements": "Prestasi",
   "clubs": {
+    "searchPlaceholder": "Cari nama ekstrakurikuler",
     "eyebrow": "Kegiatan",
     "title": "Ekstrakurikuler",
     "includeInactive": "Tampilkan yang tidak aktif",
@@ -139,6 +140,7 @@
     }
   },
   "events": {
+    "searchPlaceholder": "Cari nama atau lokasi kegiatan",
     "eyebrow": "Kegiatan",
     "title": "Agenda kegiatan",
     "add": "Tambah kegiatan",
@@ -193,6 +195,7 @@
     }
   },
   "achievements": {
+    "searchPlaceholder": "Cari nama lomba",
     "eyebrow": "Kegiatan",
     "title": "Prestasi siswa",
     "filters": {
