@@ -207,7 +207,8 @@
       "emptyTitle": "No warning-letter candidates yet",
       "emptyBody": "Students whose points reach a warning-letter threshold appear here.",
       "noPolicyTitle": "Warning-letter policy not set up",
-      "noPolicyBody": "Set it up under Warning-letter policy at the top of this page before issuing letters."
+      "noPolicyBody": "Set it up under Warning-letter policy at the top of this page before issuing letters.",
+      "noPolicyBodyAsk": "Ask a school admin to set up the warning-letter policy before letters can be issued."
     },
     "template": {
       "description": "The warning letter's numbering pattern and wording. Changes apply to letters issued after saving.",

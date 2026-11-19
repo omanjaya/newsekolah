@@ -19,6 +19,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
@@ -48,6 +49,8 @@ export function AtRiskPanel(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canIssue = useCan("issue_warning_letters");
+  // The policy is set from a header action only settings managers see.
+  const canManagePolicy = useCan("manage_settings");
 
   const [classId, setClassId] = useUrlState<string>("class_id", () => true, "");
   const [level, setLevel] = useUrlState<string>("level", () => true, "");
@@ -90,15 +93,14 @@ export function AtRiskPanel(): ReactElement {
       { student_user_id: candidate.student_user_id, level: letterLevel },
       {
         onSuccess: () => {
+          setPendingIssue(null);
           toast.success(t("issued", { level: label }));
         },
+        // On failure the dialog stays open so the counselor can try again.
         onError: (error) => {
           toast.error(
             error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
           );
-        },
-        onSettled: () => {
-          setPendingIssue(null);
         },
       },
     );
@@ -227,10 +229,15 @@ export function AtRiskPanel(): ReactElement {
     [t, levels, levelLabel, canIssue],
   );
 
-  if (levels.length === 0 && !policy.isLoading) {
+  // A failed policy load is not the same as no policy: say so and offer a retry.
+  if (policy.isError) {
+    return <QueryError retry={() => void policy.refetch()} error={policy.error} />;
+  }
+
+  if (policy.isSuccess && levels.length === 0) {
     return (
       <Alert variant="info" title={t("noPolicyTitle")}>
-        {t("noPolicyBody")}
+        {canManagePolicy ? t("noPolicyBody") : t("noPolicyBodyAsk")}
       </Alert>
     );
   }

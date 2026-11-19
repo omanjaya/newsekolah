@@ -207,7 +207,8 @@
       "emptyTitle": "Belum ada kandidat SP",
       "emptyBody": "Siswa yang poinnya mencapai ambang SP muncul di sini.",
       "noPolicyTitle": "Kebijakan SP belum diatur",
-      "noPolicyBody": "Atur lewat Kebijakan SP di kepala halaman ini sebelum menerbitkan surat."
+      "noPolicyBody": "Atur lewat Kebijakan SP di kepala halaman ini sebelum menerbitkan surat.",
+      "noPolicyBodyAsk": "Minta admin sekolah mengatur Kebijakan SP sebelum surat bisa diterbitkan."
     },
     "template": {
       "description": "Pengaturan pola penomoran dan naskah surat peringatan. Perubahan berlaku untuk surat yang diterbitkan setelah disimpan.",

@@ -6,7 +6,21 @@ const mocks = vi.hoisted(() => ({
   useSPCandidatesQuery: vi.fn(),
   issue: vi.fn(),
   canIssue: true,
+  canManage: true,
+  policy: {},
 }));
+
+const POLICY_OK = {
+  data: {
+    levels: [
+      { level: 1, label: "SP1", min_points: 25 },
+      { level: 2, label: "SP2", min_points: 50 },
+    ],
+  },
+  isLoading: false,
+  isSuccess: true,
+  isError: false,
+};
 
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 vi.mock("next/navigation", () => ({
@@ -14,7 +28,10 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
-vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => mocks.canIssue }));
+vi.mock("../../../lib/session/session-provider", () => ({
+  useCan: (permission: string) =>
+    permission === "manage_settings" ? mocks.canManage : mocks.canIssue,
+}));
 vi.mock("../../../lib/view-state/view-state-provider", () => ({
   useRememberedViewState: () => ["", vi.fn()],
 }));
@@ -33,15 +50,7 @@ vi.mock("../../reference/api", () => ({
   }),
 }));
 vi.mock("../api", () => ({
-  useDisciplinePolicyQuery: () => ({
-    data: {
-      levels: [
-        { level: 1, label: "SP1", min_points: 25 },
-        { level: 2, label: "SP2", min_points: 50 },
-      ],
-    },
-    isLoading: false,
-  }),
+  useDisciplinePolicyQuery: () => mocks.policy,
   useIssueWarningLetterMutation: () => ({ mutate: mocks.issue, isPending: false }),
   useSPCandidatesQuery: mocks.useSPCandidatesQuery,
 }));
@@ -51,6 +60,7 @@ import { AtRiskPanel } from "./at-risk-panel";
 describe("AtRiskPanel filters", () => {
   beforeEach(() => {
     mocks.canIssue = true;
+    mocks.policy = POLICY_OK;
     mocks.useSPCandidatesQuery.mockReset();
     mocks.useSPCandidatesQuery.mockReturnValue({ data: { data: [] }, isLoading: false });
     window.history.replaceState(null, "", "/discipline/at-risk");
@@ -119,6 +129,8 @@ function candidate(id: string, name: string) {
 describe("AtRiskPanel states and issuing", () => {
   beforeEach(() => {
     mocks.canIssue = true;
+    mocks.canManage = true;
+    mocks.policy = POLICY_OK;
     mocks.issue.mockReset();
     mocks.useSPCandidatesQuery.mockReset();
     window.history.replaceState(null, "", "/discipline/at-risk");
@@ -174,5 +186,69 @@ describe("AtRiskPanel states and issuing", () => {
       { student_user_id: "s2", level: 1 },
       expect.any(Object),
     );
+  });
+
+  it("keeps the confirm dialog open when issuing fails, so it can be retried", async () => {
+    mocks.useSPCandidatesQuery.mockReturnValue({
+      data: { data: [candidate("s1", "Ayu")] },
+      isLoading: false,
+    });
+    mocks.issue.mockImplementation(
+      (_vars, options: { onError?: (e: Error) => void; onSettled?: () => void }) => {
+        options.onError?.(new Error("boom"));
+        options.onSettled?.();
+      },
+    );
+    const user = userEvent.setup();
+    render(<AtRiskPanel />);
+
+    const row = screen
+      .getAllByText("Ayu")
+      .map((cell) => cell.closest("tr"))
+      .find((r) => r !== null);
+    await user.click(within(row as HTMLElement).getByRole("button", { name: "issue" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "issue" }));
+
+    expect(mocks.issue).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("shows a policy load failure with a retry, not the no-policy notice", async () => {
+    const refetch = vi.fn();
+    mocks.policy = {
+      data: undefined,
+      isLoading: false,
+      isSuccess: false,
+      isError: true,
+      error: new Error("boom"),
+      refetch,
+    };
+    mocks.useSPCandidatesQuery.mockReturnValue({ data: { data: [] }, isLoading: false });
+    const user = userEvent.setup();
+    render(<AtRiskPanel />);
+
+    expect(screen.queryByText("noPolicyTitle")).not.toBeInTheDocument();
+    await user.click(within(screen.getByRole("alert")).getByRole("button"));
+    expect(refetch).toHaveBeenCalled();
+  });
+
+  it("points a settings manager at the policy header action when none is set", () => {
+    mocks.policy = { ...POLICY_OK, data: { levels: [] } };
+    mocks.useSPCandidatesQuery.mockReturnValue({ data: { data: [] }, isLoading: false });
+    render(<AtRiskPanel />);
+
+    expect(screen.getByText("noPolicyTitle")).toBeInTheDocument();
+    expect(screen.getByText("noPolicyBody")).toBeInTheDocument();
+  });
+
+  it("asks anyone else to get an admin to set the policy", () => {
+    mocks.canManage = false;
+    mocks.policy = { ...POLICY_OK, data: { levels: [] } };
+    mocks.useSPCandidatesQuery.mockReturnValue({ data: { data: [] }, isLoading: false });
+    render(<AtRiskPanel />);
+
+    expect(screen.getByText("noPolicyBodyAsk")).toBeInTheDocument();
+    expect(screen.queryByText("noPolicyBody")).not.toBeInTheDocument();
   });
 });
