@@ -17,6 +17,7 @@ import type { ScheduleBlock } from "../api";
 import { blockCrossesBreak } from "../break-warning";
 import { clockLabel } from "../clock-label";
 import { isNowWithinBlock } from "../current-period";
+import { periodSpanLabel } from "../period-span";
 import { SUBJECT_TONE_CLASSES, subjectTone } from "../subject-tone";
 
 import { LessonSubstitutionAction } from "./lesson-substitution-action";
@@ -185,10 +186,7 @@ export function ScheduleMobileAgenda({
             // A block may span several periods; its label and time run from
             // the first period's start to the last period's end.
             const endPeriod = periodBySeq.get(block.end_seq) ?? period;
-            const spanLabel =
-              endPeriod.sequence === period.sequence
-                ? period.name
-                : `${period.name} – ${endPeriod.name}`;
+            const spanLabel = periodSpanLabel(period, endPeriod);
             const isNow = isNowWithinBlock(block.start_seq, block.end_seq, nowSeq);
             const subject = subjectMap.get(block.subject_id)?.name ?? t("unknownSubject");
             return (

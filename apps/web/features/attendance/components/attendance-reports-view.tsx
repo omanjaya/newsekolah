@@ -18,6 +18,7 @@ import type { ReactElement } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { SHORT_DATE } from "../../../lib/format-calendar-date";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
@@ -96,7 +97,14 @@ function MineReportTab(): ReactElement {
   return (
     <div className="flex flex-col gap-4">
       <Field label={t("date")}>
-        <DatePicker value={date} onChange={setDate} clearable={false} className="w-full sm:w-44" />
+        {/* The same date shape as the "Harian" tab beside it, which shares ?date=. */}
+        <DatePicker
+          value={date}
+          onChange={setDate}
+          clearable={false}
+          formatOptions={SHORT_DATE}
+          className="w-full sm:w-44"
+        />
       </Field>
 
       {report.isLoading ? (

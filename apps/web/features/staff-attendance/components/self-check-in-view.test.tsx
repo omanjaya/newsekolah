@@ -194,3 +194,29 @@ describe("SelfCheckInView -- after arriving", () => {
     expect(screen.queryByText("thisWeekEmpty")).not.toBeInTheDocument();
   });
 });
+
+describe("SelfCheckInView -- the way to the school-wide board", () => {
+  function emptyWeek() {
+    weekQuery.mockReturnValue({ data: { data: [] }, isLoading: false, isError: false });
+  }
+
+  it("links a reader of the board to it from the header, the way the board links back", () => {
+    session.permissions = ["view_staff_attendance"];
+    emptyWeek();
+    render(<SelfCheckInView />);
+
+    expect(screen.getByRole("link", { name: "navLabel" })).toHaveAttribute(
+      "href",
+      "/staff-attendance",
+    );
+    // No tab strip that the board's own page would not show.
+    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+  });
+
+  it("offers no link to an employee who may not open the board", () => {
+    emptyWeek();
+    render(<SelfCheckInView />);
+
+    expect(screen.queryByRole("link", { name: "navLabel" })).not.toBeInTheDocument();
+  });
+});

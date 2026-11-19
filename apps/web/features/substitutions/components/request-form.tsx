@@ -11,6 +11,7 @@ import {
   Select,
   Textarea,
   useDebouncedCallback,
+  useSubmitValidation,
   useToast,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
@@ -35,6 +36,7 @@ export function RequestForm({
 }): ReactElement {
   const t = useTranslations("app.substitutions.form");
   const tDays = useTranslations("app.common.weekdays");
+  const tValidation = useTranslations("validation");
   const { me } = useSession();
   const year = useActiveYear();
   const toast = useToast();
@@ -52,7 +54,12 @@ export function RequestForm({
   const [substituteLabel, setSubstituteLabel] = useState("");
   const [substituteSearch, setSubstituteSearch] = useState("");
   const [note, setNote] = useState("");
+  // The banner carries only the server's answer; a missing field says so
+  // itself, under the field, once Send has been pressed.
   const [error, setError] = useState<string | null>(null);
+  const { ref: formRef, attempted, check } = useSubmitValidation();
+  const requiredError = (value: string) =>
+    attempted && !value ? tValidation("required") : undefined;
 
   const debounceSubstituteSearch = useDebouncedCallback(setSubstituteSearch, 300);
   const eligibleSubstitutes = useEligibleSubstitutesQuery(year.id, substituteSearch);
@@ -81,10 +88,7 @@ export function RequestForm({
 
   async function submit() {
     setError(null);
-    if (!scheduleId || !date || !substituteId) {
-      setError(t("requiredError"));
-      return;
-    }
+    if (!check(Boolean(scheduleId && date && substituteId))) return;
     try {
       await create.mutateAsync({
         schedule_id: scheduleId,
@@ -101,6 +105,8 @@ export function RequestForm({
 
   return (
     <form
+      ref={formRef}
+      noValidate
       className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
@@ -108,7 +114,7 @@ export function RequestForm({
       }}
     >
       {error && <Alert variant="danger">{error}</Alert>}
-      <Field label={t("schedule")}>
+      <Field label={t("schedule")} required error={requiredError(scheduleId)}>
         <Select
           options={scheduleOptions}
           value={scheduleId}
@@ -116,10 +122,10 @@ export function RequestForm({
           placeholder={t("pick")}
         />
       </Field>
-      <Field label={t("date")}>
+      <Field label={t("date")} required error={requiredError(date)}>
         <DatePicker value={date} onChange={setDate} clearable={false} />
       </Field>
-      <Field label={t("substitute")}>
+      <Field label={t("substitute")} required error={requiredError(substituteId)}>
         <Combobox
           options={substituteOptions}
           value={substituteId}
@@ -138,7 +144,7 @@ export function RequestForm({
           aria-label={t("substitute")}
         />
       </Field>
-      <Field label={t("note")}>
+      <Field label={t("note")} optional>
         <Textarea
           rows={2}
           value={note}

@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { statusToken } from "../../../lib/attendance-status";
@@ -53,6 +53,21 @@ const STATUS_DOT_CLASS: Record<string, string> = {
   MIXED: "bg-fg-muted",
 };
 
+/** Tailwind's `lg`: from here the day's detail sits beside the calendar. */
+const SIDE_BY_SIDE_QUERY = "(min-width: 64rem)";
+
+/**
+ * Below `lg` the day's detail sits under the calendar and its legend, out
+ * of sight on a phone, so picking a day would look like it did nothing.
+ * Bring the detail into view there; beside the calendar it already is.
+ */
+function revealDayDetail(element: HTMLElement | null): void {
+  if (!element || typeof window.matchMedia !== "function") return;
+  if (window.matchMedia(SIDE_BY_SIDE_QUERY).matches) return;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  element.scrollIntoView({ block: "start", behavior: reduceMotion ? "auto" : "smooth" });
+}
+
 /** Fixed display order for the legend, independent of the calendar's own day-of-month iteration order. */
 const LEGEND_ORDER = ["H", "S", "I", "D", "A", "INCOMPLETE", "MIXED"];
 
@@ -74,6 +89,7 @@ export function AttendanceCalendar(): ReactElement {
     selection !== null && selection.today === today ? selection.month : today.slice(0, 7);
   const { data, isLoading } = useMyCalendarQuery(month);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
 
   const days = useMemo(() => data?.data ?? [], [data]);
   const byDate = useMemo(() => new Map(days.map((day) => [day.date, day])), [days]);
@@ -245,6 +261,7 @@ export function AttendanceCalendar(): ReactElement {
                       type="button"
                       onClick={() => {
                         setSelectedDate(date);
+                        revealDayDetail(detailRef.current);
                       }}
                       aria-pressed={isSelected}
                       aria-label={tMine("dayAriaLabel", {
@@ -295,7 +312,8 @@ export function AttendanceCalendar(): ReactElement {
           )}
         </Card>
 
-        <Card>
+        {/* Its top stops clear of the sticky app header when brought into view. */}
+        <Card ref={detailRef} className="scroll-mt-20" data-testid="attendance-day-detail">
           <CardHeader action={effectiveSelected ? selectedBadge : undefined}>
             <CardTitle as="h2">
               {effectiveSelected

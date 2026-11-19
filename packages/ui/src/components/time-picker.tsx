@@ -275,7 +275,10 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
             disabled={disabled}
             placeholder={placeholder ?? labels.timePickerPlaceholder}
             value={shown}
-            className={cn(FIELD_INNER_INPUT, "tabular-nums")}
+            // The clock and the list toggle leave the text little room in
+            // a narrow column, so a placeholder that does not fit ends in an
+            // ellipsis, as DatePicker's does, rather than cut mid-letter.
+            className={cn(FIELD_INNER_INPUT, "text-ellipsis tabular-nums")}
             onChange={(event) => {
               const text = event.target.value;
               setDraft(text);

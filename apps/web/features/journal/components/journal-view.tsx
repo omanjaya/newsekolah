@@ -40,7 +40,6 @@ import {
   useJournalsQuery,
   type Journal,
 } from "../api";
-import { computeJournalWeekStats } from "../lib/journal-week-stats";
 
 import { useJournalColumns } from "./journal-columns";
 import { JournalForm } from "./journal-form";
@@ -87,7 +86,6 @@ export function JournalView(): ReactElement {
   const classMap = useLookup(classes.data?.data);
   const subjectMap = useLookup(subjects.data?.data);
   const todayData = useJournalTodayData();
-  const weekStats = computeJournalWeekStats(todayData.groups, todayData.today);
 
   const list = useJournalsQuery(
     canViewAll && classId ? classId : undefined,
@@ -215,10 +213,11 @@ export function JournalView(): ReactElement {
   return (
     // The history fills the screen on desktop and scrolls inside its table,
     // beside the backlog as a rail of its own, so neither can squeeze the
-    // other to nothing; a phone stacks the backlog above the history.
+    // other to nothing; a phone stacks the backlog above the history. The
+    // week's count sits in the backlog card, not in the header, so the
+    // area's tab strip keeps its place on every tab.
     <AppPage
       variant="fit"
-      description={t("weekSummary", { count: weekStats.filledThisWeek })}
       primaryAction={
         <Button
           icon={<Plus />}

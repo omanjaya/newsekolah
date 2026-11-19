@@ -27,6 +27,14 @@ function LabelledTimePicker(props: TimePickerProps) {
 }
 
 describe("TimePicker", () => {
+  it("ends a placeholder that does not fit with an ellipsis, as DatePicker does", () => {
+    render(<LabelledTimePicker placeholder="Jam datang" />);
+    const input = screen.getByRole("combobox", { name: "Jam mulai" });
+
+    expect(input).toHaveAttribute("placeholder", "Jam datang");
+    expect(input).toHaveClass("text-ellipsis");
+  });
+
   it("normalises a typed time on blur and shows the Indonesian separator", async () => {
     const onChange = vi.fn();
     render(<LabelledTimePicker onChange={onChange} name="start" />);

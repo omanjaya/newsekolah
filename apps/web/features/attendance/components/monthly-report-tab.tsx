@@ -20,7 +20,7 @@ import {
 import { useDirectoryNames } from "../../reference/directory-names";
 import { downloadMonthlyAttendanceReport, todayInZone, type ReportScope } from "../api";
 
-import { MONTHLY_RECAP_EXPORT_COLUMNS, classOptions } from "./attendance-report-options";
+import { classOptions, monthlyRecapExportColumns } from "./attendance-report-options";
 import { MonthlyAttendanceTable } from "./monthly-attendance-table";
 import { ReportScopePicker, scopeIsReady } from "./report-scope-picker";
 
@@ -32,6 +32,7 @@ import { ReportScopePicker, scopeIsReady } from "./report-scope-picker";
  */
 export function MonthlyReportTab(): ReactElement {
   const t = useTranslations("app.attendanceReports.monthly");
+  const tColumns = useTranslations("app.attendanceReports.exportColumns");
   const { me } = useSession();
 
   const [classId, setClassId] = useState("");
@@ -122,7 +123,7 @@ export function MonthlyReportTab(): ReactElement {
         onOpenChange={setExportOpen}
         reportKey="attendance.monthly-recap"
         defaultTitle={t("exportTitle")}
-        availableColumns={MONTHLY_RECAP_EXPORT_COLUMNS}
+        availableColumns={monthlyRecapExportColumns(tColumns)}
         onExport={handleExport}
         scopeSlot={
           <div className="flex flex-col gap-2">

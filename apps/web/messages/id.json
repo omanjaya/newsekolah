@@ -892,7 +892,6 @@
         "saveChanges": "Simpan perubahan",
         "created": "Draf tersimpan",
         "updated": "Perubahan tersimpan",
-        "requiredError": "Judul dan isi wajib diisi.",
         "audienceError": "Pilih minimal satu penerima.",
         "previewAudienceLabel": "Ditujukan untuk",
         "previewScheduleImmediate": "Tampil segera setelah diterbitkan",
@@ -1048,7 +1047,6 @@
         "start": "Jam mulai",
         "end": "Jam selesai",
         "pick": "Pilih",
-        "requiredError": "Semua kolom wajib diisi.",
         "rangeError": "Jam selesai harus sama atau setelah jam mulai.",
         "created": "Jadwal ditambahkan",
         "cancel": "Batal",
@@ -1196,6 +1194,7 @@
         "daySentence": "Status hari ini: {status}.",
         "dayAriaLabel": "{date}, status {status}",
         "legendLabel": "Ringkasan status bulan ini",
+        "statsLabel": "Ringkasan presensi bulan ini",
         "statPresentLabel": "Hadir",
         "statSickLabel": "Sakit",
         "statExcusedLabel": "Izin",
@@ -1276,7 +1275,12 @@
         "openReports": "Buka laporan presensi",
         "openMonitor": "Buka monitor",
         "bodyReportsOnly": "Lihat rekap per kelas di laporan.",
-        "openReportsHub": "Buka pusat laporan"
+        "openReportsHub": "Buka pusat laporan",
+        "dayEyebrow": "Presensi sekolah {date}",
+        "dayTitle": "Rekap per kelas ada di laporan",
+        "dayBody": "Progres langsung hanya tersedia untuk hari ini.",
+        "futureTitle": "Belum ada presensi untuk hari itu",
+        "futureBody": "Kelas mengisi presensinya pada hari itu sendiri."
       },
       "openSchedule": "Buka jadwal",
       "leaveLetterNote": "Surat izin {number}"
@@ -1388,7 +1392,6 @@
         "substituteEmpty": "Tidak ada guru yang cocok atau memenuhi syarat.",
         "note": "Catatan",
         "pick": "Pilih",
-        "requiredError": "Jadwal, tanggal, dan guru pengganti wajib diisi.",
         "sent": "Permintaan terkirim",
         "cancel": "Batal",
         "send": "Kirim permintaan"

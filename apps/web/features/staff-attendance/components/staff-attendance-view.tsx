@@ -8,7 +8,7 @@ import {
   TabsTrigger,
   type PageHeaderAction,
 } from "@newsekolah/ui";
-import { Fingerprint, Plus } from "lucide-react";
+import { LogIn, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -54,7 +54,7 @@ export function StaffAttendanceView(): ReactElement {
   const onBoard = tab === "today";
 
   const secondaryActions: PageHeaderAction[] = employee
-    ? [{ label: t("self.title"), icon: <Fingerprint />, href: "/check-in" }]
+    ? [{ label: t("self.title"), icon: <LogIn />, href: "/check-in" }]
     : [];
 
   return (

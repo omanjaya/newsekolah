@@ -126,9 +126,9 @@ func (s *Service) classMonthlyRecap(
 	return ClassMonthlyRecap{ClassID: class.ID, ClassName: class.Name, Rows: rows}, nil
 }
 
-// monthlyRecapColumns are the monthly recap's stable column keys and
-// default Indonesian labels: NIS, name, one column per the tenant's
-// configured status code (key "status_<code>", so it never collides with
+// monthlyRecapColumns are the monthly recap's stable column keys, with
+// their headers in locale (reportColumnVocabulary): NIS, name, one column
+// per the tenant's configured status code (key "status_<code>", so it never collides with
 // "total"/"percentage" even if a tenant ever configured a status code
 // spelled that way), total counted days, and percentage present.
 //
@@ -137,19 +137,21 @@ func (s *Service) classMonthlyRecap(
 // view (GET .../reports/monthly, and the on-screen monthly tab) already
 // shows, and would not fit a printed recap the way a one-row-per-student
 // summary does.
-func monthlyRecapColumns(policy domain.StatusPolicy) []reportdoc.Column {
+func monthlyRecapColumns(locale string, policy domain.StatusPolicy) []reportdoc.Column {
+	label := func(key string) string { return reportColumnLabel(locale, key) }
 	columns := make([]reportdoc.Column, 0, 5+len(policy.Statuses))
 	columns = append(columns,
-		reportdoc.Column{Key: "no", Label: "No", Kind: reportdoc.ColumnNumber, Width: 5},
-		reportdoc.Column{Key: "nis", Label: "NIS", Kind: reportdoc.ColumnText, Width: 14},
-		reportdoc.Column{Key: "name", Label: "Nama Siswa", Kind: reportdoc.ColumnText, Width: 28},
+		reportdoc.Column{Key: "no", Label: label("no"), Kind: reportdoc.ColumnNumber, Width: 5},
+		reportdoc.Column{Key: "nis", Label: label("nis"), Kind: reportdoc.ColumnText, Width: 14},
+		reportdoc.Column{Key: "name", Label: label("name"), Kind: reportdoc.ColumnText, Width: 28},
 	)
+	// The tenant's own status labels: school content, not translated.
 	for _, def := range policy.Statuses {
 		columns = append(columns, reportdoc.Column{Key: "status_" + def.Code, Label: def.Label, Kind: reportdoc.ColumnNumber, Width: 10})
 	}
 	columns = append(columns,
-		reportdoc.Column{Key: "total", Label: "Total", Kind: reportdoc.ColumnNumber, Width: 10},
-		reportdoc.Column{Key: "percentage", Label: "Persentase Hadir", Kind: reportdoc.ColumnPercent, Width: 14},
+		reportdoc.Column{Key: "total", Label: label("total"), Kind: reportdoc.ColumnNumber, Width: 10},
+		reportdoc.Column{Key: "percentage", Label: label("percentage"), Kind: reportdoc.ColumnPercent, Width: 14},
 	)
 	return columns
 }
@@ -213,7 +215,7 @@ func (s *Service) ExportMonthlyRecap(ctx context.Context, tenantID uuid.UUID, cl
 		doc := reportdoc.Document{
 			Title:           "Rekap Presensi Bulanan",
 			Scope:           []reportdoc.ScopeLine{scopeLine, {Label: "Bulan", Value: domain.MonthYear(locale, month)}},
-			Columns:         monthlyRecapColumns(policy),
+			Columns:         monthlyRecapColumns(locale, policy),
 			Sections:        sections,
 			PageLabelFormat: reportdoc.PageLabel(locale),
 			EmptyRowsLabel:  reportdoc.EmptyRowsLabelFor(locale),

@@ -173,14 +173,18 @@ describe("DaySessions", () => {
     expect(within(row).getByRole("button", { name: /Matematika · Kelas 10 A/ })).toBeEnabled();
   });
 
-  it("sums the day up in one line under the title", () => {
+  it("sums the day up in one line beside the day switcher, not in the header", () => {
     todaySessions = [
       session({ schedule_id: "s1" }),
       session({ schedule_id: "s2", submitted_at: `${TODAY}T07:10:00Z` }),
     ];
     render(<DaySessions />);
 
-    expect(screen.getByText('daySummary:{"total":2,"saved":1,"pending":1}')).toBeInTheDocument();
+    // The header has no description, so the area's tab row keeps its
+    // place on every sibling tab (/journal, /attendance/reports).
+    expect(screen.getByTestId("attendance-day-summary")).toHaveTextContent(
+      'daySummary:{"total":2,"saved":1,"pending":1}',
+    );
   });
 
   it("offers the monitor once, in the school card, before a teacher is picked", () => {

@@ -15,6 +15,7 @@ const state = vi.hoisted(() => ({
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, values?: Record<string, unknown>) =>
     values ? `${key}:${JSON.stringify(values)}` : key,
+  useFormatter: () => ({ dateTime: () => "Rab, 18 Nov" }),
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({
@@ -64,15 +65,18 @@ it("links the monitor for a holder of view_monitor_presence", () => {
   expect(screen.getByRole("link", { name: "openMonitor" })).toHaveAttribute("href", "/monitor");
 });
 
-it("asks for the admin snapshot only for an administrator, and shows its progress", () => {
+it("asks for the admin snapshot only for an administrator or the principal, and shows its progress", () => {
   state.permissions = ["view_reports"];
   render(<StaffAttendanceHub />);
   expect(state.adminQueryEnabled.every((enabled) => !enabled)).toBe(true);
   cleanup();
 
-  state.roles = [{ slug: "admin" }];
-  render(<StaffAttendanceHub />);
-  expect(
-    screen.getByRole("heading", { name: 'progressTitle:{"submitted":3,"total":10}' }),
-  ).toBeInTheDocument();
+  for (const slug of ["admin", "principal"]) {
+    state.roles = [{ slug }];
+    render(<StaffAttendanceHub />);
+    expect(
+      screen.getByRole("heading", { name: 'progressTitle:{"submitted":3,"total":10}' }),
+    ).toBeInTheDocument();
+    cleanup();
+  }
 });

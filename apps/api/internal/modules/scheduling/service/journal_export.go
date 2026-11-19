@@ -13,20 +13,49 @@ import (
 // rather than paging through an unbounded ListJournals result.
 const journalExportRowLimit = 5000
 
-// journalReportColumns are the journal export's stable column keys and
-// default Indonesian labels, shared by the XLSX and PDF renderers
+// journalColumnVocabulary is the journal export's column headers per
+// locale, in sentence case like every table header in the app. apps/web's
+// download dialog shows the same labels from its own catalogue
+// (messages/features/journal.{id,en}.json, "exportColumns") and sends a
+// label only when the reader renames a column, so the two must stay word
+// for word the same.
+var journalColumnVocabulary = map[string]map[string]string{
+	reportdoc.LocaleID: {
+		"date": "Tanggal", "class": "Kelas", "subject": "Mata pelajaran", "teacher": "Guru",
+		"author": "Ditulis oleh", "topic": "Topik", "activities": "Kegiatan", "reflection": "Refleksi",
+	},
+	reportdoc.LocaleEN: {
+		"date": "Date", "class": "Class", "subject": "Subject", "teacher": "Teacher",
+		"author": "Written by", "topic": "Topic", "activities": "Activities", "reflection": "Reflection",
+	},
+}
+
+// journalColumnLabel is key's header in locale, falling back to
+// Indonesian, this module's default language.
+func journalColumnLabel(locale, key string) string {
+	if labels, ok := journalColumnVocabulary[locale]; ok {
+		if label, ok := labels[key]; ok {
+			return label
+		}
+	}
+	return journalColumnVocabulary[reportdoc.LocaleID][key]
+}
+
+// journalReportColumns are the journal export's stable column keys, with
+// their headers in locale, shared by the XLSX and PDF renderers
 // (reportdoc.Apply's Options.Columns refers to these keys, never the
 // label).
-func journalReportColumns() []reportdoc.Column {
+func journalReportColumns(locale string) []reportdoc.Column {
+	label := func(key string) string { return journalColumnLabel(locale, key) }
 	return []reportdoc.Column{
-		{Key: "date", Label: "Tanggal", Kind: reportdoc.ColumnDate, Width: 14},
-		{Key: "class", Label: "Kelas", Kind: reportdoc.ColumnText, Width: 14},
-		{Key: "subject", Label: "Mata Pelajaran", Kind: reportdoc.ColumnText, Width: 18},
-		{Key: "teacher", Label: "Guru", Kind: reportdoc.ColumnText, Width: 20},
-		{Key: "author", Label: "Ditulis Oleh", Kind: reportdoc.ColumnText, Width: 20},
-		{Key: "topic", Label: "Topik", Kind: reportdoc.ColumnText, Width: 28},
-		{Key: "activities", Label: "Kegiatan", Kind: reportdoc.ColumnText, Width: 32},
-		{Key: "reflection", Label: "Refleksi", Kind: reportdoc.ColumnText, Width: 32},
+		{Key: "date", Label: label("date"), Kind: reportdoc.ColumnDate, Width: 14},
+		{Key: "class", Label: label("class"), Kind: reportdoc.ColumnText, Width: 14},
+		{Key: "subject", Label: label("subject"), Kind: reportdoc.ColumnText, Width: 18},
+		{Key: "teacher", Label: label("teacher"), Kind: reportdoc.ColumnText, Width: 20},
+		{Key: "author", Label: label("author"), Kind: reportdoc.ColumnText, Width: 20},
+		{Key: "topic", Label: label("topic"), Kind: reportdoc.ColumnText, Width: 28},
+		{Key: "activities", Label: label("activities"), Kind: reportdoc.ColumnText, Width: 32},
+		{Key: "reflection", Label: label("reflection"), Kind: reportdoc.ColumnText, Width: 32},
 	}
 }
 
@@ -61,8 +90,9 @@ func (s *Service) journalSignature(ctx context.Context, tenantID uuid.UUID, filt
 // export's raw IDs (docs/analysis/backend-inventory.md section 1.12).
 // locale (reportdoc.LocaleID/LocaleEN) drives every reportdoc-provided
 // piece of text (dates, the PDF page-number footer, the "no rows"
-// label); report-specific text (title, scope labels, column labels)
-// stays Indonesian, this module's own default. Called with a zero
+// label) and the column headers (journalColumnVocabulary); the rest of the
+// report's own text (title, scope labels) stays Indonesian, this module's
+// own default. Called with a zero
 // reportdoc.Options, this keeps every existing caller's request working:
 // xlsx, every column, the report's own default title.
 func (s *Service) ExportJournalsReport(ctx context.Context, tenantID, academicYearID uuid.UUID, filter JournalFilter, locale string, opts reportdoc.Options) ([]byte, error) {
@@ -97,7 +127,7 @@ func (s *Service) ExportJournalsReport(ctx context.Context, tenantID, academicYe
 		doc := reportdoc.Document{
 			Title:           "Jurnal Mengajar",
 			Scope:           scope,
-			Columns:         journalReportColumns(),
+			Columns:         journalReportColumns(locale),
 			Sections:        []reportdoc.Section{{Rows: rows}},
 			PageLabelFormat: reportdoc.PageLabel(locale),
 			EmptyRowsLabel:  reportdoc.EmptyRowsLabelFor(locale),

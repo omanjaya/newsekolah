@@ -892,7 +892,6 @@
         "saveChanges": "Save changes",
         "created": "Draft saved",
         "updated": "Changes saved",
-        "requiredError": "Title and body are required.",
         "audienceError": "Pick at least one recipient.",
         "previewAudienceLabel": "Sent to",
         "previewScheduleImmediate": "Appears right after publishing",
@@ -1048,7 +1047,6 @@
         "start": "Start period",
         "end": "End period",
         "pick": "Pick",
-        "requiredError": "All fields are required.",
         "rangeError": "End period must be the same as or after the start period.",
         "created": "Schedule added",
         "cancel": "Cancel",
@@ -1196,6 +1194,7 @@
         "daySentence": "Status for this day: {status}.",
         "dayAriaLabel": "{date}, status {status}",
         "legendLabel": "This month's status summary",
+        "statsLabel": "This month's attendance summary",
         "statPresentLabel": "Present",
         "statSickLabel": "Sick",
         "statExcusedLabel": "Excused",
@@ -1276,7 +1275,12 @@
         "openReports": "Open attendance reports",
         "openMonitor": "Open the monitor",
         "bodyReportsOnly": "See each class's record in the reports.",
-        "openReportsHub": "Open the reports centre"
+        "openReportsHub": "Open the reports centre",
+        "dayEyebrow": "School attendance on {date}",
+        "dayTitle": "Each class's record is in the reports",
+        "dayBody": "Live progress is only shown for today.",
+        "futureTitle": "No attendance taken for that day yet",
+        "futureBody": "Classes take their attendance on the day itself."
       },
       "openSchedule": "Open schedule",
       "leaveLetterNote": "Leave letter {number}"
@@ -1388,7 +1392,6 @@
         "substituteEmpty": "No eligible teacher matches.",
         "note": "Note",
         "pick": "Pick",
-        "requiredError": "Schedule, date and substitute are required.",
         "sent": "Request sent",
         "cancel": "Cancel",
         "send": "Send request"

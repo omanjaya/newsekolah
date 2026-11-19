@@ -63,6 +63,14 @@ it("groups the editor into content, audience and schedule sections", () => {
   expect(screen.getByText("sectionSchedule")).toBeInTheDocument();
 });
 
+it("gives each date and time pair of the schedule a row of its own", () => {
+  render(<AnnouncementForm onSaved={vi.fn()} onCancel={vi.fn()} />);
+  const section = screen.getByRole("region", { name: "sectionSchedule" });
+  // Two pairs in one row left the time picker too narrow for "Pilih jam".
+  const grid = section.querySelector(":scope > div:last-child");
+  expect(grid).not.toHaveClass("@lg:grid-cols-2");
+});
+
 it("still creates a draft from the restructured compose tab", async () => {
   const onSaved = vi.fn();
   const user = userEvent.setup();
@@ -114,4 +122,55 @@ it("shows and saves the schedule on the school's clock, not the device's", async
   const [vars] = update.mock.calls[0] as [{ id: string; body: { starts_at?: string } }];
   expect(vars.id).toBe("a1");
   expect(vars.body.starts_at).toBe("2026-11-19T23:30:00.000Z");
+});
+
+it("marks a missing title and body on their own fields and focuses the first", async () => {
+  const user = userEvent.setup();
+  render(<AnnouncementForm onSaved={vi.fn()} onCancel={vi.fn()} />);
+
+  await user.click(screen.getByRole("button", { name: "saveDraft" }));
+
+  expect(create).not.toHaveBeenCalled();
+  // No banner for what a field can say itself.
+  expect(screen.queryByText("requiredError")).not.toBeInTheDocument();
+  const title = screen.getByRole("textbox", { name: /title/ });
+  const body = screen.getByRole("textbox", { name: /body/ });
+  expect(title).toHaveAttribute("aria-invalid", "true");
+  expect(body).toHaveAttribute("aria-invalid", "true");
+  expect(title).toHaveAttribute("aria-required", "true");
+  expect(title).toHaveFocus();
+
+  await user.type(title, "Judul");
+  expect(title).not.toHaveAttribute("aria-invalid");
+  expect(body).toHaveAttribute("aria-invalid", "true");
+});
+
+it("marks an empty audience on the audience picker, not in a banner", async () => {
+  const user = userEvent.setup();
+  render(
+    <AnnouncementForm
+      initial={{
+        id: "a1",
+        title: "Rapat",
+        body_html: "<p>Isi</p>",
+        body_text: "Isi",
+        audience: { type: "roles", role_slugs: [] },
+        is_pinned: false,
+        status: "draft",
+        recipient_count: 0,
+        created_at: "2026-11-01T00:00:00Z",
+      }}
+      onSaved={vi.fn()}
+      onCancel={vi.fn()}
+    />,
+  );
+
+  await user.click(screen.getByRole("button", { name: "saveChanges" }));
+
+  expect(update).not.toHaveBeenCalled();
+  const group = screen.getByRole("group", { name: /audienceRoles/ });
+  expect(group).toHaveAccessibleDescription("audienceError");
+  const boxes = screen.getAllByRole("checkbox");
+  expect(boxes[0]).toHaveAttribute("aria-invalid", "true");
+  expect(boxes[0]).toHaveFocus();
 });

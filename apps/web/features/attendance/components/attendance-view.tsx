@@ -77,8 +77,8 @@ function isoWeekday(date: string): number {
 
 /**
  * The teacher's day: the lesson running now (or next) as the hero with its
- * one action, the day's other sessions as a list, and the day's totals in
- * the header's one-line description. An administrator who does not teach
+ * one action, the day's other sessions as a list, and the day's totals on
+ * one line beside the day switcher. An administrator who does not teach
  * opens on the school's progress for today instead, and picks a teacher to
  * work on their sessions.
  */
@@ -266,18 +266,11 @@ export function DaySessions(): ReactElement {
   ];
 
   return (
-    // The day switcher and the teacher picker sit under the area's tabs, so
-    // the tab row stays at one height. The tabs keep the chosen day.
+    // The day switcher, the teacher picker and the day's totals sit under
+    // the area's tabs, not in the header: the header keeps one height on
+    // every tab of the area, so the tab row does not move between them.
+    // The tabs keep the chosen day.
     <AppPage
-      description={
-        items.length > 0
-          ? t("daySummary", {
-              total: sortedItems.length,
-              saved: savedCount,
-              pending: sortedItems.length - savedCount,
-            })
-          : undefined
-      }
       secondaryActions={secondaryActions}
       navParams={NAV_PARAMS}
       toolbar={
@@ -304,11 +297,24 @@ export function DaySessions(): ReactElement {
               />
             </Field>
           )}
+          {items.length > 0 && (
+            <p className="text-body-sm text-fg-muted" data-testid="attendance-day-summary">
+              {t("daySummary", {
+                total: sortedItems.length,
+                saved: savedCount,
+                pending: sortedItems.length - savedCount,
+              })}
+            </p>
+          )}
         </>
       }
     >
       {selectedTeacherId === "" ? (
-        <SchoolAttendanceToday hint={showTeacherPicker ? t("pickTeacherHint") : undefined} />
+        <SchoolAttendanceToday
+          hint={showTeacherPicker ? t("pickTeacherHint") : undefined}
+          date={date}
+          today={today}
+        />
       ) : loading ? (
         <SkeletonList rows={4} />
       ) : items.length === 0 ? (

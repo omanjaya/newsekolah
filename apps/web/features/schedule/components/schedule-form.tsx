@@ -9,6 +9,7 @@ import {
   Select,
   Skeleton,
   Textarea,
+  useSubmitValidation,
   useToast,
 } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
@@ -56,6 +57,7 @@ export function ScheduleForm({
   const tSchedule = useTranslations("app.schedule");
   const tDays = useTranslations("app.common.weekdays");
   const tCommon = useTranslations("app.offlinePage");
+  const tValidation = useTranslations("validation");
   const locale = useLocale();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -87,7 +89,12 @@ export function ScheduleForm({
   const [startId, setStartId] = useState(startDefault?.id ?? "");
   const [endId, setEndId] = useState(endDefault?.id ?? "");
   const [notes, setNotes] = useState("");
+  // The banner is for what no single field owns: a reversed period range,
+  // a timetable clash, a server error. A missing field says so itself.
   const [error, setError] = useState<string | null>(null);
+  const { ref: formRef, attempted, check } = useSubmitValidation();
+  const requiredError = (value: string) =>
+    attempted && !value ? tValidation("required") : undefined;
 
   // `detail` (the full Schedule, with `notes`) resolves after this form's
   // first render for an edit, since it's an async fetch keyed off
@@ -108,10 +115,7 @@ export function ScheduleForm({
 
   async function submit() {
     setError(null);
-    if (!classId || !subjectId || !teacherId || !startId || !endId) {
-      setError(t("requiredError"));
-      return;
-    }
+    if (!check(Boolean(classId && subjectId && teacherId && day && startId && endId))) return;
     const start = lessons.find((p) => p.id === startId);
     const end = lessons.find((p) => p.id === endId);
     if (start && end && end.sequence < start.sequence) {
@@ -150,10 +154,18 @@ export function ScheduleForm({
     }
   }
 
-  const field = (label: string, control: ReactElement) => <Field label={label}>{control}</Field>;
+  // Every field but the notes is required, and each one shows its own
+  // error once Save has been pressed (docs/07-ui-ux.md, Form).
+  const field = (label: string, value: string, control: ReactElement) => (
+    <Field label={label} required error={requiredError(value)}>
+      {control}
+    </Field>
+  );
 
   return (
     <form
+      ref={formRef}
+      noValidate
       className="flex flex-col gap-4"
       onSubmit={(event) => {
         event.preventDefault();
@@ -163,6 +175,7 @@ export function ScheduleForm({
       {error && <Alert variant="danger">{error}</Alert>}
       {field(
         t("class"),
+        classId,
         <Select
           options={(classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
           value={classId}
@@ -172,6 +185,7 @@ export function ScheduleForm({
       )}
       {field(
         t("subject"),
+        subjectId,
         <Select
           options={(subjects.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }))}
           value={subjectId}
@@ -181,6 +195,7 @@ export function ScheduleForm({
       )}
       {field(
         t("teacher"),
+        teacherId,
         <DirectoryPicker
           profileKind="teacher"
           value={teacherId}
@@ -194,6 +209,7 @@ export function ScheduleForm({
         <div className="col-span-2">
           {field(
             t("day"),
+            day,
             <Select
               options={[1, 2, 3, 4, 5, 6, 7].map((d) => ({
                 value: String(d),
@@ -206,9 +222,14 @@ export function ScheduleForm({
         </div>
         {field(
           t("start"),
+          startId,
           <Select options={periodOptions} value={startId} onValueChange={setStartId} />,
         )}
-        {field(t("end"), <Select options={periodOptions} value={endId} onValueChange={setEndId} />)}
+        {field(
+          t("end"),
+          endId,
+          <Select options={periodOptions} value={endId} onValueChange={setEndId} />,
+        )}
       </div>
       {editing && detail.isLoading ? (
         <Skeleton className="h-20 w-full" aria-busy="true" />
@@ -228,18 +249,16 @@ export function ScheduleForm({
           }
         />
       ) : (
-        field(
-          t("notes"),
+        <Field label={t("notes")} optional>
           <Textarea
-            aria-label={t("notes")}
             value={notes}
             maxLength={500}
             placeholder={t("notesPlaceholder")}
             onChange={(e) => {
               setNotes(e.target.value);
             }}
-          />,
-        )
+          />
+        </Field>
       )}
       <DialogFooter>
         <Button

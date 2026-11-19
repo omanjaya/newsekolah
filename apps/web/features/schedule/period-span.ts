@@ -31,3 +31,17 @@ export function formatPeriodTime(period: PeriodTimeLike, locale: string): string
 export function periodSpan(block: PeriodRangeLike): number {
   return Math.max(1, block.end_seq - block.start_seq + 1);
 }
+
+export interface NamedPeriodLike {
+  name: string;
+  sequence: number;
+}
+
+/**
+ * A block's periods as a label: "Jam 1" for one period, "Jam 1 – Jam 3"
+ * when it runs from `start` to a later `end`. The week agenda and the
+ * phone's day list name a block the same way.
+ */
+export function periodSpanLabel(start: NamedPeriodLike, end: NamedPeriodLike): string {
+  return end.sequence === start.sequence ? start.name : `${start.name} – ${end.name}`;
+}

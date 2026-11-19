@@ -148,11 +148,13 @@ export function ManualEntryDialog({
             hint={overnight ? t("manualForm.overnightHint") : t("manualForm.hoursHint")}
           >
             {(control) => (
+              // Side by side from 640px; on a phone the sheet is too narrow
+              // for two pickers to show their placeholders whole.
               <div
                 role="group"
                 aria-labelledby={control.labelId}
                 aria-describedby={control["aria-describedby"]}
-                className="grid grid-cols-2 gap-2"
+                className="grid gap-2 sm:grid-cols-2"
               >
                 <TimePicker
                   value={arrival}

@@ -80,5 +80,16 @@
     }
   },
   "mineTitle": "My attendance report",
-  "tabsLabel": "Report type"
+  "tabsLabel": "Report type",
+  "exportColumns": {
+    "no": "No.",
+    "nis": "NIS",
+    "name": "Student name",
+    "status": "Status",
+    "expected": "Sessions",
+    "submitted": "Sessions filled",
+    "complete": "Complete",
+    "total": "Total",
+    "percentage": "Attendance rate"
+  }
 }
