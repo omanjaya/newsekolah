@@ -1539,9 +1539,11 @@
       "other": "Lainnya"
     },
     "activeLoans": "Sedang dipinjam",
-    "noActiveLoans": "Tidak ada buku yang sedang dipinjam.",
+    "noActiveLoans": "Tidak ada buku yang sedang dipinjam",
+    "noActiveLoansBody": "Buku yang Anda pinjam di perpustakaan muncul di sini beserta tanggal kembalinya.",
     "history": "Riwayat peminjaman",
-    "noHistory": "Belum ada riwayat peminjaman.",
+    "noHistory": "Belum ada riwayat peminjaman",
+    "noHistoryBody": "Buku yang sudah Anda kembalikan tercatat di sini.",
     "tiles": {
       "nextDue": "Jatuh tempo terdekat",
       "overdue": "Terlambat"
@@ -1555,8 +1557,8 @@
     },
     "reserve": {
       "heading": "Pesanan buku",
-      "emptyBody": "Belum ada pesanan. Cari judul di bawah untuk memesan buku yang sedang dipinjam orang lain.",
-      "emptyBodyDisabled": "Belum ada pesanan.",
+      "emptyTitle": "Belum ada pesanan",
+      "emptyBody": "Cari judul di bawah untuk memesan buku yang sedang dipinjam orang lain.",
       "queuePosition": "Antrean ke-{position}",
       "status": {
         "waiting": "Menunggu",

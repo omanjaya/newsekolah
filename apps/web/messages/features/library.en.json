@@ -1539,9 +1539,11 @@
       "other": "Other"
     },
     "activeLoans": "Currently borrowed",
-    "noActiveLoans": "No books on loan right now.",
+    "noActiveLoans": "No books on loan right now",
+    "noActiveLoansBody": "Books you borrow at the library appear here with their due dates.",
     "history": "Loan history",
-    "noHistory": "No loan history yet.",
+    "noHistory": "No loan history yet",
+    "noHistoryBody": "Books you have returned are listed here.",
     "tiles": {
       "nextDue": "Next due date",
       "overdue": "Overdue"
@@ -1555,8 +1557,8 @@
     },
     "reserve": {
       "heading": "Holds",
-      "emptyBody": "No holds yet. Search a title below to place a hold on a book someone else has out.",
-      "emptyBodyDisabled": "No holds yet.",
+      "emptyTitle": "No holds yet",
+      "emptyBody": "Search a title below to place a hold on a book someone else has out.",
       "queuePosition": "Queue position {position}",
       "status": {
         "waiting": "Waiting",

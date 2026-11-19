@@ -1,7 +1,8 @@
 "use client";
 
 import type { Locale } from "@newsekolah/i18n";
-import { Card, List, ListRow, SectionHeader } from "@newsekolah/ui";
+import { Card, EmptyState, List, ListRow, SectionHeader } from "@newsekolah/ui";
+import { History } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -12,7 +13,8 @@ import { formatShortDateRange } from "../lib/short-date";
  * The reader's own closed loans as a short list, newest first and capped
  * to the 10 most recent: the title, then the loan's span on one line
  * ("25 Sep - 2 Okt"). A book still out belongs to "Sedang dipinjam" above,
- * so it is left out here.
+ * so it is left out here. An empty history is an empty state in the same
+ * card, as on the reader's other own-history pages.
  */
 export function MyLibraryHistoryTable({
   history,
@@ -29,10 +31,14 @@ export function MyLibraryHistoryTable({
   return (
     <section className="flex flex-col gap-3">
       <SectionHeader title={t("history")} />
-      {items.length === 0 ? (
-        <p className="text-body-sm text-fg-muted">{t("noHistory")}</p>
-      ) : (
-        <Card>
+      <Card>
+        {items.length === 0 ? (
+          <EmptyState
+            icon={<History aria-hidden="true" />}
+            title={t("noHistory")}
+            description={t("noHistoryBody")}
+          />
+        ) : (
           <List aria-label={t("history")}>
             {items.map((loan) => (
               <ListRow
@@ -44,8 +50,8 @@ export function MyLibraryHistoryTable({
               />
             ))}
           </List>
-        </Card>
-      )}
+        )}
+      </Card>
     </section>
   );
 }
