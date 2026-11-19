@@ -1,6 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { AppPageProps } from "../../../components/app-page";
+
 const viewport = vi.hoisted(() => ({ desktop: false }));
 
 import { LibraryDashboardView } from "./library-dashboard-view";
@@ -9,7 +11,16 @@ vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => "id",
 }));
-vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
+const page = vi.hoisted(() => ({ props: undefined as AppPageProps | undefined }));
+vi.mock("../../../components/app-page", async () => {
+  const stub = await import("../../../test/app-page-stub");
+  return {
+    AppPage: (props: AppPageProps) => {
+      page.props = props;
+      return stub.AppPage(props);
+    },
+  };
+});
 vi.mock("../../../components/use-is-desktop", () => ({
   useIsDesktop: () => viewport.desktop,
 }));
@@ -82,5 +93,16 @@ describe("LibraryDashboardView", () => {
   it("marks today's linked strip figures with a chevron on a phone", () => {
     const { container } = render(<LibraryDashboardView />);
     expect(container.querySelectorAll("svg[data-stat-chevron]")).toHaveLength(4);
+  });
+
+  // It was the only page header with a bare text link as its action; the
+  // desk now joins the header's buttons (the menu on a phone).
+  it("offers the circulation desk as a header action, not a text link", () => {
+    render(<LibraryDashboardView />);
+    expect(page.props?.actions).toBeUndefined();
+    expect(page.props?.secondaryActions).toEqual([
+      expect.objectContaining({ label: "openDesk", href: "/library/desk" }),
+    ]);
+    expect(screen.getByRole("link", { name: "openDesk" })).toHaveAttribute("href", "/library/desk");
   });
 });
