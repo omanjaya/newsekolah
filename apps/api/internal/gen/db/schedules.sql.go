@@ -16,7 +16,7 @@ const claimReportScheduleRun = `-- name: ClaimReportScheduleRun :one
 insert into report_schedule_runs (tenant_id, schedule_id, due_at, status)
 values ($1, $2, $3, 'pending')
 on conflict (schedule_id, due_at) do nothing
-returning id, tenant_id, schedule_id, due_at, status, error_message, object_key, ran_at, created_at
+returning id, tenant_id, schedule_id, due_at, status, error_message, object_key, ran_at, created_at, failure_code
 `
 
 type ClaimReportScheduleRunParams struct {
@@ -42,13 +42,14 @@ func (q *Queries) ClaimReportScheduleRun(ctx context.Context, arg ClaimReportSch
 		&i.ObjectKey,
 		&i.RanAt,
 		&i.CreatedAt,
+		&i.FailureCode,
 	)
 	return i, err
 }
 
 const completeReportScheduleRun = `-- name: CompleteReportScheduleRun :exec
 update report_schedule_runs
-set status = $3, error_message = $4, object_key = $5, ran_at = $6
+set status = $3, failure_code = $4, error_message = $5, object_key = $6, ran_at = $7
 where tenant_id = $1 and id = $2
 `
 
@@ -56,6 +57,7 @@ type CompleteReportScheduleRunParams struct {
 	TenantID     uuid.UUID          `json:"tenant_id"`
 	ID           uuid.UUID          `json:"id"`
 	Status       string             `json:"status"`
+	FailureCode  string             `json:"failure_code"`
 	ErrorMessage string             `json:"error_message"`
 	ObjectKey    string             `json:"object_key"`
 	RanAt        pgtype.Timestamptz `json:"ran_at"`
@@ -66,6 +68,7 @@ func (q *Queries) CompleteReportScheduleRun(ctx context.Context, arg CompleteRep
 		arg.TenantID,
 		arg.ID,
 		arg.Status,
+		arg.FailureCode,
 		arg.ErrorMessage,
 		arg.ObjectKey,
 		arg.RanAt,
@@ -426,7 +429,7 @@ func (q *Queries) ListEnabledReportSchedulesForHour(ctx context.Context, arg Lis
 }
 
 const listReportScheduleRuns = `-- name: ListReportScheduleRuns :many
-select id, tenant_id, schedule_id, due_at, status, error_message, object_key, ran_at, created_at from report_schedule_runs
+select id, tenant_id, schedule_id, due_at, status, error_message, object_key, ran_at, created_at, failure_code from report_schedule_runs
 where tenant_id = $1 and schedule_id = $2
 order by due_at desc
 limit $3
@@ -457,6 +460,7 @@ func (q *Queries) ListReportScheduleRuns(ctx context.Context, arg ListReportSche
 			&i.ObjectKey,
 			&i.RanAt,
 			&i.CreatedAt,
+			&i.FailureCode,
 		); err != nil {
 			return nil, err
 		}

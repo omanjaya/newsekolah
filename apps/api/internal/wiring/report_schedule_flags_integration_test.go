@@ -2,6 +2,7 @@ package wiring
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"testing"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/platform"
 	platformdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/domain"
 	reportsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
@@ -34,6 +36,64 @@ func (m *memoryScheduleStorage) PutObject(_ context.Context, objectKey string, _
 
 func (m *memoryScheduleStorage) PresignedGetURL(_ context.Context, objectKey string, _ time.Duration) (*url.URL, error) {
 	return url.Parse("https://storage.test/" + objectKey)
+}
+
+// failingScheduleStorage refuses every upload, as an unreachable S3 would.
+type failingScheduleStorage struct{ memoryScheduleStorage }
+
+func (failingScheduleStorage) PutObject(context.Context, string, []byte, string) error {
+	return errors.New("bucket unreachable")
+}
+
+// TestReportScheduleRunsRecordFailureCode checks that a failed run keeps a
+// stable failure code next to its technical message: upload_failed when
+// storage refuses the file, send_failed when the email does not go out.
+func TestReportScheduleRunsRecordFailureCode(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	// 02:10 UTC is 09:10 in the fixture tenant's Asia/Jakarta.
+	now := time.Date(2030, 1, 2, 2, 10, 0, 0, time.UTC)
+	const dueHour = 9
+
+	disciplineReports, _, permitsReports := buildReportsAdapters(pg.AppPool)
+	schoolModule := school.Register(pg.AppPool, tenant.ModeSingle, nil)
+	academicModule := academic.Register(pg.AppPool, clock.Real{})
+	register := func(storage reportsservice.ScheduleStorage) *reportsservice.ScheduleService {
+		return reports.Register(reports.Dependencies{
+			Pool: pg.AppPool, Discipline: disciplineReports, Permits: permitsReports, Storage: storage, Clock: clock.Frozen{At: now},
+			Academic: AcademicReports{Academic: academicModule.Service, School: schoolModule.Service},
+		}).ScheduleService
+	}
+
+	uploadFails := seedGradeLevelFixture(t, pg.AdminPool)
+	uploadSchedule := seedDailySchedule(t, pg.AdminPool, uploadFails.tenantID, reportsservice.KindExitPermitsYearly, dueHour)
+	pending, err := register(&failingScheduleStorage{}).RunDueSchedules(ctx)
+	require.NoError(t, err)
+	require.Empty(t, pending, "a run that could not be stored has nothing to email")
+
+	sendFails := seedGradeLevelFixture(t, pg.AdminPool)
+	sendSchedule := seedDailySchedule(t, pg.AdminPool, sendFails.tenantID, reportsservice.KindExitPermitsYearly, dueHour)
+	working := register(&memoryScheduleStorage{})
+	pending, err = working.RunDueSchedules(ctx)
+	require.NoError(t, err)
+	require.Len(t, pending, 1)
+	require.NoError(t, working.FinalizeRun(ctx, pending[0], errors.New("smtp: 550 mailbox unavailable")))
+
+	lastRun := func(tenantID, scheduleID uuid.UUID) domain.Run {
+		t.Helper()
+		runs, err := working.ListRuns(ctx, tenantID, scheduleID, 1)
+		require.NoError(t, err)
+		require.Len(t, runs, 1)
+		return runs[0]
+	}
+	upload := lastRun(uploadFails.tenantID, uploadSchedule)
+	require.Equal(t, domain.RunStatusFailed, upload.Status)
+	require.Equal(t, domain.RunFailureUpload, upload.FailureCode)
+	require.Contains(t, upload.ErrorMessage, "bucket unreachable")
+
+	send := lastRun(sendFails.tenantID, sendSchedule)
+	require.Equal(t, domain.RunStatusFailed, send.Status)
+	require.Equal(t, domain.RunFailureSend, send.FailureCode)
 }
 
 // seedDailySchedule inserts an enabled daily schedule of kind at hour,

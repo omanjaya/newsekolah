@@ -1265,6 +1265,7 @@ type ReportScheduleRun struct {
 	ObjectKey    string             `json:"object_key"`
 	RanAt        pgtype.Timestamptz `json:"ran_at"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	FailureCode  string             `json:"failure_code"`
 }
 
 type ReportScore struct {

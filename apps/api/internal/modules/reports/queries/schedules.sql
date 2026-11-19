@@ -40,7 +40,7 @@ returning *;
 
 -- name: CompleteReportScheduleRun :exec
 update report_schedule_runs
-set status = $3, error_message = $4, object_key = $5, ran_at = $6
+set status = $3, failure_code = $4, error_message = $5, object_key = $6, ran_at = $7
 where tenant_id = $1 and id = $2;
 
 -- name: ListReportScheduleRuns :many

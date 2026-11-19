@@ -33,7 +33,7 @@ type ScheduleRepository interface {
 
 	ListEnabledSchedulesForTenantHour(ctx context.Context, tenantID uuid.UUID, hour int) ([]domain.Schedule, error)
 	ClaimRun(ctx context.Context, tenantID, scheduleID uuid.UUID, dueAt time.Time) (domain.Run, bool, error)
-	CompleteRun(ctx context.Context, tenantID, runID uuid.UUID, status domain.RunStatus, errMsg, objectKey string, ranAt time.Time) error
+	CompleteRun(ctx context.Context, tenantID, runID uuid.UUID, outcome domain.RunOutcome, ranAt time.Time) error
 	ListRuns(ctx context.Context, tenantID, scheduleID uuid.UUID, limit int) ([]domain.Run, error)
 
 	ListActiveTenants(ctx context.Context) ([]TenantRef, error)

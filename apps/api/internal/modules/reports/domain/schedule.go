@@ -86,6 +86,29 @@ const (
 	RunStatusFailed  RunStatus = "failed"
 )
 
+// RunFailureCode says which stage of a failed run broke, so the app can
+// name it in the reader's language; the run's ErrorMessage keeps the
+// technical detail. Empty for a run that did not fail.
+type RunFailureCode string
+
+const (
+	RunFailureNone RunFailureCode = ""
+	// RunFailureRender: the report itself could not be built.
+	RunFailureRender RunFailureCode = "render_failed"
+	// RunFailureUpload: the built file could not be stored or linked.
+	RunFailureUpload RunFailureCode = "upload_failed"
+	// RunFailureSend: the email with the download link was not sent.
+	RunFailureSend RunFailureCode = "send_failed"
+)
+
+// RunOutcome is how a claimed run ended, written back onto its row.
+type RunOutcome struct {
+	Status       RunStatus
+	FailureCode  RunFailureCode
+	ErrorMessage string
+	ObjectKey    string
+}
+
 // Params are the same run arguments the report catalogue's RunArgs
 // accepts, stored so a scheduled run can render without a live requester.
 type Params struct {
@@ -247,6 +270,7 @@ type Run struct {
 	ScheduleID   uuid.UUID
 	DueAt        time.Time
 	Status       RunStatus
+	FailureCode  RunFailureCode
 	ErrorMessage string
 	ObjectKey    string
 	RanAt        *time.Time

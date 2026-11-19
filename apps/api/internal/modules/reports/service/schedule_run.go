@@ -132,19 +132,19 @@ func (s *ScheduleService) runOne(ctx context.Context, tenantID uuid.UUID, sched 
 
 	rendered, contentType, err := s.reports.RunDocument(ctx, tenantID, Kind(sched.ReportKind), args, opts, locale)
 	if err != nil {
-		s.failRun(ctx, tenantID, run.ID, fmt.Sprintf("render: %v", err))
+		s.failRun(ctx, tenantID, run.ID, domain.RunFailureRender, fmt.Sprintf("render: %v", err))
 		return PendingNotification{}, false, nil
 	}
 
 	objectKey := fmt.Sprintf("reports/schedules/%s/%s/%d.%s", tenantID, sched.ID, dueAt.Unix(), format)
 	if err := s.storage.PutObject(ctx, objectKey, rendered, contentType); err != nil {
-		s.failRun(ctx, tenantID, run.ID, fmt.Sprintf("upload: %v", err))
+		s.failRun(ctx, tenantID, run.ID, domain.RunFailureUpload, fmt.Sprintf("upload: %v", err))
 		return PendingNotification{}, false, nil
 	}
 
 	link, err := s.storage.PresignedGetURL(ctx, objectKey, downloadLinkTTL)
 	if err != nil {
-		s.failRun(ctx, tenantID, run.ID, fmt.Sprintf("sign download link: %v", err))
+		s.failRun(ctx, tenantID, run.ID, domain.RunFailureUpload, fmt.Sprintf("sign download link: %v", err))
 		return PendingNotification{}, false, nil
 	}
 
@@ -154,9 +154,11 @@ func (s *ScheduleService) runOne(ctx context.Context, tenantID uuid.UUID, sched 
 	}, true, nil
 }
 
-func (s *ScheduleService) failRun(ctx context.Context, tenantID, runID uuid.UUID, message string) {
+func (s *ScheduleService) failRun(ctx context.Context, tenantID, runID uuid.UUID, code domain.RunFailureCode, message string) {
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return s.repo.CompleteRun(ctx, tenantID, runID, domain.RunStatusFailed, message, "", s.clock.Now())
+		return s.repo.CompleteRun(ctx, tenantID, runID, domain.RunOutcome{
+			Status: domain.RunStatusFailed, FailureCode: code, ErrorMessage: message,
+		}, s.clock.Now())
 	})
 	if err != nil {
 		// The run row already exists (it was just claimed); losing this
@@ -172,8 +174,13 @@ func (s *ScheduleService) failRun(ctx context.Context, tenantID, runID uuid.UUID
 func (s *ScheduleService) FinalizeRun(ctx context.Context, n PendingNotification, sendErr error) error {
 	return s.withTx(ctx, n.TenantID, func(ctx context.Context) error {
 		if sendErr != nil {
-			return s.repo.CompleteRun(ctx, n.TenantID, n.RunID, domain.RunStatusFailed, sendErr.Error(), n.objectKey, s.clock.Now())
+			return s.repo.CompleteRun(ctx, n.TenantID, n.RunID, domain.RunOutcome{
+				Status: domain.RunStatusFailed, FailureCode: domain.RunFailureSend,
+				ErrorMessage: sendErr.Error(), ObjectKey: n.objectKey,
+			}, s.clock.Now())
 		}
-		return s.repo.CompleteRun(ctx, n.TenantID, n.RunID, domain.RunStatusSuccess, "", n.objectKey, s.clock.Now())
+		return s.repo.CompleteRun(ctx, n.TenantID, n.RunID, domain.RunOutcome{
+			Status: domain.RunStatusSuccess, ObjectKey: n.objectKey,
+		}, s.clock.Now())
 	})
 }

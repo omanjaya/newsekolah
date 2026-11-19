@@ -198,8 +198,13 @@ func (h *ReportsHandler) ListReportScheduleRuns(ctx context.Context, request api
 
 func toAPIRun(r domain.Run) api.ReportScheduleRun {
 	objectKey := r.ObjectKey
-	return api.ReportScheduleRun{
+	out := api.ReportScheduleRun{
 		Id: r.ID, ScheduleId: r.ScheduleID, DueAt: r.DueAt, Status: api.ReportScheduleRunStatus(r.Status),
 		ErrorMessage: r.ErrorMessage, ObjectKey: &objectKey, RanAt: r.RanAt, CreatedAt: r.CreatedAt,
 	}
+	if r.FailureCode != domain.RunFailureNone {
+		code := api.ReportScheduleRunFailureCode(r.FailureCode)
+		out.FailureCode = &code
+	}
+	return out
 }

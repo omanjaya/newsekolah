@@ -11493,6 +11493,11 @@ export interface components {
         };
         /** @enum {string} */
         ReportScheduleRunStatus: "pending" | "success" | "failed";
+        /**
+         * @description Which stage of a failed run broke: render_failed (the report could not be built), upload_failed (the file could not be stored or linked), send_failed (the email was not sent).
+         * @enum {string}
+         */
+        ReportScheduleRunFailureCode: "render_failed" | "upload_failed" | "send_failed";
         ReportScheduleRun: {
             /** Format: uuid */
             id: string;
@@ -11501,6 +11506,9 @@ export interface components {
             /** Format: date-time */
             due_at: string;
             status: components["schemas"]["ReportScheduleRunStatus"];
+            /** @description Set only on a failed run; name it to the reader, not error_message. */
+            failure_code?: components["schemas"]["ReportScheduleRunFailureCode"];
+            /** @description Technical detail of a failure, in English, for support. */
             error_message: string;
             object_key?: string;
             /** Format: date-time */
