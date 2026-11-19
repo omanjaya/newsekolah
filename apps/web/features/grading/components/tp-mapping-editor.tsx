@@ -48,11 +48,13 @@ interface RowState {
  * The editor width (CSS px) from which the five-column table fits without
  * a sideways scroll, measured on its widest row: one with a saved mapping,
  * whose actions cell holds Hapus (icon and label) beside Simpan. That row
- * is about 790px wide with the range inputs and the export code at its
- * 112px minimum; a row without a mapping is about 690px. Narrower, each
- * component gets its own card. Wider, the export code takes the spare room.
+ * is about 870px wide with the range inputs and the export code at its
+ * 192px minimum, which shows a realistic code such as TP-01-MATEMATIKA
+ * whole; a row without a mapping is about 770px. Narrower, each component
+ * gets its own card, whose code field spans the card. Wider, the export
+ * code takes the spare room.
  */
-const TABLE_MIN_WIDTH = 800;
+const TABLE_MIN_WIDTH = 880;
 
 function emptyRow(): RowState {
   return { export_code: "", r_min: "", r_max: "", t_min: "", t_max: "" };
@@ -343,7 +345,7 @@ function TPMappingTableRow(props: RowProps): ReactElement {
       <TableCell>{component.code}</TableCell>
       <TableCell>
         <Input
-          className="w-full max-w-xs min-w-28"
+          className="w-full max-w-xs min-w-48"
           aria-label={t("columns.exportCode")}
           value={row.export_code}
           maxLength={32}
