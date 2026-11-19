@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const disabled = vi.hoisted(() => new Set<string>());
 
 vi.mock("next-intl", () => ({
+  useLocale: () => "id",
   useTranslations: () =>
     Object.assign(
       (key: string, values?: Record<string, unknown>) =>
@@ -16,7 +17,7 @@ vi.mock("../../../lib/modules/use-module-enabled", () => ({
 }));
 vi.mock("../../reference/api", () => ({
   useSubjectsQuery: () => ({ data: { data: [] } }),
-  useLookup: () => new Map(),
+  useLookup: () => new Map([["sub-1", { name: "Matematika" }]]),
 }));
 
 import type { MentorStudentSnapshot } from "../api";
@@ -72,5 +73,22 @@ describe("mentor snapshot attendance", () => {
     );
     expect(screen.getByText('attendance.days {"count":18}')).toBeInTheDocument();
     expect(screen.getByText('attendance.days {"count":2}')).toBeInTheDocument();
+  });
+});
+
+describe("mentor snapshot grades", () => {
+  beforeEach(() => {
+    disabled.clear();
+  });
+
+  it("prints a fractional score with the Indonesian decimal comma", () => {
+    render(
+      <SnapshotGradesSection
+        snapshot={{ ...snapshot, published_subjects: [{ subject_id: "sub-1", score: 78.5 }] }}
+      />,
+    );
+    expect(screen.getByText("Matematika")).toBeInTheDocument();
+    expect(screen.getByText("78,5")).toBeInTheDocument();
+    expect(screen.queryByText("78.5")).not.toBeInTheDocument();
   });
 });
