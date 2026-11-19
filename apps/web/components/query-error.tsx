@@ -4,7 +4,7 @@ import { ApiError } from "@newsekolah/api-client";
 import { Alert, Button } from "@newsekolah/ui";
 import { LogIn, RotateCw } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import { createContext, useContext, type ReactElement, type ReactNode } from "react";
 
 import { useApiErrorMessage } from "../lib/i18n/api-error-message";
 import { useSignInAgain } from "../lib/session/end-session";
@@ -27,6 +27,26 @@ const TITLE_KEY = {
   session: "sessionTitle",
   failed: "title",
 } as const satisfies Record<Cause, string>;
+
+/** True inside a surface that offers one retry for every failed read. */
+const SharedRetryContext = createContext(false);
+
+/**
+ * Marks a surface (the home, the homeroom summary) whose own notice already
+ * offers one "Coba lagi" for every read that failed: while `active`, each
+ * `QueryError` inside still says what failed but leaves its own retry out,
+ * so a page with five failed cards shows one retry, not six (audit
+ * shell-home-3). Off, every error box keeps its button.
+ */
+export function SharedRetry({
+  active,
+  children,
+}: {
+  active: boolean;
+  children: ReactNode;
+}): ReactElement {
+  return <SharedRetryContext.Provider value={active}>{children}</SharedRetryContext.Provider>;
+}
 
 /**
  * Its own component so the router and session hooks it needs run only for
@@ -51,7 +71,8 @@ function SignInAgainButton(): ReactElement {
  *
  * A 401 means the session is over (the API client already tried a
  * refresh), so a retry cannot work: that case offers "Masuk lagi" instead,
- * which ends the session and opens the sign-in page.
+ * which ends the session and opens the sign-in page. Inside an active
+ * `SharedRetry` the retry button is left out (the surface offers one).
  */
 export function QueryError({
   retry,
@@ -65,6 +86,7 @@ export function QueryError({
 }): ReactElement {
   const t = useTranslations("app.page.queryError");
   const common = useTranslations("common");
+  const sharedRetry = useContext(SharedRetryContext);
   const apiErrorMessage = useApiErrorMessage();
   const cause = causeOf(error);
   const code = error instanceof ApiError ? error.code : undefined;
@@ -78,7 +100,7 @@ export function QueryError({
       action={
         cause === "session" ? (
           <SignInAgainButton />
-        ) : (
+        ) : sharedRetry ? undefined : (
           <Button variant="secondary" size="sm" icon={<RotateCw />} onClick={() => void retry()}>
             {common("actions.retry")}
           </Button>

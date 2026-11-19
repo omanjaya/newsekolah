@@ -10,7 +10,7 @@ import "../messages/features";
 import { getAccessToken, setAccessToken } from "../lib/api/access-token";
 import { getMessages } from "../lib/i18n/get-messages";
 
-import { QueryError } from "./query-error";
+import { QueryError, SharedRetry } from "./query-error";
 
 const replace = vi.fn();
 const forgetAccessToken = vi.fn();
@@ -45,6 +45,25 @@ describe("QueryError", () => {
     expect(alert).toHaveTextContent("Terjadi kesalahan, coba lagi");
     await userEvent.setup().click(screen.getByRole("button", { name: "Coba lagi" }));
     expect(retry).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves its retry to a surrounding shared retry, still saying what failed", () => {
+    renderIn(
+      <SharedRetry active>
+        <QueryError retry={() => undefined} />
+      </SharedRetry>,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("Data gagal dimuat");
+    expect(screen.queryByRole("button", { name: "Coba lagi" })).not.toBeInTheDocument();
+  });
+
+  it("keeps its retry when the shared retry is off", () => {
+    renderIn(
+      <SharedRetry active={false}>
+        <QueryError retry={() => undefined} />
+      </SharedRetry>,
+    );
+    expect(screen.getByRole("button", { name: "Coba lagi" })).toBeInTheDocument();
   });
 
   it("names the cause and shows the code when it gets the query's error", () => {

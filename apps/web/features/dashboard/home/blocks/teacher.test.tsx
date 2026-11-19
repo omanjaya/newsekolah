@@ -1,4 +1,4 @@
-import { render, renderHook, screen } from "@testing-library/react";
+import { fireEvent, render, renderHook, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Me as SessionMe } from "../../../../lib/session/session-provider";
@@ -145,8 +145,11 @@ describe("useTeacherBlock", () => {
       isLoading: false,
       isError: false,
     });
-    classesQuery.mockReturnValue({ data: { data: [{ id: "c1", name: "X-A" }] } });
-    subjectsQuery.mockReturnValue({ data: { data: [{ id: "sub1", name: "Matematika" }] } });
+    classesQuery.mockReturnValue({ isSuccess: true, data: { data: [{ id: "c1", name: "X-A" }] } });
+    subjectsQuery.mockReturnValue({
+      isSuccess: true,
+      data: { data: [{ id: "sub1", name: "Matematika" }] },
+    });
 
     const { result } = renderHook(() => useTeacherBlock(me, true));
 
@@ -171,8 +174,11 @@ describe("useTeacherBlock", () => {
       isLoading: false,
       isError: false,
     });
-    classesQuery.mockReturnValue({ data: { data: [{ id: "c1", name: "X-A" }] } });
-    subjectsQuery.mockReturnValue({ data: { data: [{ id: "sub1", name: "Matematika" }] } });
+    classesQuery.mockReturnValue({ isSuccess: true, data: { data: [{ id: "c1", name: "X-A" }] } });
+    subjectsQuery.mockReturnValue({
+      isSuccess: true,
+      data: { data: [{ id: "sub1", name: "Matematika" }] },
+    });
 
     const { result } = renderHook(() => useTeacherBlock(me, true));
 
@@ -204,6 +210,54 @@ describe("useTeacherBlock", () => {
     expect(result.current.hero).toBeUndefined();
   });
 
+  it("fails the block, with no titleless hero, when the class or subject names cannot be read", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-26T01:50:00Z"));
+    sessionsQuery.mockReturnValue({
+      data: { data: [session({ submitted_at: undefined })] },
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      refetch: vi.fn(),
+    });
+    periodsQuery.mockReturnValue({
+      data: { data: PERIODS },
+      isSuccess: true,
+      isLoading: false,
+      isError: false,
+    });
+    const refetchClasses = vi.fn();
+    classesQuery.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      isSuccess: false,
+      error: new Error("classes"),
+      refetch: refetchClasses,
+    });
+    subjectsQuery.mockReturnValue({
+      isSuccess: true,
+      data: { data: [{ id: "sub1", name: "Matematika" }] },
+    });
+
+    const { result } = renderHook(() => useTeacherBlock(me, true));
+
+    expect(result.current.failed).toBe(true);
+    expect(result.current.hero).toBeUndefined();
+    // The tile stands on the sessions alone, so it stays.
+    expect(result.current.tiles.map((tile) => tile.key)).toEqual(["teacher.pending"]);
+
+    // The card says the read failed instead of listing rows without a class.
+    render(<>{result.current.main[0]?.node}</>);
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    const sessionLinks = screen
+      .queryAllByRole("link")
+      .filter((link) => link.getAttribute("href")?.startsWith("/attendance/"));
+    expect(sessionLinks).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button"));
+    expect(refetchClasses).toHaveBeenCalledTimes(1);
+  });
+
   it("calms the hero once the running session is submitted and nothing else is upcoming", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-09-26T01:50:00Z")); // 08:50 in Asia/Jakarta
@@ -221,8 +275,11 @@ describe("useTeacherBlock", () => {
       isLoading: false,
       isError: false,
     });
-    classesQuery.mockReturnValue({ data: { data: [{ id: "c1", name: "X-A" }] } });
-    subjectsQuery.mockReturnValue({ data: { data: [{ id: "sub1", name: "Matematika" }] } });
+    classesQuery.mockReturnValue({ isSuccess: true, data: { data: [{ id: "c1", name: "X-A" }] } });
+    subjectsQuery.mockReturnValue({
+      isSuccess: true,
+      data: { data: [{ id: "sub1", name: "Matematika" }] },
+    });
 
     const { result } = renderHook(() => useTeacherBlock(me, true));
 
@@ -279,6 +336,7 @@ describe("useTeacherBlock", () => {
       isError: false,
     });
     classesQuery.mockReturnValue({
+      isSuccess: true,
       data: {
         data: [
           { id: "c1", name: "X-A" },
@@ -287,6 +345,7 @@ describe("useTeacherBlock", () => {
       },
     });
     subjectsQuery.mockReturnValue({
+      isSuccess: true,
       data: {
         data: [
           { id: "sub1", name: "Matematika" },
@@ -320,8 +379,11 @@ describe("useTeacherBlock", () => {
       isLoading: false,
       isError: false,
     });
-    classesQuery.mockReturnValue({ data: { data: [{ id: "c1", name: "X-A" }] } });
-    subjectsQuery.mockReturnValue({ data: { data: [{ id: "sub1", name: "Matematika" }] } });
+    classesQuery.mockReturnValue({ isSuccess: true, data: { data: [{ id: "c1", name: "X-A" }] } });
+    subjectsQuery.mockReturnValue({
+      isSuccess: true,
+      data: { data: [{ id: "sub1", name: "Matematika" }] },
+    });
 
     const { result } = renderHook(() => useTeacherBlock(me, true));
 
@@ -387,8 +449,11 @@ describe("useTeacherBlock", () => {
       isLoading: false,
       isError: false,
     });
-    classesQuery.mockReturnValue({ data: { data: [{ id: "c1", name: "X-A" }] } });
-    subjectsQuery.mockReturnValue({ data: { data: [{ id: "sub1", name: "Matematika" }] } });
+    classesQuery.mockReturnValue({ isSuccess: true, data: { data: [{ id: "c1", name: "X-A" }] } });
+    subjectsQuery.mockReturnValue({
+      isSuccess: true,
+      data: { data: [{ id: "sub1", name: "Matematika" }] },
+    });
 
     const { result } = renderHook(() => useTeacherBlock(me, true));
     render(<>{result.current.main.map((slot) => slot.node)}</>);

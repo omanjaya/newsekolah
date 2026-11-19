@@ -1,28 +1,24 @@
 "use client";
 
 import {
-  Button,
   Card,
   CardHeader,
   CardTitle,
-  HeroCard,
   IconCircle,
   List,
   ListRow,
-  Progress,
   Skeleton,
   Stat,
   StatGrid,
   TextLink,
   cn,
 } from "@newsekolah/ui";
-import { Bell, RotateCw } from "lucide-react";
-import Link from "next/link";
+import { Bell } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { AppPage } from "../../../components/app-page";
-import { QueryError } from "../../../components/query-error";
+import { QueryError, SharedRetry } from "../../../components/query-error";
 import { useIsDesktop, useIsWideTwoColumn } from "../../../components/use-is-desktop";
 import { isModuleEnabled } from "../../../lib/modules/feature-modules";
 import { navAccessFromMe } from "../../../lib/navigation-access";
@@ -49,16 +45,17 @@ import { collectBlocks, guardHero, guardTiles, isCalmHero } from "../home/compos
 import { entrance, useFirstEntrance } from "../home/entrance";
 import { resolvePersonas } from "../home/personas";
 import { buildShortcuts } from "../home/shortcuts";
-import {
-  isHeroLink,
-  type HeroCandidate,
-  type Me,
-  type PersonaBlock,
-  type PersonaKey,
-  type ShownHero,
-  type TileSpec,
+import type {
+  HeroCandidate,
+  Me,
+  PersonaBlock,
+  PersonaKey,
+  ShownHero,
+  TileSpec,
 } from "../home/types";
 import { useRetryFailedQueries } from "../home/use-retry-failed";
+
+import { HomeTop, type RetryAt } from "./home-top";
 
 /**
  * Stand-in `Me` while `/v1/me` is still loading. Every persona hook is
@@ -234,8 +231,14 @@ export function DashboardView(): ReactElement {
   // hero from a block that did load keeps its place (audit shell-home-3).
   // The inbox fallback with items waiting is real work, not an all-clear.
   const calm = candidate === fallback ? inbox.total === 0 : isCalmHero(candidate);
+  const failed = collected.failed || inbox.isError;
+  // Where the home's one retry sits: the hero itself when the failure
+  // takes its place, else a notice under the urgent hero that stayed, so
+  // a failed read never just drops its tile without a word (audit
+  // shell-home-3). Every card's own error box then leaves its retry out.
+  const retryAt: RetryAt = !failed ? null : calm ? "hero" : "notice";
   const hero: ShownHero =
-    (collected.failed || inbox.isError) && calm
+    retryAt === "hero"
       ? {
           key: "common.failed",
           priority: 0,
@@ -292,86 +295,97 @@ export function DashboardView(): ReactElement {
           main one the rest: at lg an 8/4 split beside the open sidebar left
           the side column about 228px, truncating the shortcuts and wrapping
           the stat tiles (audit shell-home-5). */}
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem] xl:gap-6">
-        <div className="flex min-w-0 flex-col gap-4" data-testid="dashboard-main">
-          {collected.pending ? (
-            <HomeSkeleton tiles={Math.max(tiles.length, 2)} strip={!isDesktop} />
-          ) : (
-            <>
-              <HomeHero hero={hero} enter={firstEntrance} />
-              {tiles.length > 0 && (
-                <StatGrid
-                  variant={isDesktop ? "tiles" : "strip"}
-                  aria-label={t("statsLabel")}
-                  className={cn(
-                    entrance(firstEntrance, 1).className,
-                    isDesktop && TILE_COLUMNS[Math.min(tiles.length, 4)],
-                  )}
-                  style={entrance(firstEntrance, 1).style}
-                  data-testid="dashboard-tiles"
-                >
-                  {tiles.map((tile) => (
-                    <HomeStat key={tile.key} tile={tile} countUp={firstEntrance} />
-                  ))}
-                </StatGrid>
-              )}
-            </>
-          )}
-          {checkInSlot && !twoColumn && (
-            <div data-testid={`dashboard-card-${checkInSlot.key}`} {...entrance(firstEntrance, 2)}>
-              {checkInSlot.node}
-            </div>
-          )}
-          {mainSlots.map((slot, index) => (
-            <div
-              key={slot.key}
-              data-testid={`dashboard-card-${slot.key}`}
-              {...entrance(firstEntrance, (checkInSlot && !twoColumn ? 3 : 2) + index)}
-            >
-              {slot.node}
-            </div>
-          ))}
-          {announcementsOn && announcementsInMain && <AnnouncementsCard />}
-        </div>
+      <SharedRetry active={retryAt !== null}>
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem] xl:gap-6">
+          <div className="flex min-w-0 flex-col gap-4" data-testid="dashboard-main">
+            {collected.pending ? (
+              <HomeSkeleton tiles={Math.max(tiles.length, 2)} strip={!isDesktop} />
+            ) : (
+              <>
+                <HomeTop
+                  hero={hero}
+                  retryAt={retryAt}
+                  retrying={retrying}
+                  onRetry={retry}
+                  enter={firstEntrance}
+                />
+                {tiles.length > 0 && (
+                  <StatGrid
+                    variant={isDesktop ? "tiles" : "strip"}
+                    aria-label={t("statsLabel")}
+                    className={cn(
+                      entrance(firstEntrance, 1).className,
+                      isDesktop && TILE_COLUMNS[Math.min(tiles.length, 4)],
+                    )}
+                    style={entrance(firstEntrance, 1).style}
+                    data-testid="dashboard-tiles"
+                  >
+                    {tiles.map((tile) => (
+                      <HomeStat key={tile.key} tile={tile} countUp={firstEntrance} />
+                    ))}
+                  </StatGrid>
+                )}
+              </>
+            )}
+            {checkInSlot && !twoColumn && (
+              <div
+                data-testid={`dashboard-card-${checkInSlot.key}`}
+                {...entrance(firstEntrance, 2)}
+              >
+                {checkInSlot.node}
+              </div>
+            )}
+            {mainSlots.map((slot, index) => (
+              <div
+                key={slot.key}
+                data-testid={`dashboard-card-${slot.key}`}
+                {...entrance(firstEntrance, (checkInSlot && !twoColumn ? 3 : 2) + index)}
+              >
+                {slot.node}
+              </div>
+            ))}
+            {announcementsOn && announcementsInMain && <AnnouncementsCard />}
+          </div>
 
-        <div className="flex min-w-0 flex-col gap-4" data-testid="dashboard-side">
-          {checkInSlot && twoColumn && (
-            <div data-testid={`dashboard-card-${checkInSlot.key}`}>{checkInSlot.node}</div>
-          )}
-          {sideSlots.map((slot) => (
-            <div key={slot.key} data-testid={`dashboard-card-${slot.key}`}>
-              {slot.node}
-            </div>
-          ))}
-          {shortcuts.length > 0 && (
-            // The phone has the same actions one tap away on the floating
-            // quick-action button, so the card is for wider screens. The
-            // bottom padding keeps the last icon off the card's edge, as on
-            // the circulation desk's shortcuts.
-            <Card className="hidden pb-2 md:block" data-testid="dashboard-card-shortcuts">
-              <CardHeader>
-                <CardTitle as="h2">{t("shortcuts.title")}</CardTitle>
-              </CardHeader>
-              <List variant="inset">
-                {shortcuts.map((shortcut) => (
-                  <ListRow
-                    key={shortcut.key}
-                    href={shortcut.href}
-                    leading={
-                      <IconCircle tone={shortcut.tone} size="sm">
-                        {shortcut.icon}
-                      </IconCircle>
-                    }
-                    title={shortcut.label}
-                    titleLines={2}
-                  />
-                ))}
-              </List>
-            </Card>
-          )}
-          {announcementsOn && !announcementsInMain && <AnnouncementsCard />}
+          <div className="flex min-w-0 flex-col gap-4" data-testid="dashboard-side">
+            {checkInSlot && twoColumn && (
+              <div data-testid={`dashboard-card-${checkInSlot.key}`}>{checkInSlot.node}</div>
+            )}
+            {sideSlots.map((slot) => (
+              <div key={slot.key} data-testid={`dashboard-card-${slot.key}`}>
+                {slot.node}
+              </div>
+            ))}
+            {shortcuts.length > 0 && (
+              // The phone has the same actions one tap away on the floating
+              // quick-action button, so the card is for wider screens. The
+              // bottom padding keeps the last icon off the card's edge, as on
+              // the circulation desk's shortcuts.
+              <Card className="hidden pb-2 md:block" data-testid="dashboard-card-shortcuts">
+                <CardHeader>
+                  <CardTitle as="h2">{t("shortcuts.title")}</CardTitle>
+                </CardHeader>
+                <List variant="inset">
+                  {shortcuts.map((shortcut) => (
+                    <ListRow
+                      key={shortcut.key}
+                      href={shortcut.href}
+                      leading={
+                        <IconCircle tone={shortcut.tone} size="sm">
+                          {shortcut.icon}
+                        </IconCircle>
+                      }
+                      title={shortcut.label}
+                      titleLines={2}
+                    />
+                  ))}
+                </List>
+              </Card>
+            )}
+            {announcementsOn && !announcementsInMain && <AnnouncementsCard />}
+          </div>
         </div>
-      </div>
+      </SharedRetry>
     </AppPage>
   );
 }
@@ -386,54 +400,6 @@ function AnnouncementsCard(): ReactElement {
       </CardHeader>
       <AnnouncementFeed limit={3} compact />
     </Card>
-  );
-}
-
-function HomeHero({ hero, enter }: { hero: ShownHero; enter: boolean }): ReactElement {
-  return (
-    <HeroCard
-      {...entrance(enter, 0)}
-      data-testid="dashboard-hero"
-      tone={hero.tone}
-      eyebrow={hero.eyebrow}
-      title={hero.title}
-      meta={hero.meta}
-      chip={hero.chip}
-      live={hero.live}
-      action={
-        hero.action &&
-        (isHeroLink(hero.action) ? (
-          <Button asChild className="w-full sm:w-auto">
-            <Link href={hero.action.href}>{hero.action.label}</Link>
-          </Button>
-        ) : (
-          <Button
-            className="w-full sm:w-auto"
-            icon={<RotateCw />}
-            loading={hero.action.loading}
-            onClick={hero.action.onClick}
-          >
-            {hero.action.label}
-          </Button>
-        ))
-      }
-      secondaryAction={
-        hero.secondaryAction && (
-          <TextLink href={hero.secondaryAction.href}>{hero.secondaryAction.label}</TextLink>
-        )
-      }
-    >
-      {hero.progress && (
-        <Progress
-          className="mt-1"
-          variant="meter"
-          value={hero.progress.value}
-          max={hero.progress.max}
-          label={hero.progress.label}
-          valueLabel={hero.progress.valueLabel}
-        />
-      )}
-    </HeroCard>
   );
 }
 

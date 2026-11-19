@@ -93,14 +93,25 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
     ),
   );
 
+  // Every read the hero, the tile and the card stand on: a failed class or
+  // subject read would leave the hero without a title and the card's rows
+  // without a class, so it fails the block like the sessions themselves
+  // (audit r3-n19).
+  const reads = [sessions, periods, classes, subjects];
+  const readError: unknown = reads.find((read) => read.isError)?.error ?? null;
+  const namesReady = classes.isSuccess && subjects.isSuccess;
   const block: PersonaBlock = {
     tiles: [],
     main: [],
     side: [],
-    pending: sessions.isLoading || periods.isLoading,
-    failed: sessions.isError || periods.isError,
+    pending: reads.some((read) => read.isLoading),
+    failed: reads.some((read) => read.isError),
   };
   let runningId: string | undefined;
+  // One retry for the card: it refetches whichever of its reads failed.
+  const retryFailed = () => {
+    for (const read of reads) if (read.isError) void read.refetch();
+  };
 
   if (sessions.isSuccess && periods.isSuccess) {
     const pending = todaySessions.filter((session) => !session.submitted_at);
@@ -135,7 +146,9 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
     );
     const picked = pickCurrentOrNext(eligible, now);
 
-    if (picked) {
+    // Without the class and subject names the hero would have no title, so
+    // there is none: the home shows its failure notice in its place.
+    if (namesReady && picked) {
       const { session, start } = picked.item;
       const subjectName = subjectMap.get(session.subject_id)?.name ?? "";
       const className = classMap.get(session.class_id)?.name ?? "";
@@ -174,7 +187,7 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
           secondaryAction: { label: t("hero.scheduleAction"), href: SCHEDULE_HREF },
         };
       }
-    } else {
+    } else if (namesReady) {
       const allDone = todaySessions.length > 0;
       block.hero = {
         key: "teacher.idle",
@@ -200,9 +213,9 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
       key: "teacher.today",
       node: (
         <TeacherTodayCard
-          isLoading={sessions.isLoading}
-          error={sessions.isError ? sessions.error : null}
-          onRetry={() => void sessions.refetch()}
+          isLoading={block.pending === true}
+          error={readError}
+          onRetry={retryFailed}
           sessions={ordered}
           classMap={classMap}
           subjectMap={subjectMap}
