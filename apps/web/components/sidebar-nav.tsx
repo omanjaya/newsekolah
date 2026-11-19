@@ -301,8 +301,20 @@ export function GroupFlyout({
             event.preventDefault();
             contentRef.current?.querySelector<HTMLElement>("a[href]")?.focus();
           }}
+          // A press released off the trigger never clicks it, so the
+          // flag must not wait for a click to clear: it would swallow the
+          // next keyboard toggle.
+          onPointerLeave={() => {
+            clickKeepsOpen.current = false;
+          }}
+          onPointerCancel={() => {
+            clickKeepsOpen.current = false;
+          }}
           onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") openedByHover.current = false;
+            if (event.key === "Enter" || event.key === " ") {
+              openedByHover.current = false;
+              clickKeepsOpen.current = false;
+            }
           }}
           {...(holdsActive ? { [NAV_MARKER_ATTR]: "top" } : {})}
           className={cn(
