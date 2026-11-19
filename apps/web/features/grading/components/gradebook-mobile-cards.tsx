@@ -153,7 +153,15 @@ export function GradebookMobileCards({
                   )}
                 </Button>
               ) : (
-                <span className="text-label text-fg">
+                // No report score yet reads like the empty average beside
+                // it, muted, never as a value (audit r6-n16).
+                <span
+                  className={
+                    student.report_score === undefined
+                      ? "text-fg-muted tabular-nums"
+                      : "text-label text-fg tabular-nums"
+                  }
+                >
                   {t("reportScoreColumn")} {reportScore}
                 </span>
               )}

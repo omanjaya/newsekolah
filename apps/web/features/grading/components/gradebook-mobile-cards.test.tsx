@@ -63,4 +63,36 @@ describe("GradebookMobileCards", () => {
     expect(screen.getByText("72,5")).toBeInTheDocument();
     expect(screen.getByText('starsBalance:{"name":"Budi","balance":"2"}')).toBeInTheDocument();
   });
+
+  // An empty report score read as a value, full contrast and bold, beside
+  // the muted empty average (audit r6-n16).
+  it("mutes a reader's empty report score like the empty average", () => {
+    const { rerender } = renderCards({ canManage: false });
+    const empty = screen.getByText("reportScoreColumn -");
+    expect(empty).toHaveClass("text-fg-muted");
+    expect(empty).not.toHaveClass("text-fg", "text-label");
+    expect(screen.getByText("averageColumn -")).toHaveClass("text-fg-muted");
+
+    rerender(
+      <GradebookMobileCards
+        t={t}
+        components={[component]}
+        students={[{ ...student, report_score: 80 }]}
+        canManage={false}
+        edits={{}}
+        cellValue={() => ""}
+        starBalances={new Map()}
+        scaleMin={0}
+        scaleMax={100}
+        rangeHint=""
+        liveByStudent={new Map()}
+        pendingStudentIds={new Set()}
+        onManualOverride={vi.fn()}
+        onGiveStar={vi.fn()}
+        onCommit={vi.fn()}
+        onRegisterRef={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/^reportScoreColumn 80/)).toHaveClass("text-label", "text-fg");
+  });
 });
