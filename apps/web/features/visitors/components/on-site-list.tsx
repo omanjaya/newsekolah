@@ -69,6 +69,13 @@ export function OnSiteList({
                   )}
                   <span className="truncate">
                     {host ? `${t("host", { name: host })} · ${arrival}` : arrival}
+                    {/* The guard collects this card at check out, often from a
+                        phone, where the trailing badge has no room. */}
+                    {visit.badge_number && (
+                      <span className="sm:hidden">
+                        {` · ${t("badgeNumber", { number: visit.badge_number })}`}
+                      </span>
+                    )}
                   </span>
                 </span>
               </>
