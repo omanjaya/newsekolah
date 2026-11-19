@@ -150,7 +150,7 @@ animates.
   station, `fullScreen={false}` inside a kiosk frame; `lead` for a field
   filled in before scanning, between the header and the camera), `BarcodeScannerField`,
   `ScannerResultBanner`, and the scanner hooks.
-- **Hooks**: `useCountUp`, `useMediaQuery`, `useHydrated`, `useScrollEdges`,
+- **Hooks**: `useCountUp`, `useMediaQuery`, `useContainerMinWidth`, `useHydrated`, `useScrollEdges`,
   `useActiveIndicator`, `useCollapsingTitle`, `useScanFeedback`,
   `useCameraScanner`, `useBarcodeScanner`, `useDebouncedCallback`,
   `useFieldControl`.

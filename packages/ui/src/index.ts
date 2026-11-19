@@ -77,6 +77,7 @@ export {
 } from "./hooks/use-collapsing-title.js";
 export { useCountUp, type UseCountUpOptions } from "./hooks/use-count-up.js";
 export { useHydrated } from "./hooks/use-hydrated.js";
+export { useContainerMinWidth } from "./hooks/use-container-min-width.js";
 export { useMediaQuery } from "./hooks/use-media-query.js";
 export { useScanFeedback, type ScanFeedback } from "./hooks/use-scan-feedback.js";
 export { useScrollEdges, type UseScrollEdgesOptions } from "./hooks/use-scroll-edges.js";
