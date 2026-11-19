@@ -50,6 +50,16 @@ func TestMonitorSnapshotNamesBellPeriodWithoutSchedules(t *testing.T) {
 	require.Equal(t, "no_schedule", snapshot.Sessions[0].Status)
 	require.Equal(t, "X-A", snapshot.Sessions[0].ClassName)
 
+	// A break is not a lesson period: the board must not name it as a
+	// period whose timetables are missing.
+	_, err = pg.AdminPool.Exec(ctx, `update periods set is_break = true where id = $1`, w.periodID)
+	require.NoError(t, err)
+	snapshot, err = svc.GetMonitorSnapshot(simCtx, w.tenantID)
+	require.NoError(t, err)
+	require.Nil(t, snapshot.CurrentPeriod, "a break must not be reported as the running lesson period")
+	_, err = pg.AdminPool.Exec(ctx, `update periods set is_break = false where id = $1`, w.periodID)
+	require.NoError(t, err)
+
 	// Outside every period of the template, there is still no period.
 	snapshot, err = svc.GetMonitorSnapshot(clock.WithTime(ctx, w.today), w.tenantID)
 	require.NoError(t, err)

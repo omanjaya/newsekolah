@@ -167,9 +167,11 @@ func (q *Queries) AcademicGetSubjectOfferingByID(ctx context.Context, arg Academ
 }
 
 const academicListSubjectOfferings = `-- name: AcademicListSubjectOfferings :many
-select id, tenant_id, academic_year_id, subject_id, grade_level_id, hours_per_week from subject_offerings
-where tenant_id = $1 and academic_year_id = $2
-order by id
+select so.id, so.tenant_id, so.academic_year_id, so.subject_id, so.grade_level_id, so.hours_per_week from subject_offerings so
+join subjects s on s.tenant_id = so.tenant_id and s.id = so.subject_id
+left join grade_levels gl on gl.tenant_id = so.tenant_id and gl.id = so.grade_level_id
+where so.tenant_id = $1 and so.academic_year_id = $2
+order by gl.sequence nulls first, s.name, so.id
 `
 
 type AcademicListSubjectOfferingsParams struct {
@@ -177,6 +179,8 @@ type AcademicListSubjectOfferingsParams struct {
 	AcademicYearID uuid.UUID `json:"academic_year_id"`
 }
 
+// In reading order: the offerings for every grade first, then grade by
+// grade in the school's own sequence, each grade's subjects by name.
 func (q *Queries) AcademicListSubjectOfferings(ctx context.Context, arg AcademicListSubjectOfferingsParams) ([]SubjectOffering, error) {
 	rows, err := q.db.Query(ctx, academicListSubjectOfferings, arg.TenantID, arg.AcademicYearID)
 	if err != nil {

@@ -138,6 +138,8 @@ type Querier interface {
 	AcademicListPromotionCandidates(ctx context.Context, arg AcademicListPromotionCandidatesParams) ([]AcademicListPromotionCandidatesRow, error)
 	AcademicListRooms(ctx context.Context, arg AcademicListRoomsParams) ([]AcademicListRoomsRow, error)
 	AcademicListSchoolDays(ctx context.Context, arg AcademicListSchoolDaysParams) ([]SchoolDay, error)
+	// In reading order: the offerings for every grade first, then grade by
+	// grade in the school's own sequence, each grade's subjects by name.
 	AcademicListSubjectOfferings(ctx context.Context, arg AcademicListSubjectOfferingsParams) ([]SubjectOffering, error)
 	AcademicListSubjects(ctx context.Context, arg AcademicListSubjectsParams) ([]AcademicListSubjectsRow, error)
 	AcademicListTeachingAssignments(ctx context.Context, arg AcademicListTeachingAssignmentsParams) ([]AcademicListTeachingAssignmentsRow, error)
@@ -617,10 +619,12 @@ type Querier interface {
 	GetCounselingAttachment(ctx context.Context, arg GetCounselingAttachmentParams) (CounselingAttachment, error)
 	// The bell-schedule period running at now_time on day_of_week: the period
 	// template assigned to that weekday, and its period whose [starts_at,
-	// ends_at) window contains now_time -- the same rule academic's
-	// PeriodsToday applies through domain.CurrentPeriod. The monitor snapshot
-	// falls back to this when no schedule occurrence supplies the governing
-	// period (bell times set, timetables not entered yet).
+	// ends_at) window contains now_time. The window rule matches academic's
+	// domain.CurrentPeriod, except that is_break periods are skipped here: a
+	// break is not a lesson period, so during one the board reports no lesson
+	// running instead of a period whose timetables look missing. The monitor
+	// snapshot falls back to this when no schedule occurrence supplies the
+	// governing period (bell times set, timetables not entered yet).
 	GetCurrentBellPeriodForAttendance(ctx context.Context, arg GetCurrentBellPeriodForAttendanceParams) (GetCurrentBellPeriodForAttendanceRow, error)
 	GetDefaultDocumentTemplate(ctx context.Context, arg GetDefaultDocumentTemplateParams) (DocumentTemplate, error)
 	GetDiscount(ctx context.Context, arg GetDiscountParams) (FeeDiscount, error)

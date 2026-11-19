@@ -43,9 +43,13 @@ returning *;
 select * from subject_offerings where tenant_id = $1 and id = $2;
 
 -- name: AcademicListSubjectOfferings :many
-select * from subject_offerings
-where tenant_id = $1 and academic_year_id = $2
-order by id;
+-- In reading order: the offerings for every grade first, then grade by
+-- grade in the school's own sequence, each grade's subjects by name.
+select so.* from subject_offerings so
+join subjects s on s.tenant_id = so.tenant_id and s.id = so.subject_id
+left join grade_levels gl on gl.tenant_id = so.tenant_id and gl.id = so.grade_level_id
+where so.tenant_id = $1 and so.academic_year_id = $2
+order by gl.sequence nulls first, s.name, so.id;
 
 -- name: AcademicDeleteSubjectOffering :exec
 delete from subject_offerings where tenant_id = $1 and id = $2;

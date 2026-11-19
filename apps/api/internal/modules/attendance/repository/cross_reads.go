@@ -135,7 +135,7 @@ func (r *Repository) ListCurrentPeriodScheduleCards(ctx context.Context, tenantI
 // GetCurrentBellPeriod resolves the bell-schedule period running at
 // nowLocal from the period template assigned to dayOfWeek, with its window
 // placed on date. ok is false when no template is assigned that day or
-// nowLocal falls outside every period.
+// nowLocal falls outside every lesson period (a break does not count).
 func (r *Repository) GetCurrentBellPeriod(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, date, nowLocal time.Time) (service.MonitorPeriod, bool, error) {
 	row, err := r.queries(ctx).GetCurrentBellPeriodForAttendance(ctx, db.GetCurrentBellPeriodForAttendanceParams{
 		TenantID: tenantID, AcademicYearID: academicYearID, DayOfWeek: dayOfWeek, NowTime: timeOfDay(nowLocal),

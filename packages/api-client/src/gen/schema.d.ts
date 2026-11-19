@@ -6274,8 +6274,8 @@ export interface paths {
         };
         /**
          * The current student's in-progress late arrival, if any
-         * @description 404 NOT_FOUND is the normal answer when the caller has no late arrival in progress; clients treat it
-         *     as "none", not as a failure.
+         * @description 204 No Content is the normal answer when the caller has no late arrival in progress: "none" is not
+         *     an error, so it is not answered with a 404 that browsers log as a failed request.
          */
         get: operations["getCurrentLateArrival"];
         put?: never;
@@ -25250,8 +25250,14 @@ export interface operations {
                     "application/json": components["schemas"]["LateArrivalDetail"];
                 };
             };
+            /** @description The caller has no late arrival in progress */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             401: components["responses"]["Unauthorized"];
-            404: components["responses"]["NotFound"];
         };
     };
     listLateArrivalsForReview: {

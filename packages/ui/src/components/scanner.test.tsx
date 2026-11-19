@@ -346,6 +346,60 @@ describe("Scanner", () => {
     expect(field.compareDocumentPosition(camera) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  describe("focusEntryOnMount", () => {
+    function installPointer(fine: boolean) {
+      vi.stubGlobal("matchMedia", (query: string) => ({
+        matches: fine && query === "(pointer: fine)",
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }));
+    }
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("puts the caret in a shown field where a keyboard is at hand", () => {
+      installPointer(true);
+      render(<Scanner onScan={vi.fn()} focusEntryOnMount />);
+      expect(screen.getByLabelText("Kode")).toHaveFocus();
+    });
+
+    it("focuses the manual entry toggle when the field is behind it", () => {
+      installPointer(true);
+      installCamera(() => Promise.resolve({ getTracks: () => [] }));
+      render(<Scanner onScan={vi.fn()} autoStart={false} focusEntryOnMount />);
+      expect(screen.getByRole("button", { name: "Masukkan kode manual" })).toHaveFocus();
+    });
+
+    it("does not open an on-screen keyboard on a touch screen", () => {
+      installPointer(false);
+      const { container } = render(<Scanner onScan={vi.fn()} focusEntryOnMount />);
+      expect(screen.getByLabelText("Kode")).not.toHaveFocus();
+      // Nothing to toggle: focus stays in the scanner, not on the page.
+      expect(document.activeElement).not.toBe(document.body);
+      expect(container.querySelector("[data-slot='scanner']")).toContainElement(
+        document.activeElement as HTMLElement,
+      );
+    });
+
+    it("keeps focus off the page on a touch screen when the field is always open", () => {
+      installPointer(false);
+      installCamera(() => Promise.resolve({ getTracks: () => [] }));
+      render(<Scanner onScan={vi.fn()} autoStart={false} manualEntry="open" focusEntryOnMount />);
+      expect(screen.getByLabelText("Kode")).not.toHaveFocus();
+      expect(document.activeElement).not.toBe(document.body);
+      expect(document.activeElement?.tagName).not.toBe("BUTTON");
+    });
+
+    it("leaves focus alone unless asked", () => {
+      installPointer(true);
+      render(<Scanner onScan={vi.fn()} />);
+      expect(screen.getByLabelText("Kode")).not.toHaveFocus();
+    });
+  });
+
   it("has no accessibility violations", async () => {
     installCamera(() => Promise.resolve({ getTracks: () => [] }));
     const { container } = render(
