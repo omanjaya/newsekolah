@@ -101,3 +101,44 @@ describe("VisitsView filters", () => {
     );
   });
 });
+
+// A visit's time went through its own Intl formatter, without a year, so a
+// visit from an earlier year read like this year's. It now uses the shared
+// short date-time: the year shows outside the school's current one.
+describe("VisitsView visit time", () => {
+  beforeEach(() => {
+    mocks.now = new Date("2026-09-15T02:00:00Z");
+    window.history.replaceState(null, "", "/library/visits");
+  });
+
+  it("prints the shared short date-time in the school's zone, with the year only when it differs", () => {
+    mocks.useLibraryVisitsQuery.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: "v1",
+            visitor_name: "Tamu Satu",
+            kind: "non_member",
+            group_size: 1,
+            source: "manual",
+            // 21.34 UTC on the 14th is 04.34 on the 15th in Jakarta (UTC+7).
+            visited_at: "2026-09-14T21:34:00Z",
+          },
+          {
+            id: "v2",
+            visitor_name: "Tamu Dua",
+            kind: "non_member",
+            group_size: 1,
+            source: "manual",
+            visited_at: "2025-09-15T09:32:00Z",
+          },
+        ],
+      },
+      isLoading: false,
+    });
+    render(<VisitsView />);
+
+    expect(screen.getAllByText("15 Sep 04.34").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("15 Sep 2025 16.32").length).toBeGreaterThan(0);
+  });
+});

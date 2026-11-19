@@ -116,6 +116,20 @@ export function formatTime(value: Date | string | number, options: FormatOptions
   }).format(toDate(value));
 }
 
+/**
+ * An instant as a dense list row has room for: `formatShortDate` then
+ * `formatTime`, "19 Nov 16.32" (id) / "19 Nov 4:32 PM" (en), with the year
+ * only outside the current one ("19 Nov 2025 16.32"). Both halves are read
+ * in `timeZone`.
+ */
+export function formatShortDateTime(
+  value: Date | string | number,
+  options: FormatOptions & { now?: Date },
+): string {
+  const instant = toDate(value);
+  return `${formatShortDate(instant, options)} ${formatTime(instant, options)}`;
+}
+
 /** "9 September 2026 pukul 14.05" (id) / "September 9, 2026 at 2:05 PM" (en). */
 export function formatDateTime(value: Date | string | number, options: FormatOptions): string {
   return new Intl.DateTimeFormat(INTL_LOCALE[options.locale], {

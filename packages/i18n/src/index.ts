@@ -19,6 +19,7 @@ export {
   formatNumber,
   formatRelative,
   formatShortDate,
+  formatShortDateTime,
   formatTime,
   type FormatOptions,
   type NumberFormatOptions,
