@@ -21,6 +21,7 @@ import type { ReactElement, ReactNode } from "react";
 
 import { PUBLIC_CONTAINER } from "../../../components/public-container";
 import { useApiClient } from "../../../lib/api/client";
+import { useDocumentTitle } from "../../../lib/page-title";
 import { useTenant } from "../../../lib/tenant/tenant-provider";
 
 type Verification = components["schemas"]["DocumentVerification"];
@@ -46,6 +47,19 @@ export function VerifyView({ code }: { code: string }): ReactElement {
   // at all (400) is a verdict on the code. Anything else (no network, a
   // server error, the rate limit) is not, so it gets a retry instead.
   const failed = error !== null && !isVerdictOnCode(error);
+  // The verdict names the tab too, so the result is clear from the tab
+  // strip and is what a screen reader announces for the page.
+  useDocumentTitle(
+    isLoading
+      ? t("title")
+      : failed
+        ? t("errorTitle")
+        : !data
+          ? t("notFoundTitle")
+          : data.revoked
+            ? t("revokedTitle")
+            : t("validTitle"),
+  );
 
   return (
     <div className={cn(PUBLIC_CONTAINER, "flex flex-col items-center gap-5 py-8 md:py-14")}>

@@ -2,6 +2,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { setDocumentSchoolName } from "../../../lib/page-title";
+
 import { OpacView } from "./opac-view";
 
 interface Title {
@@ -133,5 +135,11 @@ describe("OpacView", () => {
     render(<OpacView />);
     expect(screen.getByText("resultCountFirst 20")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "loadMore" })).toBeInTheDocument();
+  });
+
+  it("names the tab after the catalogue, not only the school", () => {
+    setDocumentSchoolName("SMA Contoh");
+    render(<OpacView />);
+    expect(document.title).toBe("title · SMA Contoh");
   });
 });

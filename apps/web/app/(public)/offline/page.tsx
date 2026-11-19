@@ -5,9 +5,12 @@ import { RotateCw } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { useDocumentTitle } from "../../../lib/page-title";
+
 /** Served by the service worker (app/sw.ts) as the navigation fallback when there is no network. */
 export default function OfflinePage(): ReactElement {
   const t = useTranslations("app.offlinePage");
+  useDocumentTitle(t("title"));
 
   return (
     <StatePage

@@ -14,6 +14,8 @@ vi.mock("../../../lib/tenant/tenant-provider", () => ({
 }));
 vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
 
+import { setDocumentPageTitle, setDocumentSchoolName } from "../../../lib/page-title";
+
 import { OpacGate } from "./opac-gate";
 
 function renderGate(): void {
@@ -63,5 +65,30 @@ describe("OpacGate", () => {
     mockUseTenant.mockReturnValue({ branding: undefined, displayName: "SION", isLoading: false });
     renderGate();
     expect(screen.getByText("catalogue")).toBeInTheDocument();
+  });
+
+  it("names the tab after the not-available state", () => {
+    setDocumentSchoolName("SMA Contoh");
+    mockUseTenant.mockReturnValue({
+      branding: { disabled_public_modules: ["library"] },
+      displayName: "SMA 1",
+      isLoading: false,
+    });
+    renderGate();
+    expect(document.title).toBe("unavailableTitle · SMA Contoh");
+  });
+
+  // The page it wraps names the tab; the gate itself must not clear that.
+  it("leaves the tab to the catalogue it shows", () => {
+    setDocumentSchoolName("SMA Contoh");
+    setDocumentPageTitle("Katalog");
+    mockUseTenant.mockReturnValue({
+      branding: { disabled_public_modules: [] },
+      displayName: "SMA 1",
+      isLoading: false,
+    });
+    renderGate();
+    expect(document.title).toBe("Katalog · SMA Contoh");
+    setDocumentPageTitle(null);
   });
 });

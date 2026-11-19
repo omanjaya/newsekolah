@@ -30,6 +30,7 @@ export default function ForgotPasswordPage(): ReactElement {
       <AuthCard
         status={{ tone: "success", icon: <MailCheck /> }}
         title={t("successTitle")}
+        documentTitle={t("title")}
         description={t("successBody")}
       >
         <Button asChild variant="secondary" size="lg" className="w-full">

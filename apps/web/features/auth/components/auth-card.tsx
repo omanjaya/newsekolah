@@ -3,6 +3,8 @@
 import { Card, CardTitle, IconCircle, type Tone } from "@newsekolah/ui";
 import { useId, type ReactElement, type ReactNode } from "react";
 
+import { useDocumentTitle } from "../../../lib/page-title";
+
 export interface AuthCardStatus {
   tone: Tone;
   /** A Lucide icon element. */
@@ -12,6 +14,11 @@ export interface AuthCardStatus {
 export interface AuthCardProps {
   /** The page's h1: what this screen is for, or what just happened. */
   title: string;
+  /**
+   * The browser tab's name for this page ("<page> · <school>"), when the
+   * h1 is not one: a greeting, or a sentence. Defaults to `title`.
+   */
+  documentTitle?: string;
   description?: ReactNode;
   /**
    * For a state screen (a reset link sent, a link no longer valid): the
@@ -32,12 +39,14 @@ export interface AuthCardProps {
  */
 export function AuthCard({
   title,
+  documentTitle,
   description,
   status,
   children,
   footer,
 }: AuthCardProps): ReactElement {
   const titleId = useId();
+  useDocumentTitle(documentTitle ?? title);
   return (
     <Card
       asChild

@@ -20,6 +20,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { PUBLIC_CONTAINER } from "../../../components/public-container";
+import { useDocumentTitle } from "../../../lib/page-title";
 import { useOpacTitlesQuery, type LibraryOpacTitle } from "../opac-api";
 import { classificationGroups } from "../opac-classifications";
 import { useOpacSearchParams } from "../use-opac-search-params";
@@ -41,6 +42,7 @@ const ALL = "*";
  */
 export function OpacView(): ReactElement {
   const t = useTranslations("app.library.opac");
+  useDocumentTitle(t("title"));
   const [params, setParams] = useOpacSearchParams();
   const [draft, setDraft] = useState(params.q);
   const [limit, setLimit] = useState(PAGE_SIZE);

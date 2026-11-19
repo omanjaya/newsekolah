@@ -21,6 +21,7 @@ import type { ReactElement } from "react";
 import { useSyncExternalStore } from "react";
 
 import { PUBLIC_CONTAINER } from "../../../components/public-container";
+import { useDocumentTitle } from "../../../lib/page-title";
 import { useOpacTitleQuery, type LibraryOpacTitleDetail } from "../opac-api";
 import { OPAC_LAST_SEARCH_KEY } from "../use-opac-search-params";
 
@@ -63,6 +64,11 @@ export function OpacTitleView({ titleId }: { titleId: string }): ReactElement {
   const t = useTranslations("app.library.opac");
   const catalogueHref = useCatalogueHref();
   const { data, isLoading, error } = useOpacTitleQuery(titleId);
+  // The book's own title once it loads, so a shared link or a bookmark
+  // says which book; the catalogue while it loads.
+  useDocumentTitle(
+    isLoading ? t("title") : error || !data ? t("detail.notFoundTitle") : data.title.title,
+  );
 
   return (
     <div className={cn(PUBLIC_CONTAINER, "flex flex-col gap-6 py-6 md:py-10")}>

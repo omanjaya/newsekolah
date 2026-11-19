@@ -18,6 +18,8 @@ export default function ChangePasswordPage(): ReactElement {
   const router = useRouter();
   const t = useTranslations("app.changePassword");
   const tMenu = useTranslations("app.shell.profileMenu");
+  // The h1 is a sentence; the tab gets the short name of the step.
+  const tAuth = useTranslations("auth.changePassword");
   const logout = useLogoutMutation();
 
   useEffect(() => {
@@ -46,7 +48,11 @@ export default function ChangePasswordPage(): ReactElement {
   // shape rather than an empty card.
   if (!isReady || status !== "authenticated" || !me?.must_change_password) {
     return (
-      <AuthCard title={t("forcedTitle")} description={t("forcedBody")}>
+      <AuthCard
+        title={t("forcedTitle")}
+        documentTitle={tAuth("title")}
+        description={t("forcedBody")}
+      >
         <SkeletonForm fields={3} actions={false} />
       </AuthCard>
     );
@@ -55,6 +61,7 @@ export default function ChangePasswordPage(): ReactElement {
   return (
     <AuthCard
       title={t("forcedTitle")}
+      documentTitle={tAuth("title")}
       description={t("forcedBody")}
       footer={
         // The whole app is locked until this step is done, so the only

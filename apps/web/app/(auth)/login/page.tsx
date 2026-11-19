@@ -21,7 +21,12 @@ export default function LoginPage(): ReactElement {
   }, [isReady, status, me?.must_change_password, router]);
 
   return (
-    <AuthCard title={t("welcomeTitle")} description={t("welcomeBody")} footer={t("help")}>
+    <AuthCard
+      title={t("welcomeTitle")}
+      documentTitle={t("title")}
+      description={t("welcomeBody")}
+      footer={t("help")}
+    >
       {/* LoginForm reads the `next` query param via useSearchParams, which needs a Suspense boundary. */}
       <Suspense fallback={<SkeletonForm fields={2} actions={false} />}>
         <LoginForm />

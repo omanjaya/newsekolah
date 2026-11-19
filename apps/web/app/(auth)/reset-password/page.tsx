@@ -31,6 +31,7 @@ function ResetPasswordContent(): ReactElement {
       <AuthCard
         status={{ tone: "warning", icon: <Link2Off /> }}
         title={t("invalidTitle")}
+        documentTitle={t("title")}
         description={t("invalidBody")}
         footer={<BackToLoginLink />}
       >

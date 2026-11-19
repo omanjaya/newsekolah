@@ -1,7 +1,9 @@
 import { ApiError } from "@newsekolah/api-client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { setDocumentSchoolName } from "../../../lib/page-title";
 
 import { VerifyView } from "./verify-view";
 
@@ -85,5 +87,22 @@ describe("VerifyView", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "retry" })).toBeInTheDocument();
     expect(screen.queryByText("notFoundTitle")).not.toBeInTheDocument();
+  });
+
+  it("names the tab after the check while it runs, then after the verdict", async () => {
+    setDocumentSchoolName("SMA Contoh");
+    let resolve: (doc: typeof DOC) => void = () => undefined;
+    get.mockReturnValue(
+      new Promise<typeof DOC>((done) => {
+        resolve = done;
+      }),
+    );
+    renderView();
+    expect(document.title).toBe("title · SMA Contoh");
+
+    resolve({ ...DOC, revoked: true });
+    await waitFor(() => {
+      expect(document.title).toBe("revokedTitle · SMA Contoh");
+    });
   });
 });
