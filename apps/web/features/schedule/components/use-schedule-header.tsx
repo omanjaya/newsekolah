@@ -38,7 +38,7 @@ export function useScheduleHeader({
   onAdd: () => void;
 }): {
   primaryAction: ReactNode;
-  /** The manager's add action as a round button beside the title on a phone. */
+  /** The main action as a round button beside the title on a phone. */
   primaryActionCompact: PageHeaderProps["primaryActionCompact"];
   secondaryActions: PageHeaderAction[];
   /** The class, year and current period, for the page's toolbar. */
@@ -67,19 +67,25 @@ export function useScheduleHeader({
       : []),
   ];
 
+  const canScanEntry = !canManage && isStudent && canOpenPath("/classroom-entry", access);
   const primaryAction = canManage ? (
     <Button icon={<Plus />} onClick={onAdd}>
       {t("addBlock")}
     </Button>
-  ) : isStudent && canOpenPath("/classroom-entry", access) ? (
+  ) : canScanEntry ? (
     <Button asChild icon={<ScanLine />}>
       <Link href="/classroom-entry">{tWorkspace("scanEntry")}</Link>
     </Button>
   ) : undefined;
-  // The student's scan action keeps its label: it leaves the timetable.
+  // On a phone either action is an icon button on the title's line (its
+  // label is the name and the tooltip). A full-width row under the title
+  // would push the area's tab strip down on this tab only: the calendar
+  // and the substitutions tabs have no such action.
   const primaryActionCompact = canManage
     ? { icon: <Plus />, label: t("addBlock"), onSelect: onAdd }
-    : undefined;
+    : canScanEntry
+      ? { icon: <ScanLine />, label: tWorkspace("scanEntry"), href: "/classroom-entry" }
+      : undefined;
 
   const context = (
     <p

@@ -19,8 +19,10 @@ describe("YearFormDialog", () => {
     await user.click(screen.getByRole("button", { name: "form.save" }));
 
     expect(onSubmit).not.toHaveBeenCalled();
-    expect(screen.getByText("required")).toBeInTheDocument();
-    expect(screen.getByText("form.periodRequired")).toBeInTheDocument();
+    // The period's error does not restate its hint ("pick the start, then
+    // the end"): an empty period is simply required.
+    expect(screen.getAllByText("required")).toHaveLength(2);
+    expect(screen.getByText("form.periodHint")).toBeInTheDocument();
     const name = screen.getByRole("textbox", { name: /form.label/ });
     expect(name).toHaveAttribute("aria-invalid", "true");
     expect(name).toHaveFocus();
@@ -36,9 +38,34 @@ describe("YearFormDialog", () => {
     await user.click(screen.getByRole("button", { name: "form.save" }));
     await user.type(screen.getByRole("textbox", { name: /form.label/ }), "2027/2028");
 
-    expect(screen.queryByText("required")).not.toBeInTheDocument();
-    expect(screen.getByText("form.periodRequired")).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: /form.label/ })).not.toHaveAttribute("aria-invalid");
+    expect(screen.getAllByText("required")).toHaveLength(1);
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("names the missing last day when only the start is chosen", async () => {
+    const onSubmit = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <YearFormDialog
+        target={{
+          id: "y1",
+          label: "2026/2027",
+          starts_on: "2026-07-13",
+          ends_on: "",
+          is_active: false,
+        }}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+        pending={false}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "form.save" }));
+
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByText("form.periodEndRequired")).toBeInTheDocument();
+    expect(screen.queryByText("required")).not.toBeInTheDocument();
   });
 
   it("submits an existing year unchanged", async () => {

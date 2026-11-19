@@ -134,7 +134,14 @@ export function SelfCheckInView(): ReactElement {
       variant="narrow"
       secondaryActions={
         canViewBoard
-          ? [{ label: tArea("navLabel"), icon: <Fingerprint />, href: "/staff-attendance" }]
+          ? [
+              {
+                label: tArea("navLabel"),
+                icon: <Fingerprint />,
+                href: "/staff-attendance",
+                showOnPhone: true,
+              },
+            ]
           : []
       }
     >

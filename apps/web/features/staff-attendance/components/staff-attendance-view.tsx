@@ -54,7 +54,7 @@ export function StaffAttendanceView(): ReactElement {
   const onBoard = tab === "today";
 
   const secondaryActions: PageHeaderAction[] = employee
-    ? [{ label: t("self.title"), icon: <LogIn />, href: "/check-in" }]
+    ? [{ label: t("self.title"), icon: <LogIn />, href: "/check-in", showOnPhone: true }]
     : [];
 
   return (

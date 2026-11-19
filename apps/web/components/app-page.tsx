@@ -47,7 +47,10 @@ export interface AppPageProps {
    * instead of a full row under it (PageHeader's `primaryActionCompact`).
    */
   primaryActionCompact?: PageHeaderProps["primaryActionCompact"];
-  /** Further actions: buttons from 640px up, one menu on a phone. */
+  /**
+   * Further actions: buttons from 640px up, one overflow menu on a phone
+   * (an action marked `showOnPhone` stays a labelled button there).
+   */
   secondaryActions?: PageHeaderAction[];
   /**
    * Transitional: `false` when the content still renders its own heading.

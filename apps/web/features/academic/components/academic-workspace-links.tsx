@@ -14,7 +14,7 @@ import { useSession } from "../../../lib/session/session-provider";
  * The pages of each area, as navigation registry keys: a tab's address,
  * label and access are the registry's, so the tab, the menu entry, the
  * page title and the breadcrumb share one name. `label` is the area's
- * menu entry (app.shell.nav.items), the strip's accessible name.
+ * menu entry (app.shell.nav.items), named in the strip's accessible name.
  */
 const AREAS = {
   attendance: { label: "attendance", pages: ["attendance", "journal", "attendance-reports"] },
@@ -55,5 +55,8 @@ export function AcademicWorkspaceLinks({ area }: { area: AcademicArea }): ReactE
     ];
   });
   if (items.length < 2) return null;
-  return <WorkspaceNav label={t(`app.shell.nav.items.${AREAS[area].label}`)} items={items} />;
+  // Named as the page template names its default strip ("Bagian Jadwal dan
+  // kalender"), so a screen reader hears one landmark on every sibling tab.
+  const areaName = t(`app.shell.nav.items.${AREAS[area].label}`);
+  return <WorkspaceNav label={t("app.page.sections", { area: areaName })} items={items} />;
 }

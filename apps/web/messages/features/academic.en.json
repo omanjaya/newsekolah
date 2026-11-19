@@ -53,7 +53,7 @@
       "save": "Save",
       "period": "Period",
       "periodHint": "Pick the first day, then the last.",
-      "periodRequired": "Choose the start and end dates."
+      "periodEndRequired": "The last day is not chosen yet."
     },
     "editTitle": "Edit academic year",
     "rowActions": "More actions for {label}"

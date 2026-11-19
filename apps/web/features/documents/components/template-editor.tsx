@@ -18,6 +18,7 @@ import {
   SkeletonForm,
   Textarea,
   domainIcons,
+  useSubmitValidation,
   useToast,
 } from "@newsekolah/ui";
 import { Plus } from "lucide-react";
@@ -176,7 +177,9 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
   );
   const [name, setName] = useState(template?.name ?? "");
   const [body, setBody] = useState(template?.body ?? "");
-  const [submitted, setSubmitted] = useState(false);
+  // No <form> here (the save bar floats outside the fields): the grid of
+  // fields is the root the first invalid one is found and focused in.
+  const { ref: fieldsRef, attempted, check, reset } = useSubmitValidation<HTMLDivElement>();
   const [error, setError] = useState<string | null>(null);
 
   const { placeholders, legacy } = useMemo(() => scanTemplate(body), [body]);
@@ -188,10 +191,10 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
   const dirty = template
     ? name !== template.name || body !== template.body
     : name.trim() !== "" || body.trim() !== "";
-  const nameError = submitted && !name.trim() ? t("nameRequired") : undefined;
+  const nameError = attempted && !name.trim() ? t("nameRequired") : undefined;
   let bodyError: string | undefined;
-  if (submitted && !body.trim()) bodyError = t("bodyRequired");
-  else if (submitted && legacy.length > 0) bodyError = t("legacyError");
+  if (attempted && !body.trim()) bodyError = t("bodyRequired");
+  else if (attempted && legacy.length > 0) bodyError = t("legacyError");
 
   /**
    * A value's name for a person: "Nama siswa" for `student_name`, the
@@ -244,9 +247,8 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
   }
 
   function handleSave() {
-    setSubmitted(true);
     setError(null);
-    if (!name.trim() || !body.trim() || legacy.length > 0) return;
+    if (!check(Boolean(name.trim() && body.trim()) && legacy.length === 0)) return;
     const done = (message: string) => {
       toast.success(message);
       router.push(LIST_HREF);
@@ -312,13 +314,13 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
             }
             setName(template.name);
             setBody(template.body);
-            setSubmitted(false);
+            reset();
             setError(null);
           }}
         />
       }
     >
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+      <div ref={fieldsRef} className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="flex min-w-0 flex-col gap-6">
           {error && <FormError>{error}</FormError>}
           <FormSection variant="card" title={t("detailsTitle")}>

@@ -12,6 +12,9 @@ vi.mock("../../../lib/session/session-provider", () => ({
 vi.mock("../../substitutions/api", () => ({
   useSubstitutionsQuery: () => ({ data: undefined }),
 }));
+vi.mock("../../../lib/navigation-permissions", () => ({
+  canOpenPath: (path: string) => path === "/classroom-entry",
+}));
 vi.mock("./schedule-current-period-pill", () => ({
   ScheduleCurrentPeriodPill: () => <span>pill:now</span>,
 }));
@@ -37,6 +40,25 @@ describe("useScheduleHeader", () => {
     const context = screen.getByTestId("schedule-context");
     expect(context).toHaveTextContent("X-A · 2026/2027");
     expect(context).toHaveTextContent("pill:now");
+  });
+
+  // A full-width scan button under the title on a phone pushed the area's
+  // tab strip 56px lower than on the calendar and substitutions tabs.
+  it("gives a student's scan action a compact form for the phone's title line", () => {
+    const { result } = renderHook(() =>
+      useScheduleHeader({
+        canManage: false,
+        isStudent: true,
+        className: "X-A",
+        yearLabel: "2026/2027",
+        onAdd: vi.fn(),
+      }),
+    );
+
+    expect(result.current.primaryAction).toBeDefined();
+    expect(result.current.primaryActionCompact).toEqual(
+      expect.objectContaining({ label: "scanEntry", href: "/classroom-entry" }),
+    );
   });
 
   it("names only the year to a reader who is not a student", () => {

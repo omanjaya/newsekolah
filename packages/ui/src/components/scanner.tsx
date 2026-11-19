@@ -281,6 +281,9 @@ export function Scanner({
       open={manualOpen || !cameraOffered}
       collapsible={cameraOffered && manualEntry !== "open"}
       onToggle={() => {
+        // Closing or reopening the field starts it afresh: a "type a code
+        // first" from before it was closed is not a mistake made now.
+        resetManual();
         setManualOpen((current) => !current);
       }}
       value={value}
@@ -441,15 +444,16 @@ function ManualEntry({
         </Button>
       )}
       {open && (
-        // The field and its button share one row inside the Field, so a
-        // message under the field never pulls the button out of line.
+        // The field and its button share one row inside the Field at every
+        // width, so the message under the field sits right below it, never
+        // under a button stacked between them.
         <div ref={entryRef} className={cn(collapsible && "animate-enter")}>
           <Field
             label={label}
             error={attempted && empty ? labels.scannerManualRequired : undefined}
             className={cn(kiosk && "[&_label]:text-heading")}
           >
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="flex gap-2">
               <Input
                 ref={inputRef}
                 value={value}
@@ -476,7 +480,7 @@ function ManualEntry({
               <Button
                 disabled={disabled}
                 onClick={submit}
-                className={cn(kiosk && "h-16 px-8 text-heading md:h-16")}
+                className={cn("shrink-0", kiosk && "h-16 px-5 text-heading sm:px-8 md:h-16")}
               >
                 {submitLabel}
               </Button>

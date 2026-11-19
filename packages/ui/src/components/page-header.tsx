@@ -20,7 +20,10 @@ import { UiLink } from "./ui-link.js";
 
 export type PageHeaderBreadcrumbItem = BreadcrumbItem;
 
-/** A secondary page action: a button beside the primary one from 640px up, an item of the overflow menu below. */
+/**
+ * A secondary page action: a button beside the primary one from 640px up,
+ * an item of the overflow menu below (unless `showOnPhone`).
+ */
 export interface PageHeaderAction {
   label: string;
   icon?: ReactNode;
@@ -29,6 +32,13 @@ export interface PageHeaderAction {
   disabled?: boolean;
   /** Danger-coloured, for a destructive action. */
   destructive?: boolean;
+  /**
+   * Keep it a labelled button on a phone too, in the row under the title,
+   * instead of an item of the overflow menu. Opt-in, for the one way to a
+   * sibling page (/check-in and /staff-attendance) that a menu would hide
+   * behind an ellipsis. Ignored for a destructive action.
+   */
+  showOnPhone?: boolean;
 }
 
 /** The main action as an icon button on a phone: the label is its accessible name and tooltip. */
@@ -67,7 +77,10 @@ export interface PageHeaderProps extends Omit<ComponentPropsWithRef<"div">, "tit
    * clear from its icon ("Tambah" with a plus).
    */
   primaryActionCompact?: PageHeaderCompactAction;
-  /** Further actions: buttons from 640px up, one overflow menu on a phone. */
+  /**
+   * Further actions: buttons from 640px up, one overflow menu on a phone
+   * (an action marked `showOnPhone` stays a labelled button there).
+   */
   secondaryActions?: PageHeaderAction[];
   /** A rule under the header; off by default, as in the artboard (sections are set apart by space). */
   divider?: boolean;
@@ -79,28 +92,26 @@ export interface PageHeaderProps extends Omit<ComponentPropsWithRef<"div">, "tit
   compactTitle?: string | false;
 }
 
+/** The non-destructive secondary actions as buttons; on a phone only those marked `showOnPhone`. */
 function SecondaryButtons({ actions }: { actions: PageHeaderAction[] }) {
-  return (
-    <div className="hidden sm:contents">
-      {actions.map((action) =>
-        action.href && !action.disabled ? (
-          <Button key={action.label} asChild variant="secondary" icon={action.icon}>
-            <UiLink href={action.href}>{action.label}</UiLink>
-          </Button>
-        ) : (
-          <Button
-            key={action.label}
-            variant="secondary"
-            icon={action.icon}
-            disabled={action.disabled}
-            onClick={action.onSelect}
-          >
-            {action.label}
-          </Button>
-        ),
+  return actions.map((action) => (
+    <div key={action.label} className={action.showOnPhone ? "contents" : "hidden sm:contents"}>
+      {action.href && !action.disabled ? (
+        <Button asChild variant="secondary" icon={action.icon}>
+          <UiLink href={action.href}>{action.label}</UiLink>
+        </Button>
+      ) : (
+        <Button
+          variant="secondary"
+          icon={action.icon}
+          disabled={action.disabled}
+          onClick={action.onSelect}
+        >
+          {action.label}
+        </Button>
       )}
     </div>
-  );
+  ));
 }
 
 /** The phone's main action at the end of the title's line: an accent icon button, 44px on touch. */
@@ -205,19 +216,25 @@ export function PageHeader({
   ) : null;
   const hasActions = Boolean(actions) || Boolean(primaryAction) || secondaryActions.length > 0;
   const compactPrimary = primaryActionCompact !== undefined;
-  // On a phone only the free-form actions and the primary one keep a row
-  // under the title; the overflow menu, and the primary in its compact
-  // form, sit on the title's line.
-  const phoneActions = Boolean(actions) || (Boolean(primaryAction) && !compactPrimary);
-  const phoneTrailing = secondaryActions.length > 0 || compactPrimary;
-  const hasLeading = leading !== undefined && leading !== null && leading !== false;
-  // Only a title alone beside its leading item centres on it; with a
-  // description the two lines share the avatar's height already.
-  const centredOnLeading = hasLeading && !description;
   // A destructive action never sits out as a button: it waits in the menu
   // at every width, where it takes a deliberate second tap.
   const buttons = secondaryActions.filter((action) => !action.destructive);
   const destructive = secondaryActions.filter((action) => action.destructive);
+  const shownOnPhone = buttons.filter((action) => action.showOnPhone);
+  const phoneMenu = secondaryActions.filter(
+    (action) => action.destructive === true || action.showOnPhone !== true,
+  );
+  // On a phone only the free-form actions, the primary one and the
+  // secondary ones marked `showOnPhone` keep a row under the title; the
+  // overflow menu, and the primary in its compact form, sit on the
+  // title's line.
+  const phoneActions =
+    Boolean(actions) || (Boolean(primaryAction) && !compactPrimary) || shownOnPhone.length > 0;
+  const phoneTrailing = phoneMenu.length > 0 || compactPrimary;
+  const hasLeading = leading !== undefined && leading !== null && leading !== false;
+  // Only a title alone beside its leading item centres on it; with a
+  // description the two lines share the avatar's height already.
+  const centredOnLeading = hasLeading && !description;
 
   return (
     <div
@@ -290,13 +307,11 @@ export function PageHeader({
                   )}
                 >
                   <CompactPrimary action={primaryActionCompact} />
-                  {secondaryActions.length > 0 && (
-                    <OverflowMenu actions={secondaryActions} className="flex" />
-                  )}
+                  {phoneMenu.length > 0 && <OverflowMenu actions={phoneMenu} className="flex" />}
                 </div>
               ) : (
                 <OverflowMenu
-                  actions={secondaryActions}
+                  actions={phoneMenu}
                   className={cn(
                     "-my-1 self-start pointer-coarse:-my-2 sm:hidden",
                     centredOnLeading && "self-center",

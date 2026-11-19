@@ -42,6 +42,11 @@ function YearForm({
   const tValidation = useTranslations("validation");
   const labelMissing = !label.trim();
   const periodMissing = !startsOn || !endsOn;
+  // The hint already says how to pick a period, so the error names only
+  // what is missing instead of repeating it in other words.
+  let periodError: string | undefined;
+  if (attempted && !startsOn) periodError = tValidation("required");
+  else if (attempted && !endsOn) periodError = t("form.periodEndRequired");
 
   return (
     <form
@@ -67,12 +72,7 @@ function YearForm({
           placeholder={t("form.labelPlaceholder")}
         />
       </Field>
-      <Field
-        label={t("form.period")}
-        required
-        hint={t("form.periodHint")}
-        error={attempted && periodMissing ? t("form.periodRequired") : undefined}
-      >
+      <Field label={t("form.period")} required hint={t("form.periodHint")} error={periodError}>
         <DateRangePicker
           value={startsOn ? { from: startsOn, to: endsOn } : null}
           onChange={(range) => {
