@@ -6,7 +6,7 @@ import type { AppPageProps } from "../components/app-page";
  * A stand-in for `components/app-page` in view tests, which render a view
  * without the session, tenant and router the real template reads. It keeps
  * what a view passes visible to queries: the title as the h1, the header
- * actions, the sub-navigation, the toolbar and the content.
+ * actions with their icons, the sub-navigation, the toolbar and the content.
  *
  * vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
  */
@@ -34,6 +34,7 @@ export function AppPage({
           {secondaryActions.map((action) =>
             action.href ? (
               <a key={action.label} href={action.href}>
+                {action.icon}
                 {action.label}
               </a>
             ) : (
@@ -43,6 +44,7 @@ export function AppPage({
                 disabled={action.disabled}
                 onClick={action.onSelect}
               >
+                {action.icon}
                 {action.label}
               </button>
             ),
