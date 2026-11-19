@@ -100,6 +100,13 @@ describe("EmptyState", () => {
     render(<EmptyState title="Belum ada data" titleAs="h3" />);
     expect(screen.getByRole("heading", { level: 3, name: "Belum ada data" })).toBeInTheDocument();
   });
+
+  it("can stand in as the page heading", () => {
+    render(<EmptyState title="Judul tidak ditemukan" titleAs="h1" />);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Judul tidak ditemukan" }),
+    ).toBeInTheDocument();
+  });
 });
 
 describe("FilteredEmptyState", () => {

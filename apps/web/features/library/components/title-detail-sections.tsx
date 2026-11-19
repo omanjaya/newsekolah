@@ -35,9 +35,13 @@ export function TitleIdentity({ title }: { title: LibraryTitle }): ReactElement 
         <div className="flex min-w-0 flex-col gap-1">
           {title.author && <p className="text-heading text-fg">{title.author}</p>}
           {publication && <p className="text-body-sm text-fg-muted">{publication}</p>}
-          {(title.classification || title.isbn) && (
+          {(title.classification || title.isbn || title.issn) && (
             <p className="text-body-sm text-fg-muted tabular-nums">
-              {[title.classification, title.isbn && `ISBN ${title.isbn}`]
+              {[
+                title.classification,
+                title.isbn && `ISBN ${title.isbn}`,
+                title.issn && `ISSN ${title.issn}`,
+              ]
                 .filter(Boolean)
                 .join(" · ")}
             </p>
@@ -141,6 +145,7 @@ export function BibliographicRecord({ title }: { title: LibraryTitle }): ReactEl
         <DataListItem label={t("edition")}>{title.edition}</DataListItem>
         <DataListItem label={t("pages")}>{title.pages}</DataListItem>
         <DataListItem label={t("isbn")}>{title.isbn}</DataListItem>
+        <DataListItem label={t("issn")}>{title.issn}</DataListItem>
         <DataListItem label={t("classification")}>{title.classification}</DataListItem>
         <DataListItem label={t("callNumber")}>{title.call_number}</DataListItem>
         <DataListItem label={t("language")}>{title.language}</DataListItem>

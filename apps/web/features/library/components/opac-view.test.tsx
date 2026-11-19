@@ -8,6 +8,7 @@ interface Title {
   id: string;
   title: string;
   author: string;
+  publisher?: string;
   classification: string;
   publish_year?: number;
   available_copies: number;
@@ -79,6 +80,17 @@ describe("OpacView", () => {
     expect(screen.getByText("Perpustakaan")).toBeInTheDocument();
     expect(screen.getByText("resultCount 3")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Judul 1" })).toHaveAttribute("href", "/opac/t1");
+  });
+
+  it("names the publisher for a title without an author, so the year never stands alone", () => {
+    results.mockReturnValue({
+      data: {
+        data: [title(1, { author: "", publisher: "Tempo Inti Media", publish_year: 2026 })],
+        library_name: "Perpustakaan",
+      },
+    });
+    render(<OpacView />);
+    expect(screen.getAllByText("Tempo Inti Media · 2026").length).toBeGreaterThan(0);
   });
 
   it("reads the search and the filter from the address", () => {
