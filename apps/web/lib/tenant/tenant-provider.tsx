@@ -129,7 +129,7 @@ export function TenantProvider({
     }
     return null;
   });
-  const { data, failureCount } = useTenantBranding(client);
+  const { data, failureCount, errorUpdateCount } = useTenantBranding(client);
   // The server's branding seeds the query, and the query keeps its last
   // data through a failed refetch. When neither ever had it (the endpoint
   // refused both the server and this tab), this tab's copy from an earlier
@@ -145,9 +145,13 @@ export function TenantProvider({
   // the header shows its name and logo, the accent follows, and modules the
   // school switched off stay off, instead of a skeleton held for good. Not
   // before the first failure: on a normal load the branding lands moments
-  // later.
+  // later. Once the endpoint has failed, the fallback stays: a refetch
+  // resets failureCount to 0 and puts a query with no data back to pending,
+  // which would bring the skeleton and the platform accent back for every
+  // retry. errorUpdateCount only grows, so it remembers the failure.
   const signedInSchool = useSignedInSchool();
-  const branding = data ?? sessionCopy ?? (failureCount > 0 ? signedInSchool : undefined);
+  const hasFailed = failureCount > 0 || errorUpdateCount > 0;
+  const branding = data ?? sessionCopy ?? (hasFailed ? signedInSchool : undefined);
   const schoolName = branding?.name;
   const isLoading = branding === undefined;
 

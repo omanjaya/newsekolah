@@ -178,6 +178,33 @@ describe("TenantProvider", () => {
     expect(container.querySelector("img")).toHaveAttribute("src", "https://example.test/logo.png");
   });
 
+  // A refetch of the failed query reset failureCount and brought the
+  // skeleton and the platform accent back (audit r4-r3-n14).
+  it("keeps naming the signed-in school while a failed fetch is fetched again", async () => {
+    get.mockRejectedValue(rateLimited());
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData(queryKeys.me(), {
+      tenant: { name: "SMA Contoh", accent_color: "#1F3A5F" },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <TenantProvider>
+          <Name />
+        </TenantProvider>
+      </QueryClientProvider>,
+    );
+    expect(await screen.findByText("SMA Contoh", { selector: "[data-testid=name]" })).toBeVisible();
+
+    get.mockReturnValue(new Promise(() => undefined));
+    act(() => {
+      void queryClient.refetchQueries({ queryKey: queryKeys.tenantBranding() });
+    });
+
+    expect(screen.getByTestId("name")).toHaveTextContent("SMA Contoh");
+    const accents = resolveTenantAccents("#1F3A5F");
+    expect(document.documentElement.style.getPropertyValue("--tenant-accent")).toBe(accents.light);
+  });
+
   it("waits for the branding before naming the school from the session", () => {
     get.mockReturnValue(new Promise(() => undefined));
     renderProvider(undefined, (queryClient) => {
