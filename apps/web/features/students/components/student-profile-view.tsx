@@ -199,7 +199,8 @@ export function StudentProfileView({ studentId }: { studentId: string }): ReactE
         {tabs.map((id) => {
           const Panel = TAB_PANELS[id];
           return (
-            <TabsContent key={id} value={id}>
+            // The Tabs gap already spaces the panel from the strip.
+            <TabsContent key={id} value={id} className="pt-0">
               <Panel studentId={studentId} />
             </TabsContent>
           );

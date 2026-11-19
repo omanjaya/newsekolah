@@ -76,18 +76,19 @@ export function ProfileView(): ReactElement | null {
           <TabsTrigger value="security">{t("tabs.security")}</TabsTrigger>
         </TabsList>
 
-        {/* The form panels stay mounted while hidden, so unsaved edits survive a tab switch. */}
-        <TabsContent value="account" forceMount className="data-[state=inactive]:hidden">
+        {/* The form panels stay mounted while hidden, so unsaved edits survive a tab switch.
+            Each panel drops TabsContent's own top padding: the Tabs gap spaces it already. */}
+        <TabsContent value="account" forceMount className="pt-0 data-[state=inactive]:hidden">
           <EditProfileForm />
         </TabsContent>
 
         {hasDetail && (
-          <TabsContent value="personal" forceMount className="data-[state=inactive]:hidden">
+          <TabsContent value="personal" forceMount className="pt-0 data-[state=inactive]:hidden">
             <EditDetailForm />
           </TabsContent>
         )}
 
-        <TabsContent value="security" className="flex flex-col gap-6">
+        <TabsContent value="security" className="flex flex-col gap-6 pt-0">
           <Card>
             <CardHeader>
               <CardTitle as="h2">{tAudit("accountSecurity.title")}</CardTitle>

@@ -76,4 +76,13 @@ describe("ProfileView", () => {
     fireEvent.mouseDown(screen.getByRole("tab", { name: "tabs.personal" }));
     expect(replace).toHaveBeenCalledWith("/profile?tab=personal", { scroll: false });
   });
+
+  it("does not stack the panels' top padding on the tab gap", () => {
+    render(<ProfileView />);
+    // The hidden form panels stay mounted, so every panel is checked.
+    for (const panel of screen.getAllByRole("tabpanel", { hidden: true })) {
+      expect(panel).toHaveClass("pt-0");
+      expect(panel).not.toHaveClass("pt-4");
+    }
+  });
 });
