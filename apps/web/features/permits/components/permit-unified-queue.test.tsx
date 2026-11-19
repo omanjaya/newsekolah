@@ -310,6 +310,36 @@ describe("permit queue late arrival actions", () => {
     expect(next.closest("[aria-hidden='true']")).toBeNull();
   });
 
+  it("moves focus to the row that took a middle row's place, not to the top", async () => {
+    mocks.late.mockReturnValue({
+      ...emptyResult,
+      data: {
+        data: [lateItemAtLeadership("a"), lateItemAtLeadership("b"), lateItemAtLeadership("c")],
+      },
+    });
+    const { rerender } = render(<PermitUnifiedQueue />);
+    const second = screen.getAllByRole("button", { name: "open" })[1];
+    if (!second) throw new Error("no second row");
+    await userEvent.click(second);
+    expect(screen.getByTestId("approve-panel")).toHaveTextContent("late_arrival:b");
+
+    mocks.late.mockReturnValue({
+      ...emptyResult,
+      data: { data: [lateItemAtLeadership("a"), lateItemAtLeadership("c")] },
+    });
+    rerender(<PermitUnifiedQueue />);
+    await userEvent.click(screen.getByRole("button", { name: "student-scanned" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    // The old third row now sits second.
+    const next = screen.getAllByRole("button", { name: "open" })[1];
+    await waitFor(() => {
+      expect(next).toHaveFocus();
+    });
+  });
+
   it("hands focus to the host's fallback when the last row left with the sheet", async () => {
     mocks.late.mockReturnValue({ ...emptyResult, data: { data: [lateItemAtLeadership("b")] } });
     const heading = document.createElement("h2");

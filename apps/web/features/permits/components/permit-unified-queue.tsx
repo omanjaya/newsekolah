@@ -85,8 +85,10 @@ export function PermitUnifiedQueue({
   // row that takes its place once the row is gone.
   const selectedIndex = useRef(0);
   const listRef = useRef<HTMLUListElement>(null);
-  const select = (row: PermitQueueRow | null, index = 0) => {
-    selectedIndex.current = index;
+  // Closing passes no index, so the opener's position survives until
+  // focus has moved.
+  const select = (row: PermitQueueRow | null, index?: number) => {
+    if (row !== null && index !== undefined) selectedIndex.current = index;
     setSelected(row);
     onSheetOpenChange?.(row !== null);
   };
