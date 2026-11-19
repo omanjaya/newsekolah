@@ -405,6 +405,48 @@ describe("DashboardView", () => {
     expect(screen.getByRole("link", { name: "Isi presensi" })).toHaveFocus();
   });
 
+  // The student's teacher names wait for the reloaded schedules, so that
+  // read only goes pending after the refetch has settled: the hold has to
+  // last until no block is pending (audit r5-n3, r5-r4-n2).
+  it("keeps the hero through a read that only starts once the retried ones settle", async () => {
+    let settle: () => void = () => undefined;
+    refetchQueries.mockReset().mockReturnValue(
+      new Promise<void>((resolve) => {
+        settle = resolve;
+      }),
+    );
+    studentBlock.mockReturnValue({ ...emptyBlock(), failed: true });
+    const { rerender } = render(<DashboardView />);
+
+    const hero = screen.getByTestId("dashboard-hero");
+    const retry = within(hero).getByRole("button", { name: "failed.action" });
+    await userEvent.click(retry);
+    studentBlock.mockReturnValue({ ...emptyBlock(), pending: true });
+    rerender(<DashboardView />);
+
+    // The retried reads are back; the dependent one has just started.
+    await act(async () => {
+      settle();
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByTestId("dashboard-skeleton")).not.toBeInTheDocument();
+    expect(screen.getByTestId("dashboard-hero")).toBe(hero);
+    expect(retry).toHaveAttribute("aria-busy", "true");
+
+    studentBlock.mockReturnValue({ ...emptyBlock(), hero: urgentHero() });
+    rerender(<DashboardView />);
+
+    expect(screen.getByTestId("dashboard-hero")).toBe(hero);
+    expect(screen.queryByRole("button", { name: "failed.action" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Isi presensi" })).toHaveFocus();
+
+    // Once the hold is over, a later load shows the skeleton as usual.
+    studentBlock.mockReturnValue({ ...emptyBlock(), pending: true });
+    rerender(<DashboardView />);
+    expect(screen.getByTestId("dashboard-skeleton")).toBeInTheDocument();
+  });
+
   it("keeps an urgent hero and the notice's busy retry in place while the refetch runs", async () => {
     refetchQueries.mockReset().mockReturnValue(new Promise<void>(() => undefined));
     teacherBlock.mockReturnValue({ ...emptyBlock(), hero: urgentHero() });
