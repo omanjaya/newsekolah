@@ -20,10 +20,14 @@ select exists (
 select timezone from tenants where id = $1;
 
 -- name: MentoringStudentInfo :one
--- cross-module read: users (identity) and enrollments/classes (academic),
--- for the name and class shown in the mentor's per-student view.
+-- cross-module read: users/user_profiles (identity) and enrollments/classes
+-- (academic), for the name and class shown in the mentor's per-student view.
+-- Only a student profile qualifies: a staff member's or an administrator's
+-- id is no student, so it finds no row (a 404) instead of a made-up
+-- snapshot under their name.
 select u.name as student_name, coalesce(c.name, '') as class_name
 from users u
+join user_profiles up on up.user_id = u.id and up.kind = 'student'
 left join enrollments e on e.student_user_id = u.id and e.academic_year_id = $2 and e.status = 'active'
 left join classes c on c.id = e.class_id
 where u.tenant_id = $1 and u.id = $3;

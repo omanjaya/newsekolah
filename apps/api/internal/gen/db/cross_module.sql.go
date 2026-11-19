@@ -1415,6 +1415,7 @@ func (q *Queries) MentoringHasActiveDuty(ctx context.Context, arg MentoringHasAc
 const mentoringStudentInfo = `-- name: MentoringStudentInfo :one
 select u.name as student_name, coalesce(c.name, '') as class_name
 from users u
+join user_profiles up on up.user_id = u.id and up.kind = 'student'
 left join enrollments e on e.student_user_id = u.id and e.academic_year_id = $2 and e.status = 'active'
 left join classes c on c.id = e.class_id
 where u.tenant_id = $1 and u.id = $3
@@ -1431,8 +1432,11 @@ type MentoringStudentInfoRow struct {
 	ClassName   string `json:"class_name"`
 }
 
-// cross-module read: users (identity) and enrollments/classes (academic),
-// for the name and class shown in the mentor's per-student view.
+// cross-module read: users/user_profiles (identity) and enrollments/classes
+// (academic), for the name and class shown in the mentor's per-student view.
+// Only a student profile qualifies: a staff member's or an administrator's
+// id is no student, so it finds no row (a 404) instead of a made-up
+// snapshot under their name.
 func (q *Queries) MentoringStudentInfo(ctx context.Context, arg MentoringStudentInfoParams) (MentoringStudentInfoRow, error) {
 	row := q.db.QueryRow(ctx, mentoringStudentInfo, arg.TenantID, arg.AcademicYearID, arg.ID)
 	var i MentoringStudentInfoRow
