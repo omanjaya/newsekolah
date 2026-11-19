@@ -181,6 +181,7 @@
     "save": "Save",
     "saved": "Subject saved for the academic year",
     "deleted": "{name} for {gradeLevel} removed from this academic year",
+    "deletedAllGrades": "{name} for all grade levels removed from this academic year",
     "rowActions": "More actions for {name}, {gradeLevel}",
     "deleteTitle": "Remove this subject from the academic year?",
     "deleteBody": "\"{name}\" for {gradeLevel} will be removed from this academic year. The same subject in other grade levels is not affected.",

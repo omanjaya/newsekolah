@@ -359,11 +359,11 @@ export function SubjectOfferingsView({ page }: { page: HubPageProps }): ReactEle
           if (!pendingDelete) return;
           try {
             await remove.mutateAsync(pendingDelete.id);
+            const name = subjectNameOf(pendingDelete, subjectMap);
             toast.success(
-              t("deleted", {
-                name: subjectNameOf(pendingDelete, subjectMap),
-                gradeLevel: gradeLevelName(pendingDelete),
-              }),
+              pendingDelete.grade_level_id
+                ? t("deleted", { name, gradeLevel: gradeLevelName(pendingDelete) })
+                : t("deletedAllGrades", { name }),
             );
           } catch (error) {
             fail(error);

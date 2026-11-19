@@ -181,6 +181,7 @@
     "save": "Simpan",
     "saved": "Mapel tahun ajaran tersimpan",
     "deleted": "Mapel {name} untuk {gradeLevel} dihapus dari tahun ajaran ini",
+    "deletedAllGrades": "Mapel {name} untuk semua tingkat dihapus dari tahun ajaran ini",
     "rowActions": "Aksi lain untuk {name}, {gradeLevel}",
     "deleteTitle": "Hapus mapel dari tahun ajaran ini?",
     "deleteBody": "Mapel \"{name}\" untuk {gradeLevel} akan dihapus dari tahun ajaran ini. Mapel yang sama di tingkat lain tidak berubah.",

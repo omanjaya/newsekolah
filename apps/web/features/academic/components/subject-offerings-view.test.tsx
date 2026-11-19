@@ -6,6 +6,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   gradeLevels: undefined as { data: { id: string; name: string; sequence?: number }[] } | undefined,
+  toastSuccess: vi.fn(),
 }));
 
 vi.mock("next-intl", () => ({
@@ -50,7 +51,7 @@ vi.mock("../api-offerings", () => ({
 }));
 vi.mock("@newsekolah/ui", async () => {
   const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
-  return { ...actual, useToast: () => ({ success: vi.fn(), error: vi.fn() }) };
+  return { ...actual, useToast: () => ({ success: mocks.toastSuccess, error: vi.fn() }) };
 });
 
 import { SubjectOfferingsView } from "./subject-offerings-view";
@@ -76,6 +77,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   mocks.gradeLevels = undefined;
+  mocks.toastSuccess.mockReset();
 });
 
 describe("SubjectOfferingsView", () => {
@@ -138,6 +140,10 @@ describe("SubjectOfferingsView", () => {
       within(await screen.findByRole("menu")).getByRole("menuitem", { name: "delete" }),
     );
     expect(await screen.findByText("deleteBodyAllGrades Fisika")).toBeInTheDocument();
+
+    // The toast uses the same all-grades wording, not "for All grade levels".
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "delete" }));
+    expect(mocks.toastSuccess).toHaveBeenCalledWith("deletedAllGrades Fisika");
   });
 
   it("sorts by grade level in the school's sequence, not by name", async () => {
