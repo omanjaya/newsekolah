@@ -69,6 +69,9 @@ it("gives each date and time pair of the schedule a row of its own", () => {
   // Two pairs in one row left the time picker too narrow for "Pilih jam".
   const grid = section.querySelector(":scope > div:last-child");
   expect(grid).not.toHaveClass("@lg:grid-cols-2");
+  // On a phone the date and time of a pair stack, each the full width.
+  const pair = screen.getByRole("group", { name: "startsAt" });
+  expect(pair).toHaveClass("grid-cols-1", "sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]");
 });
 
 it("still creates a draft from the restructured compose tab", async () => {
@@ -143,6 +146,21 @@ it("marks a missing title and body on their own fields and focuses the first", a
   await user.type(title, "Judul");
   expect(title).not.toHaveAttribute("aria-invalid");
   expect(body).toHaveAttribute("aria-invalid", "true");
+});
+
+it("focuses the title once the compose tab is back after a submit from the preview", async () => {
+  const user = userEvent.setup();
+  render(<AnnouncementForm onSaved={vi.fn()} onCancel={vi.fn()} />);
+
+  await user.click(screen.getByRole("tab", { name: "tabPreview" }));
+  await user.click(screen.getByRole("button", { name: "saveDraft" }));
+
+  expect(create).not.toHaveBeenCalled();
+  expect(screen.getByRole("tab", { name: "tabCompose" })).toHaveAttribute("aria-selected", "true");
+  const title = await screen.findByRole("textbox", { name: /title/ });
+  await vi.waitFor(() => {
+    expect(title).toHaveFocus();
+  });
 });
 
 it("marks an empty audience on the audience picker, not in a banner", async () => {

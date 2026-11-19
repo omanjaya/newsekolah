@@ -357,7 +357,7 @@ function DateTimeField({
     <Field label={label} hint={hint}>
       {(control) => (
         <div
-          className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-2"
+          className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
           role="group"
           aria-labelledby={control.labelId}
           aria-describedby={control["aria-describedby"]}
