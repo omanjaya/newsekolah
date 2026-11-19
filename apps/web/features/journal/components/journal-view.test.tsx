@@ -1,8 +1,9 @@
 import type * as UiModule from "@newsekolah/ui";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+import { pickDate } from "../../../test/pick-date";
 import type { LessonDayGroup } from "../lib/build-lesson-days";
 
 import { JournalView } from "./journal-view";
@@ -116,12 +117,8 @@ it("passes the chosen date range to the query and writes it to the URL state", a
   render(<JournalView />);
 
   await user.click(screen.getByRole("button", { name: "filters.dateRange" }));
-  fireEvent.change(screen.getByLabelText("filters.from"), {
-    target: { value: "2026-09-01" },
-  });
-  fireEvent.change(screen.getByLabelText("filters.to"), {
-    target: { value: "2026-09-30" },
-  });
+  await pickDate(user, "filters.from", "2026-09-01");
+  await pickDate(user, "filters.to", "2026-09-30");
 
   expect(query).toHaveBeenLastCalledWith(undefined, 0, 50, undefined, "2026-09-01", "2026-09-30");
   expect(new URLSearchParams(window.location.search).get("from")).toBe("2026-09-01");

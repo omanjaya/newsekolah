@@ -1,6 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { pickDate } from "../../../test/pick-date";
 
 const mocks = vi.hoisted(() => ({
   useStaffAttendanceHistoryQuery: vi.fn(),
@@ -69,15 +71,13 @@ describe("EmployeeRecapView filters", () => {
     return user;
   }
 
-  it("sets a date range from the two native date inputs and writes both bounds to the URL", async () => {
+  it("sets a date range from the two date pickers and writes both bounds to the URL", async () => {
     render(<EmployeeRecapView employees={EMPLOYEES} />);
     const user = await selectEmployee();
 
     await user.click(screen.getByRole("button", { name: /^history\.dateRange/ }));
-    fireEvent.change(screen.getByLabelText("history.from"), {
-      target: { value: "2026-08-01" },
-    });
-    fireEvent.change(screen.getByLabelText("history.to"), { target: { value: "2026-08-15" } });
+    await pickDate(user, "history.from", "2026-08-01");
+    await pickDate(user, "history.to", "2026-08-15");
 
     expect(mocks.useStaffAttendanceHistoryQuery).toHaveBeenLastCalledWith(
       "emp-1",
