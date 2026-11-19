@@ -77,7 +77,7 @@ export function LeaveRequestsView(): ReactElement {
         </>
       ) : (
         <EmptyState
-          icon={<domainIcons.exitPermit aria-hidden="true" />}
+          icon={<domainIcons.leave aria-hidden="true" />}
           title={t("noAccessTitle")}
           description={t("noAccessBody")}
         />

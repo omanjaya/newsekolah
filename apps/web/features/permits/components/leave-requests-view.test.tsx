@@ -98,7 +98,10 @@ describe("LeaveRequestsView", () => {
   it("shows the no-access empty state for a role with neither permission", () => {
     canSubmit = false;
     canIssue = false;
-    render(<LeaveRequestsView />);
+    const { container } = render(<LeaveRequestsView />);
     expect(screen.getByText("noAccessTitle")).toBeInTheDocument();
+    // The leave icon, not the exit permit door.
+    expect(container.querySelector(".lucide-clipboard-list")).not.toBeNull();
+    expect(container.querySelector(".lucide-door-open")).toBeNull();
   });
 });

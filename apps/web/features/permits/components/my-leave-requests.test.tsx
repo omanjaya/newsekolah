@@ -74,7 +74,10 @@ describe("MyLeaveRequests", () => {
     renderMine(onCreate);
     expect(screen.getByText("emptyTitle")).toBeInTheDocument();
     expect(screen.queryByTestId("leave-mine-tiles")).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "submit" }));
+    const repeat = screen.getByRole("button", { name: "submit" });
+    // The header carries the primary; the empty list repeats it quietly.
+    expect(repeat).not.toHaveClass("bg-accent");
+    await userEvent.click(repeat);
     expect(onCreate).toHaveBeenCalledOnce();
   });
 

@@ -89,8 +89,9 @@ export function MyLeaveRequests({
         icon={<CalendarX2 aria-hidden="true" />}
         title={t("emptyTitle")}
         description={t("emptyBody")}
+        // The header carries the primary; the empty list repeats it quietly.
         action={
-          <Button icon={<Plus />} onClick={onCreate}>
+          <Button variant="secondary" icon={<Plus />} onClick={onCreate}>
             {t("submit")}
           </Button>
         }
