@@ -39,8 +39,8 @@ export function TitleIdentity({ title }: { title: LibraryTitle }): ReactElement 
             <p className="text-body-sm text-fg-muted tabular-nums">
               {[
                 title.classification,
-                title.isbn && `ISBN ${title.isbn}`,
-                title.issn && `ISSN ${title.issn}`,
+                title.isbn && `${t("fields.isbn")} ${title.isbn}`,
+                title.issn && `${t("fields.issn")} ${title.issn}`,
               ]
                 .filter(Boolean)
                 .join(" · ")}
