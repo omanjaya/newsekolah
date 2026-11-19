@@ -27,6 +27,7 @@ import {
   type ReportExportOptions,
 } from "../../../components/report-export-dialog";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useDateRangeFilter } from "../../../lib/hooks/use-date-range-filter";
 import { useDateRangePresets } from "../../../lib/hooks/use-date-range-presets";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import {
@@ -116,8 +117,10 @@ export function LibraryReportsView({
   const today = todayInZone(timeZone);
   const presets = useDateRangePresets();
   const [tab, setTab] = useUrlState<ReportTab>(tabKey, REPORT_TABS, "loans");
-  const [from, setFrom] = useDateFilter("from", startOfIsoMonth(today));
-  const [to, setTo] = useDateFilter("to", today);
+  const [{ from, to }, setRange] = useDateRangeFilter({
+    defaultFrom: startOfIsoMonth(today),
+    defaultTo: today,
+  });
   const [month, setMonth] = useDateFilter("month", thisMonthInZone(timeZone), true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const embedded = tabKey !== "tab";
@@ -149,8 +152,7 @@ export function LibraryReportsView({
     <Button
       variant="secondary"
       onClick={() => {
-        setFrom(startOfPreviousIsoMonth(from));
-        setTo(endOfPreviousIsoMonth(from));
+        setRange({ from: startOfPreviousIsoMonth(from), to: endOfPreviousIsoMonth(from) });
       }}
     >
       {t("earlierPeriod")}
@@ -204,8 +206,7 @@ export function LibraryReportsView({
               value={{ from, to }}
               onChange={(range) => {
                 if (!range.from || !range.to) return;
-                setFrom(range.from);
-                setTo(range.to);
+                setRange({ from: range.from, to: range.to });
               }}
               presets={presets}
               today={today}

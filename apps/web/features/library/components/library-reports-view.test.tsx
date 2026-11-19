@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   overdue: vi.fn(),
+  loans: vi.fn(() => ({ data: { data: [] }, isLoading: false })),
 }));
 
 vi.mock("next-intl", () => ({
@@ -28,7 +29,7 @@ vi.mock("../../reference/directory-names", async () => {
 });
 vi.mock("../api", () => ({
   downloadMonthlyLibraryReportPdf: vi.fn(),
-  useLoansReportQuery: () => ({ data: { data: [] }, isLoading: false }),
+  useLoansReportQuery: mocks.loans,
   useMostBorrowedReportQuery: () => ({ data: { data: [] }, isLoading: false }),
   useOverdueMembersReportQuery: mocks.overdue,
 }));
@@ -146,6 +147,28 @@ describe("LibraryReportsView period reports", () => {
     const params = new URLSearchParams(window.location.search);
     expect(params.get("from")).toBe("2026-08-01");
     expect(params.get("to")).toBe("2026-08-31");
+  });
+
+  it("moves both bounds in one history entry, so Back never leaves half a range", async () => {
+    const user = userEvent.setup();
+    render(<LibraryReportsView />);
+    const push = vi.spyOn(window.history, "pushState");
+
+    await user.click(screen.getByRole("button", { name: "earlierPeriod" }));
+
+    expect(push).toHaveBeenCalledTimes(1);
+    push.mockRestore();
+  });
+
+  it("reads a reversed range from the URL in calendar order", () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/library/reports?tab=loans&from=2026-09-15&to=2026-09-01",
+    );
+    render(<LibraryReportsView />);
+
+    expect(mocks.loans).toHaveBeenLastCalledWith("2026-09-01", "2026-09-15");
   });
 
   it("offers the download as a secondary header action", () => {
