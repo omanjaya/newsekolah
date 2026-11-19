@@ -195,6 +195,7 @@ function MonitorDisplay({
     refetchInterval: mode === "polling" ? 15_000 : undefined,
   });
   const presence = useMonitorPresenceQuery(canSeePresence);
+  const periodLabel = usePeriodLabel(snapshot.data?.current_period);
 
   if (snapshot.isError) {
     // Only a refused token means the token is wrong; a network or server
@@ -231,7 +232,6 @@ function MonitorDisplay({
     .filter((session) => session.status !== "no_schedule")
     .sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status));
   const unscheduled = allSessions.filter((session) => session.status === "no_schedule");
-  const currentPeriod = snapshot.data?.current_period;
 
   return (
     <div className="flex flex-col gap-6 px-4 py-6 md:px-8 md:py-8">
@@ -294,17 +294,25 @@ function MonitorDisplay({
           </dl>
 
           {sessions.length === 0 ? (
+            // Bell times set but no timetable for this period yet: the
+            // period runs, it just has no lessons, so say which one.
             <EmptyState
               icon={<MonitorSmartphone aria-hidden="true" />}
-              title={t("noSessionsTitle")}
-              description={t("noSessionsBody")}
+              title={periodLabel ? t("noLessonsInPeriodTitle") : t("noSessionsTitle")}
+              description={
+                periodLabel
+                  ? t("noLessonsInPeriodBody", { period: periodLabel })
+                  : t("noSessionsBody")
+              }
             />
           ) : (
             <section className="flex flex-col gap-3" aria-labelledby="monitor-sessions-title">
               <SectionHeader
                 titleId="monitor-sessions-title"
                 title={t("sessionsTitle")}
-                description={currentPeriod ? <CurrentPeriod period={currentPeriod} /> : undefined}
+                description={
+                  periodLabel ? <span className="tabular-nums">{periodLabel}</span> : undefined
+                }
               />
               <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {sessions.map((session, index) => (
@@ -353,29 +361,27 @@ function MonitorPageHeading(): ReactElement {
 }
 
 /**
- * The lesson period the board is showing, in the school's time zone. It is
- * the section's description line, so it wraps under the title on a phone
- * instead of squeezing it, and inherits that line's type role.
+ * The lesson period the board is showing, in the school's time zone, or
+ * null outside lesson periods. It is the sessions section's description
+ * line (so it wraps under the title on a phone instead of squeezing it),
+ * or names the period in the empty state when no class has a lesson in it.
  */
-function CurrentPeriod({ period }: { period: MonitorPeriod }): ReactElement {
+function usePeriodLabel(period: MonitorPeriod | undefined): string | null {
   const t = useTranslations("app.monitor");
   const format = useFormatter();
   const { me } = useSession();
+  if (!period) return null;
   const clock = (instant: string) =>
     format.dateTime(new Date(instant), {
       hour: "2-digit",
       minute: "2-digit",
       timeZone: me?.tenant.timezone,
     });
-  return (
-    <span className="tabular-nums">
-      {t("currentPeriod", {
-        name: period.name,
-        start: clock(period.starts_at),
-        end: clock(period.ends_at),
-      })}
-    </span>
-  );
+  return t("currentPeriod", {
+    name: period.name,
+    start: clock(period.starts_at),
+    end: clock(period.ends_at),
+  });
 }
 
 function ConnectionIndicator({ mode }: { mode: MonitorConnectionMode }): ReactElement {

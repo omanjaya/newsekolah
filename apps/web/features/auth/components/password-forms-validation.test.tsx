@@ -3,9 +3,14 @@ import userEvent from "@testing-library/user-event";
 import type { ReactElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useChangePasswordMutation, useConfirmPasswordResetMutation } from "../api";
+import {
+  useChangePasswordMutation,
+  useConfirmPasswordResetMutation,
+  useRequestPasswordResetMutation,
+} from "../api";
 
 import { ChangePasswordForm } from "./change-password-form";
+import { ForgotPasswordForm } from "./forgot-password-form";
 import { ResetPasswordForm } from "./reset-password-form";
 
 /**
@@ -26,6 +31,7 @@ vi.mock("next-intl", () => ({
 vi.mock("../api", () => ({
   useConfirmPasswordResetMutation: vi.fn(),
   useChangePasswordMutation: vi.fn(),
+  useRequestPasswordResetMutation: vi.fn(),
 }));
 
 vi.mock("../../../lib/i18n/api-error-message", () => ({
@@ -37,6 +43,7 @@ beforeEach(() => {
   const mutation = { mutateAsync, isPending: false, isError: false, error: null };
   vi.mocked(useConfirmPasswordResetMutation).mockReturnValue(mutation as never);
   vi.mocked(useChangePasswordMutation).mockReturnValue(mutation as never);
+  vi.mocked(useRequestPasswordResetMutation).mockReturnValue(mutation as never);
 });
 
 interface Case {
@@ -87,5 +94,30 @@ describe.each(CASES)("$name with a short new password", (testCase) => {
     expect(await screen.findByText("Kata sandi minimal 8 karakter")).toBeInTheDocument();
     expect(field(container, "new_password")).toBeInTheDocument();
     expect(mutateAsync).not.toHaveBeenCalled();
+  });
+});
+
+describe("ForgotPasswordForm", () => {
+  it("treats a value of only spaces as empty and sends nothing", async () => {
+    const user = userEvent.setup();
+    const onSent = vi.fn();
+    const { container } = render(<ForgotPasswordForm onSent={onSent} />);
+    await user.type(field(container, "username_or_email"), "   ");
+    await user.click(screen.getByRole("button", { name: "submit" }));
+
+    expect(await screen.findByText("Nama pengguna atau email wajib diisi")).toBeInTheDocument();
+    expect(mutateAsync).not.toHaveBeenCalled();
+    expect(onSent).not.toHaveBeenCalled();
+  });
+
+  it("sends the identifier without surrounding spaces", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<ForgotPasswordForm onSent={vi.fn()} />);
+    await user.type(field(container, "username_or_email"), "  guru01 ");
+    await user.click(screen.getByRole("button", { name: "submit" }));
+
+    await vi.waitFor(() => {
+      expect(mutateAsync).toHaveBeenCalledWith("guru01");
+    });
   });
 });

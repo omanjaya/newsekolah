@@ -22,21 +22,38 @@ select date, end_date from academic_calendar_events
 where tenant_id = $1 and kind = 'holiday' and date <= $3 and end_date >= $2;
 
 -- name: LookupLibraryMembers :many
+-- A member whose number, NIS or username equals the query comes first: the
+-- substring match is capped, and a short code (a hand-set member number
+-- such as "12") must not lose its holder behind names that only contain it.
+-- exact_only drops the substring match altogether, for a query too short
+-- for a useful fuzzy search (a one-character member number such as "7").
 select u.id as user_id, u.name as user_name, u.username, coalesce(sp.nis, '') as nis, coalesce(lm.member_no, '') as member_no
 from users u
 left join student_profiles sp on sp.user_id = u.id
 left join library_members lm on lm.user_id = u.id and lm.tenant_id = u.tenant_id
 where u.tenant_id = $1 and u.deleted_at is null
-  and (u.name ilike '%' || sqlc.arg(query)::text || '%' or u.username ilike '%' || sqlc.arg(query)::text || '%'
-    or sp.nis ilike '%' || sqlc.arg(query)::text || '%' or lm.member_no ilike '%' || sqlc.arg(query)::text || '%')
-order by u.name
+  and (lower(lm.member_no) = lower(sqlc.arg(query)::text)
+    or lower(sp.nis) = lower(sqlc.arg(query)::text)
+    or lower(u.username) = lower(sqlc.arg(query)::text)
+    or (not sqlc.arg(exact_only)::boolean and (
+      u.name ilike '%' || sqlc.arg(query)::text || '%' or u.username ilike '%' || sqlc.arg(query)::text || '%'
+      or sp.nis ilike '%' || sqlc.arg(query)::text || '%' or lm.member_no ilike '%' || sqlc.arg(query)::text || '%')))
+order by coalesce(lower(lm.member_no) = lower(sqlc.arg(query)::text)
+    or lower(sp.nis) = lower(sqlc.arg(query)::text)
+    or lower(u.username) = lower(sqlc.arg(query)::text), false) desc,
+  u.name
 limit $2;
 
 -- name: LookupLibraryCopies :many
+-- exact_only matches the barcode exactly instead of searching barcodes and
+-- titles by substring, as for LookupLibraryMembers.
 select c.id as copy_id, c.barcode, c.status, t.id as title_id, t.title
 from library_copies c
 join library_titles t on t.id = c.title_id and t.deleted_at is null
-where c.tenant_id = $1 and (c.barcode ilike '%' || sqlc.arg(query)::text || '%' or t.title ilike '%' || sqlc.arg(query)::text || '%')
+where c.tenant_id = $1
+  and (lower(c.barcode) = lower(sqlc.arg(query)::text)
+    or (not sqlc.arg(exact_only)::boolean
+      and (c.barcode ilike '%' || sqlc.arg(query)::text || '%' or t.title ilike '%' || sqlc.arg(query)::text || '%')))
 order by t.title
 limit $2;
 

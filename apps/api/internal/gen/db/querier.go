@@ -615,6 +615,13 @@ type Querier interface {
 	GetCopyByBarcode(ctx context.Context, arg GetCopyByBarcodeParams) (LibraryCopy, error)
 	GetCounseling(ctx context.Context, arg GetCounselingParams) (Counseling, error)
 	GetCounselingAttachment(ctx context.Context, arg GetCounselingAttachmentParams) (CounselingAttachment, error)
+	// The bell-schedule period running at now_time on day_of_week: the period
+	// template assigned to that weekday, and its period whose [starts_at,
+	// ends_at) window contains now_time -- the same rule academic's
+	// PeriodsToday applies through domain.CurrentPeriod. The monitor snapshot
+	// falls back to this when no schedule occurrence supplies the governing
+	// period (bell times set, timetables not entered yet).
+	GetCurrentBellPeriodForAttendance(ctx context.Context, arg GetCurrentBellPeriodForAttendanceParams) (GetCurrentBellPeriodForAttendanceRow, error)
 	GetDefaultDocumentTemplate(ctx context.Context, arg GetDefaultDocumentTemplateParams) (DocumentTemplate, error)
 	GetDiscount(ctx context.Context, arg GetDiscountParams) (FeeDiscount, error)
 	GetDocumentTemplateByID(ctx context.Context, arg GetDocumentTemplateByIDParams) (DocumentTemplate, error)
@@ -1428,7 +1435,14 @@ type Querier interface {
 	// against the hours staff actually work, and UTC is 7-9 hours off for
 	// every Indonesian timezone.
 	LoginHistogramByHour(ctx context.Context, arg LoginHistogramByHourParams) ([]LoginHistogramByHourRow, error)
+	// exact_only matches the barcode exactly instead of searching barcodes and
+	// titles by substring, as for LookupLibraryMembers.
 	LookupLibraryCopies(ctx context.Context, arg LookupLibraryCopiesParams) ([]LookupLibraryCopiesRow, error)
+	// A member whose number, NIS or username equals the query comes first: the
+	// substring match is capped, and a short code (a hand-set member number
+	// such as "12") must not lose its holder behind names that only contain it.
+	// exact_only drops the substring match altogether, for a query too short
+	// for a useful fuzzy search (a one-character member number such as "7").
 	LookupLibraryMembers(ctx context.Context, arg LookupLibraryMembersParams) ([]LookupLibraryMembersRow, error)
 	MarkAllNotificationsRead(ctx context.Context, arg MarkAllNotificationsReadParams) error
 	MarkAnnouncementRead(ctx context.Context, arg MarkAnnouncementReadParams) error

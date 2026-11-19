@@ -85,8 +85,11 @@ export const tenantLookupQuerySchema = z.object({
 export type TenantLookupQuery = z.infer<typeof tenantLookupQuerySchema>;
 
 export const forgotPasswordSchema = z.object({
+  // Trimmed first: blank space is no identifier, and the API would answer
+  // it with the generic "link sent" success.
   username_or_email: z
     .string()
+    .trim()
     .min(1, "validation.usernameOrEmailRequired")
     .max(USERNAME_OR_EMAIL_MAX_LENGTH, "validation.usernameOrEmailMax"),
 });

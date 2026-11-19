@@ -115,24 +115,27 @@ export function SubjectOfferingsView({ page }: { page: HubPageProps }): ReactEle
     }
   }
 
-  const columns = useMemo<ColumnDef<SubjectOffering>[]>(
-    () => [
+  const columns = useMemo<ColumnDef<SubjectOffering>[]>(() => {
+    const subjectName = (offering: SubjectOffering) =>
+      subjectMap.get(offering.subject_id)?.name ?? "-";
+    const gradeLevelName = (offering: SubjectOffering) =>
+      offering.grade_level_id
+        ? (gradeLevelMap.get(offering.grade_level_id)?.name ?? "-")
+        : t("allGrades");
+    return [
       {
         // Read through accessors (not only cells) so the search box finds
         // a subject or grade level by its name.
         id: "subject",
         header: t("columns.subject"),
         enableSorting: false,
-        accessorFn: (offering) => subjectMap.get(offering.subject_id)?.name ?? "-",
+        accessorFn: subjectName,
       },
       {
         id: "gradeLevel",
         header: t("columns.gradeLevel"),
         enableSorting: false,
-        accessorFn: (offering) =>
-          offering.grade_level_id
-            ? (gradeLevelMap.get(offering.grade_level_id)?.name ?? "-")
-            : t("allGrades"),
+        accessorFn: gradeLevelName,
       },
       { accessorKey: "hours_per_week", header: t("columns.hoursPerWeek"), enableSorting: false },
       {
@@ -143,7 +146,8 @@ export function SubjectOfferingsView({ page }: { page: HubPageProps }): ReactEle
           canManage ? (
             <RowActionsMenu
               ariaLabel={t("rowActions", {
-                name: subjectMap.get(row.original.subject_id)?.name ?? "",
+                name: subjectName(row.original),
+                gradeLevel: gradeLevelName(row.original),
               })}
               items={[
                 {
@@ -165,9 +169,8 @@ export function SubjectOfferingsView({ page }: { page: HubPageProps }): ReactEle
             />
           ) : null,
       },
-    ],
-    [t, canManage, subjectMap, gradeLevelMap],
-  );
+    ];
+  }, [t, canManage, subjectMap, gradeLevelMap]);
 
   return (
     <AppPage

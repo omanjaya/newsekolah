@@ -9,9 +9,11 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
@@ -128,6 +130,27 @@ func (r *Repository) ListCurrentPeriodScheduleCards(ctx context.Context, tenantI
 		}
 	}
 	return out, nil
+}
+
+// GetCurrentBellPeriod resolves the bell-schedule period running at
+// nowLocal from the period template assigned to dayOfWeek, with its window
+// placed on date. ok is false when no template is assigned that day or
+// nowLocal falls outside every period.
+func (r *Repository) GetCurrentBellPeriod(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, date, nowLocal time.Time) (service.MonitorPeriod, bool, error) {
+	row, err := r.queries(ctx).GetCurrentBellPeriodForAttendance(ctx, db.GetCurrentBellPeriodForAttendanceParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, DayOfWeek: dayOfWeek, NowTime: timeOfDay(nowLocal),
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return service.MonitorPeriod{}, false, nil
+	}
+	if err != nil {
+		return service.MonitorPeriod{}, false, err
+	}
+	return service.MonitorPeriod{
+		Name:     row.Name,
+		StartsAt: dateAtTimeOfDay(date, row.StartsAt),
+		EndsAt:   dateAtTimeOfDay(date, row.EndsAt),
+	}, true, nil
 }
 
 // ListClassesWithoutCurrentSchedule backs the monitor snapshot's "no

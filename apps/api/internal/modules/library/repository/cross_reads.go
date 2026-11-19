@@ -57,8 +57,8 @@ func (r *Repository) HolidayDates(ctx context.Context, tenantID uuid.UUID, from,
 	return out, nil
 }
 
-func (r *Repository) LookupMembers(ctx context.Context, tenantID uuid.UUID, query string, limit int) ([]service.MemberLookupResult, error) {
-	rows, err := r.queries(ctx).LookupLibraryMembers(ctx, db.LookupLibraryMembersParams{TenantID: tenantID, Query: query, Limit: int32(limit)}) //nolint:gosec // clamped
+func (r *Repository) LookupMembers(ctx context.Context, tenantID uuid.UUID, query string, exactOnly bool, limit int) ([]service.MemberLookupResult, error) {
+	rows, err := r.queries(ctx).LookupLibraryMembers(ctx, db.LookupLibraryMembersParams{TenantID: tenantID, Query: query, ExactOnly: exactOnly, Limit: int32(limit)}) //nolint:gosec // clamped
 	if err != nil {
 		return nil, fmt.Errorf("lookup members: %w", err)
 	}
@@ -69,8 +69,8 @@ func (r *Repository) LookupMembers(ctx context.Context, tenantID uuid.UUID, quer
 	return out, nil
 }
 
-func (r *Repository) LookupCopies(ctx context.Context, tenantID uuid.UUID, query string, limit int) ([]service.CopyLookupResult, error) {
-	rows, err := r.queries(ctx).LookupLibraryCopies(ctx, db.LookupLibraryCopiesParams{TenantID: tenantID, Query: query, Limit: int32(limit)}) //nolint:gosec // clamped
+func (r *Repository) LookupCopies(ctx context.Context, tenantID uuid.UUID, query string, exactOnly bool, limit int) ([]service.CopyLookupResult, error) {
+	rows, err := r.queries(ctx).LookupLibraryCopies(ctx, db.LookupLibraryCopiesParams{TenantID: tenantID, Query: query, ExactOnly: exactOnly, Limit: int32(limit)}) //nolint:gosec // clamped
 	if err != nil {
 		return nil, fmt.Errorf("lookup copies: %w", err)
 	}

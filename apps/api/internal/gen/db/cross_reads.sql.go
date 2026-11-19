@@ -108,6 +108,47 @@ func (q *Queries) GetClassNameForAttendance(ctx context.Context, arg GetClassNam
 	return name, err
 }
 
+const getCurrentBellPeriodForAttendance = `-- name: GetCurrentBellPeriodForAttendance :one
+select p.name, p.starts_at, p.ends_at
+from period_day_assignments pda
+join periods p on p.tenant_id = pda.tenant_id and p.template_id = pda.template_id
+where pda.tenant_id = $1 and pda.academic_year_id = $2 and pda.day_of_week = $3
+  and p.starts_at <= $4::time and p.ends_at > $4::time
+order by p.sequence
+limit 1
+`
+
+type GetCurrentBellPeriodForAttendanceParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	DayOfWeek      int16       `json:"day_of_week"`
+	NowTime        pgtype.Time `json:"now_time"`
+}
+
+type GetCurrentBellPeriodForAttendanceRow struct {
+	Name     string      `json:"name"`
+	StartsAt pgtype.Time `json:"starts_at"`
+	EndsAt   pgtype.Time `json:"ends_at"`
+}
+
+// The bell-schedule period running at now_time on day_of_week: the period
+// template assigned to that weekday, and its period whose [starts_at,
+// ends_at) window contains now_time -- the same rule academic's
+// PeriodsToday applies through domain.CurrentPeriod. The monitor snapshot
+// falls back to this when no schedule occurrence supplies the governing
+// period (bell times set, timetables not entered yet).
+func (q *Queries) GetCurrentBellPeriodForAttendance(ctx context.Context, arg GetCurrentBellPeriodForAttendanceParams) (GetCurrentBellPeriodForAttendanceRow, error) {
+	row := q.db.QueryRow(ctx, getCurrentBellPeriodForAttendance,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.DayOfWeek,
+		arg.NowTime,
+	)
+	var i GetCurrentBellPeriodForAttendanceRow
+	err := row.Scan(&i.Name, &i.StartsAt, &i.EndsAt)
+	return i, err
+}
+
 const getEnrolledClassForAttendance = `-- name: GetEnrolledClassForAttendance :one
 select class_id
 from enrollments
@@ -1004,15 +1045,19 @@ const lookupLibraryCopies = `-- name: LookupLibraryCopies :many
 select c.id as copy_id, c.barcode, c.status, t.id as title_id, t.title
 from library_copies c
 join library_titles t on t.id = c.title_id and t.deleted_at is null
-where c.tenant_id = $1 and (c.barcode ilike '%' || $3::text || '%' or t.title ilike '%' || $3::text || '%')
+where c.tenant_id = $1
+  and (lower(c.barcode) = lower($3::text)
+    or (not $4::boolean
+      and (c.barcode ilike '%' || $3::text || '%' or t.title ilike '%' || $3::text || '%')))
 order by t.title
 limit $2
 `
 
 type LookupLibraryCopiesParams struct {
-	TenantID uuid.UUID `json:"tenant_id"`
-	Limit    int32     `json:"limit"`
-	Query    string    `json:"query"`
+	TenantID  uuid.UUID `json:"tenant_id"`
+	Limit     int32     `json:"limit"`
+	Query     string    `json:"query"`
+	ExactOnly bool      `json:"exact_only"`
 }
 
 type LookupLibraryCopiesRow struct {
@@ -1023,8 +1068,15 @@ type LookupLibraryCopiesRow struct {
 	Title   string    `json:"title"`
 }
 
+// exact_only matches the barcode exactly instead of searching barcodes and
+// titles by substring, as for LookupLibraryMembers.
 func (q *Queries) LookupLibraryCopies(ctx context.Context, arg LookupLibraryCopiesParams) ([]LookupLibraryCopiesRow, error) {
-	rows, err := q.db.Query(ctx, lookupLibraryCopies, arg.TenantID, arg.Limit, arg.Query)
+	rows, err := q.db.Query(ctx, lookupLibraryCopies,
+		arg.TenantID,
+		arg.Limit,
+		arg.Query,
+		arg.ExactOnly,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1055,16 +1107,24 @@ from users u
 left join student_profiles sp on sp.user_id = u.id
 left join library_members lm on lm.user_id = u.id and lm.tenant_id = u.tenant_id
 where u.tenant_id = $1 and u.deleted_at is null
-  and (u.name ilike '%' || $3::text || '%' or u.username ilike '%' || $3::text || '%'
-    or sp.nis ilike '%' || $3::text || '%' or lm.member_no ilike '%' || $3::text || '%')
-order by u.name
+  and (lower(lm.member_no) = lower($3::text)
+    or lower(sp.nis) = lower($3::text)
+    or lower(u.username) = lower($3::text)
+    or (not $4::boolean and (
+      u.name ilike '%' || $3::text || '%' or u.username ilike '%' || $3::text || '%'
+      or sp.nis ilike '%' || $3::text || '%' or lm.member_no ilike '%' || $3::text || '%')))
+order by coalesce(lower(lm.member_no) = lower($3::text)
+    or lower(sp.nis) = lower($3::text)
+    or lower(u.username) = lower($3::text), false) desc,
+  u.name
 limit $2
 `
 
 type LookupLibraryMembersParams struct {
-	TenantID uuid.UUID `json:"tenant_id"`
-	Limit    int32     `json:"limit"`
-	Query    string    `json:"query"`
+	TenantID  uuid.UUID `json:"tenant_id"`
+	Limit     int32     `json:"limit"`
+	Query     string    `json:"query"`
+	ExactOnly bool      `json:"exact_only"`
 }
 
 type LookupLibraryMembersRow struct {
@@ -1075,8 +1135,18 @@ type LookupLibraryMembersRow struct {
 	MemberNo string    `json:"member_no"`
 }
 
+// A member whose number, NIS or username equals the query comes first: the
+// substring match is capped, and a short code (a hand-set member number
+// such as "12") must not lose its holder behind names that only contain it.
+// exact_only drops the substring match altogether, for a query too short
+// for a useful fuzzy search (a one-character member number such as "7").
 func (q *Queries) LookupLibraryMembers(ctx context.Context, arg LookupLibraryMembersParams) ([]LookupLibraryMembersRow, error) {
-	rows, err := q.db.Query(ctx, lookupLibraryMembers, arg.TenantID, arg.Limit, arg.Query)
+	rows, err := q.db.Query(ctx, lookupLibraryMembers,
+		arg.TenantID,
+		arg.Limit,
+		arg.Query,
+		arg.ExactOnly,
+	)
 	if err != nil {
 		return nil, err
 	}

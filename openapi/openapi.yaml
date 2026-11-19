@@ -10368,7 +10368,8 @@ paths:
             maxLength: 100
       responses:
         "200":
-          description: Matches (at most 8, members and copies combined)
+          description: Matches (at most 8, members and copies combined), a member whose member_no, NIS or username equals q first.
+            A one-character q matches an exact member_no, NIS, username or barcode only.
           content:
             application/json:
               schema:
@@ -20759,7 +20760,8 @@ components:
           description: Indonesian weekday name (Senin, Selasa, ...).
         current_period:
           $ref: "#/components/schemas/MonitorPeriod"
-          description: Omitted when no schedule anywhere is currently in its period.
+          description: "The period running now: from the classes with a lesson in it, or else from the weekday's bell schedule.
+            Omitted outside lesson periods."
         status_counts:
           type: object
           additionalProperties:

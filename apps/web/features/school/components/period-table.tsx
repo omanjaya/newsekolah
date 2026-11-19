@@ -18,7 +18,7 @@ import {
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { clockRange } from "../../schedule/clock-label";
@@ -51,80 +51,86 @@ export function PeriodTable({ templateId }: { templateId: string }): ReactElemen
   const remove = useDeletePeriodMutation();
   const [editing, setEditing] = useState<Period | "new" | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Period | null>(null);
-  const rows = [...(periods.data?.data ?? [])].sort((a, b) => a.sequence - b.sequence);
+  const rows = useMemo(
+    () => [...(periods.data?.data ?? [])].sort((a, b) => a.sequence - b.sequence),
+    [periods.data],
+  );
   const fail = (error: unknown) => {
     toast.error(
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
     );
   };
 
-  const columns: DataTableProps<Period>["columns"] = [
-    {
-      accessorKey: "sequence",
-      header: "#",
-      enableSorting: false,
-      meta: { card: "hidden", align: "end", label: t("sequence") },
-      cell: ({ row }) => (
-        <span className="text-fg-muted tabular-nums">{row.original.sequence}</span>
-      ),
-    },
-    {
-      accessorKey: "name",
-      header: t("name"),
-      enableSorting: false,
-      meta: { card: "title" },
-    },
-    {
-      id: "time",
-      header: t("time"),
-      enableSorting: false,
-      meta: { card: "subtitle" },
-      cell: ({ row }) => (
-        <span className="tabular-nums">
-          {clockRange(row.original.starts_at, row.original.ends_at, locale)}
-        </span>
-      ),
-    },
-    {
-      id: "kind",
-      header: t("kind"),
-      enableSorting: false,
-      meta: { card: "meta" },
-      cell: ({ row }) =>
-        row.original.is_break ? (
-          <Badge tone="neutral">{t("break")}</Badge>
-        ) : (
-          <span className="text-fg-muted">{t("lesson")}</span>
+  const columns = useMemo<DataTableProps<Period>["columns"]>(
+    () => [
+      {
+        accessorKey: "sequence",
+        header: "#",
+        enableSorting: false,
+        meta: { card: "hidden", align: "end", label: t("sequence") },
+        cell: ({ row }) => (
+          <span className="text-fg-muted tabular-nums">{row.original.sequence}</span>
         ),
-    },
-    {
-      id: "actions",
-      header: t("actions"),
-      enableSorting: false,
-      cell: ({ row }) => (
-        <RowActionsMenu
-          ariaLabel={tRow("menuFor", { name: row.original.name })}
-          items={[
-            {
-              label: t("edit"),
-              icon: <Pencil />,
-              onClick: () => {
-                setEditing(row.original);
+      },
+      {
+        accessorKey: "name",
+        header: t("name"),
+        enableSorting: false,
+        meta: { card: "title" },
+      },
+      {
+        id: "time",
+        header: t("time"),
+        enableSorting: false,
+        meta: { card: "subtitle" },
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {clockRange(row.original.starts_at, row.original.ends_at, locale)}
+          </span>
+        ),
+      },
+      {
+        id: "kind",
+        header: t("kind"),
+        enableSorting: false,
+        meta: { card: "meta" },
+        cell: ({ row }) =>
+          row.original.is_break ? (
+            <Badge tone="neutral">{t("break")}</Badge>
+          ) : (
+            <span className="text-fg-muted">{t("lesson")}</span>
+          ),
+      },
+      {
+        id: "actions",
+        header: t("actions"),
+        enableSorting: false,
+        cell: ({ row }) => (
+          <RowActionsMenu
+            ariaLabel={tRow("menuFor", { name: row.original.name })}
+            items={[
+              {
+                label: t("edit"),
+                icon: <Pencil />,
+                onClick: () => {
+                  setEditing(row.original);
+                },
               },
-            },
-            {
-              label: t("delete"),
-              icon: <Trash2 />,
-              tone: "danger",
-              onClick: () => {
-                setPendingDelete(row.original);
+              {
+                label: t("delete"),
+                icon: <Trash2 />,
+                tone: "danger",
+                onClick: () => {
+                  setPendingDelete(row.original);
+                },
               },
-            },
-          ]}
-        />
-      ),
-    },
-  ];
+            ]}
+          />
+        ),
+      },
+    ],
+    [t, tRow, locale],
+  );
 
   return (
     <section className="flex flex-col gap-3" aria-labelledby="periods-title">

@@ -8948,7 +8948,7 @@ export interface components {
             date: string;
             /** @description Indonesian weekday name (Senin, Selasa, ...). */
             day_name: string;
-            /** @description Omitted when no schedule anywhere is currently in its period. */
+            /** @description The period running now: from the classes with a lesson in it, or else from the weekday's bell schedule. Omitted outside lesson periods. */
             current_period?: components["schemas"]["MonitorPeriod"];
             status_counts: {
                 [key: string]: number;
@@ -21690,7 +21690,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Matches (at most 8, members and copies combined) */
+            /** @description Matches (at most 8, members and copies combined), a member whose member_no, NIS or username equals q first. A one-character q matches an exact member_no, NIS, username or barcode only. */
             200: {
                 headers: {
                     [name: string]: unknown;

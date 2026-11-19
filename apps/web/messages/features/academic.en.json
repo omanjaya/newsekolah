@@ -181,7 +181,7 @@
     "save": "Save",
     "saved": "Subject saved for the academic year",
     "deleted": "Subject removed from this academic year",
-    "rowActions": "More actions for {name}",
+    "rowActions": "More actions for {name}, {gradeLevel}",
     "deleteTitle": "Remove this subject from the academic year?",
     "deleteBody": "\"{name}\" will be removed from this academic year.",
     "pickSubject": "Pick a subject",

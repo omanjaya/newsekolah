@@ -638,7 +638,7 @@ components:
         day_name: { type: string, description: "Indonesian weekday name (Senin, Selasa, ...)." }
         current_period:
           $ref: "#/components/schemas/MonitorPeriod"
-          description: Omitted when no schedule anywhere is currently in its period.
+          description: "The period running now: from the classes with a lesson in it, or else from the weekday's bell schedule. Omitted outside lesson periods."
         status_counts:
           type: object
           additionalProperties: { type: integer }

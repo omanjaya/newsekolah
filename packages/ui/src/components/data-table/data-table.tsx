@@ -15,6 +15,7 @@ import {
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type KeyboardEvent,
@@ -62,6 +63,12 @@ export interface DataTableProps<TData> {
    */
   mode?: "local" | "server" | "cursor";
   data: TData[];
+  /**
+   * Memoize the column set (`useMemo` with the values its accessors and
+   * cells read). A new array rebuilds every row, so an accessor that reads
+   * a lookup picks up its new value, but an array built inline on every
+   * render also rebuilds the rows on every parent render.
+   */
   columns: ColumnDef<TData>[];
   rowCount?: number;
   pagination?: PaginationState;
@@ -278,8 +285,16 @@ export function DataTable<TData>({
     setSearchResetKey((key) => key + 1);
   }, [clearSearch]);
 
+  // TanStack caches each row's accessor values and rebuilds rows only when
+  // `data` changes. A column whose accessor reads a lookup (a name map that
+  // loads after the rows) gets new defs but would keep its stale cached
+  // value, in the cells and in the search; a fresh array per column set
+  // rebuilds the rows with the current accessors.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- columns invalidates the row cache on purpose
+  const tableData = useMemo(() => data.slice(), [data, columns]);
+
   const table = useReactTable({
-    data,
+    data: tableData,
     columns,
     rowCount,
     state: {

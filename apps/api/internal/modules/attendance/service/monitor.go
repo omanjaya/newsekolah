@@ -25,8 +25,9 @@ func (s *Service) GetMonitorDisplayToken(ctx context.Context, tenantID uuid.UUID
 
 // GetMonitorSnapshot builds the public monitor display's payload: every
 // class whose current period is running right now, each card's
-// not_started/in_progress/submitted state, and the day's status totals
-// across the tenant.
+// not_started/in_progress/submitted state, the period running now (from
+// the cards, or else from the weekday's bell schedule), and the day's
+// status totals across the tenant.
 func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (MonitorSnapshot, error) {
 	var out MonitorSnapshot
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -63,6 +64,19 @@ func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (M
 				// all share one governing period; the first one found is
 				// as good as any for the snapshot-wide banner.
 				currentPeriod = &MonitorPeriod{Name: c.PeriodName, StartsAt: c.PeriodStartsAt, EndsAt: c.PeriodEndsAt}
+			}
+		}
+
+		if currentPeriod == nil {
+			// No class has a lesson right now, but the bell schedule may
+			// still be in a period (bell times set, timetables not entered
+			// yet): name that period instead of reporting none.
+			bell, ok, err := s.repo.GetCurrentBellPeriod(ctx, tenantID, yearID, dayOfWeek, today, now)
+			if err != nil {
+				return err
+			}
+			if ok {
+				currentPeriod = &bell
 			}
 		}
 

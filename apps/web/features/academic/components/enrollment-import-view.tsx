@@ -27,7 +27,7 @@ import { Download, FileSpreadsheet, School, SkipForward, TriangleAlert } from "l
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
@@ -91,8 +91,12 @@ export function EnrollmentImportView(): ReactElement {
     (r) => r.action === "assign" || r.action === "move",
   ).length;
   const stage: ImportStage = committed ? "done" : rows ? "preview" : "upload";
-  const visible = (rows ?? []).filter(
-    (r) => rowFilter === "all" || r.action === "error" || r.action === "skipped",
+  const visible = useMemo(
+    () =>
+      (rows ?? []).filter(
+        (r) => rowFilter === "all" || r.action === "error" || r.action === "skipped",
+      ),
+    [rows, rowFilter],
   );
 
   function runPreview(nextFile: File) {
@@ -115,53 +119,58 @@ export function EnrollmentImportView(): ReactElement {
     setRowFilter("all");
   }
 
-  const columns: DataTableProps<ImportRowResult>["columns"] = [
-    {
-      id: "row",
-      header: t("table.row"),
-      accessorFn: (row) => row.row_number,
-      meta: { card: "meta", align: "end" },
-      cell: ({ getValue }) => (
-        <span className="text-fg-muted tabular-nums">{getValue() as number}</span>
-      ),
-    },
-    {
-      id: "student",
-      header: t("table.student"),
-      accessorFn: (row) => row.student_name ?? row.nis ?? row.username ?? "",
-      meta: { card: "title" },
-      cell: ({ getValue }) => <span className="font-medium">{(getValue() as string) || "-"}</span>,
-    },
-    {
-      id: "class",
-      header: t("table.class"),
-      accessorFn: (row) => row.class_name ?? "",
-      meta: { card: "subtitle" },
-      cell: ({ getValue }) => (getValue() as string) || "-",
-    },
-    {
-      id: "outcome",
-      header: t("table.action"),
-      accessorFn: (row) => row.action,
-      meta: { card: "meta", label: t("table.action") },
-      cell: ({ row }) => (
-        <Badge tone={ACTION_TONE[row.original.action]} dot={row.original.action === "error"}>
-          {t(`action.${row.original.action}`)}
-        </Badge>
-      ),
-    },
-    {
-      id: "message",
-      header: t("table.message"),
-      accessorFn: (row) => row.message ?? "",
-      meta: { card: "field", label: t("table.message") },
-      cell: ({ row }) => (
-        <span className={row.original.action === "error" ? "text-danger" : "text-fg-muted"}>
-          {row.original.message ?? "-"}
-        </span>
-      ),
-    },
-  ];
+  const columns = useMemo<DataTableProps<ImportRowResult>["columns"]>(
+    () => [
+      {
+        id: "row",
+        header: t("table.row"),
+        accessorFn: (row) => row.row_number,
+        meta: { card: "meta", align: "end" },
+        cell: ({ getValue }) => (
+          <span className="text-fg-muted tabular-nums">{getValue() as number}</span>
+        ),
+      },
+      {
+        id: "student",
+        header: t("table.student"),
+        accessorFn: (row) => row.student_name ?? row.nis ?? row.username ?? "",
+        meta: { card: "title" },
+        cell: ({ getValue }) => (
+          <span className="font-medium">{(getValue() as string) || "-"}</span>
+        ),
+      },
+      {
+        id: "class",
+        header: t("table.class"),
+        accessorFn: (row) => row.class_name ?? "",
+        meta: { card: "subtitle" },
+        cell: ({ getValue }) => (getValue() as string) || "-",
+      },
+      {
+        id: "outcome",
+        header: t("table.action"),
+        accessorFn: (row) => row.action,
+        meta: { card: "meta", label: t("table.action") },
+        cell: ({ row }) => (
+          <Badge tone={ACTION_TONE[row.original.action]} dot={row.original.action === "error"}>
+            {t(`action.${row.original.action}`)}
+          </Badge>
+        ),
+      },
+      {
+        id: "message",
+        header: t("table.message"),
+        accessorFn: (row) => row.message ?? "",
+        meta: { card: "field", label: t("table.message") },
+        cell: ({ row }) => (
+          <span className={row.original.action === "error" ? "text-danger" : "text-fg-muted"}>
+            {row.original.message ?? "-"}
+          </span>
+        ),
+      },
+    ],
+    [t],
+  );
 
   return (
     // The area's header (Siswa dan kelas) over its tabs, as on the class
