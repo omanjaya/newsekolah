@@ -46,10 +46,12 @@ interface RowState {
 
 /**
  * The editor width (CSS px) from which the five-column table fits without
- * a sideways scroll: its natural width with the fixed-width inputs is
- * about 690px. Narrower, each component gets its own card.
+ * a sideways scroll, measured on its widest row: one with a saved mapping,
+ * whose actions cell holds Hapus (icon and label) beside Simpan. That row
+ * is about 790px wide with the fixed-width inputs; a row without a mapping
+ * is about 690px. Narrower, each component gets its own card.
  */
-const TABLE_MIN_WIDTH = 720;
+const TABLE_MIN_WIDTH = 800;
 
 function emptyRow(): RowState {
   return { export_code: "", r_min: "", r_max: "", t_min: "", t_max: "" };
