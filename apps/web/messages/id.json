@@ -1271,7 +1271,9 @@
         "openReportsHub": "Buka pusat laporan",
         "dayEyebrow": "Presensi sekolah {date}",
         "dayTitle": "Rekap per kelas ada di laporan",
-        "dayBody": "Progres langsung hanya tersedia untuk hari ini."
+        "dayBody": "Progres langsung hanya tersedia untuk hari ini.",
+        "futureTitle": "Belum ada presensi untuk hari itu",
+        "futureBody": "Kelas mengisi presensinya pada hari itu sendiri."
       },
       "openSchedule": "Buka jadwal",
       "leaveLetterNote": "Surat izin {number}"

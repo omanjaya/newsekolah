@@ -100,6 +100,22 @@ describe("SchoolAttendanceToday", () => {
     expect(screen.queryByRole("link", { name: "openMonitor" })).not.toBeInTheDocument();
   });
 
+  it("tells a reader on a future day that nothing is taken yet, with no report to open", () => {
+    session.permissions = ["manage_attendance", "view_monitor_presence", "view_reports"];
+    dashboard.data = { attendance_today: { submitted: 3, total: 5 } };
+    render(<SchoolAttendanceToday date="2026-11-20" today="2026-11-19" />);
+
+    expect(screen.getByText('dayEyebrow:{"date":"Rab, 18 Nov"}')).toBeInTheDocument();
+    expect(screen.getByText("futureTitle")).toBeInTheDocument();
+    expect(screen.getByText("futureBody")).toBeInTheDocument();
+    // The past day's promise of a record in the reports does not apply.
+    expect(screen.queryByText("dayTitle")).not.toBeInTheDocument();
+    expect(screen.queryByText("dayBody")).not.toBeInTheDocument();
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    expect(dashboard.enabled.every((enabled) => !enabled)).toBe(true);
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
   it("keeps the live card when the chosen day is today", () => {
     session.permissions = ["manage_attendance"];
     render(<SchoolAttendanceToday date="2026-11-19" today="2026-11-19" />);

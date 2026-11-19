@@ -1271,7 +1271,9 @@
         "openReportsHub": "Open the reports centre",
         "dayEyebrow": "School attendance on {date}",
         "dayTitle": "Each class's record is in the reports",
-        "dayBody": "Live progress is only shown for today."
+        "dayBody": "Live progress is only shown for today.",
+        "futureTitle": "No attendance taken for that day yet",
+        "futureBody": "Classes take their attendance on the day itself."
       },
       "openSchedule": "Open schedule",
       "leaveLetterNote": "Leave letter {number}"

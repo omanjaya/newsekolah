@@ -23,8 +23,8 @@ export interface SchoolAttendanceTodayProps {
   hint?: string;
   /**
    * The day the page shows ("YYYY-MM-DD"). Away from `today` the live
-   * snapshot does not apply, so the card names that day and sends the
-   * reader to its report instead.
+   * snapshot does not apply, so the card names that day: a past day sends
+   * the reader to its report, a future day has no record yet to open.
    */
   date?: string;
   /** The school's today ("YYYY-MM-DD"). */
@@ -35,8 +35,8 @@ export interface SchoolAttendanceTodayProps {
  * The first screen of a reader who oversees attendance rather than taking
  * it: today's school-wide progress where the API offers it (administrators
  * and the principal read it from the admin dashboard snapshot), and the way
- * to the reports and the live monitor. On another day it offers that day's
- * report, since the snapshot only covers today.
+ * to the reports and the live monitor. On a past day it offers that day's
+ * report, since the snapshot only covers today; a future day has none yet.
  */
 export function SchoolAttendanceToday({
   hint,
@@ -47,6 +47,8 @@ export function SchoolAttendanceToday({
   const format = useFormatter();
   const { me } = useSession();
   const otherDay = date !== undefined && today !== undefined && date !== today;
+  // ISO dates compare by their text, so the order needs no parsing.
+  const futureDay = otherDay && date > today;
   const isAdmin = me?.roles.some((role) => ADMIN_ROLES.has(role.slug)) ?? false;
   const dashboard = useAdminDashboardQuery(isAdmin && !otherDay);
   const progress = otherDay ? undefined : dashboard.data?.attendance_today;
@@ -56,8 +58,10 @@ export function SchoolAttendanceToday({
   const reportsHref = ["/attendance/reports", "/reports"].find((href) => canOpenPath(href, access));
   // The attendance report opens on the chosen day; the report centre has
   // no day of its own.
-  const reportsLink =
-    otherDay && reportsHref === "/attendance/reports"
+  // A future day has no record yet, so the card offers no report for it.
+  const reportsLink = futureDay
+    ? undefined
+    : otherDay && reportsHref === "/attendance/reports"
       ? `${reportsHref}?${new URLSearchParams({ date }).toString()}`
       : reportsHref;
   // The monitor is live, so it belongs to today only.
@@ -75,14 +79,22 @@ export function SchoolAttendanceToday({
         }),
       })
     : t("eyebrow");
-  const title = otherDay ? t("dayTitle") : running ? t("progressTitle", progress) : t("title");
-  const meta = otherDay
-    ? t("dayBody")
-    : running
-      ? t("progressBody")
-      : progress
-        ? t("noneRunning")
-        : body;
+  const title = futureDay
+    ? t("futureTitle")
+    : otherDay
+      ? t("dayTitle")
+      : running
+        ? t("progressTitle", progress)
+        : t("title");
+  const meta = futureDay
+    ? t("futureBody")
+    : otherDay
+      ? t("dayBody")
+      : running
+        ? t("progressBody")
+        : progress
+          ? t("noneRunning")
+          : body;
 
   return (
     <div className="flex flex-col gap-3">
