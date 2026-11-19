@@ -243,7 +243,14 @@ export function DashboardView(): ReactElement {
   // takes its place, else a notice under the urgent hero that stayed, so
   // a failed read never just drops its tile without a word (audit
   // shell-home-3). Every card's own error box then leaves its retry out.
-  const holding = retrying && retriedAt !== null;
+  //
+  // The hold lasts until no block is pending, not only while the refetch
+  // runs: a read that depends on a retried one (the student's teacher
+  // names wait for the reloaded schedules) only starts once that settles,
+  // and would otherwise swap the hero for the skeleton right after the
+  // retry and drop focus to <body> (audit r5-n3, r5-r4-n2).
+  const holding = retriedAt !== null && (retrying || collected.pending);
+  if (retriedAt !== null && !holding) setRetriedAt(null);
   const retryAt: RetryAt = holding ? retriedAt : !failed ? null : calm ? "hero" : "notice";
   const startRetry = () => {
     setRetriedAt(retryAt);
@@ -263,7 +270,7 @@ export function DashboardView(): ReactElement {
           meta: t("failed.meta"),
           action: {
             label: t("failed.action"),
-            loading: retrying,
+            loading: holding,
             onClick: startRetry,
           },
         }
@@ -323,7 +330,7 @@ export function DashboardView(): ReactElement {
                 <HomeTop
                   hero={hero}
                   retryAt={retryAt}
-                  retrying={retrying}
+                  retrying={holding}
                   onRetry={startRetry}
                   enter={firstEntrance}
                 />

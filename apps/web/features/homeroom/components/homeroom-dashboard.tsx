@@ -32,6 +32,7 @@ export function HomeroomDashboard({
   leaveFailure = null,
   showLeave,
   showDiscipline,
+  datedHidden = false,
 }: {
   attentionRows: Entry[];
   disciplineRows: Entry[];
@@ -46,6 +47,13 @@ export function HomeroomDashboard({
   showLeave: boolean;
   /** False when the school switched discipline off: the discipline card goes away. */
   showDiscipline: boolean;
+  /**
+   * The chosen day lies outside the reader's homeroom term: the two cards
+   * read from that day (contact, discipline) go away, since they could
+   * only repeat the refusal. The leave queue does not depend on the day,
+   * so its card stays (audit r5-n5).
+   */
+  datedHidden?: boolean;
 }): ReactElement {
   const t = useTranslations("app.homeroom");
   const format = useFormatter();
@@ -53,47 +61,49 @@ export function HomeroomDashboard({
   return (
     // The cards stretch to one height, so the row ends on one line.
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      <HomeroomQueueCard
-        className="h-full"
-        title={t("attentionListTitle")}
-        count={attentionRows.length}
-        // Guardians to contact wait on the teacher: the accent count, as
-        // on the journal's "Perlu diisi" and the permits tab.
-        countTone="accent"
-        loading={dashboardLoading}
-        failure={dashboardFailure}
-        // Its own line: the hero above already says everyone is recorded.
-        empty={t("contactEmpty")}
-      >
-        {attentionRows.map((row) => {
-          const token = statusToken(row.status_code);
-          const name = formatDisplayName(row.name);
-          return (
-            <ListRow
-              key={row.student_user_id}
-              title={name}
-              meta={
-                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  {token ? (
-                    <StatusBadge status={token} size="sm" label={t(`codes.${row.status_code}`)} />
-                  ) : (
-                    <Badge tone="warning" size="sm">
-                      {t(`codes.${row.status_code}`)}
-                    </Badge>
-                  )}
-                  {row.nis}
-                </span>
-              }
-              href={studentProfileHref(row.student_user_id)}
-              action={
-                row.guardian_phone ? (
-                  <GuardianContactActions phone={row.guardian_phone} studentName={name} />
-                ) : undefined
-              }
-            />
-          );
-        })}
-      </HomeroomQueueCard>
+      {!datedHidden && (
+        <HomeroomQueueCard
+          className="h-full"
+          title={t("attentionListTitle")}
+          count={attentionRows.length}
+          // Guardians to contact wait on the teacher: the accent count, as
+          // on the journal's "Perlu diisi" and the permits tab.
+          countTone="accent"
+          loading={dashboardLoading}
+          failure={dashboardFailure}
+          // Its own line: the hero above already says everyone is recorded.
+          empty={t("contactEmpty")}
+        >
+          {attentionRows.map((row) => {
+            const token = statusToken(row.status_code);
+            const name = formatDisplayName(row.name);
+            return (
+              <ListRow
+                key={row.student_user_id}
+                title={name}
+                meta={
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    {token ? (
+                      <StatusBadge status={token} size="sm" label={t(`codes.${row.status_code}`)} />
+                    ) : (
+                      <Badge tone="warning" size="sm">
+                        {t(`codes.${row.status_code}`)}
+                      </Badge>
+                    )}
+                    {row.nis}
+                  </span>
+                }
+                href={studentProfileHref(row.student_user_id)}
+                action={
+                  row.guardian_phone ? (
+                    <GuardianContactActions phone={row.guardian_phone} studentName={name} />
+                  ) : undefined
+                }
+              />
+            );
+          })}
+        </HomeroomQueueCard>
+      )}
 
       {showLeave && (
         <HomeroomQueueCard
@@ -125,7 +135,7 @@ export function HomeroomDashboard({
         </HomeroomQueueCard>
       )}
 
-      {showDiscipline && (
+      {showDiscipline && !datedHidden && (
         // A plain tally of records, nothing to act on: the neutral count.
         <HomeroomQueueCard
           className="h-full"

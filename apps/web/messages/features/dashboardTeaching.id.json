@@ -37,6 +37,7 @@
       "titleFallback": "Wali kelas",
       "action": "Tinjau izin",
       "empty": "Tidak ada izin menunggu",
+      "noLessons": "Tidak ada jadwal hari ini",
       "noStatus": "Belum ada data presensi hari ini",
       "statusTitle": "Presensi {className} hari ini",
       "statusTitleFallback": "Presensi kelas hari ini",
