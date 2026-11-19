@@ -8,6 +8,7 @@ import type { ReactElement } from "react";
 import type { ScheduleBlock } from "../api";
 import { blockCrossesBreak } from "../break-warning";
 import { clockLabel } from "../clock-label";
+import { periodSpanLabel } from "../period-span";
 import { SUBJECT_TONE_CLASSES, subjectTone } from "../subject-tone";
 
 import { LessonSubstitutionAction } from "./lesson-substitution-action";
@@ -66,6 +67,7 @@ export function ScheduleMobileDayList({
 }): ReactElement {
   const locale = useLocale();
   const lessons = lessonPeriods.filter((period) => !period.is_break);
+  const periodBySeq = new Map(lessonPeriods.map((period) => [period.sequence, period]));
 
   return (
     <div className="flex flex-col gap-4 md:hidden">
@@ -108,6 +110,7 @@ export function ScheduleMobileDayList({
                 );
               }
 
+              const endPeriod = periodBySeq.get(block.end_seq) ?? period;
               return (
                 <li
                   key={period.id}
@@ -116,7 +119,14 @@ export function ScheduleMobileDayList({
                     SUBJECT_TONE_CLASSES[subjectTone(block.subject_id)],
                   )}
                 >
-                  <span className="w-12 shrink-0 pt-0.5 text-label tabular-nums">{time}</span>
+                  {/* A block may span several periods: like the week agenda,
+                      it runs from the first period's start to the last's end. */}
+                  <span className="flex w-12 shrink-0 flex-col pt-0.5 text-label tabular-nums">
+                    {time}
+                    <span className="text-caption font-normal opacity-80">
+                      {clockLabel(endPeriod.ends_at, locale)}
+                    </span>
+                  </span>
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="flex items-center gap-1.5">
                       <span className="truncate text-label">
@@ -135,7 +145,7 @@ export function ScheduleMobileDayList({
                     </span>
                     <span className="text-body-sm opacity-90">
                       {teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher")} ·{" "}
-                      {period.name}
+                      {periodSpanLabel(period, endPeriod)}
                     </span>
                     <div className="-ml-3 empty:hidden">
                       <LessonSubstitutionAction block={block} />
