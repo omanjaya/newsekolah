@@ -7,10 +7,15 @@ import { useApiClient } from "../../lib/api/client";
 
 import { type LibraryLoan, useLibraryPolicyQuery, useMemberLoanHistoryQuery } from "./api";
 
-/** A crude but sufficient check: the member card's barcode is the member's own user ID. */
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export function looksLikeMemberCard(code: string): boolean {
+/**
+ * Whether a scanned code already is a member's user ID. A printed member
+ * card carries the member number (as its text and its barcode), which the
+ * kiosk resolves through the library lookup; a raw user ID is only a fast
+ * path for a code that already names the member.
+ */
+export function looksLikeMemberUserId(code: string): boolean {
   return UUID_PATTERN.test(code.trim());
 }
 

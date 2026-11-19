@@ -20,7 +20,8 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { todayInZone } from "../../../lib/tenant-date";
 import { useBorrowLoanMutation, useReturnLoanMutation } from "../api";
-import { looksLikeMemberCard, useKioskMemberSession } from "../kiosk-session";
+import { useFindMemberByCodeMutation } from "../desk-api";
+import { looksLikeMemberUserId, useKioskMemberSession } from "../kiosk-session";
 import { useTenantTimeZone } from "../use-tenant-timezone";
 
 import { KioskMemberPanel } from "./kiosk-member-panel";
@@ -98,16 +99,26 @@ export function KioskView(): ReactElement {
   const scanFeedback = useScanFeedback();
   const today = todayInZone(useTenantTimeZone());
 
-  const [memberUserId, setMemberUserId] = useState<string | null>(null);
+  const [memberUserId, setMemberUserIdState] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<KioskFeedback | null>(null);
   const [resetAt, setResetAt] = useState<number | null>(null);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedbackCount = useRef(0);
+  // Read synchronously by the card handler: a scan queued behind a lookup
+  // runs with the render it was read in, before the new session shows.
+  const memberRef = useRef<string | null>(null);
+  const cardLookupPending = useRef(false);
   const secondsLeft = useSecondsLeft(memberUserId ? resetAt : null);
 
   const session = useKioskMemberSession(memberUserId);
   const borrow = useBorrowLoanMutation();
   const returnLoan = useReturnLoanMutation();
+  const findMember = useFindMemberByCodeMutation();
+
+  const setMemberUserId = useCallback((userId: string | null) => {
+    memberRef.current = userId;
+    setMemberUserIdState(userId);
+  }, []);
 
   const say = useCallback((tone: KioskFeedback["tone"], message: string) => {
     feedbackCount.current += 1;
@@ -122,7 +133,7 @@ export function KioskView(): ReactElement {
       setFeedback(null);
       setResetAt(null);
     }, IDLE_RESET_MS);
-  }, []);
+  }, [setMemberUserId]);
 
   useEffect(
     () => () => {
@@ -136,7 +147,7 @@ export function KioskView(): ReactElement {
     setMemberUserId(null);
     setFeedback(null);
     setResetAt(null);
-  }, []);
+  }, [setMemberUserId]);
 
   const showError = (error: unknown) => {
     scanFeedback.playError();
@@ -146,18 +157,42 @@ export function KioskView(): ReactElement {
     );
   };
 
-  const handleCardScan = (event: BarcodeScanEvent): ScanHandlerResult => {
-    if (!looksLikeMemberCard(event.code)) {
-      scanFeedback.playError();
-      say("danger", t("feedback.unknownCard"));
+  /**
+   * The member's user ID for a card code, or null when no single member
+   * has it. A printed card carries the member number, resolved by the
+   * same exact-match lookup the desk uses; a user ID needs no request.
+   */
+  const resolveCardMember = async (code: string): Promise<string | null> => {
+    if (looksLikeMemberUserId(code)) return code;
+    const match = await findMember.mutateAsync(code);
+    return match.status === "found" ? match.member.user_id : null;
+  };
+
+  const handleCardScan = async (event: BarcodeScanEvent): Promise<ScanHandlerResult> => {
+    // A card read twice (a double scan, or a second read queued behind the
+    // lookup) must neither open a second session nor replace the first.
+    if (cardLookupPending.current || memberRef.current !== null) return true;
+    cardLookupPending.current = true;
+    try {
+      const userId = await resolveCardMember(event.code.trim());
+      if (userId === null) {
+        scanFeedback.playError();
+        say("danger", t("feedback.unknownCard"));
+        scheduleReset();
+        return false;
+      }
+      scanFeedback.playSuccess();
+      setMemberUserId(userId);
+      setFeedback(null);
+      scheduleReset();
+      return true;
+    } catch (error) {
+      showError(error);
       scheduleReset();
       return false;
+    } finally {
+      cardLookupPending.current = false;
     }
-    scanFeedback.playSuccess();
-    setMemberUserId(event.code.trim());
-    setFeedback(null);
-    scheduleReset();
-    return true;
   };
 
   const handleBookScan = (event: BarcodeScanEvent): ScanHandlerResult => {
