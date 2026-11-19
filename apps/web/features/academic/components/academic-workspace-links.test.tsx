@@ -10,7 +10,10 @@ const state = vi.hoisted(() => ({
   search: "",
   inbox: vi.fn(() => ({ data: { data: [] } })),
 }));
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string, values?: Record<string, string>) =>
+    values ? `${key} ${JSON.stringify(values)}` : key,
+}));
 vi.mock("next/navigation", () => ({
   usePathname: () => state.pathname,
   useSearchParams: () => new URLSearchParams(state.search),
@@ -91,10 +94,16 @@ it("renders both role and account links when both are permitted", () => {
   expect(screen.getByRole("link", { name: ACCOUNTS })).toBeInTheDocument();
 });
 
-it("names the strip after the area's menu entry", () => {
+// As the page template names an area's default strip ("Bagian {area}"), so
+// the calendar announces the same landmark as the schedule pages beside it.
+it("names the strip after the area's menu entry, as the page template does", () => {
   state.permissions = ["view_roles", "view_users"];
   render(<AcademicWorkspaceLinks area="users" />);
-  expect(screen.getByRole("navigation", { name: "app.shell.nav.items.users" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("navigation", {
+      name: 'app.page.sections {"area":"app.shell.nav.items.users"}',
+    }),
+  ).toBeInTheDocument();
 });
 
 it("renders no strip for a schedule viewer who can open only the calendar", () => {
