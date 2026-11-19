@@ -133,3 +133,45 @@ it("asks before cancelling one's own request", async () => {
   await user.click(within(dialog).getByRole("button", { name: "cancelConfirm.confirm" }));
   expect(mutations.cancel).toHaveBeenCalledWith("r1", expect.any(Object));
 });
+
+it("keeps the decline dialog and its reason open when declining fails", async () => {
+  const user = userEvent.setup();
+  requests.incoming = [request("r1", "pending")];
+  mutations.respond.mockImplementation(
+    (_vars, options: { onError?: (e: Error) => void; onSettled?: () => void }) => {
+      options.onError?.(new Error("boom"));
+      options.onSettled?.();
+    },
+  );
+  render(<SubstitutionsView />);
+
+  await user.click(screen.getByRole("button", { name: "reject" }));
+  const dialog = await screen.findByRole("dialog");
+  await user.type(within(dialog).getByRole("textbox"), "Ada rapat");
+  await user.click(within(dialog).getByRole("button", { name: "rejectConfirm.confirm" }));
+
+  expect(mutations.respond).toHaveBeenCalledTimes(1);
+  const stillOpen = screen.getByRole("dialog");
+  expect(within(stillOpen).getByRole("textbox")).toHaveValue("Ada rapat");
+  expect(within(stillOpen).getByRole("button", { name: "rejectConfirm.confirm" })).toBeEnabled();
+});
+
+it("keeps the cancel dialog open when cancelling fails", async () => {
+  const user = userEvent.setup();
+  requests.outgoing = [request("r1", "pending")];
+  mutations.cancel.mockImplementation(
+    (_id, options: { onError?: (e: Error) => void; onSettled?: () => void }) => {
+      options.onError?.(new Error("boom"));
+      options.onSettled?.();
+    },
+  );
+  render(<SubstitutionsView />);
+
+  await user.click(screen.getByRole("radio", { name: /outgoing/ }));
+  await user.click(screen.getByRole("button", { name: "cancel" }));
+  const dialog = await screen.findByRole("dialog");
+  await user.click(within(dialog).getByRole("button", { name: "cancelConfirm.confirm" }));
+
+  expect(mutations.cancel).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("dialog")).toBeInTheDocument();
+});

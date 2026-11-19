@@ -309,12 +309,12 @@ export function SubstitutionsView(): ReactElement {
           respond.mutate(
             { id: rejecting.item.id, accept: false, ...(note ? { note } : {}) },
             {
+              // On failure the dialog stays open with the typed reason, so
+              // confirming again retries without retyping it.
               onError: fail,
               onSuccess: () => {
-                toast.success(t("rejected"));
-              },
-              onSettled: () => {
                 setRejecting(null);
+                toast.success(t("rejected"));
               },
             },
           );
@@ -335,12 +335,11 @@ export function SubstitutionsView(): ReactElement {
         onConfirm={() => {
           if (!cancelling) return;
           cancel.mutate(cancelling.item.id, {
+            // On failure the dialog stays open, so confirming again retries.
             onError: fail,
             onSuccess: () => {
-              toast.success(t("cancelled"));
-            },
-            onSettled: () => {
               setCancelling(null);
+              toast.success(t("cancelled"));
             },
           });
         }}
