@@ -98,18 +98,8 @@ describe("LeaveRequestDetail", () => {
       queryError = null;
     });
 
-    it("says so in words for any reader and leads a student back to their requests", () => {
-      permissions = new Set();
-      queryError = new ApiError({ status: 404, code: "NOT_FOUND", message: "not found" });
-      render(<LeaveRequestDetail id="missing" layout="page" />);
-
-      expect(screen.getByText("notFoundBody")).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: "notFoundBackToMine" })).toHaveAttribute(
-        "href",
-        "/leave-requests",
-      );
-    });
-
+    // The full page shows the shared not-found page itself
+    // (leave-request-page-view.test.tsx); a dialog says so in place.
     it("treats a malformed id from a truncated link as not found, not a retryable failure", () => {
       permissions = new Set();
       queryError = new ApiError({
@@ -118,25 +108,20 @@ describe("LeaveRequestDetail", () => {
         message: "invalid",
         details: [{ field: "id", code: "INVALID_FORMAT" }],
       });
-      render(<LeaveRequestDetail id="abc" layout="page" />);
+      render(<LeaveRequestDetail id="abc" />);
 
       expect(screen.getByText("notFoundTitle")).toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: /retry/i })).not.toBeInTheDocument();
-      expect(screen.getByRole("link", { name: "notFoundBackToMine" })).toHaveAttribute(
-        "href",
-        "/leave-requests",
-      );
+      expect(screen.getByText("notFoundBody")).toBeInTheDocument();
+      expect(screen.queryByTestId("query-error")).not.toBeInTheDocument();
     });
 
-    it("leads a reviewer to the leave queue", () => {
+    it("reads a request the viewer may not see as missing too", () => {
       permissions = new Set(["review_leave_requests"]);
       queryError = new ApiError({ status: 403, code: "FORBIDDEN", message: "forbidden" });
-      render(<LeaveRequestDetail id="missing" layout="page" />);
+      render(<LeaveRequestDetail id="missing" />);
 
-      expect(screen.getByRole("link", { name: "issuerOpenInbox" })).toHaveAttribute(
-        "href",
-        "/inbox?type=leave",
-      );
+      expect(screen.getByText("notFoundTitle")).toBeInTheDocument();
+      expect(screen.queryByTestId("query-error")).not.toBeInTheDocument();
     });
 
     it("adds no link inside the inbox dialog", () => {

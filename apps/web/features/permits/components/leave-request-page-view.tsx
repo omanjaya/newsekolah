@@ -11,6 +11,7 @@ import { useLeaveRequestQuery } from "../api";
 import { formatDayRange } from "../lib/permit-dates";
 
 import { LeaveRequestDetail } from "./leave-request-detail";
+import { LeaveRequestNotFoundPage, isLeaveRequestMissing } from "./leave-request-not-found";
 
 /**
  * Full-page variant of the leave request detail, opened from notifications.
@@ -24,7 +25,11 @@ import { LeaveRequestDetail } from "./leave-request-detail";
 export function LeaveRequestPageView({ id }: { id: string }): ReactElement {
   const t = useTranslations("app.permits.leave");
   const locale = useLocale() as Locale;
-  const { data } = useLeaveRequestQuery(id);
+  const { data, error } = useLeaveRequestQuery(id);
+
+  // No request to open: the shared not-found page, so the tab and the
+  // heading name what is missing rather than "Detail izin".
+  if (!data && isLeaveRequestMissing(error)) return <LeaveRequestNotFoundPage />;
 
   return (
     <AppPage

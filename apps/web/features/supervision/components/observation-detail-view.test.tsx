@@ -54,7 +54,12 @@ describe("ObservationDetailView", () => {
     });
     render(<ObservationDetailView observationId="00000000-0000-0000-0000-000000000001" />);
 
-    expect(screen.getByText("notFoundTitle")).toBeInTheDocument();
+    // The shared not-found page: its title is the heading and the tab's,
+    // never the observation's own "Hasil observasi".
+    expect(screen.getByRole("heading", { name: "notFoundTitle" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "title" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("app-page")).toHaveAttribute("data-page-title", "notFoundTitle");
+    expect(screen.getByText("notFoundBody")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "actions.retry" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "backToMyReport" })).toHaveAttribute(
       "href",
