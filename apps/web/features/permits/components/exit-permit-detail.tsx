@@ -199,7 +199,10 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
   // At the gate the QR is all the student needs: bring it into view (above
   // the bottom tab bar on a phone) as soon as it arrives.
   useEffect(() => {
-    if (gateToken) gateQrRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    if (!gateToken) return;
+    // A smooth scroll asked for in JS ignores the CSS reduced-motion rule.
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    gateQrRef.current?.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
   }, [gateToken]);
 
   if (isLoading) return <Skeleton className="h-64 w-full rounded-xl" />;
@@ -296,6 +299,7 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
             expiresInLabel={(seconds) => tQr("expiresIn", { seconds })}
             // The gate pass lasts until the end of the school day: it reads
             // as the time it stops working, on the school's clock.
+            expiryDisplay="until"
             validUntilLabel={(expiresAt) =>
               tQr("validUntil", { time: formatTime(expiresAt, { locale, timeZone }) })
             }
@@ -308,7 +312,7 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
         // QR stays near the top of a phone screen.
         <Card padding="sm" className="mt-3 text-fg">
           <Disclosure>
-            <DisclosureTrigger className="flex w-full items-center gap-2 text-label text-fg">
+            <DisclosureTrigger className="flex min-h-11 w-full items-center gap-2 rounded-md text-label text-fg">
               <DisclosureIndicator />
               {t("stagesApproved", { count: inst.stages.length })}
             </DisclosureTrigger>

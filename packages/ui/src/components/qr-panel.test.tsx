@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
 
-import { LONG_LIVED_SECONDS, QrPanel, QrPanelSkeleton } from "./qr-panel.js";
+import { QrPanel, QrPanelSkeleton } from "./qr-panel.js";
 
 const NOW = new Date("2026-11-14T08:00:00Z").getTime();
 
@@ -192,6 +192,7 @@ describe("QrPanel", () => {
         expiresAt={inSeconds(8 * 3600)}
         onRenew={vi.fn()}
         renewing={false}
+        expiryDisplay="until"
         validUntilLabel={(expiresAt) => `Berlaku sampai ${expiresAt}`}
       />,
     );
@@ -207,30 +208,34 @@ describe("QrPanel", () => {
       <QrPanel
         payload="sion:gate:abc"
         code=""
-        expiresAt={inSeconds(LONG_LIVED_SECONDS + 1)}
+        expiresAt={inSeconds(180)}
         onRenew={vi.fn()}
         renewing={false}
+        expiryDisplay="until"
       />,
     );
     expect(screen.getByText(/^Berlaku sampai pukul \d{2}\.\d{2}$/)).toBeInTheDocument();
     act(() => {
-      vi.advanceTimersByTime((LONG_LIVED_SECONDS + 2) * 1000);
+      vi.advanceTimersByTime(182 * 1000);
     });
     expect(screen.getAllByText("Kode kedaluwarsa").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Buat kode baru" })).toBeInTheDocument();
   });
 
-  it("keeps the seconds countdown for a short-lived code", () => {
+  it("keeps the seconds countdown by default, even when the device clock runs behind the server", () => {
+    // A 30-second code read on a clock 10 minutes slow looks 630 seconds
+    // long; it is still a countdown with a way to a new code.
     render(
       <QrPanel
         payload="sion:desk:abc"
         code=""
-        expiresAt={inSeconds(LONG_LIVED_SECONDS)}
+        expiresAt={inSeconds(630)}
         onRenew={vi.fn()}
         renewing={false}
       />,
     );
-    expect(screen.getByText(`Berlaku ${LONG_LIVED_SECONDS} detik lagi`)).toBeInTheDocument();
+    expect(screen.getByText("Berlaku 630 detik lagi")).toBeInTheDocument();
+    expect(screen.queryByText(/Berlaku sampai/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Buat kode baru" })).toBeInTheDocument();
   });
 

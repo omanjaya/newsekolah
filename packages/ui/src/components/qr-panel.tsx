@@ -23,10 +23,18 @@ export interface QrPanelProps {
   /** Defaults to `UiLabels.qrExpiresIn`. */
   expiresInLabel?: (secondsLeft: number) => string;
   /**
-   * The line under a long-lived code (more than `LONG_LIVED_SECONDS` left
-   * when it appears), given the expiry instant: "Berlaku sampai pukul
-   * 15.59". Pass one that formats in the school's timezone; the default
-   * formats `UiLabels.qrValidUntil` in the browser's.
+   * "countdown" (default) a ring and a seconds count, for a code that lives
+   * seconds; "until" the time it stops working and no ring, for a code the
+   * server issued for hours (a gate pass that lasts the school day), which
+   * offers a new code only once it has run out. Chosen by the caller, who
+   * knows what the server issued, never guessed from the device clock.
+   */
+  expiryDisplay?: "countdown" | "until";
+  /**
+   * With `expiryDisplay="until"`, the line under the code, given the expiry
+   * instant: "Berlaku sampai pukul 15.59". Pass one that formats in the
+   * school's timezone; the default formats `UiLabels.qrValidUntil` in the
+   * browser's.
    */
   validUntilLabel?: (expiresAt: string) => string;
   /** Defaults to `UiLabels.qrRenew`. */
@@ -140,14 +148,6 @@ function useAutoRenew({
 // eslint-disable-next-line no-restricted-syntax -- the QR tile is white in both themes
 const QR_TILE = "bg-white";
 
-/**
- * A code with more than this many seconds left when it appears is
- * long-lived (a gate pass that lasts the school day): it reads as the time
- * it stops working, with no ring, and offers a new code only once it has
- * run out. A seconds count past a minute or two is machine text.
- */
-export const LONG_LIVED_SECONDS = 120;
-
 /** "15.59" (id-ID) or "15:59" (en-GB), in the browser's timezone. */
 function clockTime(expiresAt: string, locale: string): string {
   return new Intl.DateTimeFormat(locale, {
@@ -172,6 +172,7 @@ function Countdown({
   renewing,
   expiredLabel,
   expiresInLabel,
+  expiryDisplay = "countdown",
   validUntilLabel,
   renewLabel,
   label,
@@ -185,9 +186,7 @@ function Countdown({
   // `Countdown` every second would reconcile the whole QR subtree forever
   // for no visual change. The tick lives in `CountdownStatus` instead.
   const [expired, setExpired] = useState(() => remaining(expiresAt) <= 0);
-  // Decided once per code (the panel is keyed on expiresAt), so a gate pass
-  // does not switch to a seconds count in its last two minutes.
-  const [longLived] = useState(() => remaining(expiresAt) > LONG_LIVED_SECONDS);
+  const longLived = expiryDisplay === "until";
 
   const large = size === "lg";
   return (
