@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision/repository"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
@@ -75,4 +76,72 @@ func TestScheduleObservationPersistsTenantID(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, found)
 	require.Equal(t, tenant, stored.TenantID)
+}
+
+// TestListScheduledCarriesObservation checks that both scheduled lists say
+// which visits have been observed, so the cycle screen can tell what is
+// done from what is still to observe.
+func TestListScheduledCarriesObservation(t *testing.T) {
+	ctx := context.Background()
+	pg := dbtest.Start(t)
+	insertID := func(sql string, args ...any) uuid.UUID {
+		t.Helper()
+		var id uuid.UUID
+		require.NoError(t, pg.AdminPool.QueryRow(ctx, sql+" returning id", args...).Scan(&id))
+		return id
+	}
+
+	tenant := insertID(`insert into tenants (slug,name,education_level,timezone,locale,status,plan)
+		values ('supervision-list','Test','sma','UTC','id','active','default')`)
+	year := insertID(`insert into academic_years (tenant_id,label,starts_on,ends_on)
+		values ($1,'2026/2027','2026-01-01','2027-12-31')`, tenant)
+	teacher := insertID(`insert into users (tenant_id,username,password_hash,name,status,locale)
+		values ($1,'teacher','x','Teacher','active','id')`, tenant)
+	observer := insertID(`insert into users (tenant_id,username,password_hash,name,status,locale)
+		values ($1,'observer','x','Observer','active','id')`, tenant)
+	cycle := insertID(`insert into supervision_cycles (tenant_id,academic_year_id,name,instrument)
+		values ($1,$2,'Test cycle','{"name":"Instrumen","scale_min":1,"scale_max":4,"criteria":[{"key":"a","name":"A"}]}'::jsonb)`,
+		tenant, year)
+
+	schedules := stubScheduleReader{ref: service.ScheduleRef{ID: uuid.New(), TeacherUserID: teacher}}
+	svc := service.New(pg.AppPool, repository.New(pg.AppPool), nil, schedules, nil, nil, nil)
+	schedule := func(day int) uuid.UUID {
+		t.Helper()
+		out, err := svc.ScheduleObservation(ctx, tenant, service.ScheduleObservationInput{
+			CycleID: cycle, ScheduleID: schedules.ref.ID,
+			LessonDate: time.Date(2026, 9, day, 0, 0, 0, 0, time.UTC), ObserverUserID: observer,
+		})
+		require.NoError(t, err)
+		return out.ID
+	}
+	done := schedule(28)
+	pending := schedule(29)
+
+	observedAt := time.Date(2026, 9, 28, 3, 0, 0, 0, time.UTC)
+	observation, err := svc.CompleteObservation(ctx, tenant, observer, service.CompleteObservationInput{
+		ScheduledID: done, Scores: []domain.CriterionScore{{CriterionKey: "a", Score: 3}},
+		ObserverNotes: "Good", ObservedAt: observedAt,
+	})
+	require.NoError(t, err)
+
+	check := func(list []domain.ScheduledObservation) {
+		t.Helper()
+		require.Len(t, list, 2)
+		byID := map[uuid.UUID]domain.ScheduledObservation{}
+		for _, s := range list {
+			byID[s.ID] = s
+		}
+		require.True(t, byID[done].Observed())
+		require.Equal(t, observation.ID, byID[done].ObservationID.UUID)
+		require.NotNil(t, byID[done].ObservedAt)
+		require.True(t, observedAt.Equal(*byID[done].ObservedAt))
+		require.False(t, byID[pending].Observed())
+		require.Nil(t, byID[pending].ObservedAt)
+	}
+	forCycle, err := svc.ListScheduledForCycle(ctx, tenant, cycle)
+	require.NoError(t, err)
+	check(forCycle)
+	forTeacher, err := svc.ListScheduledForTeacher(ctx, tenant, cycle, teacher)
+	require.NoError(t, err)
+	check(forTeacher)
 }

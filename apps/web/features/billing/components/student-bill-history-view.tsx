@@ -232,7 +232,7 @@ function BillCard({
   onVoid: (payment: Payment) => void;
 }): ReactElement {
   const t = useTranslations("app.billing.paymentDesk");
-  const { money, day } = useBillingFormat();
+  const { money, day, period } = useBillingFormat();
   const { bill, payments } = entry;
   const outstanding = bill.amount_minor - bill.paid_amount_minor;
   const partlyPaid = bill.paid_amount_minor > 0 && outstanding > 0;
@@ -243,7 +243,7 @@ function BillCard({
         <div className="flex min-w-0 flex-col gap-1">
           <CardTitle>{bill.fee_type_name}</CardTitle>
           <CardDescription>
-            {t("billMeta", { period: bill.period, date: day(bill.due_date) })}
+            {t("billMeta", { period: period(bill.period), date: day(bill.due_date) })}
           </CardDescription>
         </div>
         <BillStatusBadge bill={bill} namespace="app.billing.paymentDesk" />

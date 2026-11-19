@@ -31,6 +31,7 @@ import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
+import { isoToZonedLocal, zonedLocalToIso } from "../../../lib/tenant-date";
 import { useClassesQuery } from "../../reference/api";
 import {
   type Announcement,
@@ -60,13 +61,6 @@ function textToHtml(text: string): string {
     .join("");
 }
 
-function toLocalInput(iso?: string): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 export function AnnouncementForm({
   initial,
   onSaved,
@@ -81,6 +75,9 @@ export function AnnouncementForm({
   const tRoles = useTranslations("app.announcements.roles");
   const locale = useLocale() as Locale;
   const { me } = useSession();
+  // The schedule pickers read and write the school's wall clock, whatever
+  // zone the device is set to (docs/07-ui-ux.md section 5).
+  const timeZone = me?.tenant.timezone;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const classes = useClassesQuery();
@@ -96,8 +93,14 @@ export function AnnouncementForm({
   const [roleSlugs, setRoleSlugs] = useState<string[]>(initial?.audience.role_slugs ?? []);
   const [classIds, setClassIds] = useState<string[]>(initial?.audience.class_ids ?? []);
   const [pinned, setPinned] = useState(initial?.is_pinned ?? false);
-  const [startsAt, setStartsAt] = useState(toLocalInput(initial?.starts_at));
-  const [endsAt, setEndsAt] = useState(toLocalInput(initial?.ends_at));
+  const [startsAt, setStartsAt] = useState(
+    initial?.starts_at ? isoToZonedLocal(initial.starts_at, timeZone) : "",
+  );
+  const [endsAt, setEndsAt] = useState(
+    initial?.ends_at ? isoToZonedLocal(initial.ends_at, timeZone) : "",
+  );
+  const startsAtIso = zonedLocalToIso(startsAt, timeZone);
+  const endsAtIso = zonedLocalToIso(endsAt, timeZone);
   const [error, setError] = useState<string | null>(null);
 
   const pending = create.isPending || update.isPending;
@@ -132,8 +135,8 @@ export function AnnouncementForm({
         ...(audienceType === "classes" ? { class_ids: classIds } : {}),
       },
       is_pinned: pinned,
-      ...(startsAt ? { starts_at: new Date(startsAt).toISOString() } : {}),
-      ...(endsAt ? { ends_at: new Date(endsAt).toISOString() } : {}),
+      ...(startsAtIso ? { starts_at: startsAtIso } : {}),
+      ...(endsAtIso ? { ends_at: endsAtIso } : {}),
     };
     try {
       const saved = initial
@@ -269,12 +272,9 @@ export function AnnouncementForm({
                 {pinned && <Badge tone="accent">{t("pinned")}</Badge>}
               </span>
               <span className="text-caption text-fg-muted">
-                {startsAt
+                {startsAtIso
                   ? t("previewScheduleAt", {
-                      date: formatDateTime(new Date(startsAt).toISOString(), {
-                        locale,
-                        timeZone: me?.tenant.timezone,
-                      }),
+                      date: formatDateTime(startsAtIso, { locale, timeZone }),
                     })
                   : t("previewScheduleImmediate")}
               </span>

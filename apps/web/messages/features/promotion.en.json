@@ -18,7 +18,9 @@
     "targetClass": "Target class",
     "chooseClass": "Choose a class",
     "actionFor": "Status of {name}",
-    "targetFor": "Destination class of {name}"
+    "targetFor": "Destination class of {name}",
+    "studentLoading": "Loading student name",
+    "studentUnknown": "Student not found"
   },
   "action": {
     "promote": "Promote",

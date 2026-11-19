@@ -48,7 +48,7 @@ export function BillDetailSheet({
   const tDesk = useTranslations("app.billing.paymentDesk");
   const canRecord = useCan("record_payments");
   const canVoid = useCan("void_payments");
-  const { money, day } = useBillingFormat();
+  const { money, day, period } = useBillingFormat();
 
   const { data: bill, isLoading, isError, error, refetch } = useBillQuery(billId);
   const studentMap = useDirectoryNames([bill?.student_user_id]);
@@ -85,7 +85,7 @@ export function BillDetailSheet({
             <div className="flex min-w-0 flex-col gap-1">
               <p className="text-heading text-fg">{bill.fee_type_name}</p>
               <p className="text-body-sm text-fg-muted">
-                {studentName} · {bill.period}
+                {studentName} · {period(bill.period)}
               </p>
             </div>
             <BillStatusBadge bill={bill} />

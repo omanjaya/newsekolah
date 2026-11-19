@@ -281,7 +281,8 @@
     "offeringsLabel": "Mapel akan disalin",
     "classesLabel": "Kelas akan disalin",
     "ofTotal": "dari {n} di tahun asal",
-    "doneTitle": "Tahun ajaran {year} siap diisi"
+    "doneTitle": "Tahun ajaran {year} siap diisi",
+    "unknownSubject": "Mata pelajaran tidak ditemukan"
   },
   "today": {
     "noPeriodNow": "Tidak ada jam pelajaran sekarang",

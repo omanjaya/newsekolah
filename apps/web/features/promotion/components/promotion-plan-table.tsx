@@ -14,6 +14,7 @@ import {
   Field,
   SegmentedControl,
   Select,
+  Skeleton,
   domainIcons,
   selectionColumn,
   useSubmitValidation,
@@ -23,7 +24,7 @@ import type { RowSelectionState } from "@tanstack/react-table";
 import { ChevronDown, School } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { StudentLink } from "../../students/components/student-link";
 import type { PromotionAction, PromotionOverride, PromotionPlanItem } from "../api";
@@ -51,12 +52,19 @@ export function PromotionPlanTable({
   onOverride,
 }: {
   rows: PromotionPlanItem[];
-  studentName: (id: string) => string;
+  /** The student's name; undefined while the directory lookup is still loading. */
+  studentName: (id: string) => string | undefined;
   fromClasses: ClassOption[];
   toClasses: ClassOption[];
   onOverride: (overrides: PromotionOverride[]) => void;
 }): ReactElement {
   const t = useTranslations("app.promotion");
+  // Labels and search need a string even while a name is loading; the
+  // name cell itself shows a skeleton then.
+  const nameOf = useCallback(
+    (id: string) => studentName(id) ?? t("table.studentLoading"),
+    [studentName, t],
+  );
   const [show, setShow] = useState<"all" | "unresolved">("all");
   const [fromClass, setFromClass] = useState("");
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -98,15 +106,24 @@ export function PromotionPlanTable({
       {
         id: "student",
         header: t("table.student"),
-        accessorFn: (row) => studentName(row.student_user_id),
+        accessorFn: (row) => studentName(row.student_user_id) ?? "",
         meta: { card: "title" },
-        cell: ({ row }) => (
-          <span className="font-medium text-fg">
-            <StudentLink studentId={row.original.student_user_id}>
-              {studentName(row.original.student_user_id)}
-            </StudentLink>
-          </span>
-        ),
+        cell: ({ row }) => {
+          const name = studentName(row.original.student_user_id);
+          if (name === undefined) {
+            return (
+              <span className="inline-flex">
+                <Skeleton className="h-4 w-40" />
+                <span className="sr-only">{t("table.studentLoading")}</span>
+              </span>
+            );
+          }
+          return (
+            <span className="font-medium text-fg">
+              <StudentLink studentId={row.original.student_user_id}>{name}</StudentLink>
+            </span>
+          );
+        },
       },
       {
         id: "fromClass",
@@ -124,7 +141,7 @@ export function PromotionPlanTable({
         meta: { label: t("table.action") },
         cell: ({ row }) => (
           <Select
-            aria-label={t("table.actionFor", { name: studentName(row.original.student_user_id) })}
+            aria-label={t("table.actionFor", { name: nameOf(row.original.student_user_id) })}
             options={PROMOTION_ACTIONS.map((a) => ({ value: a, label: t(`action.${a}`) }))}
             value={row.original.action}
             onValueChange={(action) => {
@@ -152,7 +169,7 @@ export function PromotionPlanTable({
           needsClass(row.original.action) ? (
             <Select
               aria-label={t("table.targetFor", {
-                name: studentName(row.original.student_user_id),
+                name: nameOf(row.original.student_user_id),
               })}
               options={toClasses}
               value={row.original.target_class_id ?? ""}
@@ -175,7 +192,7 @@ export function PromotionPlanTable({
           ),
       },
     ],
-    [classLabel, onOverride, studentName, t, toClasses],
+    [classLabel, onOverride, studentName, nameOf, t, toClasses],
   );
 
   return (

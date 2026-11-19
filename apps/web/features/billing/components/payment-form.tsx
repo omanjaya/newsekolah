@@ -54,7 +54,7 @@ export function PaymentForm({
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const record = useRecordPaymentMutation();
-  const { money, day } = useBillingFormat();
+  const { money, day, period } = useBillingFormat();
   const { me } = useSession();
   const todayIso = today(me?.tenant.timezone);
 
@@ -106,7 +106,7 @@ export function PaymentForm({
     >
       <DataList>
         <DataListItem label={t("bill")}>
-          {bill.fee_type_name} · {bill.period}
+          {bill.fee_type_name} · {period(bill.period)}
         </DataListItem>
         <DataListItem label={t("dueDate")}>{day(bill.due_date)}</DataListItem>
         <DataListItem label={t("outstandingLabel")}>

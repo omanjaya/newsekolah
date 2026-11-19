@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   dayRangeInZone,
+  isoToZonedLocal,
+  zonedLocalToIso,
   endOfPreviousIsoMonth,
   shiftIsoDate,
   startOfIsoMonth,
@@ -65,5 +67,33 @@ describe("dayRangeInZone", () => {
     expect(dayRangeInZone("2026-11-14", "2026-11-14", "Asia/Makassar").from).toBe(
       "2026-11-13T16:00:00.000Z",
     );
+  });
+});
+
+describe("zonedLocalToIso", () => {
+  it("reads the picked wall clock in the school's zone, not the device's", () => {
+    expect(zonedLocalToIso("2026-11-20T07:30", "Asia/Makassar")).toBe("2026-11-19T23:30:00.000Z");
+    expect(zonedLocalToIso("2026-11-20T07:30", "Asia/Jakarta")).toBe("2026-11-20T00:30:00.000Z");
+  });
+
+  it("returns null for an empty or partial value", () => {
+    expect(zonedLocalToIso("", "Asia/Makassar")).toBeNull();
+    expect(zonedLocalToIso("2026-11-20", "Asia/Makassar")).toBeNull();
+  });
+});
+
+describe("isoToZonedLocal", () => {
+  it("shows a stored instant on the school's wall clock", () => {
+    expect(isoToZonedLocal("2026-11-19T23:30:00Z", "Asia/Makassar")).toBe("2026-11-20T07:30");
+  });
+
+  it("round-trips with zonedLocalToIso", () => {
+    const iso = zonedLocalToIso("2026-12-31T23:45", "Asia/Jayapura");
+    expect(iso).not.toBeNull();
+    expect(isoToZonedLocal(iso ?? "", "Asia/Jayapura")).toBe("2026-12-31T23:45");
+  });
+
+  it("returns an empty value for an invalid instant", () => {
+    expect(isoToZonedLocal("not a date", "Asia/Makassar")).toBe("");
   });
 });

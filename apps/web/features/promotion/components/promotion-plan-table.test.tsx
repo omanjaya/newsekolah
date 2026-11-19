@@ -82,4 +82,20 @@ describe("PromotionPlanTable", () => {
       { student_user_id: "s-3", action: "retain", target_class_id: undefined },
     ]);
   });
+
+  it("shows a placeholder, never the raw id, while a name is loading", () => {
+    render(
+      <PromotionPlanTable
+        rows={ROWS}
+        studentName={(id) => (id === "s-1" ? undefined : `Siswa ${id}`)}
+        fromClasses={[{ value: "x-a", label: "X-A" }]}
+        toClasses={[{ value: "xi-a", label: "XI-A" }]}
+        onOverride={vi.fn()}
+      />,
+    );
+    const table = screen.getByRole("table");
+    expect(within(table).queryByText("s-1")).not.toBeInTheDocument();
+    expect(within(table).getByText("table.studentLoading")).toBeInTheDocument();
+    expect(within(table).getByText("Siswa s-2")).toBeInTheDocument();
+  });
 });

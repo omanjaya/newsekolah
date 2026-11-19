@@ -281,7 +281,8 @@
     "offeringsLabel": "Subjects to copy",
     "classesLabel": "Classes to copy",
     "ofTotal": "of {n} in the source year",
-    "doneTitle": "{year} is ready to fill"
+    "doneTitle": "{year} is ready to fill",
+    "unknownSubject": "Subject not found"
   },
   "today": {
     "noPeriodNow": "No lesson period right now",

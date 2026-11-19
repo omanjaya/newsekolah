@@ -69,6 +69,13 @@ beforeEach(() => {
 });
 
 describe("PaymentFlow", () => {
+  it("names a monthly bill by its month, not its period key", () => {
+    render(<PaymentFlow bill={bill} onClose={vi.fn()} />);
+
+    expect(screen.getByText("SPP · November 2026")).toBeInTheDocument();
+    expect(screen.queryByText(/2026-11/)).not.toBeInTheDocument();
+  });
+
   it("starts at the full remainder and records it as is", async () => {
     const user = userEvent.setup();
     render(<PaymentFlow bill={bill} onClose={vi.fn()} />);

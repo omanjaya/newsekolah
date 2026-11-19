@@ -91,8 +91,17 @@
         "pending": "Menunggu",
         "success": "Terkirim",
         "failed": "Gagal"
+      },
+      "failure": {
+        "render_failed": "Laporan gagal dibuat.",
+        "upload_failed": "Laporan gagal disimpan.",
+        "send_failed": "Email gagal dikirim ke penerima.",
+        "unknown": "Pengiriman gagal."
       }
-    }
+    },
+    "scheduleName": "{report}, {cadence}",
+    "rowActions": "Aksi untuk {name}",
+    "enabledFor": "Aktifkan {name}"
   },
   "arguments": {
     "class": "Kelas",

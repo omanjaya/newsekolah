@@ -15,6 +15,7 @@ export {
   formatDate,
   formatDateRange,
   formatDateTime,
+  formatMonth,
   formatNumber,
   formatRelative,
   formatShortDate,

@@ -109,7 +109,7 @@ func (s *Service) CompleteObservation(ctx context.Context, tenantID, observerUse
 			return err
 		}
 		observation := domain.Observation{
-			ScheduledID: scheduled.ID, CycleID: scheduled.CycleID, TeacherUserID: scheduled.TeacherUserID, ObserverUserID: observerUserID,
+			TenantID: tenantID, ScheduledID: scheduled.ID, CycleID: scheduled.CycleID, TeacherUserID: scheduled.TeacherUserID, ObserverUserID: observerUserID,
 			Scores: in.Scores, ObserverNotes: strings.TrimSpace(in.ObserverNotes), TeacherResponse: strings.TrimSpace(in.TeacherResponse),
 			AgreedFollowUp: strings.TrimSpace(in.AgreedFollowUp), ObservedAt: in.ObservedAt,
 		}

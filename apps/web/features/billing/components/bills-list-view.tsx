@@ -38,7 +38,7 @@ const PAGE_SIZE = 50;
 export function BillsListView(): ReactElement {
   const t = useTranslations("app.billing.bills");
   const { me } = useSession();
-  const { money, day } = useBillingFormat();
+  const { money, day, period: periodLabel } = useBillingFormat();
   const classes = useClassesQuery();
 
   const [period, setPeriod] = useDateFilter("period", "", true);
@@ -111,7 +111,12 @@ export function BillsListView(): ReactElement {
         enableSorting: false,
         meta: { card: "subtitle" },
       },
-      { accessorKey: "period", header: t("columns.period"), enableSorting: false },
+      {
+        id: "period",
+        header: t("columns.period"),
+        enableSorting: false,
+        cell: ({ row }) => periodLabel(row.original.period),
+      },
       {
         id: "dueDate",
         header: t("columns.dueDate"),
@@ -151,7 +156,7 @@ export function BillsListView(): ReactElement {
         cell: ({ row }) => <BillStatusBadge bill={row.original} />,
       },
     ],
-    [t, money, day, studentMap],
+    [t, money, day, periodLabel, studentMap],
   );
 
   return (

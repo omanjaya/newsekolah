@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
@@ -115,7 +116,14 @@ func (r *Repository) ListScheduledForCycle(ctx context.Context, tenantID, cycleI
 	if err != nil {
 		return nil, fmt.Errorf("list scheduled for cycle: %w", err)
 	}
-	return toScheduledList(rows), nil
+	out := make([]domain.ScheduledObservation, len(rows))
+	for i, row := range rows {
+		out[i] = toScheduledWithObservation(db.SupervisionScheduledObservation{
+			ID: row.ID, TenantID: row.TenantID, CycleID: row.CycleID, ScheduleID: row.ScheduleID, LessonDate: row.LessonDate,
+			TeacherUserID: row.TeacherUserID, ObserverUserID: row.ObserverUserID, CreatedAt: row.CreatedAt,
+		}, row.ObservationID, row.ObservedAt)
+	}
+	return out, nil
 }
 
 func (r *Repository) ListScheduledForTeacher(ctx context.Context, tenantID, cycleID, teacherUserID uuid.UUID) ([]domain.ScheduledObservation, error) {
@@ -125,7 +133,14 @@ func (r *Repository) ListScheduledForTeacher(ctx context.Context, tenantID, cycl
 	if err != nil {
 		return nil, fmt.Errorf("list scheduled for teacher: %w", err)
 	}
-	return toScheduledList(rows), nil
+	out := make([]domain.ScheduledObservation, len(rows))
+	for i, row := range rows {
+		out[i] = toScheduledWithObservation(db.SupervisionScheduledObservation{
+			ID: row.ID, TenantID: row.TenantID, CycleID: row.CycleID, ScheduleID: row.ScheduleID, LessonDate: row.LessonDate,
+			TeacherUserID: row.TeacherUserID, ObserverUserID: row.ObserverUserID, CreatedAt: row.CreatedAt,
+		}, row.ObservationID, row.ObservedAt)
+	}
+	return out, nil
 }
 
 func (r *Repository) CreateObservation(ctx context.Context, o domain.Observation) (domain.Observation, error) {
@@ -244,11 +259,12 @@ func toScheduled(row db.SupervisionScheduledObservation) domain.ScheduledObserva
 	}
 }
 
-func toScheduledList(rows []db.SupervisionScheduledObservation) []domain.ScheduledObservation {
-	out := make([]domain.ScheduledObservation, len(rows))
-	for i, row := range rows {
-		out[i] = toScheduled(row)
-	}
+// toScheduledWithObservation adds the joined observation (NULL while the
+// visit is still to be observed) to a scheduled row.
+func toScheduledWithObservation(row db.SupervisionScheduledObservation, observationID pgtype.UUID, observedAt pgtype.Timestamptz) domain.ScheduledObservation {
+	out := toScheduled(row)
+	out.ObservationID = pdatabase.UUIDOrNil(observationID)
+	out.ObservedAt = pdatabase.TimePtr(observedAt)
 	return out
 }
 

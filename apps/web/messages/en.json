@@ -845,7 +845,7 @@
         "staff": "Staff"
       },
       "actions": {
-        "menu": "Announcement actions",
+        "menuFor": "Actions for {title}",
         "create": "New announcement",
         "edit": "Edit",
         "publish": "Publish",

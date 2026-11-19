@@ -3,6 +3,7 @@
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
 import { Button, EmptyState, SkeletonForm, domainIcons } from "@newsekolah/ui";
+import { Eye } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -82,6 +83,33 @@ export function CompleteObservationView({
           action={
             <Button asChild variant="secondary">
               <Link href={backHref}>{t("backToCycle")}</Link>
+            </Button>
+          }
+        />
+      </AppPage>
+    );
+  }
+
+  // A deep link to a visit that is already filled in must not start a
+  // second fill (the API refuses it on save, after the work is done).
+  // The page heading names the saved result, not the fill it no longer offers.
+  if (scheduled.observation_id) {
+    return (
+      <AppPage
+        variant="narrow"
+        nav={false}
+        breadcrumb={trail.within(cycleId, cycle.data.name, { label: t("doneBreadcrumb") })}
+        title={t("doneBreadcrumb")}
+      >
+        <EmptyState
+          icon={<domainIcons.supervision />}
+          title={t("doneTitle")}
+          description={t("doneBody")}
+          action={
+            <Button asChild icon={<Eye />}>
+              <Link href={`/supervision/observations/${scheduled.observation_id}`}>
+                {t("viewResult")}
+              </Link>
             </Button>
           }
         />

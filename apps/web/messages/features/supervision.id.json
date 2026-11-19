@@ -70,7 +70,8 @@
       "scheduled": "Observasi terjadwal",
       "teachers": "Guru",
       "criteria": "Kriteria",
-      "scale": "Skala"
+      "scale": "Skala",
+      "observed": "Selesai diobservasi"
     },
     "scaleRange": "{min}–{max}",
     "scheduledTitle": "Observasi terjadwal",
@@ -80,30 +81,40 @@
       "actions": "Aksi",
       "lessonDate": "Tanggal pelajaran",
       "teacher": "Guru",
-      "observer": "Pengamat"
+      "observer": "Pengamat",
+      "status": "Status"
     },
     "unknownTeacher": "Guru tidak diketahui",
     "complete": "Isi hasil",
     "schedule": "Jadwalkan observasi",
     "emptyTitle": "Belum ada observasi terjadwal",
     "emptyBody": "Jadwalkan observasi terhadap pelajaran seorang guru untuk memulai siklus ini.",
-    "scheduleTitle": "Jadwalkan observasi"
+    "scheduleTitle": "Jadwalkan observasi",
+    "status": {
+      "scheduled": "Terjadwal",
+      "observed": "Selesai"
+    },
+    "viewResult": "Lihat hasil"
   },
   "completeObservation": {
     "breadcrumb": "Isi hasil observasi",
     "backToCycle": "Kembali ke siklus",
     "notFoundTitle": "Observasi terjadwal tidak ditemukan",
-    "notFoundBody": "Observasi ini mungkin sudah diisi atau jadwalnya dihapus. Kembali ke siklus untuk memeriksa."
+    "notFoundBody": "Observasi ini mungkin sudah diisi atau jadwalnya dihapus. Kembali ke siklus untuk memeriksa.",
+    "doneBreadcrumb": "Hasil observasi",
+    "doneTitle": "Observasi ini sudah diisi",
+    "doneBody": "Hasilnya sudah tersimpan. Buka hasil observasi untuk membaca atau menanggapinya.",
+    "viewResult": "Lihat hasil"
   },
   "cycleReport": {
     "documentTitle": "Hasil {cycle}",
     "teachersTitle": "Guru yang diobservasi",
     "teachersHint": "Buka seorang guru untuk melihat rata-rata per kriteria dan setiap observasinya.",
-    "scheduledCount": "{count, plural, other {# observasi terjadwal}}",
     "unknownTeacher": "Guru tidak diketahui",
     "emptyTitle": "Belum ada guru yang dijadwalkan",
     "emptyBody": "Guru yang dijadwalkan untuk diobservasi pada siklus ini muncul di sini.",
-    "breadcrumb": "Hasil"
+    "breadcrumb": "Hasil",
+    "progress": "{observed} dari {scheduled} observasi selesai"
   },
   "schedule": {
     "form": {

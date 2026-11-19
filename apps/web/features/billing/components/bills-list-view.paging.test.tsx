@@ -93,6 +93,18 @@ describe("BillsListView paging", () => {
     FULL_PAGE_TIMEOUT_MS,
   );
 
+  it("shows a monthly period as its month, not the stored key", () => {
+    mocks.useBillsQuery.mockReturnValue({
+      data: { data: bills(1) },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    render(<BillsListView />);
+    expect(screen.getAllByText("September 2026").length).toBeGreaterThan(0);
+    expect(screen.queryByText("2026-09")).not.toBeInTheDocument();
+  });
+
   it("returns to the first page when a filter changes", async () => {
     // The reset follows the filter, not the rows: one bill is enough.
     mocks.useBillsQuery.mockReturnValue({

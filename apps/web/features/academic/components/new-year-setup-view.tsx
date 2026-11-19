@@ -201,7 +201,7 @@ export function NewYearSetupView(): ReactElement {
                   {plan.subject_offerings.map((offering, i) => (
                     <ListRow
                       key={`${offering.subject_id}-${offering.grade_level_id ?? "all"}-${i}`}
-                      title={subjectMap.get(offering.subject_id)?.name ?? offering.subject_id}
+                      title={subjectMap.get(offering.subject_id)?.name ?? t("unknownSubject")}
                       meta={
                         offering.grade_level_id
                           ? gradeLevelMap.get(offering.grade_level_id)?.name

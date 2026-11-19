@@ -277,7 +277,12 @@ func (q *Queries) SupervisionListObservationsForTeacherCycle(ctx context.Context
 }
 
 const supervisionListScheduledForCycle = `-- name: SupervisionListScheduledForCycle :many
-select id, tenant_id, cycle_id, schedule_id, lesson_date, teacher_user_id, observer_user_id, created_at from supervision_scheduled_observations where tenant_id = $1 and cycle_id = $2 order by lesson_date desc
+select s.id, s.tenant_id, s.cycle_id, s.schedule_id, s.lesson_date, s.teacher_user_id, s.observer_user_id,
+  s.created_at, o.id as observation_id, o.observed_at as observed_at
+from supervision_scheduled_observations s
+left join supervision_observations o on o.scheduled_id = s.id and o.tenant_id = s.tenant_id
+where s.tenant_id = $1 and s.cycle_id = $2
+order by s.lesson_date desc
 `
 
 type SupervisionListScheduledForCycleParams struct {
@@ -285,15 +290,30 @@ type SupervisionListScheduledForCycleParams struct {
 	CycleID  uuid.UUID `json:"cycle_id"`
 }
 
-func (q *Queries) SupervisionListScheduledForCycle(ctx context.Context, arg SupervisionListScheduledForCycleParams) ([]SupervisionScheduledObservation, error) {
+type SupervisionListScheduledForCycleRow struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	CycleID        uuid.UUID          `json:"cycle_id"`
+	ScheduleID     uuid.UUID          `json:"schedule_id"`
+	LessonDate     pgtype.Date        `json:"lesson_date"`
+	TeacherUserID  uuid.UUID          `json:"teacher_user_id"`
+	ObserverUserID uuid.UUID          `json:"observer_user_id"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	ObservationID  pgtype.UUID        `json:"observation_id"`
+	ObservedAt     pgtype.Timestamptz `json:"observed_at"`
+}
+
+// Each scheduled visit with its observation, if one has been filled in, so
+// a list can tell what is done from what is still to observe.
+func (q *Queries) SupervisionListScheduledForCycle(ctx context.Context, arg SupervisionListScheduledForCycleParams) ([]SupervisionListScheduledForCycleRow, error) {
 	rows, err := q.db.Query(ctx, supervisionListScheduledForCycle, arg.TenantID, arg.CycleID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []SupervisionScheduledObservation{}
+	items := []SupervisionListScheduledForCycleRow{}
 	for rows.Next() {
-		var i SupervisionScheduledObservation
+		var i SupervisionListScheduledForCycleRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -303,6 +323,8 @@ func (q *Queries) SupervisionListScheduledForCycle(ctx context.Context, arg Supe
 			&i.TeacherUserID,
 			&i.ObserverUserID,
 			&i.CreatedAt,
+			&i.ObservationID,
+			&i.ObservedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -315,9 +337,12 @@ func (q *Queries) SupervisionListScheduledForCycle(ctx context.Context, arg Supe
 }
 
 const supervisionListScheduledForTeacher = `-- name: SupervisionListScheduledForTeacher :many
-select id, tenant_id, cycle_id, schedule_id, lesson_date, teacher_user_id, observer_user_id, created_at from supervision_scheduled_observations
-where tenant_id = $1 and cycle_id = $2 and teacher_user_id = $3
-order by lesson_date desc
+select s.id, s.tenant_id, s.cycle_id, s.schedule_id, s.lesson_date, s.teacher_user_id, s.observer_user_id,
+  s.created_at, o.id as observation_id, o.observed_at as observed_at
+from supervision_scheduled_observations s
+left join supervision_observations o on o.scheduled_id = s.id and o.tenant_id = s.tenant_id
+where s.tenant_id = $1 and s.cycle_id = $2 and s.teacher_user_id = $3
+order by s.lesson_date desc
 `
 
 type SupervisionListScheduledForTeacherParams struct {
@@ -326,15 +351,28 @@ type SupervisionListScheduledForTeacherParams struct {
 	TeacherUserID uuid.UUID `json:"teacher_user_id"`
 }
 
-func (q *Queries) SupervisionListScheduledForTeacher(ctx context.Context, arg SupervisionListScheduledForTeacherParams) ([]SupervisionScheduledObservation, error) {
+type SupervisionListScheduledForTeacherRow struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	CycleID        uuid.UUID          `json:"cycle_id"`
+	ScheduleID     uuid.UUID          `json:"schedule_id"`
+	LessonDate     pgtype.Date        `json:"lesson_date"`
+	TeacherUserID  uuid.UUID          `json:"teacher_user_id"`
+	ObserverUserID uuid.UUID          `json:"observer_user_id"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	ObservationID  pgtype.UUID        `json:"observation_id"`
+	ObservedAt     pgtype.Timestamptz `json:"observed_at"`
+}
+
+func (q *Queries) SupervisionListScheduledForTeacher(ctx context.Context, arg SupervisionListScheduledForTeacherParams) ([]SupervisionListScheduledForTeacherRow, error) {
 	rows, err := q.db.Query(ctx, supervisionListScheduledForTeacher, arg.TenantID, arg.CycleID, arg.TeacherUserID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []SupervisionScheduledObservation{}
+	items := []SupervisionListScheduledForTeacherRow{}
 	for rows.Next() {
-		var i SupervisionScheduledObservation
+		var i SupervisionListScheduledForTeacherRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.TenantID,
@@ -344,6 +382,8 @@ func (q *Queries) SupervisionListScheduledForTeacher(ctx context.Context, arg Su
 			&i.TeacherUserID,
 			&i.ObserverUserID,
 			&i.CreatedAt,
+			&i.ObservationID,
+			&i.ObservedAt,
 		); err != nil {
 			return nil, err
 		}

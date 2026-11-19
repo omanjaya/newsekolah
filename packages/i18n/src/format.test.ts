@@ -4,6 +4,7 @@ import {
   formatDate,
   formatDateRange,
   formatDateTime,
+  formatMonth,
   formatNumber,
   formatRelative,
   formatShortDate,
@@ -16,6 +17,13 @@ const SAMPLE = new Date("2026-09-09T07:05:00Z"); // 14.05 WIB
 describe("formatDate", () => {
   it("formats a long Indonesian date", () => {
     expect(formatDate(SAMPLE, { locale: "id", timeZone: TZ })).toBe("9 September 2026");
+  });
+});
+
+describe("formatMonth", () => {
+  it("formats a month and year", () => {
+    expect(formatMonth(SAMPLE, { locale: "id", timeZone: TZ })).toBe("September 2026");
+    expect(formatMonth("2026-11-01", { locale: "en", timeZone: "UTC" })).toBe("November 2026");
   });
 });
 

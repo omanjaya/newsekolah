@@ -23,6 +23,7 @@ import { useDraftOwner } from "../../../lib/drafts/draft-owner";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
+import { isoToZonedLocal, zonedLocalToIso } from "../../../lib/tenant-date";
 import {
   DirectoryPicker,
   useDirectoryPickerLabels,
@@ -43,13 +44,6 @@ import {
 const KINDS: CounselingKind[] = ["individual", "group", "parent", "referral"];
 const TOPICS: CounselingTopic[] = ["career", "problem", "personal", "learning", "social", "other"];
 const VISIBILITIES: CounselingVisibility[] = ["counselor", "bk_team", "leadership"];
-
-function toLocalInput(iso?: string): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 export function CounselingForm({
   initial,
@@ -74,7 +68,7 @@ export function CounselingForm({
 
   const [studentId, setStudentId] = useState(initial?.student_user_id ?? initialStudentId ?? "");
   const [sessionAt, setSessionAt] = useState(
-    toLocalInput(initial?.session_at ?? businessNow().toISOString()),
+    isoToZonedLocal(initial?.session_at ?? businessNow(), me?.tenant.timezone),
   );
   const [kind, setKind] = useState<CounselingKind>(initial?.kind ?? "individual");
   const [topic, setTopic] = useState<CounselingTopic>(initial?.topic ?? "problem");
@@ -151,10 +145,12 @@ export function CounselingForm({
       noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        if (!check(Boolean(studentId && sessionAt && title.trim() && content.trim()))) return;
+        const sessionAtIso = zonedLocalToIso(sessionAt, me?.tenant.timezone);
+        const complete = Boolean(studentId && sessionAtIso && title.trim() && content.trim());
+        if (!check(complete) || !studentId || !sessionAtIso) return;
         const body = {
           student_user_id: studentId,
-          session_at: new Date(sessionAt).toISOString(),
+          session_at: sessionAtIso,
           kind,
           topic,
           title: title.trim(),

@@ -845,7 +845,7 @@
         "staff": "Pegawai"
       },
       "actions": {
-        "menu": "Aksi pengumuman",
+        "menuFor": "Aksi untuk {title}",
         "create": "Buat pengumuman",
         "edit": "Ubah",
         "publish": "Terbitkan",

@@ -87,10 +87,15 @@ export function SsoView(): ReactElement {
   const clientIdError = submitted && !active.clientId.trim() ? t("clientIdRequired") : undefined;
   const domainError =
     submitted && !active.hostedDomain.trim() ? t("hostedDomainRequired") : undefined;
+  // The first save must carry a secret; afterwards an empty field keeps
+  // the stored one (sso_google.go googleSSOSecretToStore).
+  const secretRequired = !data.configured;
+  const secretMissing = secretRequired && !active.clientSecret.trim();
+  const clientSecretError = submitted && secretMissing ? t("clientSecretRequired") : undefined;
 
   async function handleSave() {
     setSubmitted(true);
-    if (!active.clientId.trim() || !active.hostedDomain.trim()) return;
+    if (!active.clientId.trim() || !active.hostedDomain.trim() || secretMissing) return;
     try {
       await save.mutateAsync({
         client_id: active.clientId.trim(),
@@ -196,7 +201,9 @@ export function SsoView(): ReactElement {
         </Field>
         <Field
           label={t("clientSecretLabel")}
+          required={secretRequired}
           hint={data.configured ? t("clientSecretHint") : undefined}
+          error={clientSecretError}
         >
           <PasswordInput
             value={active.clientSecret}

@@ -144,10 +144,10 @@ func (r *ScheduleRepository) ClaimRun(ctx context.Context, tenantID, scheduleID 
 	return toRun(row), true, nil
 }
 
-func (r *ScheduleRepository) CompleteRun(ctx context.Context, tenantID, runID uuid.UUID, status domain.RunStatus, errMsg, objectKey string, ranAt time.Time) error {
+func (r *ScheduleRepository) CompleteRun(ctx context.Context, tenantID, runID uuid.UUID, outcome domain.RunOutcome, ranAt time.Time) error {
 	err := r.queries(ctx).CompleteReportScheduleRun(ctx, db.CompleteReportScheduleRunParams{
-		TenantID: tenantID, ID: runID, Status: string(status), ErrorMessage: errMsg, ObjectKey: objectKey,
-		RanAt: pdatabase.Timestamptz(ranAt),
+		TenantID: tenantID, ID: runID, Status: string(outcome.Status), FailureCode: string(outcome.FailureCode),
+		ErrorMessage: outcome.ErrorMessage, ObjectKey: outcome.ObjectKey, RanAt: pdatabase.Timestamptz(ranAt),
 	})
 	if err != nil {
 		return fmt.Errorf("complete report schedule run: %w", err)
@@ -233,7 +233,8 @@ func toSchedule(row db.ReportSchedule) domain.Schedule {
 func toRun(row db.ReportScheduleRun) domain.Run {
 	return domain.Run{
 		ID: row.ID, TenantID: row.TenantID, ScheduleID: row.ScheduleID, DueAt: row.DueAt.Time,
-		Status: domain.RunStatus(row.Status), ErrorMessage: row.ErrorMessage, ObjectKey: row.ObjectKey,
+		Status: domain.RunStatus(row.Status), FailureCode: domain.RunFailureCode(row.FailureCode),
+		ErrorMessage: row.ErrorMessage, ObjectKey: row.ObjectKey,
 		RanAt: pdatabase.TimePtr(row.RanAt), CreatedAt: row.CreatedAt.Time,
 	}
 }

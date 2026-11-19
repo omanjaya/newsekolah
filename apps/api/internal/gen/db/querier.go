@@ -1597,8 +1597,10 @@ type Querier interface {
 	SupervisionListCyclesForYear(ctx context.Context, arg SupervisionListCyclesForYearParams) ([]SupervisionCycle, error)
 	SupervisionListObservationsForCycle(ctx context.Context, arg SupervisionListObservationsForCycleParams) ([]SupervisionObservation, error)
 	SupervisionListObservationsForTeacherCycle(ctx context.Context, arg SupervisionListObservationsForTeacherCycleParams) ([]SupervisionObservation, error)
-	SupervisionListScheduledForCycle(ctx context.Context, arg SupervisionListScheduledForCycleParams) ([]SupervisionScheduledObservation, error)
-	SupervisionListScheduledForTeacher(ctx context.Context, arg SupervisionListScheduledForTeacherParams) ([]SupervisionScheduledObservation, error)
+	// Each scheduled visit with its observation, if one has been filled in, so
+	// a list can tell what is done from what is still to observe.
+	SupervisionListScheduledForCycle(ctx context.Context, arg SupervisionListScheduledForCycleParams) ([]SupervisionListScheduledForCycleRow, error)
+	SupervisionListScheduledForTeacher(ctx context.Context, arg SupervisionListScheduledForTeacherParams) ([]SupervisionListScheduledForTeacherRow, error)
 	SupervisionTeacherName(ctx context.Context, arg SupervisionTeacherNameParams) (string, error)
 	SupervisionUpdateCycle(ctx context.Context, arg SupervisionUpdateCycleParams) (SupervisionCycle, error)
 	SupervisionUpdateObservation(ctx context.Context, arg SupervisionUpdateObservationParams) (SupervisionObservation, error)

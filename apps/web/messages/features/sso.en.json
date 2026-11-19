@@ -30,6 +30,7 @@
   "credentialsTitle": "Google credentials",
   "credentialsHint": "From the school's own Google Cloud project, under OAuth 2.0.",
   "clientIdRequired": "Enter the Client ID.",
+  "clientSecretRequired": "A client secret is required.",
   "hostedDomainRequired": "Enter the Google Workspace domain.",
   "saveAndEnable": "Save and turn on"
 }

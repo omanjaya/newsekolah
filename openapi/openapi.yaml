@@ -26940,6 +26940,14 @@ components:
         - pending
         - success
         - failed
+    ReportScheduleRunFailureCode:
+      type: string
+      description: "Which stage of a failed run broke: render_failed (the report could not be built), upload_failed (the file
+        could not be stored or linked), send_failed (the email was not sent)."
+      enum:
+        - render_failed
+        - upload_failed
+        - send_failed
     ReportScheduleRun:
       type: object
       required:
@@ -26961,8 +26969,13 @@ components:
           format: date-time
         status:
           $ref: "#/components/schemas/ReportScheduleRunStatus"
+        failure_code:
+          description: Set only on a failed run; name it to the reader, not error_message.
+          allOf:
+            - $ref: "#/components/schemas/ReportScheduleRunFailureCode"
         error_message:
           type: string
+          description: Technical detail of a failure, in English, for support.
         object_key:
           type: string
         ran_at:
@@ -27600,6 +27613,18 @@ components:
         observer_user_id:
           type: string
           format: uuid
+        observation_id:
+          type:
+            - string
+            - "null"
+          format: uuid
+          description: The filled-in observation of this visit; null while it is still to be observed.
+        observed_at:
+          type:
+            - string
+            - "null"
+          format: date-time
+          description: When the observation was held; null while it is still to be observed.
     ScheduledObservationWrite:
       type: object
       required:

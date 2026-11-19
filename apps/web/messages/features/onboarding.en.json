@@ -154,6 +154,10 @@
     },
     "commitAction": "Save student data",
     "doneTitle": "{count} students saved successfully",
-    "doneBody": "Student data is in. Check the completeness list below for what's next."
+    "doneBody": "Student data is in. Check the completeness list below for what's next.",
+    "back": "Back",
+    "laterBody": "Student import skipped. Upload the Dapodik file here at any time, or import students per class from the import page.",
+    "laterBack": "Upload Dapodik now",
+    "laterImport": "Open student import"
   }
 }

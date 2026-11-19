@@ -44,7 +44,11 @@ export function SetupView(): ReactElement {
           that the checklist leads and the profile waits below it. */}
       {!ready && profile}
 
-      {data && !data.ready_to_operate && <OnboardingWizard />}
+      {data && !data.ready_to_operate && (
+        <OnboardingWizard
+          templateDone={data.steps.some((step) => step.key === "grade_levels" && step.done)}
+        />
+      )}
 
       {!checklist.isError && <ChecklistSection checklist={data} isLoading={checklist.isLoading} />}
 

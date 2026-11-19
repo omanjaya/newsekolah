@@ -91,8 +91,17 @@
         "pending": "Pending",
         "success": "Sent",
         "failed": "Failed"
+      },
+      "failure": {
+        "render_failed": "The report could not be built.",
+        "upload_failed": "The report could not be stored.",
+        "send_failed": "The email could not be sent to the recipients.",
+        "unknown": "The send failed."
       }
-    }
+    },
+    "scheduleName": "{report}, {cadence}",
+    "rowActions": "Actions for {name}",
+    "enabledFor": "Enable {name}"
   },
   "arguments": {
     "class": "Class",
