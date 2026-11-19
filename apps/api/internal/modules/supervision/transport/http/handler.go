@@ -89,11 +89,17 @@ func toAPICycle(c domain.SupervisionCycle) api.SupervisionCycle {
 }
 
 func toAPIScheduled(o domain.ScheduledObservation) api.ScheduledObservation {
-	return api.ScheduledObservation{
+	out := api.ScheduledObservation{
 		Id: openapi_types.UUID(o.ID), CycleId: openapi_types.UUID(o.CycleID), ScheduleId: openapi_types.UUID(o.ScheduleID),
 		LessonDate: openapi_types.Date{Time: o.LessonDate}, TeacherUserId: openapi_types.UUID(o.TeacherUserID),
 		ObserverUserId: openapi_types.UUID(o.ObserverUserID),
+		ObservedAt:     o.ObservedAt,
 	}
+	if o.ObservationID.Valid {
+		id := openapi_types.UUID(o.ObservationID.UUID)
+		out.ObservationId = &id
+	}
+	return out
 }
 
 func toAPIScores(scores []domain.CriterionScore) []api.CriterionScore {

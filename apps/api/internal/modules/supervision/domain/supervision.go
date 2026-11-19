@@ -146,7 +146,14 @@ type ScheduledObservation struct {
 	TeacherUserID  uuid.UUID
 	ObserverUserID uuid.UUID
 	CreatedAt      time.Time
+	// ObservationID and ObservedAt are set once the visit has been filled
+	// in. Only the list reads carry them; a single get leaves them empty.
+	ObservationID uuid.NullUUID
+	ObservedAt    *time.Time
 }
+
+// Observed reports whether this visit's observation has been filled in.
+func (s ScheduledObservation) Observed() bool { return s.ObservationID.Valid }
 
 func (s ScheduledObservation) Validate() error {
 	if s.CycleID == uuid.Nil || s.ScheduleID == uuid.Nil || s.LessonDate.IsZero() {

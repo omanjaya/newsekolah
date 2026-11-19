@@ -11778,6 +11778,16 @@ export interface components {
             teacher_user_id: string;
             /** Format: uuid */
             observer_user_id: string;
+            /**
+             * Format: uuid
+             * @description The filled-in observation of this visit; null while it is still to be observed.
+             */
+            observation_id?: string | null;
+            /**
+             * Format: date-time
+             * @description When the observation was held; null while it is still to be observed.
+             */
+            observed_at?: string | null;
         };
         ScheduledObservationWrite: {
             /** Format: uuid */

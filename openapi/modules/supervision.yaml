@@ -303,6 +303,14 @@ components:
         lesson_date: { type: string, format: date }
         teacher_user_id: { type: string, format: uuid }
         observer_user_id: { type: string, format: uuid }
+        observation_id:
+          type: [string, "null"]
+          format: uuid
+          description: The filled-in observation of this visit; null while it is still to be observed.
+        observed_at:
+          type: [string, "null"]
+          format: date-time
+          description: When the observation was held; null while it is still to be observed.
 
     ScheduledObservationWrite:
       type: object
