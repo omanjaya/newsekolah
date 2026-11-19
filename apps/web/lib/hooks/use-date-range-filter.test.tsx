@@ -93,6 +93,32 @@ describe("useDateRangeFilter", () => {
     expect(both.result.current[0]).toEqual({ from: "2026-11-20", to: "2030-01-01" });
   });
 
+  it("drops both keys when set back to the page's default period", () => {
+    const defaults = { defaultFrom: "2026-11-01", defaultTo: "2026-11-19" };
+    window.history.replaceState(null, "", "/x?from=2030-01-01&only_open=true");
+    const { result } = renderHook(() => useDateRangeFilter(defaults));
+    expect(result.current[2]).toMatchObject({
+      from: "2030-01-01",
+      to: "2030-01-01",
+      defaultFrom: "2026-11-01",
+      defaultTo: "2026-11-19",
+    });
+
+    act(() => {
+      result.current[2].onChangeRange({ from: "2026-11-01", to: "2026-11-19" });
+    });
+    expect(window.location.search).toBe("?only_open=true");
+    expect(result.current[0]).toEqual({ from: "2026-11-01", to: "2026-11-19" });
+
+    // A picked range sharing one bound with the default still names both,
+    // so a shared link keeps meaning those days once the default moves on.
+    act(() => {
+      result.current[1]({ from: "2026-11-01", to: "2026-11-05" });
+    });
+    expect(query().get("from")).toBe("2026-11-01");
+    expect(query().get("to")).toBe("2026-11-05");
+  });
+
   it("falls back to the page's default period for a missing or invalid bound", () => {
     window.history.replaceState(null, "", "/x?from=2026-02-31");
     const { result } = renderHook(() =>

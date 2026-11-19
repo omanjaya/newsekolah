@@ -93,7 +93,7 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
   const [employeeId, setEmployeeId] = useState("");
   const today = todayInZone(timeZone);
   const [view, setView] = useUrlState<RecapView>("recap_view", VIEWS, "month");
-  const [{ from, to }, setRange] = useDateRangeFilter({
+  const [{ from, to }, , rangeFilter] = useDateRangeFilter({
     defaultFrom: today.slice(0, 8) + "01",
     defaultTo: today,
   });
@@ -107,9 +107,8 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
       id: "period",
       label: t("history.dateRange"),
       type: "dateRange",
-      from,
-      to,
-      onChangeRange: setRange,
+      // The month so far is the page's own period, not a filter the reader set.
+      ...rangeFilter,
       presets,
       today,
     },

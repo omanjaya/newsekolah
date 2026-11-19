@@ -1,5 +1,6 @@
 "use client";
 
+import type { DataTableFilterDef } from "@newsekolah/ui";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 
@@ -21,6 +22,18 @@ export interface DateRangeFilterOptions {
   fromKey?: string;
   toKey?: string;
 }
+
+/**
+ * The fields of a `DataTableFilters` "dateRange" filter that must agree
+ * with this hook: the current bounds, the page's default period and the
+ * setter. Spread them into the filter definition so its pill reads the
+ * default period as "no filter" and its remove and Reset controls return
+ * to it; a page that wires them by hand can drift from the defaults the
+ * URL is read with, which leaves those controls dead.
+ */
+export type DateRangeFilterFields = Required<
+  Pick<DataTableFilterDef, "from" | "to" | "defaultFrom" | "defaultTo" | "onChangeRange">
+>;
 
 /**
  * The range to filter by when its bounds are out of order. A reversed
@@ -46,7 +59,12 @@ export function orderRange(raw: DateRange, explicit: { from: boolean; to: boolea
  * range returns to the range before it, never to a half-applied one with
  * only the new start. A reversed pair from a shared or hand-edited link
  * (`?from=2026-11-19&to=2026-11-01`) is read in calendar order, so the list
- * shows 1 to 19 November instead of an unexplained empty result.
+ * shows 1 to 19 November instead of an unexplained empty result. Setting
+ * the page's default period back drops both keys, so clearing the filter
+ * leaves a clean URL.
+ *
+ * The third item is what a "dateRange" filter definition needs from it
+ * (see `DateRangeFilterFields`).
  */
 export function useDateRangeFilter({
   defaultFrom = "",
@@ -56,6 +74,7 @@ export function useDateRangeFilter({
 }: DateRangeFilterOptions = {}): readonly [
   DateRange,
   (next: DateRange, options?: { replace?: boolean }) => void,
+  DateRangeFilterFields,
 ] {
   const searchParams = useSearchParams();
   const [rawFrom] = useDateFilter(fromKey, defaultFrom);
@@ -78,11 +97,16 @@ export function useDateRangeFilter({
         [fromKey, next.from, defaultFrom],
         [toKey, next.to, defaultTo],
       ];
+      // Back to the page's own period (a removed pill, Reset): drop both
+      // keys, so the URL keeps following that period as the days pass.
+      // Any other range names both of its bounds, even one that happens
+      // to equal a default, so a shared link keeps meaning those days.
+      const atDefault = next.from === defaultFrom && next.to === defaultTo;
       for (const [key, value, fallback] of bounds) {
         // Same rule as a single date filter: an invalid value is not
         // written, and an unset bound with no default drops its key.
         if (!isDateFilterValue(value, fallback)) continue;
-        if (value === "" && fallback === "") url.searchParams.delete(key);
+        if (atDefault || (value === "" && fallback === "")) url.searchParams.delete(key);
         else url.searchParams.set(key, value);
       }
       if (url.href === window.location.href) return;
@@ -92,5 +116,13 @@ export function useDateRangeFilter({
     [fromKey, toKey, defaultFrom, defaultTo],
   );
 
-  return [range, setRange] as const;
+  const filterFields: DateRangeFilterFields = {
+    from: range.from,
+    to: range.to,
+    defaultFrom,
+    defaultTo,
+    onChangeRange: setRange,
+  };
+
+  return [range, setRange, filterFields] as const;
 }
