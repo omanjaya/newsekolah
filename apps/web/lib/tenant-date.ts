@@ -3,7 +3,7 @@
  * 08:00 in Asia/Makassar it still reports yesterday; these read the wall
  * clock of the tenant (or the browser) instead.
  */
-import { businessNow } from "./simulation/clock";
+import { businessNow, instantFromSchoolTime, schoolDateTime } from "./simulation/clock";
 
 /** "YYYY-MM-DD" for today in `timeZone` (the browser's zone when omitted). */
 export function todayInZone(timeZone?: string): string {
@@ -57,6 +57,35 @@ export function endOfPreviousIsoMonth(iso: string): string {
 export function toDateTimeLocalValue(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/**
+ * A `<input type="datetime-local">` value ("YYYY-MM-DDTHH:mm") for an
+ * instant as the wall clock in `timeZone` (the school's) reads it, so a
+ * device set to another zone still shows the school's hour. Without a zone
+ * it is the browser's, like `toDateTimeLocalValue`.
+ */
+export function isoToZonedLocal(instant: string | Date, timeZone?: string): string {
+  const date = typeof instant === "string" ? new Date(instant) : instant;
+  if (Number.isNaN(date.getTime())) return "";
+  if (!timeZone) return toDateTimeLocalValue(date);
+  const local = schoolDateTime(date, timeZone);
+  return `${local.date}T${local.time}`;
+}
+
+/**
+ * The ISO instant a "YYYY-MM-DDTHH:mm" value stands for on the wall clock
+ * in `timeZone` (the school's), or null when it is empty or not a real
+ * time. `new Date(value)` would read it in the device's zone instead.
+ */
+export function zonedLocalToIso(value: string, timeZone?: string): string | null {
+  const date = value.slice(0, 10);
+  const time = value.slice(11, 16);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return null;
+  const instant = timeZone
+    ? instantFromSchoolTime(date, time, timeZone)
+    : new Date(`${date}T${time}`);
+  return instant && !Number.isNaN(instant.getTime()) ? instant.toISOString() : null;
 }
 
 /** The UTC instant at which the wall clock in `timeZone` reads `date` at `time` ("HH:mm:ss"). */

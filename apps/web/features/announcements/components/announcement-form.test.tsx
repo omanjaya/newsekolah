@@ -23,6 +23,7 @@ beforeAll(() => {
 });
 
 const create = vi.hoisted(() => vi.fn());
+const update = vi.hoisted(() => vi.fn());
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -42,7 +43,7 @@ vi.mock("../api", () => ({
     mutateAsync: create,
     isPending: false,
   }),
-  useUpdateAnnouncementMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateAnnouncementMutation: () => ({ mutateAsync: update, isPending: false }),
 }));
 vi.mock("@newsekolah/ui", async () => {
   const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
@@ -83,4 +84,34 @@ it("still creates a draft from the restructured compose tab", async () => {
     expect.objectContaining({ title: "Judul baru", body_html: "<p>Isi pengumuman</p>" }),
   );
   expect(onSaved).toHaveBeenCalledWith({ id: "new-1" });
+});
+
+it("shows and saves the schedule on the school's clock, not the device's", async () => {
+  update.mockResolvedValue({ id: "a1" });
+  const user = userEvent.setup();
+  render(
+    <AnnouncementForm
+      initial={{
+        id: "a1",
+        title: "Rapat",
+        body_html: "<p>Isi</p>",
+        body_text: "Isi",
+        audience: { type: "all" },
+        is_pinned: false,
+        status: "scheduled",
+        // 06:30 on 20 November in Asia/Jakarta (the mocked school zone).
+        starts_at: "2026-11-19T23:30:00Z",
+        recipient_count: 0,
+        created_at: "2026-11-01T00:00:00Z",
+      }}
+      onSaved={vi.fn()}
+      onCancel={vi.fn()}
+    />,
+  );
+  expect(screen.getByDisplayValue(/^06[.:]30$/)).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "saveChanges" }));
+  const [vars] = update.mock.calls[0] as [{ id: string; body: { starts_at?: string } }];
+  expect(vars.id).toBe("a1");
+  expect(vars.body.starts_at).toBe("2026-11-19T23:30:00.000Z");
 });

@@ -18,7 +18,9 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
 import { businessNow } from "../../../lib/simulation/clock";
+import { isoToZonedLocal, zonedLocalToIso } from "../../../lib/tenant-date";
 import {
   type MentorGroupMember,
   type MentorMeetingNote,
@@ -27,13 +29,6 @@ import {
 } from "../api";
 
 const KINDS = ["group", "individual"] as const;
-
-function toLocalInput(iso?: string): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 export function MentorMeetingNoteForm({
   groupId,
@@ -51,11 +46,13 @@ export function MentorMeetingNoteForm({
   const t = useTranslations("app.mentoring.notes.form");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const { me } = useSession();
+  const timeZone = me?.tenant.timezone;
 
   const create = useCreateMentorMeetingNoteMutation(groupId);
   const update = useUpdateMentorMeetingNoteMutation();
 
-  const [metAt, setMetAt] = useState(toLocalInput(initial?.met_at ?? businessNow().toISOString()));
+  const [metAt, setMetAt] = useState(isoToZonedLocal(initial?.met_at ?? businessNow(), timeZone));
   const [kind, setKind] = useState<(typeof KINDS)[number]>(initial?.kind ?? "group");
   const [attendeeIds, setAttendeeIds] = useState<Set<string>>(
     new Set(initial?.attendee_user_ids ?? []),
@@ -72,9 +69,10 @@ export function MentorMeetingNoteForm({
       className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!metAt || attendeeIdList.length === 0 || !topic.trim() || !content.trim()) return;
+        const metAtIso = zonedLocalToIso(metAt, timeZone);
+        if (!metAtIso || attendeeIdList.length === 0 || !topic.trim() || !content.trim()) return;
         const body = {
-          met_at: new Date(metAt).toISOString(),
+          met_at: metAtIso,
           kind,
           attendee_user_ids: attendeeIdList,
           topic: topic.trim(),
