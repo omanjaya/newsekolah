@@ -53,12 +53,15 @@ where t.tenant_id = $1 and t.deleted_at is null
     sqlc.narg(availability_only)::bool is not true
     or exists (select 1 from library_copies c where c.tenant_id = t.tenant_id and c.title_id = t.id and c.status = 'available')
   )
+  -- search_tsquery is a prefix tsquery ("lask:*") built by the repository
+  -- for a query of 3+ characters, so a word typed halfway still matches;
+  -- search_like is the plain substring for shorter queries.
   and (
-    sqlc.narg(search)::text is null
-    or (char_length(sqlc.narg(search)::text) >= 3 and t.search_vector @@ plainto_tsquery('simple', sqlc.narg(search)::text))
-    or (char_length(sqlc.narg(search)::text) < 3 and (
-      lower(t.title) like '%' || lower(sqlc.narg(search)::text) || '%'
-      or lower(t.author) like '%' || lower(sqlc.narg(search)::text) || '%'
+    (sqlc.narg(search_tsquery)::text is null and sqlc.narg(search_like)::text is null)
+    or (sqlc.narg(search_tsquery)::text is not null and t.search_vector @@ to_tsquery('simple', sqlc.narg(search_tsquery)::text))
+    or (sqlc.narg(search_like)::text is not null and (
+      lower(t.title) like '%' || lower(sqlc.narg(search_like)::text) || '%'
+      or lower(t.author) like '%' || lower(sqlc.narg(search_like)::text) || '%'
     ))
     or (sqlc.narg(search_isbn)::text is not null and t.isbn like sqlc.narg(search_isbn)::text || '%')
   )
@@ -372,13 +375,15 @@ limit $2 offset $3;
 
 -- name: SearchOpacTitlesFulltext :many
 -- For a query of 3+ characters: Postgres fulltext against search_vector
--- (migrations/0094), the old app's MATCH AGAINST equivalent.
+-- (migrations/0096), the old app's MATCH AGAINST equivalent. search is a
+-- prefix tsquery ("lask:*") built by the repository, so a word typed
+-- halfway still matches; ts_rank still orders the hits.
 select * from library_titles
 where tenant_id = $1 and deleted_at is null and is_opac
   and (sqlc.narg(classification_prefix)::text is null or classification like sqlc.narg(classification_prefix)::text || '%')
   and (sqlc.narg(material_type_id)::uuid is null or material_type_id = sqlc.narg(material_type_id)::uuid)
-  and search_vector @@ plainto_tsquery('simple', sqlc.arg(search)::text)
-order by ts_rank(search_vector, plainto_tsquery('simple', sqlc.arg(search)::text)) desc, title
+  and search_vector @@ to_tsquery('simple', sqlc.arg(search)::text)
+order by ts_rank(search_vector, to_tsquery('simple', sqlc.arg(search)::text)) desc, title
 limit $2 offset $3;
 
 -- name: GetOpacTitle :one

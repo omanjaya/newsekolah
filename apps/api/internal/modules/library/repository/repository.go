@@ -133,7 +133,11 @@ func (r *Repository) DeleteTitle(ctx context.Context, tenantID, id uuid.UUID) (b
 func (r *Repository) ListTitles(ctx context.Context, tenantID uuid.UUID, f service.TitleFilter, limit, offset int) ([]domain.Title, error) {
 	params := db.ListTitlesParams{TenantID: tenantID, Limit: int32(limit), Offset: int32(offset)} //nolint:gosec // clamped by service
 	if f.Search != "" {
-		params.Search = pdatabase.Text(f.Search)
+		if q := fulltextQuery(f.Search); q != "" {
+			params.SearchTsquery = pdatabase.Text(q)
+		} else {
+			params.SearchLike = pdatabase.Text(f.Search)
+		}
 	}
 	if f.SearchISBN != "" {
 		params.SearchIsbn = pdatabase.Text(f.SearchISBN)

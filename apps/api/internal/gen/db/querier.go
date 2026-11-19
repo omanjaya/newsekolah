@@ -1539,7 +1539,9 @@ type Querier interface {
 	RevokeSession(ctx context.Context, arg RevokeSessionParams) error
 	RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) ([]uuid.UUID, error)
 	// For a query of 3+ characters: Postgres fulltext against search_vector
-	// (migrations/0094), the old app's MATCH AGAINST equivalent.
+	// (migrations/0096), the old app's MATCH AGAINST equivalent. search is a
+	// prefix tsquery ("lask:*") built by the repository, so a word typed
+	// halfway still matches; ts_rank still orders the hits.
 	SearchOpacTitlesFulltext(ctx context.Context, arg SearchOpacTitlesFulltextParams) ([]LibraryTitle, error)
 	// For a query under 3 characters: a plain LIKE over title/author, plus an
 	// exact ISBN match, matching the old app's short-query fallback

@@ -2300,18 +2300,21 @@ where t.tenant_id = $1 and t.deleted_at is null
     $6::bool is not true
     or exists (select 1 from library_copies c where c.tenant_id = t.tenant_id and c.title_id = t.id and c.status = 'available')
   )
+  -- search_tsquery is a prefix tsquery ("lask:*") built by the repository
+  -- for a query of 3+ characters, so a word typed halfway still matches;
+  -- search_like is the plain substring for shorter queries.
   and (
-    $7::text is null
-    or (char_length($7::text) >= 3 and t.search_vector @@ plainto_tsquery('simple', $7::text))
-    or (char_length($7::text) < 3 and (
-      lower(t.title) like '%' || lower($7::text) || '%'
-      or lower(t.author) like '%' || lower($7::text) || '%'
+    ($7::text is null and $8::text is null)
+    or ($7::text is not null and t.search_vector @@ to_tsquery('simple', $7::text))
+    or ($8::text is not null and (
+      lower(t.title) like '%' || lower($8::text) || '%'
+      or lower(t.author) like '%' || lower($8::text) || '%'
     ))
-    or ($8::text is not null and t.isbn like $8::text || '%')
+    or ($9::text is not null and t.isbn like $9::text || '%')
   )
 order by
-  (case when $9::text = 'newest' then t.created_at end) desc nulls last,
-  (case when $9::text = 'newest' then null else t.title end) asc
+  (case when $10::text = 'newest' then t.created_at end) desc nulls last,
+  (case when $10::text = 'newest' then null else t.title end) asc
 limit $2 offset $3
 `
 
@@ -2322,7 +2325,8 @@ type ListTitlesParams struct {
 	MaterialTypeID   pgtype.UUID `json:"material_type_id"`
 	DdcClass         pgtype.Text `json:"ddc_class"`
 	AvailabilityOnly pgtype.Bool `json:"availability_only"`
-	Search           pgtype.Text `json:"search"`
+	SearchTsquery    pgtype.Text `json:"search_tsquery"`
+	SearchLike       pgtype.Text `json:"search_like"`
 	SearchIsbn       pgtype.Text `json:"search_isbn"`
 	Sort             pgtype.Text `json:"sort"`
 }
@@ -2335,7 +2339,8 @@ func (q *Queries) ListTitles(ctx context.Context, arg ListTitlesParams) ([]Libra
 		arg.MaterialTypeID,
 		arg.DdcClass,
 		arg.AvailabilityOnly,
-		arg.Search,
+		arg.SearchTsquery,
+		arg.SearchLike,
 		arg.SearchIsbn,
 		arg.Sort,
 	)
@@ -2727,8 +2732,8 @@ select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, cl
 where tenant_id = $1 and deleted_at is null and is_opac
   and ($4::text is null or classification like $4::text || '%')
   and ($5::uuid is null or material_type_id = $5::uuid)
-  and search_vector @@ plainto_tsquery('simple', $6::text)
-order by ts_rank(search_vector, plainto_tsquery('simple', $6::text)) desc, title
+  and search_vector @@ to_tsquery('simple', $6::text)
+order by ts_rank(search_vector, to_tsquery('simple', $6::text)) desc, title
 limit $2 offset $3
 `
 
@@ -2742,7 +2747,9 @@ type SearchOpacTitlesFulltextParams struct {
 }
 
 // For a query of 3+ characters: Postgres fulltext against search_vector
-// (migrations/0094), the old app's MATCH AGAINST equivalent.
+// (migrations/0096), the old app's MATCH AGAINST equivalent. search is a
+// prefix tsquery ("lask:*") built by the repository, so a word typed
+// halfway still matches; ts_rank still orders the hits.
 func (q *Queries) SearchOpacTitlesFulltext(ctx context.Context, arg SearchOpacTitlesFulltextParams) ([]LibraryTitle, error) {
 	rows, err := q.db.Query(ctx, searchOpacTitlesFulltext,
 		arg.TenantID,
