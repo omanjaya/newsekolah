@@ -277,7 +277,7 @@ const HISTORY: readonly {
 }[] = [
   // Never through the gate: the longest second fact beside the longest statuses.
   {
-    destination: "Apotek",
+    destination: "Puskesmas, kontrol gigi",
     day: "Kam, 19 Nov",
     time: "Diajukan pukul 15.49",
     status: "rejected",
@@ -329,10 +329,11 @@ const HISTORY: readonly {
 ];
 
 /**
- * `keepMetaWhole` on the exit history at 320 and 390px: the day and the
- * status are never cut. Where both do not fit on one line beside the
- * title's column (320px, "Kedaluwarsa", "Completed"), the status moves
- * under the text, whole; the request time may still end in an ellipsis.
+ * `keepMetaWhole` on the exit history at 320 and 390px: no fact (the day,
+ * the request time) and no status is cut. Where the widest fact (or 8rem
+ * for the title) does not fit beside the status ("Diajukan pukul 15.49"
+ * beside "Ditolak" at 320px), the status moves under the text, whole; the
+ * destination takes up to two lines.
  */
 function ExitHistory() {
   return (
@@ -348,6 +349,7 @@ function ExitHistory() {
               </IconCircle>
             }
             title={row.destination}
+            titleLines={2}
             meta={[row.day, row.time]}
             keepMetaWhole
             trailing={<SemanticStatusBadge status={row.status} label={row.label} />}
