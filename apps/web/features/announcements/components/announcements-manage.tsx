@@ -10,18 +10,16 @@ import {
   DataTable,
   Dialog,
   DialogContent,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   EmptyState,
-  IconButton,
+  FilteredEmptyState,
+  RowActionsMenu,
+  type RowActionsMenuItem,
   domainIcons,
   useToast,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal } from "lucide-react";
+import { Archive, CalendarClock, Pencil, Send, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -171,58 +169,62 @@ export function AnnouncementsManage({
         id: "actions",
         header: t("columns.actions"),
         enableSorting: false,
+        meta: { align: "end" },
         cell: ({ row }) => {
           const a = row.original;
           const editable = a.status === "draft" || a.status === "scheduled";
+          const items: RowActionsMenuItem[] = [];
+          if (canEdit && editable) {
+            items.push({
+              label: t("actions.edit"),
+              icon: <Pencil />,
+              onClick: () => {
+                setEditingExisting(a);
+              },
+            });
+          }
+          if (canPublish && editable) {
+            items.push({
+              label: t("actions.publish"),
+              icon: <Send />,
+              onClick: () => {
+                setPendingPublish(a);
+              },
+            });
+          }
+          // A missed start must be moved (edit) before scheduling again.
+          if (
+            canPublish &&
+            a.status === "draft" &&
+            a.starts_at &&
+            !isMissedSchedule(a, businessNow())
+          ) {
+            items.push({
+              label: t("actions.schedule"),
+              icon: <CalendarClock />,
+              onClick: () => void run("schedule", a),
+            });
+          }
+          if (canPublish && (a.status === "published" || a.status === "scheduled")) {
+            items.push({
+              label: t("actions.archive"),
+              icon: <Archive />,
+              onClick: () => void run("archive", a),
+            });
+          }
+          if (canDelete) {
+            items.push({
+              label: t("actions.delete"),
+              icon: <Trash2 />,
+              tone: "danger",
+              onClick: () => {
+                setPendingDelete(a);
+              },
+            });
+          }
+          if (items.length === 0) return null;
           return (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <IconButton icon={<MoreHorizontal />} aria-label={t("actions.menu")} />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {canEdit && editable && (
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      setEditingExisting(a);
-                    }}
-                  >
-                    {t("actions.edit")}
-                  </DropdownMenuItem>
-                )}
-                {canPublish && editable && (
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      setPendingPublish(a);
-                    }}
-                  >
-                    {t("actions.publish")}
-                  </DropdownMenuItem>
-                )}
-                {/* A missed start must be moved (edit) before scheduling again. */}
-                {canPublish &&
-                  a.status === "draft" &&
-                  a.starts_at &&
-                  !isMissedSchedule(a, businessNow()) && (
-                    <DropdownMenuItem onSelect={() => void run("schedule", a)}>
-                      {t("actions.schedule")}
-                    </DropdownMenuItem>
-                  )}
-                {canPublish && (a.status === "published" || a.status === "scheduled") && (
-                  <DropdownMenuItem onSelect={() => void run("archive", a)}>
-                    {t("actions.archive")}
-                  </DropdownMenuItem>
-                )}
-                {canDelete && (
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      setPendingDelete(a);
-                    }}
-                  >
-                    {t("actions.delete")}
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <RowActionsMenu ariaLabel={t("actions.menuFor", { title: a.title })} items={items} />
           );
         },
       },
@@ -279,11 +281,20 @@ export function AnnouncementsManage({
         }}
         getRowId={(a) => a.id}
         emptyState={
-          <EmptyState
-            icon={<domainIcons.announcement aria-hidden="true" />}
-            title={t("manageEmptyTitle")}
-            description={t("manageEmptyBody")}
-          />
+          status ? (
+            <FilteredEmptyState
+              onReset={() => {
+                setStatus("");
+                setCursors([""]);
+              }}
+            />
+          ) : (
+            <EmptyState
+              icon={<domainIcons.announcement aria-hidden="true" />}
+              title={t("manageEmptyTitle")}
+              description={t("manageEmptyBody")}
+            />
+          )
         }
       />
 

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -8,7 +8,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  // A row's own title is kept in the label, so tests can tell rows apart.
+  useTranslations: () => (key: string, values?: { title?: string }) =>
+    values?.title ? `${key}:${values.title}` : key,
   useLocale: () => "id",
 }));
 vi.mock("next/navigation", () => ({
@@ -104,5 +106,69 @@ describe("AnnouncementsManage missed schedules", () => {
       .filter((tr): tr is HTMLTableRowElement => tr !== null);
     expect(missedRows).toHaveLength(1);
     expect(missedRows[0]).toHaveTextContent("Rapat orang tua");
+  });
+});
+
+describe("AnnouncementsManage empty and row states", () => {
+  beforeEach(() => {
+    mocks.canCreate = true;
+    mocks.useAnnouncementsQuery.mockReset();
+    window.history.replaceState(null, "", "/announcements/manage");
+  });
+
+  it("says nothing matches, with a reset, when a filter hides every row", async () => {
+    mocks.useAnnouncementsQuery.mockReturnValue({
+      data: { data: [], page: { next_cursor: "" } },
+      isLoading: false,
+    });
+    window.history.replaceState(null, "", "/announcements/manage?status=scheduled");
+    const user = userEvent.setup();
+    render(<AnnouncementsManage creating={false} onCreatingChange={vi.fn()} />);
+
+    expect(screen.queryByText("manageEmptyTitle")).not.toBeInTheDocument();
+    // FilteredEmptyState's own copy (the shared UiLabels default).
+    expect(screen.getAllByText("Tidak ada yang cocok").length).toBeGreaterThan(0);
+    const [reset] = screen.getAllByRole("button", { name: "Hapus filter" });
+    if (!reset) throw new Error("no reset");
+    await user.click(reset);
+    expect(mocks.useAnnouncementsQuery).toHaveBeenLastCalledWith("", "");
+  });
+
+  it("keeps the first-use empty state when no filter is on", () => {
+    mocks.useAnnouncementsQuery.mockReturnValue({
+      data: { data: [], page: { next_cursor: "" } },
+      isLoading: false,
+    });
+    render(<AnnouncementsManage creating={false} onCreatingChange={vi.fn()} />);
+    expect(screen.getByText("manageEmptyTitle")).toBeInTheDocument();
+  });
+
+  it("names each row's menu after its announcement, with delete set apart", async () => {
+    mocks.useAnnouncementsQuery.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: "a1",
+            title: "Rapat orang tua",
+            status: "draft",
+            audience: { type: "all" },
+            created_at: "2026-11-01T00:00:00Z",
+            recipient_count: 0,
+          },
+        ],
+        page: { next_cursor: "" },
+      },
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<AnnouncementsManage creating={false} onCreatingChange={vi.fn()} />);
+
+    const [trigger] = screen.getAllByRole("button", { name: "actions.menuFor:Rapat orang tua" });
+    if (!trigger) throw new Error("no row menu");
+    await user.click(trigger);
+    const menu = await screen.findByRole("menu");
+    expect(within(menu).getByRole("menuitem", { name: "actions.edit" })).toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "actions.delete" })).toBeInTheDocument();
+    expect(within(menu).getByRole("separator")).toBeInTheDocument();
   });
 });
