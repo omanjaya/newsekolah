@@ -106,7 +106,13 @@
       "revoke": "End session",
       "revokeConfirmTitle": "End this session",
       "revokeConfirmBody": "This device will need to sign in again after the session ends.",
-      "lastSeen": "Last active {time}"
+      "lastSeen": "Last active {time}",
+      "device": "{browser} on {os}",
+      "client": {
+        "web": "Web browser",
+        "android": "Android app",
+        "ios": "iOS app"
+      }
     }
   },
   "nav": {

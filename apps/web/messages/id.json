@@ -524,13 +524,7 @@
       "noAcademicYear": "Belum ada tahun ajaran aktif",
       "unsavedChanges": "Ada perubahan yang belum disimpan",
       "changePasswordHint": "Gunakan kata sandi yang tidak dipakai di layanan lain.",
-      "sessionLastSeen": "Terakhir aktif {time}",
-      "sessionDevice": "{browser} di {os}",
-      "sessionClient": {
-        "web": "Peramban web",
-        "android": "Aplikasi Android",
-        "ios": "Aplikasi iOS"
-      }
+      "sessionLastSeen": "Terakhir aktif {time}"
     },
     "settings": {
       "appearance": {

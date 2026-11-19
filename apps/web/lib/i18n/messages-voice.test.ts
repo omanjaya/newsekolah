@@ -50,6 +50,8 @@ const PROPER_WORDS = new Set([
   "Telegram",
   "BotFather",
   "Dapodik",
+  // The phone system a session's app runs on ("Aplikasi Android").
+  "Android",
   // Microsoft's spreadsheet and word processor, named for the file a download makes.
   "Excel",
   "Word",

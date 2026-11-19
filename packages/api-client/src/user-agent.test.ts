@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { describeUserAgent } from "./user-agent";
+import { describeUserAgent } from "./user-agent.js";
 
 describe("describeUserAgent", () => {
   it.each([

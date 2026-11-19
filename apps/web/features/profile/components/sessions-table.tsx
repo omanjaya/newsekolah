@@ -1,7 +1,7 @@
 "use client";
 
 import type { components } from "@newsekolah/api-client";
-import { ApiError } from "@newsekolah/api-client";
+import { ApiError, describeUserAgent } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatRelative } from "@newsekolah/i18n";
 import {
@@ -23,7 +23,6 @@ import { useState } from "react";
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
-import { describeUserAgent } from "../../../lib/user-agent";
 import { useRevokeSessionMutation, useSessionsQuery } from "../api";
 
 type Session = components["schemas"]["Session"];
@@ -37,12 +36,12 @@ const CLIENT_ICON = { web: Monitor, ios: Smartphone, android: Smartphone } as co
  * read as a machine word and named every web session alike.
  */
 function useSessionTitle(): (session: Session) => string {
-  const t = useTranslations("app.profile");
+  const t = useTranslations("auth.sessions");
   return (session) => {
     if (session.device_name) return session.device_name;
     const { browser, os } = describeUserAgent(session.user_agent);
-    if (browser && os) return t("sessionDevice", { browser, os });
-    return browser ?? os ?? t(`sessionClient.${session.client}`);
+    if (browser && os) return t("device", { browser, os });
+    return browser ?? os ?? t(`client.${session.client}`);
   };
 }
 

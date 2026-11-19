@@ -6,4 +6,5 @@ export {
 export { ApiError, type ApiErrorDetail, type ApiErrorParams } from "./errors.js";
 export { cookieTokenStore, type TokenStore } from "./token-store.js";
 export { queryKeys } from "./query-keys.js";
+export { describeUserAgent, type UserAgentSummary } from "./user-agent.js";
 export type { components, operations, paths } from "./gen/schema.js";

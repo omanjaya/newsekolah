@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { getApiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { resolveTabGroups } from "@/lib/auth/roles";
+import { sessionTitle } from "@/lib/auth/session-title";
 import { showToast } from "@/components/ui/Toast";
 import { t, tShared } from "@/i18n/t";
 import type { ProfileKind } from "@/lib/api/types";
@@ -105,7 +106,7 @@ export function ProfileScreen(): React.JSX.Element {
             <ListRow
               key={session.id}
               leading={<Smartphone size={20} strokeWidth={1.75} color="#5E625B" />}
-              title={session.device_name ?? session.client}
+              title={sessionTitle(session)}
               subtitle={
                 session.is_current ? tShared("auth.sessions.currentDevice") : session.last_seen_at
               }

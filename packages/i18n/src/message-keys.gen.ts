@@ -30,7 +30,11 @@ export type MessageKey =
   | "auth.login.usernameLabel"
   | "auth.login.welcomeBody"
   | "auth.login.welcomeTitle"
+  | "auth.sessions.client.android"
+  | "auth.sessions.client.ios"
+  | "auth.sessions.client.web"
   | "auth.sessions.currentDevice"
+  | "auth.sessions.device"
   | "auth.sessions.lastSeen"
   | "auth.sessions.revoke"
   | "auth.sessions.revokeConfirmBody"
@@ -328,7 +332,11 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "auth.login.usernameLabel",
   "auth.login.welcomeBody",
   "auth.login.welcomeTitle",
+  "auth.sessions.client.android",
+  "auth.sessions.client.ios",
+  "auth.sessions.client.web",
   "auth.sessions.currentDevice",
+  "auth.sessions.device",
   "auth.sessions.lastSeen",
   "auth.sessions.revoke",
   "auth.sessions.revokeConfirmBody",

@@ -5,7 +5,7 @@
  * failure. The caller gets a `PushState` rather than a thrown error.
  */
 
-import { describeUserAgent } from "../../lib/user-agent";
+import { describeUserAgent } from "@newsekolah/api-client";
 
 /** What the browser will let this viewer do about push right now. */
 export type PushState =

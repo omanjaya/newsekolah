@@ -524,13 +524,7 @@
       "noAcademicYear": "No active school year",
       "unsavedChanges": "You have unsaved changes",
       "changePasswordHint": "Use a password you do not use anywhere else.",
-      "sessionLastSeen": "Last active {time}",
-      "sessionDevice": "{browser} on {os}",
-      "sessionClient": {
-        "web": "Web browser",
-        "android": "Android app",
-        "ios": "iOS app"
-      }
+      "sessionLastSeen": "Last active {time}"
     },
     "settings": {
       "appearance": {

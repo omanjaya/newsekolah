@@ -58,12 +58,12 @@ describe("SessionsTable", () => {
     render(<SessionsTable />);
 
     // The browser and system the user agent names.
-    expect(screen.getByText("sessionDevice:Chrome,Windows")).toBeInTheDocument();
+    expect(screen.getByText("device:Chrome,Windows")).toBeInTheDocument();
     // The name the app sent at sign-in wins.
     expect(screen.getByText("Pixel 8")).toBeInTheDocument();
     // Nothing to go on: the kind of client, in words.
-    expect(screen.getByText("sessionClient.web")).toBeInTheDocument();
-    expect(screen.getByText("sessionClient.ios")).toBeInTheDocument();
+    expect(screen.getByText("client.web")).toBeInTheDocument();
+    expect(screen.getByText("client.ios")).toBeInTheDocument();
     expect(screen.queryByText("web")).not.toBeInTheDocument();
   });
 });

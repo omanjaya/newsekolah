@@ -106,7 +106,13 @@
       "revoke": "Akhiri sesi",
       "revokeConfirmTitle": "Akhiri sesi ini",
       "revokeConfirmBody": "Perangkat ini perlu masuk ulang setelah sesi diakhiri.",
-      "lastSeen": "Terakhir aktif {time}"
+      "lastSeen": "Terakhir aktif {time}",
+      "device": "{browser} di {os}",
+      "client": {
+        "web": "Peramban web",
+        "android": "Aplikasi Android",
+        "ios": "Aplikasi iOS"
+      }
     }
   },
   "nav": {
