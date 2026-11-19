@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogFooter,
   EmptyState,
+  FirstUseEmptyState,
   Field,
   Input,
   NumberInput,
@@ -220,23 +221,25 @@ export function GradeLevelsView({ page }: { page: HubPageProps }): ReactElement 
         retrying={isRefetching}
         getRowId={(g) => g.id}
         emptyState={
-          <EmptyState
-            icon={<GraduationCap aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-            action={
-              canManage ? (
-                <Button
-                  icon={<Plus />}
-                  onClick={() => {
-                    open("new");
-                  }}
-                >
-                  {t("add")}
-                </Button>
-              ) : undefined
-            }
-          />
+          // The header already carries the filled add button, so the empty
+          // state offers the outline one (one filled button per action).
+          canManage ? (
+            <FirstUseEmptyState
+              icon={<GraduationCap aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+              actionLabel={t("add")}
+              onAction={() => {
+                open("new");
+              }}
+            />
+          ) : (
+            <EmptyState
+              icon={<GraduationCap aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          )
         }
       />
 
