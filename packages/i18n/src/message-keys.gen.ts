@@ -83,7 +83,9 @@ export type MessageKey =
   | "errors.ATTACHMENT_NOT_FOUND"
   | "errors.ATTACHMENT_TOO_LARGE"
   | "errors.AUTH_INVALID_CREDENTIALS"
+  | "errors.AUTH_SESSION_REVOKED"
   | "errors.AUTH_TOKEN_EXPIRED"
+  | "errors.AUTH_TOKEN_INVALID"
   | "errors.BILLING_MODULE_DISABLED"
   | "errors.BILL_ALREADY_PAID"
   | "errors.BILL_NOT_FOUND"
@@ -371,7 +373,9 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.ATTACHMENT_NOT_FOUND",
   "errors.ATTACHMENT_TOO_LARGE",
   "errors.AUTH_INVALID_CREDENTIALS",
+  "errors.AUTH_SESSION_REVOKED",
   "errors.AUTH_TOKEN_EXPIRED",
+  "errors.AUTH_TOKEN_INVALID",
   "errors.BILLING_MODULE_DISABLED",
   "errors.BILL_ALREADY_PAID",
   "errors.BILL_NOT_FOUND",

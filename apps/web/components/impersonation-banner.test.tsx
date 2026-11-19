@@ -125,8 +125,10 @@ describe("ImpersonationBanner", () => {
   });
 
   // The impersonation reached its fixed end or another tab stopped it
-  // (401), or this tab holds a session that is not an impersonation (400):
-  // nothing is left to stop, and nothing went wrong that the admin did.
+  // (401, once the API client's refresh on AUTH_SESSION_REVOKED failed), or
+  // this tab holds a session that is not an impersonation (400, the retried
+  // stop after a refresh that landed on another identity): nothing is left
+  // to stop, and nothing went wrong that the admin did.
   it.each([
     { status: 401, code: "AUTH_SESSION_REVOKED" },
     { status: 400, code: "NOT_IMPERSONATING" },

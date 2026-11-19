@@ -150,7 +150,10 @@ describe("useStopImpersonationMutation", () => {
   // Nothing is left to stop: the impersonation reached its fixed end or
   // another tab stopped it (401), or this tab now holds a session that is
   // not an impersonation (400). Keeping the strip would leave a Stop that
-  // can never succeed.
+  // can never succeed. The API client refreshes on AUTH_SESSION_REVOKED
+  // first (packages/api-client client.test.ts covers both outcomes): a 401
+  // still arrives here when that refresh failed, and a 400 when it landed
+  // on another identity.
   it.each([
     { status: 401, code: "AUTH_SESSION_REVOKED" },
     { status: 400, code: "NOT_IMPERSONATING" },

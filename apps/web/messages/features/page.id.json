@@ -18,6 +18,8 @@
     "title": "Data gagal dimuat",
     "offlineTitle": "Tidak ada koneksi",
     "forbiddenTitle": "Data ini tidak bisa dibuka",
+    "sessionTitle": "Sesi berakhir",
+    "signInAgain": "Masuk lagi",
     "code": "Kode galat: {code}"
   }
 }

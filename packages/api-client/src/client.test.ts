@@ -162,7 +162,7 @@ describe("createApiClient", () => {
     expect(apiError.requestId).toBe("req-1");
   });
 
-  it("does not attempt a refresh for a 401 that is not AUTH_TOKEN_EXPIRED", async () => {
+  it("does not attempt a refresh for a 401 that does not say the token is dead", async () => {
     let refreshCalls = 0;
     server.use(
       http.get(`${BASE_URL}/v1/me`, () =>
@@ -309,6 +309,157 @@ describe("createApiClient", () => {
     const error = await client.GET("/v1/me").catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ApiError);
     expect(onUnauthorized).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Another tab's refresh rotates the session and revokes the row this tab's
+// access token names; an admin can also end a session on purpose. Either
+// way the token is dead, and a retry with it can never work.
+describe("a 401 for a revoked or unusable token", () => {
+  it.each(["AUTH_SESSION_REVOKED", "AUTH_TOKEN_INVALID"])(
+    "refreshes on %s and retries the same request with the new token",
+    async (code) => {
+      const seenKeys: (string | null)[] = [];
+      let refreshCalls = 0;
+      server.use(
+        http.post(`${BASE_URL}/v1/billing/payments`, ({ request }) => {
+          seenKeys.push(request.headers.get("idempotency-key"));
+          if (request.headers.get("authorization") !== "Bearer rotated-token") {
+            return HttpResponse.json(errorBody(code), { status: 401 });
+          }
+          return HttpResponse.json({ id: "a1" }, { status: 201 });
+        }),
+        http.post(`${BASE_URL}/v1/auth/refresh`, () => {
+          refreshCalls += 1;
+          return HttpResponse.json({ access_token: "rotated-token" });
+        }),
+      );
+      const onUnauthorized = vi.fn();
+      const client = createApiClient({
+        baseUrl: BASE_URL,
+        getAccessToken: () => "revoked-token",
+        clientHeader: "web/1.0.0",
+        tokenStore: createMemoryTokenStore("refresh-abc"),
+        onUnauthorized,
+      });
+
+      const result = await client.POST("/v1/billing/payments", { body: {} as never });
+
+      expect(result).toEqual({ id: "a1" });
+      expect(refreshCalls).toBe(1);
+      expect(seenKeys).toHaveLength(2);
+      expect(seenKeys[1]).toBe(seenKeys[0]);
+      expect(onUnauthorized).not.toHaveBeenCalled();
+    },
+  );
+
+  it("sends the reader to sign in when the session really ended", async () => {
+    const onUnauthorized = vi.fn();
+    server.use(
+      http.get(`${BASE_URL}/v1/me`, () =>
+        HttpResponse.json(errorBody("AUTH_SESSION_REVOKED"), { status: 401 }),
+      ),
+      http.post(`${BASE_URL}/v1/auth/refresh`, () =>
+        HttpResponse.json(errorBody("AUTH_SESSION_REVOKED"), { status: 401 }),
+      ),
+    );
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => "revoked-token",
+      clientHeader: "web/1.0.0",
+      tokenStore: createMemoryTokenStore("refresh-abc"),
+      onUnauthorized,
+    });
+
+    const error = await client.GET("/v1/me").catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).code).toBe("AUTH_SESSION_REVOKED");
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves a failed sign-in's AUTH_INVALID_CREDENTIALS untouched with a stale token in memory", async () => {
+    let refreshCalls = 0;
+    const onUnauthorized = vi.fn();
+    server.use(
+      http.post(`${BASE_URL}/v1/auth/login`, () =>
+        HttpResponse.json(errorBody("AUTH_INVALID_CREDENTIALS"), { status: 401 }),
+      ),
+      http.post(`${BASE_URL}/v1/auth/refresh`, () => {
+        refreshCalls += 1;
+        return HttpResponse.json({ access_token: "new" });
+      }),
+    );
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => "stale-token",
+      clientHeader: "web/1.0.0",
+      onUnauthorized,
+    });
+
+    const error = await client
+      .POST("/v1/auth/login", {
+        body: { username: "guru", password: "salah", client: "web" },
+      })
+      .catch((e: unknown) => e);
+
+    expect((error as ApiError).code).toBe("AUTH_INVALID_CREDENTIALS");
+    expect(refreshCalls).toBe(0);
+    expect(onUnauthorized).not.toHaveBeenCalled();
+  });
+
+  // The web app treats a stop that comes back 401, or 400 NOT_IMPERSONATING,
+  // as "the impersonation is already over" and ends the session
+  // (apps/web/features/auth/api.ts). Both must still reach it.
+  describe("stopping an impersonation", () => {
+    it("still answers 401 when the impersonation session ended and cannot be refreshed", async () => {
+      const onUnauthorized = vi.fn();
+      server.use(
+        http.post(`${BASE_URL}/v1/auth/impersonation/stop`, () =>
+          HttpResponse.json(errorBody("AUTH_SESSION_REVOKED"), { status: 401 }),
+        ),
+        http.post(`${BASE_URL}/v1/auth/refresh`, () =>
+          HttpResponse.json(errorBody("AUTH_SESSION_REVOKED"), { status: 401 }),
+        ),
+      );
+      const client = createApiClient({
+        baseUrl: BASE_URL,
+        getAccessToken: () => "impersonation-token",
+        clientHeader: "web/1.0.0",
+        tokenStore: createMemoryTokenStore("refresh-abc"),
+        onUnauthorized,
+      });
+
+      const error = await client.POST("/v1/auth/impersonation/stop").catch((e: unknown) => e);
+
+      expect((error as ApiError).status).toBe(401);
+      expect((error as ApiError).code).toBe("AUTH_SESSION_REVOKED");
+      expect(onUnauthorized).toHaveBeenCalledTimes(1);
+    });
+
+    it("answers 400 NOT_IMPERSONATING when the refresh lands on another identity", async () => {
+      server.use(
+        http.post(`${BASE_URL}/v1/auth/impersonation/stop`, ({ request }) =>
+          request.headers.get("authorization") === "Bearer own-token"
+            ? HttpResponse.json(errorBody("NOT_IMPERSONATING"), { status: 400 })
+            : HttpResponse.json(errorBody("AUTH_SESSION_REVOKED"), { status: 401 }),
+        ),
+        http.post(`${BASE_URL}/v1/auth/refresh`, () =>
+          HttpResponse.json({ access_token: "own-token" }),
+        ),
+      );
+      const client = createApiClient({
+        baseUrl: BASE_URL,
+        getAccessToken: () => "impersonation-token",
+        clientHeader: "web/1.0.0",
+        tokenStore: createMemoryTokenStore("refresh-abc"),
+      });
+
+      const error = await client.POST("/v1/auth/impersonation/stop").catch((e: unknown) => e);
+
+      expect((error as ApiError).status).toBe(400);
+      expect((error as ApiError).code).toBe("NOT_IMPERSONATING");
+    });
   });
 });
 

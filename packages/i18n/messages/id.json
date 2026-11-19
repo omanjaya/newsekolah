@@ -237,6 +237,8 @@
     "SCHEDULE_CONFLICT_TEACHER": "Guru ini sudah mengajar kelas lain pada jam yang sama. Pilih jam atau guru yang berbeda.",
     "AUTH_INVALID_CREDENTIALS": "Nama pengguna atau kata sandi salah",
     "AUTH_TOKEN_EXPIRED": "Sesi berakhir, silakan masuk kembali",
+    "AUTH_SESSION_REVOKED": "Sesi Anda sudah berakhir. Masuk lagi untuk melanjutkan.",
+    "AUTH_TOKEN_INVALID": "Sesi Anda tidak bisa dipakai lagi. Masuk lagi untuk melanjutkan.",
     "TENANT_NOT_FOUND": "Sekolah tidak ditemukan",
     "VALIDATION_FAILED": "Data yang dikirim tidak valid",
     "RATE_LIMITED": "Terlalu banyak percobaan, coba lagi dalam beberapa saat",

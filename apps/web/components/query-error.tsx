@@ -2,21 +2,44 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import { Alert, Button } from "@newsekolah/ui";
-import { RotateCw } from "lucide-react";
+import { LogIn, RotateCw } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { useApiErrorMessage } from "../lib/i18n/api-error-message";
+import { useSignInAgain } from "../lib/session/end-session";
 
-type Cause = "offline" | "forbidden" | "failed";
+type Cause = "offline" | "forbidden" | "session" | "failed";
 
 function causeOf(error: unknown): Cause {
   if (typeof navigator !== "undefined" && !navigator.onLine) return "offline";
   if (error instanceof ApiError) {
     if (error.code === "NETWORK") return "offline";
+    if (error.status === 401) return "session";
     if (error.status === 403 || error.code === "FORBIDDEN") return "forbidden";
   }
   return "failed";
+}
+
+const TITLE_KEY = {
+  offline: "offlineTitle",
+  forbidden: "forbiddenTitle",
+  session: "sessionTitle",
+  failed: "title",
+} as const satisfies Record<Cause, string>;
+
+/**
+ * Its own component so the router and session hooks it needs run only for
+ * a 401, not for every failed read.
+ */
+function SignInAgainButton(): ReactElement {
+  const t = useTranslations("app.page.queryError");
+  const signInAgain = useSignInAgain();
+  return (
+    <Button variant="secondary" size="sm" icon={<LogIn />} onClick={signInAgain}>
+      {t("signInAgain")}
+    </Button>
+  );
 }
 
 /**
@@ -24,7 +47,11 @@ function causeOf(error: unknown): Cause {
  * request (docs/07-ui-ux.md section 5: what happened, what to do, a
  * button, and a small code for support). A danger alert with "Coba lagi"
  * as its action; pass the query's `error` to name the cause (no
- * connection, no access) and show its code.
+ * connection, no access, session over) and show its code.
+ *
+ * A 401 means the session is over (the API client already tried a
+ * refresh), so a retry cannot work: that case offers "Masuk lagi" instead,
+ * which ends the session and opens the sign-in page.
  */
 export function QueryError({
   retry,
@@ -41,23 +68,21 @@ export function QueryError({
   const apiErrorMessage = useApiErrorMessage();
   const cause = causeOf(error);
   const code = error instanceof ApiError ? error.code : undefined;
-  const title =
-    cause === "offline"
-      ? t("offlineTitle")
-      : cause === "forbidden"
-        ? t("forbiddenTitle")
-        : t("title");
   const body = apiErrorMessage(cause === "offline" ? "NETWORK" : (code ?? "UNKNOWN"));
 
   return (
     <Alert
       tone="danger"
-      title={title}
+      title={t(TITLE_KEY[cause])}
       className={className}
       action={
-        <Button variant="secondary" size="sm" icon={<RotateCw />} onClick={() => void retry()}>
-          {common("actions.retry")}
-        </Button>
+        cause === "session" ? (
+          <SignInAgainButton />
+        ) : (
+          <Button variant="secondary" size="sm" icon={<RotateCw />} onClick={() => void retry()}>
+            {common("actions.retry")}
+          </Button>
+        )
       }
     >
       <p>{body}</p>

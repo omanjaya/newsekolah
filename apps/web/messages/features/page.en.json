@@ -18,6 +18,8 @@
     "title": "The data could not be loaded",
     "offlineTitle": "No connection",
     "forbiddenTitle": "This data cannot be opened",
+    "sessionTitle": "Session ended",
+    "signInAgain": "Sign in again",
     "code": "Error code: {code}"
   }
 }

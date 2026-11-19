@@ -11,6 +11,21 @@ import { cookieTokenStore, type TokenStore } from "./token-store.js";
 
 const MUTATING_METHODS: readonly HttpMethod[] = ["post", "put", "patch", "delete"];
 
+/**
+ * 401 codes that say the access token is dead, not that the request was
+ * wrong, so a refresh is worth one try. AUTH_SESSION_REVOKED is the common
+ * one in practice: another tab's refresh rotates the session and revokes
+ * the row this tab's token names. The shared refresh cookie already names
+ * the new session, so the refresh recovers silently; when the session was
+ * really ended, the refresh fails and onUnauthorized sends the reader to
+ * sign in instead of leaving every screen on a retry that cannot work.
+ */
+const REFRESHABLE_CODES: ReadonlySet<string> = new Set([
+  "AUTH_TOKEN_EXPIRED",
+  "AUTH_SESSION_REVOKED",
+  "AUTH_TOKEN_INVALID",
+]);
+
 export interface CreateApiClientOptions {
   /** API origin, e.g. "https://api.sekolahku.id" or "http://localhost:8080". */
   baseUrl: string;
@@ -318,13 +333,16 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
       if (response.status !== 401) {
         return response;
       }
-      // Refresh when the access token expired, or when the request went out
-      // with no token at all (a fresh page load whose session lives only in
-      // the httpOnly refresh cookie). Any other 401 is a real rejection.
+      // Refresh when the access token can no longer be used (see
+      // REFRESHABLE_CODES), or when the request went out with no token at
+      // all (a fresh page load whose session lives only in the httpOnly
+      // refresh cookie). Any other 401 is a real rejection: a failed sign-in
+      // sent while a stale token is in memory must still come back as
+      // AUTH_INVALID_CREDENTIALS, untouched.
       const { code } = await parseErrorFromResponse(response);
       const hadToken = request.headers.has("Authorization");
       const isRefreshCall = request.url.endsWith("/v1/auth/refresh");
-      if (isRefreshCall || (hadToken && code !== "AUTH_TOKEN_EXPIRED")) {
+      if (isRefreshCall || (hadToken && !REFRESHABLE_CODES.has(code))) {
         return response;
       }
       // refreshAccessToken already clears the token store and calls

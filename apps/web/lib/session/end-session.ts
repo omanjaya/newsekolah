@@ -3,6 +3,7 @@
 import type { NewsekolahApiClient } from "@newsekolah/api-client";
 import { clearReaderCache } from "@newsekolah/api-client/react";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { usePathname, useRouter } from "next/navigation";
 
 import { setAccessToken } from "../api/access-token";
 import { useApiClient } from "../api/client";
@@ -51,5 +52,22 @@ export function useEndSession(): () => void {
   const queryClient = useQueryClient();
   return () => {
     endSession(client, queryClient);
+  };
+}
+
+/**
+ * endSession, then the sign-in page with a way back to the current page:
+ * the same exit app/providers.tsx takes when a session runs out mid-visit.
+ * For a screen that still shows a 401 it was handed. A plain link to
+ * /login would bounce straight back, since the cached `me` reads the tab
+ * as signed in.
+ */
+export function useSignInAgain(): () => void {
+  const end = useEndSession();
+  const router = useRouter();
+  const pathname = usePathname();
+  return () => {
+    end();
+    router.replace(`/login?next=${encodeURIComponent(pathname)}`);
   };
 }

@@ -237,6 +237,8 @@
     "SCHEDULE_CONFLICT_TEACHER": "This teacher is already teaching another class at the same period. Pick a different period or teacher.",
     "AUTH_INVALID_CREDENTIALS": "Incorrect username or password",
     "AUTH_TOKEN_EXPIRED": "Your session expired, please sign in again",
+    "AUTH_SESSION_REVOKED": "Your session has ended. Sign in again to continue.",
+    "AUTH_TOKEN_INVALID": "Your session can no longer be used. Sign in again to continue.",
     "TENANT_NOT_FOUND": "School not found",
     "VALIDATION_FAILED": "The submitted data is invalid",
     "RATE_LIMITED": "Too many attempts, try again shortly",
