@@ -9,7 +9,7 @@ vi.mock("next-intl", () => ({
 }));
 
 vi.mock("../lib/short-date", () => ({
-  formatShortDate: (value: string) => value,
+  formatShortDay: (value: string) => value,
 }));
 
 describe("DueBadge", () => {

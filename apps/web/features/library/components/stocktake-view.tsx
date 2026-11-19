@@ -26,7 +26,7 @@ import { cloneElement, useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { formatShortDate } from "../lib/short-date";
+import { formatShortDay } from "../lib/short-date";
 import {
   type LibraryStocktake,
   useLibraryStocktakesQuery,
@@ -60,7 +60,7 @@ export function StocktakeView(): ReactElement {
         header: t("columns.startedOn"),
         enableSorting: false,
         meta: { card: "subtitle" },
-        cell: ({ row }) => formatShortDate(row.original.started_on, locale),
+        cell: ({ row }) => formatShortDay(row.original.started_on, locale),
       },
       {
         accessorKey: "status",

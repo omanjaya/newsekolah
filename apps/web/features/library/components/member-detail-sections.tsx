@@ -28,10 +28,13 @@ import { LibraryTitleName } from "./library-title-name";
 export function MemberPastLoans({
   loans,
   locale,
+  timeZone,
   today,
 }: {
   loans: LibraryLoan[];
   locale: Locale;
+  /** The school's zone: a borrow or return time is a day on its calendar. */
+  timeZone: string | undefined;
   today: string;
 }): ReactElement {
   const tHistory = useTranslations("app.library.memberHistory");
@@ -51,8 +54,11 @@ export function MemberPastLoans({
           title={<LibraryTitleName titleId={loan.title_id} />}
           meta={
             loan.returned_at
-              ? formatShortDateRange(loan.borrowed_at, loan.returned_at, locale, { today })
-              : formatShortDate(loan.borrowed_at, locale, { today })
+              ? formatShortDateRange(loan.borrowed_at, loan.returned_at, locale, {
+                  timeZone,
+                  today,
+                })
+              : formatShortDate(loan.borrowed_at, locale, { timeZone, today })
           }
           trailing={
             <Badge tone={toneOf(LOAN_STATUS_TONE, loan.status)}>

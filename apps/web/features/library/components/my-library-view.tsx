@@ -25,7 +25,7 @@ import { useCan } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
 import type { LibraryLoan } from "../api";
 import { classifyDueDate, overdueDays } from "../lib/due-date";
-import { formatShortDate } from "../lib/short-date";
+import { formatShortDay } from "../lib/short-date";
 import { type LibraryMyProfile, useMyLibraryProfileQuery } from "../me-api";
 import { useTenantTimeZone } from "../use-tenant-timezone";
 
@@ -50,7 +50,8 @@ const CATALOGUE_HREF = "/opac";
 export function MyLibraryView(): ReactElement {
   const t = useTranslations("app.library.me");
   const locale = useLocale() as Locale;
-  const today = todayInZone(useTenantTimeZone());
+  const timeZone = useTenantTimeZone();
+  const today = todayInZone(timeZone);
   const { data, isLoading, isError, error, refetch } = useMyLibraryProfileQuery();
   const canRegister = useCan("manage_library_members");
 
@@ -150,7 +151,12 @@ export function MyLibraryView(): ReactElement {
         </section>
       )}
 
-      <MyLibraryHistoryTable history={data.history} locale={locale} today={today} />
+      <MyLibraryHistoryTable
+        history={data.history}
+        locale={locale}
+        timeZone={timeZone}
+        today={today}
+      />
 
       <MyLibraryReservations
         reservations={data.reservations}
@@ -207,7 +213,7 @@ function MyLibraryHero({
     return (
       <HeroCard
         eyebrow={t("nextDueEyebrow")}
-        title={t("nextDueTitle", { date: formatShortDate(counts.nextDueOn, locale, { today }) })}
+        title={t("nextDueTitle", { date: formatShortDay(counts.nextDueOn, locale, { today }) })}
         meta={t("nextDueMeta", { count: counts.activeLoans })}
         chip={ready > 0 ? t("readyChip", { count: ready }) : undefined}
         secondaryAction={browse}

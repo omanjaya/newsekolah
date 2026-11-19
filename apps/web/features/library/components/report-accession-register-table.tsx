@@ -8,7 +8,7 @@ import type { ReactElement, ReactNode } from "react";
 import { useMemo } from "react";
 
 import type { LibraryCopy } from "../api";
-import { formatShortDate } from "../lib/short-date";
+import { formatShortDay } from "../lib/short-date";
 import { useLibraryAccessionRegisterReportQuery } from "../reports-api";
 
 import { LibraryTitleName } from "./library-title-name";
@@ -60,7 +60,7 @@ export function ReportAccessionRegisterTable({
         header: t("columns.acquiredOn"),
         enableSorting: false,
         cell: ({ row }) =>
-          row.original.acquired_on ? formatShortDate(row.original.acquired_on, locale) : "-",
+          row.original.acquired_on ? formatShortDay(row.original.acquired_on, locale) : "-",
       },
     ],
     [t, locale],

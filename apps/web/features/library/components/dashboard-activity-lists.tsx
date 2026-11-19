@@ -44,7 +44,8 @@ export function DashboardActivityLists({
 }): ReactElement {
   const t = useTranslations("app.library.dashboard");
   const locale = useLocale() as Locale;
-  const today = todayInZone(useTenantTimeZone());
+  const timeZone = useTenantTimeZone();
+  const today = todayInZone(timeZone);
   const canCirculate = useCan("manage_library_circulation");
   const canViewMembers = useCan("manage_library_members");
   const memberHref = (loan: LibraryLoan) =>
@@ -100,7 +101,7 @@ export function DashboardActivityLists({
               <ListRow
                 key={loan.id}
                 title={<LibraryTitleName titleId={loan.title_id} />}
-                meta={`${borrower(loan)} · ${formatShortDate(loan.borrowed_at, locale, { today })}`}
+                meta={`${borrower(loan)} · ${formatShortDate(loan.borrowed_at, locale, { timeZone, today })}`}
                 href={memberHref(loan)}
               />
             ))}

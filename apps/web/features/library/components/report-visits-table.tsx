@@ -7,7 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 
 import { QueryError } from "../../../components/query-error";
-import { formatShortDate } from "../lib/short-date";
+import { formatShortDay } from "../lib/short-date";
 import { useLibraryVisitsReportQuery } from "../reports-api";
 
 import { ReportBreakdown } from "./report-breakdown";
@@ -49,7 +49,7 @@ export function ReportVisitsTable({
           title={t("columns.day")}
           rows={data.per_day.map((row) => ({
             key: row.day,
-            name: formatShortDate(row.day, locale),
+            name: formatShortDay(row.day, locale),
             count: row.count,
           }))}
         />

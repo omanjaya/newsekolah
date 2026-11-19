@@ -34,7 +34,7 @@ import { useLookup } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { studentProfileHref } from "../../students/href";
 import { printMemberCard } from "../api";
-import { formatShortDate } from "../lib/short-date";
+import { formatShortDay } from "../lib/short-date";
 import { MEMBER_STATUS_TONE, toneOf } from "../lib/status-tones";
 import {
   type LibraryMember,
@@ -177,7 +177,7 @@ export function MembersView(): ReactElement {
         // date is a dash in the table and nothing on the card.
         cell: ({ row }) => {
           if (!row.original.valid_until) return <span className="max-md:hidden">-</span>;
-          const date = formatShortDate(row.original.valid_until, locale);
+          const date = formatShortDay(row.original.valid_until, locale);
           return (
             <>
               <span className="max-md:hidden">{date}</span>

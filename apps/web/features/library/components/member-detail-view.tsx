@@ -40,7 +40,7 @@ import { todayInZone } from "../../../lib/tenant-date";
 import { useLookup } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { printMemberCard, useMemberLoanHistoryQuery, useMemberReservationsQuery } from "../api";
-import { formatShortDate } from "../lib/short-date";
+import { formatShortDay } from "../lib/short-date";
 import { MEMBER_STATUS_TONE, toneOf } from "../lib/status-tones";
 import {
   printLibraryClearanceLetter,
@@ -77,7 +77,8 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_library_members");
   const canCirculate = useCan("manage_library_circulation");
-  const today = todayInZone(useTenantTimeZone());
+  const timeZone = useTenantTimeZone();
+  const today = todayInZone(timeZone);
 
   const member = useLibraryMemberQuery(userId);
   const memberTypes = useLibraryMemberTypesQuery();
@@ -211,7 +212,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
           </DataListItem>
           <DataListItem label={t("memberType")}>{typeName}</DataListItem>
           <DataListItem label={t("validUntil")}>
-            {data.valid_until ? formatShortDate(data.valid_until, locale, { today }) : undefined}
+            {data.valid_until ? formatShortDay(data.valid_until, locale, { today }) : undefined}
           </DataListItem>
         </DataList>
         <div className="flex flex-wrap items-center gap-3">
@@ -302,7 +303,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
         </TabsContent>
 
         <TabsContent value="history">
-          <MemberPastLoans loans={pastLoans} locale={locale} today={today} />
+          <MemberPastLoans loans={pastLoans} locale={locale} timeZone={timeZone} today={today} />
         </TabsContent>
 
         <TabsContent value="fines">

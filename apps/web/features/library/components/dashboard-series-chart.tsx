@@ -8,7 +8,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import type { LibraryDashboard } from "../dashboard-api";
-import { formatShortDate } from "../lib/short-date";
+import { formatShortDay } from "../lib/short-date";
 
 type SeriesPoint = LibraryDashboard["series"][number];
 
@@ -80,8 +80,8 @@ export function DashboardSeriesChart({ series }: { series: SeriesPoint[] }): Rea
       </div>
       {first && last && (
         <div className="flex justify-between text-caption text-fg-muted" aria-hidden="true">
-          <span>{formatShortDate(first.day, locale)}</span>
-          <span>{formatShortDate(last.day, locale)}</span>
+          <span>{formatShortDay(first.day, locale)}</span>
+          <span>{formatShortDay(last.day, locale)}</span>
         </div>
       )}
     </div>
