@@ -180,6 +180,8 @@ export function ViolationRecordDialog({
               type="button"
               variant="secondary"
               onClick={() => {
+                // Cancel resets like Escape does: the dialog stays mounted.
+                reset();
                 onOpenChange(false);
               }}
             >

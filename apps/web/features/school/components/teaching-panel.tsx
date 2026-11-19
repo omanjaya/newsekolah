@@ -172,7 +172,7 @@ export function TeachingPanel({
           ref={formRef}
           noValidate
           aria-label={t("addTeachingTitle")}
-          className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end"
+          className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-start"
           onSubmit={(e) => {
             e.preventDefault();
             if (!check(Boolean(subjectId && teacherId))) return;
@@ -219,9 +219,19 @@ export function TeachingPanel({
               labels={teacherLabels}
             />
           </Field>
-          <Button type="submit" variant="secondary" icon={<Plus />} loading={create.isPending}>
-            {t("addTeaching")}
-          </Button>
+          {/*
+            Top-aligned with an empty label row of the same type role, so the
+            button stays level with both controls when a Field below grows
+            an error line after Submit (bottom alignment tipped them apart).
+          */}
+          <div className="flex flex-col gap-2">
+            <span aria-hidden="true" className="hidden text-label md:block">
+              &nbsp;
+            </span>
+            <Button type="submit" variant="secondary" icon={<Plus />} loading={create.isPending}>
+              {t("addTeaching")}
+            </Button>
+          </div>
         </form>
       )}
       <ConfirmDialog

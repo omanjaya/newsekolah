@@ -226,6 +226,13 @@ export function MoveStudentsDialog({
   const { ref: formRef, attempted, check, reset } = useSubmitValidation();
   const tValidation = useTranslations("validation");
 
+  // Cancel, Escape and the overlay all close through here, so a reopened
+  // dialog never shows the last attempt's errors (it stays mounted).
+  function close() {
+    reset();
+    onClose();
+  }
+
   async function submit() {
     if (!check(Boolean(toClassId && effectiveOn))) return;
     setRunning(true);
@@ -251,9 +258,7 @@ export function MoveStudentsDialog({
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (next) return;
-        reset();
-        onClose();
+        if (!next) close();
       }}
     >
       <DialogContent
@@ -294,7 +299,7 @@ export function MoveStudentsDialog({
             />
           </Field>
           <DialogFooter>
-            <Button variant="secondary" onClick={onClose}>
+            <Button variant="secondary" onClick={close}>
               {t("form.cancel")}
             </Button>
             <Button type="submit" loading={running}>
@@ -330,6 +335,13 @@ export function LeaveStudentsDialog({
   const { ref: formRef, attempted, check, reset } = useSubmitValidation();
   const tValidation = useTranslations("validation");
 
+  // Cancel, Escape and the overlay all close through here, so a reopened
+  // dialog never shows the last attempt's errors (it stays mounted).
+  function close() {
+    reset();
+    onClose();
+  }
+
   async function submit() {
     if (!check(Boolean(leftOn))) return;
     setRunning(true);
@@ -351,9 +363,7 @@ export function LeaveStudentsDialog({
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (next) return;
-        reset();
-        onClose();
+        if (!next) close();
       }}
     >
       <DialogContent
@@ -382,7 +392,7 @@ export function LeaveStudentsDialog({
             />
           </Field>
           <DialogFooter>
-            <Button variant="secondary" onClick={onClose}>
+            <Button variant="secondary" onClick={close}>
               {t("form.cancel")}
             </Button>
             <Button type="submit" variant="danger" loading={running}>
