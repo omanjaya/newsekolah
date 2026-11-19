@@ -620,7 +620,9 @@ type Querier interface {
 	// ends_at) window contains now_time -- the same rule academic's
 	// PeriodsToday applies through domain.CurrentPeriod. The monitor snapshot
 	// falls back to this when no schedule occurrence supplies the governing
-	// period (bell times set, timetables not entered yet).
+	// period (bell times set, timetables not entered yet). A break is not a
+	// lesson period: during one the board reports no lesson running instead
+	// of a period whose timetables look missing.
 	GetCurrentBellPeriodForAttendance(ctx context.Context, arg GetCurrentBellPeriodForAttendanceParams) (GetCurrentBellPeriodForAttendanceRow, error)
 	GetDefaultDocumentTemplate(ctx context.Context, arg GetDefaultDocumentTemplateParams) (DocumentTemplate, error)
 	GetDiscount(ctx context.Context, arg GetDiscountParams) (FeeDiscount, error)
