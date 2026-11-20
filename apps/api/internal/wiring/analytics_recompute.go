@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
 )
 
@@ -17,15 +18,24 @@ type StudentRiskRecomputer interface {
 }
 
 // RegisterAnalyticsRecompute keeps early warning current with discipline:
-// recording or voiding a violation and issuing a warning letter rescore
-// that student in the same transaction (discipline publishes these events
-// inside it, under a savepoint), instead of leaving the risk list, the
-// student's profile summary and the counselor's "Siswa berisiko" block on
-// the nightly run's figures. A rescoring failure is logged and never fails
-// the discipline write.
+// recording or voiding a violation (by hand or from an attendance roll
+// call) and issuing a warning letter rescore that student in the same
+// transaction (discipline publishes these events inside it, under a
+// savepoint), instead of leaving the risk list, the student's profile
+// summary and the counselor's "Siswa berisiko" block on the nightly run's
+// figures.
+//
+// A rescoring failure is logged and never fails the discipline write. The
+// rescoring runs in a savepoint of its own: other subscribers of the same
+// event share the publisher's savepoint (the notification bridge writing
+// the "Surat peringatan diterbitkan" inbox rows), and an SQL error here
+// must roll back only the rescoring, never their work.
 func RegisterAnalyticsRecompute(bus *events.Bus, analytics StudentRiskRecomputer, logger *slog.Logger) {
 	rescore := func(ctx context.Context, name string, tenantID, studentID uuid.UUID) error {
-		if err := analytics.RecomputeStudents(ctx, tenantID, []uuid.UUID{studentID}); err != nil {
+		err := database.WithSavepoint(ctx, func(ctx context.Context) error {
+			return analytics.RecomputeStudents(ctx, tenantID, []uuid.UUID{studentID})
+		})
+		if err != nil {
 			logger.WarnContext(ctx, "analytics: rescore after discipline change failed", "event", name, "error", err)
 		}
 		return nil

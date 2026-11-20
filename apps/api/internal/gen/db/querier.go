@@ -193,6 +193,10 @@ type Querier interface {
 	// cross-module read: enrollments (academic) is the roster the recompute
 	// job scores, mirroring attendance's own ListActiveEnrollments.
 	AnalyticsListActiveStudents(ctx context.Context, arg AnalyticsListActiveStudentsParams) ([]AnalyticsListActiveStudentsRow, error)
+	// AnalyticsListActiveStudents narrowed to the given students, for
+	// rescoring a few students after a change to their record without reading
+	// the whole roster.
+	AnalyticsListActiveStudentsByIDs(ctx context.Context, arg AnalyticsListActiveStudentsByIDsParams) ([]AnalyticsListActiveStudentsByIDsRow, error)
 	// cross-module read: tenants is the platform-wide registry owned by the
 	// school module, the same read notifications' ListActiveTenantsForMaintenance
 	// already does for its own periodic jobs. Not RLS-protected: this loops
@@ -502,7 +506,7 @@ type Querier interface {
 	// Hard delete, not void: replacing an attendance session's per-student
 	// violations on resave is delete-then-reinsert, matching the old system's
 	// teacher_attendance.go L295-309, not an auditable void.
-	DeleteViolationRecordsBySessionStudent(ctx context.Context, arg DeleteViolationRecordsBySessionStudentParams) error
+	DeleteViolationRecordsBySessionStudent(ctx context.Context, arg DeleteViolationRecordsBySessionStudentParams) (int64, error)
 	DeleteViolationType(ctx context.Context, arg DeleteViolationTypeParams) error
 	DeleteWebAuthnCredential(ctx context.Context, arg DeleteWebAuthnCredentialParams) error
 	DeleteWebhookEndpoint(ctx context.Context, arg DeleteWebhookEndpointParams) error

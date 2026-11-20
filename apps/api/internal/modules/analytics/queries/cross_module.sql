@@ -13,6 +13,15 @@ select e.student_user_id, e.class_id
 from enrollments e
 where e.tenant_id = $1 and e.academic_year_id = $2 and e.status = 'active';
 
+-- name: AnalyticsListActiveStudentsByIDs :many
+-- AnalyticsListActiveStudents narrowed to the given students, for
+-- rescoring a few students after a change to their record without reading
+-- the whole roster.
+select e.student_user_id, e.class_id
+from enrollments e
+where e.tenant_id = $1 and e.academic_year_id = $2 and e.status = 'active'
+  and e.student_user_id = any(sqlc.arg(student_ids)::uuid[]);
+
 -- name: AnalyticsGetHomeroomClassID :one
 -- cross-module read: duty slug 'homeroom', the same lookup as attendance's
 -- GetHomeroomClassForAttendance (docs/analysis/backend-inventory.md

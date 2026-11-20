@@ -218,13 +218,7 @@ func recordViolationCore(ctx context.Context, repo Repository, policy domain.SPP
 	}
 	out.DueLevels = policy.DueLevels(out.TotalPoints, issued)
 
-	var crossed []domain.SPLevel
-	for _, lvl := range policy.Levels {
-		if before < lvl.MinPoints && out.TotalPoints >= lvl.MinPoints {
-			crossed = append(crossed, lvl)
-		}
-	}
-	return out, crossed, nil
+	return out, crossedLevels(policy, before, out.TotalPoints), nil
 }
 
 // maxViolationAttachments is the "1-3 photos" cap from the feature brief:
@@ -445,19 +439,37 @@ func recordOne(ctx context.Context, repo Repository, tenantID, yearID uuid.UUID,
 // below, which does audit every void -- because this path corrects
 // session-linked records automatically from attendance, not a counselor's
 // manual, reasoned decision to void one.
+//
+// When the call changed anything (a record deleted or written) it
+// publishes ViolationRecorded inside the transaction, like RecordViolation,
+// so the student's early-warning score follows a roll call's violations
+// too, and ThresholdReached for every SP level the new total crosses, so
+// the counselor hears of it whichever screen the violation came from. A
+// roll call saved again with the same violations replaces them with equal
+// points and therefore crosses nothing new.
 func (s *Service) ReplaceSessionViolations(
 	ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID, violationTypeIDs []uuid.UUID, occurredOn time.Time, reporterUserID uuid.UUID,
 ) error {
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		if err := s.repo.DeleteRecordsBySessionStudent(ctx, tenantID, sessionID, studentUserID); err != nil {
-			return err
-		}
-		if len(violationTypeIDs) == 0 {
-			return nil
-		}
-		yearID, err := s.activeYear(ctx, tenantID)
+		yearID, hasYear, err := s.years.GetActiveAcademicYearID(ctx, tenantID)
 		if err != nil {
 			return err
+		}
+		before := 0
+		if hasYear {
+			if before, err = s.repo.SumActivePoints(ctx, tenantID, yearID, studentUserID); err != nil {
+				return err
+			}
+		}
+		deleted, err := s.repo.DeleteRecordsBySessionStudent(ctx, tenantID, sessionID, studentUserID)
+		if err != nil {
+			return err
+		}
+		if len(violationTypeIDs) == 0 && deleted == 0 {
+			return nil
+		}
+		if len(violationTypeIDs) > 0 && !hasYear {
+			return domain.ErrNoActiveAcademicYear
 		}
 		for _, typeID := range violationTypeIDs {
 			vt, ok, err := s.repo.GetViolationType(ctx, tenantID, typeID)
@@ -478,8 +490,56 @@ func (s *Service) ReplaceSessionViolations(
 				return err
 			}
 		}
-		return nil
+		s.publishInTx(ctx, ViolationRecorded{TenantID: tenantID, StudentUserID: studentUserID})
+		if !hasYear {
+			return nil
+		}
+		return s.publishCrossedLevels(ctx, tenantID, yearID, studentUserID, before)
 	})
+}
+
+// publishCrossedLevels publishes ThresholdReached for every SP level the
+// student's active total has crossed since it stood at before. It runs
+// inside the caller's transaction, after the caller's writes.
+func (s *Service) publishCrossedLevels(ctx context.Context, tenantID, yearID, studentUserID uuid.UUID, before int) error {
+	after, err := s.repo.SumActivePoints(ctx, tenantID, yearID, studentUserID)
+	if err != nil {
+		return err
+	}
+	if after <= before {
+		return nil
+	}
+	policy, err := s.loadPolicy(ctx, tenantID)
+	if err != nil {
+		return err
+	}
+	crossed := crossedLevels(policy, before, after)
+	if len(crossed) == 0 {
+		return nil
+	}
+	classID, err := s.repo.ActiveClassID(ctx, tenantID, yearID, studentUserID)
+	if err != nil {
+		return err
+	}
+	for _, lvl := range crossed {
+		s.publishInTx(ctx, ThresholdReached{
+			TenantID: tenantID, StudentUserID: studentUserID, ClassID: classID,
+			Level: lvl.Level, LevelLabel: lvl.Label, ThresholdPoints: lvl.MinPoints, TotalPoints: after,
+		})
+	}
+	return nil
+}
+
+// crossedLevels is every SP level a student's active total passed going
+// from before to after points.
+func crossedLevels(policy domain.SPPolicy, before, after int) []domain.SPLevel {
+	var crossed []domain.SPLevel
+	for _, lvl := range policy.Levels {
+		if before < lvl.MinPoints && after >= lvl.MinPoints {
+			crossed = append(crossed, lvl)
+		}
+	}
+	return crossed
 }
 
 // ViolationSummary implements attendance's DisciplineReader for the

@@ -34,8 +34,8 @@ func newFakeRecordRepo() *fakeRecordRepo {
 
 func (f *fakeRecordRepo) addType(t domain.ViolationType) { f.types[t.ID] = t }
 
-func (f *fakeRecordRepo) DeleteRecordsBySessionStudent(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) error {
-	return nil
+func (f *fakeRecordRepo) DeleteRecordsBySessionStudent(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (int64, error) {
+	return 0, nil
 }
 
 func (f *fakeRecordRepo) StudentEligible(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (bool, bool, error) {

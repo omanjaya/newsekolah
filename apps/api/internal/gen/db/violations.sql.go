@@ -130,7 +130,7 @@ func (q *Queries) CreateViolationType(ctx context.Context, arg CreateViolationTy
 	return i, err
 }
 
-const deleteViolationRecordsBySessionStudent = `-- name: DeleteViolationRecordsBySessionStudent :exec
+const deleteViolationRecordsBySessionStudent = `-- name: DeleteViolationRecordsBySessionStudent :execrows
 delete from violation_records
 where tenant_id = $1 and attendance_session_id = $2 and student_user_id = $3
 `
@@ -144,9 +144,12 @@ type DeleteViolationRecordsBySessionStudentParams struct {
 // Hard delete, not void: replacing an attendance session's per-student
 // violations on resave is delete-then-reinsert, matching the old system's
 // teacher_attendance.go L295-309, not an auditable void.
-func (q *Queries) DeleteViolationRecordsBySessionStudent(ctx context.Context, arg DeleteViolationRecordsBySessionStudentParams) error {
-	_, err := q.db.Exec(ctx, deleteViolationRecordsBySessionStudent, arg.TenantID, arg.AttendanceSessionID, arg.StudentUserID)
-	return err
+func (q *Queries) DeleteViolationRecordsBySessionStudent(ctx context.Context, arg DeleteViolationRecordsBySessionStudentParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteViolationRecordsBySessionStudent, arg.TenantID, arg.AttendanceSessionID, arg.StudentUserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const deleteViolationType = `-- name: DeleteViolationType :exec

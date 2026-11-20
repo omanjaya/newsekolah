@@ -62,6 +62,22 @@ func (r *Repository) ListActiveStudents(ctx context.Context, tenantID, academicY
 	return out, nil
 }
 
+// ListActiveStudentsByIDs is ListActiveStudents narrowed to studentIDs; a
+// student without an active enrollment this year is simply not returned.
+func (r *Repository) ListActiveStudentsByIDs(ctx context.Context, tenantID, academicYearID uuid.UUID, studentIDs []uuid.UUID) ([]service.StudentRef, error) {
+	rows, err := r.queries(ctx).AnalyticsListActiveStudentsByIDs(ctx, db.AnalyticsListActiveStudentsByIDsParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, StudentIds: studentIDs,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list active students by id: %w", err)
+	}
+	out := make([]service.StudentRef, len(rows))
+	for i, row := range rows {
+		out[i] = service.StudentRef{StudentUserID: row.StudentUserID, ClassID: uuid.NullUUID{UUID: row.ClassID, Valid: true}}
+	}
+	return out, nil
+}
+
 func (r *Repository) GetHomeroomClassID(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID) (uuid.NullUUID, error) {
 	classID, err := r.queries(ctx).AnalyticsGetHomeroomClassID(ctx, db.AnalyticsGetHomeroomClassIDParams{
 		TenantID: tenantID, AcademicYearID: academicYearID, UserID: teacherUserID,

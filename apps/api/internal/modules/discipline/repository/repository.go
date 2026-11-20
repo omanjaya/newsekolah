@@ -113,13 +113,14 @@ func (r *Repository) CreateRecord(ctx context.Context, rec domain.ViolationRecor
 	return toRecord(row, "", "", ""), nil
 }
 
-func (r *Repository) DeleteRecordsBySessionStudent(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID) error {
-	if err := r.queries(ctx).DeleteViolationRecordsBySessionStudent(ctx, db.DeleteViolationRecordsBySessionStudentParams{
+func (r *Repository) DeleteRecordsBySessionStudent(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID) (int64, error) {
+	n, err := r.queries(ctx).DeleteViolationRecordsBySessionStudent(ctx, db.DeleteViolationRecordsBySessionStudentParams{
 		TenantID: tenantID, AttendanceSessionID: pgtype.UUID{Bytes: sessionID, Valid: true}, StudentUserID: studentUserID,
-	}); err != nil {
-		return fmt.Errorf("delete session violation records: %w", err)
+	})
+	if err != nil {
+		return 0, fmt.Errorf("delete session violation records: %w", err)
 	}
-	return nil
+	return n, nil
 }
 
 func (r *Repository) GetRecord(ctx context.Context, tenantID, id uuid.UUID) (domain.ViolationRecord, bool, error) {

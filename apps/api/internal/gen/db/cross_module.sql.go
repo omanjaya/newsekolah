@@ -119,6 +119,47 @@ func (q *Queries) AnalyticsListActiveStudents(ctx context.Context, arg Analytics
 	return items, nil
 }
 
+const analyticsListActiveStudentsByIDs = `-- name: AnalyticsListActiveStudentsByIDs :many
+select e.student_user_id, e.class_id
+from enrollments e
+where e.tenant_id = $1 and e.academic_year_id = $2 and e.status = 'active'
+  and e.student_user_id = any($3::uuid[])
+`
+
+type AnalyticsListActiveStudentsByIDsParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	StudentIds     []uuid.UUID `json:"student_ids"`
+}
+
+type AnalyticsListActiveStudentsByIDsRow struct {
+	StudentUserID uuid.UUID `json:"student_user_id"`
+	ClassID       uuid.UUID `json:"class_id"`
+}
+
+// AnalyticsListActiveStudents narrowed to the given students, for
+// rescoring a few students after a change to their record without reading
+// the whole roster.
+func (q *Queries) AnalyticsListActiveStudentsByIDs(ctx context.Context, arg AnalyticsListActiveStudentsByIDsParams) ([]AnalyticsListActiveStudentsByIDsRow, error) {
+	rows, err := q.db.Query(ctx, analyticsListActiveStudentsByIDs, arg.TenantID, arg.AcademicYearID, arg.StudentIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AnalyticsListActiveStudentsByIDsRow{}
+	for rows.Next() {
+		var i AnalyticsListActiveStudentsByIDsRow
+		if err := rows.Scan(&i.StudentUserID, &i.ClassID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const analyticsListActiveTenants = `-- name: AnalyticsListActiveTenants :many
 select id from tenants where status = 'active'
 `

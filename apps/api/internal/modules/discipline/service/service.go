@@ -34,7 +34,8 @@ type Repository interface {
 	DeleteViolationType(ctx context.Context, tenantID, id uuid.UUID) error
 
 	CreateRecord(ctx context.Context, r domain.ViolationRecord) (domain.ViolationRecord, error)
-	DeleteRecordsBySessionStudent(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID) error
+	// DeleteRecordsBySessionStudent returns how many records it deleted.
+	DeleteRecordsBySessionStudent(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID) (int64, error)
 	GetRecord(ctx context.Context, tenantID, id uuid.UUID) (domain.ViolationRecord, bool, error)
 	GetRecordByWorkflow(ctx context.Context, tenantID, workflowInstanceID, violationTypeID uuid.UUID) (domain.ViolationRecord, bool, error)
 	VoidRecord(ctx context.Context, tenantID, id, voidedBy uuid.UUID, reason string) (domain.ViolationRecord, bool, error)

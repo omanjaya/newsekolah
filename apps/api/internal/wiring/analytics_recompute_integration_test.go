@@ -2,6 +2,7 @@ package wiring
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"testing"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/config"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
@@ -75,10 +77,78 @@ func TestEarlyWarningFollowsDisciplineChanges(t *testing.T) {
 	require.Zero(t, points, "a voided violation stops counting at once")
 	require.False(t, atRisk)
 
+	// A roll call's violations go through ReplaceSessionViolations, not
+	// RecordViolation, and must rescore (and notify a crossed SP level)
+	// all the same, including when a resave removes them again.
+	var thresholds int
+	bus.Subscribe(disciplineservice.ThresholdReached{}.EventName(), func(context.Context, events.Event) error {
+		thresholds++
+		return nil
+	})
+	session := uuid.New()
+	replace := func(typeIDs ...uuid.UUID) {
+		t.Helper()
+		require.NoError(t, disciplineModule.Service.ReplaceSessionViolations(
+			ctx, fx.tenantID, session, student, typeIDs, time.Now(), student))
+	}
+	replace(violationType)
+	points, atRisk, _ = risk()
+	require.Equal(t, 60, points, "a roll-call violation counts without waiting for the nightly run")
+	require.True(t, atRisk)
+	require.NotZero(t, thresholds, "60 points cross an SP level and the counselor hears of it")
+	crossings := thresholds
+	replace(violationType)
+	require.Equal(t, crossings, thresholds, "saving the roll call again with the same violations crosses nothing new")
+	replace()
+	points, atRisk, _ = risk()
+	require.Zero(t, points, "a violation removed from the roll call stops counting at once")
+	require.False(t, atRisk)
+
 	policy, err := analyticsModule.Service.Policy(ctx, fx.tenantID)
 	require.NoError(t, err)
 	updated, err := analyticsModule.Service.UpdatePolicy(ctx, fx.tenantID, student, policy)
 	require.NoError(t, err)
+	analyticsModule.Service.WaitForRescores()
 	_, _, version := risk()
 	require.Equal(t, updated.Version, version, "the school is rescored under the new policy right away")
+}
+
+// failingRecomputer stands in for an analytics rescoring that hits an SQL
+// error in the publisher's transaction.
+type failingRecomputer struct{ calls *int }
+
+func (f failingRecomputer) RecomputeStudents(ctx context.Context, _ uuid.UUID, _ []uuid.UUID) error {
+	*f.calls++
+	tx, ok := database.TxFromContext(ctx)
+	if !ok {
+		return errors.New("no ambient transaction")
+	}
+	_, err := tx.Exec(ctx, "select 1/0")
+	return err
+}
+
+// TestFailedRescoreKeepsTheLetterNotification: the notification bridge and
+// the analytics rescoring both subscribe to WarningLetterIssued and run in
+// the savepoint discipline opens for the event. A rescoring that fails
+// with an SQL error must roll back only itself, never the "Surat
+// peringatan diterbitkan" notification the bridge has just written.
+func TestFailedRescoreKeepsTheLetterNotification(t *testing.T) {
+	h := newThresholdHarness(t)
+	calls := 0
+	RegisterAnalyticsRecompute(h.bus, failingRecomputer{calls: &calls}, slog.Default())
+	ctx := context.Background()
+
+	_, err := h.record(t)
+	require.NoError(t, err)
+	_, err = h.discipline.Service.IssueWarningLetter(ctx, h.fx.tenantID, h.student, h.counselor, 1)
+	require.NoError(t, err)
+
+	require.Equal(t, 2, calls, "the violation and the letter each asked for a rescore")
+	require.Equal(t, 1, h.count(t, `select count(*) from warning_letters where tenant_id = $1 and student_user_id = $2`, h.fx.tenantID, h.student))
+	require.Equal(t, 1, h.count(t,
+		`select count(*) from notifications where tenant_id = $1 and user_id = $2 and kind = 'warning_letter_issued'`,
+		h.fx.tenantID, h.student))
+	require.Equal(t, 1, h.count(t,
+		`select count(*) from notifications where tenant_id = $1 and user_id = $2 and kind = 'discipline_threshold_reached'`,
+		h.fx.tenantID, h.counselor))
 }
