@@ -6,6 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getAccessToken, setAccessToken } from "../lib/api/access-token";
+import { readDraft, writeDraft } from "../lib/drafts/draft-storage";
 import { CLEAR_ACCESS_COOKIE_PATH } from "../lib/session/clear-server-access-cookie";
 import type { Me } from "../lib/session/session-provider";
 
@@ -48,6 +49,10 @@ vi.mock("@newsekolah/ui", async () => {
   return { ...actual, useToast: () => ({ error: toastError, success: vi.fn() }) };
 });
 
+/** Whose drafts the impersonation writes, and the admin's own (lib/drafts/draft-owner.ts). */
+const IMPERSONATED_OWNER = "school:teacher~admin";
+const ADMIN_OWNER = "school:admin";
+
 /** useRoleTestingQuery's key for this session (features/auth/role-testing-api.ts). */
 const ROLE_STATUS_KEY = ["auth", "role-testing", "school", "teacher", "admin", "", "", ""];
 
@@ -72,6 +77,7 @@ let fetchMock: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   vi.clearAllMocks();
   sessionStorage.clear();
+  localStorage.clear();
   setAccessToken("teacher-token");
   fetchMock = vi.fn(() => Promise.resolve(new Response(null, { status: 204 })));
   vi.stubGlobal("fetch", fetchMock);
@@ -90,6 +96,7 @@ describe("ImpersonationBanner", () => {
     post.mockRejectedValue(
       new ApiError({ status: 503, code: "SERVICE_UNAVAILABLE", message: "down" }),
     );
+    writeDraft(IMPERSONATED_OWNER, "journal", "class-1", { text: "as the teacher" });
     const user = userEvent.setup();
     const client = renderStrip();
 
@@ -105,6 +112,7 @@ describe("ImpersonationBanner", () => {
     expect(forgetAccessToken).not.toHaveBeenCalled();
     expect(client.getQueryData(["notifications", "unread-count"])).toEqual({ count: 2 });
     expect(toastError).toHaveBeenCalledTimes(1);
+    expect(readDraft(IMPERSONATED_OWNER, "journal", "class-1")).not.toBeNull();
   });
 
   it("lets the admin try again after a failed stop", async () => {
@@ -154,6 +162,8 @@ describe("ImpersonationBanner", () => {
 
   it("goes to the sign-in page with no token left once the server stopped the impersonation", async () => {
     post.mockResolvedValue(undefined);
+    writeDraft(IMPERSONATED_OWNER, "journal", "class-1", { text: "as the teacher" });
+    writeDraft(ADMIN_OWNER, "counseling", "new", { text: "the admin's own" });
     const user = userEvent.setup();
     const client = renderStrip();
 
@@ -168,6 +178,32 @@ describe("ImpersonationBanner", () => {
     expect(forgetAccessToken).toHaveBeenCalledTimes(1);
     expect(client.getQueryData(["me"])).toBeUndefined();
     expect(toastError).not.toHaveBeenCalled();
+    // Nobody is signed in here any more: an explicit sign-out forgets every draft.
+    expect(readDraft(IMPERSONATED_OWNER, "journal", "class-1")).toBeNull();
+    expect(readDraft(ADMIN_OWNER, "counseling", "new")).toBeNull();
+  });
+
+  it("returns the admin to their own dashboard when the server restored the admin's session", async () => {
+    const admin = { ...teacher, id: "admin", name: "Admin", impersonated_by: undefined };
+    post.mockResolvedValue({ access_token: "admin-token", user: admin });
+    writeDraft(IMPERSONATED_OWNER, "journal", "class-1", { text: "as the teacher" });
+    writeDraft(ADMIN_OWNER, "counseling", "new", { text: "the admin's own" });
+    const user = userEvent.setup();
+    const client = renderStrip();
+
+    await user.click(screen.getByRole("button", { name: "impersonationStop" }));
+
+    await waitFor(() => {
+      expect(replace).toHaveBeenCalledWith("/dashboard");
+    });
+    expect(replace).not.toHaveBeenCalledWith("/login");
+    expect(getAccessToken()).toBe("admin-token");
+    expect(client.getQueryData(["me"])).toEqual(admin);
+    expect(client.getQueryData(["notifications", "unread-count"])).toBeUndefined();
+    expect(toastError).not.toHaveBeenCalled();
+    // The admin is still signed in here: only the impersonation's drafts go.
+    expect(readDraft(IMPERSONATED_OWNER, "journal", "class-1")).toBeNull();
+    expect(readDraft(ADMIN_OWNER, "counseling", "new")).not.toBeNull();
   });
 
   it("signs in again from an expired role-testing session without keeping its token", async () => {

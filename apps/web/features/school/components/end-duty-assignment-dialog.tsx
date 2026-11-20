@@ -55,7 +55,13 @@ function EndForm({
   const apiErrorMessage = useApiErrorMessage();
   const { me } = useSession();
   const update = useUpdateDutyAssignmentMutation();
-  const [endsOn, setEndsOn] = useState(() => todayInZone(me?.tenant.timezone));
+  // Today, but never before the assignment's own start: the picker refuses
+  // earlier days and the API answers them with VALIDATION_FAILED, so a
+  // default of today on a row that starts later could not be submitted.
+  const [endsOn, setEndsOn] = useState(() => {
+    const today = todayInZone(me?.tenant.timezone);
+    return assignment.starts_on > today ? assignment.starts_on : today;
+  });
 
   return (
     <DialogContent title={t("end")}>
@@ -70,7 +76,7 @@ function EndForm({
           </Button>
           <Button
             loading={update.isPending}
-            disabled={!endsOn}
+            disabled={!endsOn || endsOn < assignment.starts_on}
             onClick={() => {
               update.mutate(
                 { id: assignment.id, body: { is_active: false, ends_on: endsOn } },

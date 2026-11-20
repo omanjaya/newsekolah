@@ -61,6 +61,19 @@ where tenant_id = $1 and academic_year_id = $2 and duty_type_id = $3 and user_id
 order by starts_on desc, created_at desc
 limit 1;
 
+-- name: ActiveDutyAssignmentExists :one
+-- Whether the user already actively holds this duty for the same scope (the
+-- same class or student, or the whole school) in the year, other than
+-- exclude_id (the row being reactivated). Backed by the partial unique
+-- index ux_duty_assignments_active.
+select exists (
+  select 1 from duty_assignments
+  where tenant_id = $1 and academic_year_id = $2 and duty_type_id = $3 and user_id = $4 and is_active
+    and scope_class_id is not distinct from sqlc.narg(scope_class_id)::uuid
+    and scope_student_id is not distinct from sqlc.narg(scope_student_id)::uuid
+    and (sqlc.narg(exclude_id)::uuid is null or id <> sqlc.narg(exclude_id)::uuid)
+)::bool as found;
+
 -- name: UpdateDutyAssignment :exec
 update duty_assignments set is_active = $3, ends_on = $4 where tenant_id = $1 and id = $2;
 

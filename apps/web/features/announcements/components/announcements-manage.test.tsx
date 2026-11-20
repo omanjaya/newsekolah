@@ -108,6 +108,40 @@ describe("AnnouncementsManage missed schedules", () => {
     expect(missedRows).toHaveLength(1);
     expect(missedRows[0]).toHaveTextContent("Rapat orang tua");
   });
+
+  it("says when publishing a draft whose start is ahead reaches its readers", async () => {
+    mocks.useAnnouncementsQuery.mockReturnValue({
+      data: {
+        data: [
+          row("a1", "Rapat orang tua", "draft", "2000-01-01T00:00:00Z"),
+          row("a2", "Libur semester", "draft", "2999-01-01T00:00:00Z"),
+        ],
+        page: { next_cursor: "" },
+      },
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<AnnouncementsManage creating={false} onCreatingChange={vi.fn()} />);
+
+    async function confirmBody(title: string): Promise<string> {
+      const [trigger] = screen.getAllByRole("button", { name: `actions.menuFor:${title}` });
+      if (!trigger) throw new Error("no row menu");
+      await user.click(trigger);
+      const menu = await screen.findByRole("menu");
+      await user.click(within(menu).getByRole("menuitem", { name: "actions.publish" }));
+      const dialog = await screen.findByRole("dialog");
+      const text = dialog.textContent;
+      await user.keyboard("{Escape}");
+      return text;
+    }
+
+    expect(await confirmBody("Libur semester")).toContain(
+      "actions.publishConfirmBodyLater:Libur semester",
+    );
+    expect(await confirmBody("Rapat orang tua")).toContain(
+      "actions.publishConfirmBody:Rapat orang tua",
+    );
+  });
 });
 
 describe("AnnouncementsManage empty and row states", () => {

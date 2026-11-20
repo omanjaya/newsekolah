@@ -14,6 +14,7 @@ import { setAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
 import { retireServerAccessCookie } from "../../lib/session/clear-server-access-cookie";
 import { useEndSession, useForgetSession } from "../../lib/session/end-session";
+import { switchReader } from "../../lib/session/switch-reader";
 import { clearSimulation } from "../../lib/simulation/clock";
 import { getPasskey } from "../../lib/webauthn";
 
@@ -81,44 +82,58 @@ function isImpersonationOver(error: unknown): boolean {
   );
 }
 
+/** How a stop ended: back in the admin's own session, or signed out. */
+export type ImpersonationStopOutcome = "restored" | "ended";
+
 /**
- * POST /v1/auth/impersonation/stop. The server revokes the impersonation
- * session; there is no admin session to go back to (starting the
- * impersonation replaced it), so a stop the server confirmed ends like a
- * sign-out: the server access cookie is set aside, then `useEndSession`
- * drops the tokens (the API client's remembered one too, which may still
- * be the admin's own and valid) and the cache, and the caller sends the
- * admin to sign in. The cookie by then names at most the revoked session,
- * since the start removed the admin's, so `retireServerAccessCookie` only
- * marks it stale when the route cannot remove it, and the sign-out goes
- * on; the next sign-in sets it aside again before it starts.
+ * POST /v1/auth/impersonation/stop.
  *
- * A stop the server refused because the impersonation is already over
- * (see `isImpersonationOver`) ends the same way: there is nothing left to
- * stop, and keeping the strip would leave a Stop that can never succeed
- * over screens that all get 401.
+ * An impersonation started from the web parks the admin's own login on the
+ * server (the continuation cookie, as role testing does), so the server
+ * answers the stop with the admin's restored tokens: they go through
+ * `switchReader`, like the start did, and the caller takes the admin to
+ * their dashboard ("restored"). The server access cookie, which named the
+ * impersonated account, is set aside first so a reload cannot render it
+ * over the admin; `retireServerAccessCookie` never keeps the stop from
+ * finishing.
+ *
+ * With nothing to restore (a 204: an impersonation started before the
+ * continuation existed, or one that outlived it), a confirmed stop ends
+ * like a sign-out: `useEndSession` drops the tokens (the API client's
+ * remembered one too) and the cache, and the caller sends the admin to
+ * sign in ("ended"). A stop the server refused because the impersonation
+ * is already over (see `isImpersonationOver`) ends the same way: there is
+ * nothing left to stop, and keeping the strip would leave a Stop that can
+ * never succeed over screens that all get 401.
  *
  * Any other failed stop changes nothing here. The impersonation session
  * is still alive on the server and the browser still holds its refresh
  * cookie, so the tab really is still impersonating: it keeps its token,
  * its data and the strip that says so (components/impersonation-banner.tsx),
- * which shows the error and lets the admin try again. Clearing anything
- * would not end that session; it only hid the strip while the session
- * went on.
+ * which shows the error and lets the admin try again.
  */
 export function useStopImpersonationMutation() {
   const client = useApiClient();
+  const queryClient = useQueryClient();
   const endSession = useEndSession();
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<ImpersonationStopOutcome> => {
+      let restored: components["schemas"]["AuthTokens"] | undefined;
       try {
-        await client.POST("/v1/auth/impersonation/stop");
+        restored = await client.POST("/v1/auth/impersonation/stop");
       } catch (error) {
         if (!isImpersonationOver(error)) throw error;
       }
       await retireServerAccessCookie();
+      if (restored) {
+        await switchReader(queryClient, client, restored);
+        return "restored";
+      }
+      return "ended";
     },
-    onSuccess: endSession,
+    onSuccess: (outcome) => {
+      if (outcome === "ended") endSession();
+    },
     // The strip shows the failure itself.
     meta: { errorToast: false },
   });

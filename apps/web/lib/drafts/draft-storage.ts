@@ -11,7 +11,9 @@
  * Drafts deliberately survive a reload, a crash, a closed tab and an
  * expired session: keeping a teacher's work through a dropped classroom
  * connection is their whole purpose. Only an explicit sign-out removes
- * them (`removeAllDrafts`, via `lib/session/forget-account.ts`).
+ * them (`removeAllDrafts`, via `lib/session/forget-account.ts`), and an
+ * impersonation that hands the browser back to its administrator removes
+ * the impersonated session's own (`removeDraftsOf`).
  *
  * Every function here swallows storage failures (private browsing, a full
  * quota, storage disabled, server rendering): a draft is a convenience and
@@ -103,6 +105,17 @@ function removeKeysWhere(matches: (key: string) => boolean): void {
 /** Every owner's drafts of every kind: what an explicit sign-out leaves behind. */
 export function removeAllDrafts(): void {
   removeKeysWhere((key) => key.startsWith(DRAFT_KEY_PREFIX));
+}
+
+/**
+ * One owner's drafts of every kind, and nobody else's: what an
+ * impersonation leaves behind once the administrator is back in their own
+ * session on this browser. Does nothing without an owner.
+ */
+export function removeDraftsOf(owner: string | null): void {
+  if (!owner) return;
+  const prefix = `${DRAFT_KEY_PREFIX}${owner}:`;
+  removeKeysWhere((key) => key.startsWith(prefix));
 }
 
 /** Deletes drafts stored before they had owners; run once when the app starts. */

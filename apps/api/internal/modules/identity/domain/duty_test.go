@@ -24,6 +24,7 @@ func TestValidateDutyAssignment(t *testing.T) {
 		name    string
 		in      DutyAssignmentInput
 		wantErr bool
+		is      error
 	}{
 		{
 			name:    "school scope with no target is valid",
@@ -56,9 +57,10 @@ func TestValidateDutyAssignment(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "missing starts_on is rejected",
+			name:    "missing starts_on is rejected as required",
 			in:      DutyAssignmentInput{ScopeKind: DutyScopeSchool},
 			wantErr: true,
+			is:      ErrDutyStartRequired,
 		},
 		{
 			name: "ends_on before starts_on is rejected",
@@ -67,13 +69,23 @@ func TestValidateDutyAssignment(t *testing.T) {
 				EndsOn: timePtr(starts.Add(-24 * time.Hour)),
 			},
 			wantErr: true,
+			is:      ErrInvalidDutyDateRange,
+		},
+		{
+			name: "ends_on on starts_on is valid",
+			in: DutyAssignmentInput{
+				ScopeKind: DutyScopeSchool, StartsOn: starts, EndsOn: timePtr(starts),
+			},
+			wantErr: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := ValidateDutyAssignment(tt.in)
-			if tt.wantErr {
+			if tt.is != nil {
+				require.ErrorIs(t, err, tt.is)
+			} else if tt.wantErr {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)

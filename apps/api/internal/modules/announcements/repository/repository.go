@@ -130,6 +130,24 @@ func (r *Repository) ListDueScheduled(ctx context.Context) ([]domain.Announcemen
 	return toDomains(rows)
 }
 
+// ListPendingNotifications lists the tenant's published announcements whose
+// recipients are still to be notified and whose starts_at has passed.
+func (r *Repository) ListPendingNotifications(ctx context.Context) ([]domain.Announcement, error) {
+	rows, err := r.queries(ctx).ListPendingAnnouncementNotifications(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list pending announcement notifications: %w", err)
+	}
+	return toDomains(rows)
+}
+
+// MarkNotified records that an announcement's recipients were notified.
+func (r *Repository) MarkNotified(ctx context.Context, tenantID, id uuid.UUID) error {
+	if err := r.queries(ctx).MarkAnnouncementNotified(ctx, db.MarkAnnouncementNotifiedParams{TenantID: tenantID, ID: id}); err != nil {
+		return fmt.Errorf("mark announcement notified: %w", err)
+	}
+	return nil
+}
+
 func (r *Repository) ListActiveTenantIDs(ctx context.Context) ([]uuid.UUID, error) {
 	ids, err := r.queries(ctx).ListActiveTenantIDsForAnnouncements(ctx)
 	if err != nil {

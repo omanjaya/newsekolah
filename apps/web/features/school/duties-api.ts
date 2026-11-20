@@ -175,6 +175,10 @@ export function useEndDutyAssignmentMutation() {
  * remove it does not start, and fails with `ServerAccessCookieError`,
  * which the caller shows as such), and the response goes through
  * `switchReader`.
+ * The server parks the admin's own login in an httpOnly continuation
+ * cookie, so a reload refreshes the impersonation (up to its fixed end)
+ * instead of signing out, and stopping it restores the admin
+ * (features/auth/api.ts, useStopImpersonationMutation).
  * SimulationSync would not drop the admin's reads: it refetches only when
  * the business clock moves, not when the reader changes.
  */

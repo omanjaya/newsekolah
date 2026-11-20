@@ -13,3 +13,8 @@ left join enrollments e on e.student_user_id = u.id and e.academic_year_id = $3 
 left join classes c on c.id = e.class_id
 left join student_profiles sp on sp.user_id = u.id
 where u.tenant_id = $1 and u.id = $2;
+
+-- name: BillingGetTenantTimezone :one
+-- cross-module read: tenants (platform). A generated bill's due date is a
+-- calendar day in the school's own timezone, never the server's UTC day.
+select timezone from tenants where id = $1;

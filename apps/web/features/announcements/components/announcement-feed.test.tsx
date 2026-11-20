@@ -115,3 +115,79 @@ it("keeps the compact dashboard preview as a flat row list, not a card grid", ()
 
   expect(screen.queryByTestId("announcement-feed-cards")).not.toBeInTheDocument();
 });
+
+it("opens, reads and scrolls to the announcement a notification focuses", () => {
+  const scrollIntoView = vi.fn();
+  Element.prototype.scrollIntoView = scrollIntoView;
+  query.mockReturnValue({
+    data: { data: [item({ id: "a1", title: "Lain" }), item({ id: "a2", title: "Fokus" })] },
+    isLoading: false,
+    isError: false,
+  });
+  render(<AnnouncementFeed focusId="a2" />);
+
+  expect(screen.getByTestId("announcement-feed-card-a2")).toHaveAttribute("aria-expanded", "true");
+  expect(screen.getByTestId("announcement-feed-card-a1")).toHaveAttribute("aria-expanded", "false");
+  expect(markRead).toHaveBeenCalledTimes(1);
+  expect(markRead).toHaveBeenCalledWith("a2");
+  expect(scrollIntoView).toHaveBeenCalledTimes(1);
+  expect(screen.queryByText("focusMissingTitle")).not.toBeInTheDocument();
+});
+
+it("opens the next announcement a notification focuses while the feed stays mounted", () => {
+  Element.prototype.scrollIntoView = vi.fn();
+  query.mockReturnValue({
+    data: { data: [item({ id: "a1", title: "Pertama" }), item({ id: "a2", title: "Kedua" })] },
+    isLoading: false,
+    isError: false,
+  });
+  const { rerender } = render(<AnnouncementFeed focusId="a1" />);
+  expect(screen.getByTestId("announcement-feed-card-a1")).toHaveAttribute("aria-expanded", "true");
+
+  rerender(<AnnouncementFeed focusId="a2" />);
+
+  expect(screen.getByTestId("announcement-feed-card-a2")).toHaveAttribute("aria-expanded", "true");
+  expect(screen.getByTestId("announcement-feed-card-a1")).toHaveAttribute("aria-expanded", "false");
+  expect(markRead).toHaveBeenCalledWith("a2");
+});
+
+it("scrolls to the focused announcement without animation when motion is reduced", () => {
+  const scrollIntoView = vi.fn();
+  Element.prototype.scrollIntoView = scrollIntoView;
+  const matchMedia = vi.fn((query: string) => ({
+    matches: query === "(prefers-reduced-motion: reduce)",
+  }));
+  vi.stubGlobal("matchMedia", matchMedia);
+  query.mockReturnValue({
+    data: { data: [item({ id: "a1" })] },
+    isLoading: false,
+    isError: false,
+  });
+  try {
+    render(<AnnouncementFeed focusId="a1" />);
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "start", behavior: "auto" });
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+it("says calmly when the focused announcement is not in the feed, instead of a 404", () => {
+  query.mockReturnValue({
+    data: { data: [item({ id: "a1" })] },
+    isLoading: false,
+    isError: false,
+  });
+  render(<AnnouncementFeed focusId="not-yet-visible" />);
+
+  expect(screen.getByText("focusMissingTitle")).toBeInTheDocument();
+  expect(screen.getByTestId("announcement-feed-card-a1")).toBeInTheDocument();
+  expect(markRead).not.toHaveBeenCalled();
+});
+
+it("keeps the notice beside the empty state when the feed is empty", () => {
+  query.mockReturnValue({ data: { data: [] }, isLoading: false, isError: false });
+  render(<AnnouncementFeed focusId="gone" />);
+
+  expect(screen.getByText("focusMissingTitle")).toBeInTheDocument();
+  expect(screen.getByText("feedEmptyTitle")).toBeInTheDocument();
+});

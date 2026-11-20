@@ -100,6 +100,21 @@ export function AnnouncementsManage({
     );
   }
 
+  /**
+   * With a start still ahead, readers see the announcement and are
+   * notified only from then, so the confirmation says when.
+   */
+  function publishConfirmBody(a: Announcement): string {
+    const values = { title: a.title, audience: describeAudience(a.audience, t) };
+    if (a.starts_at && new Date(a.starts_at) > businessNow()) {
+      return t("actions.publishConfirmBodyLater", {
+        ...values,
+        date: formatDateTime(a.starts_at, { locale, timeZone }),
+      });
+    }
+    return t("actions.publishConfirmBody", values);
+  }
+
   async function run(action: "publish" | "schedule" | "archive", a: Announcement) {
     try {
       await transition.mutateAsync({ id: a.id, action });
@@ -336,14 +351,7 @@ export function AnnouncementsManage({
           if (!open) setPendingPublish(null);
         }}
         title={t("actions.publishConfirmTitle")}
-        description={
-          pendingPublish
-            ? t("actions.publishConfirmBody", {
-                title: pendingPublish.title,
-                audience: describeAudience(pendingPublish.audience, t),
-              })
-            : ""
-        }
+        description={pendingPublish ? publishConfirmBody(pendingPublish) : ""}
         confirmLabel={t("actions.publish")}
         confirming={transition.isPending}
         onConfirm={async () => {

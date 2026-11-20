@@ -47,7 +47,8 @@ func Register(deps Dependencies) *Module {
 }
 
 // PublishScheduledArgs is the River job that promotes due scheduled
-// announcements. It carries no payload; the service scans every tenant.
+// announcements and notifies the recipients of published ones whose start
+// has just passed. It carries no payload; the service scans every tenant.
 type PublishScheduledArgs struct{}
 
 func (PublishScheduledArgs) Kind() string { return "announcements.publish_scheduled" }
@@ -65,6 +66,15 @@ func (w *publishScheduledWorker) Work(ctx context.Context, _ *river.Job[PublishS
 	}
 	if published > 0 {
 		w.logger.Info("scheduled announcements published", "count", published)
+	}
+	// After publishing, so an announcement published above is not listed
+	// as pending: it was notified in its own publish.
+	notified, errs := w.svc.NotifyDue(ctx)
+	for _, err := range errs {
+		w.logger.Warn("announcement notification failed", "error", err)
+	}
+	if notified > 0 {
+		w.logger.Info("announcements notified at their start", "count", notified)
 	}
 	return nil
 }

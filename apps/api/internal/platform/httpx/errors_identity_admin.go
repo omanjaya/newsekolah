@@ -17,6 +17,7 @@ var (
 	// ErrTeacherAlreadyHomeroom is shared by the duty admin and the class
 	// form, the two ways a homeroom teacher is assigned.
 	ErrTeacherAlreadyHomeroom    = NewError(http.StatusConflict, "TEACHER_ALREADY_HOMEROOM")
+	ErrDutyAssignmentExists      = NewError(http.StatusConflict, "DUTY_ASSIGNMENT_ALREADY_EXISTS")
 	ErrImpersonationNotAllowed   = NewError(http.StatusForbidden, "IMPERSONATION_NOT_ALLOWED")
 	ErrNotImpersonating          = NewError(http.StatusBadRequest, "NOT_IMPERSONATING")
 	ErrPasswordResetTokenInvalid = NewError(http.StatusBadRequest, "PASSWORD_RESET_TOKEN_INVALID")

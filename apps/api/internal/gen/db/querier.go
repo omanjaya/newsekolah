@@ -194,6 +194,11 @@ type Querier interface {
 	AcademicUpsertSchoolDay(ctx context.Context, arg AcademicUpsertSchoolDayParams) error
 	AcademicUpsertWeekdayAssignment(ctx context.Context, arg AcademicUpsertWeekdayAssignmentParams) error
 	ActivateAcademicYear(ctx context.Context, arg ActivateAcademicYearParams) error
+	// Whether the user already actively holds this duty for the same scope (the
+	// same class or student, or the whole school) in the year, other than
+	// exclude_id (the row being reactivated). Backed by the partial unique
+	// index ux_duty_assignments_active.
+	ActiveDutyAssignmentExists(ctx context.Context, arg ActiveDutyAssignmentExistsParams) (bool, error)
 	AddDutyPermission(ctx context.Context, arg AddDutyPermissionParams) error
 	AddParticipant(ctx context.Context, arg AddParticipantParams) (ActivityParticipant, error)
 	AddRolePermission(ctx context.Context, arg AddRolePermissionParams) error
@@ -239,6 +244,9 @@ type Querier interface {
 	// cross-module read: enrollments/classes (academic), for the student list
 	// generation charges and the arrears report groups by class.
 	BillingActiveEnrollments(ctx context.Context, arg BillingActiveEnrollmentsParams) ([]BillingActiveEnrollmentsRow, error)
+	// cross-module read: tenants (platform). A generated bill's due date is a
+	// calendar day in the school's own timezone, never the server's UTC day.
+	BillingGetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error)
 	// cross-module read: users (identity) and enrollments/classes (academic),
 	// for the name and class printed on a receipt.
 	BillingStudentDisplay(ctx context.Context, arg BillingStudentDisplayParams) (BillingStudentDisplayRow, error)
@@ -1376,6 +1384,10 @@ type Querier interface {
 	ListParticipants(ctx context.Context, arg ListParticipantsParams) ([]ActivityParticipant, error)
 	ListPartners(ctx context.Context, tenantID uuid.UUID) ([]LibraryPartner, error)
 	ListPaymentsForBill(ctx context.Context, arg ListPaymentsForBillParams) ([]Payment, error)
+	// Drives the same job: published announcements whose recipients were not
+	// notified at publish time because starts_at was still ahead, once
+	// starts_at has passed.
+	ListPendingAnnouncementNotifications(ctx context.Context) ([]Announcement, error)
 	ListPeriodsRefByTemplate(ctx context.Context, arg ListPeriodsRefByTemplateParams) ([]Period, error)
 	ListPermissionCodesForDutyTypes(ctx context.Context, dutyTypeIds []uuid.UUID) ([]ListPermissionCodesForDutyTypesRow, error)
 	ListPermissionCodesForRoles(ctx context.Context, roleIds []uuid.UUID) ([]string, error)
@@ -1591,6 +1603,7 @@ type Querier interface {
 	// for a useful fuzzy search (a one-character member number such as "7").
 	LookupLibraryMembers(ctx context.Context, arg LookupLibraryMembersParams) ([]LookupLibraryMembersRow, error)
 	MarkAllNotificationsRead(ctx context.Context, arg MarkAllNotificationsReadParams) error
+	MarkAnnouncementNotified(ctx context.Context, arg MarkAnnouncementNotifiedParams) error
 	MarkAnnouncementRead(ctx context.Context, arg MarkAnnouncementReadParams) error
 	MarkDigestSent(ctx context.Context, arg MarkDigestSentParams) error
 	// expected_return_at is null for a permit that needs no return.

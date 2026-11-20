@@ -83,7 +83,9 @@ func EvaluateRefresh(s Session, now time.Time) RefreshOutcome {
 // rotation at all, before EvaluateRefresh's expiry/reuse checks even run.
 // An impersonation session is not: docs/08-security.md section 2 fixes its
 // lifetime at 30 minutes, so it must expire outright rather than rotate
-// indefinitely like a normal login session.
+// indefinitely like a normal login session. An impersonation started from
+// the web renews its access token through the continuation cookie instead
+// (service.RefreshRoleTesting), which never extends that fixed end.
 func (k SessionKind) CanRefresh() bool {
 	return k == SessionLogin
 }

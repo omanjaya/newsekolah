@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 
@@ -123,6 +124,12 @@ func (h *Handler) ImpersonateUser(ctx context.Context, request api.ImpersonateUs
 	}
 	ip, userAgent := deviceInfoFromContext(ctx)
 
+	if client == api.Web {
+		if resp, ok, err := h.impersonateWithReturn(ctx, tenantID, actorID, request.UserId, ip, userAgent); ok || err != nil {
+			return resp, err
+		}
+	}
+
 	result, err := h.service.StartImpersonation(ctx, tenantID, actorID, request.UserId, toClientKind(client), ip, userAgent)
 	if err != nil {
 		return nil, mapAdminError(err)
@@ -136,17 +143,79 @@ func (h *Handler) ImpersonateUser(ctx context.Context, request api.ImpersonateUs
 	return resp, nil
 }
 
+// impersonateWithReturn starts a web impersonation that parks the admin's
+// own login in the continuation cookie (service.StartImpersonationWithReturn),
+// so a reload keeps the impersonation and stopping it restores the admin.
+// ok is false, with no error, when there is no continuation to build (no
+// refresh cookie, an origin outside the app, no sealer configured, or a
+// refresh cookie that is not this session's): the caller then starts the
+// plain impersonation as before.
+func (h *Handler) impersonateWithReturn(ctx context.Context, tenantID, actorID, targetID uuid.UUID, ip, userAgent string) (api.ImpersonateUserResponseObject, bool, error) {
+	refresh, hasRefresh := httpx.RefreshCookieFromContext(ctx)
+	sessionID, hasSession := httpx.SessionIDFromContext(ctx)
+	if !hasRefresh || !hasSession || !httpx.OriginAllowed(httpx.RequestMetaFromContext(ctx).Origin, h.appOrigins) {
+		return nil, false, nil
+	}
+	started, err := h.service.StartImpersonationWithReturn(ctx, tenantID, actorID, sessionID, targetID, refresh, ip, userAgent)
+	if errors.Is(err, service.ErrRoleTestingUnavailable) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, mapAdminError(err)
+	}
+	httpx.QueueRoleTestingCookie(ctx, httpx.RoleTestingCookie(started.Proof, started.Deadline, h.isProduction))
+	cookie := httpx.RefreshCookie(started.Auth.RefreshToken, started.Auth.RefreshExpiresAt, h.isProduction)
+	resp := api.ImpersonateUser200JSONResponse{Body: h.toAuthTokens(ctx, tenantID, started.Auth, api.Web)}
+	resp.Headers.SetCookie = &cookie
+	return resp, true, nil
+}
+
 func (h *Handler) StopImpersonation(ctx context.Context, _ api.StopImpersonationRequestObject) (api.StopImpersonationResponseObject, error) {
 	sessionID, ok := httpx.SessionIDFromContext(ctx)
 	if !ok {
 		return nil, httpx.ErrNotImpersonating
 	}
 	tenantID := tenantIDFromContext(ctx)
+	if resp, ok := h.stopImpersonationWithReturn(ctx, tenantID, sessionID); ok {
+		return resp, nil
+	}
+	if _, hasProof := httpx.RoleTestingCookieFromContext(ctx); hasProof {
+		// A continuation that can no longer restore anything goes too.
+		httpx.QueueRoleTestingCookie(ctx, httpx.ExpiredRoleTestingCookie(h.isProduction))
+	}
 	if err := h.service.StopImpersonation(ctx, tenantID, sessionID); err != nil {
 		return nil, mapAdminError(err)
 	}
 	_ = h.sessionCache.Invalidate(ctx, tenantID, sessionID)
 	return api.StopImpersonation204Response{}, nil
+}
+
+// stopImpersonationWithReturn ends a web impersonation whose continuation
+// names this session and hands the admin their own session back
+// (service.RestoreRoleTesting). ok is false when there is no such
+// continuation; the caller then only revokes the impersonation.
+func (h *Handler) stopImpersonationWithReturn(ctx context.Context, tenantID, sessionID uuid.UUID) (api.StopImpersonationResponseObject, bool) {
+	rawProof, hasProof := httpx.RoleTestingCookieFromContext(ctx)
+	refresh, hasRefresh := httpx.RefreshCookieFromContext(ctx)
+	if !hasProof || !hasRefresh {
+		return nil, false
+	}
+	proof, err := h.service.DecodeRoleTestingProof(rawProof)
+	if err != nil || !proof.Impersonation || proof.ChildSessionID != sessionID {
+		return nil, false
+	}
+	ip, userAgent := deviceInfoFromContext(ctx)
+	restored, err := h.service.RestoreRoleTesting(ctx, tenantID, rawProof, refresh, ip, userAgent)
+	if err != nil {
+		return nil, false
+	}
+	_ = h.sessionCache.Invalidate(ctx, tenantID, sessionID)
+	httpx.QueueRoleTestingCookie(ctx, httpx.ExpiredRoleTestingCookie(h.isProduction))
+	cookie := httpx.RefreshCookie(restored.RefreshToken, restored.RefreshExpiresAt, h.isProduction)
+	return api.StopImpersonation200JSONResponse{
+		Body:    h.toAuthTokensForRefresh(ctx, tenantID, restored, true),
+		Headers: api.StopImpersonation200ResponseHeaders{SetCookie: &cookie},
+	}, true
 }
 
 func (h *Handler) RequestPasswordReset(ctx context.Context, request api.RequestPasswordResetRequestObject) (api.RequestPasswordResetResponseObject, error) {

@@ -30,6 +30,8 @@ export function AnnouncementsView(): ReactElement {
   const pathname = usePathname();
   const search = useSearchParams();
   const tab: AnnouncementsTab = canManage && search.get("tab") === "manage" ? "manage" : "feed";
+  // A notification opens the feed on its announcement ("?focus=<id>").
+  const focusId = search.get("focus") ?? undefined;
   const [creating, setCreating] = useState(false);
 
   function selectTab(next: string) {
@@ -76,14 +78,14 @@ export function AnnouncementsView(): ReactElement {
             <TabsTrigger value="manage">{t("tabManage")}</TabsTrigger>
           </TabsList>
           <TabsContent value="feed">
-            <AnnouncementFeed />
+            <AnnouncementFeed focusId={focusId} />
           </TabsContent>
           <TabsContent value="manage">
             <AnnouncementsManage creating={creating} onCreatingChange={setCreating} />
           </TabsContent>
         </Tabs>
       ) : (
-        <AnnouncementFeed />
+        <AnnouncementFeed focusId={focusId} />
       )}
     </AppPage>
   );

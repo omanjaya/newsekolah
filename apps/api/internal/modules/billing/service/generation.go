@@ -9,6 +9,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/billing/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // GenerationSummary is what the caller sees back from a preview or an
@@ -117,8 +118,40 @@ func (s *Service) plan(ctx context.Context, tenantID uuid.UUID, period string) (
 	if err != nil {
 		return none, time.Time{}, uuid.Nil, err
 	}
-	dueDate := s.clock.Now().AddDate(0, 0, 10)
+	dueDate, err := s.dueDate(ctx, tenantID)
+	if err != nil {
+		return none, time.Time{}, uuid.Nil, err
+	}
 	return domain.PlanGeneration(feeTypes, students, period, discounts, existing), dueDate, yearID, nil
+}
+
+// billDueDays is how many days after the run a generated bill falls due.
+const billDueDays = 10
+
+// dueDate is the calendar day a bill generated now falls due: the
+// school's local "today" on the business clock (the simulated time when
+// the request carries one, docs/testing-time-simulation.md) plus
+// billDueDays. Reading the process clock instead dated a bill issued in a
+// simulated month by the real calendar, so the web, which compares
+// due_date with the simulated today, showed it overdue the moment it was
+// issued.
+func (s *Service) dueDate(ctx context.Context, tenantID uuid.UUID) (time.Time, error) {
+	tz, err := s.repo.TenantTimezone(ctx, tenantID)
+	if err != nil {
+		return time.Time{}, err
+	}
+	loc := time.UTC
+	if l, lerr := time.LoadLocation(tz); tz != "" && lerr == nil {
+		loc = l
+	}
+	return localDueDate(clock.Now(ctx, s.clock), loc), nil
+}
+
+// localDueDate is the date billDueDays after now's calendar day in loc,
+// at midnight UTC the way a DATE column value is carried.
+func localDueDate(now time.Time, loc *time.Location) time.Time {
+	y, m, d := now.In(loc).Date()
+	return time.Date(y, m, d+billDueDays, 0, 0, 0, 0, time.UTC)
 }
 
 func candidatesToBills(plan []domain.BillCandidate, tenantID, yearID uuid.UUID, dueDate time.Time, generatedBy uuid.NullUUID) []domain.Bill {

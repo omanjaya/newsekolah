@@ -77,10 +77,10 @@ func ValidateDutyAssignment(in DutyAssignmentInput) error {
 	}
 
 	if in.StartsOn.IsZero() {
-		return ErrInvalidScopeKind
+		return ErrDutyStartRequired
 	}
 	if in.EndsOn != nil && in.EndsOn.Before(in.StartsOn) {
-		return ErrInvalidScopeKind
+		return ErrInvalidDutyDateRange
 	}
 	return nil
 }

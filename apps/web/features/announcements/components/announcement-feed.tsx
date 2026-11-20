@@ -3,6 +3,7 @@
 import type { Locale } from "@newsekolah/i18n";
 import { formatRelative } from "@newsekolah/i18n";
 import {
+  Alert,
   Card,
   cn,
   Disclosure,
@@ -18,7 +19,7 @@ import {
 import { Pin } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { bentoCells } from "../../../lib/layout/bento";
@@ -43,6 +44,11 @@ import { htmlToExcerpt } from "../lib/html-excerpt";
  * no attachment concept yet), so the card omits both rather than
  * inventing data the server never sends.
  *
+ * `focusId` (a notification's "?focus=<id>") opens that announcement's
+ * card, records its read and scrolls it into view; when it is not in the
+ * reader's feed (not visible yet, already ended, or not addressed to them)
+ * a calm notice says so above the feed instead of a 404.
+ *
  * `compact` (the dashboard's 3-item preview) keeps its own flat row list --
  * a 3-row widget has no room for a card grid -- and its props are
  * unchanged, since the dashboard depends on exactly this shape.
@@ -50,16 +56,26 @@ import { htmlToExcerpt } from "../lib/html-excerpt";
 export function AnnouncementFeed({
   limit,
   compact = false,
+  focusId,
 }: {
   limit?: number;
   compact?: boolean;
+  focusId?: string;
 }): ReactElement {
   const t = useTranslations("app.announcements");
   const { me } = useSession();
   const { data, isLoading, isError, error, refetch } = useMyAnnouncementsQuery();
   const markRead = useMarkAnnouncementReadMutation();
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(focusId ?? null);
   const items = (data?.data ?? []).slice(0, limit);
+  const focused = focusId ? items.find((item) => item.id === focusId) : undefined;
+  const focusMissing = focusId !== undefined && data !== undefined && focused === undefined;
+  useFocusedAnnouncement(focused, (item) => {
+    // A notification clicked while the feed is already showing only changes
+    // ?focus=, so the card opens here rather than through the initial state.
+    setOpen(item.id);
+    if (!item.is_read) markRead.mutate(item.id);
+  });
 
   function toggle(item: MyAnnouncement) {
     setOpen((current) => (current === item.id ? null : item.id));
@@ -115,13 +131,21 @@ export function AnnouncementFeed({
     return <SkeletonList rows={3} leading={false} />;
   }
   if (isError) return <QueryError retry={refetch} error={error} />;
+  const missingNotice = focusMissing ? (
+    <Alert tone="info" title={t("focusMissingTitle")}>
+      {t("focusMissingBody")}
+    </Alert>
+  ) : null;
   if (items.length === 0) {
     return (
-      <EmptyState
-        icon={<domainIcons.announcement aria-hidden="true" />}
-        title={t("feedEmptyTitle")}
-        description={t("feedEmptyBody")}
-      />
+      <div className="flex flex-col gap-4">
+        {missingNotice}
+        <EmptyState
+          icon={<domainIcons.announcement aria-hidden="true" />}
+          title={t("feedEmptyTitle")}
+          description={t("feedEmptyBody")}
+        />
+      </div>
     );
   }
 
@@ -147,18 +171,54 @@ export function AnnouncementFeed({
   );
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2" data-testid="announcement-feed-cards">
-      {cells.map((cell) => (
-        <div
-          key={cell.key}
-          data-testid={`announcement-feed-cell-${cell.key}`}
-          className={cn("flex h-full flex-col", cell.span === "full" && "lg:col-span-2")}
-        >
-          <div className="flex-1">{cell.node}</div>
-        </div>
-      ))}
+    <div className="flex flex-col gap-4">
+      {missingNotice}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2" data-testid="announcement-feed-cards">
+        {cells.map((cell) => (
+          <div
+            key={cell.key}
+            id={announcementCellId(cell.key)}
+            data-testid={`announcement-feed-cell-${cell.key}`}
+            className={cn(
+              "flex h-full scroll-mt-4 flex-col",
+              cell.span === "full" && "lg:col-span-2",
+            )}
+          >
+            <div className="flex-1">{cell.node}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
+}
+
+function announcementCellId(id: string): string {
+  return `announcement-${id}`;
+}
+
+/**
+ * Once the focused announcement is in the feed: hands it to `onFocus`
+ * (which opens it and records its read -- opening it is what reading
+ * means here) and scrolls its card into view, once per focused id, so a
+ * later notification focusing another announcement is handled too. The
+ * scroll is instant when the reader asks for reduced motion.
+ */
+function useFocusedAnnouncement(
+  focused: MyAnnouncement | undefined,
+  onFocus: (item: MyAnnouncement) => void,
+): void {
+  const handled = useRef<string | null>(null);
+  useEffect(() => {
+    if (!focused || handled.current === focused.id) return;
+    handled.current = focused.id;
+    onFocus(focused);
+    const reduceMotion =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document
+      .getElementById(announcementCellId(focused.id))
+      ?.scrollIntoView({ block: "start", behavior: reduceMotion ? "auto" : "smooth" });
+  }, [focused, onFocus]);
 }
 
 /**

@@ -12,12 +12,16 @@ import {
   useRoleTestingQuery,
   useRoleTestingSwitchMutation,
 } from "../features/auth/role-testing-api";
+import { draftOwnerOf } from "../lib/drafts/draft-owner";
 import { useApiErrorMessage } from "../lib/i18n/api-error-message";
 import { confirmUnsavedChangesBeforeNavigation } from "../lib/navigation/use-unsaved-changes-protection";
 import { isAuthRedirecting } from "../lib/session/auth-redirect-flag";
 import { ServerAccessCookieError } from "../lib/session/clear-server-access-cookie";
 import { useEndSession } from "../lib/session/end-session";
-import { forgetAccountOnThisBrowser } from "../lib/session/forget-account";
+import {
+  forgetAccountOnThisBrowser,
+  forgetImpersonationOnThisBrowser,
+} from "../lib/session/forget-account";
 import { useSession } from "../lib/session/session-provider";
 
 import { ShellStrip } from "./shell-strip";
@@ -32,10 +36,13 @@ import { ShellStrip } from "./shell-strip";
  * role switcher carries the controls on a desktop, and the strip offers
  * the way back on a phone, where the header has no room for them.
  *
- * Stopping an impersonation goes to the sign-in page once the server has
- * ended it, or has answered that it was already over (its fixed end came,
- * another tab stopped it): useStopImpersonationMutation treats both the
- * same, with no error to show. A stop that failed otherwise (no answer, a
+ * Stopping an impersonation returns the admin to their own dashboard when
+ * the server restored the admin's session (an impersonation started from
+ * this browser parks it), and goes to the sign-in page when the server
+ * ended it with nothing to restore, or answered that it was already over
+ * (its fixed end came, another tab stopped it):
+ * useStopImpersonationMutation treats those the same, with no error to
+ * show. A stop that failed otherwise (no answer, a
  * server error, too many requests) leaves everything as it was, since the
  * impersonation is still going on: the strip stays, says what went wrong,
  * and its button can be pressed again.
@@ -128,16 +135,27 @@ export function ImpersonationBanner(): ReactElement | null {
   if (roleStatus.isPending) return null;
 
   function handleStop() {
-    // Pressing Stop is an explicit sign-out on this browser, like the account
-    // menu: drafts and account caches are forgotten before the request, so
-    // they go even if the request then fails. The session itself ends only
-    // when the server confirms the stop or answers that it is already over
-    // (useStopImpersonationMutation); a stop that merely fails keeps the
-    // token, the cached data and this strip, so it can be pressed again.
-    forgetAccountOnThisBrowser();
+    // Whose drafts this impersonation wrote, read before the stop swaps the
+    // session back to the admin.
+    const impersonatedOwner = draftOwnerOf(me);
+    // What this browser forgets follows what the stop turned out to be. A
+    // stop the server answered with the admin's own session is not a
+    // sign-out: only the impersonated session's drafts and account caches
+    // go, and the admin's own drafts stay. A stop that leaves nobody signed
+    // in (nothing to restore, or the impersonation was already over) is an
+    // explicit sign-out like the account menu's, so everything goes. A stop
+    // that merely fails keeps the token, the cached data, the drafts and
+    // this strip, since the impersonation is still going on, so it can be
+    // pressed again.
     stop.mutateAsync().then(
-      () => {
-        router.replace("/login");
+      (outcome) => {
+        if (outcome === "restored") {
+          forgetImpersonationOnThisBrowser(impersonatedOwner);
+          router.replace("/dashboard");
+        } else {
+          forgetAccountOnThisBrowser();
+          router.replace("/login");
+        }
       },
       (error: unknown) => {
         // Another request found the session gone meanwhile, and the app is
