@@ -1495,8 +1495,10 @@ type Querier interface {
 	// a class, security staff at the gate) when an unrelated event fires; that
 	// always runs on the real clock like the rest of business-time simulation's
 	// background/event-delivery paths (docs/testing-time-simulation.md), so
-	// current_date here is intentionally left as the database's own real date,
-	// not the simulated clock ListActiveDutyAssignmentsForUser above follows.
+	// today is the real date, not the simulated clock
+	// ListActiveDutyAssignmentsForUser above follows. It is still the tenant's
+	// local calendar date, passed in by the service: the database session runs
+	// in UTC, whose current_date is yesterday before 08:00 in Asia/Makassar.
 	ListUserIDsWithActiveDuty(ctx context.Context, arg ListUserIDsWithActiveDutyParams) ([]uuid.UUID, error)
 	ListUserRoleSlugs(ctx context.Context, userID uuid.UUID) ([]string, error)
 	ListUsersAdmin(ctx context.Context, arg ListUsersAdminParams) ([]ListUsersAdminRow, error)

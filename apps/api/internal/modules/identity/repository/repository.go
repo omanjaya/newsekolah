@@ -273,9 +273,9 @@ func toDomainSession(row db.Session) domain.Session {
 	}
 }
 
-func (r *Repository) ListUserIDsWithActiveDuty(ctx context.Context, tenantID uuid.UUID, slug string, classID uuid.NullUUID) ([]uuid.UUID, error) {
+func (r *Repository) ListUserIDsWithActiveDuty(ctx context.Context, tenantID uuid.UUID, slug string, classID uuid.NullUUID, today time.Time) ([]uuid.UUID, error) {
 	ids, err := r.queries(ctx).ListUserIDsWithActiveDuty(ctx, db.ListUserIDsWithActiveDutyParams{
-		TenantID: tenantID, Slug: slug, ClassID: pdatabase.NullUUID(classID),
+		TenantID: tenantID, Slug: slug, ClassID: pdatabase.NullUUID(classID), Today: pdatabase.Date(today),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list users with duty %s: %w", slug, err)
