@@ -65,3 +65,47 @@ func TestMonitorSnapshotNamesBellPeriodWithoutSchedules(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, snapshot.CurrentPeriod)
 }
+
+// TestMonitorLeavesOutAClassOnHoliday: a class the academic calendar gives
+// a holiday today has no lesson running, whatever its weekly timetable
+// says. The monitor shows it as no_schedule (not as a lesson not started),
+// names no running period even though the bell schedule is in one, and the
+// dashboard's progress figure leaves it out of the total (S12).
+func TestMonitorLeavesOutAClassOnHoliday(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	w := seedWorld(t, ctx, pg.AdminPool, "monitor-holiday")
+	at := w.today.Add(10 * time.Hour)
+	simCtx := clock.WithTime(ctx, at)
+	_, err := pg.AdminPool.Exec(ctx,
+		`insert into period_day_assignments (tenant_id, academic_year_id, day_of_week, template_id)
+		 select $1, $2, $3, template_id from periods where id = $4`,
+		w.tenantID, w.yearID, domain.IsoWeekday(at), w.periodID,
+	)
+	require.NoError(t, err)
+
+	// Control: on an ordinary day the lesson is running and counted.
+	plain := buildService(pg.AppPool)
+	snapshot, err := plain.GetMonitorSnapshot(simCtx, w.tenantID)
+	require.NoError(t, err)
+	require.Len(t, snapshot.Sessions, 1)
+	require.Equal(t, "not_started", snapshot.Sessions[0].Status)
+	require.NotNil(t, snapshot.CurrentPeriod)
+	_, total, err := plain.TodaySubmittedCount(simCtx, w.tenantID)
+	require.NoError(t, err)
+	require.Equal(t, 1, total)
+
+	svc := buildService(pg.AppPool)
+	svc.SetCalendar(holidayCalendar{classID: w.classID, date: w.today, name: "Libur"})
+	snapshot, err = svc.GetMonitorSnapshot(simCtx, w.tenantID)
+	require.NoError(t, err)
+	require.Len(t, snapshot.Sessions, 1)
+	require.Equal(t, "no_schedule", snapshot.Sessions[0].Status, "a holiday has no lesson to start")
+	require.Equal(t, "X-A", snapshot.Sessions[0].ClassName)
+	require.Nil(t, snapshot.CurrentPeriod, "no lesson runs anywhere, so no period is shown as running")
+
+	submitted, total, err := svc.TodaySubmittedCount(simCtx, w.tenantID)
+	require.NoError(t, err)
+	require.Zero(t, total, "a class on holiday is not waiting for attendance")
+	require.Zero(t, submitted)
+}
