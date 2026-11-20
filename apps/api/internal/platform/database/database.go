@@ -166,6 +166,35 @@ func WithPlatformTx(ctx context.Context, pool *pgxpool.Pool, fn func(ctx context
 	})
 }
 
+// WithSavepoint runs fn inside a savepoint of the ambient transaction, so
+// a side effect that fails (an error or a panic) is rolled back on its own
+// while the caller's transaction stays usable and can still commit. Without
+// an ambient transaction fn simply runs with ctx. Services use it for
+// best-effort work that should commit together with their own writes when
+// it succeeds, such as publishing a domain event whose subscribers write
+// notifications.
+func WithSavepoint(ctx context.Context, fn func(ctx context.Context) error) (err error) {
+	outer, ok := TxFromContext(ctx)
+	if !ok || outer == nil {
+		return fn(ctx)
+	}
+	sp, err := outer.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin savepoint: %w", err)
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("savepoint: recovered panic: %v", r)
+		}
+		if err != nil {
+			_ = sp.Rollback(ctx)
+			return
+		}
+		err = sp.Commit(ctx)
+	}()
+	return fn(context.WithValue(ctx, txKey, sp))
+}
+
 func withTx(ctx context.Context, pool *pgxpool.Pool, fn func(ctx context.Context, tx pgx.Tx) error) (err error) {
 	// A service calling another service inside its own transaction must
 	// share it: nested calls join the ambient transaction instead of opening

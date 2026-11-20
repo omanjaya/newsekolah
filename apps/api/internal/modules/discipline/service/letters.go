@@ -95,16 +95,17 @@ func (s *Service) IssueWarningLetter(ctx context.Context, tenantID, studentID, i
 			Level: target.Level, LevelLabel: target.Label, ThresholdPoints: target.MinPoints, TotalPoints: total,
 			LetterNumber: doc.Number, IssuedBy: uuid.NullUUID{UUID: issuerUserID, Valid: true}, Snapshot: snapshot, DocumentAssetID: doc.AssetID,
 		})
-		return err
-	})
-	if err != nil {
-		return domain.WarningLetter{}, err
-	}
-	if s.events != nil {
-		_ = s.events.Publish(ctx, WarningLetterIssued{
+		if err != nil {
+			return err
+		}
+		s.publishInTx(ctx, WarningLetterIssued{
 			TenantID: tenantID, LetterID: out.ID, StudentUserID: studentID, ClassID: classID,
 			Level: out.Level, LevelLabel: out.LevelLabel, LetterNumber: out.LetterNumber, IssuedBy: issuerUserID,
 		})
+		return nil
+	})
+	if err != nil {
+		return domain.WarningLetter{}, err
 	}
 	return out, nil
 }

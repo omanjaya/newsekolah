@@ -136,18 +136,17 @@ var _ ViolationRecorder = (*Service)(nil)
 // RecordViolation snapshots each type's points at the time of the offence
 // so later catalog edits never rewrite history, validates the student has
 // an active enrollment in the active year (and is an active account), and
-// records 1-50 distinct types in a single transaction.
+// records 1-50 distinct types in a single transaction. A crossed SP level
+// is published inside that transaction (see publishInTx), so the
+// counselor's notification commits with the record and a notification
+// failure can never answer an already saved record with an error.
 func (s *Service) RecordViolation(ctx context.Context, tenantID uuid.UUID, in RecordInput) (RecordResult, error) {
 	typeIDs, err := in.validate()
 	if err != nil {
 		return RecordResult{}, err
 	}
 
-	var (
-		out     RecordResult
-		classID uuid.NullUUID
-		crossed []domain.SPLevel
-	)
+	var out RecordResult
 	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeYear(ctx, tenantID)
 		if err != nil {
@@ -157,27 +156,28 @@ func (s *Service) RecordViolation(ctx context.Context, tenantID uuid.UUID, in Re
 		if err != nil {
 			return err
 		}
+		var crossed []domain.SPLevel
 		out, crossed, err = recordViolationCore(ctx, s.repo, policy, tenantID, yearID, in, typeIDs)
 		if err != nil {
 			return err
 		}
-		if len(crossed) > 0 {
-			if classID, err = s.repo.ActiveClassID(ctx, tenantID, yearID, in.StudentUserID); err != nil {
-				return err
-			}
+		if len(crossed) == 0 {
+			return nil
+		}
+		classID, err := s.repo.ActiveClassID(ctx, tenantID, yearID, in.StudentUserID)
+		if err != nil {
+			return err
+		}
+		for _, lvl := range crossed {
+			s.publishInTx(ctx, ThresholdReached{
+				TenantID: tenantID, StudentUserID: in.StudentUserID, ClassID: classID,
+				Level: lvl.Level, LevelLabel: lvl.Label, ThresholdPoints: lvl.MinPoints, TotalPoints: out.TotalPoints,
+			})
 		}
 		return nil
 	})
 	if err != nil {
 		return RecordResult{}, err
-	}
-	if s.events != nil {
-		for _, lvl := range crossed {
-			_ = s.events.Publish(ctx, ThresholdReached{
-				TenantID: tenantID, StudentUserID: in.StudentUserID, ClassID: classID,
-				Level: lvl.Level, LevelLabel: lvl.Label, ThresholdPoints: lvl.MinPoints, TotalPoints: out.TotalPoints,
-			})
-		}
 	}
 	return out, nil
 }

@@ -1,6 +1,12 @@
 package service
 
-import "github.com/google/uuid"
+import (
+	"context"
+
+	"github.com/google/uuid"
+
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
+)
 
 // ThresholdReached is published the moment a student's active total
 // crosses a new SP level, before any letter is issued, so a counselor can
@@ -21,3 +27,18 @@ type ThresholdReached struct {
 // the notification bridge's Envelope republish never reaches its own typed
 // subscriber (see scheduling's SubstitutionRequested.EventName).
 func (ThresholdReached) EventName() string { return "discipline.student_threshold_reached" }
+
+// publishInTx publishes evt from inside the caller's transaction, wrapped
+// in a savepoint. Subscribers (the notification bridge writing a
+// counselor's inbox row) then commit together with the write that caused
+// the event, while a subscriber that fails or panics is rolled back on its
+// own and never turns an already valid write into an error: the request
+// answers with its real outcome, so nobody retries and records it twice.
+func (s *Service) publishInTx(ctx context.Context, evt interface{ EventName() string }) {
+	if s.events == nil {
+		return
+	}
+	_ = database.WithSavepoint(ctx, func(ctx context.Context) error {
+		return s.events.Publish(ctx, evt)
+	})
+}
