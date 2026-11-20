@@ -60,8 +60,15 @@ type Querier interface {
 	AcademicDeleteTerm(ctx context.Context, arg AcademicDeleteTermParams) error
 	AcademicDeleteTrack(ctx context.Context, arg AcademicDeleteTrackParams) error
 	// Ends every active homeroom assignment of the class, not just one, so a
-	// class left with two holders by older code heals on the next edit.
+	// class left with two holders by older code heals on the next edit. A
+	// holder whose duty starts after ends_on (one created under a simulated
+	// future date) ends on its own first day, never before it starts.
 	AcademicEndActiveHomeroomAssignments(ctx context.Context, arg AcademicEndActiveHomeroomAssignmentsParams) error
+	// Ends every active duty scoped to a class that is being deleted, whatever
+	// its type (the homeroom duty included): a duty for a class that no longer
+	// exists would stay listed with no class and keep its holder counted as
+	// homeroom of "another class".
+	AcademicEndClassDutyAssignments(ctx context.Context, arg AcademicEndClassDutyAssignmentsParams) error
 	// Cross-module writes onto duty_types/duty_assignments (owned by the
 	// identity module): the class record's homeroom_teacher_id and the
 	// "homeroom" duty assignment for that class must always agree, so setting

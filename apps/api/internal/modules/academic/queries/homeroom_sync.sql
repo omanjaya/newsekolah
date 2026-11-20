@@ -10,9 +10,19 @@ select id from duty_types where tenant_id = $1 and slug = 'homeroom' and deleted
 
 -- name: AcademicEndActiveHomeroomAssignments :exec
 -- Ends every active homeroom assignment of the class, not just one, so a
--- class left with two holders by older code heals on the next edit.
-update duty_assignments set is_active = false, ends_on = coalesce(ends_on, sqlc.arg(ends_on)::date)
+-- class left with two holders by older code heals on the next edit. A
+-- holder whose duty starts after ends_on (one created under a simulated
+-- future date) ends on its own first day, never before it starts.
+update duty_assignments set is_active = false, ends_on = coalesce(ends_on, greatest(starts_on, sqlc.arg(ends_on)::date))
 where tenant_id = $1 and academic_year_id = $2 and duty_type_id = $3 and scope_class_id = $4 and is_active;
+
+-- name: AcademicEndClassDutyAssignments :exec
+-- Ends every active duty scoped to a class that is being deleted, whatever
+-- its type (the homeroom duty included): a duty for a class that no longer
+-- exists would stay listed with no class and keep its holder counted as
+-- homeroom of "another class".
+update duty_assignments set is_active = false, ends_on = coalesce(ends_on, greatest(starts_on, sqlc.arg(ends_on)::date))
+where tenant_id = $1 and scope_class_id = $2 and is_active;
 
 -- name: AcademicTeacherIsHomeroomOfOtherClass :one
 -- Whether the teacher already holds the homeroom duty for another class

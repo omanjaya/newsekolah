@@ -39,7 +39,7 @@ func (q *Queries) AcademicCreateHomeroomAssignment(ctx context.Context, arg Acad
 }
 
 const academicEndActiveHomeroomAssignments = `-- name: AcademicEndActiveHomeroomAssignments :exec
-update duty_assignments set is_active = false, ends_on = coalesce(ends_on, $5::date)
+update duty_assignments set is_active = false, ends_on = coalesce(ends_on, greatest(starts_on, $5::date))
 where tenant_id = $1 and academic_year_id = $2 and duty_type_id = $3 and scope_class_id = $4 and is_active
 `
 
@@ -52,7 +52,9 @@ type AcademicEndActiveHomeroomAssignmentsParams struct {
 }
 
 // Ends every active homeroom assignment of the class, not just one, so a
-// class left with two holders by older code heals on the next edit.
+// class left with two holders by older code heals on the next edit. A
+// holder whose duty starts after ends_on (one created under a simulated
+// future date) ends on its own first day, never before it starts.
 func (q *Queries) AcademicEndActiveHomeroomAssignments(ctx context.Context, arg AcademicEndActiveHomeroomAssignmentsParams) error {
 	_, err := q.db.Exec(ctx, academicEndActiveHomeroomAssignments,
 		arg.TenantID,
@@ -61,6 +63,26 @@ func (q *Queries) AcademicEndActiveHomeroomAssignments(ctx context.Context, arg 
 		arg.ScopeClassID,
 		arg.EndsOn,
 	)
+	return err
+}
+
+const academicEndClassDutyAssignments = `-- name: AcademicEndClassDutyAssignments :exec
+update duty_assignments set is_active = false, ends_on = coalesce(ends_on, greatest(starts_on, $3::date))
+where tenant_id = $1 and scope_class_id = $2 and is_active
+`
+
+type AcademicEndClassDutyAssignmentsParams struct {
+	TenantID     uuid.UUID   `json:"tenant_id"`
+	ScopeClassID pgtype.UUID `json:"scope_class_id"`
+	EndsOn       pgtype.Date `json:"ends_on"`
+}
+
+// Ends every active duty scoped to a class that is being deleted, whatever
+// its type (the homeroom duty included): a duty for a class that no longer
+// exists would stay listed with no class and keep its holder counted as
+// homeroom of "another class".
+func (q *Queries) AcademicEndClassDutyAssignments(ctx context.Context, arg AcademicEndClassDutyAssignmentsParams) error {
+	_, err := q.db.Exec(ctx, academicEndClassDutyAssignments, arg.TenantID, arg.ScopeClassID, arg.EndsOn)
 	return err
 }
 

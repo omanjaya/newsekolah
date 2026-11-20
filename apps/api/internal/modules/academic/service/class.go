@@ -24,6 +24,7 @@ type classRepository interface {
 	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
 	FindHomeroomDutyTypeID(ctx context.Context, tenantID uuid.UUID) (uuid.UUID, bool, error)
 	EndActiveHomeroomAssignments(ctx context.Context, tenantID, yearID, dutyTypeID, classID uuid.UUID, endsOn time.Time) error
+	EndClassDutyAssignments(ctx context.Context, tenantID, classID uuid.UUID, endsOn time.Time) error
 	TeacherIsHomeroomOfOtherClass(ctx context.Context, tenantID, yearID, dutyTypeID, teacherID, classID uuid.UUID) (bool, error)
 	CreateHomeroomAssignment(ctx context.Context, tenantID, yearID, dutyTypeID, teacherID, classID uuid.UUID, startsOn time.Time) error
 
@@ -174,7 +175,10 @@ func (s *Service) ListClasses(ctx context.Context, tenantID, yearID uuid.UUID, s
 }
 
 // DeleteClass refuses to remove a class with active enrollments or teaching
-// assignments (409 ACADEMIC_HAS_DEPENDENTS).
+// assignments (409 ACADEMIC_HAS_DEPENDENTS). The duties scoped to the class
+// (its homeroom duty first of all) end with it, the same way changing the
+// homeroom teacher ends the previous holder's duty, so no duty is left
+// active on a class that no longer exists.
 func (s *Service) DeleteClass(ctx context.Context, tenantID, id uuid.UUID) error {
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		enrollments, err := s.repo.CountEnrollmentsForClass(ctx, tenantID, id)
@@ -187,6 +191,9 @@ func (s *Service) DeleteClass(ctx context.Context, tenantID, id uuid.UUID) error
 		}
 		if enrollments > 0 || assignments > 0 {
 			return domain.ErrHasDependents
+		}
+		if err := s.repo.EndClassDutyAssignments(ctx, tenantID, id, s.tenantToday(ctx, tenantID)); err != nil {
+			return err
 		}
 		return s.repo.SoftDeleteClass(ctx, tenantID, id)
 	})

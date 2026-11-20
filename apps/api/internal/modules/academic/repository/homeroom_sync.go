@@ -36,6 +36,15 @@ func (r *Repository) EndActiveHomeroomAssignments(ctx context.Context, tenantID,
 	})
 }
 
+// EndClassDutyAssignments ends every active duty scoped to classID, of any
+// duty type, as of endsOn (or the duty's own first day when it starts
+// later).
+func (r *Repository) EndClassDutyAssignments(ctx context.Context, tenantID, classID uuid.UUID, endsOn time.Time) error {
+	return r.queries(ctx).AcademicEndClassDutyAssignments(ctx, db.AcademicEndClassDutyAssignmentsParams{
+		TenantID: tenantID, ScopeClassID: uuidPtrToPg(&classID), EndsOn: pdatabase.Date(endsOn),
+	})
+}
+
 // TeacherIsHomeroomOfOtherClass reports whether teacherID already holds the
 // homeroom duty for a class other than classID this year.
 func (r *Repository) TeacherIsHomeroomOfOtherClass(ctx context.Context, tenantID, yearID, dutyTypeID, teacherID, classID uuid.UUID) (bool, error) {
