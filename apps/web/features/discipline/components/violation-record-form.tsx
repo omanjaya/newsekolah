@@ -317,7 +317,7 @@ export function ViolationRecordForm({
         }
       </Field>
 
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field label={t("date")} required>
           <DatePicker
             name="occurred_on"

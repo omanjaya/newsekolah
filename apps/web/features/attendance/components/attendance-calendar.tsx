@@ -216,7 +216,7 @@ export function AttendanceCalendar(): ReactElement {
         />
       </StatGrid>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[1.6fr_1fr]">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1.6fr_1fr]">
         <Card>
           <CardHeader>
             <CardTitle as="h2">{tMine("calendarTitle")}</CardTitle>

@@ -44,7 +44,7 @@ export function BrandingView(): ReactElement {
   if (isLoading || !data) {
     return (
       <SettingsPage navKey={NAV_KEY} variant="default">
-        <div aria-busy="true" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div aria-busy="true" className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <SkeletonForm fields={4} actions={false} />
           <SkeletonForm fields={3} actions={false} className="hidden lg:flex" />
         </div>
@@ -152,7 +152,7 @@ function BrandingForm({ initial }: { initial: TenantBranding }): ReactElement {
         />
       }
     >
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="flex min-w-0 flex-col gap-6">
           {error && <FormError>{error}</FormError>}
           <PreviewSheet label={t("preview.title")} description={t("preview.description")}>

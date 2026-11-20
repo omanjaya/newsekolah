@@ -189,7 +189,7 @@ export function NewYearSetupView(): ReactElement {
               hint={t("ofTotal", { n: plan.classes.length })}
             />
           </StatGrid>
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle as="h2">{t("offeringsTitle", { n: newOfferings.length })}</CardTitle>

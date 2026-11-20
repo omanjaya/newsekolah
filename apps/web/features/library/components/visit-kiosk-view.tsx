@@ -82,7 +82,7 @@ export function VisitKioskView(): ReactElement {
 
   return (
     <div className="flex flex-1 items-center justify-center px-4 py-6 sm:px-8 md:py-10">
-      <div className="grid w-full max-w-6xl items-center gap-6 md:gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)]">
+      <div className="grid grid-cols-1 w-full max-w-6xl items-center gap-6 md:gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)]">
         <HeroCard
           size="kiosk"
           eyebrow={t("eyebrow")}

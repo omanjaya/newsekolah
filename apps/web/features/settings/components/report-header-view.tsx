@@ -61,7 +61,7 @@ export function ReportHeaderView(): ReactElement {
   if (isLoading || !data) {
     return (
       <SettingsPage navKey={NAV_KEY} variant="default">
-        <div aria-busy="true" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <div aria-busy="true" className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
           <SkeletonForm fields={5} actions={false} />
           <SkeletonForm fields={2} actions={false} className="hidden lg:flex" />
         </div>
@@ -195,7 +195,7 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
         />
       }
     >
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="flex min-w-0 flex-col gap-6">
           {error && <FormError>{error}</FormError>}
 
@@ -328,7 +328,7 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
                     }}
                   />
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <Field label={t("signerRoleLabel")}>
                     <Input
                       value={signer.role_label}

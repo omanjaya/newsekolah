@@ -132,7 +132,7 @@ export function DutyView(): ReactElement {
         />
       }
     >
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start">
         <div className="flex min-w-0 flex-col gap-4">
           <DeskQrPanel
             key={mode}

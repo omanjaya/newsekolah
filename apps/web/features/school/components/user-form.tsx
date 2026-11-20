@@ -133,7 +133,7 @@ export function UserForm({
       }}
     >
       {error && <FormError>{error}</FormError>}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {field(
           t("name"),
           <Input
@@ -229,7 +229,7 @@ export function UserForm({
           {customRoles.length === 0 ? (
             <p className="text-fg-muted">{t("noCustomRoles")}</p>
           ) : (
-            <div className="grid gap-2 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
               {customRoles.map((role) => {
                 const checked = additionalRoleIds.includes(role.id);
                 return (

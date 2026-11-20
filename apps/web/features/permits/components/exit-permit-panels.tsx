@@ -96,7 +96,7 @@ export function GatePanel({ modeSwitch }: { modeSwitch?: ReactNode } = {}): Reac
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
       <Scanner
         title={t("title")}
         description={t("hint")}

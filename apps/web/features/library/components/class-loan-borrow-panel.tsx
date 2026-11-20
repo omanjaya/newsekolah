@@ -103,7 +103,7 @@ export function ClassLoanBorrowPanel(): ReactElement {
         <CardDescription>{t("description")}</CardDescription>
       </CardHeader>
 
-      <div className="grid items-end gap-4 px-5 pb-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
+      <div className="grid grid-cols-1 items-end gap-4 px-5 pb-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
         <Field label={t("classLabel")}>
           <Select
             options={classOptions}

@@ -91,7 +91,7 @@ export function LoanDeskView(): ReactElement {
     <AppPage variant="wide" nav={<LibraryWorkspaceNav area="circulation" />}>
       {/* The work on the left, today and the occasional destinations on the
           right; on a phone the overdue queue comes before the side column. */}
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-6">
           <DeskScanBar
             mode={session.mode}

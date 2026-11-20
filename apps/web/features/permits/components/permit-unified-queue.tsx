@@ -330,7 +330,7 @@ export function PermitUnifiedQueue({
       )}
       {!loading && errors.length === 0 && visible.length > 0 && <BulkApproveBar bulk={bulk} />}
       {!loading && errors.length === 0 && visible.length > 0 && (
-        <ul ref={listRef} className="grid gap-4 lg:grid-cols-2">
+        <ul ref={listRef} className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {cells.map((cell) => (
             <li
               key={cell.key}

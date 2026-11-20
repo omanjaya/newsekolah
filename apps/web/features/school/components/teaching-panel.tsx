@@ -172,7 +172,7 @@ export function TeachingPanel({
           ref={formRef}
           noValidate
           aria-label={t("addTeachingTitle")}
-          className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-start"
+          className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-start"
           onSubmit={(e) => {
             e.preventDefault();
             if (!check(Boolean(subjectId && teacherId))) return;

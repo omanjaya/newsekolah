@@ -154,7 +154,7 @@ export function ManualEntryDialog({
                 role="group"
                 aria-labelledby={control.labelId}
                 aria-describedby={control["aria-describedby"]}
-                className="grid gap-2 sm:grid-cols-2"
+                className="grid grid-cols-1 gap-2 sm:grid-cols-2"
               >
                 <TimePicker
                   value={arrival}
