@@ -143,18 +143,18 @@ export function useTeachers() {
  * home screen's "next lesson" card and today's schedule list. class_id
  * comes from `me.current_class` (only set for students with an active
  * enrollment); the query stays disabled otherwise rather than guessing.
- * The week asked for is the school's current one (as_of today). */
+ * No as_of: the server reads its own current week (clock.Now in the
+ * school's time zone, time simulation included), so the week is never
+ * one the device's clock picked while the weekday came from elsewhere. */
 export function useMyTodaySchedule(dayOfWeek: number) {
   const yearId = useActiveYearId();
   const { me } = useAuth();
   const classId = me?.current_class?.id;
-  const asOf = schoolToday(me?.tenant.timezone);
   return useQuery({
     queryKey: queryKeys.schedules({
       academic_year_id: yearId,
       class_id: classId,
       day_of_week: dayOfWeek,
-      as_of: asOf,
     }),
     queryFn: () =>
       getApiClient().GET("/v1/schedules", {
@@ -163,7 +163,6 @@ export function useMyTodaySchedule(dayOfWeek: number) {
             academic_year_id: yearId,
             class_id: classId,
             day_of_week: dayOfWeek,
-            as_of: asOf,
           },
         },
       }),
