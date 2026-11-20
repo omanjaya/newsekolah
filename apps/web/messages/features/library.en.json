@@ -1567,7 +1567,7 @@
     "max_renewals": "Maximum renewals",
     "renewal_days": "Renewal duration (days)",
     "fine_per_day": "Fine per day",
-    "reservation_hold_days": "Reservation hold (days)",
+    "reservation_hold_days": "Reservation hold (open days)",
     "booking_max": "Maximum reservations",
     "due_reminder_days": "Reminder before due date (days)",
     "saturday_closed": "Closed on Saturday",

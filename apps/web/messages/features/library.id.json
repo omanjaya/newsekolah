@@ -1567,7 +1567,7 @@
     "max_renewals": "Maksimum perpanjangan",
     "renewal_days": "Lama perpanjangan (hari)",
     "fine_per_day": "Denda per hari",
-    "reservation_hold_days": "Masa simpan reservasi (hari)",
+    "reservation_hold_days": "Masa simpan reservasi (hari buka)",
     "booking_max": "Maksimum reservasi",
     "due_reminder_days": "Pengingat sebelum jatuh tempo (hari)",
     "saturday_closed": "Tutup pada Sabtu",
