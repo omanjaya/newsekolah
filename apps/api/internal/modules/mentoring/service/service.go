@@ -91,6 +91,14 @@ type GradingReader interface {
 	PublishedSubjects(ctx context.Context, tenantID, studentID uuid.UUID) ([]domain.PublishedGrade, error)
 }
 
+// ActivitiesReader is the activities module reached through a wiring
+// adapter: a mentee's achievements and club memberships, for the mentor's
+// snapshot. The adapter reports none while activities is turned off.
+type ActivitiesReader interface {
+	StudentAchievements(ctx context.Context, tenantID, studentID uuid.UUID) ([]domain.SnapshotAchievement, error)
+	StudentClubs(ctx context.Context, tenantID, studentID uuid.UUID) ([]domain.SnapshotClub, error)
+}
+
 // FlagChecker asks the platform module whether mentoring is turned on for
 // this tenant, reached through a wiring adapter so mentoring never imports
 // the platform module directly.
@@ -107,6 +115,7 @@ type Service struct {
 	attendance AttendanceReader
 	discipline DisciplineReader
 	grading    GradingReader
+	activities ActivitiesReader
 	flags      FlagChecker
 	sealer     *crypto.Sealer
 	clock      clock.Clock
@@ -118,6 +127,13 @@ func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, attendan
 		clk = clock.Real{}
 	}
 	return &Service{pool: pool, repo: repo, years: years, attendance: attendance, discipline: discipline, grading: grading, flags: flags, sealer: sealer, clock: clk}
+}
+
+// WithActivities sets the reader of a mentee's achievements and clubs;
+// without one the snapshot carries neither.
+func (s *Service) WithActivities(r ActivitiesReader) *Service {
+	s.activities = r
+	return s
 }
 
 // WithClock swaps the clock; tests use it to pin "now".

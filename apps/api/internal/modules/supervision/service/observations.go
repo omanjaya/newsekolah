@@ -22,6 +22,7 @@ type ScheduleObservationInput struct {
 // a caller-supplied teacher id.
 func (s *Service) ScheduleObservation(ctx context.Context, tenantID uuid.UUID, in ScheduleObservationInput) (domain.ScheduledObservation, error) {
 	var out domain.ScheduledObservation
+	var visit observedLesson
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		if err := s.requireEnabled(ctx, tenantID); err != nil {
 			return err
@@ -46,6 +47,10 @@ func (s *Service) ScheduleObservation(ctx context.Context, tenantID uuid.UUID, i
 			return err
 		}
 		out, err = s.repo.CreateScheduledObservation(ctx, scheduled)
+		if err != nil {
+			return err
+		}
+		visit, err = s.describeLesson(ctx, tenantID, out.ScheduleID, out.LessonDate)
 		return err
 	})
 	if err != nil {
@@ -53,7 +58,9 @@ func (s *Service) ScheduleObservation(ctx context.Context, tenantID uuid.UUID, i
 	}
 	s.publish(ctx, Event{
 		Name: EventObservationScheduled, TenantID: tenantID, SubjectUserID: out.TeacherUserID, ActorUserID: in.ObserverUserID,
-		Payload: map[string]any{"scheduled_id": out.ID.String(), "lesson_date": out.LessonDate.Format(time.DateOnly), "href": "/supervision/my-report"},
+		Payload: visit.payload(map[string]any{
+			"scheduled_id": out.ID.String(), "href": "/supervision/my-report", "summary": visit.scheduledSummary(),
+		}),
 	})
 	return out, nil
 }
@@ -97,6 +104,7 @@ type CompleteObservationInput struct {
 // teacher's response, and the agreed follow-up.
 func (s *Service) CompleteObservation(ctx context.Context, tenantID, observerUserID uuid.UUID, in CompleteObservationInput) (domain.Observation, error) {
 	var out domain.Observation
+	var visit observedLesson
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		if err := s.requireEnabled(ctx, tenantID); err != nil {
 			return err
@@ -132,6 +140,10 @@ func (s *Service) CompleteObservation(ctx context.Context, tenantID, observerUse
 			return err
 		}
 		out, err = s.repo.CreateObservation(ctx, observation)
+		if err != nil {
+			return err
+		}
+		visit, err = s.describeLesson(ctx, tenantID, scheduled.ScheduleID, scheduled.LessonDate)
 		return err
 	})
 	if err != nil {
@@ -139,7 +151,10 @@ func (s *Service) CompleteObservation(ctx context.Context, tenantID, observerUse
 	}
 	s.publish(ctx, Event{
 		Name: EventObservationCompleted, TenantID: tenantID, SubjectUserID: out.TeacherUserID, ActorUserID: observerUserID,
-		Payload: map[string]any{"observation_id": out.ID.String(), "href": "/supervision/observations/" + out.ID.String()},
+		Payload: visit.payload(map[string]any{
+			"observation_id": out.ID.String(), "href": "/supervision/observations/" + out.ID.String(),
+			"summary": visit.completedSummary(),
+		}),
 	})
 	return out, nil
 }
@@ -148,6 +163,7 @@ func (s *Service) CompleteObservation(ctx context.Context, tenantID, observerUse
 // the agreed follow-up after reading the observer's notes.
 func (s *Service) RecordTeacherResponse(ctx context.Context, tenantID, id, teacherUserID uuid.UUID, response, followUp string) (domain.Observation, error) {
 	var out domain.Observation
+	var visit observedLesson
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		if err := s.requireEnabled(ctx, tenantID); err != nil {
 			return err
@@ -164,6 +180,22 @@ func (s *Service) RecordTeacherResponse(ctx context.Context, tenantID, id, teach
 		}
 		current.TeacherResponse, current.AgreedFollowUp = strings.TrimSpace(response), strings.TrimSpace(followUp)
 		out, err = s.repo.UpdateObservation(ctx, current)
+		if err != nil {
+			return err
+		}
+		// The observer may have several teachers responding in one cycle:
+		// the notification names who responded and to which visit.
+		scheduled, ok, err := s.repo.GetScheduledObservation(ctx, tenantID, out.ScheduledID)
+		if err != nil {
+			return err
+		}
+		visit = observedLesson{date: out.ObservedAt}
+		if ok {
+			if visit, err = s.describeLesson(ctx, tenantID, scheduled.ScheduleID, scheduled.LessonDate); err != nil {
+				return err
+			}
+		}
+		visit, err = s.withTeacherName(ctx, tenantID, out.TeacherUserID, visit)
 		return err
 	})
 	if err != nil {
@@ -171,7 +203,10 @@ func (s *Service) RecordTeacherResponse(ctx context.Context, tenantID, id, teach
 	}
 	s.publish(ctx, Event{
 		Name: EventResponseRecorded, TenantID: tenantID, SubjectUserID: out.ObserverUserID, ActorUserID: teacherUserID,
-		Payload: map[string]any{"observation_id": out.ID.String(), "href": "/supervision/observations/" + out.ID.String()},
+		Payload: visit.payload(map[string]any{
+			"observation_id": out.ID.String(), "href": "/supervision/observations/" + out.ID.String(),
+			"summary": visit.responseSummary(),
+		}),
 	})
 	return out, nil
 }

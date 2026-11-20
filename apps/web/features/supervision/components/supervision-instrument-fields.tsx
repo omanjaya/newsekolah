@@ -17,7 +17,9 @@ import type { SupervisionCriterion, SupervisionInstrument } from "../api";
 import {
   criterionKeyFrom,
   duplicateCriterionKeys,
+  duplicateCriterionNames,
   keyFollowsName,
+  normalizedCriterionName,
   uniqueCriterionKey,
 } from "../lib/criterion-key";
 
@@ -27,8 +29,10 @@ import {
  * observation form scores against: it follows the name while the
  * criterion is new (nobody has to invent one), and is fixed once it exists
  * (`lockedKeys`), since recorded scores point at it. Two criteria named
- * alike get numbered codes (`_2`); a code typed twice is marked on both
- * rows, since the API refuses an instrument whose codes repeat.
+ * alike get numbered codes (`_2`), but the name itself is marked on both
+ * rows, since the scoring form shows criteria by name and two identical
+ * rows could not be told apart; a code typed twice is marked the same
+ * way, since the API refuses an instrument whose codes repeat.
  */
 export function SupervisionInstrumentFields({
   instrument,
@@ -41,6 +45,7 @@ export function SupervisionInstrumentFields({
 }): ReactElement {
   const t = useTranslations("app.supervision.instrument");
   const duplicates = duplicateCriterionKeys(instrument.criteria);
+  const duplicateNames = duplicateCriterionNames(instrument.criteria);
 
   function updateCriterion(index: number, patch: Partial<SupervisionCriterion>) {
     const criteria = instrument.criteria.map((c, i) => (i === index ? { ...c, ...patch } : c));
@@ -111,6 +116,8 @@ export function SupervisionInstrumentFields({
             const locked = lockedKeys?.has(criterion.key) ?? false;
             const duplicate = duplicates.has(criterion.key.trim());
             const errorId = `criterion-key-error-${index}`;
+            const nameDuplicate = duplicateNames.has(normalizedCriterionName(criterion.name));
+            const nameErrorId = `criterion-name-error-${index}`;
             return (
               <li key={index} className="flex items-start gap-2">
                 <span
@@ -128,6 +135,8 @@ export function SupervisionInstrumentFields({
                     aria-label={t("criterionNameLabel", { index: index + 1 })}
                     placeholder={t("criterionNamePlaceholder")}
                     autoComplete="off"
+                    invalid={nameDuplicate}
+                    aria-describedby={nameDuplicate ? nameErrorId : undefined}
                   />
                   <Input
                     value={criterion.key}
@@ -142,6 +151,11 @@ export function SupervisionInstrumentFields({
                     invalid={duplicate}
                     aria-describedby={duplicate ? errorId : undefined}
                   />
+                  {nameDuplicate && (
+                    <div className="sm:col-span-2">
+                      <FieldError id={nameErrorId}>{t("criterionNameDuplicate")}</FieldError>
+                    </div>
+                  )}
                   {duplicate && (
                     <div className="sm:col-span-2">
                       <FieldError id={errorId}>{t("criterionKeyDuplicate")}</FieldError>

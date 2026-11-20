@@ -349,6 +349,7 @@
     "SUPERVISION_LESSON_DAY_MISMATCH": "Tanggal observasi tidak jatuh pada hari pelajaran yang dipilih",
     "SUPERVISION_SCHEDULED_EXISTS": "Pelajaran ini sudah dijadwalkan untuk observasi pada tanggal tersebut",
     "SUPERVISION_CRITERION_KEY_DUPLICATE": "Kode kriteria harus unik, ubah kode yang sama",
+    "SUPERVISION_CRITERION_NAME_DUPLICATE": "Nama kriteria harus unik, ubah nama yang sama",
     "SUPERVISION_LESSON_NOT_RESOLVED": "Jadwal pelajaran yang dituju tidak ditemukan",
     "SUPERVISION_MODULE_DISABLED": "Modul supervisi belum diaktifkan untuk sekolah ini",
     "WARNING_LETTER_NOT_DUE": "Siswa ini belum mencapai tingkat surat peringatan tersebut",

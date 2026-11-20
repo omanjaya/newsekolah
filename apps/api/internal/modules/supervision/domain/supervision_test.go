@@ -67,6 +67,31 @@ func TestInstrumentValidate(t *testing.T) {
 	}
 }
 
+func TestInstrumentValidateNames(t *testing.T) {
+	if err := sampleInstrument().ValidateNames(nil); err != nil {
+		t.Fatalf("distinct names rejected: %v", err)
+	}
+
+	// Two rows the scoring form could not tell apart, even though their
+	// keys differ: refused on create, whatever the case or spacing.
+	dup := sampleInstrument()
+	dup.Criteria = append(dup.Criteria, Criterion{Key: "materi_2", Name: "  penguasaan   MATERI "})
+	if err := dup.ValidateNames(nil); err != ErrCriterionNameTaken {
+		t.Fatalf("want ErrCriterionNameTaken for a repeated name, got %v", err)
+	}
+
+	// An instrument saved before the rule keeps its repetition editable...
+	if err := dup.ValidateNames(&dup); err != nil {
+		t.Fatalf("an already repeated name blocked the edit: %v", err)
+	}
+	// ...but a new repetition is still refused.
+	more := dup
+	more.Criteria = append(append([]Criterion{}, dup.Criteria...), Criterion{Key: "kelas_2", Name: "Pengelolaan kelas"})
+	if err := more.ValidateNames(&dup); err != ErrCriterionNameTaken {
+		t.Fatalf("want ErrCriterionNameTaken for a new repetition, got %v", err)
+	}
+}
+
 func TestInstrumentValidateScores(t *testing.T) {
 	instrument := sampleInstrument()
 

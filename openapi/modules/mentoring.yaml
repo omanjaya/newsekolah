@@ -209,6 +209,11 @@ paths:
       operationId: listMentorMeetingNotes
       x-permission: manage_mentoring
       summary: Meeting notes for a group the reader may open (mentor, counselor, leadership)
+      description: >-
+        Lists the notes the reader may open. A note only its author, a
+        counselor or leadership may read is left out of `data` and counted in
+        `withheld_count`, so a group manager can tell "no notes yet" from
+        "notes exist that are not yours to read".
       parameters:
         - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
@@ -218,9 +223,13 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [data]
+                required: [data, withheld_count]
                 properties:
                   data: { type: array, items: { $ref: "#/components/schemas/MentorMeetingNote" } }
+                  withheld_count:
+                    type: integer
+                    minimum: 0
+                    description: Notes in this group the reader may not open.
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
     post:
@@ -436,6 +445,8 @@ components:
           discipline_points,
           discipline_active_count,
           published_subjects,
+          achievements,
+          clubs,
         ]
       properties:
         student_user_id: { type: string, format: uuid }
@@ -455,6 +466,14 @@ components:
             properties:
               subject_id: { type: string, format: uuid }
               score: { type: number }
+        achievements:
+          type: array
+          description: The student's achievements in every academic year, as the student profile lists them; empty while activities is turned off.
+          items: { $ref: "#/components/schemas/Achievement" }
+        clubs:
+          type: array
+          description: The student's club membership history; empty while activities is turned off.
+          items: { $ref: "#/components/schemas/StudentMembership" }
 
     MentorTermSummary:
       type: object

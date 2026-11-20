@@ -6,8 +6,8 @@ import type { ReactElement } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
-import { RecordNotFoundPage } from "../../../components/record-not-found";
-import { isNotFoundError } from "../../../lib/api/not-found";
+import { RecordForbiddenPage, RecordNotFoundPage } from "../../../components/record-not-found";
+import { isForbiddenError, isNotFoundError } from "../../../lib/api/not-found";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
@@ -43,6 +43,18 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
     return (
       <RecordNotFoundPage
         title={t("notFoundTitle")}
+        backHref={groupsHref}
+        backLabel={t("backToGroups")}
+      />
+    );
+  }
+
+  // A group another guru wali mentors: the no-access page, not a retry
+  // that the API can only refuse again.
+  if (group.isError && !group.data && isForbiddenError(group.error)) {
+    return (
+      <RecordForbiddenPage
+        error={group.error}
         backHref={groupsHref}
         backLabel={t("backToGroups")}
       />
@@ -89,7 +101,11 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
         </TabsContent>
         {canSeeNotes && (
           <TabsContent value="notes" className="pt-4">
-            <MentorMeetingNotesPanel groupId={groupId} members={members.data?.data ?? []} />
+            <MentorMeetingNotesPanel
+              groupId={groupId}
+              mentorUserId={group.data.mentor_user_id}
+              members={members.data?.data ?? []}
+            />
           </TabsContent>
         )}
       </Tabs>

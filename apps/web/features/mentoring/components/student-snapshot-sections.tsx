@@ -20,6 +20,7 @@ import type { ReactElement } from "react";
 
 import { statusToken } from "../../../lib/attendance-status";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
+import { ActivitiesRecord } from "../../activities/components/activities-record";
 import { useLookup, useSubjectsQuery } from "../../reference/api";
 import type { MentorStudentSnapshot } from "../api";
 
@@ -45,8 +46,8 @@ function sortAttendanceEntries(entries: [string, number][]): [string, number][] 
 }
 
 /*
- * The three sections of a student's mentoring snapshot (this month's
- * attendance, discipline, published grades), composed from other modules
+ * The sections of a student's mentoring snapshot (this month's
+ * attendance, discipline, published grades, the activities record), composed from other modules
  * through `GET /v1/mentoring/students/{id}/snapshot`. Shared by the
  * mentor's per-student page and the student profile. Each is a card.
  */
@@ -125,6 +126,35 @@ export function SnapshotDisciplineSection({
           }
         />
       </StatGrid>
+    </Card>
+  );
+}
+
+/**
+ * The student's clubs and achievements (every academic year, as the
+ * student profile lists them), carried by the snapshot so the guru wali
+ * who writes the term summary sees them without view_activities. Left out
+ * while the school has activities off.
+ */
+export function SnapshotActivitiesSection({
+  snapshot,
+}: {
+  snapshot: MentorStudentSnapshot;
+}): ReactElement | null {
+  const t = useTranslations("app.mentoring.studentView");
+  const activitiesOn = useModuleEnabled("activities");
+  if (!activitiesOn) return null;
+  const loaded = { isLoading: false, isError: false } as const;
+  return (
+    <Card padding="md">
+      <CardHeader>
+        <CardTitle as="h2">{t("activities.title")}</CardTitle>
+      </CardHeader>
+      <ActivitiesRecord
+        clubs={{ ...loaded, data: { data: snapshot.clubs } }}
+        achievements={{ ...loaded, data: { data: snapshot.achievements } }}
+        achievementsAllYears
+      />
     </Card>
   );
 }

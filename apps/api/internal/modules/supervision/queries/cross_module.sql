@@ -21,3 +21,13 @@ select timezone from tenants where id = $1;
 
 -- name: SupervisionTeacherName :one
 select name from users where tenant_id = $1 and id = $2;
+
+-- name: SupervisionLessonLabel :one
+-- cross-module read: schedules/classes/subjects (scheduling, academic), so
+-- an observation's notifications can name the lesson ("X-A, Matematika")
+-- instead of a fixed sentence that cannot tell two visits apart.
+select c.name as class_name, sub.name as subject_name
+from schedules s
+join classes c on c.id = s.class_id
+join subjects sub on sub.id = s.subject_id
+where s.tenant_id = $1 and s.id = $2;

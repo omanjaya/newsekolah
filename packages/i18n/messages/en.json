@@ -349,6 +349,7 @@
     "SUPERVISION_LESSON_DAY_MISMATCH": "The observation date does not fall on the chosen lesson's weekday",
     "SUPERVISION_SCHEDULED_EXISTS": "This lesson is already scheduled for observation on that date",
     "SUPERVISION_CRITERION_KEY_DUPLICATE": "Criterion codes must be unique, change the repeated code",
+    "SUPERVISION_CRITERION_NAME_DUPLICATE": "Criterion names must be unique, change the repeated name",
     "SUPERVISION_LESSON_NOT_RESOLVED": "The scheduled lesson could not be found",
     "SUPERVISION_MODULE_DISABLED": "Supervision is not enabled for this school",
     "WARNING_LETTER_NOT_DUE": "This student has not reached that warning-letter level yet",

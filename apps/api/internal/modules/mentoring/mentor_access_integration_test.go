@@ -81,7 +81,8 @@ func TestGuruWaliReachesOwnGroupOnly(t *testing.T) {
 	require.NoError(t, err)
 	notes, err := mod.Service.ListMeetingNotesForGroup(ctx, fx.tenantID, mentor, group.ID)
 	require.NoError(t, err)
-	require.Len(t, notes, 1)
+	require.Len(t, notes.Notes, 1)
+	require.Zero(t, notes.WithheldCount)
 
 	// The term summary saves (it used to insert a zero tenant id and
 	// fail with a 500) and reads back.
@@ -179,4 +180,87 @@ func TestTeacherRoleCarriesMentorPermission(t *testing.T) {
 		return
 	}
 	t.Fatal("teacher role default missing")
+}
+
+// TestMeetingNotesFollowTheGroupReadRule covers two gaps found on the
+// running app. A group manager (the admin) opened the notes tab and was
+// told there were none while the mentor had recorded one: the note is not
+// theirs to read, so it is now withheld and counted (withheld_count)
+// instead of silently dropped. And a counselor read the notes of a group
+// whose page and members answered 403: notes, the group and its members
+// now share one read rule, so a counselor reaches all three through the
+// view_mentoring their duty grants, or none of them without it.
+func TestMeetingNotesFollowTheGroupReadRule(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	fx := seedMentoringFixture(t, pg.AdminPool)
+	mod := newTestMentoringModule(t, pg.AppPool)
+	q := db.New(pg.AdminPool)
+
+	group, err := mod.Service.CreateGroup(ctx, fx.tenantID, service.GroupInput{MentorUserID: fx.mentorID, Name: "Wali X-A"})
+	require.NoError(t, err)
+	_, err = mod.Service.CreateMeetingNote(ctx, fx.tenantID, domain.Viewer{UserID: fx.mentorID}, service.MeetingNoteInput{
+		GroupID: group.ID, MetAt: time.Now(), Kind: domain.MeetingGroup, AttendeeUserIDs: []uuid.UUID{fx.studentID},
+		Topic: "Topik", Content: "Isi",
+	})
+	require.NoError(t, err)
+
+	// The admin manages every group but is neither the note's author, a
+	// counselor nor leadership: no note content, one withheld.
+	admin, err := q.CreateUser(ctx, db.CreateUserParams{
+		TenantID: fx.tenantID, Username: "admin-" + uuid.NewString(), PasswordHash: "x",
+		Name: "Admin", Status: "active", Locale: "id",
+	})
+	require.NoError(t, err)
+	managed, err := mod.Service.ListMeetingNotesForGroup(ctx, fx.tenantID, domain.Viewer{UserID: admin.ID, ReadAll: true, WriteAll: true}, group.ID)
+	require.NoError(t, err)
+	require.Empty(t, managed.Notes)
+	require.Equal(t, 1, managed.WithheldCount)
+
+	// The same through the handler: withheld_count reaches the client.
+	adminPerms := staticPerms{set: authz.NewSet(authz.PermViewMentoring, authz.PermManageMentoring, authz.PermManageMentorGroups)}
+	adminHandler := transporthttp.New(mod.Service, adminPerms)
+	adminCtx := httpx.WithUserID(httpx.WithTenantID(ctx, fx.tenantID), admin.ID)
+	resp, err := adminHandler.ListMentorMeetingNotes(adminCtx, api.ListMentorMeetingNotesRequestObject{GroupId: group.ID})
+	require.NoError(t, err)
+	listed := resp.(api.ListMentorMeetingNotes200JSONResponse)
+	require.Empty(t, listed.Data)
+	require.Equal(t, 1, listed.WithheldCount)
+
+	// A counselor duty holder.
+	dutyType, err := q.CreateDutyType(ctx, db.CreateDutyTypeParams{
+		TenantID: fx.tenantID, Slug: "counselor", Name: "Guru BK", ScopeKind: "school",
+	})
+	require.NoError(t, err)
+	_, err = q.CreateDutyAssignment(ctx, db.CreateDutyAssignmentParams{
+		TenantID: fx.tenantID, AcademicYearID: fx.yearID, DutyTypeID: dutyType.ID, UserID: fx.counselorID,
+		StartsOn: database.Date(time.Now().AddDate(0, 0, -1)),
+	})
+	require.NoError(t, err)
+
+	// Without view_mentoring the counselor reaches neither the group nor
+	// its notes: one rule, never notes behind a group page that refuses.
+	bare := domain.Viewer{UserID: fx.counselorID}
+	_, err = mod.Service.GetGroup(ctx, fx.tenantID, bare, group.ID)
+	require.ErrorIs(t, err, domain.ErrGroupForbidden)
+	_, err = mod.Service.ListMeetingNotesForGroup(ctx, fx.tenantID, bare, group.ID)
+	require.ErrorIs(t, err, domain.ErrGroupForbidden)
+
+	// With the view_mentoring the counselor duty now grants: the group,
+	// its members and the note content, but no writing.
+	counselor := domain.Viewer{UserID: fx.counselorID, ReadAll: true}
+	_, err = mod.Service.GetGroup(ctx, fx.tenantID, counselor, group.ID)
+	require.NoError(t, err)
+	_, err = mod.Service.ListMembers(ctx, fx.tenantID, counselor, group.ID)
+	require.NoError(t, err)
+	read, err := mod.Service.ListMeetingNotesForGroup(ctx, fx.tenantID, counselor, group.ID)
+	require.NoError(t, err)
+	require.Len(t, read.Notes, 1)
+	require.Equal(t, "Isi", read.Notes[0].Content)
+	require.Zero(t, read.WithheldCount)
+	_, err = mod.Service.CreateMeetingNote(ctx, fx.tenantID, counselor, service.MeetingNoteInput{
+		GroupID: group.ID, MetAt: time.Now(), Kind: domain.MeetingGroup, AttendeeUserIDs: []uuid.UUID{fx.studentID},
+		Topic: "Topik", Content: "Isi",
+	})
+	require.ErrorIs(t, err, domain.ErrGroupForbidden)
 }

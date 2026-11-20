@@ -19,7 +19,11 @@ type DutyTypeDefault struct {
 func DutyTypeDefaults() []DutyTypeDefault {
 	return []DutyTypeDefault{
 		{"homeroom", "Wali Kelas", "class", []string{PermViewAttendance, PermReviewLeaveRequests, PermCorrectAttendance}},
-		{"counselor", "Guru BK", "school", []string{PermIssueLeaveLetters, PermViewReports, PermManageCounseling, PermIssueWarningLetters, PermViewDiscipline, PermRecordViolations}},
+		// view_mentoring (counselor and leadership): domain.MeetingNote.VisibleTo
+		// lets both read a guru wali's meeting notes, so both open every
+		// mentor group read-only to reach them (backfilled by
+		// 0145_duty_view_mentoring.up.sql). Never manage_mentor_groups.
+		{"counselor", "Guru BK", "school", []string{PermIssueLeaveLetters, PermViewReports, PermManageCounseling, PermIssueWarningLetters, PermViewDiscipline, PermRecordViolations, PermViewMentoring}},
 		{"picket", "Guru Piket", "school", []string{PermManageAttendance}},
 		// issue_scan_tokens: the leadership stage of a late arrival or an
 		// exit permit is approved by showing the student a stage QR, so
@@ -28,7 +32,7 @@ func DutyTypeDefaults() []DutyTypeDefault {
 		// (role_defaults.go).
 		// view_counseling: reads the counseling notes a counselor shares with
 		// leadership (backfilled by 0134_view_counseling_permission.up.sql).
-		{"leadership", "Wakil Kepala Sekolah", "school", []string{PermReviewLeaveRequests, PermIssueLeaveLetters, PermViewReports, PermIssueWarningLetters, PermViewDiscipline, PermIssueScanTokens, PermViewCounseling}},
+		{"leadership", "Wakil Kepala Sekolah", "school", []string{PermReviewLeaveRequests, PermIssueLeaveLetters, PermViewReports, PermIssueWarningLetters, PermViewDiscipline, PermIssueScanTokens, PermViewCounseling, PermViewMentoring}},
 		{"security", "Satpam", "school", []string{PermScanExitPermits}},
 		{"librarian", "Petugas Perpustakaan", "school", []string{PermManageLibraryCirculation}},
 		// The school treasurer: reads bills and arrears and records

@@ -114,6 +114,40 @@ func toAPINote(n domain.MeetingNote) api.MentorMeetingNote {
 	}
 }
 
+func toAPISnapshotAchievements(list []domain.SnapshotAchievement) []api.Achievement {
+	out := make([]api.Achievement, len(list))
+	for i, a := range list {
+		var notes *string
+		if a.Notes != "" {
+			notes = &a.Notes
+		}
+		out[i] = api.Achievement{
+			Id: openapi_types.UUID(a.ID), StudentUserId: openapi_types.UUID(a.StudentUserID), CompetitionName: a.CompetitionName,
+			Level: api.AchievementLevel(a.Level), Placement: a.Placing, AchievedOn: openapi_types.Date{Time: a.AchievedOn}, Notes: notes,
+		}
+	}
+	return out
+}
+
+func toAPISnapshotClubs(list []domain.SnapshotClub) []api.StudentMembership {
+	out := make([]api.StudentMembership, len(list))
+	for i, c := range list {
+		status := api.StudentMembershipStatus("left")
+		if c.Active {
+			status = "active"
+		}
+		out[i] = api.StudentMembership{
+			Id: openapi_types.UUID(c.ID), ExtracurricularId: openapi_types.UUID(c.ExtracurricularID),
+			StudentUserId: openapi_types.UUID(c.StudentUserID), ClubName: c.ClubName,
+			JoinedOn: openapi_types.Date{Time: c.JoinedOn}, Status: status,
+		}
+		if c.LeftOn != nil {
+			out[i].LeftOn = &openapi_types.Date{Time: *c.LeftOn}
+		}
+	}
+	return out
+}
+
 func toAPISummary(s domain.TermSummary) api.MentorTermSummary {
 	mentor := openapi_types.UUID(s.MentorUserID)
 	return api.MentorTermSummary{
@@ -243,15 +277,15 @@ func (h *MentoringHandler) ListMentorMeetingNotes(ctx context.Context, request a
 	if err != nil {
 		return nil, mapError(err)
 	}
-	notes, err := h.service.ListMeetingNotesForGroup(ctx, tenantID(ctx), viewer, request.GroupId)
+	list, err := h.service.ListMeetingNotesForGroup(ctx, tenantID(ctx), viewer, request.GroupId)
 	if err != nil {
 		return nil, mapError(err)
 	}
-	data := make([]api.MentorMeetingNote, len(notes))
-	for i, n := range notes {
+	data := make([]api.MentorMeetingNote, len(list.Notes))
+	for i, n := range list.Notes {
 		data[i] = toAPINote(n)
 	}
-	return api.ListMentorMeetingNotes200JSONResponse{Data: data}, nil
+	return api.ListMentorMeetingNotes200JSONResponse{Data: data, WithheldCount: list.WithheldCount}, nil
 }
 
 func (h *MentoringHandler) CreateMentorMeetingNote(ctx context.Context, request api.CreateMentorMeetingNoteRequestObject) (api.CreateMentorMeetingNoteResponseObject, error) {
@@ -328,6 +362,7 @@ func (h *MentoringHandler) GetMentorStudentSnapshot(ctx context.Context, request
 		StudentUserId: openapi_types.UUID(snapshot.StudentUserID), StudentName: snapshot.StudentName, ClassName: snapshot.ClassName,
 		AttendanceByStatus: snapshot.AttendanceByStatus, DisciplinePoints: snapshot.DisciplinePoints,
 		DisciplineActiveCount: snapshot.DisciplineActiveCount, PublishedSubjects: subjects,
+		Achievements: toAPISnapshotAchievements(snapshot.Achievements), Clubs: toAPISnapshotClubs(snapshot.Clubs),
 	}, nil
 }
 

@@ -133,52 +133,50 @@ func (s *Service) GetMeetingNote(ctx context.Context, tenantID, id, readerUserID
 	return out, err
 }
 
+// MeetingNoteList is a group's notes as one reader sees them: the notes
+// they may open, and how many others the group holds that only their
+// mentor, a counselor or leadership may read.
+type MeetingNoteList struct {
+	Notes         []domain.MeetingNote
+	WithheldCount int
+}
+
 // ListMeetingNotesForGroup returns every note the reader may open; notes
-// outside the reader's role are skipped rather than returned with an
-// empty body, since a list view has no use for a note nobody can read.
-// The group itself must be one the viewer may open, or the viewer must
-// hold a counselor or leadership duty (who read notes across groups).
-func (s *Service) ListMeetingNotesForGroup(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, groupID uuid.UUID) ([]domain.MeetingNote, error) {
+// outside the reader's role are left out rather than returned with an
+// empty body, and counted in WithheldCount, so a group manager who may not
+// read them is told notes exist instead of being shown an empty list. The
+// group must be one the viewer may open (readableGroup), the same rule as
+// the group and its members: a counselor or leadership duty holder opens
+// every group through the view_mentoring their duty grants.
+func (s *Service) ListMeetingNotesForGroup(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, groupID uuid.UUID) (MeetingNoteList, error) {
 	readerUserID := viewer.UserID
-	var out []domain.MeetingNote
+	var out MeetingNoteList
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		if err := s.requireEnabled(ctx, tenantID); err != nil {
 			return err
 		}
-		group, ok, err := s.repo.GetGroup(ctx, tenantID, groupID)
-		if err != nil {
+		if _, err := s.readableGroup(ctx, tenantID, viewer, groupID); err != nil {
 			return err
-		}
-		if !ok {
-			return domain.ErrGroupNotFound
-		}
-		if !viewer.CanRead(group) {
-			role, err := s.noteReaderRole(ctx, tenantID, group.AcademicYearID, readerUserID, uuid.Nil)
-			if err != nil {
-				return err
-			}
-			if !role.IsCounselor && !role.IsLeadership {
-				return domain.ErrGroupForbidden
-			}
 		}
 		rows, err := s.repo.ListMeetingNotesForGroup(ctx, tenantID, groupID)
 		if err != nil {
 			return err
 		}
-		out = make([]domain.MeetingNote, 0, len(rows))
+		out.Notes = make([]domain.MeetingNote, 0, len(rows))
 		for _, enc := range rows {
 			role, err := s.noteReaderRole(ctx, tenantID, enc.AcademicYearID, readerUserID, enc.MentorUserID)
 			if err != nil {
 				return err
 			}
 			if !enc.VisibleTo(role) {
+				out.WithheldCount++
 				continue
 			}
 			n, err := s.open(enc)
 			if err != nil {
 				return err
 			}
-			out = append(out, n)
+			out.Notes = append(out.Notes, n)
 		}
 		return nil
 	})

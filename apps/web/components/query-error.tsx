@@ -71,8 +71,10 @@ function SignInAgainButton(): ReactElement {
  *
  * A 401 means the session is over (the API client already tried a
  * refresh), so a retry cannot work: that case offers "Masuk lagi" instead,
- * which ends the session and opens the sign-in page. Inside an active
- * `SharedRetry` the retry button is left out (the surface offers one).
+ * which ends the session and opens the sign-in page. A 403 is a refusal
+ * the same request will meet again, so it offers no retry at all. Inside
+ * an active `SharedRetry` the retry button is left out (the surface
+ * offers one).
  */
 export function QueryError({
   retry,
@@ -100,7 +102,7 @@ export function QueryError({
       action={
         cause === "session" ? (
           <SignInAgainButton />
-        ) : sharedRetry ? undefined : (
+        ) : sharedRetry || cause === "forbidden" ? undefined : (
           <Button variant="secondary" size="sm" icon={<RotateCw />} onClick={() => void retry()}>
             {common("actions.retry")}
           </Button>

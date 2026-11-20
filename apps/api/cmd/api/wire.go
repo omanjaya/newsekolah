@@ -335,11 +335,15 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// Fase 6 modules (docs/12-roadmap.md): both gated by platform's
 	// per-tenant feature flags through the wiring.PlatformFlags adapter,
 	// so neither imports the platform module directly.
+	activitiesModule := activities.Register(activities.Dependencies{
+		Pool: pool, Years: schoolModule.Service, Perms: identityModule.Service, Clock: clock.Real{},
+	})
 	mentoringModule := mentoring.Register(mentoring.Dependencies{
 		Pool: pool, Years: schoolModule.Service,
 		Attendance: wiring.MentoringAttendance{Svc: attendanceModule.Service},
 		Discipline: wiring.MentoringDiscipline{Svc: disciplineModule.Service, Flags: backgroundFlags},
 		Grading:    wiring.MentoringGrading{Svc: gradingModule.Service},
+		Activities: wiring.MentoringActivities{Svc: activitiesModule.Service, Flags: backgroundFlags},
 		Flags:      wiring.PlatformFlags{Svc: platformModule.Service},
 		Perms:      identityModule.Service,
 		Sealer:     sealer, Clock: clock.Real{},
@@ -411,9 +415,6 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	jobInserter.client = riverClient
 	bg := &background{jobs: riverClient, runWorkers: cfg.WorkerInline, logger: logger}
 
-	activitiesModule := activities.Register(activities.Dependencies{
-		Pool: pool, Years: schoolModule.Service, Perms: identityModule.Service, Clock: clock.Real{},
-	})
 	doc, err := api.GetSpec()
 	if err != nil {
 		return nil, nil, err

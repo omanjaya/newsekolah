@@ -13,6 +13,7 @@ func init() {
 	catalog["SUPERVISION_LESSON_DAY_MISMATCH"] = map[string]string{Indonesian: "Tanggal observasi tidak jatuh pada hari pelajaran yang dipilih.", English: "The observation date does not fall on the chosen lesson's weekday."}
 	catalog["SUPERVISION_SCHEDULED_EXISTS"] = map[string]string{Indonesian: "Pelajaran ini sudah dijadwalkan untuk observasi pada tanggal tersebut.", English: "This lesson is already scheduled for observation on that date."}
 	catalog["SUPERVISION_CRITERION_KEY_DUPLICATE"] = map[string]string{Indonesian: "Kode kriteria harus unik dalam satu instrumen.", English: "Criterion codes must be unique within an instrument."}
+	catalog["SUPERVISION_CRITERION_NAME_DUPLICATE"] = map[string]string{Indonesian: "Nama kriteria harus unik dalam satu instrumen.", English: "Criterion names must be unique within an instrument."}
 	catalog["SUPERVISION_LESSON_NOT_RESOLVED"] = map[string]string{Indonesian: "Jam pelajaran yang diobservasi belum dapat ditentukan.", English: "The observed lesson could not be resolved."}
 	catalog["SUPERVISION_MODULE_DISABLED"] = map[string]string{Indonesian: "Modul supervisi belum diaktifkan untuk sekolah Anda.", English: "The supervision module is not enabled for your school."}
 }

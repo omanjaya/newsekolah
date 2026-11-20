@@ -15,5 +15,6 @@ var (
 	ErrSupervisionLessonDayMismatch    = NewError(http.StatusUnprocessableEntity, "SUPERVISION_LESSON_DAY_MISMATCH")
 	ErrSupervisionScheduledExists      = NewError(http.StatusConflict, "SUPERVISION_SCHEDULED_EXISTS")
 	ErrSupervisionCriterionKeyTaken    = NewError(http.StatusBadRequest, "SUPERVISION_CRITERION_KEY_DUPLICATE")
+	ErrSupervisionCriterionNameTaken   = NewError(http.StatusBadRequest, "SUPERVISION_CRITERION_NAME_DUPLICATE")
 	ErrSupervisionModuleDisabled       = NewError(http.StatusForbidden, "SUPERVISION_MODULE_DISABLED")
 )

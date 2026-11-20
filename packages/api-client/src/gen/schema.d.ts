@@ -5853,7 +5853,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Meeting notes for a group the reader may open (mentor, counselor, leadership) */
+        /**
+         * Meeting notes for a group the reader may open (mentor, counselor, leadership)
+         * @description Lists the notes the reader may open. A note only its author, a counselor or leadership may read is left out of `data` and counted in `withheld_count`, so a group manager can tell "no notes yet" from "notes exist that are not yours to read".
+         */
         get: operations["listMentorMeetingNotes"];
         put?: never;
         /** Record a mentoring session */
@@ -11344,6 +11347,10 @@ export interface components {
                 subject_id: string;
                 score: number;
             }[];
+            /** @description The student's achievements in every academic year, as the student profile lists them; empty while activities is turned off. */
+            achievements: components["schemas"]["Achievement"][];
+            /** @description The student's club membership history; empty while activities is turned off. */
+            clubs: components["schemas"]["StudentMembership"][];
         };
         MentorTermSummary: {
             /** Format: uuid */
@@ -24666,6 +24673,8 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["MentorMeetingNote"][];
+                        /** @description Notes in this group the reader may not open. */
+                        withheld_count: number;
                     };
                 };
             };

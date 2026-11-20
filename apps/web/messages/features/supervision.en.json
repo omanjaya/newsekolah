@@ -24,7 +24,8 @@
     "criterionNamePlaceholder": "Criterion name",
     "removeCriterionNumbered": "Remove criterion {index}",
     "addCriterion": "Add criterion",
-    "criterionKeyDuplicate": "Another criterion uses this code."
+    "criterionKeyDuplicate": "Another criterion uses this code.",
+    "criterionNameDuplicate": "Another criterion uses this name."
   },
   "cycles": {
     "add": "Create cycle",
@@ -52,7 +53,8 @@
         "instrumentName": "Enter the instrument's name.",
         "scale": "The highest score must be above the lowest.",
         "criteria": "Every criterion needs a name and a code.",
-        "criteriaDuplicate": "Criterion codes must be unique. Change the repeated code."
+        "criteriaDuplicate": "Criterion codes must be unique. Change the repeated code.",
+        "criteriaNameDuplicate": "Criterion names must be unique. Change the repeated name."
       },
       "cancel": "Cancel",
       "submit": "Save",

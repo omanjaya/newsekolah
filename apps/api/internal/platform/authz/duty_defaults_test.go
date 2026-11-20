@@ -30,3 +30,29 @@ func TestDutyTypeDefaultsAreWellFormed(t *testing.T) {
 		t.Fatal("homeroom is a required default duty type (attendance and permits hard-code its slug)")
 	}
 }
+
+// TestCounselorAndLeadershipReadMentorGroups: both may read a guru wali's
+// meeting notes (mentoring's MeetingNote.VisibleTo), so both duties open
+// every mentor group read-only. view_mentoring is a full read grant, so it
+// also opens every student's snapshot (grades included), the profile's
+// overview and grades tabs and every term summary (docs/08-security.md).
+// Neither manages the groups, so neither writes notes or summaries.
+func TestCounselorAndLeadershipReadMentorGroups(t *testing.T) {
+	found := 0
+	for _, d := range DutyTypeDefaults() {
+		if d.Slug != "counselor" && d.Slug != "leadership" {
+			continue
+		}
+		found++
+		set := NewSet(d.Permissions...)
+		if !set.Has(PermViewMentoring) {
+			t.Fatalf("duty %q must carry view_mentoring", d.Slug)
+		}
+		if set.Has(PermManageMentorGroups) {
+			t.Fatalf("duty %q must not manage mentor groups", d.Slug)
+		}
+	}
+	if found != 2 {
+		t.Fatalf("want the counselor and leadership duty defaults, found %d", found)
+	}
+}

@@ -23,3 +23,13 @@ export function isNotFoundError(error: unknown): boolean {
     details.every((detail) => detail.code === "INVALID_FORMAT")
   );
 }
+
+/**
+ * Whether a read by id was refused for this reader (a 403): the record
+ * exists but belongs to someone else's scope, such as a club another
+ * teacher coaches or a group another guru wali mentors. A retry can never
+ * succeed, so the screen shows its no-access state with a way back.
+ */
+export function isForbiddenError(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 403;
+}

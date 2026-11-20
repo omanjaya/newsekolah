@@ -84,4 +84,33 @@ describe("SupervisionInstrumentFields", () => {
     );
     expect(screen.getAllByText("criterionKeyDuplicate")).toHaveLength(2);
   });
+
+  it("marks both rows when two criteria carry the same name, though their codes differ", () => {
+    render(
+      <SupervisionInstrumentFields
+        instrument={{
+          name: "Instrumen",
+          scale_min: 1,
+          scale_max: 4,
+          criteria: [
+            { key: "penguasaan_kelas", name: "Penguasaan kelas" },
+            { key: "penguasaan_kelas_2", name: "penguasaan  Kelas" },
+            { key: "metode", name: "Metode" },
+          ],
+        }}
+        onChange={vi.fn()}
+      />,
+    );
+    const first = screen.getByRole("textbox", { name: "criterionNameLabel 1" });
+    const second = screen.getByRole("textbox", { name: "criterionNameLabel 2" });
+    expect(first).toHaveAttribute("aria-invalid", "true");
+    expect(second).toHaveAttribute("aria-invalid", "true");
+    expect(first).toHaveAccessibleDescription("criterionNameDuplicate");
+    expect(screen.getByRole("textbox", { name: "criterionNameLabel 3" })).not.toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    expect(screen.getAllByText("criterionNameDuplicate")).toHaveLength(2);
+    expect(screen.queryByText("criterionKeyDuplicate")).not.toBeInTheDocument();
+  });
 });

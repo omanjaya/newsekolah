@@ -34,8 +34,8 @@ import { useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
-import { RecordNotFoundPage } from "../../../components/record-not-found";
-import { isNotFoundError } from "../../../lib/api/not-found";
+import { RecordForbiddenPage, RecordNotFoundPage } from "../../../components/record-not-found";
+import { isForbiddenError, isNotFoundError } from "../../../lib/api/not-found";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
@@ -125,13 +125,24 @@ export function ClubDetailView({ clubId }: { clubId: string }): ReactElement {
     ) : undefined;
 
   // Without the club there is nothing to enrol into or schedule: an unknown
-  // or malformed id is a missing club, any other failure offers a retry,
-  // and the tabs wait for the club rather than show an empty roster.
+  // or malformed id is a missing club, a club another teacher coaches is
+  // the no-access page (a retry would only be refused again), any other
+  // failure offers a retry, and the tabs wait for the club rather than
+  // show an empty roster.
   if (!club) {
     if (clubQuery.isError && isNotFoundError(clubQuery.error)) {
       return (
         <RecordNotFoundPage
           title={t("notFoundTitle")}
+          backHref="/activities/clubs"
+          backLabel={t("backToClubs")}
+        />
+      );
+    }
+    if (clubQuery.isError && isForbiddenError(clubQuery.error)) {
+      return (
+        <RecordForbiddenPage
+          error={clubQuery.error}
           backHref="/activities/clubs"
           backLabel={t("backToClubs")}
         />

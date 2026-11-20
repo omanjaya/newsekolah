@@ -6,22 +6,23 @@ import type { ReactElement } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
-import { RecordNotFoundPage } from "../../../components/record-not-found";
-import { isNotFoundError } from "../../../lib/api/not-found";
+import { RecordForbiddenPage, RecordNotFoundPage } from "../../../components/record-not-found";
+import { isForbiddenError, isNotFoundError } from "../../../lib/api/not-found";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useMentorGroupQuery, useMentorStudentSnapshotQuery } from "../api";
 import { useMentorGroupsHref } from "../permissions";
 
 import { MentorTermSummaryPanel } from "./mentor-term-summary-panel";
 import {
+  SnapshotActivitiesSection,
   SnapshotAttendanceSection,
   SnapshotDisciplineSection,
   SnapshotGradesSection,
 } from "./student-snapshot-sections";
 
 /**
- * The mentor's per-student view: attendance, discipline, and published
- * grades composed from other modules (docs/03-layered-architecture.md:
+ * The mentor's per-student view: attendance, discipline, published grades
+ * and the activities record (clubs, achievements) composed from other modules (docs/03-layered-architecture.md:
  * mentoring reads these through the API, never their own tables), plus the
  * mentor's own term summary for the same student. The trail leads back to
  * the group.
@@ -53,6 +54,17 @@ export function MentorStudentView({
       />
     );
   }
+  // A group another guru wali mentors, or a student outside the reader's
+  // groups: the no-access page, since a retry is refused again.
+  if (group.isError && !group.data && isForbiddenError(group.error)) {
+    return (
+      <RecordForbiddenPage
+        error={group.error}
+        backHref={groupsHref}
+        backLabel={tGroup("backToGroups")}
+      />
+    );
+  }
   // Both requests fail for a malformed link in parallel. A failed snapshot
   // waits for the group's answer (the skeleton below), which may still
   // turn out to be the group's not-found page, so neither the student's
@@ -64,6 +76,16 @@ export function MentorStudentView({
         title={t("notFoundTitle")}
         backHref={`/mentoring/groups/${groupId}`}
         backLabel={t("backToGroup")}
+      />
+    );
+  }
+
+  if (snapshotFailed && !group.isPending && isForbiddenError(snapshot.error)) {
+    return (
+      <RecordForbiddenPage
+        error={snapshot.error}
+        backHref={groupsHref}
+        backLabel={tGroup("backToGroups")}
       />
     );
   }
@@ -98,18 +120,25 @@ export function MentorStudentView({
       ]}
     >
       {/* Three short read-outs side by side once there is room, each card
-          stretched to the row height; the summary the mentor writes spans below. */}
+          stretched to the row height; the activities record and the summary
+          the mentor writes span below. */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <SnapshotAttendanceSection snapshot={data} />
         <SnapshotDisciplineSection snapshot={data} />
         <SnapshotGradesSection snapshot={data} />
       </div>
 
+      <SnapshotActivitiesSection snapshot={data} />
+
       <Card padding="md">
         <CardHeader>
           <CardTitle as="h2">{t("termSummary.title")}</CardTitle>
         </CardHeader>
-        <MentorTermSummaryPanel groupId={groupId} studentId={studentId} />
+        <MentorTermSummaryPanel
+          groupId={groupId}
+          studentId={studentId}
+          mentorUserId={group.data?.mentor_user_id}
+        />
       </Card>
     </AppPage>
   );

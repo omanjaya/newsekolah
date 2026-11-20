@@ -40,6 +40,9 @@ type Repository interface {
 	// TeacherName returns domain.ErrTeacherNotFound for a user id the
 	// tenant does not have.
 	TeacherName(ctx context.Context, tenantID, teacherUserID uuid.UUID) (string, error)
+	// LessonLabel names a weekly lesson's class and subject for a
+	// notification; found is false once the lesson is gone.
+	LessonLabel(ctx context.Context, tenantID, scheduleID uuid.UUID) (LessonLabel, bool, error)
 	// GetTenantTimezone resolves the tenant's configured IANA timezone, for
 	// HasActiveDuty's tenant-local "today" (tenantNow, see tenant.go).
 	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
