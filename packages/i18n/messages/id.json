@@ -454,6 +454,7 @@
     "LIBRARY_VIOLATION_NOT_FOUND": "Pelanggaran perpustakaan tidak ditemukan.",
     "LIBRARY_VIOLATION_ALREADY_SETTLED": "Pelanggaran ini sudah diselesaikan.",
     "LIBRARY_VISIT_NOT_FOUND": "Kunjungan perpustakaan tidak ditemukan.",
+    "LIBRARY_READ_IN_PLACE_NOT_FOUND": "Sesi baca di tempat tidak ditemukan.",
     "LIBRARY_VISIT_TOKEN_GONE": "Kode QR sudah dipakai atau kedaluwarsa. Pindai kode baru di layar perpustakaan.",
     "LIBRARY_COVER_TOO_LARGE": "Ukuran sampul melebihi 3 MB. Pilih gambar yang lebih kecil.",
     "LIBRARY_COVER_INVALID_TYPE": "Jenis berkas sampul tidak didukung. Pakai JPEG, PNG, atau WebP.",

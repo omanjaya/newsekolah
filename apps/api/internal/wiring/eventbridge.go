@@ -14,6 +14,7 @@ import (
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	schedulingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // DutyLookup answers "who holds this duty right now", used to address
@@ -167,7 +168,7 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 		return one(events.Envelope{
 			Name: events.LibraryReservationReady, Tenant: e.TenantID, Subject: []uuid.UUID{e.MemberUserID},
 			Payload: map[string]any{"reservation_id": e.ReservationID.String(), "title_id": e.TitleID.String(),
-				"summary": "Judul yang Anda pesan sudah siap diambil di perpustakaan.", "href": "/library/me"},
+				"summary": reservationReadySummary(e), "href": "/library/me"},
 		}, nil)
 	})
 	subscribe(b, func(_ context.Context, e libraryservice.LoanDueReminderEvent) ([]events.Envelope, error) {
@@ -180,6 +181,16 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 			Payload: map[string]any{"loan_count": e.LoanCount, "summary": summary, "href": "/library/me"},
 		}, nil)
 	})
+}
+
+// reservationReadySummary tells the member the book is waiting and until
+// when: the hold lapses on its own, so the deadline is the part they need.
+func reservationReadySummary(e libraryservice.ReservationReadyEvent) string {
+	if e.ExpiresAt.IsZero() {
+		return "Judul yang Anda pesan sudah siap diambil di perpustakaan."
+	}
+	return fmt.Sprintf("Judul yang Anda pesan sudah siap diambil di perpustakaan, paling lambat %s.",
+		reportdoc.FormatDate(reportdoc.LocaleID, e.ExpiresAt))
 }
 
 // studentOwnDisciplineHref is the web page where a student reads their own

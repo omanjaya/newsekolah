@@ -70,7 +70,8 @@ var (
 	ErrViolationNotFound       = errors.New("library violation not found")
 	ErrViolationAlreadySettled = errors.New("library violation is already settled")
 
-	ErrVisitNotFound = errors.New("library visit not found")
+	ErrVisitNotFound       = errors.New("library visit not found")
+	ErrReadInPlaceNotFound = errors.New("library read-in-place session not found")
 	// ErrKioskTokenInvalid is a visit-kiosk QR that is unknown, expired,
 	// already used, or issued for another purpose; the wiring adapter
 	// translates the scan-token pipeline's own errors into it.

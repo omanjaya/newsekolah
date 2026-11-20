@@ -63,7 +63,8 @@ func (s *Service) MonthlyReport(ctx context.Context, tenantID uuid.UUID, month s
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return MonthlyReport{}, err
 	}
-	from, to, err := parseReportMonth(month, clock.Now(ctx, s.clock), s.tenantLocation(ctx, tenantID))
+	loc := s.tenantLocation(ctx, tenantID)
+	from, to, err := parseReportMonth(month, clock.Now(ctx, s.clock), loc)
 	if err != nil {
 		return MonthlyReport{}, err
 	}
@@ -102,7 +103,7 @@ func (s *Service) MonthlyReport(ctx context.Context, tenantID uuid.UUID, month s
 		if err != nil {
 			return err
 		}
-		lateReturns, err := s.repo.CountLateReturnsBetween(ctx, tenantID, from, to)
+		lateReturns, err := s.repo.CountLateReturnsBetween(ctx, tenantID, from, to, loc.String())
 		if err != nil {
 			return err
 		}

@@ -47,10 +47,13 @@ func (s *Service) autoRegisterMember(ctx context.Context, tenantID, userID uuid.
 	if !found {
 		return domain.Member{}, domain.ErrMemberTypeNotFound
 	}
-	return s.createMemberWithGeneratedNo(ctx, tenantID, userID, memberType, policy, now)
+	return s.createMemberWithGeneratedNo(ctx, tenantID, userID, memberType, policy, s.schoolDay(ctx, tenantID, now))
 }
 
-func (s *Service) createMemberWithGeneratedNo(ctx context.Context, tenantID, userID uuid.UUID, memberType domain.MemberType, policy domain.Policy, now time.Time) (domain.Member, error) {
+// createMemberWithGeneratedNo registers userID on today, the school's
+// calendar day (schoolDay): it is the registration date, the start of the
+// validity period and the year in the member number.
+func (s *Service) createMemberWithGeneratedNo(ctx context.Context, tenantID, userID uuid.UUID, memberType domain.MemberType, policy domain.Policy, today time.Time) (domain.Member, error) {
 	// The member number is unique per tenant, not per member type, so the
 	// running number has to count every member the school has. Counting one
 	// type only meant the first member of a second type restarted at 1 and
@@ -60,16 +63,16 @@ func (s *Service) createMemberWithGeneratedNo(ctx context.Context, tenantID, use
 	if err != nil {
 		return domain.Member{}, err
 	}
-	validUntil := domain.ValidUntilFromRegistration(now, memberType.ValidityMonths)
+	validUntil := domain.ValidUntilFromRegistration(today, memberType.ValidityMonths)
 	// Only a member_no collision is worth another attempt with the next
 	// number. A user who is already a member, or any other failure, comes
 	// back at once so the caller sees the real reason instead of
 	// "could not generate a unique number".
 	for attempt := 0; attempt < maxMemberNoRetries; attempt++ {
-		memberNo := domain.GenerateMemberNo(policy.MemberNoFormat, now.Year(), count+1+attempt)
+		memberNo := domain.GenerateMemberNo(policy.MemberNoFormat, today.Year(), count+1+attempt)
 		member, err := s.repo.CreateMember(ctx, domain.Member{
 			UserID: userID, TenantID: tenantID, MemberNo: memberNo, MemberTypeID: memberType.ID,
-			RegisteredOn: now, ValidUntil: &validUntil, Status: domain.MemberActive,
+			RegisteredOn: today, ValidUntil: &validUntil, Status: domain.MemberActive,
 		})
 		if err == nil {
 			return member, nil
@@ -108,9 +111,9 @@ func (s *Service) RegisterMember(ctx context.Context, tenantID uuid.UUID, in Reg
 		if !found {
 			return domain.ErrMemberTypeNotFound
 		}
-		now := clock.Now(ctx, s.clock)
+		today := s.schoolDay(ctx, tenantID, clock.Now(ctx, s.clock))
 		if in.MemberNo == "" {
-			member, err = s.createMemberWithGeneratedNo(ctx, tenantID, in.UserID, memberType, policy, now)
+			member, err = s.createMemberWithGeneratedNo(ctx, tenantID, in.UserID, memberType, policy, today)
 			if err != nil {
 				return err
 			}
@@ -119,10 +122,10 @@ func (s *Service) RegisterMember(ctx context.Context, tenantID uuid.UUID, in Reg
 			}
 			return err
 		}
-		validUntil := domain.ValidUntilFromRegistration(now, memberType.ValidityMonths)
+		validUntil := domain.ValidUntilFromRegistration(today, memberType.ValidityMonths)
 		member, err = s.repo.CreateMember(ctx, domain.Member{
 			UserID: in.UserID, TenantID: tenantID, MemberNo: in.MemberNo, MemberTypeID: memberType.ID,
-			RegisteredOn: now, ValidUntil: &validUntil, Status: domain.MemberActive, Notes: in.Notes,
+			RegisteredOn: today, ValidUntil: &validUntil, Status: domain.MemberActive, Notes: in.Notes,
 		})
 		return err
 	})
@@ -168,9 +171,9 @@ func (s *Service) BulkRegisterByRole(ctx context.Context, tenantID, memberTypeID
 		if err != nil {
 			return err
 		}
-		now := clock.Now(ctx, s.clock)
+		today := s.schoolDay(ctx, tenantID, clock.Now(ctx, s.clock))
 		for _, c := range candidates {
-			member, err := s.createMemberWithGeneratedNo(ctx, tenantID, c.UserID, memberType, policy, now)
+			member, err := s.createMemberWithGeneratedNo(ctx, tenantID, c.UserID, memberType, policy, today)
 			if err != nil {
 				result.Failed = append(result.Failed, FailedRegistration{UserID: c.UserID, UserName: c.UserName, Err: err})
 				continue

@@ -76,4 +76,7 @@ type ReadInPlace struct {
 	StartedAt    time.Time
 	EndedAt      *time.Time
 	CreatedBy    uuid.NullUUID
+	// MemberName is the member reader's display name, resolved by the
+	// service from the identity module; it is not stored on the row.
+	MemberName string
 }

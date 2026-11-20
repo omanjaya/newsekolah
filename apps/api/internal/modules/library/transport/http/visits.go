@@ -29,6 +29,15 @@ func toAPIVisit(v domain.Visit) api.LibraryVisit {
 	return out
 }
 
+// toAPIRecordedVisit is a record or kiosk-scan response: the visit plus
+// whether it was the member's visit already recorded within the dedupe
+// window rather than a new one.
+func toAPIRecordedVisit(r service.RecordVisitResult) api.LibraryVisit {
+	out := toAPIVisit(r.Visit)
+	out.AlreadyRecorded = &r.AlreadyRecorded
+	return out
+}
+
 func (h *LibraryHandler) ListLibraryVisits(ctx context.Context, request api.ListLibraryVisitsRequestObject) (api.ListLibraryVisitsResponseObject, error) {
 	visits, err := h.service.ListVisits(ctx, tenantID(ctx), request.Params.From.Time, request.Params.To.Time, intOr(request.Params.Limit, 50), intOr(request.Params.Offset, 0))
 	if err != nil {
@@ -50,11 +59,11 @@ func (h *LibraryHandler) RecordLibraryVisit(ctx context.Context, request api.Rec
 	if b.MemberUserId != nil {
 		in.MemberUserID = uuid.NullUUID{UUID: *b.MemberUserId, Valid: true}
 	}
-	v, err := h.service.RecordVisit(ctx, tenantID(ctx), in)
+	result, err := h.service.RecordVisit(ctx, tenantID(ctx), in)
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return api.RecordLibraryVisit201JSONResponse(toAPIVisit(v)), nil
+	return api.RecordLibraryVisit201JSONResponse(toAPIRecordedVisit(result)), nil
 }
 
 func (h *LibraryHandler) GetTodayLibraryVisitSummary(ctx context.Context, _ api.GetTodayLibraryVisitSummaryRequestObject) (api.GetTodayLibraryVisitSummaryResponseObject, error) {
@@ -76,11 +85,11 @@ func (h *LibraryHandler) IssueLibraryKioskToken(ctx context.Context, _ api.Issue
 }
 
 func (h *LibraryHandler) ScanLibraryKioskVisit(ctx context.Context, request api.ScanLibraryKioskVisitRequestObject) (api.ScanLibraryKioskVisitResponseObject, error) {
-	v, err := h.service.ScanKioskVisit(ctx, tenantID(ctx), request.Body.Token, userID(ctx))
+	result, err := h.service.ScanKioskVisit(ctx, tenantID(ctx), request.Body.Token, userID(ctx))
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return api.ScanLibraryKioskVisit200JSONResponse(toAPIVisit(v)), nil
+	return api.ScanLibraryKioskVisit200JSONResponse(toAPIRecordedVisit(result)), nil
 }
 
 func toAPIReadInPlace(p domain.ReadInPlace) api.LibraryReadInPlace {
@@ -91,6 +100,9 @@ func toAPIReadInPlace(p domain.ReadInPlace) api.LibraryReadInPlace {
 	}
 	if p.VisitorName != "" {
 		out.VisitorName = &p.VisitorName
+	}
+	if p.MemberName != "" {
+		out.MemberName = &p.MemberName
 	}
 	return out
 }
@@ -121,4 +133,12 @@ func (h *LibraryHandler) StartLibraryReadInPlace(ctx context.Context, request ap
 		return nil, mapError(err)
 	}
 	return api.StartLibraryReadInPlace201JSONResponse(toAPIReadInPlace(p)), nil
+}
+
+func (h *LibraryHandler) EndLibraryReadInPlace(ctx context.Context, request api.EndLibraryReadInPlaceRequestObject) (api.EndLibraryReadInPlaceResponseObject, error) {
+	p, err := h.service.EndReadInPlace(ctx, tenantID(ctx), request.ReadInPlaceId)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.EndLibraryReadInPlace200JSONResponse(toAPIReadInPlace(p)), nil
 }

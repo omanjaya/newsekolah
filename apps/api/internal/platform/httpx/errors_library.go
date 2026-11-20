@@ -53,8 +53,9 @@ var (
 	ErrLibraryViolationNotFound       = NewError(http.StatusNotFound, "LIBRARY_VIOLATION_NOT_FOUND")
 	ErrLibraryViolationAlreadySettled = NewError(http.StatusConflict, "LIBRARY_VIOLATION_ALREADY_SETTLED")
 
-	ErrLibraryVisitNotFound  = NewError(http.StatusNotFound, "LIBRARY_VISIT_NOT_FOUND")
-	ErrLibraryVisitTokenGone = NewError(http.StatusGone, "LIBRARY_VISIT_TOKEN_GONE")
+	ErrLibraryVisitNotFound       = NewError(http.StatusNotFound, "LIBRARY_VISIT_NOT_FOUND")
+	ErrLibraryReadInPlaceNotFound = NewError(http.StatusNotFound, "LIBRARY_READ_IN_PLACE_NOT_FOUND")
+	ErrLibraryVisitTokenGone      = NewError(http.StatusGone, "LIBRARY_VISIT_TOKEN_GONE")
 
 	ErrLibraryCoverTooLarge      = NewError(http.StatusBadRequest, "LIBRARY_COVER_TOO_LARGE")
 	ErrLibraryCoverInvalidType   = NewError(http.StatusBadRequest, "LIBRARY_COVER_INVALID_TYPE")

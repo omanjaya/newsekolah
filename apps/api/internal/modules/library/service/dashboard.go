@@ -192,6 +192,19 @@ func (s *Service) tenantLocation(ctx context.Context, tenantID uuid.UUID) *time.
 	return loc
 }
 
+// schoolDay is the calendar day at instant now on the school's own
+// calendar, as a bare date (midnight UTC, the form date columns are read
+// and written in). A registration or suspension at 07:30 WITA (23:30 UTC
+// the evening before) belongs to that local day, not the previous UTC one.
+func (s *Service) schoolDay(ctx context.Context, tenantID uuid.UUID, now time.Time) time.Time {
+	return localDate(now.In(s.tenantLocation(ctx, tenantID)))
+}
+
+// localDate is t's own calendar date (in t's location) as a bare date.
+func localDate(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+}
+
 // mergeSeries combines the loans and returns series into one point per
 // calendar day from first to last inclusive. A day with no loans or
 // returns is absent from the query results and comes out as zero, so the

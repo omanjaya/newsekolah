@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/documents"
 )
 
@@ -309,7 +310,7 @@ func (s *Service) PrintClearanceLetter(ctx context.Context, tenantID, memberUser
 	}
 	vars := map[string]any{
 		"SchoolName": info.SchoolName, "MemberName": info.MemberName, "MemberNo": info.MemberNo,
-		"ClassName": info.ClassName, "IssuedOn": s.clock.Now().Format("2006-01-02"),
+		"ClassName": info.ClassName, "IssuedOn": s.schoolDay(ctx, tenantID, clock.Now(ctx, s.clock)).Format("2006-01-02"),
 	}
 	rendered, err := s.renderer.Render(ctx, documents.Template{Engine: documents.EngineHTML, Body: clearanceLetterTemplate}, vars)
 	if err != nil {

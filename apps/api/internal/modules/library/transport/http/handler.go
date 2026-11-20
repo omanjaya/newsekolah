@@ -89,8 +89,9 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrViolationNotFound:       httpx.ErrLibraryViolationNotFound,
 	domain.ErrViolationAlreadySettled: httpx.ErrLibraryViolationAlreadySettled,
 
-	domain.ErrVisitNotFound:     httpx.ErrLibraryVisitNotFound,
-	domain.ErrKioskTokenInvalid: httpx.ErrLibraryVisitTokenGone,
+	domain.ErrVisitNotFound:       httpx.ErrLibraryVisitNotFound,
+	domain.ErrReadInPlaceNotFound: httpx.ErrLibraryReadInPlaceNotFound,
+	domain.ErrKioskTokenInvalid:   httpx.ErrLibraryVisitTokenGone,
 
 	domain.ErrCoverTooLarge:      httpx.ErrLibraryCoverTooLarge,
 	domain.ErrCoverInvalidType:   httpx.ErrLibraryCoverInvalidType,

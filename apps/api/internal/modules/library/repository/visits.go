@@ -81,3 +81,45 @@ func (r *Repository) ListReadInPlaceForCopy(ctx context.Context, tenantID, copyI
 	}
 	return out, nil
 }
+
+func (r *Repository) SetVisitPurpose(ctx context.Context, tenantID, visitID uuid.UUID, purpose string) (domain.Visit, bool, error) {
+	row, err := r.queries(ctx).SetVisitPurpose(ctx, db.SetVisitPurposeParams{TenantID: tenantID, ID: visitID, Purpose: purpose})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Visit{}, false, nil
+	}
+	if err != nil {
+		return domain.Visit{}, false, fmt.Errorf("set visit purpose: %w", err)
+	}
+	return toVisit(row), true, nil
+}
+
+func (r *Repository) GetReadInPlace(ctx context.Context, tenantID, id uuid.UUID) (domain.ReadInPlace, bool, error) {
+	row, err := r.queries(ctx).GetReadInPlace(ctx, db.GetReadInPlaceParams{TenantID: tenantID, ID: id})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ReadInPlace{}, false, nil
+	}
+	if err != nil {
+		return domain.ReadInPlace{}, false, fmt.Errorf("get read in place: %w", err)
+	}
+	return toReadInPlace(row), true, nil
+}
+
+func (r *Repository) EndOpenReadInPlaceForCopy(ctx context.Context, tenantID, copyID uuid.UUID, endedAt time.Time) error {
+	if err := r.queries(ctx).EndOpenReadInPlaceForCopy(ctx, db.EndOpenReadInPlaceForCopyParams{
+		TenantID: tenantID, CopyID: copyID, EndedAt: pdatabase.Timestamptz(endedAt),
+	}); err != nil {
+		return fmt.Errorf("end open read in place for copy: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) EndReadInPlace(ctx context.Context, tenantID, id uuid.UUID, endedAt time.Time) (domain.ReadInPlace, bool, error) {
+	row, err := r.queries(ctx).EndReadInPlace(ctx, db.EndReadInPlaceParams{TenantID: tenantID, ID: id, EndedAt: pdatabase.Timestamptz(endedAt)})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ReadInPlace{}, false, nil
+	}
+	if err != nil {
+		return domain.ReadInPlace{}, false, fmt.Errorf("end read in place: %w", err)
+	}
+	return toReadInPlace(row), true, nil
+}

@@ -148,7 +148,7 @@ func (s *Service) borrowOneWithQuota(ctx context.Context, tenantID uuid.UUID, in
 		return domain.Loan{}, domain.ErrLoansClosed
 	}
 
-	if err := member.EligibleToBorrow(now); err != nil {
+	if err := member.EligibleToBorrow(s.schoolDay(ctx, tenantID, now)); err != nil {
 		return domain.Loan{}, err
 	}
 
@@ -396,7 +396,7 @@ func (s *Service) recordLateOutcome(ctx context.Context, tenantID uuid.UUID, loa
 		})
 		return err
 	case domain.PenaltySuspend:
-		suspendedUntil := now.AddDate(0, 0, outcome.SuspendDays)
+		suspendedUntil := s.schoolDay(ctx, tenantID, now).AddDate(0, 0, outcome.SuspendDays)
 		if _, err := s.repo.CreateViolation(ctx, domain.Violation{
 			TenantID: tenantID, LoanID: uuid.NullUUID{UUID: loan.ID, Valid: true}, MemberUserID: loan.MemberUserID,
 			Kind: domain.ViolationLate, Penalty: domain.PenaltySuspend, SuspendDays: outcome.SuspendDays, Status: domain.ViolationUnpaid,
@@ -419,7 +419,8 @@ func (s *Service) recordLateOutcome(ctx context.Context, tenantID uuid.UUID, loa
 
 // releaseCopyAfterReturn puts a returned copy back into circulation: if a
 // member is waiting for the title it goes straight to them (status
-// reserved, held for the policy's hold window, notified), otherwise it
+// reserved, held until the end of the policy's hold_days-th open library
+// day, notified), otherwise it
 // becomes available again. Returns the reservation marked ready, if any
 // (ok=false when the copy simply went back to available) -- callers
 // publish the live "library.reservation_ready" hub push themselves, after
@@ -457,11 +458,20 @@ func (s *Service) releaseCopyAfterReturn(ctx context.Context, tenantID, copyID, 
 		return domain.Reservation{}, false, err
 	}
 	now := clock.Now(ctx, s.clock)
-	ready, _, err := s.repo.MarkReservationReady(ctx, tenantID, next.ID, copyID, now, now.AddDate(0, 0, policy.ReservationHoldDays))
+	loc := s.tenantLocation(ctx, tenantID)
+	wdr, err := s.workingDayRule(ctx, tenantID, policy, localDate(now.In(loc)), policy.ReservationHoldDays+14)
 	if err != nil {
 		return domain.Reservation{}, false, err
 	}
-	if err := s.publish(ctx, ReservationReadyEvent{TenantID: tenantID, ReservationID: ready.ID, TitleID: titleID, MemberUserID: ready.MemberUserID}); err != nil {
+	expiresAt := wdr.HoldExpiresAt(now, loc, policy.ReservationHoldDays)
+	ready, _, err := s.repo.MarkReservationReady(ctx, tenantID, next.ID, copyID, now, expiresAt)
+	if err != nil {
+		return domain.Reservation{}, false, err
+	}
+	if err := s.publish(ctx, ReservationReadyEvent{
+		TenantID: tenantID, ReservationID: ready.ID, TitleID: titleID, MemberUserID: ready.MemberUserID,
+		ExpiresAt: expiresAt.In(loc),
+	}); err != nil {
 		return domain.Reservation{}, false, err
 	}
 	return ready, true, nil
@@ -474,6 +484,9 @@ type ReservationReadyEvent struct {
 	ReservationID uuid.UUID
 	TitleID       uuid.UUID
 	MemberUserID  uuid.UUID
+	// ExpiresAt is the pickup deadline in the school's time zone, so the
+	// notification can name the last day to collect the book.
+	ExpiresAt time.Time
 }
 
 // EventName is distinct from platform/events.LibraryReservationReady so the
@@ -532,7 +545,7 @@ func (s *Service) Renew(ctx context.Context, tenantID uuid.UUID, in RenewInput, 
 		if member, found, err := s.repo.GetMember(ctx, tenantID, existing.MemberUserID); err != nil {
 			return err
 		} else if found {
-			if err := member.EligibleToBorrow(now); err != nil {
+			if err := member.EligibleToBorrow(s.schoolDay(ctx, tenantID, now)); err != nil {
 				return err
 			}
 		}
@@ -650,7 +663,7 @@ func (s *Service) OverdueLoans(ctx context.Context, tenantID uuid.UUID) ([]domai
 	var out []domain.Loan
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = s.repo.ListOverdueLoans(ctx, tenantID, clock.Now(ctx, s.clock))
+		out, err = s.repo.ListOverdueLoans(ctx, tenantID, s.schoolDay(ctx, tenantID, clock.Now(ctx, s.clock)))
 		return err
 	})
 	return out, err
@@ -662,7 +675,7 @@ func (s *Service) OverdueLoansDetailed(ctx context.Context, tenantID uuid.UUID) 
 	var out []OverdueLoanDetail
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = s.repo.ListOverdueLoansDetailed(ctx, tenantID, clock.Now(ctx, s.clock))
+		out, err = s.repo.ListOverdueLoansDetailed(ctx, tenantID, s.schoolDay(ctx, tenantID, clock.Now(ctx, s.clock)))
 		return err
 	})
 	return out, err

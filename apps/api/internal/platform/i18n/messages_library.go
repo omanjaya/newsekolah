@@ -52,6 +52,7 @@ func init() {
 	catalog["LIBRARY_VIOLATION_ALREADY_SETTLED"] = map[string]string{Indonesian: "Pelanggaran ini sudah diselesaikan.", English: "This violation is already settled."}
 
 	catalog["LIBRARY_VISIT_NOT_FOUND"] = map[string]string{Indonesian: "Kunjungan tidak ditemukan.", English: "Visit not found."}
+	catalog["LIBRARY_READ_IN_PLACE_NOT_FOUND"] = map[string]string{Indonesian: "Sesi baca di tempat tidak ditemukan.", English: "Read-in-place session not found."}
 	catalog["LIBRARY_VISIT_TOKEN_GONE"] = map[string]string{Indonesian: "Kode QR sudah dipakai atau kedaluwarsa. Pindai kode baru di layar perpustakaan.", English: "This QR code was already used or has expired. Scan the new code on the library screen."}
 
 	catalog["LIBRARY_COVER_TOO_LARGE"] = map[string]string{Indonesian: "Ukuran sampul melebihi 3 MB.", English: "Cover image exceeds 3 MB."}

@@ -250,3 +250,21 @@ func TestBridge_ThresholdAndLibraryEventsDoNotPanic(t *testing.T) {
 	require.Equal(t, []uuid.UUID{member}, (*got)[1].Subject)
 	require.Equal(t, []uuid.UUID{member}, (*got)[2].Subject)
 }
+
+// TestBridge_ReservationReadyNamesThePickupDeadline: the hold lapses on its
+// own, so the member's notification says until when to collect the book.
+func TestBridge_ReservationReadyNamesThePickupDeadline(t *testing.T) {
+	wita, err := time.LoadLocation("Asia/Makassar")
+	require.NoError(t, err)
+	bus := events.NewBus()
+	RegisterNotificationBridge(bus, nil, slog.Default())
+	got := spyEnvelopes(t, bus, events.LibraryReservationReady)
+
+	require.NoError(t, bus.Publish(context.Background(), libraryservice.ReservationReadyEvent{
+		TenantID: uuid.New(), ReservationID: uuid.New(), TitleID: uuid.New(), MemberUserID: uuid.New(),
+		ExpiresAt: time.Date(2026, 11, 24, 23, 59, 59, 0, wita),
+	}))
+	require.Len(t, *got, 1)
+	require.Equal(t, "Judul yang Anda pesan sudah siap diambil di perpustakaan, paling lambat 24 November 2026.",
+		(*got)[0].Payload["summary"])
+}

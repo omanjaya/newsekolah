@@ -98,14 +98,17 @@ func (s *Service) OverdueMembers(ctx context.Context, tenantID uuid.UUID) ([]Ove
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	now := clock.Now(ctx, s.clock)
+	// Overdue and the fine are counted in the school's calendar days: at
+	// 07:00 WITA a loan due yesterday is overdue, although it is still
+	// yesterday in UTC.
+	today := s.schoolDay(ctx, tenantID, clock.Now(ctx, s.clock))
 	var out []OverdueMemberSummary
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		policy, err := s.loadPolicy(ctx, tenantID)
 		if err != nil {
 			return err
 		}
-		overdue, err := s.repo.ListOverdueLoans(ctx, tenantID, now)
+		overdue, err := s.repo.ListOverdueLoans(ctx, tenantID, today)
 		if err != nil {
 			return err
 		}
@@ -119,7 +122,7 @@ func (s *Service) OverdueMembers(ctx context.Context, tenantID uuid.UUID) ([]Ove
 				order = append(order, loan.MemberUserID)
 			}
 			summary.LoanCount++
-			summary.TotalFine += domain.CalculateFine(policy, loan.DueOn, now)
+			summary.TotalFine += domain.CalculateFine(policy, loan.DueOn, today)
 		}
 		out = make([]OverdueMemberSummary, len(order))
 		for i, id := range order {
@@ -392,7 +395,7 @@ func (s *Service) CatalogueSummary(ctx context.Context, tenantID uuid.UUID, from
 		if err != nil {
 			return err
 		}
-		overdue, err := s.repo.CountOverdueNow(ctx, tenantID, clock.Now(ctx, s.clock))
+		overdue, err := s.repo.CountOverdueNow(ctx, tenantID, s.schoolDay(ctx, tenantID, clock.Now(ctx, s.clock)))
 		if err != nil {
 			return err
 		}

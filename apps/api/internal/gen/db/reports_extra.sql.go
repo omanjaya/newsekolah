@@ -63,17 +63,29 @@ func (q *Queries) CountCopiesAddedInPeriod(ctx context.Context, arg CountCopiesA
 
 const countLateReturnsBetween = `-- name: CountLateReturnsBetween :one
 select count(*)::int from library_loans
-where tenant_id = $1 and status = 'returned' and returned_at >= $2 and returned_at < $3 and returned_at::date > due_on
+where tenant_id = $1 and status = 'returned'
+  and returned_at >= $2 and returned_at < $3
+  and (returned_at at time zone $4::text)::date > due_on
 `
 
 type CountLateReturnsBetweenParams struct {
-	TenantID     uuid.UUID          `json:"tenant_id"`
-	ReturnedAt   pgtype.Timestamptz `json:"returned_at"`
-	ReturnedAt_2 pgtype.Timestamptz `json:"returned_at_2"`
+	TenantID uuid.UUID          `json:"tenant_id"`
+	FromAt   pgtype.Timestamptz `json:"from_at"`
+	ToAt     pgtype.Timestamptz `json:"to_at"`
+	Tz       string             `json:"tz"`
 }
 
+// A return is late when the school's calendar day it happened on (tz is
+// the tenant's IANA zone) is after the due date: a book due on the 20th
+// and returned at 07:00 WITA on the 21st is late, although that instant
+// is still the 20th in UTC.
 func (q *Queries) CountLateReturnsBetween(ctx context.Context, arg CountLateReturnsBetweenParams) (int32, error) {
-	row := q.db.QueryRow(ctx, countLateReturnsBetween, arg.TenantID, arg.ReturnedAt, arg.ReturnedAt_2)
+	row := q.db.QueryRow(ctx, countLateReturnsBetween,
+		arg.TenantID,
+		arg.FromAt,
+		arg.ToAt,
+		arg.Tz,
+	)
 	var column_1 int32
 	err := row.Scan(&column_1)
 	return column_1, err

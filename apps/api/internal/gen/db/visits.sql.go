@@ -257,6 +257,53 @@ func (q *Queries) CreateVisit(ctx context.Context, arg CreateVisitParams) (Visit
 	return i, err
 }
 
+const endOpenReadInPlaceForCopy = `-- name: EndOpenReadInPlaceForCopy :exec
+update library_read_in_place set ended_at = $3
+where tenant_id = $1 and copy_id = $2 and ended_at is null
+`
+
+type EndOpenReadInPlaceForCopyParams struct {
+	TenantID uuid.UUID          `json:"tenant_id"`
+	CopyID   uuid.UUID          `json:"copy_id"`
+	EndedAt  pgtype.Timestamptz `json:"ended_at"`
+}
+
+// A copy is at one table at a time: starting a new session closes any
+// session on the copy still open.
+func (q *Queries) EndOpenReadInPlaceForCopy(ctx context.Context, arg EndOpenReadInPlaceForCopyParams) error {
+	_, err := q.db.Exec(ctx, endOpenReadInPlaceForCopy, arg.TenantID, arg.CopyID, arg.EndedAt)
+	return err
+}
+
+const endReadInPlace = `-- name: EndReadInPlace :one
+update library_read_in_place set ended_at = $3
+where tenant_id = $1 and id = $2 and ended_at is null
+returning id, tenant_id, copy_id, member_user_id, visitor_name, started_at, ended_at, created_by, created_at
+`
+
+type EndReadInPlaceParams struct {
+	TenantID uuid.UUID          `json:"tenant_id"`
+	ID       uuid.UUID          `json:"id"`
+	EndedAt  pgtype.Timestamptz `json:"ended_at"`
+}
+
+func (q *Queries) EndReadInPlace(ctx context.Context, arg EndReadInPlaceParams) (LibraryReadInPlace, error) {
+	row := q.db.QueryRow(ctx, endReadInPlace, arg.TenantID, arg.ID, arg.EndedAt)
+	var i LibraryReadInPlace
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.CopyID,
+		&i.MemberUserID,
+		&i.VisitorName,
+		&i.StartedAt,
+		&i.EndedAt,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getLastVisitForMember = `-- name: GetLastVisitForMember :one
 select id, tenant_id, member_user_id, visitor_name, kind, purpose, group_size, source, visited_at, created_by, created_at from library_visits where tenant_id = $1 and member_user_id = $2 order by visited_at desc limit 1
 `
@@ -279,6 +326,32 @@ func (q *Queries) GetLastVisitForMember(ctx context.Context, arg GetLastVisitFor
 		&i.GroupSize,
 		&i.Source,
 		&i.VisitedAt,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getReadInPlace = `-- name: GetReadInPlace :one
+select id, tenant_id, copy_id, member_user_id, visitor_name, started_at, ended_at, created_by, created_at from library_read_in_place where tenant_id = $1 and id = $2
+`
+
+type GetReadInPlaceParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) GetReadInPlace(ctx context.Context, arg GetReadInPlaceParams) (LibraryReadInPlace, error) {
+	row := q.db.QueryRow(ctx, getReadInPlace, arg.TenantID, arg.ID)
+	var i LibraryReadInPlace
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.CopyID,
+		&i.MemberUserID,
+		&i.VisitorName,
+		&i.StartedAt,
+		&i.EndedAt,
 		&i.CreatedBy,
 		&i.CreatedAt,
 	)
@@ -566,6 +639,39 @@ func (q *Queries) SetVisitBadge(ctx context.Context, arg SetVisitBadgeParams) (V
 		&i.CheckedOutBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const setVisitPurpose = `-- name: SetVisitPurpose :one
+update library_visits set purpose = $3
+where tenant_id = $1 and id = $2 and purpose = ''
+returning id, tenant_id, member_user_id, visitor_name, kind, purpose, group_size, source, visited_at, created_by, created_at
+`
+
+type SetVisitPurposeParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+	Purpose  string    `json:"purpose"`
+}
+
+// Fills in the purpose of a visit recorded without one, when the same
+// member's visit is recorded again inside the dedupe window with a purpose.
+func (q *Queries) SetVisitPurpose(ctx context.Context, arg SetVisitPurposeParams) (LibraryVisit, error) {
+	row := q.db.QueryRow(ctx, setVisitPurpose, arg.TenantID, arg.ID, arg.Purpose)
+	var i LibraryVisit
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.MemberUserID,
+		&i.VisitorName,
+		&i.Kind,
+		&i.Purpose,
+		&i.GroupSize,
+		&i.Source,
+		&i.VisitedAt,
+		&i.CreatedBy,
+		&i.CreatedAt,
 	)
 	return i, err
 }

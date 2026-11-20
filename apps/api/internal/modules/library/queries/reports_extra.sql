@@ -24,8 +24,14 @@ select count(*)::int from library_visits where tenant_id = $1 and visited_at >= 
 select count(*)::int from library_copies where tenant_id = $1 and created_at >= $2 and created_at < $3;
 
 -- name: CountLateReturnsBetween :one
+-- A return is late when the school's calendar day it happened on (tz is
+-- the tenant's IANA zone) is after the due date: a book due on the 20th
+-- and returned at 07:00 WITA on the 21st is late, although that instant
+-- is still the 20th in UTC.
 select count(*)::int from library_loans
-where tenant_id = $1 and status = 'returned' and returned_at >= $2 and returned_at < $3 and returned_at::date > due_on;
+where tenant_id = sqlc.arg(tenant_id) and status = 'returned'
+  and returned_at >= sqlc.arg(from_at) and returned_at < sqlc.arg(to_at)
+  and (returned_at at time zone sqlc.arg(tz)::text)::date > due_on;
 
 -- name: SumFinesRecordedBetween :one
 select coalesce(sum(fine_amount), 0)::int from library_loans
