@@ -23,6 +23,7 @@
   },
   "failures": {
     "expired": "The code has expired or was already used. Ask for a new QR code.",
+    "libraryVisitExpired": "This library QR code was already used or has expired. Scan the new code on the library screen.",
     "lateArrivalBusy": "Your late arrival is already being processed and is not waiting for a scan."
   },
   "unknown": {
