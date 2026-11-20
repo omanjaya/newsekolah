@@ -27,24 +27,20 @@ func (r *Repository) FindHomeroomDutyTypeID(ctx context.Context, tenantID uuid.U
 	return id, true, nil
 }
 
-// FindActiveHomeroomAssignment returns the class's current active
-// homeroom duty assignment, if any.
-func (r *Repository) FindActiveHomeroomAssignment(ctx context.Context, tenantID, yearID, dutyTypeID, classID uuid.UUID) (id, userID uuid.UUID, found bool, err error) {
-	row, err := r.queries(ctx).AcademicFindActiveHomeroomAssignment(ctx, db.AcademicFindActiveHomeroomAssignmentParams{
+// EndActiveHomeroomAssignments ends every active homeroom assignment of
+// classID as of endsOn.
+func (r *Repository) EndActiveHomeroomAssignments(ctx context.Context, tenantID, yearID, dutyTypeID, classID uuid.UUID, endsOn time.Time) error {
+	return r.queries(ctx).AcademicEndActiveHomeroomAssignments(ctx, db.AcademicEndActiveHomeroomAssignmentsParams{
 		TenantID: tenantID, AcademicYearID: yearID, DutyTypeID: dutyTypeID, ScopeClassID: uuidPtrToPg(&classID),
+		EndsOn: pdatabase.Date(endsOn),
 	})
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return uuid.UUID{}, uuid.UUID{}, false, nil
-		}
-		return uuid.UUID{}, uuid.UUID{}, false, err
-	}
-	return row.ID, row.UserID, true, nil
 }
 
-func (r *Repository) EndHomeroomAssignment(ctx context.Context, tenantID, id uuid.UUID, endsOn time.Time) error {
-	return r.queries(ctx).AcademicEndHomeroomAssignment(ctx, db.AcademicEndHomeroomAssignmentParams{
-		TenantID: tenantID, ID: id, EndsOn: pdatabase.Date(endsOn),
+// TeacherIsHomeroomOfOtherClass reports whether teacherID already holds the
+// homeroom duty for a class other than classID this year.
+func (r *Repository) TeacherIsHomeroomOfOtherClass(ctx context.Context, tenantID, yearID, dutyTypeID, teacherID, classID uuid.UUID) (bool, error) {
+	return r.queries(ctx).AcademicTeacherIsHomeroomOfOtherClass(ctx, db.AcademicTeacherIsHomeroomOfOtherClassParams{
+		TenantID: tenantID, AcademicYearID: yearID, DutyTypeID: dutyTypeID, UserID: teacherID, ClassID: classID,
 	})
 }
 

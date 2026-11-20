@@ -16,12 +16,13 @@ import {
   syncSimulationIdentity,
 } from "../../lib/simulation/clock";
 
-import { useImpersonateUserMutation } from "./duties-api";
+import { useImpersonateUserMutation, useUpdateDutyAssignmentMutation } from "./duties-api";
 
 const post = vi.hoisted(() => vi.fn());
+const put = vi.hoisted(() => vi.fn());
 const forgetAccessToken = vi.hoisted(() => vi.fn());
 vi.mock("../../lib/api/client", () => ({
-  useApiClient: () => ({ POST: post, forgetAccessToken }),
+  useApiClient: () => ({ POST: post, PUT: put, forgetAccessToken }),
 }));
 
 function person(id: string, impersonatedBy?: string, permissions: string[] = []): Me {
@@ -254,5 +255,24 @@ describe("useImpersonateUserMutation", () => {
     });
 
     expect(getSimulationTime()).toBe("2026-09-30T00:00:00.000Z");
+  });
+});
+
+describe("useUpdateDutyAssignmentMutation", () => {
+  it("refreshes the class list with the duty list, since a homeroom change moves the class's teacher", async () => {
+    put.mockResolvedValue({ id: "a1" });
+    const client = appQueryClient();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    const { result } = renderHook(() => useUpdateDutyAssignmentMutation(), {
+      wrapper: wrapperFor(client),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({ id: "a1", body: { is_active: true } });
+    });
+
+    const keys = invalidate.mock.calls.map(([filters]) => filters?.queryKey);
+    expect(keys).toContainEqual(["duties"]);
+    expect(keys).toContainEqual(["academic", "classes"]);
   });
 });

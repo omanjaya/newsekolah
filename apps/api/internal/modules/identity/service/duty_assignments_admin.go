@@ -9,6 +9,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // ListDutyAssignments lists assignments for one academic year, optionally
@@ -50,6 +51,9 @@ func (s *Service) CreateDutyAssignment(ctx context.Context, tenantID uuid.UUID, 
 			return fmt.Errorf("check assignee is teacher or staff: %w", err)
 		} else if !ok {
 			return domain.ErrAssigneeNotEligible
+		}
+		if err := s.requireSingleHomeroom(ctx, tenantID, dutyType.Slug, dutyType.ID, in); err != nil {
+			return err
 		}
 		if err := s.endActiveHomeroomAssignment(ctx, tenantID, dutyType, in); err != nil {
 			return err
@@ -101,28 +105,54 @@ func (s *Service) checkScopeTargetsExist(ctx context.Context, tenantID uuid.UUID
 	return nil
 }
 
-// endActiveHomeroomAssignment ends a class's currently active "homeroom"
-// duty assignment, if any, before CreateDutyAssignment creates a new one
-// for the same class -- mirroring academic/service.syncHomeroomDuty, which
-// does the same when classes.homeroom_teacher_id is edited directly.
-// Without this, two assignments could be active for one class at once
-// while homeroom_teacher_id silently points at only the newest.
+// endActiveHomeroomAssignment ends every active "homeroom" duty
+// assignment of the class (except in.ID, the row being reactivated) before
+// a new holder takes over -- mirroring academic/service.syncHomeroomDuty,
+// which does the same when classes.homeroom_teacher_id is edited directly.
+// It ends all of them, not just one, so a class left with two active
+// holders by older code heals on the next change.
 func (s *Service) endActiveHomeroomAssignment(ctx context.Context, tenantID uuid.UUID, dutyType DutyTypeRecord, in DutyAssignmentRecord) error {
 	if dutyType.Slug != homeroomDutySlug || !in.ScopeClassID.Valid {
 		return nil
 	}
-	existingID, found, err := s.repo.FindActiveAssignmentForClass(ctx, tenantID, in.AcademicYearID, dutyType.ID, in.ScopeClassID.UUID)
-	if err != nil {
-		return fmt.Errorf("find active homeroom assignment: %w", err)
-	}
-	if !found {
-		return nil
-	}
-	endsOn := in.StartsOn
-	if err := s.repo.UpdateDutyAssignmentRecord(ctx, tenantID, existingID, false, &endsOn); err != nil {
+	keep := uuid.NullUUID{UUID: in.ID, Valid: in.ID != uuid.Nil}
+	if err := s.repo.EndActiveAssignmentsForClass(ctx, tenantID, in.AcademicYearID, dutyType.ID, in.ScopeClassID.UUID, keep, in.StartsOn); err != nil {
 		return fmt.Errorf("end previous homeroom assignment: %w", err)
 	}
 	return nil
+}
+
+// requireSingleHomeroom refuses making in.UserID homeroom teacher of a
+// second class in the same academic year: attendance, permits and the
+// homeroom pages each resolve a teacher to one class.
+func (s *Service) requireSingleHomeroom(ctx context.Context, tenantID uuid.UUID, dutySlug string, dutyTypeID uuid.UUID, in DutyAssignmentRecord) error {
+	if dutySlug != homeroomDutySlug || !in.ScopeClassID.Valid {
+		return nil
+	}
+	other, err := s.repo.HoldsDutyForOtherClass(ctx, tenantID, in.AcademicYearID, dutyTypeID, in.UserID, in.ScopeClassID.UUID)
+	if err != nil {
+		return err
+	}
+	if other {
+		return domain.ErrTeacherAlreadyHomeroom
+	}
+	return nil
+}
+
+// resyncClassHomeroom points classes.homeroom_teacher_id at whoever still
+// holds the class's homeroom duty after one holder was ended or deleted,
+// or clears it when nobody does -- instead of always clearing it, which
+// left the class "without a homeroom teacher" while another active holder
+// remained.
+func (s *Service) resyncClassHomeroom(ctx context.Context, tenantID uuid.UUID, record DutyAssignmentRecord) error {
+	if record.DutySlug != homeroomDutySlug || !record.ScopeClassID.Valid {
+		return nil
+	}
+	holder, found, err := s.repo.FindActiveHolderForClass(ctx, tenantID, record.AcademicYearID, record.DutyTypeID, record.ScopeClassID.UUID)
+	if err != nil {
+		return err
+	}
+	return s.syncClassHomeroom(ctx, tenantID, record.DutySlug, record.ScopeClassID, uuid.NullUUID{UUID: holder, Valid: found})
 }
 
 // UpdateDutyAssignment toggles is_active and/or sets an end date, e.g. to
@@ -137,16 +167,32 @@ func (s *Service) UpdateDutyAssignment(ctx context.Context, tenantID, id uuid.UU
 		if endsOn != nil && endsOn.Before(before.StartsOn) {
 			return domain.ErrInvalidScopeKind
 		}
+		reactivating := !before.IsActive && isActive
+		if reactivating {
+			// Reactivating a homeroom row makes its holder the class's
+			// homeroom teacher again: the same rules as a new assignment.
+			if err := s.requireSingleHomeroom(ctx, tenantID, before.DutySlug, before.DutyTypeID, before); err != nil {
+				return err
+			}
+			dutyType := DutyTypeRecord{ID: before.DutyTypeID, Slug: before.DutySlug}
+			// The class's other holder hands over today, not on the
+			// reactivated row's original start date.
+			takeover := before
+			takeover.StartsOn = clock.Now(ctx, s.clock)
+			if err := s.endActiveHomeroomAssignment(ctx, tenantID, dutyType, takeover); err != nil {
+				return err
+			}
+		}
 		if err := s.repo.UpdateDutyAssignmentRecord(ctx, tenantID, id, isActive, endsOn); err != nil {
 			return fmt.Errorf("update duty assignment: %w", err)
 		}
 		after := before
 		after.IsActive, after.EndsOn = isActive, endsOn
-		if before.IsActive && !isActive {
-			// The homeroom teacher just lost the duty: clear the class's
-			// cached homeroom_teacher_id rather than leave it pointing at
-			// someone no longer holding the duty.
-			if err := s.syncClassHomeroom(ctx, tenantID, before.DutySlug, before.ScopeClassID, uuid.NullUUID{}); err != nil {
+		if reactivating || (before.IsActive && !isActive) {
+			// classes.homeroom_teacher_id follows whoever holds the duty
+			// now: the reactivated holder, the class's other remaining
+			// holder, or nobody.
+			if err := s.resyncClassHomeroom(ctx, tenantID, after); err != nil {
 				return fmt.Errorf("sync class homeroom teacher: %w", err)
 			}
 		}
@@ -172,7 +218,7 @@ func (s *Service) DeleteDutyAssignment(ctx context.Context, tenantID, id uuid.UU
 			return fmt.Errorf("delete duty assignment: %w", err)
 		}
 		if before.IsActive {
-			if err := s.syncClassHomeroom(ctx, tenantID, before.DutySlug, before.ScopeClassID, uuid.NullUUID{}); err != nil {
+			if err := s.resyncClassHomeroom(ctx, tenantID, before); err != nil {
 				return fmt.Errorf("sync class homeroom teacher: %w", err)
 			}
 		}

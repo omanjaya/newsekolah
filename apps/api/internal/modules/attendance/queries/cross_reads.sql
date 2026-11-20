@@ -51,6 +51,9 @@ where da.tenant_id = $1
   and da.scope_class_id is not null
   and da.starts_on <= sqlc.arg(as_of)::date
   and (da.ends_on is null or da.ends_on >= sqlc.arg(as_of)::date)
+-- A teacher holds one homeroom at a time (identity and academic refuse a
+-- second); the newest wins if older data still has two.
+order by da.starts_on desc, da.created_at desc
 limit 1;
 
 -- name: GetTenantTimezoneForAttendance :one

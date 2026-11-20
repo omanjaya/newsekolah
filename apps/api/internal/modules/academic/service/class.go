@@ -22,8 +22,8 @@ type classRepository interface {
 	CountTeachingAssignmentsForClass(ctx context.Context, tenantID, id uuid.UUID) (int64, error)
 
 	FindHomeroomDutyTypeID(ctx context.Context, tenantID uuid.UUID) (uuid.UUID, bool, error)
-	FindActiveHomeroomAssignment(ctx context.Context, tenantID, yearID, dutyTypeID, classID uuid.UUID) (id, userID uuid.UUID, found bool, err error)
-	EndHomeroomAssignment(ctx context.Context, tenantID, id uuid.UUID, endsOn time.Time) error
+	EndActiveHomeroomAssignments(ctx context.Context, tenantID, yearID, dutyTypeID, classID uuid.UUID, endsOn time.Time) error
+	TeacherIsHomeroomOfOtherClass(ctx context.Context, tenantID, yearID, dutyTypeID, teacherID, classID uuid.UUID) (bool, error)
 	CreateHomeroomAssignment(ctx context.Context, tenantID, yearID, dutyTypeID, teacherID, classID uuid.UUID, startsOn time.Time) error
 
 	IsActiveStudent(ctx context.Context, tenantID, userID uuid.UUID) (bool, error)
@@ -96,12 +96,19 @@ func (s *Service) syncHomeroomDuty(ctx context.Context, class domain.Class, befo
 	if err != nil || !found {
 		return err
 	}
-	if assignmentID, _, found, err := s.repo.FindActiveHomeroomAssignment(ctx, class.TenantID, class.AcademicYearID, dutyTypeID, class.ID); err != nil {
-		return err
-	} else if found {
-		if err := s.repo.EndHomeroomAssignment(ctx, class.TenantID, assignmentID, clock.Now(ctx, s.clock)); err != nil {
+	if after != nil {
+		// A teacher is homeroom of one class at a time: attendance, permits
+		// and the homeroom pages each resolve a teacher to one class.
+		other, err := s.repo.TeacherIsHomeroomOfOtherClass(ctx, class.TenantID, class.AcademicYearID, dutyTypeID, *after, class.ID)
+		if err != nil {
 			return err
 		}
+		if other {
+			return domain.ErrTeacherAlreadyHomeroom
+		}
+	}
+	if err := s.repo.EndActiveHomeroomAssignments(ctx, class.TenantID, class.AcademicYearID, dutyTypeID, class.ID, clock.Now(ctx, s.clock)); err != nil {
+		return err
 	}
 	if after != nil {
 		return s.repo.CreateHomeroomAssignment(ctx, class.TenantID, class.AcademicYearID, dutyTypeID, *after, class.ID, clock.Now(ctx, s.clock))

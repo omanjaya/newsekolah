@@ -12,39 +12,35 @@ import (
 )
 
 // fakeHomeroomDutyRepo embeds the (nil) Repository interface so it
-// satisfies every method endActiveHomeroomAssignment's tests do not call.
-// It records every UpdateDutyAssignmentRecord call so a test can assert
-// whether the previous active assignment was ended.
+// satisfies every method the homeroom helpers' tests do not call. It
+// records every EndActiveAssignmentsForClass call and answers
+// HoldsDutyForOtherClass from a fixed flag.
 type fakeHomeroomDutyRepo struct {
 	Repository
-	activeID  uuid.UUID
-	hasActive bool
+	holdsOther bool
 
-	updatedID       uuid.UUID
-	updatedIsActive bool
-	updatedEndsOn   *time.Time
-	updateCalls     int
+	endCalls  int
+	endClass  uuid.UUID
+	endKeep   uuid.NullUUID
+	endsOnArg time.Time
 }
 
-func (f *fakeHomeroomDutyRepo) FindActiveAssignmentForClass(_ context.Context, _, _, _, _ uuid.UUID) (uuid.UUID, bool, error) {
-	return f.activeID, f.hasActive, nil
-}
-
-func (f *fakeHomeroomDutyRepo) UpdateDutyAssignmentRecord(_ context.Context, _, id uuid.UUID, isActive bool, endsOn *time.Time) error {
-	f.updateCalls++
-	f.updatedID, f.updatedIsActive, f.updatedEndsOn = id, isActive, endsOn
+func (f *fakeHomeroomDutyRepo) EndActiveAssignmentsForClass(_ context.Context, _, _, _, classID uuid.UUID, keepID uuid.NullUUID, endsOn time.Time) error {
+	f.endCalls++
+	f.endClass, f.endKeep, f.endsOnArg = classID, keepID, endsOn
 	return nil
 }
 
-// TestEndActiveHomeroomAssignmentEndsThePrevious proves CreateDutyAssignment's
-// helper ends a class's existing active "homeroom" duty before a new one is
-// created, so classes.homeroom_teacher_id (kept in sync by syncClassHomeroom
-// from the newly created row) never has two active duty rows behind it --
-// mirroring academic/service.syncHomeroomDuty for the direct class-form edit
-// path.
-func TestEndActiveHomeroomAssignmentEndsThePrevious(t *testing.T) {
+func (f *fakeHomeroomDutyRepo) HoldsDutyForOtherClass(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID, uuid.UUID) (bool, error) {
+	return f.holdsOther, nil
+}
+
+// TestEndActiveHomeroomAssignmentEndsEveryPreviousHolder proves
+// CreateDutyAssignment's helper ends the class's active "homeroom" duty
+// rows -- all of them, so duplicates heal -- as of the new holder's start
+// date, mirroring academic/service.syncHomeroomDuty for the class form.
+func TestEndActiveHomeroomAssignmentEndsEveryPreviousHolder(t *testing.T) {
 	tenantID, yearID, classID := uuid.New(), uuid.New(), uuid.New()
-	existingID := uuid.New()
 	dutyType := DutyTypeRecord{ID: uuid.New(), Slug: homeroomDutySlug}
 	startsOn := time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC)
 	in := DutyAssignmentRecord{
@@ -53,15 +49,19 @@ func TestEndActiveHomeroomAssignmentEndsThePrevious(t *testing.T) {
 		StartsOn:       startsOn,
 	}
 
-	repo := &fakeHomeroomDutyRepo{activeID: existingID, hasActive: true}
+	repo := &fakeHomeroomDutyRepo{}
 	svc := &Service{repo: repo}
 
 	require.NoError(t, svc.endActiveHomeroomAssignment(context.Background(), tenantID, dutyType, in))
-	require.Equal(t, 1, repo.updateCalls)
-	require.Equal(t, existingID, repo.updatedID)
-	require.False(t, repo.updatedIsActive)
-	require.NotNil(t, repo.updatedEndsOn)
-	require.True(t, startsOn.Equal(*repo.updatedEndsOn))
+	require.Equal(t, 1, repo.endCalls)
+	require.Equal(t, classID, repo.endClass)
+	require.False(t, repo.endKeep.Valid, "a new assignment has no row of its own to keep yet")
+	require.True(t, startsOn.Equal(repo.endsOnArg))
+
+	// Reactivating a row keeps that row and ends the others.
+	in.ID = uuid.New()
+	require.NoError(t, svc.endActiveHomeroomAssignment(context.Background(), tenantID, dutyType, in))
+	require.Equal(t, uuid.NullUUID{UUID: in.ID, Valid: true}, repo.endKeep)
 }
 
 // TestEndActiveHomeroomAssignmentSkipsNonHomeroomDuty proves the helper is
@@ -77,30 +77,26 @@ func TestEndActiveHomeroomAssignmentSkipsNonHomeroomDuty(t *testing.T) {
 		StartsOn:       time.Now(),
 	}
 
-	repo := &fakeHomeroomDutyRepo{activeID: uuid.New(), hasActive: true}
+	repo := &fakeHomeroomDutyRepo{}
 	svc := &Service{repo: repo}
 
 	require.NoError(t, svc.endActiveHomeroomAssignment(context.Background(), tenantID, dutyType, in))
-	require.Zero(t, repo.updateCalls, "a non-homeroom duty type must never end an existing assignment")
+	require.Zero(t, repo.endCalls, "a non-homeroom duty type must never end an existing assignment")
 }
 
-// TestEndActiveHomeroomAssignmentNoOpWhenNoneActive proves the helper
-// leaves nothing to do when the class has no active homeroom duty yet --
-// the ordinary case of assigning a class's first homeroom teacher.
-func TestEndActiveHomeroomAssignmentNoOpWhenNoneActive(t *testing.T) {
-	tenantID, yearID, classID := uuid.New(), uuid.New(), uuid.New()
-	dutyType := DutyTypeRecord{ID: uuid.New(), Slug: homeroomDutySlug}
+// TestRequireSingleHomeroom refuses a second class for a teacher who is
+// already homeroom teacher elsewhere this year, and ignores other duties.
+func TestRequireSingleHomeroom(t *testing.T) {
 	in := DutyAssignmentRecord{
-		AcademicYearID: yearID,
-		ScopeClassID:   uuid.NullUUID{UUID: classID, Valid: true},
-		StartsOn:       time.Now(),
+		AcademicYearID: uuid.New(), UserID: uuid.New(),
+		ScopeClassID: uuid.NullUUID{UUID: uuid.New(), Valid: true},
 	}
+	svc := &Service{repo: &fakeHomeroomDutyRepo{holdsOther: true}}
+	require.ErrorIs(t, svc.requireSingleHomeroom(context.Background(), uuid.New(), homeroomDutySlug, uuid.New(), in), domain.ErrTeacherAlreadyHomeroom)
+	require.NoError(t, svc.requireSingleHomeroom(context.Background(), uuid.New(), "counselor", uuid.New(), in))
 
-	repo := &fakeHomeroomDutyRepo{hasActive: false}
-	svc := &Service{repo: repo}
-
-	require.NoError(t, svc.endActiveHomeroomAssignment(context.Background(), tenantID, dutyType, in))
-	require.Zero(t, repo.updateCalls)
+	svc = &Service{repo: &fakeHomeroomDutyRepo{holdsOther: false}}
+	require.NoError(t, svc.requireSingleHomeroom(context.Background(), uuid.New(), homeroomDutySlug, uuid.New(), in))
 }
 
 // fakeScopeTargetRepo embeds the (nil) Repository interface so it

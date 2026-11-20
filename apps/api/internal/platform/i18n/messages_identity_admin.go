@@ -35,6 +35,10 @@ var identityAdminCatalog = map[string]map[string]string{
 		Indonesian: "Salah satu kode izin tidak dikenali.",
 		English:    "One of the permission codes is not recognized.",
 	},
+	"TEACHER_ALREADY_HOMEROOM": {
+		Indonesian: "Guru ini sudah menjadi wali kelas lain pada tahun ajaran ini. Akhiri tugas wali kelas itu dulu.",
+		English:    "This teacher is already homeroom teacher of another class this academic year. End that homeroom duty first.",
+	},
 	"DUTY_TYPE_IN_USE": {
 		Indonesian: "Jenis tugas masih dipakai oleh satu atau lebih penugasan.",
 		English:    "The duty type still has one or more assignments.",

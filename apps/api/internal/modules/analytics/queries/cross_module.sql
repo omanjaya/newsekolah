@@ -22,6 +22,7 @@ from duty_assignments da
 join duty_types dt on dt.id = da.duty_type_id
 where da.tenant_id = $1 and da.academic_year_id = $2 and da.user_id = $3
   and dt.slug = 'homeroom' and da.is_active and dt.is_active and dt.deleted_at is null
+order by da.starts_on desc, da.created_at desc
 limit 1;
 
 -- name: AnalyticsHasActiveDuty :one

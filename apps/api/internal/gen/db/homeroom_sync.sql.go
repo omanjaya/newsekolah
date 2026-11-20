@@ -38,50 +38,30 @@ func (q *Queries) AcademicCreateHomeroomAssignment(ctx context.Context, arg Acad
 	return err
 }
 
-const academicEndHomeroomAssignment = `-- name: AcademicEndHomeroomAssignment :exec
-update duty_assignments set is_active = false, ends_on = coalesce(ends_on, $3)
-where tenant_id = $1 and id = $2
-`
-
-type AcademicEndHomeroomAssignmentParams struct {
-	TenantID uuid.UUID   `json:"tenant_id"`
-	ID       uuid.UUID   `json:"id"`
-	EndsOn   pgtype.Date `json:"ends_on"`
-}
-
-func (q *Queries) AcademicEndHomeroomAssignment(ctx context.Context, arg AcademicEndHomeroomAssignmentParams) error {
-	_, err := q.db.Exec(ctx, academicEndHomeroomAssignment, arg.TenantID, arg.ID, arg.EndsOn)
-	return err
-}
-
-const academicFindActiveHomeroomAssignment = `-- name: AcademicFindActiveHomeroomAssignment :one
-select id, user_id from duty_assignments
+const academicEndActiveHomeroomAssignments = `-- name: AcademicEndActiveHomeroomAssignments :exec
+update duty_assignments set is_active = false, ends_on = coalesce(ends_on, $5::date)
 where tenant_id = $1 and academic_year_id = $2 and duty_type_id = $3 and scope_class_id = $4 and is_active
-limit 1
 `
 
-type AcademicFindActiveHomeroomAssignmentParams struct {
+type AcademicEndActiveHomeroomAssignmentsParams struct {
 	TenantID       uuid.UUID   `json:"tenant_id"`
 	AcademicYearID uuid.UUID   `json:"academic_year_id"`
 	DutyTypeID     uuid.UUID   `json:"duty_type_id"`
 	ScopeClassID   pgtype.UUID `json:"scope_class_id"`
+	EndsOn         pgtype.Date `json:"ends_on"`
 }
 
-type AcademicFindActiveHomeroomAssignmentRow struct {
-	ID     uuid.UUID `json:"id"`
-	UserID uuid.UUID `json:"user_id"`
-}
-
-func (q *Queries) AcademicFindActiveHomeroomAssignment(ctx context.Context, arg AcademicFindActiveHomeroomAssignmentParams) (AcademicFindActiveHomeroomAssignmentRow, error) {
-	row := q.db.QueryRow(ctx, academicFindActiveHomeroomAssignment,
+// Ends every active homeroom assignment of the class, not just one, so a
+// class left with two holders by older code heals on the next edit.
+func (q *Queries) AcademicEndActiveHomeroomAssignments(ctx context.Context, arg AcademicEndActiveHomeroomAssignmentsParams) error {
+	_, err := q.db.Exec(ctx, academicEndActiveHomeroomAssignments,
 		arg.TenantID,
 		arg.AcademicYearID,
 		arg.DutyTypeID,
 		arg.ScopeClassID,
+		arg.EndsOn,
 	)
-	var i AcademicFindActiveHomeroomAssignmentRow
-	err := row.Scan(&i.ID, &i.UserID)
-	return i, err
+	return err
 }
 
 const academicFindHomeroomDutyTypeID = `-- name: AcademicFindHomeroomDutyTypeID :one
@@ -100,4 +80,35 @@ func (q *Queries) AcademicFindHomeroomDutyTypeID(ctx context.Context, tenantID u
 	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const academicTeacherIsHomeroomOfOtherClass = `-- name: AcademicTeacherIsHomeroomOfOtherClass :one
+select exists(
+  select 1 from duty_assignments
+  where tenant_id = $1 and academic_year_id = $2 and duty_type_id = $3 and user_id = $4 and is_active
+    and scope_class_id is not null and scope_class_id <> $5::uuid
+)
+`
+
+type AcademicTeacherIsHomeroomOfOtherClassParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	DutyTypeID     uuid.UUID `json:"duty_type_id"`
+	UserID         uuid.UUID `json:"user_id"`
+	ClassID        uuid.UUID `json:"class_id"`
+}
+
+// Whether the teacher already holds the homeroom duty for another class
+// this year: a teacher is homeroom of one class at a time.
+func (q *Queries) AcademicTeacherIsHomeroomOfOtherClass(ctx context.Context, arg AcademicTeacherIsHomeroomOfOtherClassParams) (bool, error) {
+	row := q.db.QueryRow(ctx, academicTeacherIsHomeroomOfOtherClass,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.DutyTypeID,
+		arg.UserID,
+		arg.ClassID,
+	)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
