@@ -3,10 +3,17 @@ import { act, renderHook } from "@testing-library/react";
 import type { ReactElement, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { gradingKeys, useSaveComponentScoresMutation, type Gradebook } from "./api";
+import {
+  gradingKeys,
+  useDeleteComponentMutation,
+  useSaveComponentScoresMutation,
+  useUpdateComponentMutation,
+  type Gradebook,
+} from "./api";
 
 const put = vi.hoisted(() => vi.fn());
-vi.mock("../../lib/api/client", () => ({ useApiClient: () => ({ PUT: put }) }));
+const del = vi.hoisted(() => vi.fn());
+vi.mock("../../lib/api/client", () => ({ useApiClient: () => ({ PUT: put, DELETE: del }) }));
 vi.mock("./realtime", () => ({ useMyGradesLive: () => undefined }));
 
 function sheet(termId: string, score: number | undefined): Gradebook {
@@ -36,6 +43,7 @@ function setup() {
 
 beforeEach(() => {
   put.mockReset();
+  del.mockReset();
 });
 
 describe("useSaveComponentScoresMutation", () => {
@@ -96,5 +104,55 @@ describe("useSaveComponentScoresMutation", () => {
       params: { path: { componentId: "c1" } },
       body: { entries: [{ student_user_id: "s1", score: null }] },
     });
+  });
+});
+
+describe("component mutations", () => {
+  function setupHook<T>(hook: () => T) {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    function Wrapper({ children }: { children: ReactNode }): ReactElement {
+      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    }
+    const { result } = renderHook(hook, { wrapper: Wrapper });
+    const eraporKey = gradingKeys.eraporPreview("class-1", "term-1");
+    const myGradesKey = gradingKeys.myGrades("term-1");
+    queryClient.setQueryData(eraporKey, { rows: [] });
+    queryClient.setQueryData(myGradesKey, { subjects: [] });
+    function stale(key: readonly unknown[]) {
+      return queryClient.getQueryState(key)?.isInvalidated;
+    }
+    return { result, stale: () => [stale(eraporKey), stale(myGradesKey)] };
+  }
+
+  it("refreshes the e-Rapor preview and the student's grades after a component is deleted", async () => {
+    const { result, stale } = setupHook(() => useDeleteComponentMutation());
+    del.mockResolvedValue(undefined);
+
+    await act(async () => {
+      await result.current.mutateAsync("c1");
+    });
+
+    expect(stale()).toEqual([true, true]);
+  });
+
+  it("refreshes the e-Rapor preview and the student's grades after a component is reweighed", async () => {
+    const { result, stale } = setupHook(() => useUpdateComponentMutation());
+    put.mockResolvedValue(undefined);
+
+    await act(async () => {
+      await result.current.mutateAsync({
+        id: "c1",
+        body: {
+          class_id: "class-1",
+          subject_id: "subject-1",
+          code: "TG1",
+          kind: "formative",
+          weight: 2,
+          sequence: 1,
+        },
+      });
+    });
+
+    expect(stale()).toEqual([true, true]);
   });
 });
