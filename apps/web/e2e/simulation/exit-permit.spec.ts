@@ -188,12 +188,28 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
     await passGate(security.page, `sion:gate:${permitId}:${gateToken}`);
 
     // The student's already open card follows the gate scan live, to its
-    // exited state with the time they went through.
+    // exited state with the time they went through and the time they are
+    // due back (or were, once the permit's last lesson is over).
     await assertNoNavigation(student.page, async () => {
       await expect(student.page.getByText("Sudah keluar", { exact: true })).toBeVisible({
         timeout: 20_000,
       });
-      await expect(student.page.getByText(/^Keluar gerbang pukul \d{2}\.\d{2}$/)).toBeVisible();
+      await expect(
+        student.page.getByText(
+          /^Keluar gerbang pukul \d{2}\.\d{2} · (Kembali paling lambat|Seharusnya kembali) pukul \d{2}\.\d{2}$/,
+        ),
+      ).toBeVisible();
+    });
+
+    // The gate lists the student as not back yet; recording the return
+    // takes them off the list and turns the student's card to "Sudah kembali".
+    const outList = security.page.locator("section").filter({ hasText: "Belum kembali" });
+    await outList
+      .getByRole("button", { name: `Catat kembali: ${newcomer.name}` })
+      .click({ timeout: 20_000 });
+    await expect(security.page.getByText(`${newcomer.name} tercatat kembali`)).toBeVisible();
+    await expect(student.page.getByText("Sudah kembali", { exact: true })).toBeVisible({
+      timeout: 20_000,
     });
   } finally {
     await closeAll(
