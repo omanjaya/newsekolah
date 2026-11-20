@@ -170,6 +170,24 @@ describe("ImpersonationBanner", () => {
     expect(toastError).not.toHaveBeenCalled();
   });
 
+  it("returns the admin to their own dashboard when the server restored the admin's session", async () => {
+    const admin = { ...teacher, id: "admin", name: "Admin", impersonated_by: undefined };
+    post.mockResolvedValue({ access_token: "admin-token", user: admin });
+    const user = userEvent.setup();
+    const client = renderStrip();
+
+    await user.click(screen.getByRole("button", { name: "impersonationStop" }));
+
+    await waitFor(() => {
+      expect(replace).toHaveBeenCalledWith("/dashboard");
+    });
+    expect(replace).not.toHaveBeenCalledWith("/login");
+    expect(getAccessToken()).toBe("admin-token");
+    expect(client.getQueryData(["me"])).toEqual(admin);
+    expect(client.getQueryData(["notifications", "unread-count"])).toBeUndefined();
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
   it("signs in again from an expired role-testing session without keeping its token", async () => {
     get.mockRejectedValue(
       new ApiError({ status: 401, code: "AUTH_TOKEN_EXPIRED", message: "expired" }),

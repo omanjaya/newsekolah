@@ -32,10 +32,13 @@ import { ShellStrip } from "./shell-strip";
  * role switcher carries the controls on a desktop, and the strip offers
  * the way back on a phone, where the header has no room for them.
  *
- * Stopping an impersonation goes to the sign-in page once the server has
- * ended it, or has answered that it was already over (its fixed end came,
- * another tab stopped it): useStopImpersonationMutation treats both the
- * same, with no error to show. A stop that failed otherwise (no answer, a
+ * Stopping an impersonation returns the admin to their own dashboard when
+ * the server restored the admin's session (an impersonation started from
+ * this browser parks it), and goes to the sign-in page when the server
+ * ended it with nothing to restore, or answered that it was already over
+ * (its fixed end came, another tab stopped it):
+ * useStopImpersonationMutation treats those the same, with no error to
+ * show. A stop that failed otherwise (no answer, a
  * server error, too many requests) leaves everything as it was, since the
  * impersonation is still going on: the strip stays, says what went wrong,
  * and its button can be pressed again.
@@ -136,8 +139,10 @@ export function ImpersonationBanner(): ReactElement | null {
     // token, the cached data and this strip, so it can be pressed again.
     forgetAccountOnThisBrowser();
     stop.mutateAsync().then(
-      () => {
-        router.replace("/login");
+      (outcome) => {
+        // Back in the admin's own session when the server restored it;
+        // signed out when there was none to restore.
+        router.replace(outcome === "restored" ? "/dashboard" : "/login");
       },
       (error: unknown) => {
         // Another request found the session gone meanwhile, and the app is

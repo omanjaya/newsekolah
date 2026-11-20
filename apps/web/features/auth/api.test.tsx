@@ -107,6 +107,31 @@ afterEach(() => {
 });
 
 describe("useStopImpersonationMutation", () => {
+  // An impersonation started from this browser parked the admin's login on
+  // the server: the stop answers with the admin's own tokens, and the tab
+  // becomes the admin again instead of being signed out.
+  it("hands the tab back to the admin when the server restored the admin's session", async () => {
+    const admin = person("admin");
+    post.mockImplementation((path: string) => {
+      calls.push(path);
+      return Promise.resolve({ access_token: "admin-token", user: admin });
+    });
+    const { client, result } = setup(() => useStopImpersonationMutation());
+
+    let outcome: string | undefined;
+    await act(async () => {
+      outcome = await result.current.mutateAsync();
+    });
+
+    expect(outcome).toBe("restored");
+    expect(calls).toEqual(["/v1/auth/impersonation/stop", "clear-sat"]);
+    expect(getAccessToken()).toBe("admin-token");
+    expect(client.getQueryData(["me"])).toEqual(admin);
+    // The impersonated account's reads go; the school's branding stays.
+    expect(client.getQueryData(UNREAD_KEY)).toBeUndefined();
+    expect(client.getQueryData(BRANDING_KEY)).toEqual({ name: "School" });
+  });
+
   it("ends the session once the server stopped it, the client's remembered token included", async () => {
     const frozen = startTestClock();
     const { client, result } = setup(() => useStopImpersonationMutation());
