@@ -33,6 +33,7 @@
     "sessionSubmitted": "Tersimpan",
     "sessionPending": "Belum diisi",
     "sessionNoEntries": "Tidak ada siswa pada sesi ini.",
+    "entryLeftClass": "Tidak lagi di kelas ini",
     "columns": {
       "name": "Nama siswa",
       "status": "Status",
