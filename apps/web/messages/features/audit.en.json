@@ -58,7 +58,8 @@
       "read": "Viewed a counseling record"
     },
     "document": {
-      "issue": "Issued a document"
+      "issue": "Issued a document",
+      "revoke": "Revoked a document"
     },
     "duty_assignment": {
       "create": "Added a duty assignment",

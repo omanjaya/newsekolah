@@ -9,10 +9,13 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next-intl", () => ({
-  useTranslations:
-    () =>
-    (key: string, values?: Record<string, unknown>): string =>
-      values ? `${key} ${JSON.stringify(values)}` : key,
+  // The preview table asks t.has before translating a row's message code.
+  useTranslations: () =>
+    Object.assign(
+      (key: string, values?: Record<string, unknown>): string =>
+        values ? `${key} ${JSON.stringify(values)}` : key,
+      { has: () => true },
+    ),
 }));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/library/import",
@@ -65,8 +68,20 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.preview.mockResolvedValue({
     rows: [
-      { row_number: 1, status: "new_title", message_code: "NEW_TITLE", title: "Laskar Pelangi", copies: 1 },
-      { row_number: 2, status: "new_title", message_code: "NEW_TITLE", title: "Bumi Manusia", copies: 1 },
+      {
+        row_number: 1,
+        status: "new_title",
+        message_code: "NEW_TITLE",
+        title: "Laskar Pelangi",
+        copies: 1,
+      },
+      {
+        row_number: 2,
+        status: "new_title",
+        message_code: "NEW_TITLE",
+        title: "Bumi Manusia",
+        copies: 1,
+      },
     ],
     summary: { new_titles: 2, existing_titles: 0, copies: 2, errors: 0 },
   });

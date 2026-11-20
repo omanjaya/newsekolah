@@ -68,9 +68,9 @@ describe("ImportPreviewTable", () => {
     ).toBeGreaterThan(0);
     expect(screen.getAllByText("Kode jenis bahan tidak dikenali.").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Baris ini tidak bisa diimpor.").length).toBeGreaterThan(0);
-    expect(
-      screen.getAllByText("Barcode B-0100 sudah dipakai di baris 3.").length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Barcode B-0100 sudah dipakai di baris 3.").length).toBeGreaterThan(
+      0,
+    );
     expect(screen.queryByText(/MATERIAL_TYPE_UNKNOWN|SOMETHING_NEW/)).not.toBeInTheDocument();
   });
 

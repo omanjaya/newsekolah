@@ -58,7 +58,8 @@
       "read": "Membuka catatan konseling"
     },
     "document": {
-      "issue": "Menerbitkan dokumen"
+      "issue": "Menerbitkan dokumen",
+      "revoke": "Mencabut dokumen"
     },
     "duty_assignment": {
       "create": "Menambah penugasan tugas",
