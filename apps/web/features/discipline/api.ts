@@ -64,6 +64,15 @@ function useInvalidateDiscipline() {
   };
 }
 
+/**
+ * Refetches every discipline query (points, ledger, preview). For a write
+ * that failed part-way, whose committed share no mutation success has
+ * invalidated yet.
+ */
+export function useRefreshDiscipline(): () => Promise<void> {
+  return useInvalidateDiscipline();
+}
+
 // Violation catalog.
 
 /**

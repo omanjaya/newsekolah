@@ -29,6 +29,7 @@ import { useDirectoryNames, useDirectorySearch } from "../../reference/directory
 import {
   type ViolationRecordResult,
   useRecordViolationMutation,
+  useRefreshDiscipline,
   useViolationTypesQuery,
 } from "../api";
 import { usePointsPreviewQuery } from "../api-violation-extras";
@@ -51,7 +52,9 @@ const PICK_ROW =
  * collects every `ViolationRecordResult` -- the caller shows a per-student
  * summary (points and any warning-letter level newly due) from that list.
  * Before saving, it previews each student's new total and any warning
- * letter that total would cross.
+ * letter that total would cross. When a batch stops part-way, the students
+ * already saved leave the selection and are named in an alert, so saving
+ * again records only the rest instead of duplicating the first ones.
  */
 export function ViolationRecordForm({
   onDone,
@@ -80,6 +83,10 @@ export function ViolationRecordForm({
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [attempted, setAttempted] = useState(false);
+  // Results of students already saved by an earlier, interrupted attempt.
+  const [savedResults, setSavedResults] = useState<ViolationRecordResult[]>([]);
+  const [partial, setPartial] = useState<{ names: string[]; message: string } | null>(null);
+  const refreshDiscipline = useRefreshDiscipline();
 
   const preview = usePointsPreviewQuery(studentIds);
 
@@ -138,8 +145,10 @@ export function ViolationRecordForm({
     setAttempted(true);
     if (studentIds.length === 0 || typeIds.length === 0 || !occurredOn) return;
     setSubmitting(true);
+    setPartial(null);
+    const results: ViolationRecordResult[] = [...savedResults];
+    const savedNow: string[] = [];
     try {
-      const results: ViolationRecordResult[] = [];
       // Sequential, not Promise.all: each call still hits the same
       // student-points invalidation, and a school piling on 50 selections
       // does not need to open 50 connections at once.
@@ -151,13 +160,29 @@ export function ViolationRecordForm({
           notes: notes.trim() || undefined,
         });
         results.push(result);
+        savedNow.push(studentId);
       }
-      toast.success(t("recorded", { count: studentIds.length }));
+      toast.success(t("recorded", { count: results.length }));
       onDone(results);
     } catch (error) {
-      toast.error(
-        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-      );
+      const message =
+        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN");
+      // A batch that stops part-way must not be saved again as a whole:
+      // the students already recorded leave the selection (and the summary
+      // keeps their results), so "Simpan" retries only the rest. The
+      // refresh also brings the points preview up to date with whatever
+      // the server did commit.
+      void refreshDiscipline();
+      if (savedNow.length > 0) {
+        setSavedResults(results);
+        setStudentIds((current) => current.filter((id) => !savedNow.includes(id)));
+        setPartial({
+          names: savedNow.map((id) => studentMap.get(id)?.name ?? t("unknownStudent")),
+          message,
+        });
+      } else {
+        toast.error(message);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -376,12 +401,20 @@ export function ViolationRecordForm({
         </Alert>
       )}
 
+      {partial && (
+        <Alert variant="danger" title={t("partial.title", { count: partial.names.length })}>
+          <p>{t("partial.saved", { names: partial.names.join(", ") })}</p>
+          <p>{partial.message}</p>
+          <p>{t("partial.rest")}</p>
+        </Alert>
+      )}
+
       <DialogFooter>
         <Button
           type="button"
           variant="secondary"
           onClick={() => {
-            onDone();
+            onDone(savedResults.length > 0 ? savedResults : undefined);
           }}
         >
           {t("cancel")}

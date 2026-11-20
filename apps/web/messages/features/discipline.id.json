@@ -64,6 +64,11 @@
       "cancel": "Batal",
       "submit": "Simpan",
       "recorded": "{count, plural, other {# pelanggaran tercatat}}",
+      "partial": {
+        "title": "{count, plural, other {Baru # siswa yang tercatat}}",
+        "saved": "Sudah tersimpan: {names}. Siswa ini sudah dihapus dari pilihan.",
+        "rest": "Siswa lainnya belum tercatat. Tekan Simpan untuk mencatat siswa yang tersisa."
+      },
       "preview": {
         "title": "Pratinjau poin (sebelum disimpan)",
         "loading": "Memeriksa poin saat ini...",
