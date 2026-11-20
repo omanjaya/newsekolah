@@ -39,7 +39,10 @@ export function isoWeekdayOf(iso: string): number {
   return new Date(Date.UTC(year, month - 1, day)).getUTCDay() || 7;
 }
 
-/** The first day of the month containing `iso` ("YYYY-MM-DD"). */
+/**
+ * The first day ("YYYY-MM-01") of the month containing `iso`, which may be
+ * a date ("YYYY-MM-DD") or a month ("YYYY-MM", a month picker's value).
+ */
 export function startOfIsoMonth(iso: string): string {
   return `${iso.slice(0, 7)}-01`;
 }

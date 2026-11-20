@@ -17,8 +17,8 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/documents"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 )
 
@@ -372,8 +372,9 @@ func (s *Service) IssueLeaveLetter(ctx context.Context, tenantID, instanceID, is
 			return err
 		}
 		// Letter numbering by month/year (like issue_document.go's
-		// IssueDocument) is a business decision, not bookkeeping.
-		now := clock.Now(ctx, s.clock)
+		// IssueDocument) is a business decision, not bookkeeping, and
+		// follows the school's own calendar day.
+		now := s.tenantNow(ctx, tenantID)
 		seq, err := s.repo.NextSequenceValue(ctx, tenantID, leaveLetterDocumentKind, inst.AcademicYearID)
 		if err != nil {
 			return fmt.Errorf("next letter number: %w", err)
@@ -491,6 +492,9 @@ const leaveReasonTrailingPunct = " \t\n.,;:!?…"
 // trailing sentence punctuation (leaveReasonTrailingPunct) is trimmed
 // because the sentence the built-in template puts it in supplies its own
 // full stop ("ke luar kota.." or "di Makassar!." otherwise).
+// "starts_on" and "ends_on" are long dates like "issued_at", so the letter
+// reads one date style throughout. They are SQL DATE values (midnight UTC
+// for the calendar day), so their own day is printed with no zone shift.
 // "days" counts school days only: a weekend or holiday inside the range is
 // not a day of leave, and attendance records none for it.
 func leaveLetterVars(lr domain.LeaveRequest, x leaveLetterExtras) map[string]any {
@@ -502,8 +506,8 @@ func leaveLetterVars(lr domain.LeaveRequest, x leaveLetterExtras) map[string]any
 		"letter_number": x.number, "student_name": lr.StudentNameSnapshot, "class_name": lr.ClassNameSnapshot,
 		"guardian_name": lr.GuardianNameSnapshot, "category": domain.CategoryLabel(lr.Category),
 		"category_code": string(lr.Category), "reason": lr.Reason, "reason_detail": detail,
-		"starts_on": lr.StartsOn.Format("02-01-2006"), "ends_on": lr.EndsOn.Format("02-01-2006"),
-		"days": x.schoolDays, "issued_at": x.issuedAt.Format("02-01-2006"), "verification_code": x.verificationCode,
+		"starts_on": reportdoc.FormatDate(reportdoc.LocaleID, lr.StartsOn), "ends_on": reportdoc.FormatDate(reportdoc.LocaleID, lr.EndsOn),
+		"days": x.schoolDays, "issued_at": issuedOnLabel(x.issuedAt), "verification_code": x.verificationCode,
 		"nis": x.nis, "address": x.address, "homeroom_name": x.homeroomName, "issuer_name": x.issuerName,
 	}
 }

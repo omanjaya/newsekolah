@@ -86,6 +86,13 @@ func Message(code, acceptLanguage string) string {
 	return entry[DefaultLocale]
 }
 
+// Has reports whether code has its own message in locale, rather than the
+// INTERNAL_ERROR text Message falls back to for an unknown code.
+func Has(code, locale string) bool {
+	_, ok := catalog[code][locale]
+	return ok
+}
+
 // FromTenantLocale normalizes a tenants.locale column value ("id", "en",
 // or empty on an old/never-set row) to a locale Message/Resolve
 // understand, defaulting to DefaultLocale. Generated documents (reports,

@@ -8,6 +8,7 @@ import { getAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
 import { reportExportExtension, withReportExportParams } from "../../lib/api/report-export-query";
 import { API_URL } from "../../lib/env";
+import { startOfIsoMonth } from "../../lib/tenant-date";
 
 import { useVisitorBoardLive } from "./realtime";
 
@@ -215,11 +216,18 @@ export function useDailyRecapQuery(date: string) {
   });
 }
 
+/**
+ * `month` is the picker's "YYYY-MM"; the monthly recap endpoints take a full
+ * date (any day of the month), so the request carries the month's 1st.
+ */
 export function useMonthlyRecapQuery(month: string) {
   const client = useApiClient();
   return useQuery({
     queryKey: keys.monthlyRecap(month),
-    queryFn: () => client.GET("/v1/visitors/recap/monthly", { params: { query: { month } } }),
+    queryFn: () =>
+      client.GET("/v1/visitors/recap/monthly", {
+        params: { query: { month: startOfIsoMonth(month) } },
+      }),
     enabled: month !== "",
   });
 }
@@ -296,7 +304,7 @@ export function useExportMonthlyRecapMutation() {
     mutationFn: ({ month, options }: { month: string; options: ReportExportOptions }) =>
       downloadRecapExport(
         "/v1/visitors/recap/monthly/export",
-        new URLSearchParams({ month }),
+        new URLSearchParams({ month: startOfIsoMonth(month) }),
         `rekap-tamu-${month}`,
         options,
       ),
