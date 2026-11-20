@@ -53,7 +53,13 @@ export interface CreateApiClientOptions {
   clientHeader: string;
   /** Returns a BCP 47 locale for `Accept-Language`. Defaults to "id". */
   getLocale?: () => string;
-  /** Optional per-request test clock; never attached to authentication requests. */
+  /**
+   * Optional per-request test clock, sent as `X-Simulation-Time`. Never
+   * attached to authentication requests (`/v1/auth/*`). `/v1/me` does carry
+   * it: the reader's duties, and the permissions they grant, are the ones
+   * active on the business day, so a simulated day must reach it too. The
+   * app returns a value only once `/v1/me` has shown the actor may simulate.
+   */
   getSimulationTime?: () => string | null;
 }
 
@@ -379,7 +385,7 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
         request.headers.set("X-Tenant", options.tenantSlug);
       }
       const requestPath = new URL(request.url).pathname;
-      if (!requestPath.startsWith("/v1/auth/") && requestPath !== "/v1/me") {
+      if (!requestPath.startsWith("/v1/auth/")) {
         const simulationTime = options.getSimulationTime?.();
         if (simulationTime) request.headers.set("X-Simulation-Time", simulationTime);
       }

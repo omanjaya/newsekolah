@@ -43,7 +43,7 @@ function createMemoryTokenStore(initialRefreshToken: string | null): TokenStore 
 }
 
 describe("createApiClient", () => {
-  it("scopes simulation to business requests and reads its latest instant per request", async () => {
+  it("scopes simulation to everything but authentication and reads its latest instant per request", async () => {
     const seen: [string, string | null][] = [];
     server.use(
       http.get(`${BASE_URL}/v1/me`, ({ request }) => {
@@ -71,8 +71,10 @@ describe("createApiClient", () => {
     current = "2026-10-01T01:00:00.000Z";
     await client.GET("/v1/tenant/branding");
     await client.POST("/v1/auth/logout");
+    // `/v1/me` names the duties active on the business day, so it follows
+    // the simulated clock; only authentication requests never do.
     expect(seen).toEqual([
-      ["me", null],
+      ["me", "2026-09-30T00:00:00.000Z"],
       ["business", "2026-09-30T00:00:00.000Z"],
       ["business", "2026-10-01T01:00:00.000Z"],
       ["auth", null],
