@@ -118,11 +118,15 @@ teaching_assignments (id, tenant_id, academic_year_id, teacher_user_id, subject_
 ```sql
 schedules (id, tenant_id, academic_year_id, term_id null, class_id, subject_id, teacher_user_id, room_id null, day_of_week,
            start_period_id, end_period_id, source text check in ('admin','teacher','import'), notes, created_by, updated_by,
-           created_at, updated_at)
-   -- exclusion constraint anti bentrok memakai int4range atas sequence periode:
-   --   exclude using gist (class_id with =, day_of_week with =, period_range with &&) where (academic_year_id = ...)
-   --   exclude using gist (teacher_user_id with =, day_of_week with =, period_range with &&)
-   --   period_range int4range generated always as (int4range(start_seq, end_seq, '[]')) stored
+           effective_from date not null, effective_until date null, created_at, updated_at)
+   -- period_range int4range generated always as (int4range(start_seq, end_seq, '[]')) stored
+   -- effective_range daterange generated always as (daterange(effective_from, effective_until, '[]')) stored
+   -- check (effective_until is null or effective_until >= effective_from)
+   -- exclusion constraint anti bentrok, hanya antar versi yang tanggal berlakunya beririsan (migrasi 0147):
+   --   ex_schedules_class_slot   exclude using gist (academic_year_id with =, class_id with =, day_of_week with =,
+   --                                                 period_range with &&, effective_range with &&)
+   --   ex_schedules_teacher_slot exclude using gist (academic_year_id with =, teacher_user_id with =, day_of_week with =,
+   --                                                 period_range with &&, effective_range with &&)
 substitution_requests (id, tenant_id, academic_year_id, schedule_id, date, requester_user_id, substitute_user_id,
                        status text check in ('pending','accepted','rejected','cancelled'), requester_note, response_note, responded_at,
                        created_at, unique (schedule_id, date) where status in ('pending','accepted'))
@@ -130,6 +134,14 @@ class_journals (id, tenant_id, academic_year_id, teacher_user_id, written_by_use
                 activities, reflection, attendance_session_id null, created_at, updated_at,
                 unique (academic_year_id, teacher_user_id, class_id, subject_id, lesson_date))
 ```
+
+**Jadwal bertanggal berlaku (migrasi 0147).** Satu baris `schedules` adalah satu versi pelajaran mingguan: pelajaran itu ada di jadwal dari `effective_from` sampai `effective_until`, kedua batas inklusif, dan `effective_until` kosong berarti sampai akhir tahun ajaran. Versi berlaku pada tanggal `d` bila `effective_range @> d`; setiap pembacaan "pelajaran apa saja pada tanggal D" (daftar sesi guru, buka sesi, jumlah pelajaran yang diharapkan untuk status harian, kalender siswa, laporan harian, rekap analitik, monitor, izin keluar, supervisi, permintaan guru pengganti, grid jadwal per minggu) memakai saringan itu.
+
+- Kedua batas disimpan pada hari pelajarannya sendiri ("di-snap" oleh service): `effective_from` menjadi tanggal pertama pada atau setelah tanggal yang diminta dengan hari itu, `effective_until` tanggal terakhir pada atau sebelumnya. Dengan begitu dua versi pada hari yang sama hanya beririsan bila berbagi tanggal pelajaran sungguhan, sehingga pelajaran Kamis yang dihapus "mulai Senin 30 Nov" (berakhir Kamis 26 Nov) tidak bentrok dengan pelajaran baru "mulai Jumat 27 Nov" (mulai Kamis 3 Des).
+- Riwayat sebuah versi adalah sesi presensi yang sudah tercatat (`attendance_session_recorded()`, migrasi 0144) atau permintaan guru pengganti apa pun. Invarian: setiap sesi tercatat dan setiap permintaan pengganti berstatus `pending`/`accepted` berada di dalam rentang versinya.
+- Perubahan atau penghapusan blok yang punya riwayat berlaku mulai tanggal D ("Berlaku mulai", paling cepat hari ini di zona waktu sekolah dan sehari setelah tanggal riwayat terakhir): versi lama diakhiri pada pelajaran terakhirnya sebelum D (atau dihapus bila belum pernah terjadi sebelum D), dan untuk perubahan dibuat versi baru (id baru) mulai pelajaran pertama pada atau setelah D. Blok tanpa riwayat masih boleh dikoreksi di tempat untuk seluruh tahun ajaran.
+- Pemicu `trg_schedule_history_guard` (fungsi `protect_schedule_history`) kini juga menolak perubahan `effective_from`/`effective_until` yang mengeluarkan sesi tercatat atau permintaan pengganti aktif dari rentang (constraint `schedule_history_range`, SQLSTATE 23503) dan menghapus sesi placeholder di luar rentang baru. Pemicu `trg_attendance_sessions_schedule_in_effect` dan `trg_substitution_requests_schedule_in_effect` (fungsi `require_schedule_in_effect`, `FOR KEY SHARE`) menolak sesi atau permintaan pengganti yang tanggalnya di luar rentang versinya (constraint `schedule_in_effect`, SQLSTATE 23514). Keduanya cadangan integritas; keputusan tetap di service.
+- Pengisian awal: baris lama berlaku dari tanggal pertama tahun ajaran pada harinya (atau lebih awal bila riwayatnya lebih awal), tanpa akhir. Migrasi turun menghapus versi yang sudah diakhiri dan gagal bila salah satunya memegang riwayat.
 
 ## 6. Domain: presensi
 

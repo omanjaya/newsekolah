@@ -130,6 +130,10 @@ Pencarian global (`Ctrl/Cmd+K`) menjangkau semua halaman yang diizinkan, termasu
 
 ## 4. Alur utama yang dirancang ulang
 
+### Jadwal pelajaran
+
+Jadwal pelajaran menampilkan satu minggu pilihan (tampilan per hari: satu tanggal pilihan) dengan tanggal di setiap kolom, karena jadwal bertanggal berlaku: setiap hari memuat pelajaran yang berlaku pada tanggalnya. Blok yang sudah punya riwayat presensi atau guru pengganti tetap bisa diubah dan dihapus, tetapi dialognya meminta "Berlaku mulai" (paling cepat tanggal yang disebut server) dan menjelaskan bahwa pertemuan sebelum tanggal itu tetap tercatat dengan jadwal lama; blok tanpa riwayat dikoreksi untuk seluruh tahun ajaran dengan catatan singkat. Hanya blok yang sudah tidak berlaku yang terkunci, dengan alasannya. Blok yang mulai atau berakhir di tengah minggu memberi keterangan "Mulai ..."/"Sampai ...". Tempel, impor massal, dan pengosongan jadwal tahun ajaran juga memakai "Berlaku mulai".
+
 ### Presensi guru (target < 30 detik untuk 36 siswa)
 
 Beranda menampilkan sesi berjalan dengan tombol "Isi presensi". Grid default semua Hadir; ketuk siswa untuk ganti status (segmented H S I D A); pencarian nama; toggle "hanya yang tidak hadir"; siswa dengan surat izin terbit terkunci dengan penjelasan; siswa dalam proses terlambat ditandai; jurnal di bawah dengan topik dari pertemuan sebelumnya sebagai saran; simpan bekerja offline dan menampilkan status sinkron. Koreksi setelah jendela meminta alasan dan tercatat di audit.
