@@ -249,8 +249,8 @@ func toAcademicYear(row db.AcademicYear) domain.AcademicYear {
 }
 
 // SetupCounts answers the onboarding checklist in one round trip.
-func (r *Repository) SetupCounts(ctx context.Context, tenantID uuid.UUID, yearID uuid.NullUUID) (service.SetupCounts, error) {
-	row, err := r.queries(ctx).SetupCounts(ctx, db.SetupCountsParams{TenantID: tenantID, YearID: pdatabase.NullUUID(yearID)})
+func (r *Repository) SetupCounts(ctx context.Context, tenantID uuid.UUID, yearID uuid.NullUUID, today time.Time) (service.SetupCounts, error) {
+	row, err := r.queries(ctx).SetupCounts(ctx, db.SetupCountsParams{TenantID: tenantID, YearID: pdatabase.NullUUID(yearID), Today: pdatabase.Date(today)})
 	if err != nil {
 		return service.SetupCounts{}, fmt.Errorf("setup counts: %w", err)
 	}

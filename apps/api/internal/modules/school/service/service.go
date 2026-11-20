@@ -149,6 +149,15 @@ func (s *Service) SetOnboardingDependencies(academic AcademicPort, identity Iden
 	s.clk = clk
 }
 
+// clock is the injected clock, or the real one before
+// SetOnboardingDependencies runs (and in tests that never call it).
+func (s *Service) clock() clock.Clock {
+	if s.clk == nil {
+		return clock.Real{}
+	}
+	return s.clk
+}
+
 // withTx opens the tenant-scoped transaction for one use case, per
 // docs/03-layered-architecture.md section 2.
 func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx context.Context) error) error {

@@ -8,6 +8,8 @@ import (
 
 	academicdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 // seedDemoLevel is the level template applied when a tenant asks for
@@ -41,7 +43,7 @@ func (s *Service) SeedSampleData(ctx context.Context, tenantID uuid.UUID) (SeedR
 
 	var report SeedReport
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		counts, err := s.repo.SetupCounts(ctx, tenantID, uuid.NullUUID{})
+		counts, err := s.repo.SetupCounts(ctx, tenantID, uuid.NullUUID{}, clock.LocalDate(clock.Now(ctx, s.clock()), tenant.LocationFromContext(ctx)))
 		if err != nil {
 			return err
 		}
