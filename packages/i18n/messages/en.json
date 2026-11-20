@@ -469,6 +469,8 @@
     "ACADEMIC_YEAR_REQUIRED": "No active academic year is set. Contact the school admin.",
     "ACADEMIC_YEAR_NAME_EXISTS": "An academic year with this name already exists. Use a different name.",
     "ACADEMIC_YEAR_ARCHIVED": "This academic year is archived, so its data cannot be changed.",
+    "ACADEMIC_TERM_OVERLAP": "These term dates overlap another term in the same academic year. Change the dates.",
+    "ACADEMIC_TERM_OUTSIDE_YEAR": "Term dates must fall within the academic year.",
     "ACADEMIC_TERM_SEQUENCE_TAKEN": "This term number is already used in this academic year. Pick a different number.",
     "ACADEMIC_CODE_EXISTS": "This code is already in use. Use a different code.",
     "ACADEMIC_CLASS_NAME_EXISTS": "A class with this name already exists in this academic year. Use a different name.",

@@ -469,6 +469,8 @@
     "ACADEMIC_YEAR_REQUIRED": "Tahun ajaran aktif belum diatur. Hubungi admin sekolah.",
     "ACADEMIC_YEAR_NAME_EXISTS": "Nama tahun ajaran ini sudah dipakai. Gunakan nama lain.",
     "ACADEMIC_YEAR_ARCHIVED": "Tahun ajaran ini sudah diarsipkan, jadi datanya tidak bisa diubah.",
+    "ACADEMIC_TERM_OVERLAP": "Tanggal semester ini bertumpang dengan semester lain di tahun ajaran yang sama. Ubah tanggalnya.",
+    "ACADEMIC_TERM_OUTSIDE_YEAR": "Tanggal semester harus berada di dalam rentang tahun ajaran.",
     "ACADEMIC_TERM_SEQUENCE_TAKEN": "Urutan semester ini sudah dipakai di tahun ajaran yang sama. Pilih urutan lain.",
     "ACADEMIC_CODE_EXISTS": "Kode ini sudah dipakai. Gunakan kode lain.",
     "ACADEMIC_CLASS_NAME_EXISTS": "Nama kelas ini sudah dipakai di tahun ajaran yang sama. Gunakan nama lain.",

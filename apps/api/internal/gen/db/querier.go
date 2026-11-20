@@ -89,6 +89,9 @@ type Querier interface {
 	AcademicGetSubjectByID(ctx context.Context, arg AcademicGetSubjectByIDParams) (Subject, error)
 	AcademicGetSubjectOfferingByID(ctx context.Context, arg AcademicGetSubjectOfferingByIDParams) (SubjectOffering, error)
 	AcademicGetTeachingAssignmentByID(ctx context.Context, arg AcademicGetTeachingAssignmentByIDParams) (TeachingAssignment, error)
+	// The tenant's IANA timezone, so a server-picked date (a homeroom duty's
+	// starts_on/ends_on) is the school's local date, not the UTC one.
+	AcademicGetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error)
 	AcademicGetTermByID(ctx context.Context, arg AcademicGetTermByIDParams) (Term, error)
 	AcademicGetTrackByID(ctx context.Context, arg AcademicGetTrackByIDParams) (Track, error)
 	// Read-only lookups against tables owned by the identity module (users,

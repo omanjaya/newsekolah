@@ -20,3 +20,8 @@ where tenant_id = $1 and id = $2;
 -- name: AcademicCreateHomeroomAssignment :exec
 insert into duty_assignments (tenant_id, academic_year_id, duty_type_id, user_id, scope_class_id, starts_on)
 values ($1, $2, $3, $4, $5, $6);
+
+-- name: AcademicGetTenantTimezone :one
+-- The tenant's IANA timezone, so a server-picked date (a homeroom duty's
+-- starts_on/ends_on) is the school's local date, not the UTC one.
+select timezone from tenants where id = $1;

@@ -42,6 +42,9 @@ func (r *Repository) FindActiveHomeroomAssignment(ctx context.Context, tenantID,
 	return row.ID, row.UserID, true, nil
 }
 
+// EndHomeroomAssignment and CreateHomeroomAssignment store the calendar
+// date endsOn/startsOn carries in its own location; the service passes a
+// tenant-local instant (Service.tenantToday), never a UTC one.
 func (r *Repository) EndHomeroomAssignment(ctx context.Context, tenantID, id uuid.UUID, endsOn time.Time) error {
 	return r.queries(ctx).AcademicEndHomeroomAssignment(ctx, db.AcademicEndHomeroomAssignmentParams{
 		TenantID: tenantID, ID: id, EndsOn: pdatabase.Date(endsOn),
@@ -53,4 +56,10 @@ func (r *Repository) CreateHomeroomAssignment(ctx context.Context, tenantID, yea
 		TenantID: tenantID, AcademicYearID: yearID, DutyTypeID: dutyTypeID, UserID: teacherID,
 		ScopeClassID: uuidPtrToPg(&classID), StartsOn: pdatabase.Date(startsOn),
 	})
+}
+
+// GetTenantTimezone returns the tenant's configured IANA timezone ("" when
+// unset).
+func (r *Repository) GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error) {
+	return r.queries(ctx).AcademicGetTenantTimezone(ctx, tenantID)
 }

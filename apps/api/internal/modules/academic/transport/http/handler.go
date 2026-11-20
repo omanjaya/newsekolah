@@ -105,6 +105,8 @@ var conflictErrs = []struct {
 	{domain.ErrAcademicYearNameExists, "ACADEMIC_YEAR_NAME_EXISTS"},
 	{domain.ErrAcademicYearArchived, "ACADEMIC_YEAR_ARCHIVED"},
 	{domain.ErrTermSequenceTaken, "ACADEMIC_TERM_SEQUENCE_TAKEN"},
+	{domain.ErrTermOverlap, "ACADEMIC_TERM_OVERLAP"},
+	{domain.ErrTermOutsideYear, "ACADEMIC_TERM_OUTSIDE_YEAR"},
 	{domain.ErrGradeLevelCodeExists, "ACADEMIC_CODE_EXISTS"},
 	{domain.ErrTrackCodeExists, "ACADEMIC_CODE_EXISTS"},
 	{domain.ErrClassNameExists, "ACADEMIC_CLASS_NAME_EXISTS"},

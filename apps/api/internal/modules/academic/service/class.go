@@ -21,6 +21,7 @@ type classRepository interface {
 	CountEnrollmentsForClass(ctx context.Context, tenantID, id uuid.UUID) (int64, error)
 	CountTeachingAssignmentsForClass(ctx context.Context, tenantID, id uuid.UUID) (int64, error)
 
+	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
 	FindHomeroomDutyTypeID(ctx context.Context, tenantID uuid.UUID) (uuid.UUID, bool, error)
 	FindActiveHomeroomAssignment(ctx context.Context, tenantID, yearID, dutyTypeID, classID uuid.UUID) (id, userID uuid.UUID, found bool, err error)
 	EndHomeroomAssignment(ctx context.Context, tenantID, id uuid.UUID, endsOn time.Time) error
@@ -96,17 +97,37 @@ func (s *Service) syncHomeroomDuty(ctx context.Context, class domain.Class, befo
 	if err != nil || !found {
 		return err
 	}
+	// One date for both ends: the outgoing teacher's last day and the
+	// incoming teacher's first day are the school's local "today", not the
+	// UTC date (which is still yesterday before 08:00 in Asia/Makassar).
+	today := s.tenantToday(ctx, class.TenantID)
 	if assignmentID, _, found, err := s.repo.FindActiveHomeroomAssignment(ctx, class.TenantID, class.AcademicYearID, dutyTypeID, class.ID); err != nil {
 		return err
 	} else if found {
-		if err := s.repo.EndHomeroomAssignment(ctx, class.TenantID, assignmentID, clock.Now(ctx, s.clock)); err != nil {
+		if err := s.repo.EndHomeroomAssignment(ctx, class.TenantID, assignmentID, today); err != nil {
 			return err
 		}
 	}
 	if after != nil {
-		return s.repo.CreateHomeroomAssignment(ctx, class.TenantID, class.AcademicYearID, dutyTypeID, *after, class.ID, clock.Now(ctx, s.clock))
+		return s.repo.CreateHomeroomAssignment(ctx, class.TenantID, class.AcademicYearID, dutyTypeID, *after, class.ID, today)
 	}
 	return nil
+}
+
+// tenantToday is the tenant's local calendar date for the request's
+// business instant (clock.Now, so a simulated time applies too), as a
+// UTC-midnight time.Time a date column stores unchanged. An unset or
+// unknown timezone falls back to UTC rather than failing the write.
+func (s *Service) tenantToday(ctx context.Context, tenantID uuid.UUID) time.Time {
+	now := clock.Now(ctx, s.clock)
+	loc := time.UTC
+	if tz, err := s.repo.GetTenantTimezone(ctx, tenantID); err == nil && tz != "" {
+		if l, err := time.LoadLocation(tz); err == nil {
+			loc = l
+		}
+	}
+	y, m, d := now.In(loc).Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 }
 
 func (s *Service) GetClass(ctx context.Context, tenantID, id uuid.UUID) (domain.Class, error) {

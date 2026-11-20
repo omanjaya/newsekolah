@@ -1,0 +1,1 @@
+drop index if exists ux_subject_offerings_year_subject_grade;

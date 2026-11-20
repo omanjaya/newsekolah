@@ -158,7 +158,9 @@ func (s *Service) UpdateSubjectOffering(ctx context.Context, tenantID, id uuid.U
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		offering, err = s.repo.UpdateSubjectOffering(ctx, tenantID, id, gradeLevelID, hoursPerWeek)
-		return mapNotFound(err, domain.ErrSubjectNotFound)
+		// Moving an offering onto a grade the subject is already offered
+		// for collides with ux_subject_offerings_year_subject_grade.
+		return mapNotFound(mapUniqueViolation(err, domain.ErrSubjectOfferingExists), domain.ErrSubjectNotFound)
 	})
 	return offering, err
 }

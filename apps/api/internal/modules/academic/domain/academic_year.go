@@ -66,11 +66,14 @@ func BuildDefaultTerms(yearID, tenantID uuid.UUID, startsOn, endsOn time.Time, c
 	}
 
 	terms := make([]Term, count)
-	cursor := startsOn
+	cursor := dateOnly(startsOn)
 	for i := 0; i < count; i++ {
-		end := cursor.Add(step)
+		// Each term ends on a whole day and the next one starts the day
+		// after, so no calendar day belongs to two terms
+		// (ValidateTermPlacement and the terms exclusion constraint).
+		end := dateOnly(cursor.Add(step))
 		if i == count-1 {
-			end = endsOn
+			end = dateOnly(endsOn)
 		}
 		terms[i] = Term{
 			TenantID:       tenantID,
@@ -80,9 +83,38 @@ func BuildDefaultTerms(yearID, tenantID uuid.UUID, startsOn, endsOn time.Time, c
 			StartsOn:       cursor,
 			EndsOn:         end,
 		}
-		cursor = end
+		cursor = end.AddDate(0, 0, 1)
 	}
 	return terms
+}
+
+// ValidateTermPlacement checks a term's dates against its academic year
+// and the year's other terms: the term must lie within the year, and no
+// calendar day may belong to two terms (both ends inclusive, as the admin
+// reads "13 Jul - 20 Des"). excludeID is the term being edited, so it is
+// not compared with itself; pass uuid.Nil for a new term.
+func ValidateTermPlacement(year AcademicYear, siblings []Term, excludeID uuid.UUID, startsOn, endsOn time.Time) error {
+	start, end := dateOnly(startsOn), dateOnly(endsOn)
+	if start.Before(dateOnly(year.StartsOn)) || end.After(dateOnly(year.EndsOn)) {
+		return ErrTermOutsideYear
+	}
+	for _, t := range siblings {
+		if t.ID == excludeID {
+			continue
+		}
+		if !start.After(dateOnly(t.EndsOn)) && !dateOnly(t.StartsOn).After(end) {
+			return ErrTermOverlap
+		}
+	}
+	return nil
+}
+
+// dateOnly drops the clock part of t, keeping its calendar date, so dates
+// read back from a date column and dates parsed from a request compare
+// equal whatever zone or time of day they carry.
+func dateOnly(t time.Time) time.Time {
+	y, m, d := t.Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 }
 
 const (

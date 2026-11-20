@@ -101,3 +101,16 @@ func (q *Queries) AcademicFindHomeroomDutyTypeID(ctx context.Context, tenantID u
 	err := row.Scan(&id)
 	return id, err
 }
+
+const academicGetTenantTimezone = `-- name: AcademicGetTenantTimezone :one
+select timezone from tenants where id = $1
+`
+
+// The tenant's IANA timezone, so a server-picked date (a homeroom duty's
+// starts_on/ends_on) is the school's local date, not the UTC one.
+func (q *Queries) AcademicGetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, academicGetTenantTimezone, id)
+	var timezone string
+	err := row.Scan(&timezone)
+	return timezone, err
+}

@@ -10,6 +10,8 @@ var (
 
 	ErrTermNotFound      = errors.New("term not found")
 	ErrTermSequenceTaken = errors.New("term sequence already used in this academic year")
+	ErrTermOverlap       = errors.New("term dates overlap another term in this academic year")
+	ErrTermOutsideYear   = errors.New("term dates fall outside the academic year")
 
 	ErrCalendarEventNotFound     = errors.New("calendar event not found")
 	ErrInvalidCalendarEventRange = errors.New("end_date must not be before date")

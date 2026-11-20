@@ -228,11 +228,14 @@ func (s *Service) CreateTerm(ctx context.Context, tenantID, yearID uuid.UUID, na
 	}
 	var term domain.Term
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if err := s.checkTermPlacement(ctx, tenantID, yearID, uuid.Nil, startsOn, endsOn); err != nil {
+			return err
+		}
 		var err error
 		term, err = s.repo.CreateTerm(ctx, domain.Term{
 			TenantID: tenantID, AcademicYearID: yearID, Name: name, Sequence: sequence, StartsOn: startsOn, EndsOn: endsOn,
 		})
-		return mapCheckViolation(mapUniqueViolation(err, domain.ErrTermSequenceTaken), domain.ErrFieldTooLong)
+		return mapTermWriteError(mapUniqueViolation(err, domain.ErrTermSequenceTaken))
 	})
 	return term, err
 }
@@ -246,11 +249,41 @@ func (s *Service) UpdateTerm(ctx context.Context, tenantID, id uuid.UUID, name s
 	}
 	var term domain.Term
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
+		existing, err := s.repo.GetTermByID(ctx, tenantID, id)
+		if err != nil {
+			return mapNotFound(err, domain.ErrTermNotFound)
+		}
+		if err := s.checkTermPlacement(ctx, tenantID, existing.AcademicYearID, id, startsOn, endsOn); err != nil {
+			return err
+		}
 		term, err = s.repo.UpdateTerm(ctx, tenantID, id, name, startsOn, endsOn)
-		return mapNotFound(mapCheckViolation(err, domain.ErrFieldTooLong), domain.ErrTermNotFound)
+		return mapNotFound(mapTermWriteError(err), domain.ErrTermNotFound)
 	})
 	return term, err
+}
+
+// checkTermPlacement loads the term's academic year and its other terms
+// and applies domain.ValidateTermPlacement: the dates must lie within the
+// year and share no day with another term. excludeID is the term being
+// edited (uuid.Nil for a new one).
+func (s *Service) checkTermPlacement(ctx context.Context, tenantID, yearID, excludeID uuid.UUID, startsOn, endsOn time.Time) error {
+	year, err := s.repo.GetYearByID(ctx, tenantID, yearID)
+	if err != nil {
+		return mapNotFound(err, domain.ErrAcademicYearNotFound)
+	}
+	siblings, err := s.repo.ListTermsByYear(ctx, tenantID, yearID)
+	if err != nil {
+		return err
+	}
+	return domain.ValidateTermPlacement(year, siblings, excludeID, startsOn, endsOn)
+}
+
+// mapTermWriteError maps the terms table's own constraints: the length
+// check to ErrFieldTooLong and the no-overlap exclusion constraint
+// (migrations/0129_terms_no_overlap) to ErrTermOverlap, for two saves that
+// raced past checkTermPlacement.
+func mapTermWriteError(err error) error {
+	return mapExclusionViolation(mapCheckViolation(err, domain.ErrFieldTooLong), domain.ErrTermOverlap)
 }
 
 func (s *Service) DeleteTerm(ctx context.Context, tenantID, id uuid.UUID) error {

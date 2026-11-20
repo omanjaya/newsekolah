@@ -18,6 +18,14 @@ func init() {
 			Indonesian: "Urutan semester ini sudah digunakan pada tahun ajaran tersebut.",
 			English:    "This term sequence is already used in this academic year.",
 		},
+		"ACADEMIC_TERM_OVERLAP": {
+			Indonesian: "Tanggal semester ini bertumpang dengan semester lain pada tahun ajaran yang sama.",
+			English:    "These term dates overlap another term in the same academic year.",
+		},
+		"ACADEMIC_TERM_OUTSIDE_YEAR": {
+			Indonesian: "Tanggal semester harus berada di dalam rentang tahun ajaran.",
+			English:    "Term dates must fall within the academic year.",
+		},
 		"ACADEMIC_CODE_EXISTS": {
 			Indonesian: "Kode ini sudah digunakan.",
 			English:    "This code already exists.",
