@@ -16,13 +16,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
+import { useBusinessNow } from "../../../lib/simulation/clock";
 import { isoWeekdayOf } from "../../../lib/tenant-date";
 import {
   useClassesQuery,
@@ -186,18 +187,13 @@ export function DaySessions(): ReactElement {
     [items, periodMap],
   );
 
-  // Re-evaluated every 30s so "sedang berlangsung"/"berikutnya" stays
-  // accurate through a lesson without a full page reload; only meaningful
-  // for today's own list, never for a past or future date.
-  const [now, setNow] = useState(() => nowTimeInZone(me?.tenant.timezone));
-  useEffect(() => {
-    const id = setInterval(() => {
-      setNow(nowTimeInZone(me?.tenant.timezone));
-    }, 30_000);
-    return () => {
-      clearInterval(id);
-    };
-  }, [me?.tenant.timezone]);
+  // Read from the business clock on every render: useBusinessNow re-renders
+  // every 30s, so "sedang berlangsung"/"berikutnya" stays accurate through
+  // a lesson, and at once when the simulated time is applied or moved (on
+  // a full page load it is applied only after the first render). Only
+  // meaningful for today's own list, never for a past or future date.
+  useBusinessNow();
+  const now = nowTimeInZone(me?.tenant.timezone);
   const isToday = date === today;
 
   const ongoingScheduleId = useMemo(() => {
