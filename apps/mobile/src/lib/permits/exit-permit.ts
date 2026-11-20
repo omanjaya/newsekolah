@@ -3,23 +3,39 @@
 // lesson-period-options.ts): which lessons can still be asked for, and
 // where the student stands on returning after the gate.
 
-/** "HH:mm" on the school's wall clock at `now`, in `timeZone` when known. */
-export function schoolClock(now: Date, timeZone?: string): string {
+/** "YYYY-MM-DD HH:mm" on the school's calendar and wall clock at `now`. */
+function schoolDateTime(now: Date, timeZone?: string): string {
   try {
     const parts = new Intl.DateTimeFormat("en-GB", {
       timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
       hourCycle: "h23",
     }).formatToParts(now);
     const part = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
-    return `${part("hour")}:${part("minute")}`;
+    return `${part("year")}-${part("month")}-${part("day")} ${part("hour")}:${part("minute")}`;
   } catch {
     // An engine without time zone data: the device's own clock, which is
     // the school's for a student at school.
     const pad = (n: number) => String(n).padStart(2, "0");
-    return `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
   }
+}
+
+/** "HH:mm" on the school's wall clock at `now`, in `timeZone` when known. */
+export function schoolClock(now: Date, timeZone?: string): string {
+  return schoolDateTime(now, timeZone).slice(11, 16);
+}
+
+/** "YYYY-MM-DD", the school's calendar day of `instant`, in `timeZone` when known. */
+export function schoolDay(instant: Date | string, timeZone?: string): string {
+  return schoolDateTime(typeof instant === "string" ? new Date(instant) : instant, timeZone).slice(
+    0,
+    10,
+  );
 }
 
 /** Whether a lesson ending at `ends_at` ("HH:mm:ss") is over at `clock` ("HH:mm"). */
@@ -43,6 +59,44 @@ export function upcomingLessons<T extends { ends_at: string; is_break: boolean }
 export function endLessons<T extends { id: string }>(lessons: readonly T[], startId: string): T[] {
   const start = lessons.findIndex((p) => p.id === startId);
   return start < 0 ? [...lessons] : lessons.slice(start);
+}
+
+/**
+ * Today's permit (as the web's isTodaysPermit in exit-permits-view.tsx):
+ * opened on the school's today and still on its way, approved, or through
+ * the gate. The API allows one such permit a day (EXIT_PERMIT_ALREADY_TODAY),
+ * so the screen offers no new request while there is one. A cancelled,
+ * rejected or expired permit frees the day, and one from an earlier day is
+ * history: the API no longer counts it.
+ */
+export function isTodaysPermit(
+  permit: { status: string; opened_at: string },
+  now: Date,
+  timeZone?: string,
+): boolean {
+  return (
+    (permit.status === "in_progress" ||
+      permit.status === "approved" ||
+      permit.status === "completed") &&
+    schoolDay(permit.opened_at, timeZone) === schoolDay(now, timeZone)
+  );
+}
+
+/**
+ * Whether a permit's last lesson has ended on the school's clock (as the
+ * web's usePermitLessonsOver): the API then refuses its stage scans and its
+ * gate QR (EXIT_PERMIT_WINDOW_CLOSED). A permit opened on an earlier school
+ * day is over whatever the time now, as the API reads it (the permit's own
+ * local day). False while the end lesson is unknown.
+ */
+export function permitLessonsOver(
+  permit: { opened_at: string },
+  endPeriod: { ends_at: string } | undefined,
+  now: Date,
+  timeZone?: string,
+): boolean {
+  if (schoolDay(permit.opened_at, timeZone) < schoolDay(now, timeZone)) return true;
+  return endPeriod ? lessonEnded(endPeriod, schoolClock(now, timeZone)) : false;
 }
 
 /**
@@ -99,6 +153,12 @@ export type ExitReturnState =
   | { kind: "no_return" }
   /** Out, due back at `due`; `lateMinutes` > 0 once that has passed. */
   | { kind: "out"; due: string; lateMinutes: number }
+  /**
+   * The exit day ended with no return on record (due back at `due`): the
+   * gate can no longer record it, so a minute count would only keep
+   * growing without saying anything new.
+   */
+  | { kind: "unrecorded"; due: string }
   /** Back at `at`; `lateMinutes` null when there was no due time to judge it by. */
   | { kind: "returned"; at: string; lateMinutes: number | null };
 
@@ -108,8 +168,15 @@ function minutesLate(dueIso: string, atMs: number): number {
   return Math.max(0, Math.floor((atMs - due) / 60_000));
 }
 
-/** Where the student stands on returning at `now`. */
-export function exitReturnState(permit: ExitReturnFields, now: Date): ExitReturnState {
+/**
+ * Where the student stands on returning at `now`; `timeZone` is the
+ * school's, whose calendar day decides when the exit day is over.
+ */
+export function exitReturnState(
+  permit: ExitReturnFields,
+  now: Date,
+  timeZone?: string,
+): ExitReturnState {
   if (!permit.exited_at) return { kind: "none" };
   if (!permit.return_required) return { kind: "no_return" };
   const due = permit.expected_return_at;
@@ -121,5 +188,8 @@ export function exitReturnState(permit: ExitReturnFields, now: Date): ExitReturn
     };
   }
   if (!due) return { kind: "none" };
+  if (schoolDay(now, timeZone) > schoolDay(permit.exited_at, timeZone)) {
+    return { kind: "unrecorded", due };
+  }
   return { kind: "out", due, lateMinutes: minutesLate(due, now.getTime()) };
 }

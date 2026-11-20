@@ -20,7 +20,8 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import {
   endLessons,
   exitReturnState,
-  lessonEnded,
+  isTodaysPermit,
+  permitLessonsOver,
   schoolClock,
   upcomingLessons,
   type ExitReturnFields,
@@ -40,7 +41,7 @@ function timeOfDay(iso: string, timeZone: string | undefined): string {
 
 /** The return line once the student is through the gate, or null. */
 function returnText(permit: ExitReturnFields, timeZone: string | undefined): string | null {
-  const state = exitReturnState(permit, new Date());
+  const state = exitReturnState(permit, new Date(), timeZone);
   switch (state.kind) {
     case "none":
       return null;
@@ -54,6 +55,8 @@ function returnText(permit: ExitReturnFields, timeZone: string | undefined): str
             .replace("{time}", time)
         : t("permits.not_back").replace("{time}", time);
     }
+    case "unrecorded":
+      return t("permits.not_recorded_back").replace("{time}", timeOfDay(state.due, timeZone));
     case "returned": {
       const time = timeOfDay(state.at, timeZone);
       if (state.lateMinutes === null) return t("permits.returned").replace("{time}", time);
@@ -68,10 +71,14 @@ function returnText(permit: ExitReturnFields, timeZone: string | undefined): str
 
 export default function ExitPermitsRoute(): React.JSX.Element {
   const permits = useMyExitPermits(true);
+  const { me } = useAuth();
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const items = permits.data?.data ?? [];
-  const active = items.find((p) => p.status === "in_progress" || p.status === "approved");
+  // One exit permit a day: today's, even once through the gate, holds the
+  // request button; one left open from an earlier day does not.
+  const now = new Date();
+  const today = items.find((p) => isTodaysPermit(p, now, me?.tenant.timezone));
 
   if (openId) return <PermitDetail id={openId} onBack={() => setOpenId(null)} />;
   if (creating)
@@ -94,7 +101,7 @@ export default function ExitPermitsRoute(): React.JSX.Element {
           <Button
             label={t("permits.request")}
             variant="ghost"
-            disabled={Boolean(active)}
+            disabled={Boolean(today)}
             onPress={() => setCreating(true)}
           />
         }
@@ -256,7 +263,6 @@ function PermitDetail({ id, onBack }: { id: string; onBack: () => void }): React
   const cancel = useCancelExitPermit();
   const gate = useIssueGateToken();
   const periods = usePeriods();
-  const clock = useSchoolClock();
   const { me } = useAuth();
   if (isLoading || !data)
     return (
@@ -271,9 +277,10 @@ function PermitDetail({ id, onBack }: { id: string; onBack: () => void }): React
       </View>
     );
   const inst = data.instance;
-  // Once the permit's last lesson is over the API refuses its gate QR.
+  // Once the permit's last lesson is over, or its day has passed, the API
+  // refuses its stage scans and its gate QR (EXIT_PERMIT_WINDOW_CLOSED).
   const endPeriod = periods.data?.find((p) => p.id === data.end_period_id);
-  const lessonsOver = endPeriod ? lessonEnded(endPeriod, clock) : false;
+  const lessonsOver = permitLessonsOver(inst, endPeriod, new Date(), me?.tenant.timezone);
   const back = returnText(data, me?.tenant.timezone);
   return (
     <View className="flex-1 bg-bg dark:bg-bg-dark">
@@ -287,7 +294,11 @@ function PermitDetail({ id, onBack }: { id: string; onBack: () => void }): React
           {inst.id}
         </Text>
         <WorkflowSteps instance={inst} />
-        {inst.status === "in_progress" && inst.current_stage?.verification === "qr_scan" ? (
+        {inst.status === "in_progress" && lessonsOver ? (
+          <Text className="text-sm text-ink/60 dark:text-ink-dark/60">
+            {t("permits.lessons_over_pending")}
+          </Text>
+        ) : inst.status === "in_progress" && inst.current_stage?.verification === "qr_scan" ? (
           <Button
             label={t("permits.scan_stage").replace("{stage}", inst.current_stage.label)}
             fullWidth
@@ -295,17 +306,19 @@ function PermitDetail({ id, onBack }: { id: string; onBack: () => void }): React
           />
         ) : null}
         {inst.status === "approved" && !data.exited_at ? (
-          gate.data ? (
+          // A pass minted earlier goes once the lessons are over: the gate
+          // refuses it then.
+          lessonsOver ? (
+            <Text className="text-sm text-ink/60 dark:text-ink-dark/60">
+              {t("permits.lessons_over")}
+            </Text>
+          ) : gate.data ? (
             <TokenQr
               token={gate.data}
               purpose="gate"
               onRenew={() => gate.mutate(id)}
               renewing={gate.isPending}
             />
-          ) : lessonsOver ? (
-            <Text className="text-sm text-ink/60 dark:text-ink-dark/60">
-              {t("permits.lessons_over")}
-            </Text>
           ) : (
             <Button
               label={t("permits.show_gate")}
