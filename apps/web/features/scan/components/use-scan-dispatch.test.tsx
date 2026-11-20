@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   exitStage: vi.fn(),
   lateStage: vi.fn(),
   refetchLate: vi.fn(),
+  libraryVisit: vi.fn(),
 }));
 
 vi.mock("next-intl", () => ({
@@ -19,7 +20,7 @@ vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { disabled_modules: [] } }),
 }));
 vi.mock("../../library/visits-api", () => ({
-  useScanLibraryKioskVisitMutation: () => ({ mutateAsync: vi.fn() }),
+  useScanLibraryKioskVisitMutation: () => ({ mutateAsync: mocks.libraryVisit }),
 }));
 vi.mock("../../permits/api", async (importOriginal) => {
   const actual = await importOriginal<typeof PermitsApi>();
@@ -79,5 +80,32 @@ describe("useScanDispatch approver QR", () => {
     await result.current("sion:approve_stage:exit-9:tok");
 
     expect(mocks.exitStage).toHaveBeenCalledWith({ id: "exit-9", token: "tok" });
+  });
+});
+
+describe("useScanDispatch library visit", () => {
+  beforeEach(() => {
+    mocks.libraryVisit.mockReset();
+  });
+
+  it("confirms a new visit", async () => {
+    mocks.libraryVisit.mockResolvedValue({ id: "v1", already_recorded: false });
+    const { result } = renderHook(() => useScanDispatch());
+
+    const outcome = await result.current("sion:library_visit::tok");
+
+    expect(mocks.libraryVisit).toHaveBeenCalledWith({ token: "tok" });
+    expect(outcome).toMatchObject({ ok: true, message: "results.library_visit" });
+  });
+
+  // A second scan inside 30 minutes is folded into the first visit; the
+  // member is told so instead of reading "recorded" again.
+  it("says a repeat scan within 30 minutes was already recorded", async () => {
+    mocks.libraryVisit.mockResolvedValue({ id: "v1", already_recorded: true });
+    const { result } = renderHook(() => useScanDispatch());
+
+    const outcome = await result.current("sion:library_visit::tok");
+
+    expect(outcome).toMatchObject({ ok: true, message: "results.library_visit_already" });
   });
 });

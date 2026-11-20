@@ -905,7 +905,10 @@
       "purpose": "Keperluan",
       "purposePlaceholder": "Misalnya membaca atau mengerjakan tugas",
       "cancel": "Batal",
-      "submit": "Simpan"
+      "submit": "Simpan",
+      "recorded": "Kunjungan dicatat",
+      "alreadyRecorded": "Kunjungan anggota ini sudah tercatat pukul {time}, kurang dari 30 menit lalu, jadi tidak dicatat dua kali.",
+      "purposeKept": "Keperluan yang tercatat tetap: {purpose}"
     }
   },
   "visitKiosk": {
@@ -936,7 +939,11 @@
     "started": "Sesi baca di tempat dicatat",
     "logHeading": "Riwayat baca di tempat",
     "emptyLog": "Belum ada riwayat untuk eksemplar ini.",
-    "ongoing": "sedang berlangsung"
+    "ongoing": "sedang berlangsung",
+    "end": "Selesai",
+    "ended": "Sesi baca di tempat diakhiri",
+    "endedAt": "selesai {time}",
+    "unnamedReader": "Pembaca tanpa nama"
   },
   "stocktake": {
     "searchPlaceholder": "Cari nama stok opname",

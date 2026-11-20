@@ -905,7 +905,10 @@
       "purpose": "Purpose",
       "purposePlaceholder": "For example reading or homework",
       "cancel": "Cancel",
-      "submit": "Save"
+      "submit": "Save",
+      "recorded": "Visit recorded",
+      "alreadyRecorded": "This member's visit was already recorded at {time}, less than 30 minutes ago, so it was not recorded twice.",
+      "purposeKept": "The recorded purpose stays: {purpose}"
     }
   },
   "visitKiosk": {
@@ -936,7 +939,11 @@
     "started": "Read-in-place session logged",
     "logHeading": "Read-in-place history",
     "emptyLog": "No history yet for this copy.",
-    "ongoing": "ongoing"
+    "ongoing": "ongoing",
+    "end": "End",
+    "ended": "Read-in-place session ended",
+    "endedAt": "ended {time}",
+    "unnamedReader": "Unnamed reader"
   },
   "stocktake": {
     "searchPlaceholder": "Search stocktake name",

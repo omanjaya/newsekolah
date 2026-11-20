@@ -1,6 +1,8 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
+import { formatTime } from "@newsekolah/i18n";
+import type { Locale } from "@newsekolah/i18n";
 import {
   DialogFooter,
   NumberInput,
@@ -12,8 +14,9 @@ import {
   Input,
   Select,
   useSubmitValidation,
+  useToast,
 } from "@newsekolah/ui";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
@@ -22,6 +25,7 @@ import {
   DirectoryPicker,
   useDirectoryPickerLabels,
 } from "../../reference/components/directory-picker";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 import { type LibraryVisitKind, useRecordLibraryVisitMutation } from "../visits-api";
 
 const KINDS: LibraryVisitKind[] = ["member", "non_member", "group"];
@@ -40,6 +44,9 @@ export function VisitRecordDialog({
   // one level up rather than being duplicated inside the form namespace.
   const tKind = useTranslations("app.library.visits.kinds");
   const apiErrorMessage = useApiErrorMessage();
+  const locale = useLocale() as Locale;
+  const timeZone = useTenantTimeZone();
+  const toast = useToast();
   const record = useRecordLibraryVisitMutation();
   const memberLabels = useDirectoryPickerLabels(t("memberPlaceholder"));
 
@@ -81,16 +88,33 @@ export function VisitRecordDialog({
             e.preventDefault();
             setError("");
             if (!check(canSubmit)) return;
+            const sentPurpose = purpose.trim();
             record.mutate(
               {
                 kind,
                 member_user_id: kind === "member" ? memberUserId : undefined,
                 visitor_name: kind === "member" ? undefined : visitorName.trim(),
-                purpose: purpose.trim() || undefined,
+                purpose: sentPurpose || undefined,
                 group_size: kind === "group" ? Number(groupSize) || 1 : 1,
               },
               {
-                onSuccess: () => {
+                onSuccess: (visit) => {
+                  if (visit.already_recorded) {
+                    // The member's visit within the last 30 minutes counts
+                    // once: say so, and say when the purpose typed now was
+                    // not saved because the visit already has one.
+                    const kept = visit.purpose ?? "";
+                    toast.info(
+                      t("alreadyRecorded", {
+                        time: formatTime(visit.visited_at, { locale, timeZone }),
+                      }),
+                      sentPurpose && sentPurpose !== kept
+                        ? { description: t("purposeKept", { purpose: kept }) }
+                        : undefined,
+                    );
+                  } else {
+                    toast.success(t("recorded"));
+                  }
                   reset();
                   onRecorded();
                 },

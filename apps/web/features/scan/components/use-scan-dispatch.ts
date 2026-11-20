@@ -91,8 +91,11 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
           throw new LateArrivalBusyError();
         }
         case "library_visit": {
-          await libraryVisit.mutateAsync({ token });
-          return t("results.library_visit");
+          const visit = await libraryVisit.mutateAsync({ token });
+          // A second scan within 30 minutes counts as the same visit.
+          return t(
+            visit.already_recorded ? "results.library_visit_already" : "results.library_visit",
+          );
         }
       }
     },
