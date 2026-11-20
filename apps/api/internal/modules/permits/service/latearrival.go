@@ -389,7 +389,7 @@ func (s *Service) CurrentLateArrival(ctx context.Context, tenantID, studentUserI
 		found  bool
 	)
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		inst, ok, err := s.repo.GetInProgressInstance(ctx, tenantID, domain.KindLateArrival, studentUserID)
+		inst, ok, err := s.repo.GetInProgressInstance(ctx, tenantID, domain.KindLateArrival, studentUserID, s.tenantNow(ctx, tenantID))
 		if err != nil || !ok {
 			return err
 		}

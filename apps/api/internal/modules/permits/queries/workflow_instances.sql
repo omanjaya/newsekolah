@@ -32,8 +32,15 @@ limit $4 offset $5;
 -- name: GetInProgressWorkflowInstance :one
 -- Any not-yet-terminal instance of this kind for this subject, used to
 -- reject a new submission with a clear 409 before the DB constraint would.
+-- sqlc.narg('today') is the tenant-local business date for a day-bound
+-- kind (domain.Kind.DayBound: exit permits, late arrivals), null for the
+-- rest: an instance of such a kind left open from an earlier day is stale
+-- -- the expiry job closes it after the real midnight -- and must not
+-- block today, whatever clock the request runs on (the time simulation
+-- included) and however long ago the job last ran.
 select * from workflow_instances
 where tenant_id = $1 and kind = $2 and subject_user_id = $3 and status in ('in_progress', 'approved')
+  and (sqlc.narg('today')::date is null or local_date >= sqlc.narg('today')::date)
 order by opened_at desc
 limit 1;
 
@@ -79,10 +86,16 @@ where tenant_id = $1 and kind = $2 and status = 'in_progress';
 -- any instance still in_progress past its opening day is force-closed so
 -- it never blocks the next day's attendance. openedBefore is the instant
 -- of local midnight for the tenant's timezone, computed by the caller so
--- this query stays timezone-agnostic.
+-- this query stays timezone-agnostic. An exit permit approved but never
+-- taken through the gate is closed the same way: it can no longer be
+-- used (its lessons are over), the student cannot cancel it (only an
+-- in_progress instance can be), and while approved it would block every
+-- later exit permit.
 update workflow_instances
 set status = 'expired', closed_at = now()
-where tenant_id = $1 and status = 'in_progress' and opened_at < $2
+where tenant_id = $1
+  and (status = 'in_progress' or (kind = 'exit_permit' and status = 'approved'))
+  and opened_at < $2
 returning *;
 
 -- name: MergeWorkflowInstancePayload :one

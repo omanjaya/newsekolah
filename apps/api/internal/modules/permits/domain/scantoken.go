@@ -39,17 +39,20 @@ func (p Purpose) Valid() bool {
 // within a few seconds (docs/08-security.md section 7: "30 detik untuk
 // kelas"). gate_exit is the one purpose that lives far longer -- until the
 // end of the exit permit's last period -- computed by TokenTTL's caller
-// from the actual period end time, not a fixed duration.
+// from the time left until that period ends, not a fixed duration.
 const shortLivedTTL = 30 * time.Second
 
 // TokenTTL returns how long a freshly minted token of purpose stays valid.
-// For PurposeGateExit, periodEndsAt is the wall-clock end of the exit
-// permit's end period on the day it is issued; every other purpose ignores
-// it and returns a fixed short TTL.
-func TokenTTL(purpose Purpose, now time.Time, periodEndsAt time.Time) time.Duration {
+// For PurposeGateExit, untilPeriodEnd is how long the exit permit's end
+// period still runs on the school's (business) clock: the caller measures
+// it on that clock, so a simulated morning mints a pass that lasts as
+// long as the simulated lessons have left, not until the real date of the
+// simulated day. Every other purpose ignores it and returns a fixed short
+// TTL.
+func TokenTTL(purpose Purpose, untilPeriodEnd time.Duration) time.Duration {
 	if purpose == PurposeGateExit {
-		if d := periodEndsAt.Sub(now); d > 0 {
-			return d
+		if untilPeriodEnd > 0 {
+			return untilPeriodEnd
 		}
 		// The period has already ended (e.g. issued in its last minute):
 		// still grant a short window rather than an already-expired token.

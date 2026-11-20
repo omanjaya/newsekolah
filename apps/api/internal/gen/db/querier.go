@@ -619,7 +619,11 @@ type Querier interface {
 	// any instance still in_progress past its opening day is force-closed so
 	// it never blocks the next day's attendance. openedBefore is the instant
 	// of local midnight for the tenant's timezone, computed by the caller so
-	// this query stays timezone-agnostic.
+	// this query stays timezone-agnostic. An exit permit approved but never
+	// taken through the gate is closed the same way: it can no longer be
+	// used (its lessons are over), the student cannot cancel it (only an
+	// in_progress instance can be), and while approved it would block every
+	// later exit permit.
 	ExpireHangingWorkflowInstances(ctx context.Context, arg ExpireHangingWorkflowInstancesParams) ([]WorkflowInstance, error)
 	// Ready holds past their expires_at, for the periodic expiry job
 	// (old app: hourly job, library_circulation.go:1909-1993). copy_id lets
@@ -763,6 +767,12 @@ type Querier interface {
 	GetInProgressLateArrivalToday(ctx context.Context, arg GetInProgressLateArrivalTodayParams) (WorkflowInstance, error)
 	// Any not-yet-terminal instance of this kind for this subject, used to
 	// reject a new submission with a clear 409 before the DB constraint would.
+	// sqlc.narg('today') is the tenant-local business date for a day-bound
+	// kind (domain.Kind.DayBound: exit permits, late arrivals), null for the
+	// rest: an instance of such a kind left open from an earlier day is stale
+	// -- the expiry job closes it after the real midnight -- and must not
+	// block today, whatever clock the request runs on (the time simulation
+	// included) and however long ago the job last ran.
 	GetInProgressWorkflowInstance(ctx context.Context, arg GetInProgressWorkflowInstanceParams) (WorkflowInstance, error)
 	GetIncident(ctx context.Context, arg GetIncidentParams) (VisitorIncident, error)
 	GetIssuedDocumentByEntity(ctx context.Context, arg GetIssuedDocumentByEntityParams) (IssuedDocument, error)

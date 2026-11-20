@@ -26,7 +26,7 @@ type Repository interface {
 	GetInstance(ctx context.Context, tenantID, id uuid.UUID) (domain.Instance, bool, error)
 	GetInstanceForUpdate(ctx context.Context, tenantID, id uuid.UUID) (domain.Instance, bool, error)
 	AdvanceInstance(ctx context.Context, tenantID, id uuid.UUID, stageIndex int, status domain.Status, closedAt *time.Time) (domain.Instance, error)
-	GetInProgressInstance(ctx context.Context, tenantID uuid.UUID, kind domain.Kind, subjectUserID uuid.UUID) (domain.Instance, bool, error)
+	GetInProgressInstance(ctx context.Context, tenantID uuid.UUID, kind domain.Kind, subjectUserID uuid.UUID, today time.Time) (domain.Instance, bool, error)
 	LockSubjectForInstanceCounting(ctx context.Context, tenantID, subjectUserID uuid.UUID) error
 	CountInstancesForSubjectYear(ctx context.Context, tenantID uuid.UUID, kind domain.Kind, subjectUserID, academicYearID uuid.UUID) (int64, error)
 	CountInProgressInstances(ctx context.Context, tenantID uuid.UUID, kind domain.Kind) (int64, error)

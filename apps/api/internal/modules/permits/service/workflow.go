@@ -167,7 +167,7 @@ func (s *Service) createInstance(ctx context.Context, in newInstanceInput) (doma
 		return domain.Instance{}, domain.Definition{}, err
 	}
 
-	if _, ok, err := s.repo.GetInProgressInstance(ctx, in.tenantID, in.kind, in.subjectUserID); err != nil {
+	if _, ok, err := s.repo.GetInProgressInstance(ctx, in.tenantID, in.kind, in.subjectUserID, s.tenantNow(ctx, in.tenantID)); err != nil {
 		return domain.Instance{}, domain.Definition{}, err
 	} else if ok {
 		return domain.Instance{}, domain.Definition{}, domain.ErrAlreadyInProgress
