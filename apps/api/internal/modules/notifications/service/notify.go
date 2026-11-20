@@ -10,6 +10,7 @@ import (
 	"github.com/riverqueue/river"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // deliveryMaxAttempts matches the brief: River retries a delivery job up
@@ -52,14 +53,10 @@ func (s *Service) Notify(ctx context.Context, tenantID uuid.UUID, in Notificatio
 
 func (s *Service) tenantLocation(ctx context.Context, tenantID uuid.UUID) *time.Location {
 	tz, err := s.repo.TenantTimezone(ctx, tenantID)
-	if err != nil || tz == "" {
-		return time.UTC
-	}
-	loc, err := time.LoadLocation(tz)
 	if err != nil {
 		return time.UTC
 	}
-	return loc
+	return clock.Location(tz)
 }
 
 func (s *Service) notifyOne(

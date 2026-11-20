@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/domain"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // WarningLetterIssued is published after a letter commits so notifications
@@ -132,7 +131,9 @@ func (s *Service) issueLetterDocument(ctx context.Context, tenantID, letterID, y
 		if tmpl.SeqPad > 0 {
 			format = fmt.Sprintf("%%0%dd/SP/%%s", tmpl.SeqPad)
 		}
-		return IssuedDocument{Number: fmt.Sprintf(format, issuedCount+1, clock.Now(ctx, s.clock).Format("2006"))}, nil
+		// The school's own year: 23:30 UTC on 31 December is already the
+		// new year in Asia/Makassar.
+		return IssuedDocument{Number: fmt.Sprintf(format, issuedCount+1, s.tenantNow(ctx, tenantID).Format("2006"))}, nil
 	}
 	doc, err := s.docs.IssueWarningLetter(ctx, tenantID, WarningLetterDocument{
 		LetterID: letterID, AcademicYearID: yearID, IssuerUserID: issuerUserID,

@@ -12,7 +12,6 @@ import (
 	permitsdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	platformdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // DisciplineDocuments issues warning letters through the permits module's
@@ -51,9 +50,12 @@ func (d DisciplineDocuments) DocumentURL(ctx context.Context, tenantID, assetID 
 // When the tenant has discipline turned off the violation is not recorded
 // and the late-arrival review still succeeds: a turned-off module produces
 // no records, and the permits flow must not fail because of it.
+//
+// The violation's occurred_on is the school's own calendar day for the
+// review's business instant (discipline's Today: the tenant's timezone and
+// the request's simulated clock), not the UTC date of the server clock.
 type LateArrivalDiscipline struct {
 	Discipline *disciplineservice.Service
-	Clock      clock.Clock
 	// Flags reads the discipline feature flag; nil leaves discipline on.
 	Flags ModuleFlagReader
 }
@@ -66,7 +68,7 @@ func (d LateArrivalDiscipline) RecordLateArrivalViolation(ctx context.Context, t
 	if !on {
 		return nil
 	}
-	occurredOn := d.Clock.Now()
+	occurredOn := d.Discipline.Today(ctx, tenantID)
 	_, err = d.Discipline.RecordViolation(ctx, tenantID, disciplineservice.RecordInput{
 		StudentUserID: studentUserID, ViolationTypeID: violationTypeID, OccurredOn: occurredOn, Notes: note,
 		WorkflowInstanceID: uuid.NullUUID{UUID: workflowInstanceID, Valid: true}, ReporterUserID: reporterUserID,

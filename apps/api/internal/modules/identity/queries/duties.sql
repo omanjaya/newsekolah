@@ -52,8 +52,10 @@ returning *;
 -- a class, security staff at the gate) when an unrelated event fires; that
 -- always runs on the real clock like the rest of business-time simulation's
 -- background/event-delivery paths (docs/testing-time-simulation.md), so
--- current_date here is intentionally left as the database's own real date,
--- not the simulated clock ListActiveDutyAssignmentsForUser above follows.
+-- today is the real date, not the simulated clock
+-- ListActiveDutyAssignmentsForUser above follows. It is still the tenant's
+-- local calendar date, passed in by the service: the database session runs
+-- in UTC, whose current_date is yesterday before 08:00 in Asia/Makassar.
 select distinct da.user_id
 from duty_assignments da
 join duty_types dt on dt.id = da.duty_type_id
@@ -63,8 +65,8 @@ where da.tenant_id = $1
   and da.is_active
   and dt.is_active
   and dt.deleted_at is null
-  and da.starts_on <= current_date
-  and (da.ends_on is null or da.ends_on >= current_date)
+  and da.starts_on <= sqlc.arg('today')::date
+  and (da.ends_on is null or da.ends_on >= sqlc.arg('today')::date)
   and (
     dt.scope_kind = 'school'
     or (sqlc.narg('class_id')::uuid is not null and da.scope_class_id = sqlc.narg('class_id')::uuid)

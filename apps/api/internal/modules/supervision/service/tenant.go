@@ -16,14 +16,10 @@ import (
 // the same reason permits does (docs/testing-time-simulation.md).
 func (s *Service) tenantLocation(ctx context.Context, tenantID uuid.UUID) *time.Location {
 	tz, err := s.repo.GetTenantTimezone(ctx, tenantID)
-	if err != nil || tz == "" {
-		return time.UTC
-	}
-	loc, err := time.LoadLocation(tz)
 	if err != nil {
 		return time.UTC
 	}
-	return loc
+	return clock.Location(tz)
 }
 
 // tenantNow is the request's business-time instant -- the simulated

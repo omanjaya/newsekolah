@@ -15,6 +15,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 // XLSXContentType and PDFContentType are the two content types
@@ -303,7 +304,11 @@ func (s *Service) attachLetterhead(ctx context.Context, tenantID uuid.UUID, args
 	if sig == nil {
 		return
 	}
-	when := clock.Now(ctx, s.clock)
+	// "Today" is the school's own calendar day: the UTC date of the
+	// instant is still yesterday before 08:00 in Asia/Makassar. The
+	// request's tenant carries the zone; the scheduled run passes its
+	// own tenant-local Date instead.
+	when := clock.LocalDate(clock.Now(ctx, s.clock), tenant.LocationFromContext(ctx))
 	if args.Date != nil {
 		when = *args.Date
 	}

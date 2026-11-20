@@ -55,11 +55,12 @@ type AuthRepository interface {
 	// asOf decides which duty assignments count as active: the request's
 	// simulated business time when one is attached to ctx (a superadmin
 	// running a time simulation, including while impersonating another
-	// user -- see internal/platform/clock.Now), the real date otherwise.
+	// user -- see internal/platform/clock.Now), the real date otherwise,
+	// always as the tenant's local calendar date (tenantDate).
 	// This never affects whether the session/authentication itself is
 	// valid; see IsSessionActive below.
 	ListActiveDuties(ctx context.Context, tenantID, userID, academicYearID uuid.UUID, asOf time.Time) ([]authz.Duty, error)
-	ListUserIDsWithActiveDuty(ctx context.Context, tenantID uuid.UUID, slug string, classID uuid.NullUUID) ([]uuid.UUID, error)
+	ListUserIDsWithActiveDuty(ctx context.Context, tenantID uuid.UUID, slug string, classID uuid.NullUUID, today time.Time) ([]uuid.UUID, error)
 
 	CreateSession(ctx context.Context, s NewSession) (domain.Session, error)
 	GetSessionByRefreshHash(ctx context.Context, tenantID uuid.UUID, hash []byte) (domain.Session, error)
@@ -354,7 +355,7 @@ func (s *Service) loadPrincipal(ctx context.Context, tenantID, userID uuid.UUID)
 	principal := authz.Principal{UserID: userID, RolePerms: rolePerms}
 
 	if yearID, ok, err := s.years.GetActiveAcademicYearID(ctx, tenantID); err == nil && ok {
-		duties, err := s.repo.ListActiveDuties(ctx, tenantID, userID, yearID, clock.Now(ctx, s.clock))
+		duties, err := s.repo.ListActiveDuties(ctx, tenantID, userID, yearID, s.tenantDate(ctx, tenantID, clock.Now(ctx, s.clock)))
 		if err == nil {
 			principal.Duties = duties
 		}
@@ -371,7 +372,10 @@ func (s *Service) UsersWithDuty(ctx context.Context, tenantID uuid.UUID, slug st
 	var ids []uuid.UUID
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		ids, err = s.repo.ListUserIDsWithActiveDuty(ctx, tenantID, slug, classID)
+		// Real time, not the simulated clock: this addresses notifications
+		// from the event bus, outside any one request's business time. The
+		// date is still the school's own, never the UTC date.
+		ids, err = s.repo.ListUserIDsWithActiveDuty(ctx, tenantID, slug, classID, s.tenantDate(ctx, tenantID, s.clock.Now()))
 		return err
 	})
 	return ids, err

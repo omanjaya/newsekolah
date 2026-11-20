@@ -100,7 +100,8 @@ func (s *Service) CheckIn(ctx context.Context, tenantID, guardUserID uuid.UUID, 
 // configured).
 func (s *Service) issueBadge(ctx context.Context, tenantID, guardUserID uuid.UUID, v domain.Visit) (IssuedBadge, error) {
 	if s.docs == nil {
-		return IssuedBadge{Number: fmt.Sprintf("TAMU-%s", clock.Now(ctx, s.clock).Format("20060102-150405"))}, nil
+		// The number reads as the school's own date and time of arrival.
+		return IssuedBadge{Number: fmt.Sprintf("TAMU-%s", v.ArrivedAt.In(s.tenantLocation(ctx, tenantID)).Format("20060102-150405"))}, nil
 	}
 	yearID, _, err := s.activeYear(ctx, tenantID)
 	if err != nil {

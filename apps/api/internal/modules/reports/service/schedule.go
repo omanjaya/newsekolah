@@ -450,12 +450,8 @@ func (s *ScheduleService) WithClock(c clock.Clock) *ScheduleService {
 
 func (s *ScheduleService) tenantLocation(ctx context.Context, tenantID uuid.UUID) *time.Location {
 	tz, err := s.repo.TenantTimezone(ctx, tenantID)
-	if err != nil || tz == "" {
-		return time.UTC
-	}
-	loc, err := time.LoadLocation(tz)
 	if err != nil {
 		return time.UTC
 	}
-	return loc
+	return clock.Location(tz)
 }

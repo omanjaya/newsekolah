@@ -16,14 +16,10 @@ import (
 // needs for the same reason permits does (docs/testing-time-simulation.md).
 func (s *Service) tenantLocation(ctx context.Context, tenantID uuid.UUID) *time.Location {
 	tz, err := s.repo.GetTenantTimezone(ctx, tenantID)
-	if err != nil || tz == "" {
-		return time.UTC
-	}
-	loc, err := time.LoadLocation(tz)
 	if err != nil {
 		return time.UTC
 	}
-	return loc
+	return clock.Location(tz)
 }
 
 // tenantNow is the request's business-time instant -- the simulated
@@ -35,4 +31,12 @@ func (s *Service) tenantLocation(ctx context.Context, tenantID uuid.UUID) *time.
 // (UTC) current_date.
 func (s *Service) tenantNow(ctx context.Context, tenantID uuid.UUID) time.Time {
 	return clock.Now(ctx, s.clock).In(s.tenantLocation(ctx, tenantID))
+}
+
+// Today is the school's calendar date for the request's business instant
+// in the tenant's timezone, the occurred_on a violation recorded "now" by
+// another module (a reviewed late arrival) carries. The UTC date of the
+// instant would file a 07:30 Asia/Makassar review under yesterday.
+func (s *Service) Today(ctx context.Context, tenantID uuid.UUID) time.Time {
+	return clock.LocalDate(clock.Now(ctx, s.clock), s.tenantLocation(ctx, tenantID))
 }

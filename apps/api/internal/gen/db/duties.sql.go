@@ -245,17 +245,18 @@ where da.tenant_id = $1
   and da.is_active
   and dt.is_active
   and dt.deleted_at is null
-  and da.starts_on <= current_date
-  and (da.ends_on is null or da.ends_on >= current_date)
+  and da.starts_on <= $3::date
+  and (da.ends_on is null or da.ends_on >= $3::date)
   and (
     dt.scope_kind = 'school'
-    or ($3::uuid is not null and da.scope_class_id = $3::uuid)
+    or ($4::uuid is not null and da.scope_class_id = $4::uuid)
   )
 `
 
 type ListUserIDsWithActiveDutyParams struct {
 	TenantID uuid.UUID   `json:"tenant_id"`
 	Slug     string      `json:"slug"`
+	Today    pgtype.Date `json:"today"`
 	ClassID  pgtype.UUID `json:"class_id"`
 }
 
@@ -265,10 +266,17 @@ type ListUserIDsWithActiveDutyParams struct {
 // a class, security staff at the gate) when an unrelated event fires; that
 // always runs on the real clock like the rest of business-time simulation's
 // background/event-delivery paths (docs/testing-time-simulation.md), so
-// current_date here is intentionally left as the database's own real date,
-// not the simulated clock ListActiveDutyAssignmentsForUser above follows.
+// today is the real date, not the simulated clock
+// ListActiveDutyAssignmentsForUser above follows. It is still the tenant's
+// local calendar date, passed in by the service: the database session runs
+// in UTC, whose current_date is yesterday before 08:00 in Asia/Makassar.
 func (q *Queries) ListUserIDsWithActiveDuty(ctx context.Context, arg ListUserIDsWithActiveDutyParams) ([]uuid.UUID, error) {
-	rows, err := q.db.Query(ctx, listUserIDsWithActiveDuty, arg.TenantID, arg.Slug, arg.ClassID)
+	rows, err := q.db.Query(ctx, listUserIDsWithActiveDuty,
+		arg.TenantID,
+		arg.Slug,
+		arg.Today,
+		arg.ClassID,
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -126,15 +126,11 @@ func (s *Service) syncHomeroomDuty(ctx context.Context, class domain.Class, befo
 // UTC-midnight time.Time a date column stores unchanged. An unset or
 // unknown timezone falls back to UTC rather than failing the write.
 func (s *Service) tenantToday(ctx context.Context, tenantID uuid.UUID) time.Time {
-	now := clock.Now(ctx, s.clock)
 	loc := time.UTC
-	if tz, err := s.repo.GetTenantTimezone(ctx, tenantID); err == nil && tz != "" {
-		if l, err := time.LoadLocation(tz); err == nil {
-			loc = l
-		}
+	if tz, err := s.repo.GetTenantTimezone(ctx, tenantID); err == nil {
+		loc = clock.Location(tz)
 	}
-	y, m, d := now.In(loc).Date()
-	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+	return clock.LocalDate(clock.Now(ctx, s.clock), loc)
 }
 
 func (s *Service) GetClass(ctx context.Context, tenantID, id uuid.UUID) (domain.Class, error) {

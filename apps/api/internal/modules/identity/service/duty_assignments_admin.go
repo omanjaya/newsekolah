@@ -204,7 +204,7 @@ func (s *Service) UpdateDutyAssignment(ctx context.Context, tenantID, id uuid.UU
 			// The class's other holder hands over today, not on the
 			// reactivated row's original start date.
 			takeover := before
-			takeover.StartsOn = clock.Now(ctx, s.clock)
+			takeover.StartsOn = s.tenantDate(ctx, tenantID, clock.Now(ctx, s.clock))
 			if err := s.endActiveHomeroomAssignment(ctx, tenantID, dutyType, takeover); err != nil {
 				return err
 			}

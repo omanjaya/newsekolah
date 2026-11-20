@@ -22,16 +22,23 @@ type Recap struct {
 	Incidents      map[domain.Severity]int
 }
 
-// DailyRecap covers the calendar day containing day, local to the server's
-// UTC clock (every timestamp in this module is stored and compared in UTC).
+// DailyRecap covers the school's calendar day day (its year, month and
+// day; the zone it carries is ignored): local midnight to local midnight
+// in the tenant's timezone. Timestamps are stored in UTC, so a UTC-midnight
+// range would move a guest who arrived at 07:30 in Asia/Makassar (23:30
+// UTC the day before) onto the previous day's recap.
 func (s *Service) DailyRecap(ctx context.Context, tenantID uuid.UUID, day time.Time) (Recap, error) {
-	from := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, time.UTC)
+	loc := s.tenantLocation(ctx, tenantID)
+	from := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, loc)
 	return s.recap(ctx, tenantID, from, from.AddDate(0, 0, 1))
 }
 
-// MonthlyRecap covers the calendar month containing day.
+// MonthlyRecap covers the school's calendar month containing day, from
+// the first's local midnight to the next month's, in the tenant's
+// timezone.
 func (s *Service) MonthlyRecap(ctx context.Context, tenantID uuid.UUID, day time.Time) (Recap, error) {
-	from := time.Date(day.Year(), day.Month(), 1, 0, 0, 0, 0, time.UTC)
+	loc := s.tenantLocation(ctx, tenantID)
+	from := time.Date(day.Year(), day.Month(), 1, 0, 0, 0, 0, loc)
 	return s.recap(ctx, tenantID, from, from.AddDate(0, 1, 0))
 }
 
