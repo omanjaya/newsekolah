@@ -371,11 +371,11 @@ Catatan lingkungan: setelah build ulang, server `next start` lama harus benar-be
 
 Putaran UI sudah mengerucut (99, 53, 38, 27, 13, 12 temuan), jadi pengujian beralih dari tampilan ke fungsi: apakah sekolah benar-benar bisa memakai aplikasi ini. Penguji per area menjalankan alur kerja dari awal sampai akhir dengan data nyata di stack lokal. Mereka membuat, menyetujui, mengembalikan, dan menghapus data sebagai peran sebenarnya, lalu memeriksa layar hilir milik peran lain. Setiap bug yang dilaporkan direproduksi ulang oleh agen lain sebelum dihitung.
 
-| Putaran                                          | Bug terkonfirmasi                                                                                                                                                                                                              | Hasil                                                                                                        |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| Uji alur 1 (11 area)                             | 126 (F1-F126), termasuk blocker: impor pengguna crash, pemilih pegawai di presensi pegawai kosong, panic di ambang SP, guru mentor tidak bisa membuka kelompoknya, admin tidak bisa menyunting pengguna (`users_locale_check`) | 126 diperbaiki di 11 cabang, ditinjau adversarial, digabung di `0a56804`; uji ulang langsung sedang berjalan |
-| Uji waktu 1 (jam nyata)                          | 18 (T1-T18), 8 di antaranya baru di luar F                                                                                                                                                                                     | masuk putaran perbaikan waktu                                                                                |
-| Uji waktu 2 (simulasi waktu `X-Simulation-Time`) | 25 (S1-S25), 4 tumpang tindih dengan F/T                                                                                                                                                                                       | masuk putaran perbaikan waktu                                                                                |
+| Putaran                                          | Bug terkonfirmasi                                                                                                                                                                                                              | Hasil                                                                                                                            |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Uji alur 1 (11 area)                             | 126 (F1-F126), termasuk blocker: impor pengguna crash, pemilih pegawai di presensi pegawai kosong, panic di ambang SP, guru mentor tidak bisa membuka kelompoknya, admin tidak bisa menyunting pengguna (`users_locale_check`) | 126 diperbaiki di 11 cabang, ditinjau adversarial, digabung di `0a56804`; uji ulang langsung: 117 beres, sisanya masuk putaran 2 |
+| Uji waktu 1 (jam nyata)                          | 18 (T1-T18), 8 di antaranya baru di luar F                                                                                                                                                                                     | masuk putaran perbaikan waktu                                                                                                    |
+| Uji waktu 2 (simulasi waktu `X-Simulation-Time`) | 25 (S1-S25), 4 tumpang tindih dengan F/T                                                                                                                                                                                       | masuk putaran perbaikan waktu                                                                                                    |
 
 Uji waktu memakai fitur simulasi waktu milik sistem (header `X-Simulation-Time`, hanya untuk pemegang `platform_superadmin`), bukan menunggu jam berjalan. Penguji memajukan jam per 15 menit, per jam, atau per hari sambil menyamar sebagai pustakawan, guru, dan siswa.
 
@@ -390,6 +390,35 @@ Catatan lingkungan lokal:
 
 - Unggahan memakai server S3 tiruan (moto) di port 9000, karena MinIO tidak tersedia di kontainer.
 - Akun `operator` (peran Super Admin, kata sandi sama dengan akun seed) hanya dibuat di basis data uji lokal untuk simulasi waktu. Akun ini bukan bagian dari seed.
+
+## Pembaruan 20 November (lanjutan): uji ulang langsung, putaran 2-4, dan jadwal berlaku mulai tanggal
+
+Setiap putaran perbaikan diuji ulang langsung di aplikasi yang sudah dibangun ulang, bukan hanya lewat uji otomatis. Penguji menjalankan ulang langkah reproduksi asli per bug dan memeriksa layar hilirnya. Klaim "belum beres" atau "regresi" baru dihitung setelah agen lain mereproduksinya sendiri.
+
+| Putaran                                | Diuji ulang di | Hasil uji ulang                                                     | Diteruskan ke                  |
+| -------------------------------------- | -------------- | ------------------------------------------------------------------- | ------------------------------ |
+| Perbaikan F (126 bug)                  | `0a56804`      | 117 beres; 9 belum tuntas atau regresi                              | putaran 2                      |
+| Perbaikan waktu (T dan S, 42 bug)      | build waktu    | 39 beres; 3 sebagian (S13, S23, T7) dan 22 regresi terkonfirmasi    | putaran 3 (25 item)            |
+| Putaran 2 (50 item)                    | `7d2e69a`      | 46 beres; 23 terkonfirmasi (3 belum tuntas, 19 regresi, F6 tersisa) | putaran 4 (22 item) dan jadwal |
+| Putaran 3 (25 item) dan jadwal berlaku | `aae33dd`      | uji ulang langsung sedang berjalan                                  |                                |
+| Putaran 4 (22 item)                    | -              | digabung; menunggu uji ulang langsung                               |                                |
+
+Setiap cabang perbaikan ditinjau adversarial sebelum digabung, lalu diperbaiki lagi sesuai temuan peninjau. Semua item putaran 3 dan 4 diperbaiki; tidak ada yang dilewati.
+
+Contoh perbaikan putaran 3: struk sesi meja perpustakaan tidak lagi kehilangan pengembalian atau perpanjangan saat buku dipindai ulang; kartu anggota yang dipindai di mode Kembalikan memilih anggota; daftar terlambat dihitung dalam hari kerja seperti pengembalian; daftar anggota tidak terkirim dua kali saat diklik ganda; hari Sabtu dan Minggu tidak lagi ditandai Izin; guru tidak menerima notifikasi izin milik siswa; isi pengumuman yang dibuka tidak terpotong.
+
+Contoh perbaikan putaran 4: filter Klasifikasi katalog (misalnya 800 Sastra) kembali menampilkan buku di bawah kelas DDC itu; toast impor pengguna menyebut jumlah dibuat, diperbarui, dan tidak berubah sesuai hasil; nama kolom yang berubah tampil dalam bahasa Indonesia; ringkasan presensi tidak lagi menampilkan angka negatif; dialog nilai rapor manual membuka nilai yang tersimpan; kartu tamu menampilkan tuan rumah, jam datang, dan lama kunjungan tanpa terpotong.
+
+### Jadwal berlaku mulai tanggal (F6 bagian 2)
+
+Sebelumnya, blok jadwal yang sudah punya presensi atau guru pengganti terkunci selamanya: tidak bisa diubah atau dihapus. Sejak migrasi 0147, jadwal punya `effective_from` dan `effective_until` (keduanya inklusif). Mengubah atau menghapus blok yang sudah punya riwayat kini menanyakan "Berlaku mulai". Versi lama diakhiri sehari sebelum tanggal itu dan versi baru dimulai pada tanggal itu, sehingga sesi, presensi, jurnal, penggantian, dan laporan masa lalu tetap menunjuk blok seperti adanya. Blok tanpa riwayat masih bisa disunting di tempat.
+
+- Tanggal paling awal adalah hari ini menurut zona waktu sekolah (mengikuti simulasi waktu), atau sehari setelah riwayat terakhir blok itu.
+- Pemeriksaan bentrok guru dan kelas hanya membandingkan versi yang rentang berlakunya tumpang tindih.
+- Trigger basis data menolak perubahan yang membuat riwayat jatuh di luar rentang berlaku, dan menolak sesi atau penggantian baru pada tanggal ketika blok tidak berlaku.
+- Semua pembaca "pelajaran apa pada tanggal D" memfilter rentang berlaku: daftar presensi harian, beranda guru, penggantian, monitor, grid jadwal per minggu, rekap, analitik, hitungan hari pelajaran untuk izin, dan endpoint mobile.
+
+Validasi di `aae33dd`: `go test ./...` dengan integrasi Postgres lulus untuk 90 paket; `pnpm typecheck`, `pnpm lint`, dan `pnpm test` lulus (web 523 berkas dan 3.261 uji).
 
 ## Yang tersisa
 
