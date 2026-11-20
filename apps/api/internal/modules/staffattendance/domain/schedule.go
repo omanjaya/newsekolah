@@ -1,6 +1,10 @@
 package domain
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // StatusCode is one staff_attendance_records.status_code value.
 type StatusCode string
@@ -41,6 +45,11 @@ type ScheduleDay struct {
 	StartMinute    int
 	EndMinute      int
 	GraceMinutes   int
+	// CreatedAt is when this weekday was first given a schedule row. A
+	// schedule is not retroactive: a day before it existed has no
+	// expectation to be absent from (see InEffectOn). Zero means "always
+	// in effect".
+	CreatedAt time.Time
 }
 
 func (d ScheduleDay) Valid() bool {
@@ -54,6 +63,20 @@ func (d ScheduleDay) Valid() bool {
 		return false
 	}
 	return true
+}
+
+// InEffectOn reports whether this schedule row already existed on day,
+// the local midnight of a calendar date in the school's zone: the row
+// counts from the school-local date it was created on, inclusive. Days
+// with no stored record are only judged against a schedule in effect on
+// them, so giving someone a first schedule never turns the weeks before
+// it into absences.
+func (d ScheduleDay) InEffectOn(day time.Time) bool {
+	if d.CreatedAt.IsZero() {
+		return true
+	}
+	y, m, dd := d.CreatedAt.In(day.Location()).Date()
+	return !day.Before(time.Date(y, m, dd, 0, 0, 0, 0, day.Location()))
 }
 
 // CrossesMidnight reports whether the shift's end falls on the calendar

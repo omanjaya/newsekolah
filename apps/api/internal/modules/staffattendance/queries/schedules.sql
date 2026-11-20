@@ -1,8 +1,13 @@
 -- name: UpsertStaffAttendanceScheduleDay :one
+-- created_at is the service clock's instant rather than now(), so a
+-- simulated school day dates a first schedule the way it dates scans:
+-- days before it have no schedule to be absent from. An update keeps the
+-- original created_at.
 insert into staff_attendance_schedules (
-  tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_by, updated_by
+  tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_by, updated_by,
+  created_at
 )
-values ($1, $2, $3, $4, $5, $6, $7, $8, $8)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $8, $9)
 on conflict (tenant_id, employee_user_id, weekday) do update set
   is_working_day = excluded.is_working_day,
   start_minute = excluded.start_minute,

@@ -28,6 +28,13 @@ select * from staff_attendance_records
 where tenant_id = $1 and employee_user_id = $2 and date >= $3 and date < $4
 order by date;
 
+-- name: ListStaffAttendanceUnscheduledRecords :many
+-- One employee's records stored as "unscheduled": the days they recorded
+-- before any work schedule existed, which a first schedule re-judges.
+select * from staff_attendance_records
+where tenant_id = $1 and employee_user_id = $2 and status_code = 'unscheduled'
+order by date;
+
 -- name: ReplaceStaffAttendanceRecordFields :one
 -- Used by a correction: writes the corrected fields directly (as opposed
 -- to UpsertStaffAttendanceRecord's coalesce-on-conflict, which never

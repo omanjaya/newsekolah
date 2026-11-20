@@ -176,6 +176,55 @@ func (q *Queries) ListStaffAttendanceRecordsByEmployeeRange(ctx context.Context,
 	return items, nil
 }
 
+const listStaffAttendanceUnscheduledRecords = `-- name: ListStaffAttendanceUnscheduledRecords :many
+select id, tenant_id, employee_user_id, date, arrival_at, departure_at, status_code, late_minutes, early_leave_minutes, source, notes, created_at, updated_at, created_by, updated_by from staff_attendance_records
+where tenant_id = $1 and employee_user_id = $2 and status_code = 'unscheduled'
+order by date
+`
+
+type ListStaffAttendanceUnscheduledRecordsParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	EmployeeUserID uuid.UUID `json:"employee_user_id"`
+}
+
+// One employee's records stored as "unscheduled": the days they recorded
+// before any work schedule existed, which a first schedule re-judges.
+func (q *Queries) ListStaffAttendanceUnscheduledRecords(ctx context.Context, arg ListStaffAttendanceUnscheduledRecordsParams) ([]StaffAttendanceRecord, error) {
+	rows, err := q.db.Query(ctx, listStaffAttendanceUnscheduledRecords, arg.TenantID, arg.EmployeeUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []StaffAttendanceRecord{}
+	for rows.Next() {
+		var i StaffAttendanceRecord
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.EmployeeUserID,
+			&i.Date,
+			&i.ArrivalAt,
+			&i.DepartureAt,
+			&i.StatusCode,
+			&i.LateMinutes,
+			&i.EarlyLeaveMinutes,
+			&i.Source,
+			&i.Notes,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.CreatedBy,
+			&i.UpdatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const replaceStaffAttendanceRecordFields = `-- name: ReplaceStaffAttendanceRecordFields :one
 update staff_attendance_records set
   arrival_at = $3, departure_at = $4, status_code = $5, late_minutes = $6, early_leave_minutes = $7,

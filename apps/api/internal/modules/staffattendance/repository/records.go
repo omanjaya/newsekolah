@@ -63,6 +63,16 @@ func (r *Repository) ReplaceRecordFields(ctx context.Context, tenantID uuid.UUID
 	return toRecord(row), nil
 }
 
+func (r *Repository) ListUnscheduledRecords(ctx context.Context, tenantID, employeeUserID uuid.UUID) ([]domain.Record, error) {
+	rows, err := r.queries(ctx).ListStaffAttendanceUnscheduledRecords(ctx, db.ListStaffAttendanceUnscheduledRecordsParams{
+		TenantID: tenantID, EmployeeUserID: employeeUserID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return toRecords(rows), nil
+}
+
 func (r *Repository) ListRecordsByDate(ctx context.Context, tenantID uuid.UUID, date time.Time) ([]domain.Record, error) {
 	rows, err := r.queries(ctx).ListStaffAttendanceRecordsByDate(ctx, db.ListStaffAttendanceRecordsByDateParams{
 		TenantID: tenantID, Date: pdatabase.Date(date),

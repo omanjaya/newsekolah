@@ -12,6 +12,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
@@ -86,7 +87,10 @@ func TestGetAllEmployeesMonthlyRecap(t *testing.T) {
 				Weekday: weekday, IsWorkingDay: true, StartMinute: 8 * 60, EndMinute: 16 * 60, GraceMinutes: 0,
 			})
 		}
-		_, err = mod.Service.ReplaceWeeklySchedule(ctx, tenant.ID, user.ID, user.ID, days)
+		// The schedule is dated before February 2025, so every unrecorded
+		// day of that month is measured against it.
+		since := clock.WithTime(ctx, time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC))
+		_, err = mod.Service.ReplaceWeeklySchedule(since, tenant.ID, user.ID, user.ID, days)
 		require.NoError(t, err)
 		return user.ID
 	}

@@ -1470,6 +1470,9 @@ type Querier interface {
 	// staff" for this module.
 	ListStaffAttendanceRosterEmployees(ctx context.Context, tenantID uuid.UUID) ([]ListStaffAttendanceRosterEmployeesRow, error)
 	ListStaffAttendanceScheduleDays(ctx context.Context, arg ListStaffAttendanceScheduleDaysParams) ([]StaffAttendanceSchedule, error)
+	// One employee's records stored as "unscheduled": the days they recorded
+	// before any work schedule existed, which a first schedule re-judges.
+	ListStaffAttendanceUnscheduledRecords(ctx context.Context, arg ListStaffAttendanceUnscheduledRecordsParams) ([]StaffAttendanceRecord, error)
 	// Active users with a teacher or staff profile, for a duty assignment
 	// form's assignee dropdown -- the same eligibility IsActiveTeacherOrStaff
 	// checks on create.
@@ -1919,6 +1922,10 @@ type Querier interface {
 	// shown alongside the score, not bookkeeping.
 	UpsertReportScore(ctx context.Context, arg UpsertReportScoreParams) (ReportScore, error)
 	UpsertStaffAttendanceRecord(ctx context.Context, arg UpsertStaffAttendanceRecordParams) (StaffAttendanceRecord, error)
+	// created_at is the service clock's instant rather than now(), so a
+	// simulated school day dates a first schedule the way it dates scans:
+	// days before it have no schedule to be absent from. An update keeps the
+	// original created_at.
 	UpsertStaffAttendanceScheduleDay(ctx context.Context, arg UpsertStaffAttendanceScheduleDayParams) (StaffAttendanceSchedule, error)
 	UpsertStaffProfile(ctx context.Context, arg UpsertStaffProfileParams) error
 	UpsertStudentProfile(ctx context.Context, arg UpsertStudentProfileParams) error

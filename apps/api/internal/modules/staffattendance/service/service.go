@@ -47,6 +47,9 @@ type Repository interface {
 	ReplaceRecordFields(ctx context.Context, tenantID uuid.UUID, rec domain.Record) (domain.Record, error)
 	ListRecordsByDate(ctx context.Context, tenantID uuid.UUID, date time.Time) ([]domain.Record, error)
 	ListRecordsByEmployeeRange(ctx context.Context, tenantID, employeeUserID uuid.UUID, from, to time.Time) ([]domain.Record, error)
+	// ListUnscheduledRecords is one employee's records stored as
+	// StatusUnscheduled, any date.
+	ListUnscheduledRecords(ctx context.Context, tenantID, employeeUserID uuid.UUID) ([]domain.Record, error)
 
 	// Corrections.
 	CreateCorrection(ctx context.Context, tenantID, recordID, changedBy uuid.UUID, reason string, previous, next domain.Snapshot) error
@@ -166,6 +169,25 @@ func (s *Service) isWorkingDay(ctx context.Context, tenantID, yearID uuid.UUID, 
 func (s *Service) computeStatus(
 	ctx context.Context, tenantID, employeeUserID uuid.UUID, date time.Time, arrival, departure *time.Time,
 ) (domain.LatenessResult, string, error) {
+	return s.judgeDay(ctx, tenantID, employeeUserID, date, arrival, departure, false)
+}
+
+// derivedStatus is computeStatus for a day with no stored record (today's
+// board, history, the recap). Such a day is only measured against a
+// schedule that already existed on it (domain.ScheduleDay.InEffectOn):
+// before the employee's first schedule it is StatusUnscheduled, never
+// StatusAbsent. A stored record is still judged against the current
+// schedule whatever its date, so a device import or manual backfill of
+// earlier days keeps working once the schedule exists.
+func (s *Service) derivedStatus(
+	ctx context.Context, tenantID, employeeUserID uuid.UUID, date time.Time,
+) (domain.LatenessResult, string, error) {
+	return s.judgeDay(ctx, tenantID, employeeUserID, date, nil, nil, true)
+}
+
+func (s *Service) judgeDay(
+	ctx context.Context, tenantID, employeeUserID uuid.UUID, date time.Time, arrival, departure *time.Time, derived bool,
+) (domain.LatenessResult, string, error) {
 	days, err := s.repo.ListScheduleDays(ctx, tenantID, employeeUserID)
 	if err != nil {
 		return domain.LatenessResult{}, "", err
@@ -178,6 +200,9 @@ func (s *Service) computeStatus(
 			schedule = &day
 			break
 		}
+	}
+	if derived && schedule != nil && !schedule.InEffectOn(staffDate(ctx, date)) {
+		schedule = nil
 	}
 
 	yearID, hasYear, err := s.activeAcademicYear(ctx, tenantID)
@@ -226,9 +251,7 @@ func toRecordView(rec domain.Record, employeeName string) RecordView {
 // invocation without tenant context retains its historical UTC fallback.
 func staffLocation(ctx context.Context) *time.Location {
 	if school, ok := tenant.FromContext(ctx); ok {
-		if loc, err := time.LoadLocation(school.Timezone); err == nil {
-			return loc
-		}
+		return clock.Location(school.Timezone)
 	}
 	return time.UTC
 }

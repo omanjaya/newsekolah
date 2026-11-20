@@ -19,6 +19,7 @@ func (r *Repository) UpsertScheduleDay(
 		TenantID: tenantID, EmployeeUserID: employeeUserID, Weekday: day.Weekday, IsWorkingDay: day.IsWorkingDay,
 		StartMinute: int16(day.StartMinute), EndMinute: int16(day.EndMinute), GraceMinutes: int16(day.GraceMinutes), //nolint:gosec // clamped by domain.ScheduleDay.Valid before this call
 		CreatedBy: pdatabase.NullUUID(uuid.NullUUID{UUID: actorID, Valid: actorID != uuid.Nil}),
+		CreatedAt: pdatabase.Timestamptz(day.CreatedAt),
 	})
 	if err != nil {
 		return domain.ScheduleDay{}, err
