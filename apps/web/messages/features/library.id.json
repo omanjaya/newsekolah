@@ -1630,6 +1630,8 @@
       "selectedTitle": "Dipilih: {title}",
       "submit": "Pesan",
       "reserved": "Pesanan dibuat",
+      "pickupBy": "Ambil paling lambat {date} pukul {time}",
+      "pickupPassed": "Batas ambil {date} pukul {time} sudah lewat",
       "bookingDisabled": "Pemesanan mandiri sedang dinonaktifkan. Hubungi pustakawan untuk memesan judul."
     },
     "dueOn": "Kembali {date}",

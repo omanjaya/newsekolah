@@ -1630,6 +1630,8 @@
       "selectedTitle": "Selected: {title}",
       "submit": "Reserve",
       "reserved": "Hold placed",
+      "pickupBy": "Pick up by {date}, {time}",
+      "pickupPassed": "The pickup deadline, {date}, {time}, has passed",
       "bookingDisabled": "Self-service holds are switched off. Ask the librarian to place a hold."
     },
     "dueOn": "Due {date}",

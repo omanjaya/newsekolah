@@ -22,9 +22,11 @@ import type { ReactElement } from "react";
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useCan } from "../../../lib/session/session-provider";
+import { businessNow } from "../../../lib/simulation/clock";
 import { todayInZone } from "../../../lib/tenant-date";
 import type { LibraryLoan } from "../api";
 import { classifyDueDate, overdueDays } from "../lib/due-date";
+import { shownReservationStatus } from "../lib/reservation-pickup";
 import { formatShortDay } from "../lib/short-date";
 import { type LibraryMyProfile, useMyLibraryProfileQuery } from "../me-api";
 import { useTenantTimeZone } from "../use-tenant-timezone";
@@ -161,6 +163,9 @@ export function MyLibraryView(): ReactElement {
       <MyLibraryReservations
         reservations={data.reservations}
         bookingEnabled={data.booking_enabled ?? false}
+        locale={locale}
+        timeZone={timeZone}
+        today={today}
       />
     </AppPage>
   );
@@ -187,7 +192,10 @@ function MyLibraryHero({
   const t = useTranslations("app.library.me.hero");
   const tMe = useTranslations("app.library.me");
   const browse = <TextLink href={CATALOGUE_HREF}>{tMe("browseCatalogue")}</TextLink>;
-  const ready = reservations.filter((reservation) => reservation.status === "ready").length;
+  const now = businessNow();
+  const ready = reservations.filter(
+    (reservation) => shownReservationStatus(reservation, now) === "ready",
+  ).length;
 
   const overdue = loans.filter((loan) => classifyDueDate(loan.due_on, today) === "overdue");
   const latest = overdue[0];

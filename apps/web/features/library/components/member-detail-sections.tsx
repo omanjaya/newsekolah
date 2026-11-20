@@ -17,12 +17,14 @@ import { BookCheck, Bookmark, Scale } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { businessNow } from "../../../lib/simulation/clock";
 import type { LibraryLoan, LibraryReservation } from "../api";
 import { formatShortDate, formatShortDateRange } from "../lib/short-date";
-import { LOAN_STATUS_TONE, RESERVATION_STATUS_TONE, toneOf } from "../lib/status-tones";
+import { LOAN_STATUS_TONE, toneOf } from "../lib/status-tones";
 import type { LibraryViolation } from "../violations-api";
 
 import { LibraryTitleName } from "./library-title-name";
+import { ReservationStatus } from "./reservation-status";
 
 /** Closed loans, newest first as the API returns them: title, the loan's span and how it ended. */
 export function MemberPastLoans({
@@ -128,11 +130,17 @@ export function MemberFines({
 /** The member's holds: which title, and where they stand in its queue. */
 export function MemberReservations({
   reservations,
+  locale,
+  timeZone,
+  today,
 }: {
   reservations: LibraryReservation[];
+  locale: Locale;
+  timeZone: string | undefined;
+  today?: string;
 }): ReactElement {
   const t = useTranslations("app.library.memberDetail");
-  const tReserve = useTranslations("app.library.me.reserve");
+  const now = businessNow();
   if (reservations.length === 0) {
     return (
       <Card>
@@ -149,11 +157,13 @@ export function MemberReservations({
           title={<LibraryTitleName titleId={reservation.title_id} />}
           href={`/library/catalogue/${reservation.title_id}`}
           trailing={
-            <Badge tone={toneOf(RESERVATION_STATUS_TONE, reservation.status)}>
-              {reservation.status === "waiting" && reservation.position
-                ? tReserve("queuePosition", { position: reservation.position })
-                : tReserve(`status.${reservation.status}`)}
-            </Badge>
+            <ReservationStatus
+              reservation={reservation}
+              now={now}
+              locale={locale}
+              timeZone={timeZone}
+              today={today}
+            />
           }
         />
       ))}
