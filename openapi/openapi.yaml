@@ -21491,6 +21491,7 @@ components:
         - parent
         - referral
     CounselingTopic:
+      description: A write that omits it is stored as problem.
       type: string
       enum:
         - career
@@ -21499,7 +21500,6 @@ components:
         - learning
         - social
         - other
-      default: problem
     CounselingVisibility:
       type: string
       enum:

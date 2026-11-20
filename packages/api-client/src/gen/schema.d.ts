@@ -9257,7 +9257,7 @@ export interface components {
         /** @enum {string} */
         CounselingKind: "individual" | "group" | "parent" | "referral";
         /**
-         * @default problem
+         * @description A write that omits it is stored as problem.
          * @enum {string}
          */
         CounselingTopic: "career" | "problem" | "personal" | "learning" | "social" | "other";

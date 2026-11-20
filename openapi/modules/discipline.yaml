@@ -1040,9 +1040,12 @@ components:
       type: string
       enum: [individual, group, parent, referral]
     CounselingTopic:
+      # No schema default: the request validator would write it into every
+      # optional query parameter that uses this schema (the BK-team list's
+      # topic filter), so an unfiltered list would only show "problem".
+      description: A write that omits it is stored as problem.
       type: string
       enum: [career, problem, personal, learning, social, other]
-      default: problem
     CounselingVisibility:
       type: string
       enum: [counselor, bk_team, leadership]
