@@ -361,6 +361,7 @@ func (s *Service) Return(ctx context.Context, tenantID uuid.UUID, in ReturnInput
 		if err != nil {
 			return err
 		}
+		loan.LateDays = lateDays
 		if _, err := s.repo.CreateCirculationEvent(ctx, domain.ItemEventRecord{
 			TenantID: tenantID, CopyID: existing.CopyID, LoanID: uuid.NullUUID{UUID: existing.ID, Valid: true},
 			MemberUserID: uuid.NullUUID{UUID: existing.MemberUserID, Valid: true}, EventType: domain.EventReturned,

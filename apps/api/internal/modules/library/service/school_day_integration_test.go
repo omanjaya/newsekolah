@@ -248,6 +248,7 @@ func TestOverdueMembersReportProjectsTheReturnFine(t *testing.T) {
 	returned, err := svc.Return(monday, w.tenantID, service.ReturnInput{Barcode: w.barcodes[0], CheckedInBy: w.memberID})
 	require.NoError(t, err)
 	require.Equal(t, report[0].TotalFine, returned.FineAmount, "the report projected what the return charged")
+	require.Equal(t, 2, returned.LateDays, "the return reports the working days it charged, not calendar days")
 }
 
 // TestOverdueListCountsTheSchoolDay lists overdue loans at 07:30 WITA the

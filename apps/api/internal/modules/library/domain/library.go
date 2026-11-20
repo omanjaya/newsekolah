@@ -304,6 +304,10 @@ type Loan struct {
 	// them zero-valued.
 	TitleName   string
 	TitleAuthor string
+	// LateDays is the working days late Service.Return charged the return
+	// for (weekends the library closes and holidays not counted). Only the
+	// loan Return hands back carries it; every other read leaves it zero.
+	LateDays int
 }
 
 // IsOverdue reports whether an active loan is past its due date on today,

@@ -11052,6 +11052,8 @@ export interface components {
             /** @description The title's name, present only on GET /v1/library/me (active_loans, history): a member holding only view_own_library_loans cannot call GET /v1/library/titles/{titleId} (view_library) themselves. */
             title_name?: string;
             title_author?: string;
+            /** @description The working days late the return was charged for (closed weekend days and holidays not counted), present only on the responses of POST /v1/library/loans/{loanId}/return and /v1/library/loans/return-by-barcode; 0 is an on-time return. */
+            late_days?: number;
         };
         /** @enum {string} */
         LibraryReservationStatus: "waiting" | "ready" | "fulfilled" | "cancelled" | "expired";
