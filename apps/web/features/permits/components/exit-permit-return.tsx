@@ -14,7 +14,8 @@ import { type ExitReturnState, exitReturnState } from "../lib/exit-return";
 /**
  * The card once the student is through the gate: when they left and, when
  * a return is expected, when they are due back, turning danger once that
- * has passed; after security records them back, when they came back and
+ * has passed (a warning, with no minute count, once the exit day ended
+ * with no return on record); after security records them back, when they came back and
  * whether it was late.
  */
 export function ExitedCard({
@@ -43,6 +44,18 @@ export function ExitedCard({
         live={!late}
         title={destination}
         meta={[exited, t(late ? "hero.wasDueBack" : "hero.dueBack", { time: due })].join(" · ")}
+      />
+    );
+  }
+  if (state.kind === "unrecorded") {
+    const due = formatTime(state.due, { locale, timeZone });
+    return (
+      <HeroCard
+        tone="warning"
+        eyebrow={t("hero.exitedEyebrow")}
+        chip={t("hero.unrecordedChip")}
+        title={destination}
+        meta={[exited, t("hero.wasDueBack", { time: due })].join(" · ")}
       />
     );
   }
@@ -83,14 +96,17 @@ export function useReturnText(data: ExitPermitDetail | undefined): string | null
   const now = useBusinessNow();
   if (!data?.exited_at) return null;
   if (!data.return_required) return t("noReturn");
-  const state = exitReturnState(data, now);
   const timeZone = me?.tenant.timezone;
+  const state = exitReturnState(data, now, timeZone);
   if (state.kind === "returned") {
     const at = formatTime(state.at, { locale, timeZone });
     if (state.lateMinutes === null) return t("hero.returnedAt", { time: at });
     return state.lateMinutes > 0
       ? t("returnedLate", { time: at, minutes: state.lateMinutes })
       : t("returnedOnTime", { time: at });
+  }
+  if (state.kind === "unrecorded") {
+    return t("notRecordedBack", { time: formatTime(state.due, { locale, timeZone }) });
   }
   if (state.kind === "out") {
     const due = formatTime(state.due, { locale, timeZone });
