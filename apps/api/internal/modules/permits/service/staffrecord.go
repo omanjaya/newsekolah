@@ -121,7 +121,7 @@ func (s *Service) RecordExitPermitByStaff(ctx context.Context, in RecordExitPerm
 		if _, err = s.repo.MarkExitPermitIssued(ctx, in.TenantID, inst.ID, now); err != nil {
 			return err
 		}
-		from, to, err := s.exitPermitWindow(ctx, in.TenantID, permit)
+		from, to, err := s.exitPermitWindow(ctx, in.TenantID, permit, now)
 		if err != nil {
 			return err
 		}

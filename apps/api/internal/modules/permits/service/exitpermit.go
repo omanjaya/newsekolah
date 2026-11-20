@@ -342,19 +342,20 @@ func (s *Service) GateScan(ctx context.Context, tenantID, instanceID, securityUs
 		if !ok {
 			return domain.ErrInstanceNotFound
 		}
-		// Bug fix vs. the old app: forced attendance status only overrides
-		// sessions within the permit's own period range, not the whole day.
-		// Tenant-local, not s.clock.Now() directly, for the same reason as
-		// IssueGateToken's periodEndsAt above.
-		from, to, err := s.exitPermitWindow(ctx, tenantID, permit)
-		if err != nil {
-			return err
-		}
-
 		// The exit time, and the due-back time a return is judged "on
 		// time" or "late" against, follow the simulated business clock,
 		// not the server's real one.
 		now := clock.Now(ctx, s.clock)
+		// Bug fix vs. the old app: forced attendance status only overrides
+		// sessions within the permit's own period range, not the whole day,
+		// and only from the exit on: lessons the student sat in before an
+		// approval chain that outlasted the first period keep their record.
+		// Tenant-local, not s.clock.Now() directly, for the same reason as
+		// IssueGateToken's periodEndsAt above.
+		from, to, err := s.exitPermitWindow(ctx, tenantID, permit, now)
+		if err != nil {
+			return err
+		}
 		updated, err = s.repo.AdvanceInstance(ctx, tenantID, instanceID, inst.CurrentStageIndex, domain.StatusCompleted, &now)
 		if err != nil {
 			return err
@@ -385,9 +386,12 @@ func (s *Service) GateScan(ctx context.Context, tenantID, instanceID, securityUs
 	return updated, nil
 }
 
-// exitPermitWindow is the permit's lesson window on the tenant-local
-// today: from the start of its first period to the end of its last.
-func (s *Service) exitPermitWindow(ctx context.Context, tenantID uuid.UUID, permit domain.ExitPermit) (from, to time.Time, err error) {
+// exitPermitWindow is the attendance window an exit at exitAt marks D on
+// the tenant-local today: from the start of the permit's first period, or
+// the exit itself when that comes later, to the end of its last period.
+// The end stays the last period's end whatever the exit time: it is also
+// when the student is due back.
+func (s *Service) exitPermitWindow(ctx context.Context, tenantID uuid.UUID, permit domain.ExitPermit, exitAt time.Time) (from, to time.Time, err error) {
 	startPeriod, err := s.repo.GetPeriod(ctx, tenantID, permit.StartPeriodID)
 	if err != nil {
 		return time.Time{}, time.Time{}, err
@@ -397,7 +401,11 @@ func (s *Service) exitPermitWindow(ctx context.Context, tenantID uuid.UUID, perm
 		return time.Time{}, time.Time{}, err
 	}
 	day := s.tenantNow(ctx, tenantID)
-	return combineDateAndDuration(day, startPeriod.StartsAt), combineDateAndDuration(day, endPeriod.EndsAt), nil
+	from = combineDateAndDuration(day, startPeriod.StartsAt)
+	if from.Before(exitAt) {
+		from = exitAt
+	}
+	return from, combineDateAndDuration(day, endPeriod.EndsAt), nil
 }
 
 // dueBack is when a student leaving on permit must be back: the end of the
