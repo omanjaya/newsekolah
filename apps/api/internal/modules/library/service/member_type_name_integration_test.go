@@ -81,6 +81,13 @@ func TestMemberTypeNameMigrationRenamesExistingDuplicates(t *testing.T) {
 	}
 	_, err = f.pg.AdminPool.Exec(f.ctx, `insert into library_member_types (tenant_id,name,deleted_at) values ($1,'Siswa',now())`, f.tenant)
 	require.NoError(t, err)
+	// A school that already worked around the clash by hand: the rename
+	// must not take a name a live type uses, or the index cannot be built.
+	for i, name := range []string{"Guru", "guru", "Guru (2)"} {
+		_, err = f.pg.AdminPool.Exec(f.ctx, `insert into library_member_types (tenant_id,name,created_at)
+			values ($1,$2,now() + make_interval(secs => $3))`, f.tenant, name, 10+i)
+		require.NoError(t, err)
+	}
 
 	_, err = f.pg.AdminPool.Exec(f.ctx, string(up))
 	require.NoError(t, err)
@@ -90,5 +97,5 @@ func TestMemberTypeNameMigrationRenamesExistingDuplicates(t *testing.T) {
 	require.NoError(t, err)
 	names, err := pgx.CollectRows(rows, pgx.RowTo[string])
 	require.NoError(t, err)
-	require.Equal(t, []string{"Siswa", "siswa (2)", "SISWA (3)"}, names)
+	require.Equal(t, []string{"Siswa", "siswa (2)", "SISWA (3)", "Guru", "guru (3)", "Guru (2)"}, names)
 }
