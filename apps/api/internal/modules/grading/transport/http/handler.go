@@ -242,9 +242,7 @@ func componentInput(b *api.AssessmentComponentWrite) service.ComponentInput {
 	in := service.ComponentInput{
 		ClassID: b.ClassId, SubjectID: b.SubjectId, TermID: nullUUID(b.TermId), Code: b.Code,
 		Kind: domain.ComponentKind(b.Kind), Weight: float64(b.Weight), Sequence: 1, KKTP: f64Ptr(b.Kktp),
-	}
-	if b.Description != nil {
-		in.Description = *b.Description
+		Description: b.Description,
 	}
 	if b.Sequence != nil {
 		in.Sequence = *b.Sequence
