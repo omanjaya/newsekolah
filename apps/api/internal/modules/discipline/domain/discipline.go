@@ -229,6 +229,35 @@ const (
 	TopicOther    CounselingTopic = "other"
 )
 
+// counselingKindLabels and counselingTopicLabels are the Indonesian names
+// printed documents use, the same words as the web's option labels.
+var (
+	counselingKindLabels = map[CounselingKind]string{
+		CounselingIndividual: "Individu", CounselingGroup: "Kelompok",
+		CounselingParent: "Orang tua", CounselingReferral: "Rujukan",
+	}
+	counselingTopicLabels = map[CounselingTopic]string{
+		TopicCareer: "Karier", TopicProblem: "Masalah", TopicPersonal: "Pribadi",
+		TopicLearning: "Belajar", TopicSocial: "Sosial", TopicOther: "Lainnya",
+	}
+)
+
+// Label is the kind's printable name, or the raw code for an unknown one.
+func (k CounselingKind) Label() string {
+	if label, ok := counselingKindLabels[k]; ok {
+		return label
+	}
+	return string(k)
+}
+
+// Label is the topic's printable name, or the raw code for an unknown one.
+func (t CounselingTopic) Label() string {
+	if label, ok := counselingTopicLabels[t]; ok {
+		return label
+	}
+	return string(t)
+}
+
 // DefaultCounselingTopic matches the old app's default (counseling.go:511).
 const DefaultCounselingTopic = TopicProblem
 

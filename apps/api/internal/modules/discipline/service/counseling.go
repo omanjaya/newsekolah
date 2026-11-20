@@ -572,11 +572,8 @@ func (s *Service) CounselingReportPDF(ctx context.Context, tenantID, counselingI
 	}
 	counselorName = s.lookupName(ctx, tenantID, note.CounselorUserID)
 
-	rendered, err := s.renderer.Render(ctx, documents.Template{Engine: documents.EngineHTML, Body: BuiltinCounselingReportHTML}, map[string]any{
-		"student_name": studentName, "counselor_name": counselorName, "session_at": note.SessionAt.Format("02-01-2006 15:04"),
-		"kind": string(note.Kind), "topic": string(note.Topic), "title": note.Title, "content": note.Content,
-		"follow_up_plan": note.FollowUpPlan, "career_goals": note.CareerGoals, "problem_description": note.ProblemDescription,
-	})
+	rendered, err := s.renderer.Render(ctx, documents.Template{Engine: documents.EngineHTML, Body: BuiltinCounselingReportHTML},
+		counselingReportVars(note, studentName, counselorName, s.tenantLocation(ctx, tenantID)))
 	if err != nil {
 		return "", fmt.Errorf("render counseling report: %w", err)
 	}
@@ -589,6 +586,17 @@ func (s *Service) CounselingReportPDF(ctx context.Context, tenantID, counselingI
 		return "", fmt.Errorf("presign counseling report: %w", err)
 	}
 	return u.String(), nil
+}
+
+// counselingReportVars fills the report template: the session time on the
+// school's clock (stored in UTC), the session format and topic by their
+// printable names.
+func counselingReportVars(note domain.Counseling, studentName, counselorName string, loc *time.Location) map[string]any {
+	return map[string]any{
+		"student_name": studentName, "counselor_name": counselorName, "session_at": note.SessionAt.In(loc).Format("02-01-2006 15:04"),
+		"kind": note.Kind.Label(), "topic": note.Topic.Label(), "title": note.Title, "content": note.Content,
+		"follow_up_plan": note.FollowUpPlan, "career_goals": note.CareerGoals, "problem_description": note.ProblemDescription,
+	}
 }
 
 // BuiltinCounselingReportHTML is the printable A4 report for one note,
