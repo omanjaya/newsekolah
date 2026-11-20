@@ -22,6 +22,9 @@ vi.mock("../../../lib/session/session-provider", () => ({
   useCan: () => mocks.canManage,
   useSession: () => ({ me: undefined }),
 }));
+vi.mock("../../reference/directory-names", () => ({
+  useDirectoryNames: () => new Map([["teacher-1", { id: "teacher-1", name: "SARI DEWI" }]]),
+}));
 vi.mock("../api", () => ({
   useExtracurricularsQuery: mocks.useExtracurricularsQuery,
   useDeleteExtracurricularMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
@@ -71,6 +74,17 @@ describe("ClubsView filters", () => {
   });
 });
 
+describe("ClubsView for a coach", () => {
+  it("tells a coach with no club of their own so, instead of the school-wide empty list", () => {
+    // Without view_activities the API returns only the clubs the reader coaches.
+    mocks.canManage = false;
+    mocks.useExtracurricularsQuery.mockReturnValue({ data: { data: [] }, isLoading: false });
+    render(<ClubsView />);
+    expect(screen.getByText("coachEmptyTitle")).toBeInTheDocument();
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+  });
+});
+
 describe("ClubsView rows", () => {
   beforeEach(() => {
     mocks.canManage = true;
@@ -89,12 +103,20 @@ describe("ClubsView rows", () => {
             meeting_start: "15:00",
             meeting_end: "16:30",
             is_active: true,
+            coach_user_id: "teacher-1",
           },
         ],
       },
       isLoading: false,
     });
     window.history.replaceState(null, "", "/activities/clubs");
+  });
+
+  it("names each club's coach (pembina)", () => {
+    render(<ClubsView />);
+    const table = within(screen.getByRole("table"));
+    expect(table.getByText("columns.coach")).toBeInTheDocument();
+    expect(table.getByText("Sari Dewi")).toBeInTheDocument();
   });
 
   it("opens the club from its row and keeps edit and delete in the row's menu", async () => {

@@ -62,6 +62,13 @@ export function ActivityParticipants({
   const fail = (error: unknown) => {
     toast.error(error instanceof ApiError ? errorMessage(error.code) : errorMessage("UNKNOWN"));
   };
+  const takenIds = new Set(
+    participants.flatMap((participant) =>
+      [participant.class_id, participant.grade_level_id, participant.student_user_id].filter(
+        (id): id is string => Boolean(id),
+      ),
+    ),
+  );
   const studentNameById = useDirectoryNames(
     participants.map((participant) => participant.student_user_id),
   );
@@ -116,10 +123,14 @@ export function ActivityParticipants({
                 placeholder={t("choose")}
                 value={target}
                 onValueChange={setTarget}
+                // A class or grade already taking part is left out, so it
+                // cannot be added twice.
                 options={(scope === "class"
                   ? (classes.data?.data ?? [])
                   : (grades.data?.data ?? [])
-                ).map((item) => ({ value: item.id, label: item.name }))}
+                )
+                  .filter((item) => !takenIds.has(item.id))
+                  .map((item) => ({ value: item.id, label: item.name }))}
               />
             )}
           </Field>
@@ -139,7 +150,9 @@ export function ActivityParticipants({
             {participants.map((participant) => {
               const name =
                 participant.scope === "student"
-                  ? (studentNameById.get(participant.student_user_id ?? "")?.name ?? t("unknown"))
+                  ? formatDisplayName(
+                      studentNameById.get(participant.student_user_id ?? "")?.name ?? t("unknown"),
+                    )
                   : ((participant.scope === "class"
                       ? classes.data?.data.find((item) => item.id === participant.class_id)?.name
                       : grades.data?.data.find((item) => item.id === participant.grade_level_id)
@@ -153,7 +166,9 @@ export function ActivityParticipants({
                     {participant.scope === "student" && <Avatar name={name} size={32} />}
                     <span className="truncate">
                       <span className="text-fg-muted">{t(participant.scope)}: </span>
-                      {formatDisplayName(name)}
+                      {/* A class or grade name ("X-A", "XII-B") stays as the
+                          school wrote it; only a person's name is re-cased. */}
+                      {name}
                     </span>
                   </div>
                   {canManage && (

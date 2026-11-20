@@ -31,6 +31,9 @@ const keys = {
   members: (clubId: string, includeLeft: boolean) =>
     ["activities", "clubs", clubId, "members", includeLeft] as const,
   myClubs: () => ["activities", "me", "clubs"] as const,
+  myEvents: () => ["activities", "me", "events"] as const,
+  myAchievements: () => ["activities", "me", "achievements"] as const,
+  studentClubs: (studentId: string) => ["activities", "students", studentId, "clubs"] as const,
   meetings: (clubId: string) => ["activities", "clubs", clubId, "meetings"] as const,
   roster: (meetingId: string) => ["activities", "meetings", meetingId, "roster"] as const,
   membershipPolicy: () => ["activities", "membership-policy"] as const,
@@ -180,6 +183,36 @@ export function useMyClubsQuery() {
   return useQuery({
     queryKey: keys.myClubs(),
     queryFn: () => client.GET("/v1/me/clubs"),
+  });
+}
+
+/** The signed-in student's own activities that have not ended yet. */
+export function useMyActivityEventsQuery() {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.myEvents(),
+    queryFn: () => client.GET("/v1/me/activities"),
+  });
+}
+
+/** The signed-in student's own achievements this year. */
+export function useMyAchievementsQuery() {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.myAchievements(),
+    queryFn: () => client.GET("/v1/me/achievements"),
+  });
+}
+
+/** One student's club memberships, for the student profile (view_activities). */
+export function useStudentClubMembershipsQuery(studentId: string) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.studentClubs(studentId),
+    queryFn: () =>
+      client.GET("/v1/activities/students/{studentId}/memberships", {
+        params: { path: { studentId } },
+      }),
   });
 }
 

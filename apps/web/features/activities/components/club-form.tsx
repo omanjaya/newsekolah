@@ -18,6 +18,10 @@ import { useState, type ReactElement } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
+  DirectoryPicker,
+  useDirectoryPickerLabels,
+} from "../../reference/components/directory-picker";
+import {
   type Extracurricular,
   type ExtracurricularWrite,
   useCreateExtracurricularMutation,
@@ -42,7 +46,12 @@ export function ClubForm({
   const create = useCreateExtracurricularMutation();
   const update = useUpdateExtracurricularMutation();
 
+  const coachLabels = useDirectoryPickerLabels(t("coachPlaceholder"));
+
   const [isActive, setIsActive] = useState(initial?.is_active ?? true);
+  // The pembina: the teacher who schedules this club's meetings and takes
+  // its attendance (the API scopes a teacher to the clubs they coach).
+  const [coachUserId, setCoachUserId] = useState(initial?.coach_user_id ?? "");
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [capacity, setCapacity] = useState(initial?.capacity ? String(initial.capacity) : "");
@@ -76,7 +85,8 @@ export function ClubForm({
           meeting_start: meetingStart.trim() || undefined,
           meeting_end: meetingEnd.trim() || undefined,
           is_active: isActive,
-          coach_user_id: initial?.coach_user_id,
+          // Left out to clear it: the API stores no coach then.
+          coach_user_id: coachUserId || undefined,
         };
         const onSuccess = () => {
           toast.success(tClubs("saved"));
@@ -101,6 +111,33 @@ export function ClubForm({
             setName(e.target.value);
           }}
           maxLength={150}
+        />
+      </Field>
+      <Field
+        label={t("coach")}
+        hint={t("coachHint")}
+        labelAside={
+          coachUserId ? (
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              onClick={() => {
+                setCoachUserId("");
+              }}
+            >
+              {t("coachClear")}
+            </Button>
+          ) : undefined
+        }
+      >
+        <DirectoryPicker
+          profileKind="teacher"
+          value={coachUserId}
+          onValueChange={(id) => {
+            setCoachUserId(id);
+          }}
+          labels={coachLabels}
         />
       </Field>
       <Field label={t("description")}>

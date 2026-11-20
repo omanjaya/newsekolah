@@ -24,7 +24,11 @@ import {
   useMeetingRosterQuery,
   useRecordAttendanceMutation,
 } from "../api";
-import { computeAttendanceChanges, studentsToMarkPresent } from "../lib/meeting-status";
+import {
+  DEFAULT_STATUS,
+  computeAttendanceChanges,
+  studentsToMarkPresent,
+} from "../lib/meeting-status";
 
 import { MeetingRosterRow } from "./meeting-roster-row";
 import { MeetingStatusFilterChips } from "./meeting-status-filter-chips";
@@ -32,7 +36,8 @@ import { MeetingStatusFilterChips } from "./meeting-status-filter-chips";
 interface RosterStudent {
   id: string;
   name: string;
-  initialStatus: AttendanceStatus;
+  /** The stored status, or undefined while none is recorded for this meeting. */
+  recordedStatus: AttendanceStatus | undefined;
 }
 
 /**
@@ -79,9 +84,7 @@ export function MeetingAttendanceEditor({
   const students: RosterStudent[] = activeMembers.map((member) => ({
     id: member.student_user_id,
     name: directory.names.get(member.student_user_id)?.name ?? t("unknownStudent"),
-    // Every active member defaults to present; only a member with an
-    // already-recorded entry shows a different status.
-    initialStatus: entryById.get(member.student_user_id) ?? "H",
+    recordedStatus: entryById.get(member.student_user_id),
   }));
 
   return <RosterEditor key={meetingId} meetingId={meetingId} students={students} />;
@@ -99,18 +102,25 @@ function RosterEditor({
   const apiErrorMessage = useApiErrorMessage();
   const record = useRecordAttendanceMutation(meetingId);
 
-  // Snapshotted once at mount (this component is keyed by meetingId, so a
-  // background refetch after a save re-renders the parent but does not
-  // remount this component or reset either state below).
-  const [initialStatuses] = useState<Record<string, AttendanceStatus>>(() =>
-    Object.fromEntries(students.map((s) => [s.id, s.initialStatus])),
+  // What the server holds, snapshotted at mount and moved forward by each
+  // save (this component is keyed by meetingId, so a background refetch
+  // after a save re-renders the parent but does not remount this component
+  // or reset either state below). A member with no recorded status has no
+  // entry: shown as present, but still to be saved.
+  const [savedStatuses, setSavedStatuses] = useState<Partial<Record<string, AttendanceStatus>>>(
+    () =>
+      Object.fromEntries(
+        students.flatMap((s) => (s.recordedStatus ? [[s.id, s.recordedStatus]] : [])),
+      ),
   );
-  const [statuses, setStatuses] = useState<Record<string, AttendanceStatus>>(initialStatuses);
+  const [statuses, setStatuses] = useState<Record<string, AttendanceStatus>>(() =>
+    Object.fromEntries(students.map((s) => [s.id, s.recordedStatus ?? DEFAULT_STATUS])),
+  );
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<Set<AttendanceStatus>>(new Set());
   const [saving, setSaving] = useState(false);
 
-  const changes = computeAttendanceChanges(statuses, initialStatuses);
+  const changes = computeAttendanceChanges(statuses, savedStatuses);
 
   const counts = useMemo(() => {
     const out: Record<AttendanceStatus, number> = { H: 0, I: 0, S: 0, A: 0 };
@@ -153,16 +163,17 @@ function RosterEditor({
 
   async function save() {
     setSaving(true);
+    // Each row is its own POST (upserted server-side by meeting + student).
+    // Every pending row is sent, present ones included, so the meeting's
+    // record says who attended rather than only the exceptions. A row moves
+    // into the saved snapshot as soon as its request succeeds, so a failure
+    // part way leaves only the unsent rows marked.
+    const sent: Record<string, AttendanceStatus> = {};
     try {
-      // No batch endpoint exists for this roster (each status is its own
-      // POST, upserted server-side by meeting + student); looping only
-      // over the changed rows keeps this to the minimum number of
-      // requests instead of one per visible student.
-      for (const studentId of changes.changedStudentIds) {
-        await record.mutateAsync({
-          student_user_id: studentId,
-          status_code: statuses[studentId] ?? "H",
-        });
+      for (const studentId of changes.pendingStudentIds) {
+        const code = statuses[studentId] ?? DEFAULT_STATUS;
+        await record.mutateAsync({ student_user_id: studentId, status_code: code });
+        sent[studentId] = code;
       }
       toast.success(t("recorded"));
     } catch (error) {
@@ -170,9 +181,17 @@ function RosterEditor({
         error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
       );
     } finally {
+      setSavedStatuses((prev) => ({ ...prev, ...sent }));
       setSaving(false);
     }
   }
+
+  const footer =
+    changes.count > 0
+      ? t("unsavedChanges", { count: changes.count })
+      : changes.unrecordedStudentIds.size > 0
+        ? t("notRecorded")
+        : t("saveHint");
 
   return (
     <div className="mt-2 flex flex-col gap-3 rounded-md border border-border p-3">
@@ -221,14 +240,10 @@ function RosterEditor({
       </Card>
 
       <StickySaveBar
-        leadingSlot={
-          <span className="text-body-sm text-fg-muted">
-            {changes.count > 0 ? t("unsavedChanges", { count: changes.count }) : t("saveHint")}
-          </span>
-        }
+        leadingSlot={<span className="text-body-sm text-fg-muted">{footer}</span>}
         saveLabel={t("save")}
         saving={saving}
-        disabled={changes.count === 0}
+        disabled={changes.pendingStudentIds.size === 0}
         onSave={() => void save()}
       />
     </div>

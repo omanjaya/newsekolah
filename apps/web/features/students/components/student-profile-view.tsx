@@ -28,6 +28,7 @@ import { navAccessFromMe } from "../../../lib/navigation-access";
 import { canOpenPath } from "../../../lib/navigation-permissions";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
+import { StudentActivitiesTab } from "../../activities/components/student-activities-tab";
 import { useStudentRiskQuery } from "../../analytics/api";
 import { useOpenStudentDisciplineReport } from "../../discipline/components/use-open-student-discipline-report";
 import { useMentorStudentSnapshotQuery } from "../../mentoring/api";
@@ -57,6 +58,7 @@ const TAB_PANELS: Record<StudentProfileTab, (props: { studentId: string }) => Re
   discipline: StudentDisciplineTab,
   counseling: StudentCounselingTab,
   library: StudentLibraryTab,
+  activities: StudentActivitiesTab,
   guardians: StudentGuardiansTab,
 };
 

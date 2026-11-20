@@ -25,6 +25,8 @@ import { AppPage } from "../../../components/app-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { formatDisplayName } from "../../../lib/text/format-name";
+import { useDirectoryNames } from "../../reference/directory-names";
 import {
   type Extracurricular,
   useDeleteExtracurricularMutation,
@@ -62,7 +64,11 @@ export function ClubsView(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const clubs = data?.data ?? [];
+  const clubs = useMemo(() => data?.data ?? [], [data]);
+  // Without view_activities the list holds only the clubs the reader
+  // coaches (the API scopes it), so the empty state speaks to a coach.
+  const coachOnly = !useCan("view_activities");
+  const coachMap = useDirectoryNames(clubs.map((club) => club.coach_user_id));
 
   const filters: DataTableFilterDef[] = [
     {
@@ -87,6 +93,24 @@ export function ClubsView(): ReactElement {
         // The whole row opens the club (onRowActivate), so the name is
         // plain text rather than a link that looks like every other cell.
         cell: ({ row }) => <span className="font-medium text-fg">{row.original.name}</span>,
+      },
+      {
+        id: "coach",
+        header: t("columns.coach"),
+        enableSorting: false,
+        meta: { card: "subtitle", label: t("columns.coach") },
+        accessorFn: (club) =>
+          club.coach_user_id ? (coachMap.get(club.coach_user_id)?.name ?? "") : "",
+        cell: ({ row }) => {
+          const id = row.original.coach_user_id;
+          if (!id) return <span className="text-fg-muted">{t("noCoach")}</span>;
+          const name = coachMap.get(id)?.name;
+          return name ? (
+            formatDisplayName(name)
+          ) : (
+            <span className="text-fg-muted">{t("unknownCoach")}</span>
+          );
+        },
       },
       {
         accessorKey: "meeting_day",
@@ -147,7 +171,7 @@ export function ClubsView(): ReactElement {
           ]
         : []),
     ],
-    [t, canManage, locale],
+    [t, canManage, locale, coachMap],
   );
 
   return (
@@ -216,8 +240,8 @@ export function ClubsView(): ReactElement {
           emptyState={
             <EmptyState
               icon={<Users aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
+              title={coachOnly ? t("coachEmptyTitle") : t("emptyTitle")}
+              description={coachOnly ? t("coachEmptyBody") : t("emptyBody")}
               // The header already carries the primary "add"; this one
               // only repeats it where the reader is looking.
               action={

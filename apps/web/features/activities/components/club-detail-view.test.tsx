@@ -32,6 +32,8 @@ vi.mock("@newsekolah/ui", async () => {
 });
 vi.mock("../../reference/directory-names", () => ({
   useDirectoryNames: () => new Map([["student-1", { id: "student-1", name: "Siswa Contoh" }]]),
+  useDirectoryName: (id: string | undefined) =>
+    id === "teacher-1" ? { id: "teacher-1", name: "SARI DEWI" } : undefined,
 }));
 vi.mock("./club-detail-forms", () => ({
   JoinMemberForm: () => <div>Join form</div>,
@@ -127,6 +129,11 @@ describe("ClubDetailView", () => {
     expect(screen.getByText("weekdays.friday, 15.00 – 16.30")).toBeInTheDocument();
     expect(screen.getByText("facts.capacity", { exact: false })).toBeInTheDocument();
     expect(screen.getByText("Lapangan", { exact: false })).toBeInTheDocument();
+  });
+
+  it("says who coaches the club", () => {
+    render(<ClubDetailView clubId="club-1" />);
+    expect(screen.getByText("facts.noCoach", { exact: false })).toBeInTheDocument();
   });
 
   it("names its tab strip, as the other detail pages do", () => {
