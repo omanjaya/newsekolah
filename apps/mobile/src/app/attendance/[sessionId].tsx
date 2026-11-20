@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { FlatList, Pressable, Switch, Text, TextInput, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { Lock } from "lucide-react-native";
+import { Info, Lock } from "lucide-react-native";
 import { ApiError } from "@newsekolah/api-client";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Button } from "@/components/ui/Button";
@@ -13,6 +13,7 @@ import {
   type SaveEntriesRequest,
   type SessionDetail,
 } from "@/lib/api/hooks";
+import { sessionAccess } from "@/lib/attendance/session-access";
 import { getOfflineQueue } from "@/lib/offline/queue";
 import { useFlushOfflineQueue } from "@/lib/offline/sync";
 import { cn } from "@/lib/cn";
@@ -56,14 +57,10 @@ function Editor({ session }: { session: SessionDetail }): React.JSX.Element {
   const [topic, setTopic] = useState(session.journal_topic ?? "");
   const [activities, setActivities] = useState(session.journal_activities ?? "");
   const [reason, setReason] = useState("");
-  // The API says which mode this viewer saves in (save_mode): the lesson's
-  // own teacher keeps re-saving in normal mode after the first save, while
-  // a homeroom teacher or corrector on someone else's lesson -- submitted
-  // or not -- needs correction mode and a reason. Only a response without
-  // save_mode (an older API) falls back to the submitted state.
-  const isCorrection =
-    session.save_mode === "correction" ||
-    (session.save_mode === undefined && Boolean(session.submitted_at));
+  // A lesson handed to a substitute opens to look only; see sessionAccess.
+  const access = sessionAccess(session);
+  const readOnly = access === "read_only";
+  const isCorrection = access === "correction";
 
   const visible = session.roster.filter((r) => {
     if (search && !r.name.toLowerCase().includes(search.toLowerCase())) return false;
@@ -83,6 +80,7 @@ function Editor({ session }: { session: SessionDetail }): React.JSX.Element {
    * silently queuing it.
    */
   async function submit() {
+    if (readOnly) return;
     if (isCorrection && !reason.trim()) {
       showToast(t("attendance.reason_required"), "error");
       return;
@@ -115,7 +113,7 @@ function Editor({ session }: { session: SessionDetail }): React.JSX.Element {
       router.back();
     } catch (error) {
       if (error instanceof ApiError) {
-        showToast(error.status === 409 ? t("attendance.conflict") : t("common.error"), "error");
+        showToast(saveErrorMessage(error.status), "error");
         return;
       }
       await getOfflineQueue().enqueueOrReplace(
@@ -145,11 +143,12 @@ function Editor({ session }: { session: SessionDetail }): React.JSX.Element {
           <Text className="text-sm text-ink dark:text-ink-dark">{t("attendance.only_absent")}</Text>
           <Switch value={onlyAbsent} onValueChange={setOnlyAbsent} />
         </View>
+        {readOnly ? <HandedOverNotice /> : null}
       </View>
       <FlatList
         data={visible}
         keyExtractor={(r) => r.student_user_id}
-        contentContainerStyle={{ paddingBottom: 220 }}
+        contentContainerStyle={{ paddingBottom: readOnly ? 32 : 220 }}
         renderItem={({ item, index }) => {
           const current = statuses[item.student_user_id] ?? defaultCode;
           const lockNote = rowLockNote(item);
@@ -177,8 +176,9 @@ function Editor({ session }: { session: SessionDetail }): React.JSX.Element {
                     return (
                       <Pressable
                         key={s.code}
+                        disabled={readOnly}
                         accessibilityRole="radio"
-                        accessibilityState={{ selected }}
+                        accessibilityState={{ selected, disabled: readOnly }}
                         accessibilityLabel={s.label}
                         onPress={() =>
                           setStatuses((prev) => ({ ...prev, [item.student_user_id]: s.code }))
@@ -186,6 +186,7 @@ function Editor({ session }: { session: SessionDetail }): React.JSX.Element {
                         className={cn(
                           "min-h-11 min-w-11 items-center justify-center border border-line px-3 first:rounded-l-input last:rounded-r-input dark:border-line-dark",
                           selected ? "bg-accent" : "bg-surface dark:bg-surface-dark",
+                          readOnly && "opacity-60",
                         )}
                       >
                         <Text
@@ -217,12 +218,14 @@ function Editor({ session }: { session: SessionDetail }): React.JSX.Element {
             <TextInput
               value={topic}
               onChangeText={setTopic}
+              editable={!readOnly}
               placeholder={t("attendance.topic")}
               className="rounded-input border border-line bg-surface px-3 py-2 text-base text-ink dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark"
             />
             <TextInput
               value={activities}
               onChangeText={setActivities}
+              editable={!readOnly}
               placeholder={t("attendance.activities")}
               multiline
               className="min-h-20 rounded-input border border-line bg-surface px-3 py-2 text-base text-ink dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark"
@@ -230,24 +233,61 @@ function Editor({ session }: { session: SessionDetail }): React.JSX.Element {
           </View>
         }
       />
-      <View className="absolute inset-x-0 bottom-0 gap-2 border-t border-line bg-bg px-4 pb-8 pt-3 dark:border-line-dark dark:bg-bg-dark">
-        {isCorrection ? (
-          <TextInput
-            value={reason}
-            onChangeText={setReason}
-            placeholder={t("attendance.reason")}
-            className="rounded-input border border-line bg-surface px-3 py-2 text-base text-ink dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark"
+      {readOnly ? null : (
+        <View className="absolute inset-x-0 bottom-0 gap-2 border-t border-line bg-bg px-4 pb-8 pt-3 dark:border-line-dark dark:bg-bg-dark">
+          {isCorrection ? (
+            <TextInput
+              value={reason}
+              onChangeText={setReason}
+              placeholder={t("attendance.reason")}
+              className="rounded-input border border-line bg-surface px-3 py-2 text-base text-ink dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark"
+            />
+          ) : null}
+          <Button
+            label={isCorrection ? t("attendance.save_correction") : t("attendance.save")}
+            fullWidth
+            loading={submitting}
+            onPress={() => void submit()}
           />
-        ) : null}
-        <Button
-          label={isCorrection ? t("attendance.save_correction") : t("attendance.save")}
-          fullWidth
-          loading={submitting}
-          onPress={() => void submit()}
-        />
+        </View>
+      )}
+    </View>
+  );
+}
+
+/**
+ * Says why a handed-over lesson has no save button: the substitute fills
+ * it, and its own teacher can only look.
+ */
+function HandedOverNotice(): React.JSX.Element {
+  return (
+    <View
+      accessibilityRole="summary"
+      className="flex-row gap-2 rounded-input border border-line bg-surface p-3 dark:border-line-dark dark:bg-surface-dark"
+    >
+      <Info size={16} color="#5E625B" importantForAccessibility="no" />
+      <View className="flex-1 gap-0.5">
+        <Text className="text-sm font-medium text-ink dark:text-ink-dark">
+          {t("attendance.handed_over_title")}
+        </Text>
+        <Text className="text-xs text-ink/60 dark:text-ink-dark/60">
+          {t("attendance.handed_over_body")}
+        </Text>
       </View>
     </View>
   );
+}
+
+/**
+ * The message for a save the server answered with an error: a 409 means
+ * another device already recorded the session, and a 403 that this viewer
+ * may no longer save it (for instance the lesson went to a substitute
+ * while the screen was open).
+ */
+function saveErrorMessage(status: number): string {
+  if (status === 409) return t("attendance.conflict");
+  if (status === 403) return t("attendance.no_access");
+  return t("common.error");
 }
 
 type RosterItem = SessionDetail["roster"][number];
