@@ -1,10 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { ReservationQueue } from "./title-detail-sections";
+import type { LibraryTitle } from "../api";
+
+import { BibliographicRecord, ReservationQueue } from "./title-detail-sections";
+
+const intl = vi.hoisted(() => ({ locale: "id" }));
 
 vi.mock("next-intl", () => ({
-  useLocale: () => "id",
+  useLocale: () => intl.locale,
   useTranslations: () => (key: string, values?: Record<string, string>) =>
     values?.date ? `${key} ${values.date}` : key,
 }));
@@ -81,5 +85,35 @@ describe("ReservationQueue", () => {
     expect(lapsed.querySelector('[data-slot="list-row-trailing"]')).toHaveTextContent(
       /^status\.expired$/,
     );
+  });
+});
+
+describe("BibliographicRecord", () => {
+  const title = {
+    id: "t1",
+    title: "Bumi Manusia",
+    author: "Pramoedya Ananta Toer",
+    ddc_number: "899.2213",
+    classification: "",
+    call_number: "899.2213 PRA b",
+    language: "ind",
+  } as LibraryTitle;
+
+  // The DDC number the librarian entered was only visible inside the call
+  // number, and the language read as the stored code "ind".
+  it("shows the DDC number and names the language", () => {
+    intl.locale = "id";
+    render(<BibliographicRecord title={title} />);
+
+    expect(screen.getByText("ddcNumber").nextElementSibling).toHaveTextContent(/^899\.2213$/);
+    expect(screen.getByText("language").nextElementSibling).toHaveTextContent(/^Indonesia$/);
+    expect(screen.queryByText("ind")).not.toBeInTheDocument();
+  });
+
+  it("names the language in the reader's locale", () => {
+    intl.locale = "en";
+    render(<BibliographicRecord title={title} />);
+
+    expect(screen.getByText("Indonesian")).toBeInTheDocument();
   });
 });

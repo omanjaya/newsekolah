@@ -20,6 +20,7 @@ import { businessNow } from "../../../lib/simulation/clock";
 import { todayInZone } from "../../../lib/tenant-date";
 import { useDirectoryNames } from "../../reference/directory-names";
 import type { LibraryReservation, LibraryTitle } from "../api";
+import { languageName } from "../lib/language-name";
 import { formatShortDate } from "../lib/short-date";
 import { useTenantTimeZone } from "../use-tenant-timezone";
 
@@ -134,6 +135,7 @@ export function ReservationQueue({
 /** The catalogue record, field by field, empty fields marked rather than dropped. */
 export function BibliographicRecord({ title }: { title: LibraryTitle }): ReactElement {
   const t = useTranslations("app.library.titleDetail.fields");
+  const locale = useLocale();
   return (
     <Card padding="md">
       <DataList layout="stacked" columns={2}>
@@ -147,9 +149,14 @@ export function BibliographicRecord({ title }: { title: LibraryTitle }): ReactEl
         <DataListItem label={t("pages")}>{title.pages}</DataListItem>
         <DataListItem label={t("isbn")}>{title.isbn}</DataListItem>
         <DataListItem label={t("issn")}>{title.issn}</DataListItem>
+        {/* The Dewey number drives the call number and the catalogue's
+            class filter; the free-text classification sits beside it. */}
+        <DataListItem label={t("ddcNumber")}>{title.ddc_number}</DataListItem>
         <DataListItem label={t("classification")}>{title.classification}</DataListItem>
         <DataListItem label={t("callNumber")}>{title.call_number}</DataListItem>
-        <DataListItem label={t("language")}>{title.language}</DataListItem>
+        <DataListItem label={t("language")}>
+          {title.language && languageName(title.language, locale)}
+        </DataListItem>
         <DataListItem label={t("subjects")} fullWidth>
           {title.subjects}
         </DataListItem>

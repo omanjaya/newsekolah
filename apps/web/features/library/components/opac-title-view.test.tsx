@@ -67,6 +67,24 @@ describe("OpacTitleView", () => {
     expect(screen.getByText("0126-4273")).toBeInTheDocument();
   });
 
+  it("shows the DDC number beside the classification, and leaves it out when unset", () => {
+    query.mockReturnValue({
+      data: detail({ ddc_number: "899.2213", language: "ind" }),
+      isLoading: false,
+      error: null,
+    });
+    const { unmount } = render(<OpacTitleView titleId="t1" />);
+    expect(screen.getByText("detail.ddcNumber").nextElementSibling).toHaveTextContent(
+      /^899\.2213$/,
+    );
+    expect(screen.getByText("detail.language").nextElementSibling).toHaveTextContent(/^Indonesia$/);
+    unmount();
+
+    query.mockReturnValue({ data: detail({}), isLoading: false, error: null });
+    render(<OpacTitleView titleId="t1" />);
+    expect(screen.queryByText("detail.ddcNumber")).not.toBeInTheDocument();
+  });
+
   it("keeps the ISBN row for a book with neither identifier", () => {
     query.mockReturnValue({ data: detail({}), isLoading: false, error: null });
     render(<OpacTitleView titleId="t1" />);

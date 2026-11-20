@@ -22,6 +22,7 @@ import { useSyncExternalStore } from "react";
 
 import { PUBLIC_CONTAINER } from "../../../components/public-container";
 import { useDocumentTitle } from "../../../lib/page-title";
+import { languageName } from "../lib/language-name";
 import { useOpacTitleQuery, type LibraryOpacTitleDetail } from "../opac-api";
 import { OPAC_LAST_SEARCH_KEY } from "../use-opac-search-params";
 
@@ -186,6 +187,11 @@ function TitleDetail({ detail }: { detail: LibraryOpacTitleDetail }): ReactEleme
               <span className="tabular-nums">{title.issn}</span>
             </DataListItem>
           )}
+          {title.ddc_number && (
+            <DataListItem label={t("detail.ddcNumber")}>
+              <span className="tabular-nums">{title.ddc_number}</span>
+            </DataListItem>
+          )}
           <DataListItem label={t("detail.classification")}>{title.classification}</DataListItem>
           {title.call_number && (
             <DataListItem label={t("detail.callNumber")}>{title.call_number}</DataListItem>
@@ -229,13 +235,4 @@ function CopyRow({ copy }: { copy: Copy }): ReactElement {
       }
     />
   );
-}
-
-/** "ind" -> "Indonesia": catalogue records store ISO 639 codes. */
-function languageName(code: string, locale: string): string {
-  try {
-    return new Intl.DisplayNames([locale], { type: "language" }).of(code) ?? code;
-  } catch {
-    return code;
-  }
 }
