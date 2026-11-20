@@ -1,7 +1,7 @@
 import type * as UiModule from "@newsekolah/ui";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeAll, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -12,9 +12,28 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: () => true,
 }));
+type Mutate = (days: unknown, options: { onSuccess: () => void }) => void;
+const scheduleState = vi.hoisted(() => ({
+  days: [] as {
+    weekday: number;
+    is_working_day: boolean;
+    start_minute: number;
+    end_minute: number;
+    grace_minutes: number;
+  }[],
+  mutate: undefined as Mutate | undefined,
+}));
 vi.mock("../api", () => ({
-  useStaffAttendanceScheduleQuery: () => ({ data: { data: [] }, isLoading: false }),
-  useReplaceStaffAttendanceScheduleMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useStaffAttendanceScheduleQuery: () => ({
+    data: { data: scheduleState.days },
+    isLoading: false,
+  }),
+  useReplaceStaffAttendanceScheduleMutation: () => ({
+    mutate: (days: unknown, options: { onSuccess: () => void }) => {
+      scheduleState.mutate?.(days, options);
+    },
+    isPending: false,
+  }),
 }));
 vi.mock("@newsekolah/ui", async () => {
   const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
@@ -39,6 +58,68 @@ beforeAll(() => {
       }
     },
   );
+});
+
+beforeEach(() => {
+  scheduleState.days = [];
+  scheduleState.mutate = (_days, options) => {
+    options.onSuccess();
+  };
+});
+
+async function openFormFor(name: string) {
+  render(
+    <ScheduleEditorView
+      employees={[
+        { id: "guru", name: "Guru Contoh", has_schedule: false },
+        { id: "satpam", name: "Satpam Contoh", has_schedule: true },
+      ]}
+    />,
+  );
+  await userEvent.click(screen.getByRole("button", { name: "schedule.employee" }));
+  await userEvent.click(screen.getByRole("option", { name: new RegExp(name) }));
+}
+
+it("does not call an employee without any schedule saved", async () => {
+  await openFormFor("Guru Contoh");
+
+  expect(screen.getByText("schedule.notSet")).toBeInTheDocument();
+  expect(screen.queryByText("schedule.upToDate")).not.toBeInTheDocument();
+
+  const [monday] = screen.getAllByRole("switch", { name: "schedule.workingDayFor" });
+  if (!monday) throw new Error("no working-day switch");
+  await userEvent.click(monday);
+  expect(screen.getByText("schedule.unsaved")).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "schedule.save" }));
+  // Once stored, the same week is the saved one.
+  expect(screen.getByText("schedule.upToDate")).toBeInTheDocument();
+});
+
+it("says the schedule is saved for someone who has one", async () => {
+  scheduleState.days = [
+    { weekday: 1, is_working_day: true, start_minute: 480, end_minute: 960, grace_minutes: 10 },
+  ];
+  await openFormFor("Satpam Contoh");
+
+  expect(screen.getByText("schedule.upToDate")).toBeInTheDocument();
+  expect(screen.queryByText("schedule.notSet")).not.toBeInTheDocument();
+});
+
+it("gives each start and end time a box wide enough for the whole time", async () => {
+  scheduleState.days = [
+    { weekday: 1, is_working_day: true, start_minute: 480, end_minute: 960, grace_minutes: 10 },
+  ];
+  await openFormFor("Satpam Contoh");
+
+  // jsdom cannot measure text, so this pins the box width the live check
+  // needed: at w-28 the clock and the list toggle left "08.00" 34px of
+  // its 38 (desktop) and 22px of its 43 (touch), and it read "08.…".
+  for (const label of ["schedule.startFor", "schedule.endFor"]) {
+    const [first] = screen.getAllByRole("combobox", { name: label });
+    expect(first?.parentElement).toHaveClass("w-36");
+    expect(first?.parentElement).not.toHaveClass("w-28");
+    expect(first).not.toHaveClass("text-ellipsis");
+  }
 });
 
 it("offers staff who have no work schedule yet, so a fresh school can give the first one", async () => {

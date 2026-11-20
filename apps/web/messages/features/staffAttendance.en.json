@@ -92,6 +92,7 @@
     "endHint": "Set an end earlier than the start for a shift that runs past midnight.",
     "unsaved": "There are unsaved changes",
     "upToDate": "The schedule is saved",
+    "notSet": "No work schedule yet. Turn on the working days, then save.",
     "save": "Save schedule",
     "saved": "Schedule saved",
     "weekdays": {
