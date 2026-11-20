@@ -49,6 +49,11 @@ type userSeed struct {
 }
 
 var systemUsers = []userSeed{
+	// superadmin: the one account that holds manage_permissions, as the
+	// first account of a real tenant does (cmd/bootstrap). Admin Sekolah
+	// deliberately lacks it (authz.RoleDefaults), so without this account
+	// nobody in the demo school could create a custom role.
+	{"superadmin", "Super Admin Contoh", "super_admin"},
 	{"admin", "Admin Contoh", "admin"},
 	{"guru", "Guru Contoh", "teacher"},
 	{"gurubk", "Guru BK Contoh", "teacher"},

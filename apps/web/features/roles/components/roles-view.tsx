@@ -2,6 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Alert,
   Badge,
   Button,
   Card,
@@ -183,6 +184,7 @@ export function RolesView(): ReactElement {
         )
       }
     >
+      {!canManage && <Alert tone="info" title={t("readOnlyNotice")} className="mb-6" />}
       {roles.isLoading ? (
         <SkeletonList rows={6} framed />
       ) : roles.isError && !roles.data ? (

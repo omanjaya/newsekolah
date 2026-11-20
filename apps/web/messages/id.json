@@ -1840,7 +1840,8 @@
           "teacherLeaveHint": "Meninjau izin dan menerbitkan surat izin tidak ikut peran guru. Berikan lewat penugasan tugas di Data sekolah > Pembagian tugas.",
           "additionalRoles": "Peran tambahan",
           "additionalRolesHint": "Peran tambahan hanya bisa peran khusus (bukan peran sistem).",
-          "noCustomRoles": "Belum ada peran khusus. Buat di Pengaturan > Peran dan akses."
+          "noCustomRoles": "Belum ada peran khusus. Buat di Pengaturan > Peran dan akses.",
+          "noCustomRolesAskSuperAdmin": "Belum ada peran khusus. Minta Super Admin sekolah membuatnya di Pengaturan > Peran dan akses."
         },
         "import": {
           "searchPlaceholder": "Cari nama atau nama pengguna",
@@ -2175,6 +2176,7 @@
       "system": "Bawaan",
       "systemHint": "Peran bawaan tidak bisa diubah. Untuk kombinasi izin lain, buat peran baru.",
       "systemHintReadOnly": "Peran bawaan, hanya bisa dilihat.",
+      "readOnlyNotice": "Hanya Super Admin yang bisa membuat peran dan mengubah izin. Hubungi Super Admin sekolah bila butuh peran baru, misalnya Bendahara.",
       "deleteRole": "Hapus peran",
       "deleteBody": "Peran {name} akan dihapus. Pengguna yang memilikinya kehilangan izin dari peran ini.",
       "deleted": "Peran dihapus",
