@@ -70,8 +70,11 @@ export function AnnouncementFeed({
   const items = (data?.data ?? []).slice(0, limit);
   const focused = focusId ? items.find((item) => item.id === focusId) : undefined;
   const focusMissing = focusId !== undefined && data !== undefined && focused === undefined;
-  useFocusedAnnouncement(focused, (id) => {
-    markRead.mutate(id);
+  useFocusedAnnouncement(focused, (item) => {
+    // A notification clicked while the feed is already showing only changes
+    // ?focus=, so the card opens here rather than through the initial state.
+    setOpen(item.id);
+    if (!item.is_read) markRead.mutate(item.id);
   });
 
   function toggle(item: MyAnnouncement) {
@@ -194,23 +197,28 @@ function announcementCellId(id: string): string {
 }
 
 /**
- * Once the focused announcement is in the feed: records its read (opening
- * it is what reading means here) and scrolls its card into view, once per
- * focused id.
+ * Once the focused announcement is in the feed: hands it to `onFocus`
+ * (which opens it and records its read -- opening it is what reading
+ * means here) and scrolls its card into view, once per focused id, so a
+ * later notification focusing another announcement is handled too. The
+ * scroll is instant when the reader asks for reduced motion.
  */
 function useFocusedAnnouncement(
   focused: MyAnnouncement | undefined,
-  markRead: (id: string) => void,
+  onFocus: (item: MyAnnouncement) => void,
 ): void {
   const handled = useRef<string | null>(null);
   useEffect(() => {
     if (!focused || handled.current === focused.id) return;
     handled.current = focused.id;
-    if (!focused.is_read) markRead(focused.id);
+    onFocus(focused);
+    const reduceMotion =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     document
       .getElementById(announcementCellId(focused.id))
-      ?.scrollIntoView({ block: "start", behavior: "smooth" });
-  }, [focused, markRead]);
+      ?.scrollIntoView({ block: "start", behavior: reduceMotion ? "auto" : "smooth" });
+  }, [focused, onFocus]);
 }
 
 /**
