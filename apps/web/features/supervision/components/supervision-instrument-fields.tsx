@@ -1,19 +1,34 @@
 "use client";
 
-import { Button, Field, FormSection, IconButton, Input, NumberInput } from "@newsekolah/ui";
+import {
+  Button,
+  Field,
+  FieldError,
+  FormSection,
+  IconButton,
+  Input,
+  NumberInput,
+} from "@newsekolah/ui";
 import { Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import type { SupervisionCriterion, SupervisionInstrument } from "../api";
-import { criterionKeyFrom } from "../lib/criterion-key";
+import {
+  criterionKeyFrom,
+  duplicateCriterionKeys,
+  keyFollowsName,
+  uniqueCriterionKey,
+} from "../lib/criterion-key";
 
 /**
  * Editable criteria list and scale for one instrument, shared by the create
  * and edit cycle forms. A criterion's `key` is the short code the
  * observation form scores against: it follows the name while the
  * criterion is new (nobody has to invent one), and is fixed once it exists
- * (`lockedKeys`), since recorded scores point at it.
+ * (`lockedKeys`), since recorded scores point at it. Two criteria named
+ * alike get numbered codes (`_2`); a code typed twice is marked on both
+ * rows, since the API refuses an instrument whose codes repeat.
  */
 export function SupervisionInstrumentFields({
   instrument,
@@ -25,6 +40,7 @@ export function SupervisionInstrumentFields({
   lockedKeys?: ReadonlySet<string>;
 }): ReactElement {
   const t = useTranslations("app.supervision.instrument");
+  const duplicates = duplicateCriterionKeys(instrument.criteria);
 
   function updateCriterion(index: number, patch: Partial<SupervisionCriterion>) {
     const criteria = instrument.criteria.map((c, i) => (i === index ? { ...c, ...patch } : c));
@@ -33,10 +49,11 @@ export function SupervisionInstrumentFields({
 
   function renameCriterion(index: number, criterion: SupervisionCriterion, name: string) {
     const locked = lockedKeys?.has(criterion.key) ?? false;
-    const followsName = criterion.key === "" || criterion.key === criterionKeyFrom(criterion.name);
+    const followsName = keyFollowsName(criterion.key, criterion.name);
+    const taken = new Set(instrument.criteria.filter((_, i) => i !== index).map((c) => c.key));
     updateCriterion(index, {
       name,
-      ...(!locked && followsName ? { key: criterionKeyFrom(name) } : {}),
+      ...(!locked && followsName ? { key: uniqueCriterionKey(criterionKeyFrom(name), taken) } : {}),
     });
   }
 
@@ -92,6 +109,8 @@ export function SupervisionInstrumentFields({
         <ol className="flex flex-col gap-3">
           {instrument.criteria.map((criterion, index) => {
             const locked = lockedKeys?.has(criterion.key) ?? false;
+            const duplicate = duplicates.has(criterion.key.trim());
+            const errorId = `criterion-key-error-${index}`;
             return (
               <li key={index} className="flex items-start gap-2">
                 <span
@@ -120,7 +139,14 @@ export function SupervisionInstrumentFields({
                     placeholder={t("criterionKeyPlaceholder")}
                     autoComplete="off"
                     className="text-fg-muted"
+                    invalid={duplicate}
+                    aria-describedby={duplicate ? errorId : undefined}
                   />
+                  {duplicate && (
+                    <div className="sm:col-span-2">
+                      <FieldError id={errorId}>{t("criterionKeyDuplicate")}</FieldError>
+                    </div>
+                  )}
                 </div>
                 <IconButton
                   icon={<Trash2 />}

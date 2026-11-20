@@ -21,6 +21,9 @@ export const NOTIFICATION_KINDS = [
   "exit_permit_exited",
   "late_arrival_opened",
   "late_arrival_updated",
+  "supervision_observation_scheduled",
+  "supervision_observation_completed",
+  "supervision_response_recorded",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -43,6 +46,9 @@ export const NOTIFICATION_KIND_MODULE: Record<NotificationKind, FeatureModule | 
   exit_permit_exited: "permits",
   late_arrival_opened: "permits",
   late_arrival_updated: "permits",
+  supervision_observation_scheduled: "supervision",
+  supervision_observation_completed: "supervision",
+  supervision_response_recorded: "supervision",
 };
 
 /** The kinds of the modules that are on, in list order. */
@@ -102,6 +108,11 @@ export const NOTIFICATION_KIND_AUDIENCE: Record<
   exit_permit_exited: STUDENT,
   late_arrival_opened: { permissions: HOMEROOM },
   late_arrival_updated: STUDENT,
+  // The observed teacher hears of a planned visit and its result; the
+  // observer (manage_supervision) of the teacher's response.
+  supervision_observation_scheduled: { permissions: ["view_own_supervision"] },
+  supervision_observation_completed: { permissions: ["view_own_supervision"] },
+  supervision_response_recorded: { permissions: ["manage_supervision"] },
 };
 
 /** Whether `me` can ever be sent `kind`. */

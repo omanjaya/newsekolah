@@ -13,6 +13,7 @@ import {
   useCreateSupervisionCycleMutation,
   useUpdateSupervisionCycleMutation,
 } from "../api";
+import { duplicateCriterionKeys } from "../lib/criterion-key";
 
 import { SupervisionInstrumentFields } from "./supervision-instrument-fields";
 
@@ -58,6 +59,9 @@ export function SupervisionCycleForm({
     ...(instrument.criteria.length === 0 ||
     instrument.criteria.some((c) => c.key.trim() === "" || c.name.trim() === "")
       ? [t("errors.criteria")]
+      : []),
+    ...(duplicateCriterionKeys(instrument.criteria).size > 0
+      ? [t("errors.criteriaDuplicate")]
       : []),
   ];
 

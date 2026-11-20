@@ -804,7 +804,10 @@
         "exit_permit_issued": "Izin keluar diterbitkan",
         "exit_permit_exited": "Siswa keluar gerbang",
         "late_arrival_opened": "Keterlambatan tercatat",
-        "late_arrival_updated": "Keterlambatan diperbarui"
+        "late_arrival_updated": "Keterlambatan diperbarui",
+        "supervision_observation_scheduled": "Observasi kelas dijadwalkan",
+        "supervision_observation_completed": "Hasil observasi tersedia",
+        "supervision_response_recorded": "Tanggapan hasil observasi"
       },
       "seeAll": "Lihat semua",
       "searchPlaceholder": "Cari judul atau isi notifikasi",

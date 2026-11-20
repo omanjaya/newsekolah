@@ -23,7 +23,22 @@ describe("availableNotificationKinds", () => {
       "attendance_submitted",
       "substitution_requested",
       "substitution_responded",
+      "supervision_observation_scheduled",
+      "supervision_observation_completed",
+      "supervision_response_recorded",
     ]);
+  });
+
+  it("offers the observed teacher the supervision visit and result, the observer the response", () => {
+    const receivable = (permissions: string[]) =>
+      NOTIFICATION_KINDS.filter((kind) =>
+        canReceiveNotificationKind(kind, { profile_kind: "teacher", permissions }),
+      ).filter((kind) => kind.startsWith("supervision_"));
+    expect(receivable(["view_own_supervision", "respond_to_supervision"])).toEqual([
+      "supervision_observation_scheduled",
+      "supervision_observation_completed",
+    ]);
+    expect(receivable(["manage_supervision"])).toEqual(["supervision_response_recorded"]);
   });
 
   it("leaves out the announcement kind while announcements is off", () => {
@@ -32,14 +47,24 @@ describe("availableNotificationKinds", () => {
     );
   });
 
-  it("names the emitting module of every permits and announcements kind", () => {
+  it("names the emitting module of every permits, announcements and supervision kind", () => {
     const owned = Object.entries(NOTIFICATION_KIND_MODULE).filter(([, module]) => module);
     expect(
       owned.every(([kind, module]) =>
-        kind === "announcement_published" ? module === "announcements" : module === "permits",
+        kind === "announcement_published"
+          ? module === "announcements"
+          : kind.startsWith("supervision_")
+            ? module === "supervision"
+            : module === "permits",
       ),
     ).toBe(true);
-    expect(owned).toHaveLength(9);
+    expect(owned).toHaveLength(12);
+  });
+
+  it("leaves out the supervision kinds while supervision is off", () => {
+    expect(availableNotificationKinds(off("supervision"))).not.toContain(
+      "supervision_observation_completed",
+    );
   });
 });
 

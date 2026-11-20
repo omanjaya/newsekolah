@@ -17,10 +17,13 @@ import {
 } from "../../reference/components/directory-picker";
 import { useSchedulesQuery } from "../../schedule/api";
 import { useScheduleObservationMutation } from "../api";
+import { isoWeekdayOf } from "../lib/lesson-weekday";
 
 /**
  * Schedules an observation against one of a teacher's own lesson blocks:
- * the teacher, which of their lessons, and the date of the visit.
+ * the teacher, the date of the visit, and which of their lessons that day
+ * (only the blocks on the date's weekday are offered: a Monday lesson is
+ * never observed on a Friday, and the API refuses the pairing too).
  */
 export function ScheduleObservationForm({
   cycleId,
@@ -50,7 +53,9 @@ export function ScheduleObservationForm({
   const [attempted, setAttempted] = useState(false);
   const schedule = useScheduleObservationMutation(cycleId);
 
-  const blockOptions = (blocks.data?.data ?? []).map((block) => ({
+  const weekday = isoWeekdayOf(lessonDate);
+  const dayBlocks = (blocks.data?.data ?? []).filter((block) => block.day_of_week === weekday);
+  const blockOptions = dayBlocks.map((block) => ({
     value: block.schedule_ids[0] ?? "",
     label: [
       tWeekdays(String(block.day_of_week)),
@@ -67,6 +72,8 @@ export function ScheduleObservationForm({
     date: lessonDate === "" ? t("errors.date") : undefined,
   };
   const valid = Object.values(errors).every((error) => error === undefined);
+  // The teacher's blocks are in, and none falls on the chosen date's weekday.
+  const noLessonThatDay = teacherId !== "" && blocks.data !== undefined && dayBlocks.length === 0;
   const shown = (error: string | undefined) => (attempted ? error : undefined);
 
   return (
@@ -106,23 +113,38 @@ export function ScheduleObservationForm({
           labels={teacherLabels}
         />
       </Field>
+      <Field label={t("lessonDate")} required error={shown(errors.date)}>
+        <DatePicker
+          value={lessonDate}
+          onChange={(next) => {
+            setLessonDate(next);
+            // A lesson of another weekday no longer fits the visit.
+            if (isoWeekdayOf(next) !== weekday) setScheduleId("");
+          }}
+          today={today}
+          required
+        />
+      </Field>
       <Field
         label={t("lesson")}
         required
-        disabled={teacherId === ""}
-        hint={teacherId === "" ? t("selectTeacherFirst") : undefined}
-        error={teacherId === "" ? undefined : shown(errors.lesson)}
+        disabled={teacherId === "" || noLessonThatDay}
+        hint={
+          teacherId === ""
+            ? t("selectTeacherFirst")
+            : noLessonThatDay && weekday !== undefined
+              ? t("noLessonOnDay", { day: tWeekdays(String(weekday)) })
+              : undefined
+        }
+        error={teacherId === "" || noLessonThatDay ? undefined : shown(errors.lesson)}
       >
         <Select
           options={blockOptions}
           value={scheduleId}
           onValueChange={setScheduleId}
           placeholder={t("lessonPlaceholder")}
-          disabled={teacherId === ""}
+          disabled={teacherId === "" || noLessonThatDay}
         />
-      </Field>
-      <Field label={t("lessonDate")} required error={shown(errors.date)}>
-        <DatePicker value={lessonDate} onChange={setLessonDate} today={today} required />
       </Field>
       <DialogFooter>
         <Button type="button" variant="secondary" onClick={onDone}>
