@@ -13,11 +13,13 @@ import { useUpdateProfileMutation } from "../api";
 import { ProfileSaveBar } from "./profile-save-bar";
 
 /**
- * `Me` exposes name, username and email (see the schema in
- * packages/api-client's generated types) -- phone and locale are
- * write-only from this screen's point of view, so those two fields start
- * blank/at the current UI locale rather than pretending to show a stored
- * value the API never sends back. The save bar rises once a field changed.
+ * `Me` exposes name, username, email and the language preference (see the
+ * schema in packages/api-client's generated types) -- phone is write-only
+ * from this screen's point of view, so it starts blank rather than
+ * pretending to show a stored value the API never sends back. The language
+ * select shows the stored preference and is sent only when it changed, so
+ * saving another field never overwrites it; once saved, `UserLocaleSync`
+ * switches the app to it. The save bar rises once a field changed.
  */
 export function EditProfileForm(): ReactElement | null {
   const { me } = useSession();
@@ -27,7 +29,8 @@ export function EditProfileForm(): ReactElement | null {
   const apiErrorMessage = useApiErrorMessage();
   const update = useUpdateProfileMutation();
 
-  const initialLocale: "id" | "en" = uiLocale === "en" ? "en" : "id";
+  const storedLocale = me?.locale ?? uiLocale;
+  const initialLocale: "id" | "en" = storedLocale === "en" ? "en" : "id";
   const [username, setUsername] = useState(me?.username ?? "");
   const [name, setName] = useState(me?.name ?? "");
   const [email, setEmail] = useState(me?.email ?? "");
@@ -59,7 +62,7 @@ export function EditProfileForm(): ReactElement | null {
         name: name.trim(),
         ...(email.trim() ? { email: email.trim() } : {}),
         ...(phone.trim() ? { phone: phone.trim() } : {}),
-        locale,
+        ...(locale !== initialLocale ? { locale } : {}),
       });
       setPhone("");
       toast.success(t("saved"));

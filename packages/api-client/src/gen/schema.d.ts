@@ -9925,6 +9925,11 @@ export interface components {
             name: string;
             /** Format: uri */
             avatar_url?: string;
+            /**
+             * @description The user's own language preference (users.locale), set on the profile page. Clients render in it ahead of the tenant's default language. Always sent by the server.
+             * @enum {string}
+             */
+            locale?: "id" | "en";
             /** @enum {string} */
             profile_kind?: "student" | "teacher" | "staff";
             roles: components["schemas"]["Role"][];

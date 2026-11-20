@@ -55,10 +55,12 @@ func TestUpdateMyProfile_EmptyLocaleKeepsStoredValue(t *testing.T) {
 	_, err := pg.AdminPool.Exec(ctx, `update users set locale = 'en' where id = $1`, userID)
 	require.NoError(t, err)
 
-	_, err = svc.UpdateMyProfile(ctx, tenantID, userID, service.UpdateMyProfileInput{
+	me, err := svc.UpdateMyProfile(ctx, tenantID, userID, service.UpdateMyProfileInput{
 		Name: "Self Renamed", Email: "locale-self@example.test",
 	})
 	require.NoError(t, err)
+	// GET /v1/me carries the stored preference, so clients can apply it.
+	require.Equal(t, "en", me.Locale)
 
 	var locale string
 	require.NoError(t, pg.AdminPool.QueryRow(ctx, `select locale from users where id = $1`, userID).Scan(&locale))

@@ -4,6 +4,7 @@ import type { ReactElement, ReactNode } from "react";
 
 import { getMessagesForNamespaces } from "../../lib/i18n/get-messages";
 import { APP_NAMESPACES } from "../../lib/i18n/namespace-sets";
+import { getRequestLocale } from "../../lib/i18n/request-locale.server";
 import { dehydrateAppQueryClient } from "../../lib/session/dehydrate-app-query-client.server";
 import { getTenantBrandingServer } from "../../lib/tenant/get-branding.server";
 
@@ -41,7 +42,7 @@ export default async function AppLayout({
     getTenantBrandingServer(),
     dehydrateAppQueryClient(),
   ]);
-  const locale = branding?.locale ?? "id";
+  const locale = await getRequestLocale(branding?.locale);
   const messages = getMessagesForNamespaces(locale, APP_NAMESPACES);
 
   return (

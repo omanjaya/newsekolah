@@ -1,4 +1,5 @@
 import { removeAllDrafts } from "../drafts/draft-storage";
+import { clearUserLocaleCookie } from "../i18n/user-locale-cookie";
 import { deleteAccountScopedCaches } from "../pwa/cache-policy";
 
 /**
@@ -19,5 +20,7 @@ import { deleteAccountScopedCaches } from "../pwa/cache-policy";
  */
 export function forgetAccountOnThisBrowser(): void {
   removeAllDrafts();
+  // The next person here sees the school's language, not this account's.
+  clearUserLocaleCookie();
   void deleteAccountScopedCaches();
 }

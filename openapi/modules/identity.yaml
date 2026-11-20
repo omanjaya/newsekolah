@@ -770,6 +770,15 @@ components:
         avatar_url:
           type: string
           format: uri
+        locale:
+          type: string
+          enum:
+            - id
+            - en
+          description: >-
+            The user's own language preference (users.locale), set on the
+            profile page. Clients render in it ahead of the tenant's
+            default language. Always sent by the server.
         profile_kind:
           type: string
           enum:

@@ -56,6 +56,7 @@ type MeResult struct {
 	Email              string
 	Name               string
 	AvatarURL          string
+	Locale             string
 	ProfileKind        domain.ProfileKind
 	Detail             UserProfileFields
 	Roles              []domain.Role
@@ -127,6 +128,7 @@ func (s *Service) me(ctx context.Context, user domain.User) (MeResult, error) {
 		Email:              user.Email,
 		Name:               user.Name,
 		AvatarURL:          user.AvatarURL,
+		Locale:             user.Locale,
 		Roles:              roles,
 		Permissions:        principal.Effective().Slice(),
 		Duties:             duties,
