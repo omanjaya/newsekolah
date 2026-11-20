@@ -20,6 +20,7 @@ describe("monthly visitor recap", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
     vi.clearAllMocks();
   });
 
@@ -39,9 +40,16 @@ describe("monthly visitor recap", () => {
   it("exports the month by its first day", async () => {
     const fetchMock = vi.fn(() => Promise.resolve(new Response("x", { status: 200 })));
     vi.stubGlobal("fetch", fetchMock);
-    // jsdom has no object URLs; the download only needs them to exist.
-    URL.createObjectURL = () => "blob:recap";
-    URL.revokeObjectURL = vi.fn();
+    // jsdom has no object URLs and cannot follow the download link; the
+    // export only needs them to exist and the click to go nowhere.
+    vi.stubGlobal(
+      "URL",
+      Object.assign(class extends URL {}, {
+        createObjectURL: () => "blob:recap",
+        revokeObjectURL: vi.fn(),
+      }),
+    );
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
 
     const { result } = renderHook(() => useExportMonthlyRecapMutation(), { wrapper });
     await act(() =>
