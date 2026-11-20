@@ -16,7 +16,7 @@ import {
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
@@ -78,6 +78,8 @@ export function ComponentDialog({
   const update = useUpdateComponentMutation();
   const remove = useDeleteComponentMutation();
   const editing = target === "new" ? null : target;
+  const deleteBlockedId = useId();
+  const deleteBlocked = editing !== null && hasScores;
 
   const [code, setCode] = useState(editing?.code ?? "");
   const [description, setDescription] = useState(editing?.description ?? "");
@@ -212,8 +214,10 @@ export function ComponentDialog({
                 }}
               />
             </Field>
-            {editing && hasScores && (
-              <p className="text-body-sm text-fg-muted">{t("deleteBlocked")}</p>
+            {deleteBlocked && (
+              <p id={deleteBlockedId} className="text-body-sm text-fg-muted">
+                {t("deleteBlocked")}
+              </p>
             )}
             <DialogFooter className="sm:justify-between">
               {editing ? (
@@ -222,6 +226,8 @@ export function ComponentDialog({
                   variant="ghost"
                   className="text-danger"
                   disabled={hasScores}
+                  // The reason it is disabled, read with the button.
+                  aria-describedby={deleteBlocked ? deleteBlockedId : undefined}
                   onClick={() => {
                     setConfirmingDelete(true);
                   }}

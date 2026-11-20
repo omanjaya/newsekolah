@@ -117,8 +117,9 @@ describe("ComponentDialog", () => {
 
   it("does not offer Delete while the column still holds scores", () => {
     renderDialog(PTS, true);
-    expect(screen.getByRole("button", { name: "delete" })).toBeDisabled();
-    expect(screen.getByText("deleteBlocked")).toBeInTheDocument();
+    const deleteButton = screen.getByRole("button", { name: "delete" });
+    expect(deleteButton).toBeDisabled();
+    expect(deleteButton).toHaveAccessibleDescription("deleteBlocked");
   });
 
   it("offers Delete for an empty column", () => {

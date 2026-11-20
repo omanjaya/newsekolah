@@ -160,11 +160,14 @@ describe("withCellEdit", () => {
     expect(withCellEdit({ c1: { s1: "80", s2: "70" } }, "c1", "s1", "82", 82)).toEqual({
       c1: { s2: "70" },
     });
-    expect(withCellEdit({ c1: { s1: "8" } }, "c1", "s1", "82,0", 82)).toEqual({ c1: {} });
+    expect(withCellEdit({ c1: { s1: "8" } }, "c1", "s1", "82,0", 82)).toEqual({});
   });
 
   it("leaves nothing pending for a cell typed into and cleared again", () => {
-    expect(withCellEdit({ c1: { s1: "65" } }, "c1", "s1", "", undefined)).toEqual({ c1: {} });
+    expect(withCellEdit({ c1: { s1: "65" } }, "c1", "s1", "", undefined)).toEqual({});
+    expect(withCellEdit({ c1: { s1: "65" }, c2: { s1: "70" } }, "c1", "s1", "", undefined)).toEqual(
+      { c2: { s1: "70" } },
+    );
     const untouched = {};
     expect(withCellEdit(untouched, "c1", "s1", "", undefined)).toBe(untouched);
   });

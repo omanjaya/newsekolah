@@ -24,6 +24,7 @@ export function parseScoreInput(raw: string): number | null | "invalid" {
  * `prev` with one cell's edit set to `value`, or dropped when `value` reads
  * as the score already saved (`original`, undefined for none): typing a
  * score back, or clearing a cell that was empty, leaves nothing pending.
+ * A column whose last edit is dropped is removed from the result.
  */
 export function withCellEdit(
   prev: Edits,
@@ -37,10 +38,11 @@ export function withCellEdit(
   const column = prev[componentId] ?? {};
   if (!unchanged) return { ...prev, [componentId]: { ...column, [studentId]: value } };
   if (!(studentId in column)) return prev;
-  return {
-    ...prev,
-    [componentId]: Object.fromEntries(Object.entries(column).filter(([id]) => id !== studentId)),
-  };
+  const rest = Object.fromEntries(Object.entries(column).filter(([id]) => id !== studentId));
+  // A column left with no edits is dropped too, so `edits` (and the draft
+  // mirrored from it) never holds an empty column object.
+  if (Object.keys(rest).length > 0) return { ...prev, [componentId]: rest };
+  return Object.fromEntries(Object.entries(prev).filter(([id]) => id !== componentId));
 }
 
 /**
