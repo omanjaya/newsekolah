@@ -11,7 +11,7 @@ const MAX_SLUG_LENGTH = 60;
 export function fileNameSlug(text: string): string {
   return text
     .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .slice(0, MAX_SLUG_LENGTH)
