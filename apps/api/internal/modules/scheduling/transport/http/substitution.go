@@ -12,10 +12,9 @@ func (h *SchedulingHandler) ListSubstitutions(ctx context.Context, request api.L
 	tenantID := tenantIDFromContext(ctx)
 	userID, _ := httpx.UserIDFromContext(ctx)
 
-	// The "all" (manage_schedules-only) scope lists tenant-wide, so joining
-	// each row's schedule is not worth the extra cost there; the two
-	// self scopes below (incoming/outgoing) are what the web substitutions
-	// page renders as a session-card list, so those are enriched.
+	// The "all" (manage_schedules-only) scope is the admin's school-wide
+	// view on the web substitutions page; like the two self scopes below,
+	// each row carries the lesson it covers.
 	if request.Params.Direction == api.ListSubstitutionsParamsDirectionAll {
 		actor, aerr := h.actorFor(ctx, tenantID, userID)
 		if aerr != nil {
@@ -35,7 +34,7 @@ func (h *SchedulingHandler) ListSubstitutions(ctx context.Context, request api.L
 		}
 		data := make([]api.Substitution, len(subs))
 		for i, s := range subs {
-			data[i] = toAPISubstitution(s)
+			data[i] = toAPISubstitutionWithSchedule(s)
 		}
 		return api.ListSubstitutions200JSONResponse{Data: data}, nil
 	}

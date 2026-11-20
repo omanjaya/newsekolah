@@ -93,7 +93,7 @@ type Repository interface {
 	ListAcceptedSubstitutionsForRequesterDate(ctx context.Context, tenantID, requesterUserID uuid.UUID, date time.Time) ([]domain.Substitution, error)
 	// ListSubstitutionsAll is the manage_schedules-only "all" list scope;
 	// status filters to one status when non-nil.
-	ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.Substitution, error)
+	ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.SubstitutionWithSchedule, error)
 	// ListEligibleSubstituteTeachers backs the substitute picker: active
 	// teachers this academic year, excluding excludeUserID, with an
 	// optional name search.

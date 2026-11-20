@@ -7,7 +7,9 @@ import { SubstitutionsView } from "./substitutions-view";
 const requests = vi.hoisted(() => ({
   incoming: [] as unknown[],
   outgoing: [] as unknown[],
+  all: [] as unknown[],
 }));
+const access = vi.hoisted(() => ({ permissions: [] as string[], roles: [{ slug: "teacher" }] }));
 const mutations = vi.hoisted(() => ({ respond: vi.fn(), cancel: vi.fn() }));
 
 vi.mock("next-intl", () => ({
@@ -20,7 +22,10 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
-  useSession: () => ({ me: { tenant: { timezone: "Asia/Makassar" } } }),
+  useSession: () => ({
+    me: { id: "me", roles: access.roles, tenant: { timezone: "Asia/Makassar" } },
+  }),
+  useCan: (permission: string) => access.permissions.includes(permission),
 }));
 vi.mock("../../../lib/tenant-date", () => ({ todayInZone: () => "2026-11-14" }));
 vi.mock("../../reference/api", () => ({
@@ -30,10 +35,16 @@ vi.mock("../../reference/api", () => ({
   useLookup: (items: { id: string }[] | undefined) =>
     new Map((items ?? []).map((item) => [item.id, item])),
 }));
-vi.mock("../../reference/directory-names", () => ({ useDirectoryNames: () => new Map() }));
+vi.mock("../../reference/directory-names", () => ({
+  useDirectoryNames: () =>
+    new Map([
+      ["teacher-2", { name: "Guru Dua" }],
+      ["teacher-3", { name: "Guru Tiga" }],
+    ]),
+}));
 vi.mock("./request-form", () => ({ RequestForm: () => null }));
 vi.mock("../api", () => ({
-  useSubstitutionsQuery: (direction: "incoming" | "outgoing") => ({
+  useSubstitutionsQuery: (direction: "incoming" | "outgoing" | "all") => ({
     data: { data: requests[direction] },
     isLoading: false,
     isError: false,
@@ -46,6 +57,9 @@ afterEach(() => {
   cleanup();
   requests.incoming = [];
   requests.outgoing = [];
+  requests.all = [];
+  access.permissions = [];
+  access.roles = [{ slug: "teacher" }];
   mutations.respond.mockReset();
   mutations.cancel.mockReset();
 });
@@ -60,6 +74,11 @@ function request(id: string, status: string) {
     requester_user_id: "teacher-2",
     substitute_user_id: "me",
   };
+}
+
+/** A request this teacher sent. */
+function outgoingRequest(id: string, status: string) {
+  return { ...request(id, status), requester_user_id: "me", substitute_user_id: "teacher-2" };
 }
 
 it("counts the requests still waiting on this teacher on the incoming switch", () => {
@@ -122,7 +141,7 @@ it("accepts with one tap", async () => {
 
 it("asks before cancelling one's own request", async () => {
   const user = userEvent.setup();
-  requests.outgoing = [request("r1", "pending")];
+  requests.outgoing = [outgoingRequest("r1", "pending")];
   render(<SubstitutionsView />);
 
   await user.click(screen.getByRole("radio", { name: /outgoing/ }));
@@ -158,7 +177,7 @@ it("keeps the decline dialog and its reason open when declining fails", async ()
 
 it("keeps the cancel dialog open when cancelling fails", async () => {
   const user = userEvent.setup();
-  requests.outgoing = [request("r1", "pending")];
+  requests.outgoing = [outgoingRequest("r1", "pending")];
   mutations.cancel.mockImplementation(
     (_id, options: { onError?: (e: Error) => void; onSettled?: () => void }) => {
       options.onError?.(new Error("boom"));
@@ -174,4 +193,30 @@ it("keeps the cancel dialog open when cancelling fails", async () => {
 
   expect(mutations.cancel).toHaveBeenCalledTimes(1);
   expect(screen.getByRole("dialog")).toBeInTheDocument();
+});
+
+it("offers the school-wide list only to a schedule manager", () => {
+  render(<SubstitutionsView />);
+  expect(screen.queryByRole("radio", { name: "all" })).not.toBeInTheDocument();
+});
+
+it("opens a non-teaching admin on every request in the school, naming both teachers", () => {
+  access.permissions = ["manage_schedules"];
+  access.roles = [{ slug: "admin" }];
+  requests.all = [
+    {
+      ...request("r1", "pending"),
+      requester_user_id: "teacher-2",
+      substitute_user_id: "teacher-3",
+    },
+  ];
+  render(<SubstitutionsView />);
+
+  expect(screen.getByRole("radio", { name: "all" })).toBeChecked();
+  const card = screen.getByTestId("substitution-r1");
+  expect(card).toHaveTextContent("Matematika · X-A");
+  expect(card).toHaveTextContent("fromTeacher: Guru Dua");
+  expect(card).toHaveTextContent("toTeacher: Guru Tiga");
+  // Only the two teachers answer or withdraw it.
+  expect(within(card).queryByRole("button")).not.toBeInTheDocument();
 });

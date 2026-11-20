@@ -124,7 +124,7 @@ func (r *Repository) ListSubstitutionsOutgoingWithSchedule(ctx context.Context, 
 	return out, nil
 }
 
-func (r *Repository) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.Substitution, error) {
+func (r *Repository) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.SubstitutionWithSchedule, error) {
 	var statusFilter pgtype.Text
 	if status != nil {
 		statusFilter = pdatabase.Text(string(*status))
@@ -133,7 +133,15 @@ func (r *Repository) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUI
 	if err != nil {
 		return nil, err
 	}
-	return toSubstitutions(rows), nil
+	out := make([]domain.SubstitutionWithSchedule, len(rows))
+	for i, row := range rows {
+		out[i] = domain.SubstitutionWithSchedule{
+			Substitution: toSubstitution(row.SubstitutionRequest),
+			ClassID:      row.ClassID, SubjectID: row.SubjectID,
+			StartPeriodID: row.StartPeriodID, EndPeriodID: row.EndPeriodID,
+		}
+	}
+	return out, nil
 }
 
 func (r *Repository) ListEligibleSubstituteTeachers(ctx context.Context, tenantID, academicYearID, excludeUserID uuid.UUID, search string, limit, offset int) ([]service.SubstituteCandidate, error) {

@@ -1366,8 +1366,9 @@ type Querier interface {
 	ListStudentRiskTotals(ctx context.Context, arg ListStudentRiskTotalsParams) ([]ListStudentRiskTotalsRow, error)
 	// The manage_schedules-only "all" scope (docs/analysis/backend-inventory.md
 	// section 1.13): every substitution request tenant-wide, optionally
-	// narrowed to one status.
-	ListSubstitutionsAll(ctx context.Context, arg ListSubstitutionsAllParams) ([]SubstitutionRequest, error)
+	// narrowed to one status, joined with the covered lesson like the two
+	// self scopes so the admin's school-wide list can name it.
+	ListSubstitutionsAll(ctx context.Context, arg ListSubstitutionsAllParams) ([]ListSubstitutionsAllRow, error)
 	ListSubstitutionsIncoming(ctx context.Context, arg ListSubstitutionsIncomingParams) ([]SubstitutionRequest, error)
 	// Same rows as ListSubstitutionsIncoming, joined with the covered
 	// schedule's class/subject/period so the web substitutions page can render

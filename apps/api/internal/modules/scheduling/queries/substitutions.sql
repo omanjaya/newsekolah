@@ -63,10 +63,13 @@ order by sr.date desc, sr.created_at desc;
 -- name: ListSubstitutionsAll :many
 -- The manage_schedules-only "all" scope (docs/analysis/backend-inventory.md
 -- section 1.13): every substitution request tenant-wide, optionally
--- narrowed to one status.
-select * from substitution_requests
-where tenant_id = $1 and (sqlc.narg(status)::text is null or status = sqlc.narg(status)::text)
-order by date desc, created_at desc;
+-- narrowed to one status, joined with the covered lesson like the two
+-- self scopes so the admin's school-wide list can name it.
+select sqlc.embed(sr), s.class_id, s.subject_id, s.start_period_id, s.end_period_id
+from substitution_requests sr
+join schedules s on s.id = sr.schedule_id
+where sr.tenant_id = $1 and (sqlc.narg(status)::text is null or sr.status = sqlc.narg(status)::text)
+order by sr.date desc, sr.created_at desc;
 
 -- name: ListEligibleSubstituteTeachers :many
 -- Active teachers this academic year, excluding requesterUserID, with an

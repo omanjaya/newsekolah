@@ -215,8 +215,8 @@ func (s *Service) ListSubstitutionsOutgoingWithSchedule(ctx context.Context, ten
 
 // ListSubstitutionsAll is the manage_schedules-only "all" list scope; the
 // transport layer is responsible for the permission check.
-func (s *Service) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.Substitution, error) {
-	var out []domain.Substitution
+func (s *Service) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.SubstitutionWithSchedule, error) {
+	var out []domain.SubstitutionWithSchedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		out, err = s.repo.ListSubstitutionsAll(ctx, tenantID, status)

@@ -408,6 +408,15 @@ func TestListSubstitutionsWithSchedule(t *testing.T) {
 	require.Len(t, incoming, 1)
 	require.Equal(t, domain.SubstitutionAccepted, incoming[0].Status)
 	require.Equal(t, class, incoming[0].ClassID)
+
+	// The admin's school-wide scope names the lesson too.
+	all, err := svc.ListSubstitutionsAll(ctx, tenant, nil)
+	require.NoError(t, err)
+	require.Len(t, all, 1)
+	require.Equal(t, created.ID, all[0].ID)
+	require.Equal(t, class, all[0].ClassID)
+	require.Equal(t, subject, all[0].SubjectID)
+	require.Equal(t, p1, all[0].StartPeriodID)
 }
 
 // fullAccessPermissions grants manage_schedules unconditionally, putting
