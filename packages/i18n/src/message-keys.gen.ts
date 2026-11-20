@@ -151,6 +151,7 @@ export type MessageKey =
   | "errors.COUNSELING_FORBIDDEN"
   | "errors.COUNSELING_NOT_FOUND"
   | "errors.DISCOUNT_NOT_FOUND"
+  | "errors.DUTY_ASSIGNMENT_ALREADY_EXISTS"
   | "errors.DUTY_TYPE_ALREADY_EXISTS"
   | "errors.DUTY_TYPE_IN_USE"
   | "errors.ENROLLMENT_NOT_FOUND"
@@ -632,6 +633,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.COUNSELING_FORBIDDEN",
   "errors.COUNSELING_NOT_FOUND",
   "errors.DISCOUNT_NOT_FOUND",
+  "errors.DUTY_ASSIGNMENT_ALREADY_EXISTS",
   "errors.DUTY_TYPE_ALREADY_EXISTS",
   "errors.DUTY_TYPE_IN_USE",
   "errors.ENROLLMENT_NOT_FOUND",

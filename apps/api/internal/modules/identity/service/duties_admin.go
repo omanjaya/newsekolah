@@ -63,6 +63,7 @@ type DutiesRepository interface {
 	EndActiveAssignmentsForClass(ctx context.Context, tenantID, academicYearID, dutyTypeID, classID uuid.UUID, keepID uuid.NullUUID, endsOn time.Time) error
 	FindActiveHolderForClass(ctx context.Context, tenantID, academicYearID, dutyTypeID, classID uuid.UUID) (userID uuid.UUID, found bool, err error)
 	HoldsDutyForOtherClass(ctx context.Context, tenantID, academicYearID, dutyTypeID, userID, classID uuid.UUID) (bool, error)
+	ActiveDutyAssignmentExists(ctx context.Context, tenantID uuid.UUID, in DutyAssignmentRecord, excludeID uuid.NullUUID) (bool, error)
 	CreateDutyAssignmentRecord(ctx context.Context, tenantID uuid.UUID, in DutyAssignmentRecord) (DutyAssignmentRecord, error)
 	UpdateDutyAssignmentRecord(ctx context.Context, tenantID, id uuid.UUID, isActive bool, endsOn *time.Time) error
 	DeleteDutyAssignmentRecord(ctx context.Context, tenantID, id uuid.UUID) error

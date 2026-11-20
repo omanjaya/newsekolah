@@ -12,6 +12,45 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const activeDutyAssignmentExists = `-- name: ActiveDutyAssignmentExists :one
+select exists (
+  select 1 from duty_assignments
+  where tenant_id = $1 and academic_year_id = $2 and duty_type_id = $3 and user_id = $4 and is_active
+    and scope_class_id is not distinct from $5::uuid
+    and scope_student_id is not distinct from $6::uuid
+    and ($7::uuid is null or id <> $7::uuid)
+)::bool as found
+`
+
+type ActiveDutyAssignmentExistsParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	DutyTypeID     uuid.UUID   `json:"duty_type_id"`
+	UserID         uuid.UUID   `json:"user_id"`
+	ScopeClassID   pgtype.UUID `json:"scope_class_id"`
+	ScopeStudentID pgtype.UUID `json:"scope_student_id"`
+	ExcludeID      pgtype.UUID `json:"exclude_id"`
+}
+
+// Whether the user already actively holds this duty for the same scope (the
+// same class or student, or the whole school) in the year, other than
+// exclude_id (the row being reactivated). Backed by the partial unique
+// index ux_duty_assignments_active.
+func (q *Queries) ActiveDutyAssignmentExists(ctx context.Context, arg ActiveDutyAssignmentExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, activeDutyAssignmentExists,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.DutyTypeID,
+		arg.UserID,
+		arg.ScopeClassID,
+		arg.ScopeStudentID,
+		arg.ExcludeID,
+	)
+	var found bool
+	err := row.Scan(&found)
+	return found, err
+}
+
 const classExistsInTenant = `-- name: ClassExistsInTenant :one
 select exists(select 1 from classes where tenant_id = $1 and id = $2 and deleted_at is null)
 `

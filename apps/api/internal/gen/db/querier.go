@@ -188,6 +188,11 @@ type Querier interface {
 	AcademicUpsertSchoolDay(ctx context.Context, arg AcademicUpsertSchoolDayParams) error
 	AcademicUpsertWeekdayAssignment(ctx context.Context, arg AcademicUpsertWeekdayAssignmentParams) error
 	ActivateAcademicYear(ctx context.Context, arg ActivateAcademicYearParams) error
+	// Whether the user already actively holds this duty for the same scope (the
+	// same class or student, or the whole school) in the year, other than
+	// exclude_id (the row being reactivated). Backed by the partial unique
+	// index ux_duty_assignments_active.
+	ActiveDutyAssignmentExists(ctx context.Context, arg ActiveDutyAssignmentExistsParams) (bool, error)
 	AddDutyPermission(ctx context.Context, arg AddDutyPermissionParams) error
 	AddParticipant(ctx context.Context, arg AddParticipantParams) (ActivityParticipant, error)
 	AddRolePermission(ctx context.Context, arg AddRolePermissionParams) error

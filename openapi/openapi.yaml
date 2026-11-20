@@ -7566,6 +7566,10 @@ paths:
       operationId: createDutyAssignment
       x-permission: manage_master_data
       summary: Assign a duty to a user for an academic year (optionally scoped)
+      description: |
+        A user holds a duty at most once per scope (the school, one class or one student) at a
+        time: a second active assignment of the same duty, user and scope in the year returns 409
+        DUTY_ASSIGNMENT_ALREADY_EXISTS.
       requestBody:
         required: true
         content:
@@ -7603,6 +7607,11 @@ paths:
       operationId: updateDutyAssignment
       x-permission: manage_master_data
       summary: Activate, deactivate or end a duty assignment
+      description: |
+        An ends_on before the assignment's starts_on returns 400 VALIDATION_FAILED with the detail
+        field ends_on, code BEFORE_START; an assignment that has not started yet is cancelled with
+        DELETE instead. Reactivating a row while the same user actively holds the same duty for the
+        same scope returns 409 DUTY_ASSIGNMENT_ALREADY_EXISTS.
       requestBody:
         required: true
         content:
@@ -7632,6 +7641,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
     delete:
       tags:
         - duties

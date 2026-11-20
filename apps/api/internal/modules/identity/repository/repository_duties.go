@@ -200,6 +200,9 @@ func (r *Repository) CreateDutyAssignmentRecord(ctx context.Context, tenantID uu
 		ScopeClassID: pdatabase.NullUUID(in.ScopeClassID), ScopeStudentID: pdatabase.NullUUID(in.ScopeStudentID),
 		StartsOn: pdatabase.Date(in.StartsOn),
 	})
+	if isActiveAssignmentViolation(err) {
+		return service.DutyAssignmentRecord{}, domain.ErrDutyAssignmentExists
+	}
 	if err != nil {
 		return service.DutyAssignmentRecord{}, fmt.Errorf("create duty assignment: %w", err)
 	}
@@ -218,10 +221,37 @@ func (r *Repository) UpdateDutyAssignmentRecord(ctx context.Context, tenantID, i
 	err := r.queries(ctx).UpdateDutyAssignment(ctx, db.UpdateDutyAssignmentParams{
 		TenantID: tenantID, ID: id, IsActive: isActive, EndsOn: pdatabase.Date(ends),
 	})
+	if isActiveAssignmentViolation(err) {
+		return domain.ErrDutyAssignmentExists
+	}
 	if err != nil {
 		return fmt.Errorf("update duty assignment: %w", err)
 	}
 	return nil
+}
+
+// ActiveDutyAssignmentExists reports whether in.UserID already actively
+// holds in.DutyTypeID for in's scope in in's academic year, ignoring
+// excludeID.
+func (r *Repository) ActiveDutyAssignmentExists(ctx context.Context, tenantID uuid.UUID, in service.DutyAssignmentRecord, excludeID uuid.NullUUID) (bool, error) {
+	found, err := r.queries(ctx).ActiveDutyAssignmentExists(ctx, db.ActiveDutyAssignmentExistsParams{
+		TenantID: tenantID, AcademicYearID: in.AcademicYearID, DutyTypeID: in.DutyTypeID, UserID: in.UserID,
+		ScopeClassID: pdatabase.NullUUID(in.ScopeClassID), ScopeStudentID: pdatabase.NullUUID(in.ScopeStudentID),
+		ExcludeID: pdatabase.NullUUID(excludeID),
+	})
+	if err != nil {
+		return false, fmt.Errorf("active duty assignment exists: %w", err)
+	}
+	return found, nil
+}
+
+// isActiveAssignmentViolation reports a write refused by the partial
+// unique index ux_duty_assignments_active (one active assignment per
+// person, duty and scope), as opposed to the homeroom trigger's own 23505
+// errors, which the service's homeroom checks report first.
+func isActiveAssignmentViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "ux_duty_assignments_active"
 }
 
 func (r *Repository) DeleteDutyAssignmentRecord(ctx context.Context, tenantID, id uuid.UUID) error {

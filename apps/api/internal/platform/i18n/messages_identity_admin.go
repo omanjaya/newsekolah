@@ -39,6 +39,10 @@ var identityAdminCatalog = map[string]map[string]string{
 		Indonesian: "Guru ini sudah menjadi wali kelas lain pada tahun ajaran ini. Akhiri tugas wali kelas itu dulu.",
 		English:    "This teacher is already homeroom teacher of another class this academic year. End that homeroom duty first.",
 	},
+	"DUTY_ASSIGNMENT_ALREADY_EXISTS": {
+		Indonesian: "Orang ini sudah memegang tugas yang sama untuk cakupan yang sama dan masih aktif.",
+		English:    "This person already holds the same duty for the same scope, and it is still active.",
+	},
 	"DUTY_TYPE_IN_USE": {
 		Indonesian: "Jenis tugas masih dipakai oleh satu atau lebih penugasan.",
 		English:    "The duty type still has one or more assignments.",

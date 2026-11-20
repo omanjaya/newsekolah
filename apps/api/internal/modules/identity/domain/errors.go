@@ -51,6 +51,13 @@ var (
 	// a second class in the same academic year: attendance, permits and
 	// the homeroom pages resolve a teacher to exactly one class.
 	ErrTeacherAlreadyHomeroom = errors.New("the teacher is already homeroom teacher of another class this academic year")
+	// ErrDutyAssignmentExists refuses a second active assignment of the
+	// same duty to the same person for the same scope in one academic
+	// year, such as a double submitted "Beri tugas".
+	ErrDutyAssignmentExists = errors.New("the user already holds this duty for this scope")
+	// ErrInvalidDutyDateRange is a missing start date or an end date before
+	// the start date.
+	ErrInvalidDutyDateRange = errors.New("duty assignment ends before it starts")
 
 	// Impersonation
 	ErrCannotImpersonateSelf       = errors.New("cannot impersonate own account")

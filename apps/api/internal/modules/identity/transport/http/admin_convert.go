@@ -47,6 +47,8 @@ var adminErrorMap = map[error]error{
 	domain.ErrScopeTargetNotFound:         httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "scope", Code: "TARGET_NOT_FOUND"}),
 	domain.ErrAssigneeNotEligible:         httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "user_id", Code: "NOT_TEACHER_OR_STAFF"}),
 	domain.ErrTeacherAlreadyHomeroom:      httpx.ErrTeacherAlreadyHomeroom,
+	domain.ErrDutyAssignmentExists:        httpx.ErrDutyAssignmentExists,
+	domain.ErrInvalidDutyDateRange:        httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "ends_on", Code: "BEFORE_START"}),
 	domain.ErrCannotImpersonateSelf:       httpx.ErrImpersonationNotAllowed,
 	domain.ErrCannotImpersonateSuperAdmin: httpx.ErrImpersonationNotAllowed,
 	domain.ErrCannotImpersonateInactive:   httpx.ErrImpersonationNotAllowed,

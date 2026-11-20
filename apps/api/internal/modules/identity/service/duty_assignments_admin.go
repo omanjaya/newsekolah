@@ -52,6 +52,9 @@ func (s *Service) CreateDutyAssignment(ctx context.Context, tenantID uuid.UUID, 
 		} else if !ok {
 			return domain.ErrAssigneeNotEligible
 		}
+		if err := s.refuseDuplicateAssignment(ctx, tenantID, in); err != nil {
+			return err
+		}
 		if err := s.requireSingleHomeroom(ctx, tenantID, dutyType.Slug, dutyType.ID, in); err != nil {
 			return err
 		}
@@ -74,6 +77,24 @@ func (s *Service) CreateDutyAssignment(ctx context.Context, tenantID uuid.UUID, 
 		return nil
 	})
 	return record, err
+}
+
+// refuseDuplicateAssignment refuses giving in.UserID a duty they already
+// actively hold for the same scope this year (in.ID, when set, is the row
+// being reactivated and does not count). A double submitted "Beri tugas"
+// used to save the same assignment twice. The partial unique index
+// ux_duty_assignments_active backs this check against two concurrent
+// requests, and the repository maps its violation to the same error.
+func (s *Service) refuseDuplicateAssignment(ctx context.Context, tenantID uuid.UUID, in DutyAssignmentRecord) error {
+	exclude := uuid.NullUUID{UUID: in.ID, Valid: in.ID != uuid.Nil}
+	exists, err := s.repo.ActiveDutyAssignmentExists(ctx, tenantID, in, exclude)
+	if err != nil {
+		return fmt.Errorf("check duplicate duty assignment: %w", err)
+	}
+	if exists {
+		return domain.ErrDutyAssignmentExists
+	}
+	return nil
 }
 
 func (s *Service) checkScopeTargetsExist(ctx context.Context, tenantID uuid.UUID, in DutyAssignmentRecord) error {
@@ -165,10 +186,15 @@ func (s *Service) UpdateDutyAssignment(ctx context.Context, tenantID, id uuid.UU
 			return domain.ErrDutyAssignmentNotFound
 		}
 		if endsOn != nil && endsOn.Before(before.StartsOn) {
-			return domain.ErrInvalidScopeKind
+			// An assignment that has not started yet is cancelled with
+			// DeleteDutyAssignment instead: it never granted anything.
+			return domain.ErrInvalidDutyDateRange
 		}
 		reactivating := !before.IsActive && isActive
 		if reactivating {
+			if err := s.refuseDuplicateAssignment(ctx, tenantID, before); err != nil {
+				return err
+			}
 			// Reactivating a homeroom row makes its holder the class's
 			// homeroom teacher again: the same rules as a new assignment.
 			if err := s.requireSingleHomeroom(ctx, tenantID, before.DutySlug, before.DutyTypeID, before); err != nil {

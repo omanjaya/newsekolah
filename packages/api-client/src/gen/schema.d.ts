@@ -3265,7 +3265,12 @@ export interface paths {
         /** Duty assignments in an academic year */
         get: operations["listDutyAssignments"];
         put?: never;
-        /** Assign a duty to a user for an academic year (optionally scoped) */
+        /**
+         * Assign a duty to a user for an academic year (optionally scoped)
+         * @description A user holds a duty at most once per scope (the school, one class or one student) at a
+         *     time: a second active assignment of the same duty, user and scope in the year returns 409
+         *     DUTY_ASSIGNMENT_ALREADY_EXISTS.
+         */
         post: operations["createDutyAssignment"];
         delete?: never;
         options?: never;
@@ -3283,7 +3288,13 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Activate, deactivate or end a duty assignment */
+        /**
+         * Activate, deactivate or end a duty assignment
+         * @description An ends_on before the assignment's starts_on returns 400 VALIDATION_FAILED with the detail
+         *     field ends_on, code BEFORE_START; an assignment that has not started yet is cancelled with
+         *     DELETE instead. Reactivating a row while the same user actively holds the same duty for the
+         *     same scope returns 409 DUTY_ASSIGNMENT_ALREADY_EXISTS.
+         */
         put: operations["updateDutyAssignment"];
         post?: never;
         /** Remove a duty assignment */
@@ -19408,6 +19419,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     deleteDutyAssignment: {
