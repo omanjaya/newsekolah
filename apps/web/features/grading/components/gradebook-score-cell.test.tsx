@@ -72,4 +72,22 @@ describe("GradebookScoreCell", () => {
     });
     expect(onCommit).toHaveBeenCalledTimes(1);
   });
+
+  it("reads a read-only comma decimal as a score, not as a dash", () => {
+    render(
+      <GradebookScoreCell
+        studentId="s1"
+        componentId="c1"
+        rowIndex={0}
+        value="8,5"
+        readOnly
+        decimals={2}
+        ariaLabel="Nilai UH2 Siswa Contoh"
+        onCommit={vi.fn()}
+        onRegisterRef={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("8,5")).toBeInTheDocument();
+    expect(screen.queryByText("-")).not.toBeInTheDocument();
+  });
 });

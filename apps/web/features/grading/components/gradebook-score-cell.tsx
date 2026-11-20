@@ -6,7 +6,7 @@ import { memo, useEffect, useRef, useState, type ClipboardEvent, type ReactEleme
 
 import { formatScore } from "../lib/format-score";
 import { isMultiCellPaste, parsePastedGrid } from "../lib/gradebook-paste";
-import { scoreProblem } from "../lib/gradebook-scores";
+import { parseScoreInput, scoreProblem } from "../lib/gradebook-scores";
 
 const COMMIT_DEBOUNCE_MS = 400;
 
@@ -158,7 +158,10 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
   if (readOnly) {
     // Plain text in the cell: the column header and the row's student
     // name already say whose score it is, as they do for the average.
-    const score = value === "" ? Number.NaN : Number(value);
+    // The value is the locale's text ("8,5" in id), so it is read with
+    // either separator, as an edited cell is.
+    const parsed = parseScoreInput(value);
+    const score = typeof parsed === "number" ? parsed : Number.NaN;
     return (
       <span
         className={cn(

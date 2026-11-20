@@ -158,3 +158,42 @@ describe("GradebookTable saved scores", () => {
     expect(loadGradebookDraft(OWNER, SHEET_KEY)).toBeNull();
   });
 });
+
+describe("GradebookTable read-only scores", () => {
+  it("shows a saved decimal to a reader who cannot edit, never a dash", () => {
+    render(
+      <GradebookTable
+        sheet={{
+          ...sheet,
+          components: [
+            ...sheet.components,
+            {
+              id: "c2",
+              class_id: "class-1",
+              subject_id: "subject-1",
+              term_id: "term-1",
+              code: "TG2",
+              kind: "formative",
+              weight: 1,
+              sequence: 2,
+            },
+          ],
+          students: [{ student_user_id: "s1", name: "Citra", scores: { c1: 8.5, c2: 9.25 } }],
+        }}
+        canManage={false}
+        search=""
+        onSearchChange={vi.fn()}
+        onEditComponent={vi.fn()}
+        onManualOverride={vi.fn()}
+        starBalances={new Map()}
+        onGiveStar={vi.fn()}
+        onAddComponent={vi.fn()}
+      />,
+    );
+    expect(screen.queryAllByRole("textbox").filter((el) => el.id.includes("c1-s1"))).toHaveLength(
+      0,
+    );
+    expect(screen.getByText("8,5")).toBeInTheDocument();
+    expect(screen.getByText("9,25")).toBeInTheDocument();
+  });
+});
