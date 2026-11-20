@@ -135,7 +135,9 @@ type Repository interface {
 	OpenSession(ctx context.Context, s domain.Session) (session domain.Session, created bool, err error)
 	GetSessionByID(ctx context.Context, tenantID, id uuid.UUID) (domain.Session, error)
 	GetSessionBySchedule(ctx context.Context, tenantID, scheduleID uuid.UUID, date time.Time) (session domain.Session, found bool, err error)
-	SubmitSession(ctx context.Context, tenantID, id, submittedBy uuid.UUID, notes string) (domain.Session, error)
+	// SubmitSession marks the session submitted at at, the business
+	// clock's now (not the database's), so a simulated save time sticks.
+	SubmitSession(ctx context.Context, tenantID, id, submittedBy uuid.UUID, notes string, at time.Time) (domain.Session, error)
 	ListSessionsByClassDate(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) ([]domain.Session, error)
 	ListSessionsByTeacherDate(ctx context.Context, tenantID uuid.UUID, date time.Time, teacherUserID uuid.UUID) ([]domain.Session, error)
 	ListSessionsByDateRange(ctx context.Context, tenantID, academicYearID uuid.UUID, from, to time.Time) ([]domain.Session, error)

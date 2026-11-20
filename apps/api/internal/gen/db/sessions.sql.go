@@ -722,24 +722,28 @@ func (q *Queries) RevokeSessionFamily(ctx context.Context, arg RevokeSessionFami
 
 const submitAttendanceSession = `-- name: SubmitAttendanceSession :one
 update attendance_sessions
-set submitted_at = now(), submitted_by = $3, notes = $4
+set submitted_at = $5, submitted_by = $3, notes = $4
 where tenant_id = $1 and id = $2
 returning id, tenant_id, academic_year_id, schedule_id, date, class_id, subject_id, teacher_user_id, substitute_user_id, start_period_id, end_period_id, notes, submitted_at, submitted_by, created_at, updated_at
 `
 
 type SubmitAttendanceSessionParams struct {
-	TenantID    uuid.UUID   `json:"tenant_id"`
-	ID          uuid.UUID   `json:"id"`
-	SubmittedBy pgtype.UUID `json:"submitted_by"`
-	Notes       pgtype.Text `json:"notes"`
+	TenantID    uuid.UUID          `json:"tenant_id"`
+	ID          uuid.UUID          `json:"id"`
+	SubmittedBy pgtype.UUID        `json:"submitted_by"`
+	Notes       pgtype.Text        `json:"notes"`
+	SubmittedAt pgtype.Timestamptz `json:"submitted_at"`
 }
 
+// submitted_at comes from the service's business clock (which a
+// superadmin's time simulation moves), not the database's now().
 func (q *Queries) SubmitAttendanceSession(ctx context.Context, arg SubmitAttendanceSessionParams) (AttendanceSession, error) {
 	row := q.db.QueryRow(ctx, submitAttendanceSession,
 		arg.TenantID,
 		arg.ID,
 		arg.SubmittedBy,
 		arg.Notes,
+		arg.SubmittedAt,
 	)
 	var i AttendanceSession
 	err := row.Scan(

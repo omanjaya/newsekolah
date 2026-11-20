@@ -285,25 +285,14 @@ func (s *Service) OpenSession(ctx context.Context, tenantID uuid.UUID, actor Act
 		if err != nil {
 			return err
 		}
-		detail.SaveMode, err = s.viewerSaveMode(ctx, tenantID, actor, session)
-		return err
+		window, err := s.saveWindowInput(ctx, tenantID, actor, session)
+		if err != nil {
+			return err
+		}
+		detail.SaveMode, detail.EditableUntil = viewerSaveMode(window)
+		return nil
 	})
 	return detail, err
-}
-
-// viewerSaveMode is the mode actor saves session in: normal for whoever
-// passes the per-schedule access check (its own teacher, or an accepted
-// substitute for that date), who SaveEntries lets keep re-saving in normal
-// mode until the correction deadline; correction for anyone else.
-func (s *Service) viewerSaveMode(ctx context.Context, tenantID uuid.UUID, actor Actor, session domain.Session) (domain.SaveMode, error) {
-	ok, err := s.access.HasAccess(ctx, tenantID, session.ScheduleID, actor.UserID, session.Date)
-	if err != nil {
-		return "", err
-	}
-	if ok {
-		return domain.SaveModeNormal, nil
-	}
-	return domain.SaveModeCorrection, nil
 }
 
 // GetSessionDetail reads one session's full recording payload. A caller
@@ -317,10 +306,11 @@ func (s *Service) GetSessionDetail(ctx context.Context, tenantID uuid.UUID, acto
 			return err
 		}
 
-		saveMode, err := s.viewerSaveMode(ctx, tenantID, actor, session)
+		window, err := s.saveWindowInput(ctx, tenantID, actor, session)
 		if err != nil {
 			return err
 		}
+		saveMode, editableUntil := viewerSaveMode(window)
 		if !actor.CanViewAll && saveMode != domain.SaveModeNormal {
 			return domain.ErrNoAccess
 		}
@@ -330,7 +320,7 @@ func (s *Service) GetSessionDetail(ctx context.Context, tenantID uuid.UUID, acto
 			return err
 		}
 		detail, err = s.buildSessionDetail(ctx, tenantID, session, policy)
-		detail.SaveMode = saveMode
+		detail.SaveMode, detail.EditableUntil = saveMode, editableUntil
 		return err
 	})
 	return detail, err
@@ -500,6 +490,8 @@ func (s *Service) periodEndAt(ctx context.Context, tenantID uuid.UUID, session d
 	if err != nil {
 		return time.Time{}, err
 	}
-	y, m, d := session.Date.In(loc).Date()
+	// The DATE's own fields name the day (it arrives as midnight UTC);
+	// converting it first would move it back a day west of UTC.
+	y, m, d := session.Date.Date()
 	return time.Date(y, m, d, 0, 0, 0, 0, loc).Add(endOfDay).Add(saveWindowGrace), nil
 }

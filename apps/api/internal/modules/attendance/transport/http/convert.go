@@ -112,6 +112,7 @@ func toAPISessionDetail(d service.SessionDetail) api.AttendanceSessionDetail {
 		mode := api.AttendanceSessionDetailSaveMode(d.SaveMode)
 		out.SaveMode = &mode
 	}
+	out.EditableUntil = d.EditableUntil
 	return out
 }
 

@@ -82,6 +82,11 @@ type SessionDetail struct {
 	// until the correction deadline; correction for anyone else (a
 	// homeroom teacher or global corrector), who must give a reason.
 	SaveMode domain.SaveMode
+	// EditableUntil is the last instant the viewer may save the session in
+	// SaveMode (domain.EditableUntil), so the editor shows a locked session
+	// as locked before anything is filled in. Nil when the viewer may not
+	// save it in that mode at all.
+	EditableUntil *time.Time
 }
 
 // SessionSummary is one row of ListMyAttendanceToday.

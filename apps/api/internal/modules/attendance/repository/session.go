@@ -82,10 +82,10 @@ func (r *Repository) GetSessionBySchedule(ctx context.Context, tenantID, schedul
 	return toSession(row), true, nil
 }
 
-func (r *Repository) SubmitSession(ctx context.Context, tenantID, id, submittedBy uuid.UUID, notes string) (domain.Session, error) {
+func (r *Repository) SubmitSession(ctx context.Context, tenantID, id, submittedBy uuid.UUID, notes string, at time.Time) (domain.Session, error) {
 	row, err := r.queries(ctx).SubmitAttendanceSession(ctx, db.SubmitAttendanceSessionParams{
 		TenantID: tenantID, ID: id, SubmittedBy: pdatabase.NullUUID(uuid.NullUUID{UUID: submittedBy, Valid: true}),
-		Notes: pdatabase.Text(notes),
+		Notes: pdatabase.Text(notes), SubmittedAt: pdatabase.Timestamptz(at),
 	})
 	if err != nil {
 		return domain.Session{}, err

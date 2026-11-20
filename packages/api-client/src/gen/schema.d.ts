@@ -9051,6 +9051,11 @@ export interface components {
              * @enum {string}
              */
             save_mode?: "normal" | "correction";
+            /**
+             * Format: date-time
+             * @description The last instant this viewer may save the session in save_mode (tenant time zone). After it the session is locked for the viewer, and a save is refused with ATTENDANCE_WINDOW_CLOSED or ATTENDANCE_CORRECTION_WINDOW_CLOSED. Absent when the viewer may not save it in that mode at all.
+             */
+            editable_until?: string;
         };
         SaveAttendanceEntriesRequest: {
             /**

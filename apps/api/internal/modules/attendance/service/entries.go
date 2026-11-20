@@ -41,16 +41,11 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 			return err
 		}
 
-		accessOK, err := s.access.HasAccess(ctx, tenantID, session.ScheduleID, actor.UserID, session.Date)
+		window, err := s.saveWindowInput(ctx, tenantID, actor, session)
 		if err != nil {
 			return err
 		}
-
-		homeroomClassID, hasHomeroom, err := s.repo.GetHomeroomClassForTeacher(ctx, tenantID, session.AcademicYearID, actor.UserID, session.Date)
-		if err != nil {
-			return err
-		}
-		isHomeroom := hasHomeroom && homeroomClassID == session.ClassID
+		accessOK, isHomeroom := window.IsScheduleOwner, window.IsHomeroomOfClass
 
 		switch mode {
 		case domain.SaveModeCorrection:
@@ -66,27 +61,8 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 			}
 		}
 
-		periodEnd, err := s.periodEndAt(ctx, tenantID, session)
-		if err != nil {
-			return err
-		}
-		periodStart, err := s.periodStartAt(ctx, tenantID, session)
-		if err != nil {
-			return err
-		}
-		correctionDays, configured, err := s.repo.GetCorrectionDays(ctx, tenantID)
-		if err != nil {
-			return err
-		}
-		if !configured {
-			correctionDays = defaultCorrectionDays
-		}
-
-		loc := s.tenantLocation(ctx, tenantID)
-		if err := domain.ResolveSaveWindow(domain.SaveWindowInput{
-			Now: clock.Now(ctx, s.clock).In(loc), SessionDate: session.Date, PeriodStartAt: periodStart, PeriodEndAt: periodEnd, CorrectionDays: correctionDays,
-			IsGlobalCorrector: actor.IsGlobalCorrector, IsHomeroomOfClass: isHomeroom, IsScheduleOwner: accessOK,
-		}, mode); err != nil {
+		now := window.Now
+		if err := domain.ResolveSaveWindow(window, mode); err != nil {
 			return err
 		}
 
@@ -209,7 +185,10 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 			}
 		}
 
-		session, err = s.repo.SubmitSession(ctx, tenantID, sessionID, actor.UserID, session.Notes)
+		// submitted_at is the business clock's now, the same instant the
+		// save window was judged against, so "saved at" agrees with the
+		// toast under a simulated time too.
+		session, err = s.repo.SubmitSession(ctx, tenantID, sessionID, actor.UserID, session.Notes, now)
 		if err != nil {
 			return err
 		}
@@ -224,11 +203,7 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 		}
 		detail.SkippedBlockedStudentIDs = skippedBlocked
 		detail.OverriddenStudentIDs = overridden
-		if accessOK {
-			detail.SaveMode = domain.SaveModeNormal
-		} else {
-			detail.SaveMode = domain.SaveModeCorrection
-		}
+		detail.SaveMode, detail.EditableUntil = viewerSaveMode(window)
 
 		if s.events != nil {
 			_ = s.events.Publish(ctx, Submitted{
@@ -258,6 +233,63 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 		}
 	}
 	return detail, nil
+}
+
+// saveWindowInput resolves every fact the save window turns on for actor
+// and session: whether actor passes the per-schedule access check (its own
+// teacher or accepted substitute), whether actor is the class's homeroom
+// teacher, the lesson's start and end on its date and the correction
+// deadline, all on the tenant's wall clock and the business clock (which a
+// superadmin's time simulation moves). SaveEntries judges a save with it,
+// and the session detail tells the viewer the same window up front.
+func (s *Service) saveWindowInput(ctx context.Context, tenantID uuid.UUID, actor Actor, session domain.Session) (domain.SaveWindowInput, error) {
+	accessOK, err := s.access.HasAccess(ctx, tenantID, session.ScheduleID, actor.UserID, session.Date)
+	if err != nil {
+		return domain.SaveWindowInput{}, err
+	}
+	homeroomClassID, hasHomeroom, err := s.repo.GetHomeroomClassForTeacher(ctx, tenantID, session.AcademicYearID, actor.UserID, session.Date)
+	if err != nil {
+		return domain.SaveWindowInput{}, err
+	}
+	periodEnd, err := s.periodEndAt(ctx, tenantID, session)
+	if err != nil {
+		return domain.SaveWindowInput{}, err
+	}
+	periodStart, err := s.periodStartAt(ctx, tenantID, session)
+	if err != nil {
+		return domain.SaveWindowInput{}, err
+	}
+	correctionDays, configured, err := s.repo.GetCorrectionDays(ctx, tenantID)
+	if err != nil {
+		return domain.SaveWindowInput{}, err
+	}
+	if !configured {
+		correctionDays = defaultCorrectionDays
+	}
+	return domain.SaveWindowInput{
+		Now: clock.Now(ctx, s.clock).In(s.tenantLocation(ctx, tenantID)), SessionDate: session.Date,
+		PeriodStartAt: periodStart, PeriodEndAt: periodEnd, CorrectionDays: correctionDays,
+		IsGlobalCorrector: actor.IsGlobalCorrector, IsHomeroomOfClass: hasHomeroom && homeroomClassID == session.ClassID,
+		IsScheduleOwner: accessOK,
+	}, nil
+}
+
+// viewerSaveMode is the mode the viewer described by window saves in --
+// normal for whoever passes the per-schedule access check (its own
+// teacher, or an accepted substitute for that date), who keeps re-saving
+// in normal mode until the correction deadline; correction for anyone
+// else -- and until when that save stays open (nil when the viewer may not
+// save in that mode at all).
+func viewerSaveMode(window domain.SaveWindowInput) (domain.SaveMode, *time.Time) {
+	mode := domain.SaveModeCorrection
+	if window.IsScheduleOwner {
+		mode = domain.SaveModeNormal
+	}
+	until, ok := domain.EditableUntil(window, mode)
+	if !ok {
+		return mode, nil
+	}
+	return mode, &until
 }
 
 // attendanceSubmittedRolePayload is the minimal payload pushed to

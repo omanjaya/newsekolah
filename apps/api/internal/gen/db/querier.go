@@ -1738,6 +1738,8 @@ type Querier interface {
 	// school.feature_flags").
 	StaffAttendanceGetFeatureFlag(ctx context.Context, arg StaffAttendanceGetFeatureFlagParams) (bool, error)
 	StarBalance(ctx context.Context, arg StarBalanceParams) (int32, error)
+	// submitted_at comes from the service's business clock (which a
+	// superadmin's time simulation moves), not the database's now().
 	SubmitAttendanceSession(ctx context.Context, arg SubmitAttendanceSessionParams) (AttendanceSession, error)
 	SumActivePoints(ctx context.Context, arg SumActivePointsParams) (int32, error)
 	SumFinesRecordedBetween(ctx context.Context, arg SumFinesRecordedBetweenParams) (int32, error)

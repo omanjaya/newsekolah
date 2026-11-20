@@ -16,7 +16,10 @@ const (
 // SaveWindowInput carries everything ResolveSaveWindow needs to decide
 // whether a save is allowed, already resolved to concrete instants by the
 // service (tenant timezone, period end time, correction_days setting) so
-// this function stays a pure comparison.
+// this function stays a pure comparison. Now must already be in the
+// tenant's time zone: the session's calendar date is read in that zone,
+// whatever location SessionDate itself carries (a Postgres DATE arrives
+// as midnight UTC).
 type SaveWindowInput struct {
 	Now time.Time
 	// SessionDate is the calendar date the session was held.
@@ -55,25 +58,44 @@ func ResolveSaveWindow(in SaveWindowInput, mode SaveMode) error {
 	if SessionNotStarted(in.SessionDate, in.Now) || in.Now.Before(in.PeriodStartAt) {
 		return ErrSessionNotStarted
 	}
+	until, allowed := EditableUntil(in, mode)
+	switch {
+	case !allowed:
+		return ErrCorrectionNotAllowed
+	case !in.Now.After(until):
+		return nil
+	case mode == SaveModeCorrection:
+		return ErrCorrectionWindowClosed
+	default:
+		return ErrSaveWindowClosed
+	}
+}
+
+// EditableUntil is the last instant a save in mode is allowed for the
+// viewer in described, so the editor can say up front that a session is
+// locked instead of letting a teacher fill a roster the save will refuse.
+// allowed is false when the viewer may not save in that mode at all (a
+// correction by someone who is neither a global corrector nor the class's
+// homeroom teacher).
+//
+// A normal-mode save closes at the period end; the session's own teacher
+// keeps saving until the correction deadline when that is later. A
+// correction closes at the correction deadline.
+func EditableUntil(in SaveWindowInput, mode SaveMode) (until time.Time, allowed bool) {
+	deadline := CorrectionDeadline(in.SessionDate, in.CorrectionDays, in.Now.Location())
 	switch mode {
 	case SaveModeNormal:
-		if !in.Now.After(in.PeriodEndAt) {
-			return nil
+		if in.IsScheduleOwner && deadline.After(in.PeriodEndAt) {
+			return deadline, true
 		}
-		if in.IsScheduleOwner && !in.Now.After(correctionDeadline(in.SessionDate, in.CorrectionDays)) {
-			return nil
-		}
-		return ErrSaveWindowClosed
+		return in.PeriodEndAt, true
 	case SaveModeCorrection:
 		if !in.IsGlobalCorrector && !in.IsHomeroomOfClass {
-			return ErrCorrectionNotAllowed
+			return time.Time{}, false
 		}
-		if in.Now.After(correctionDeadline(in.SessionDate, in.CorrectionDays)) {
-			return ErrCorrectionWindowClosed
-		}
-		return nil
+		return deadline, true
 	default:
-		return ErrCorrectionNotAllowed
+		return time.Time{}, false
 	}
 }
 
@@ -86,11 +108,11 @@ func SessionNotStarted(sessionDate, now time.Time) bool {
 	return time.Date(sy, sm, sd, 0, 0, 0, 0, time.UTC).After(time.Date(ny, nm, nd, 0, 0, 0, 0, time.UTC))
 }
 
-func correctionDeadline(sessionDate time.Time, correctionDays int) time.Time {
-	return endOfDay(sessionDate).AddDate(0, 0, correctionDays)
-}
-
-func endOfDay(t time.Time) time.Time {
-	y, m, d := t.Date()
-	return time.Date(y, m, d, 23, 59, 59, 0, t.Location())
+// CorrectionDeadline is the last second of the day correctionDays after
+// sessionDate's calendar date, on the wall clock of loc (the tenant's time
+// zone). The date is read from sessionDate's own fields, not converted, so
+// a DATE column scanned as midnight UTC still names the right day.
+func CorrectionDeadline(sessionDate time.Time, correctionDays int, loc *time.Location) time.Time {
+	y, m, d := sessionDate.Date()
+	return time.Date(y, m, d+correctionDays, 23, 59, 59, 0, loc)
 }

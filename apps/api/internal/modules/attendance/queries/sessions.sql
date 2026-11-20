@@ -26,8 +26,10 @@ select * from attendance_sessions where tenant_id = $1 and schedule_id = $2 and 
 select * from attendance_sessions where tenant_id = $1 and id = $2;
 
 -- name: SubmitAttendanceSession :one
+-- submitted_at comes from the service's business clock (which a
+-- superadmin's time simulation moves), not the database's now().
 update attendance_sessions
-set submitted_at = now(), submitted_by = $3, notes = $4
+set submitted_at = $5, submitted_by = $3, notes = $4
 where tenant_id = $1 and id = $2
 returning *;
 
