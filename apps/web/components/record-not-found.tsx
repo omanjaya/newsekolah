@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, StatePage } from "@newsekolah/ui";
+import { Button, StatePage, type BreadcrumbItem } from "@newsekolah/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -18,6 +18,27 @@ export interface RecordNotFoundPageProps {
   /** Where the record would be listed, so the reader can look for it again. */
   backHref: string;
   backLabel: string;
+  /** See `RecordPageTrailParent`. */
+  trailParent?: RecordPageTrailParent;
+}
+
+/**
+ * The page the trail above the state leads back to, when it is not the
+ * one AppPage derives from the path: a route some readers open without
+ * being allowed the list above it (a guru wali's own group under the
+ * school-wide group list) passes the page they can open, so the trail and
+ * the back button agree.
+ */
+export interface RecordPageTrailParent {
+  label: string;
+  href: string;
+}
+
+function trailFor(
+  parent: RecordPageTrailParent | undefined,
+  title: string,
+): BreadcrumbItem[] | undefined {
+  return parent ? [parent, { label: title }] : undefined;
 }
 
 /**
@@ -33,10 +54,11 @@ export function RecordNotFoundPage({
   description,
   backHref,
   backLabel,
+  trailParent,
 }: RecordNotFoundPageProps): ReactElement {
   const t = useTranslations("app.page.recordNotFound");
   return (
-    <AppPage title={title} nav={false} header={false}>
+    <AppPage title={title} nav={false} header={false} breadcrumb={trailFor(trailParent, title)}>
       <StatePage
         kind="not-found"
         title={title}
@@ -57,6 +79,8 @@ export interface RecordForbiddenPageProps {
   /** Where the reader's own records are listed. */
   backHref: string;
   backLabel: string;
+  /** See `RecordPageTrailParent`. */
+  trailParent?: RecordPageTrailParent;
 }
 
 /**
@@ -71,13 +95,19 @@ export function RecordForbiddenPage({
   error,
   backHref,
   backLabel,
+  trailParent,
 }: RecordForbiddenPageProps): ReactElement {
   const t = useTranslations("app.page.recordForbidden");
   const apiErrorMessage = useApiErrorMessage();
   const code = error instanceof ApiError ? error.code : undefined;
   const reason = code && code !== "FORBIDDEN" ? apiErrorMessage(code) : t("body");
   return (
-    <AppPage title={t("title")} nav={false} header={false}>
+    <AppPage
+      title={t("title")}
+      nav={false}
+      header={false}
+      breadcrumb={trailFor(trailParent, t("title"))}
+    >
       <StatePage
         kind="forbidden"
         title={t("title")}
