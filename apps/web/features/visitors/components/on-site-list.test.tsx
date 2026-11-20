@@ -50,23 +50,58 @@ it("names the visitor pass in the meta line for a phone, where the trailing badg
   expect(arrival.parentElement?.contains(phonePass ?? null)).toBe(false);
 });
 
-it("puts the arrival before the host, so a long host name is what gets cut", () => {
+it("gives whom they came to see a line of its own, apart from the arrival and the pass", () => {
   const hosted: BoardEntry = { ...entry, visit: { ...entry.visit, host_user_id: "host-1" } };
-  render(<OnSiteList entries={[hosted]} canManage onCheckOut={vi.fn()} />);
+  render(<OnSiteList entries={[hosted]} canManage onCheckOut={vi.fn()} onPrintBadge={vi.fn()} />);
 
-  const line = screen.getByText(/arrived/);
-  expect(line).toHaveClass("truncate");
-  expect(line.textContent).toBe("arrived · host");
+  // Sharing one line with "Masuk 06.45 · 5 j 42 mnt" left the host cut to
+  // "Menemui Kep..." on a phone and in the board's desktop column.
+  const host = screen.getByText("host");
+  expect(host).toHaveClass("block", "truncate");
+  expect(host).not.toHaveClass("max-sm:hidden", "sm:hidden");
+  expect(host).toHaveAttribute("title", "host");
+  const arrival = screen.getByText("arrived");
+  expect(arrival.textContent).toBe("arrived");
+  expect(host.contains(arrival)).toBe(false);
+  expect(arrival.contains(host)).toBe(false);
+  expect(arrival).toHaveAttribute("title", "arrived");
+  const phonePass = screen
+    .getAllByText(/badgeNumber 12/)
+    .find((el) => el.classList.contains("sm:hidden"));
+  expect(host.contains(phonePass ?? null)).toBe(false);
+
+  // Host, arrival and pass: the row's meta holds all three lines.
+  const meta = host.parentElement;
+  expect(meta).toHaveClass("line-clamp-3");
+  expect(meta?.contains(arrival)).toBe(true);
+  expect(meta?.contains(phonePass ?? null)).toBe(true);
+  expect(Array.from(meta?.children ?? []).indexOf(host)).toBeLessThan(
+    Array.from(meta?.children ?? []).indexOf(arrival.parentElement as Element),
+  );
 });
 
-it("gives a phone's two meta lines to the arrival and the pass, not the purpose", () => {
+it("gives a phone's three lines to the host, arrival and pass, not the purpose", () => {
+  const hosted: BoardEntry = { ...entry, visit: { ...entry.visit, host_user_id: "host-1" } };
+  render(<OnSiteList entries={[hosted]} canManage={false} onCheckOut={vi.fn()} />);
+
+  const about = screen.getByText("Rapat");
+  expect(about).toHaveClass("max-sm:hidden");
+  // Still readable in full where the row cuts it.
+  expect(about).toHaveAttribute("title", "Rapat");
+});
+
+it("keeps the purpose on a phone when there is no host to show", () => {
   render(<OnSiteList entries={[entry]} canManage={false} onCheckOut={vi.fn()} />);
 
-  expect(screen.getByText("Rapat")).toHaveClass("max-sm:hidden");
+  expect(screen.getByText("Rapat")).not.toHaveClass("max-sm:hidden");
+  expect(screen.queryByText("host")).not.toBeInTheDocument();
 });
 
 it("keeps the purpose on a phone when there is no pass to show", () => {
-  const noBadge: BoardEntry = { ...entry, visit: { ...entry.visit, badge_number: "" } };
+  const noBadge: BoardEntry = {
+    ...entry,
+    visit: { ...entry.visit, host_user_id: "host-1", badge_number: "" },
+  };
   render(<OnSiteList entries={[noBadge]} canManage={false} onCheckOut={vi.fn()} />);
 
   expect(screen.getByText("Rapat")).not.toHaveClass("max-sm:hidden");

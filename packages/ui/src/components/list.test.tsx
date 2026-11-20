@@ -31,6 +31,30 @@ describe("List and ListRow", () => {
     await expectNoAxeViolations(container);
   });
 
+  it("clamps the meta to two lines, or three when the row asks for them", () => {
+    render(
+      <List>
+        <ListRow title="Pak Joko" meta="Rapat" />
+        <ListRow
+          title="Bu Sari"
+          metaLines={3}
+          meta={
+            <>
+              <span className="block truncate">Menemui Kepala Sekolah Contoh</span>
+              <span className="block truncate">Masuk 06.45 · 5 j 42 mnt</span>
+              <span className="block truncate">Kartu TAMU-9/XI/2026</span>
+            </>
+          }
+        />
+      </List>,
+    );
+
+    expect(screen.getByText("Rapat")).toHaveClass("line-clamp-2");
+    const threeLines = screen.getByText("Kartu TAMU-9/XI/2026").parentElement;
+    expect(threeLines).toHaveClass("line-clamp-3");
+    expect(threeLines).not.toHaveClass("line-clamp-2");
+  });
+
   it("keeps each fact of a meta list whole, joined with a middle dot", () => {
     render(
       <List>

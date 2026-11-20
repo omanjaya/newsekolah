@@ -26,6 +26,12 @@ export interface ListRowProps extends Omit<ComponentPropsWithRef<"li">, "title" 
    */
   meta?: ReactNode | readonly ReactNode[];
   /**
+   * How many lines the meta may take: 2 (default), or 3 for a row whose
+   * facts each need a line of their own (whom a visitor came to see, since
+   * when, the badge they wear), so none of them is cut to make room.
+   */
+  metaLines?: 2 | 3;
+  /**
    * Keeps every fact of an array `meta` (a date, a request time) whole,
    * whatever the locale makes of their length: the row's text never
    * narrows below its widest fact (up to the row's own width), and when
@@ -173,6 +179,7 @@ export function ListRow({
   title,
   titleLines = 1,
   meta,
+  metaLines = 2,
   keepMetaWhole = false,
   trailing,
   action,
@@ -234,7 +241,11 @@ export function ListRow({
       {hasMeta && (
         <div
           id={metaId}
-          className={cn("line-clamp-2 text-fg-muted", dense ? "text-caption" : "text-body-sm")}
+          className={cn(
+            metaLines === 3 ? "line-clamp-3" : "line-clamp-2",
+            "text-fg-muted",
+            dense ? "text-caption" : "text-body-sm",
+          )}
         >
           {Array.isArray(meta) ? <MetaSegments segments={meta} /> : meta}
         </div>
