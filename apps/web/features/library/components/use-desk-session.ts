@@ -79,17 +79,19 @@ export function useDeskSession() {
   const returnByBarcode = useReturnLoanByBarcodeMutation();
   const renewByBarcode = useRenewLoanByBarcodeMutation();
 
-  // A new member starts a new session. Returns and renewals scanned
-  // before any card (a book handed back on its own) stay on the receipt
-  // of the member who is then served.
-  const selectMember = useCallback(
-    (next: DeskSelectedMember) => {
-      if (member) setBasket(EMPTY_BASKET);
-      setMember(next);
-      setScanError("");
-    },
-    [member],
-  );
+  // A new member starts a new session. Of the returns and renewals already
+  // on the desk (an idle desk can take a whole drop-box from many readers),
+  // only that member's own loans stay, so their receipt never lists books
+  // someone else handed back; the rest, failed rows included, are dropped.
+  const selectMember = useCallback((next: DeskSelectedMember) => {
+    setBasket((prev) => ({
+      borrow: [],
+      return: prev.return.filter((item) => item.memberUserId === next.userId),
+      renew: prev.renew.filter((item) => item.memberUserId === next.userId),
+    }));
+    setMember(next);
+    setScanError("");
+  }, []);
 
   const endSession = useCallback(() => {
     setMember(null);
@@ -179,7 +181,13 @@ export function useDeskSession() {
         feedback.playSuccess();
         setBasket((prev) => ({
           ...prev,
-          return: addBasketItem(prev.return, { barcode: code, title, state: "done", detail }),
+          return: addBasketItem(prev.return, {
+            barcode: code,
+            title,
+            state: "done",
+            detail,
+            memberUserId: loan.member_user_id,
+          }),
         }));
       } catch (error) {
         feedback.playError();
@@ -212,6 +220,7 @@ export function useDeskSession() {
             title,
             state: "done",
             detail: t("basket.renewedUntil", { date: formatDate(loan.due_on, { locale }) }),
+            memberUserId: loan.member_user_id,
           }),
         }));
       } catch (error) {

@@ -25,6 +25,12 @@ export interface DeskBasketItem {
   state: DeskBasketItemState;
   /** Shown under the title once known: a block reason before Confirm, or a result after it. */
   detail?: string;
+  /**
+   * The borrower of the loan a return or renewal acted on, when the server
+   * said whose it was. An idle desk can return books from many readers, so
+   * this decides which rows belong on the receipt of the member then served.
+   */
+  memberUserId?: string;
 }
 
 const MAX_BASKET_SIZE = 50;

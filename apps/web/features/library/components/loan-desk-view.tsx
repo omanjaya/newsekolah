@@ -139,17 +139,26 @@ export function LoanDeskView(): ReactElement {
                 <CardHeader
                   className={session.member ? "border-t border-line pt-4" : undefined}
                   action={
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      icon={<Undo2 />}
-                      disabled={!canUndo}
-                      onClick={() => {
-                        session.undo(session.mode);
-                      }}
-                    >
-                      {t("undoLastScan")}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {/* An idle desk's return or renewal list belongs to no
+                          one; Selesai clears it before the next reader. */}
+                      {!session.member && items.length > 0 && (
+                        <Button variant="ghost" size="sm" onClick={session.endSession}>
+                          {t("member.endSession")}
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={<Undo2 />}
+                        disabled={!canUndo}
+                        onClick={() => {
+                          session.undo(session.mode);
+                        }}
+                      >
+                        {t("undoLastScan")}
+                      </Button>
+                    </div>
                   }
                 >
                   <CardTitle as="h2">{t(`basket.heading.${session.mode}`)}</CardTitle>

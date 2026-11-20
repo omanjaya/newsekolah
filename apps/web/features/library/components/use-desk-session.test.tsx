@@ -105,26 +105,39 @@ describe("useDeskSession", () => {
     expect(result.current.scanError).not.toContain("member.notFound");
   });
 
-  it("keeps books returned before the card on the member's receipt", async () => {
-    returnByBarcode.mockResolvedValue({
-      title_id: "t1",
-      due_on: "2026-11-20",
-      returned_at: "2026-11-20T08:00:00Z",
-      fine_amount: 0,
-    });
+  it("keeps only the served member's own returns from an idle desk", async () => {
+    returnByBarcode
+      .mockResolvedValueOnce({
+        title_id: "t1",
+        member_user_id: "u1",
+        due_on: "2026-11-20",
+        returned_at: "2026-11-20T08:00:00Z",
+        fine_amount: 0,
+      })
+      .mockResolvedValueOnce({
+        title_id: "t2",
+        member_user_id: "u2",
+        due_on: "2026-11-20",
+        returned_at: "2026-11-20T08:00:00Z",
+        fine_amount: 0,
+      })
+      .mockRejectedValueOnce(new Error("not found"));
     const { result } = renderHook(() => useDeskSession());
     act(() => {
       result.current.setMode("return");
     });
-    scan(result, "2026/00012");
-    await waitFor(() => {
-      expect(result.current.basket.return).toHaveLength(1);
-    });
+    for (const barcode of ["A", "B", "C"]) {
+      scan(result, barcode);
+      await waitFor(() => {
+        expect(result.current.scanning).toBe(false);
+      });
+    }
+    expect(result.current.basket.return).toHaveLength(3);
 
     act(() => {
       result.current.selectMember(member);
     });
-    expect(result.current.basket.return).toHaveLength(1);
+    expect(result.current.basket.return.map((item) => item.barcode)).toEqual(["A"]);
 
     act(() => {
       result.current.selectMember({ userId: "u2", name: "Siswa Dua" });

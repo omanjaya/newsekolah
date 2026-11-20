@@ -203,6 +203,26 @@ describe("LoanDeskView", () => {
     expect(live).toHaveTextContent("Matematika");
   });
 
+  it("lets the librarian clear an idle desk's return list with Selesai", async () => {
+    const endSession = vi.fn();
+    deskSession.mockReturnValue(
+      baseSession({
+        mode: "return",
+        endSession,
+        basket: {
+          borrow: [],
+          return: [{ barcode: "2026/00012", title: "Matematika", state: "done" }],
+          renew: [],
+        },
+      }),
+    );
+    render(<LoanDeskView />);
+
+    await userEvent.click(screen.getByRole("button", { name: "member.endSession" }));
+
+    expect(endSession).toHaveBeenCalled();
+  });
+
   it("warns about an unpaid fine and shows the quota in use before lending", () => {
     deskSession.mockReturnValue(
       baseSession({
