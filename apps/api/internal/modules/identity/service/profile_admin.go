@@ -105,7 +105,13 @@ func (s *Service) UpdateMyProfile(ctx context.Context, tenantID, userID uuid.UUI
 			}
 		}
 
-		if err := s.repo.UpdateOwnProfileRecord(ctx, tenantID, userID, username, in.Name, email, in.Phone, in.Locale); err != nil {
+		// An absent locale keeps the stored preference (users_locale_check
+		// rejects an empty value).
+		locale := in.Locale
+		if locale == "" {
+			locale = user.Locale
+		}
+		if err := s.repo.UpdateOwnProfileRecord(ctx, tenantID, userID, username, in.Name, email, in.Phone, locale); err != nil {
 			return fmt.Errorf("update own profile: %w", err)
 		}
 		if row.ProfileKind.Valid() {

@@ -105,7 +105,13 @@ func (s *Service) UpdateUser(ctx context.Context, tenantID, actorID, userID uuid
 			}
 		}
 
-		if err := s.repo.UpdateUserBasic(ctx, tenantID, userID, in.Name, in.Email, in.Phone, in.Locale); err != nil {
+		// An absent locale keeps the stored preference: the admin user form
+		// does not edit it, and users_locale_check rejects an empty value.
+		locale := in.Locale
+		if locale == "" {
+			locale = before.Locale
+		}
+		if err := s.repo.UpdateUserBasic(ctx, tenantID, userID, in.Name, in.Email, in.Phone, locale); err != nil {
 			return fmt.Errorf("update user: %w", err)
 		}
 		if err := s.writeProfile(ctx, tenantID, userID, in.ProfileKind, in.Profile); err != nil {
@@ -127,7 +133,7 @@ func (s *Service) UpdateUser(ctx context.Context, tenantID, actorID, userID uuid
 
 		view, err = s.toUserAdminView(ctx, tenantID, UserAdminRow{
 			ID: userID, Username: before.Username, Email: in.Email, Phone: in.Phone, Name: in.Name,
-			Status: before.Status, ProfileKind: in.ProfileKind, Locale: in.Locale,
+			Status: before.Status, ProfileKind: in.ProfileKind, Locale: locale,
 			MustChangePassword: before.MustChangePassword, LastLoginAt: before.LastLoginAt, CreatedAt: before.CreatedAt,
 		})
 		if err != nil {
