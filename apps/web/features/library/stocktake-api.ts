@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
 import { API_URL } from "../../lib/env";
+import { fileNameSlug, joinFileNameParts } from "../../lib/text/file-name-slug";
 
 export type LibraryStocktake = components["schemas"]["LibraryStocktake"];
 export type LibraryStocktakeScan = components["schemas"]["LibraryStocktakeScan"];
@@ -109,15 +110,34 @@ export function useCloseStocktakeMutation() {
   });
 }
 
+type StocktakeReportSubject = Pick<LibraryStocktake, "id" | "name" | "started_on">;
+
+/**
+ * The report's file name: the session's name and start date, the way the
+ * other library reports name their period
+ * ("laporan-opname-opname-semester-1-2026-11-02.xlsx"), so it can be told
+ * apart in a downloads folder. It used to be the session's raw id.
+ */
+export function stocktakeReportFileName(stocktake: StocktakeReportSubject): string {
+  const base = joinFileNameParts(
+    "laporan-opname",
+    fileNameSlug(stocktake.name),
+    stocktake.started_on,
+  );
+  return `${base}.xlsx`;
+}
+
 /**
  * XLSX per-session stocktake report. The API returns raw spreadsheet
  * bytes, so a plain `fetch` is used instead of the JSON-typed client (see
  * `api.ts`'s own `downloadPDF`).
  */
-export async function downloadLibraryStocktakeReportXlsx(stocktakeId: string): Promise<void> {
+export async function downloadLibraryStocktakeReportXlsx(
+  stocktake: StocktakeReportSubject,
+): Promise<void> {
   const token = getAccessToken();
   const response = await fetch(
-    `${API_URL}/v1/library/stocktakes/${encodeURIComponent(stocktakeId)}/report.xlsx`,
+    `${API_URL}/v1/library/stocktakes/${encodeURIComponent(stocktake.id)}/report.xlsx`,
     { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
   );
   if (!response.ok) {
@@ -128,7 +148,7 @@ export async function downloadLibraryStocktakeReportXlsx(stocktakeId: string): P
   try {
     const link = document.createElement("a");
     link.href = url;
-    link.download = `laporan-opname-${stocktakeId}.xlsx`;
+    link.download = stocktakeReportFileName(stocktake);
     document.body.appendChild(link);
     link.click();
     link.remove();

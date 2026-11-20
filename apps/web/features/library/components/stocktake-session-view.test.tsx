@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { StocktakeSessionView } from "./stocktake-session-view";
 
 const sessionFailure = vi.hoisted<{ current: unknown }>(() => ({ current: null }));
+const downloadReport = vi.hoisted(() => vi.fn());
 const mocks = vi.hoisted(() => ({
   status: "open",
   scan: vi.fn(),
@@ -34,7 +35,7 @@ vi.mock("./stocktake-results", () => ({
   ),
 }));
 vi.mock("../stocktake-api", () => ({
-  downloadLibraryStocktakeReportXlsx: vi.fn(),
+  downloadLibraryStocktakeReportXlsx: downloadReport,
   useLibraryStocktakeQuery: () =>
     sessionFailure.current
       ? {
@@ -45,7 +46,12 @@ vi.mock("../stocktake-api", () => ({
           refetch: vi.fn(),
         }
       : {
-          data: { id: "st-1", name: "Opname semester 1", status: mocks.status },
+          data: {
+            id: "st-1",
+            name: "Opname semester 1",
+            started_on: "2026-11-02",
+            status: mocks.status,
+          },
           isLoading: false,
         },
   useLibraryStocktakeProgressQuery: () => ({
@@ -202,5 +208,18 @@ describe("StocktakeSessionView", () => {
     render(<StocktakeSessionView stocktakeId="st-1" />);
     expect(screen.getByText("progress.remaining")).toBeInTheDocument();
     expect(screen.queryByText("result.missing")).not.toBeInTheDocument();
+  });
+
+  // The download is named from the session it reports on, not its raw id.
+  it("hands the loaded session to the report download", async () => {
+    mocks.status = "closed";
+    const user = userEvent.setup();
+    render(<StocktakeSessionView stocktakeId="st-1" />);
+
+    await user.click(screen.getByRole("button", { name: "downloadReport" }));
+
+    expect(downloadReport).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "st-1", name: "Opname semester 1", started_on: "2026-11-02" }),
+    );
   });
 });
