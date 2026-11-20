@@ -128,22 +128,30 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 	subscribe(b, func(ctx context.Context, e disciplineservice.WarningLetterIssued) ([]events.Envelope, error) {
 		homeroom, err := b.holders(ctx, e.TenantID, "homeroom", e.ClassID)
 		summary := fmt.Sprintf("%s nomor %s telah diterbitkan.", e.LevelLabel, e.LetterNumber)
-		// No page shows one letter by id: the student reads theirs on their
-		// own discipline page, the homeroom teacher on the student's record.
-		return []events.Envelope{{
-			Name: events.WarningLetterIssued, Tenant: e.TenantID, Actor: e.IssuedBy, Subject: []uuid.UUID{e.StudentUserID},
-			Payload: map[string]any{"letter_id": e.LetterID.String(), "level": e.Level, "summary": summary, "href": "/my-discipline"},
-		}, {
-			Name: events.WarningLetterIssued, Tenant: e.TenantID, Actor: e.IssuedBy, Subject: without(homeroom, e.IssuedBy),
-			Payload: map[string]any{"letter_id": e.LetterID.String(), "level": e.Level, "summary": summary, "href": "/discipline/students/" + e.StudentUserID.String()},
-		}}, err
+		payload := func(href string) map[string]any {
+			return map[string]any{"letter_id": e.LetterID.String(), "level": e.Level, "summary": summary, "href": href}
+		}
+		// The student and the homeroom teachers land on different pages:
+		// the student reads their own record at /my-discipline, staff open
+		// the student's discipline page (the same target as the threshold
+		// notification below). There is no per-letter page to link to.
+		return []events.Envelope{
+			{
+				Name: events.WarningLetterIssued, Tenant: e.TenantID, Actor: e.IssuedBy, Subject: []uuid.UUID{e.StudentUserID},
+				Payload: payload(studentOwnDisciplineHref),
+			},
+			{
+				Name: events.WarningLetterIssued, Tenant: e.TenantID, Actor: e.IssuedBy, Subject: without(homeroom, e.IssuedBy),
+				Payload: payload(staffStudentDisciplineHref(e.StudentUserID)),
+			},
+		}, err
 	})
 	subscribe(b, func(ctx context.Context, e disciplineservice.ThresholdReached) ([]events.Envelope, error) {
 		counselors, err := b.holders(ctx, e.TenantID, "counselor", uuid.NullUUID{})
 		summary := fmt.Sprintf("Seorang siswa mencapai %s (%d poin).", e.LevelLabel, e.TotalPoints)
 		return one(events.Envelope{
 			Name: events.DisciplineThresholdReached, Tenant: e.TenantID, Subject: counselors,
-			Payload: map[string]any{"student_user_id": e.StudentUserID.String(), "level": e.Level, "summary": summary, "href": "/discipline/students/" + e.StudentUserID.String()},
+			Payload: map[string]any{"student_user_id": e.StudentUserID.String(), "level": e.Level, "summary": summary, "href": staffStudentDisciplineHref(e.StudentUserID)},
 		}, err)
 	})
 	subscribe(b, func(ctx context.Context, e attendanceservice.Submitted) ([]events.Envelope, error) {
@@ -172,6 +180,16 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 			Payload: map[string]any{"loan_count": e.LoanCount, "summary": summary, "href": "/library/me"},
 		}, nil)
 	})
+}
+
+// studentOwnDisciplineHref is the web page where a student reads their own
+// points and warning letters.
+const studentOwnDisciplineHref = "/my-discipline"
+
+// staffStudentDisciplineHref is the web page staff with view_discipline
+// open for one student's discipline record (apps/web/features/discipline/href.ts).
+func staffStudentDisciplineHref(studentUserID uuid.UUID) string {
+	return "/discipline/students/" + studentUserID.String()
 }
 
 type bridge struct {

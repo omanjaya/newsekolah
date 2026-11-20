@@ -64,6 +64,11 @@
       "cancel": "Cancel",
       "submit": "Save",
       "recorded": "{count, plural, one {Violation recorded} other {# violations recorded}}",
+      "partial": {
+        "title": "{count, plural, one {Only # student was recorded} other {Only # students were recorded}}",
+        "saved": "Already saved: {names}. They have been removed from the selection.",
+        "rest": "The other students were not recorded. Save again to record the remaining students."
+      },
       "preview": {
         "title": "Points preview (before saving)",
         "loading": "Checking current points...",
@@ -115,10 +120,11 @@
     "emptyTitle": "Violation catalog is empty",
     "emptyBody": "Add violation types along with their point values.",
     "edit": "Edit",
-    "deleteTitle": "Deactivate violation type",
-    "deleteBody": "\"{name}\" can no longer be chosen for new records. Existing records keep their own data.",
-    "deleteConfirm": "Deactivate",
-    "deleted": "Violation type deactivated",
+    "deactivate": "Deactivate",
+    "deactivated": "\"{name}\" deactivated. It can no longer be chosen for new records; existing records are unchanged.",
+    "activate": "Activate",
+    "activated": "\"{name}\" activated again.",
+    "undo": "Undo",
     "saved": "Violation type saved",
     "form": {
       "createTitle": "Add violation type",
@@ -146,7 +152,12 @@
     "levelPlaceholder": "E.g. SP1",
     "addLevel": "Add level",
     "save": "Save policy",
-    "saved": "Warning-letter policy saved"
+    "saved": "Warning-letter policy saved",
+    "errors": {
+      "labelRequired": "Enter a label for this level",
+      "pointsRequired": "Enter a threshold above 0",
+      "pointsMustIncrease": "The threshold must be higher than the previous level"
+    }
   },
   "warningLetters": {
     "searchPlaceholder": "Search by name or NIS",
@@ -190,6 +201,7 @@
       },
       "issue": "Issue {level}",
       "issued": "{level} issued",
+      "alreadyIssued": "{level} for this student has already been issued.",
       "pointsValue": "{points} pts",
       "issueConfirm": {
         "title": "Issue {level} to {student}?",
@@ -230,7 +242,8 @@
     "add": "Log counseling",
     "tabs": {
       "mine": "My notes",
-      "bkTeam": "BK team"
+      "bkTeam": "BK team",
+      "leadership": "Leadership"
     },
     "columns": {
       "title": "Title",
@@ -243,6 +256,10 @@
     "emptyTitle": "No counseling notes yet",
     "emptyBody": "Your counseling notes will appear here.",
     "unknownStudent": "Unknown student",
+    "leadership": {
+      "emptyTitle": "No notes shared with leadership yet",
+      "emptyBody": "Notes a counselor marks as visible to school leadership appear here."
+    },
     "bkTeam": {
       "topicFilter": "Topic",
       "topicAll": "Every topic",

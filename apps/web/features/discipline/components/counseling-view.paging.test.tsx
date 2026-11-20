@@ -14,7 +14,11 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/discipline/counseling",
   useSearchParams: () => new URLSearchParams(window.location.search),
 }));
-vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => false }));
+// A counselor without the BK-team duty: only "Catatan saya", read
+// without the write actions the paging tests do not need.
+vi.mock("../../../lib/session/session-provider", () => ({
+  useSession: () => ({ me: { permissions: ["manage_counseling"], roles: [], duties: [] } }),
+}));
 vi.mock("../../reference/api", () => ({
   useLookup: () => new Map(),
 }));
@@ -28,6 +32,7 @@ vi.mock("../api-counseling-extras", () => ({
   useDeleteCounselingMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 vi.mock("./counseling-bk-team-panel", () => ({ CounselingBKTeamPanel: () => null }));
+vi.mock("./counseling-leadership-panel", () => ({ CounselingLeadershipPanel: () => null }));
 vi.mock("./counseling-detail-dialog", () => ({ CounselingDetailDialog: () => null }));
 vi.mock("./counseling-form", () => ({ CounselingForm: () => null }));
 
@@ -54,18 +59,24 @@ describe("CounselingView paging", () => {
     const user = userEvent.setup();
     render(<CounselingView />);
 
-    expect(mocks.useMyCounselingsQuery).toHaveBeenLastCalledWith({
-      limit: 50,
-      offset: 0,
-      search: "",
-    });
+    expect(mocks.useMyCounselingsQuery).toHaveBeenLastCalledWith(
+      {
+        limit: 50,
+        offset: 0,
+        search: "",
+      },
+      true,
+    );
     await user.click(screen.getByRole("button", { name: "Ke halaman berikutnya" }));
 
-    expect(mocks.useMyCounselingsQuery).toHaveBeenLastCalledWith({
-      limit: 50,
-      offset: 50,
-      search: "",
-    });
+    expect(mocks.useMyCounselingsQuery).toHaveBeenLastCalledWith(
+      {
+        limit: 50,
+        offset: 50,
+        search: "",
+      },
+      true,
+    );
     expect(new URLSearchParams(window.location.search).get("mine_page")).toBe("2");
   });
 
@@ -77,11 +88,14 @@ describe("CounselingView paging", () => {
     await user.type(screen.getByRole("searchbox", { name: "searchPlaceholder" }), "bud");
 
     await waitFor(() => {
-      expect(mocks.useMyCounselingsQuery).toHaveBeenLastCalledWith({
-        limit: 50,
-        offset: 0,
-        search: "bud",
-      });
+      expect(mocks.useMyCounselingsQuery).toHaveBeenLastCalledWith(
+        {
+          limit: 50,
+          offset: 0,
+          search: "bud",
+        },
+        true,
+      );
     });
     const params = new URLSearchParams(window.location.search);
     expect(params.get("mine_q")).toBe("bud");

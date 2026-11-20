@@ -166,6 +166,43 @@ func WithPlatformTx(ctx context.Context, pool *pgxpool.Pool, fn func(ctx context
 	})
 }
 
+// WithSavepoint runs fn inside a savepoint of the ambient transaction, so
+// a side effect that fails (an error or a panic) is rolled back on its own
+// while the caller's transaction stays usable and can still commit. Without
+// an ambient transaction fn simply runs with ctx. Services use it for
+// best-effort work that should commit together with their own writes when
+// it succeeds, such as publishing a domain event whose subscribers write
+// notifications.
+//
+// fn keeps using the ambient transaction itself. A side effect that hit an
+// SQL error but swallowed it (a subscriber that only logs) leaves the
+// transaction aborted; releasing the savepoint then fails, and it is
+// rolled back all the same, so the caller's transaction is usable again.
+func WithSavepoint(ctx context.Context, fn func(ctx context.Context) error) (err error) {
+	tx, ok := TxFromContext(ctx)
+	if !ok || tx == nil {
+		return fn(ctx)
+	}
+	name := "sp_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+	if _, err := tx.Exec(ctx, "savepoint "+name); err != nil {
+		return fmt.Errorf("begin savepoint: %w", err)
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("savepoint: recovered panic: %v", r)
+		}
+		if err == nil {
+			if _, err = tx.Exec(ctx, "release savepoint "+name); err == nil {
+				return
+			}
+		}
+		if _, rollbackErr := tx.Exec(ctx, "rollback to savepoint "+name); rollbackErr != nil {
+			err = fmt.Errorf("%w (rollback to savepoint: %v)", err, rollbackErr)
+		}
+	}()
+	return fn(ctx)
+}
+
 func withTx(ctx context.Context, pool *pgxpool.Pool, fn func(ctx context.Context, tx pgx.Tx) error) (err error) {
 	// A service calling another service inside its own transaction must
 	// share it: nested calls join the ambient transaction instead of opening

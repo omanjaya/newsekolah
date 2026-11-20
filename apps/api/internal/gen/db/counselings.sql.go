@@ -275,12 +275,12 @@ func (q *Queries) ListCounselingsByCounselor(ctx context.Context, arg ListCounse
 
 const listCounselingsByVisibility = `-- name: ListCounselingsByVisibility :many
 select c.id, c.tenant_id, c.academic_year_id, c.student_user_id, c.counselor_user_id, c.session_at, c.kind, c.title, c.content_encrypted, c.content_key_id, c.follow_up_plan_encrypted, c.visibility, c.created_at, c.updated_at, c.topic, c.career_goals_encrypted, c.problem_description_encrypted from counselings c
-where c.tenant_id = $1 and c.academic_year_id = $2 and c.visibility = 'bk_team'
-  and ($5::text is null or c.topic = $5)
-  and ($6::text is null or exists (
+where c.tenant_id = $1 and c.academic_year_id = $2 and c.visibility = $5::text
+  and ($6::text is null or c.topic = $6)
+  and ($7::text is null or exists (
     select 1 from users su left join student_profiles sp on sp.user_id = su.id
     where su.id = c.student_user_id
-      and (su.name ilike '%' || $6 || '%' or sp.nis ilike '%' || $6 || '%')))
+      and (su.name ilike '%' || $7 || '%' or sp.nis ilike '%' || $7 || '%')))
 order by c.session_at desc
 limit $3 offset $4
 `
@@ -290,19 +290,22 @@ type ListCounselingsByVisibilityParams struct {
 	AcademicYearID uuid.UUID   `json:"academic_year_id"`
 	Limit          int32       `json:"limit"`
 	Offset         int32       `json:"offset"`
+	Visibility     string      `json:"visibility"`
 	Topic          pgtype.Text `json:"topic"`
 	Search         pgtype.Text `json:"search"`
 }
 
-// Cross-student view for any counselor (duty "counselor"): every note the
-// author chose to share with the whole BK team, optionally by topic and
-// student name/NIS (never note content: it is encrypted at rest).
+// Cross-student view of the notes their authors shared with one audience:
+// 'bk_team' for any counselor (duty "counselor"), 'leadership' for school
+// leadership. Optionally by topic and student name/NIS (never note
+// content: it is encrypted at rest).
 func (q *Queries) ListCounselingsByVisibility(ctx context.Context, arg ListCounselingsByVisibilityParams) ([]Counseling, error) {
 	rows, err := q.db.Query(ctx, listCounselingsByVisibility,
 		arg.TenantID,
 		arg.AcademicYearID,
 		arg.Limit,
 		arg.Offset,
+		arg.Visibility,
 		arg.Topic,
 		arg.Search,
 	)

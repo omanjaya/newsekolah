@@ -11,6 +11,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -178,6 +180,9 @@ type Repository interface {
 	// decides the calendar date "today" is for the attendance window.
 	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
 	ListActiveStudents(ctx context.Context, tenantID, academicYearID uuid.UUID) ([]StudentRef, error)
+	// ListActiveStudentsByIDs is ListActiveStudents narrowed to studentIDs,
+	// for rescoring a few students without reading the whole roster.
+	ListActiveStudentsByIDs(ctx context.Context, tenantID, academicYearID uuid.UUID, studentIDs []uuid.UUID) ([]StudentRef, error)
 	GetHomeroomClassID(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID) (uuid.NullUUID, error)
 	HasActiveDuty(ctx context.Context, tenantID, academicYearID, userID uuid.UUID, slug string) (bool, error)
 
@@ -214,6 +219,9 @@ type Service struct {
 	// flags is nil when no flag wiring is configured: both toggleable
 	// signal sources then count as on (see sources.go).
 	flags FlagReader
+	// rescores tracks the school-wide rescoring UpdatePolicy starts in the
+	// background (see WaitForRescores).
+	rescores sync.WaitGroup
 }
 
 // DashboardDeps groups the admin dashboard's cross-module readers.
@@ -292,20 +300,27 @@ func (s *Service) loadPolicy(ctx context.Context, tenantID uuid.UUID) (domain.Po
 	return policy, nil
 }
 
-// policyRescoreTimeout bounds the rescore UpdatePolicy runs after a save,
-// well inside the API's request timeout, so a large school's save answers
-// in time (reporting that the list was not rescored) instead of failing
-// after the policy was already stored.
-const policyRescoreTimeout = 15 * time.Second
+// policyRescoreWait bounds how long UpdatePolicy waits for the rescore it
+// starts, well inside the API's request timeout, so a large school's save
+// answers in time (reporting that the list is not rescored yet) instead of
+// failing after the policy was already stored.
+const policyRescoreWait = 15 * time.Second
+
+// policyRescoreTimeout bounds the school-wide rescoring a policy change
+// starts, which runs detached from the request that saved the policy.
+const policyRescoreTimeout = 10 * time.Minute
 
 // UpdatePolicy appends a new version of the tenant's scoring policy and
-// rescores the tenant at once, so the list reflects the new thresholds as
-// soon as it is saved instead of after the next scheduled run. The rescore
-// is best effort: the policy is saved either way, and recomputed reports
-// whether the rescore finished. It does not when it fails, runs past
-// policyRescoreTimeout, or another rescore of the tenant is already
-// running (one that read the previous policy); the next scheduled run then
-// applies the new policy.
+// starts rescoring the school under it, so the early-warning screens stop
+// showing levels from a policy the school has just replaced instead of
+// waiting for the next scheduled run. The rescoring is detached from the
+// request: a client that disconnects, or a save that stops waiting after
+// policyRescoreWait, does not cancel it halfway. recomputed reports
+// whether the rescore finished within that wait. It does not when it is
+// still running (it then finishes in the background), fails, or another
+// rescore of the tenant is already running (one that read the previous
+// policy); in the last two cases the next scheduled run applies the new
+// policy. A failure is logged.
 func (s *Service) UpdatePolicy(ctx context.Context, tenantID, actorUserID uuid.UUID, next domain.Policy) (policy domain.Policy, recomputed bool, err error) {
 	if err := next.Validate(); err != nil {
 		return domain.Policy{}, false, err
@@ -325,8 +340,41 @@ func (s *Service) UpdatePolicy(ctx context.Context, tenantID, actorUserID uuid.U
 	if err != nil {
 		return next, false, err
 	}
-	rescoreCtx, cancel := context.WithTimeout(ctx, policyRescoreTimeout)
-	defer cancel()
-	_, rescoreErr := s.Recompute(rescoreCtx, tenantID)
-	return next, rescoreErr == nil, nil
+	done := s.rescoreInBackground(ctx, tenantID)
+	wait := time.NewTimer(policyRescoreWait)
+	defer wait.Stop()
+	select {
+	case rescoreErr := <-done:
+		return next, rescoreErr == nil, nil
+	case <-wait.C:
+		return next, false, nil
+	case <-ctx.Done():
+		return next, false, nil
+	}
+}
+
+// rescoreInBackground rescores the tenant detached from ctx's
+// cancellation and reports the outcome on the returned channel, which is
+// buffered so nobody has to read it.
+func (s *Service) rescoreInBackground(ctx context.Context, tenantID uuid.UUID) <-chan error {
+	done := make(chan error, 1)
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), policyRescoreTimeout)
+	s.rescores.Add(1)
+	go func() {
+		defer s.rescores.Done()
+		defer cancel()
+		_, err := s.Recompute(ctx, tenantID)
+		if err != nil && !errors.Is(err, ErrNoActiveAcademicYear) && !errors.Is(err, ErrRecomputeInProgress) {
+			slog.WarnContext(ctx, "analytics: rescore after policy update failed", "tenant_id", tenantID, "error", err)
+		}
+		done <- err
+	}()
+	return done
+}
+
+// WaitForRescores blocks until every background rescoring UpdatePolicy
+// started has finished, for a graceful shutdown or a test that reads the
+// rescored results.
+func (s *Service) WaitForRescores() {
+	s.rescores.Wait()
 }

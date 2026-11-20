@@ -1,3 +1,4 @@
+import { ApiError } from "@newsekolah/api-client";
 import type * as UiModule from "@newsekolah/ui";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -6,6 +7,8 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   search: vi.fn(),
   record: vi.fn(),
+  refresh: vi.fn(),
+  toastError: vi.fn(),
 }));
 
 vi.mock("next-intl", () => ({
@@ -20,6 +23,7 @@ vi.mock("../../reference/directory-names", async () => {
   const people = [
     { id: "s1", name: "Sari" },
     { id: "s2", name: "Budi" },
+    { id: "s3", name: "Tono" },
   ];
   return { ...directoryNamesStub(people), useDirectorySearch: mocks.search };
 });
@@ -28,6 +32,7 @@ vi.mock("../../../lib/session/session-provider", () => ({
 }));
 vi.mock("../api", () => ({
   useRecordViolationMutation: () => ({ mutateAsync: mocks.record, isPending: false }),
+  useRefreshDiscipline: () => mocks.refresh,
   useViolationTypesQuery: () => ({
     data: { data: [{ id: "type-1", name: "Terlambat", points: 5, is_active: true }] },
   }),
@@ -37,7 +42,7 @@ vi.mock("../api-violation-extras", () => ({
 }));
 vi.mock("@newsekolah/ui", async () => {
   const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
-  return { ...actual, useToast: () => ({ success: vi.fn(), error: vi.fn() }) };
+  return { ...actual, useToast: () => ({ success: vi.fn(), error: mocks.toastError }) };
 });
 
 import { ViolationRecordForm } from "./violation-record-form";
@@ -65,6 +70,7 @@ beforeEach(() => {
     data: [
       { id: "s1", name: "Sari", username: "sari" },
       { id: "s2", name: "Budi", username: "budi" },
+      { id: "s3", name: "Tono", username: "tono" },
     ],
     isFetching: false,
   });
@@ -119,5 +125,89 @@ describe("ViolationRecordForm date", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("ViolationRecordForm batch that fails part-way", () => {
+  it("keeps saved students out of the retry and reports who was recorded", async () => {
+    const user = userEvent.setup();
+    const onDone = vi.fn();
+    const sariResult = { record: { student_user_id: "s1" }, total_points: 30, due_levels: [] };
+    const budiResult = { record: { student_user_id: "s2" }, total_points: 5, due_levels: [] };
+    mocks.record
+      .mockResolvedValueOnce(sariResult)
+      .mockRejectedValueOnce(new ApiError({ status: 500, code: "INTERNAL", message: "boom" }))
+      .mockResolvedValueOnce(budiResult);
+    render(<ViolationRecordForm onDone={onDone} />);
+
+    await user.click(screen.getByRole("checkbox", { name: /Sari/ }));
+    await user.click(screen.getByRole("checkbox", { name: /Budi/ }));
+    await user.click(screen.getByRole("checkbox", { name: /Terlambat/ }));
+    await user.click(screen.getByRole("button", { name: /submit/ }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/partial.saved.*Sari/);
+    expect(mocks.refresh).toHaveBeenCalled();
+    expect(mocks.toastError).not.toHaveBeenCalled();
+    expect(onDone).not.toHaveBeenCalled();
+    // Sari left the selection; only Budi is still picked.
+    expect(screen.queryByRole("button", { name: /removeStudent.*Sari/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /removeStudent.*Budi/ })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /submit/ }));
+
+    await waitFor(() => {
+      expect(onDone).toHaveBeenCalledWith([sariResult, budiResult]);
+    });
+    expect(mocks.record).toHaveBeenCalledTimes(3);
+    expect(
+      mocks.record.mock.calls.map(
+        ([body]) => (body as { student_user_id: string }).student_user_id,
+      ),
+    ).toEqual(["s1", "s2", "s2"]);
+  });
+
+  it("keeps naming every saved student across failed retries, with the latest error", async () => {
+    const user = userEvent.setup();
+    const onDone = vi.fn();
+    const sariResult = { record: { student_user_id: "s1" }, total_points: 30, due_levels: [] };
+    const budiResult = { record: { student_user_id: "s2" }, total_points: 5, due_levels: [] };
+    mocks.record
+      // First attempt: Sari saved, Budi fails.
+      .mockResolvedValueOnce(sariResult)
+      .mockRejectedValueOnce(new ApiError({ status: 500, code: "INTERNAL", message: "boom" }))
+      // Second attempt fails on its first remaining student.
+      .mockRejectedValueOnce(new ApiError({ status: 503, code: "UNAVAILABLE", message: "down" }))
+      // Third attempt: Budi saved, Tono fails.
+      .mockResolvedValueOnce(budiResult)
+      .mockRejectedValueOnce(new ApiError({ status: 500, code: "INTERNAL", message: "boom" }));
+    render(<ViolationRecordForm onDone={onDone} />);
+
+    await user.click(screen.getByRole("checkbox", { name: /Sari/ }));
+    await user.click(screen.getByRole("checkbox", { name: /Budi/ }));
+    await user.click(screen.getByRole("checkbox", { name: /Tono/ }));
+    await user.click(screen.getByRole("checkbox", { name: /Terlambat/ }));
+    await user.click(screen.getByRole("button", { name: /submit/ }));
+
+    let alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/partial.title \{"count":1\}/);
+    expect(alert).toHaveTextContent("INTERNAL");
+
+    await user.click(screen.getByRole("button", { name: /submit/ }));
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("UNAVAILABLE");
+    });
+    alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent(/partial.saved.*Sari/);
+    expect(alert).not.toHaveTextContent("INTERNAL");
+    expect(mocks.toastError).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: /submit/ }));
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/partial.title \{"count":2\}/);
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(/partial.saved.*Sari, Budi/);
+    expect(screen.getByRole("alert")).toHaveTextContent("INTERNAL");
+    expect(onDone).not.toHaveBeenCalled();
   });
 });

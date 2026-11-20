@@ -113,13 +113,14 @@ func (r *Repository) CreateRecord(ctx context.Context, rec domain.ViolationRecor
 	return toRecord(row, "", "", ""), nil
 }
 
-func (r *Repository) DeleteRecordsBySessionStudent(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID) error {
-	if err := r.queries(ctx).DeleteViolationRecordsBySessionStudent(ctx, db.DeleteViolationRecordsBySessionStudentParams{
+func (r *Repository) DeleteRecordsBySessionStudent(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID) (int64, error) {
+	n, err := r.queries(ctx).DeleteViolationRecordsBySessionStudent(ctx, db.DeleteViolationRecordsBySessionStudentParams{
 		TenantID: tenantID, AttendanceSessionID: pgtype.UUID{Bytes: sessionID, Valid: true}, StudentUserID: studentUserID,
-	}); err != nil {
-		return fmt.Errorf("delete session violation records: %w", err)
+	})
+	if err != nil {
+		return 0, fmt.Errorf("delete session violation records: %w", err)
 	}
-	return nil
+	return n, nil
 }
 
 func (r *Repository) GetRecord(ctx context.Context, tenantID, id uuid.UUID) (domain.ViolationRecord, bool, error) {
@@ -449,12 +450,13 @@ func (r *Repository) ListCounselingsByCounselor(ctx context.Context, tenantID, y
 	return toCounselings(rows), nil
 }
 
-func (r *Repository) ListCounselingsByVisibility(ctx context.Context, tenantID, yearID uuid.UUID, topic, search string, limit, offset int) ([]service.EncryptedCounseling, error) {
+func (r *Repository) ListCounselingsByVisibility(ctx context.Context, tenantID, yearID uuid.UUID, visibility domain.Visibility, topic, search string, limit, offset int) ([]service.EncryptedCounseling, error) {
 	rows, err := r.queries(ctx).ListCounselingsByVisibility(ctx, db.ListCounselingsByVisibilityParams{
-		TenantID: tenantID, AcademicYearID: yearID, Limit: int32(limit), Offset: int32(offset), Topic: pdatabase.Text(topic), Search: pdatabase.Text(search), //nolint:gosec // clamped
+		TenantID: tenantID, AcademicYearID: yearID, Visibility: string(visibility),
+		Limit: int32(limit), Offset: int32(offset), Topic: pdatabase.Text(topic), Search: pdatabase.Text(search), //nolint:gosec // clamped
 	})
 	if err != nil {
-		return nil, fmt.Errorf("list bk team counselings: %w", err)
+		return nil, fmt.Errorf("list %s counselings: %w", visibility, err)
 	}
 	return toCounselings(rows), nil
 }
@@ -561,6 +563,10 @@ func (r *Repository) HasActiveDuty(ctx context.Context, tenantID, yearID, userID
 	return r.queries(ctx).DisciplineHasActiveDuty(ctx, db.DisciplineHasActiveDutyParams{
 		TenantID: tenantID, AcademicYearID: yearID, UserID: userID, Slug: slug, ClassID: pdatabase.NullUUID(classID), Today: pdatabase.Date(today),
 	})
+}
+
+func (r *Repository) HasRole(ctx context.Context, tenantID, userID uuid.UUID, slug string) (bool, error) {
+	return r.queries(ctx).DisciplineUserHasRole(ctx, db.DisciplineUserHasRoleParams{TenantID: tenantID, UserID: userID, Slug: slug})
 }
 
 func (r *Repository) GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error) {

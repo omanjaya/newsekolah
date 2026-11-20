@@ -19,12 +19,26 @@ import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { type SPLevel, useUpdateDisciplinePolicyMutation } from "../api";
+import { validateLevels } from "../lib/sp-policy-validation";
 
 /** Editable copy of one ladder row; kept as strings so an empty number field doesn't force 0. */
 interface DraftLevel {
   level: number;
   label: string;
   minPoints: string;
+}
+
+/**
+ * Focuses the first control in the layout the reader sees: each field is
+ * rendered twice (the desktop grid and the phone cards), one of them hidden
+ * with display:none, which has no client rects.
+ */
+function focusFirstVisible(ids: string[]) {
+  const controls = ids
+    .map((id) => document.getElementById(id))
+    .filter((el): el is HTMLElement => el !== null);
+  const target = controls.find((el) => el.getClientRects().length > 0) ?? controls[0];
+  target?.focus();
 }
 
 function toDraft(levels: SPLevel[]): DraftLevel[] {
@@ -45,6 +59,10 @@ export function DisciplinePolicyEditor({
   const apiErrorMessage = useApiErrorMessage();
   const update = useUpdateDisciplinePolicyMutation();
   const [levels, setLevels] = useState<DraftLevel[]>(() => toDraft(initialLevels));
+  // Errors show once a save was attempted, then follow every edit.
+  const [attempted, setAttempted] = useState(false);
+  const errors = attempted ? validateLevels(levels) : new Map<number, never>();
+  const errorText = (key: string | undefined) => (key ? t(`errors.${key}`) : undefined);
 
   function updateLevel(index: number, patch: Partial<DraftLevel>) {
     setLevels((prev) => prev.map((level, i) => (i === index ? { ...level, ...patch } : level)));
@@ -61,6 +79,14 @@ export function DisciplinePolicyEditor({
   }
 
   async function save() {
+    setAttempted(true);
+    const problems = validateLevels(levels);
+    const first = [...problems.keys()].sort((a, b) => a - b)[0];
+    if (first !== undefined) {
+      const field = problems.get(first)?.label ? "label" : "points";
+      focusFirstVisible([`sp-level-${field}-${first}`, `sp-level-${field}-m-${first}`]);
+      return;
+    }
     const payload: SPLevel[] = levels.map((level) => ({
       level: level.level,
       label: level.label.trim(),
@@ -99,29 +125,38 @@ export function DisciplinePolicyEditor({
               <span className="sr-only">{t("remove")}</span>
             </div>
             {levels.map((level, index) => (
-              <div
-                key={index}
-                className="grid grid-cols-[3rem_1fr_10rem_2.5rem] items-center gap-2"
-              >
-                <span className="text-body tabular-nums text-fg">{level.level}</span>
-                <Input
+              <div key={index} className="grid grid-cols-[3rem_1fr_10rem_2.5rem] items-start gap-2">
+                <span className="flex h-11 items-center text-body tabular-nums text-fg md:pointer-fine:h-9">
+                  {level.level}
+                </span>
+                <Field
+                  label={t("columns.label")}
+                  hideLabel
                   id={`sp-level-label-${index}`}
-                  aria-label={t("columns.label")}
-                  value={level.label}
-                  placeholder={t("levelPlaceholder")}
-                  onChange={(e) => {
-                    updateLevel(index, { label: e.target.value });
-                  }}
-                />
-                <NumberInput
+                  error={errorText(errors.get(index)?.label)}
+                >
+                  <Input
+                    value={level.label}
+                    placeholder={t("levelPlaceholder")}
+                    onChange={(e) => {
+                      updateLevel(index, { label: e.target.value });
+                    }}
+                  />
+                </Field>
+                <Field
+                  label={t("columns.minPoints")}
+                  hideLabel
                   id={`sp-level-points-${index}`}
-                  aria-label={t("columns.minPoints")}
-                  min={0}
-                  value={level.minPoints === "" ? null : Number(level.minPoints)}
-                  onChange={(next) => {
-                    updateLevel(index, { minPoints: next === null ? "" : String(next) });
-                  }}
-                />
+                  error={errorText(errors.get(index)?.minPoints)}
+                >
+                  <NumberInput
+                    min={0}
+                    value={level.minPoints === "" ? null : Number(level.minPoints)}
+                    onChange={(next) => {
+                      updateLevel(index, { minPoints: next === null ? "" : String(next) });
+                    }}
+                  />
+                </Field>
                 <IconButton
                   icon={<Trash2 />}
                   aria-label={t("remove")}
@@ -151,7 +186,11 @@ export function DisciplinePolicyEditor({
                     }}
                   />
                 </div>
-                <Field label={t("columns.label")}>
+                <Field
+                  label={t("columns.label")}
+                  id={`sp-level-label-m-${index}`}
+                  error={errorText(errors.get(index)?.label)}
+                >
                   <Input
                     value={level.label}
                     placeholder={t("levelPlaceholder")}
@@ -160,7 +199,11 @@ export function DisciplinePolicyEditor({
                     }}
                   />
                 </Field>
-                <Field label={t("columns.minPoints")}>
+                <Field
+                  label={t("columns.minPoints")}
+                  id={`sp-level-points-m-${index}`}
+                  error={errorText(errors.get(index)?.minPoints)}
+                >
                   <NumberInput
                     min={0}
                     value={level.minPoints === "" ? null : Number(level.minPoints)}

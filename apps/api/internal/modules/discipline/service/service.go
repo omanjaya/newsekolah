@@ -34,7 +34,8 @@ type Repository interface {
 	DeleteViolationType(ctx context.Context, tenantID, id uuid.UUID) error
 
 	CreateRecord(ctx context.Context, r domain.ViolationRecord) (domain.ViolationRecord, error)
-	DeleteRecordsBySessionStudent(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID) error
+	// DeleteRecordsBySessionStudent returns how many records it deleted.
+	DeleteRecordsBySessionStudent(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID) (int64, error)
 	GetRecord(ctx context.Context, tenantID, id uuid.UUID) (domain.ViolationRecord, bool, error)
 	GetRecordByWorkflow(ctx context.Context, tenantID, workflowInstanceID, violationTypeID uuid.UUID) (domain.ViolationRecord, bool, error)
 	VoidRecord(ctx context.Context, tenantID, id, voidedBy uuid.UUID, reason string) (domain.ViolationRecord, bool, error)
@@ -62,7 +63,7 @@ type Repository interface {
 	GetCounseling(ctx context.Context, tenantID, id uuid.UUID) (EncryptedCounseling, bool, error)
 	ListCounselingsForStudent(ctx context.Context, tenantID, yearID, studentID uuid.UUID) ([]EncryptedCounseling, error)
 	ListCounselingsByCounselor(ctx context.Context, tenantID, yearID, counselorID uuid.UUID, search string, limit, offset int) ([]EncryptedCounseling, error)
-	ListCounselingsByVisibility(ctx context.Context, tenantID, yearID uuid.UUID, topic, search string, limit, offset int) ([]EncryptedCounseling, error)
+	ListCounselingsByVisibility(ctx context.Context, tenantID, yearID uuid.UUID, visibility domain.Visibility, topic, search string, limit, offset int) ([]EncryptedCounseling, error)
 	DeleteCounseling(ctx context.Context, tenantID, id uuid.UUID) error
 
 	CreateCounselingAttachment(ctx context.Context, tenantID, counselingID, assetID uuid.UUID) (domain.CounselingAttachment, error)
@@ -75,6 +76,9 @@ type Repository interface {
 	StudentSnapshot(ctx context.Context, tenantID, studentID, yearID uuid.UUID) (StudentSnapshot, error)
 	StudentEligible(ctx context.Context, tenantID, yearID, studentID uuid.UUID) (enrolled, active bool, err error)
 	HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string, classID uuid.NullUUID, today time.Time) (bool, error)
+	// HasRole reports whether the user holds the role with this slug
+	// (identity's user_roles), for the principal counted as leadership.
+	HasRole(ctx context.Context, tenantID, userID uuid.UUID, slug string) (bool, error)
 	ActiveClassID(ctx context.Context, tenantID, yearID, studentID uuid.UUID) (uuid.NullUUID, error)
 	// GetTenantTimezone resolves the tenant's configured IANA timezone, for
 	// HasActiveDuty's tenant-local "today" (tenantNow, see tenant.go).

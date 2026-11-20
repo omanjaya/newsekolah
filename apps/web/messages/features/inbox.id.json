@@ -13,6 +13,7 @@
     "open": "Buka siswa",
     "issue": "Terbitkan {level}",
     "issued": "{level} berhasil diterbitkan.",
+    "alreadyIssued": "{level} untuk siswa ini sudah diterbitkan.",
     "meta": "{nis} · {className} · {points} poin"
   },
   "backHome": "Kembali ke beranda",

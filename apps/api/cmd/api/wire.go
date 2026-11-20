@@ -246,6 +246,10 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Clock:    clock.Real{},
 	})
 
+	// Early warning rescoring a student the moment their discipline record
+	// changes, rather than only on the nightly run.
+	wiring.RegisterAnalyticsRecompute(eventBus, analyticsModule.Service, logger)
+
 	// The action-inbox badge sums each queue's own count; it owns no data.
 	inboxPermits := wiring.InboxPermits{Queues: permitsModule.Service, Flags: backgroundFlags}
 	inboxModule := inbox.Register(inbox.Dependencies{

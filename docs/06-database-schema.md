@@ -179,7 +179,7 @@ Aturan "satu izin keluar per hari" dan "tidak boleh ada yang belum selesai" menj
 ## 8. Domain: disiplin dan konseling
 
 ```sql
-violation_types (id, tenant_id, code, name, points int check (points >= 0), category, is_active, deleted_at, unique (tenant_id, code))
+violation_types (id, tenant_id, code, name, points int check (points >= 0), category, is_active, deleted_at, unique (tenant_id, code) where deleted_at is null)
 violation_records (id, tenant_id, academic_year_id, student_user_id, violation_type_id, points_snapshot int, occurred_on,
                    attendance_session_id null, workflow_instance_id null, reporter_user_id, notes, created_at, updated_at,
                    voided_at null, voided_by null, void_reason null)

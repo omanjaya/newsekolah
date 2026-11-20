@@ -25,13 +25,17 @@ var (
 	ErrCounselingForbidden     = errors.New("counseling not visible to this user")
 	ErrNoActiveAcademicYear    = errors.New("no active academic year")
 	ErrInvalidInput            = errors.New("invalid input")
-	ErrStudentNotEnrolled      = errors.New("student has no active enrollment in the active academic year")
-	ErrStudentInactive         = errors.New("student account is not active")
-	ErrAttachmentNotFound      = errors.New("attachment not found")
-	ErrAttachmentTooLarge      = errors.New("attachment file exceeds the size limit")
-	ErrAttachmentInvalidType   = errors.New("attachment file is not a supported image type")
-	ErrAttachmentLimitReached  = errors.New("violation record already has the maximum number of attachments")
-	ErrReportUnavailable       = errors.New("pdf report generation is not configured for this deployment")
+	// ErrSPThresholdsNotIncreasing is an SP ladder whose levels do not each
+	// need more points than the one before, the one policy mistake a client
+	// can only spot by comparing rows.
+	ErrSPThresholdsNotIncreasing = errors.New("sp thresholds must increase level by level")
+	ErrStudentNotEnrolled        = errors.New("student has no active enrollment in the active academic year")
+	ErrStudentInactive           = errors.New("student account is not active")
+	ErrAttachmentNotFound        = errors.New("attachment not found")
+	ErrAttachmentTooLarge        = errors.New("attachment file exceeds the size limit")
+	ErrAttachmentInvalidType     = errors.New("attachment file is not a supported image type")
+	ErrAttachmentLimitReached    = errors.New("violation record already has the maximum number of attachments")
+	ErrReportUnavailable         = errors.New("pdf report generation is not configured for this deployment")
 )
 
 type ViolationType struct {
@@ -126,7 +130,7 @@ func (p SPPolicy) Validate() error {
 			return ErrInvalidInput
 		}
 		if i > 0 && lvl.MinPoints <= sorted[i-1].MinPoints {
-			return ErrInvalidInput
+			return ErrSPThresholdsNotIncreasing
 		}
 	}
 	return nil
@@ -228,6 +232,35 @@ const (
 	TopicSocial   CounselingTopic = "social"
 	TopicOther    CounselingTopic = "other"
 )
+
+// counselingKindLabels and counselingTopicLabels are the Indonesian names
+// printed documents use, the same words as the web's option labels.
+var (
+	counselingKindLabels = map[CounselingKind]string{
+		CounselingIndividual: "Individu", CounselingGroup: "Kelompok",
+		CounselingParent: "Orang tua", CounselingReferral: "Rujukan",
+	}
+	counselingTopicLabels = map[CounselingTopic]string{
+		TopicCareer: "Karier", TopicProblem: "Masalah", TopicPersonal: "Pribadi",
+		TopicLearning: "Belajar", TopicSocial: "Sosial", TopicOther: "Lainnya",
+	}
+)
+
+// Label is the kind's printable name, or the raw code for an unknown one.
+func (k CounselingKind) Label() string {
+	if label, ok := counselingKindLabels[k]; ok {
+		return label
+	}
+	return string(k)
+}
+
+// Label is the topic's printable name, or the raw code for an unknown one.
+func (t CounselingTopic) Label() string {
+	if label, ok := counselingTopicLabels[t]; ok {
+		return label
+	}
+	return string(t)
+}
 
 // DefaultCounselingTopic matches the old app's default (counseling.go:511).
 const DefaultCounselingTopic = TopicProblem

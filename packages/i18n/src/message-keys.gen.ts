@@ -292,6 +292,7 @@ export type MessageKey =
   | "errors.SCHEDULE_HAS_HISTORY"
   | "errors.SCHEDULE_YEAR_ARCHIVED"
   | "errors.SCORE_OUT_OF_RANGE"
+  | "errors.SP_THRESHOLDS_NOT_INCREASING"
   | "errors.SSO_ACCOUNT_NOT_FOUND"
   | "errors.SSO_CLIENT_SECRET_REQUIRED"
   | "errors.SSO_INVALID_TOKEN"
@@ -743,6 +744,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.SCHEDULE_HAS_HISTORY",
   "errors.SCHEDULE_YEAR_ARCHIVED",
   "errors.SCORE_OUT_OF_RANGE",
+  "errors.SP_THRESHOLDS_NOT_INCREASING",
   "errors.SSO_ACCOUNT_NOT_FOUND",
   "errors.SSO_CLIENT_SECRET_REQUIRED",
   "errors.SSO_INVALID_TOKEN",

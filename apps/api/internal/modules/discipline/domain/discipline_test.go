@@ -75,6 +75,16 @@ func TestSPPolicyValidateRejectsBrokenLadders(t *testing.T) {
 	require.NoError(t, domain.DefaultSPPolicy().Validate())
 }
 
+// An out-of-order ladder gets its own error, so clients can say which rule
+// broke instead of a generic "invalid data".
+func TestSPPolicyValidateNamesOutOfOrderThresholds(t *testing.T) {
+	err := domain.SPPolicy{Levels: []domain.SPLevel{
+		{Level: 1, MinPoints: 25, Label: "SP 1"}, {Level: 2, MinPoints: 20, Label: "SP 2"},
+	}}.Validate()
+	require.ErrorIs(t, err, domain.ErrSPThresholdsNotIncreasing)
+	require.ErrorIs(t, domain.SPPolicy{Levels: []domain.SPLevel{{Level: 1, MinPoints: 20}}}.Validate(), domain.ErrInvalidInput)
+}
+
 func TestSPPolicyFirstCrossedDates(t *testing.T) {
 	policy := domain.DefaultSPPolicy()
 

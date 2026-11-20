@@ -64,6 +64,11 @@
       "cancel": "Batal",
       "submit": "Simpan",
       "recorded": "{count, plural, other {# pelanggaran tercatat}}",
+      "partial": {
+        "title": "{count, plural, other {Baru # siswa yang tercatat}}",
+        "saved": "Sudah tersimpan: {names}. Siswa ini sudah dihapus dari pilihan.",
+        "rest": "Siswa lainnya belum tercatat. Simpan lagi untuk mencatat siswa yang tersisa."
+      },
       "preview": {
         "title": "Pratinjau poin (sebelum disimpan)",
         "loading": "Memeriksa poin saat ini...",
@@ -115,10 +120,11 @@
     "emptyTitle": "Katalog pelanggaran kosong",
     "emptyBody": "Tambahkan jenis pelanggaran beserta bobot poinnya.",
     "edit": "Ubah",
-    "deleteTitle": "Nonaktifkan jenis pelanggaran",
-    "deleteBody": "\"{name}\" tidak lagi bisa dipilih untuk catatan baru. Catatan lama tetap menyimpan datanya sendiri.",
-    "deleteConfirm": "Nonaktifkan",
-    "deleted": "Jenis pelanggaran dinonaktifkan",
+    "deactivate": "Nonaktifkan",
+    "deactivated": "\"{name}\" dinonaktifkan. Tidak bisa dipilih untuk catatan baru; catatan lama tetap utuh.",
+    "activate": "Aktifkan",
+    "activated": "\"{name}\" diaktifkan kembali.",
+    "undo": "Urungkan",
     "saved": "Jenis pelanggaran tersimpan",
     "form": {
       "createTitle": "Tambah jenis pelanggaran",
@@ -146,7 +152,12 @@
     "levelPlaceholder": "Contoh: SP1",
     "addLevel": "Tambah tingkat",
     "save": "Simpan kebijakan",
-    "saved": "Kebijakan SP tersimpan"
+    "saved": "Kebijakan SP tersimpan",
+    "errors": {
+      "labelRequired": "Isi label tingkat ini",
+      "pointsRequired": "Isi ambang poin di atas 0",
+      "pointsMustIncrease": "Ambang harus lebih besar dari tingkat sebelumnya"
+    }
   },
   "warningLetters": {
     "searchPlaceholder": "Cari nama atau NIS",
@@ -190,6 +201,7 @@
       },
       "issue": "Terbitkan {level}",
       "issued": "{level} diterbitkan",
+      "alreadyIssued": "{level} untuk siswa ini sudah diterbitkan.",
       "pointsValue": "{points} poin",
       "issueConfirm": {
         "title": "Terbitkan {level} untuk {student}?",
@@ -230,7 +242,8 @@
     "add": "Catat konseling",
     "tabs": {
       "mine": "Catatan saya",
-      "bkTeam": "Tim BK"
+      "bkTeam": "Tim BK",
+      "leadership": "Pimpinan"
     },
     "columns": {
       "title": "Judul",
@@ -243,6 +256,10 @@
     "emptyTitle": "Belum ada catatan konseling",
     "emptyBody": "Catatan konseling Anda akan muncul di sini.",
     "unknownStudent": "Siswa tidak diketahui",
+    "leadership": {
+      "emptyTitle": "Belum ada catatan yang dibagikan ke pimpinan",
+      "emptyBody": "Catatan yang ditandai konselor sebagai terlihat oleh pimpinan sekolah muncul di sini."
+    },
     "bkTeam": {
       "topicFilter": "Topik",
       "topicAll": "Semua topik",

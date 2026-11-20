@@ -31,11 +31,12 @@ order by c.session_at desc
 limit $4 offset $5;
 
 -- name: ListCounselingsByVisibility :many
--- Cross-student view for any counselor (duty "counselor"): every note the
--- author chose to share with the whole BK team, optionally by topic and
--- student name/NIS (never note content: it is encrypted at rest).
+-- Cross-student view of the notes their authors shared with one audience:
+-- 'bk_team' for any counselor (duty "counselor"), 'leadership' for school
+-- leadership. Optionally by topic and student name/NIS (never note
+-- content: it is encrypted at rest).
 select c.* from counselings c
-where c.tenant_id = $1 and c.academic_year_id = $2 and c.visibility = 'bk_team'
+where c.tenant_id = $1 and c.academic_year_id = $2 and c.visibility = sqlc.arg(visibility)::text
   and (sqlc.narg(topic)::text is null or c.topic = sqlc.narg(topic))
   and (sqlc.narg(search)::text is null or exists (
     select 1 from users su left join student_profiles sp on sp.user_id = su.id

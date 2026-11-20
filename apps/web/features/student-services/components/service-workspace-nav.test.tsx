@@ -21,7 +21,9 @@ vi.mock("next/navigation", () => ({ usePathname: () => session.pathname }));
 vi.mock("../../../components/workspace-nav", () => import("../../../test/workspace-nav-stub"));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: (permission: string) => session.permissions.includes(permission),
-  useSession: () => ({ me: { disabled_modules: session.disabled_modules } }),
+  useSession: () => ({
+    me: { disabled_modules: session.disabled_modules, permissions: session.permissions, roles: [] },
+  }),
 }));
 
 // Each page's tab is named by its navigation registry entry (the mock returns the key).

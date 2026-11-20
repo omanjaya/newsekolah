@@ -1,10 +1,12 @@
-import { render, screen, within } from "@testing-library/react";
+import { ApiError } from "@newsekolah/api-client";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useSPCandidatesQuery: vi.fn(),
   issue: vi.fn(),
+  refresh: vi.fn(),
   canIssue: true,
   canManage: true,
   policy: {},
@@ -52,6 +54,7 @@ vi.mock("../../reference/api", () => ({
 vi.mock("../api", () => ({
   useDisciplinePolicyQuery: () => mocks.policy,
   useIssueWarningLetterMutation: () => ({ mutate: mocks.issue, isPending: false }),
+  useRefreshDiscipline: () => mocks.refresh,
   useSPCandidatesQuery: mocks.useSPCandidatesQuery,
 }));
 
@@ -132,6 +135,7 @@ describe("AtRiskPanel states and issuing", () => {
     mocks.canManage = true;
     mocks.policy = POLICY_OK;
     mocks.issue.mockReset();
+    mocks.refresh.mockReset();
     mocks.useSPCandidatesQuery.mockReset();
     window.history.replaceState(null, "", "/discipline/at-risk");
   });
@@ -212,6 +216,33 @@ describe("AtRiskPanel states and issuing", () => {
 
     expect(mocks.issue).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("closes the dialog and reloads the candidates when the letter was issued already", async () => {
+    mocks.useSPCandidatesQuery.mockReturnValue({
+      data: { data: [candidate("s1", "Ayu")] },
+      isLoading: false,
+    });
+    mocks.issue.mockImplementation((_vars, options: { onError?: (e: Error) => void }) => {
+      options.onError?.(
+        new ApiError({ status: 409, code: "WARNING_LETTER_ALREADY_ISSUED", message: "exists" }),
+      );
+    });
+    const user = userEvent.setup();
+    render(<AtRiskPanel />);
+
+    const row = screen
+      .getAllByText("Ayu")
+      .map((cell) => cell.closest("tr"))
+      .find((r) => r !== null);
+    await user.click(within(row as HTMLElement).getByRole("button", { name: "issue" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "issue" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(mocks.refresh).toHaveBeenCalledTimes(1);
   });
 
   it("shows a policy load failure with a retry, not the no-policy notice", async () => {

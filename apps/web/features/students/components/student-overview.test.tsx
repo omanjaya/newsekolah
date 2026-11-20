@@ -10,6 +10,22 @@ const risk = vi.hoisted(() => ({
   has_grade_trend: false,
   error: undefined as ApiError | undefined,
 }));
+const discipline = vi.hoisted(() => ({
+  permissions: ["view_early_warning"] as string[],
+  live: undefined as
+    | {
+        total_points: number;
+        records: {
+          id: string;
+          is_voided: boolean;
+          occurred_on: string;
+          type_name: string;
+          points: number;
+        }[];
+        letters: { id: string; issued_at: string; level_label: string; letter_number: string }[];
+      }
+    | undefined,
+}));
 
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
@@ -18,13 +34,16 @@ vi.mock("next-intl", () => ({
     params ? `${key} ${JSON.stringify(params)}` : key,
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
-  useCan: (permission: string) => permission === "view_early_warning",
+  useCan: (permission: string) => discipline.permissions.includes(permission),
   useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
 }));
 vi.mock("../../../lib/modules/use-module-enabled", () => ({ useModuleEnabled: () => true }));
 vi.mock("../../analytics/components/student-risk-panel", () => ({ StudentRiskPanel: () => null }));
 vi.mock("../../discipline/api", () => ({
-  useStudentDisciplineQuery: () => ({ data: undefined, isLoading: false }),
+  useStudentDisciplineQuery: (_id: string, enabled = true) => ({
+    data: enabled ? discipline.live : undefined,
+    isLoading: false,
+  }),
 }));
 vi.mock("../../discipline/api-counseling-extras", () => ({
   useStudentCounselingsQuery: () => ({ data: undefined, isLoading: false }),
@@ -70,6 +89,8 @@ describe("StudentOverviewTab risk figures", () => {
     risk.current_average = 0;
     risk.previous_average = 0;
     risk.error = undefined;
+    discipline.permissions = ["view_early_warning"];
+    discipline.live = undefined;
   });
 
   it("writes the grade average with one decimal and the Indonesian comma", () => {
@@ -101,5 +122,44 @@ describe("StudentOverviewTab risk figures", () => {
     expect(screen.getByText("noResultBody")).toBeInTheDocument();
     expect(screen.queryByText("ANALYTICS_RESULT_NOT_FOUND")).not.toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+});
+
+describe("StudentOverviewTab discipline figures", () => {
+  beforeEach(() => {
+    risk.error = undefined;
+    discipline.live = undefined;
+  });
+
+  // The stored risk score said 0 points and 0 letters next to a timeline
+  // with SP 3 and an 81-point record: the figures now come from discipline.
+  it("shows the live points, active violations and letters, not the stored score's", () => {
+    discipline.permissions = ["view_early_warning", "view_discipline"];
+    discipline.live = {
+      total_points: 81,
+      records: [
+        { id: "r1", is_voided: false, occurred_on: "2026-11-20", type_name: "Bolos", points: 25 },
+        { id: "r2", is_voided: false, occurred_on: "2026-11-19", type_name: "Bolos", points: 56 },
+        { id: "r3", is_voided: true, occurred_on: "2026-11-18", type_name: "Bolos", points: 10 },
+      ],
+      letters: ["1", "2", "3"].map((n) => ({
+        id: `l${n}`,
+        issued_at: `2026-11-20T0${n}:00:00Z`,
+        level_label: `SP ${n}`,
+        letter_number: `00${n}/SP/XI/2026`,
+      })),
+    };
+    render(<StudentOverviewTab studentId="s-1" />);
+
+    expect(screen.getByText("81")).toBeInTheDocument();
+    expect(screen.getByText('activeViolations {"n":2}')).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
+  });
+
+  it("falls back to the stored score for a reader without discipline access", () => {
+    discipline.permissions = ["view_early_warning"];
+    render(<StudentOverviewTab studentId="s-1" />);
+
+    expect(screen.getByText('activeViolations {"n":0}')).toBeInTheDocument();
   });
 });

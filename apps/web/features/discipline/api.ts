@@ -64,6 +64,15 @@ function useInvalidateDiscipline() {
   };
 }
 
+/**
+ * Refetches every discipline query (points, ledger, preview). For a write
+ * that failed part-way, whose committed share no mutation success has
+ * invalidated yet.
+ */
+export function useRefreshDiscipline(): () => Promise<void> {
+  return useInvalidateDiscipline();
+}
+
 // Violation catalog.
 
 /**
@@ -103,20 +112,6 @@ export function useUpdateViolationTypeMutation() {
       client.PUT("/v1/discipline/violation-types/{typeId}", {
         params: { path: { typeId: id } },
         body,
-      }),
-    onSuccess: invalidate,
-
-    meta: { errorToast: false },
-  });
-}
-
-export function useDeleteViolationTypeMutation() {
-  const client = useApiClient();
-  const invalidate = useInvalidateDiscipline();
-  return useMutation({
-    mutationFn: (id: string) =>
-      client.DELETE("/v1/discipline/violation-types/{typeId}", {
-        params: { path: { typeId: id } },
       }),
     onSuccess: invalidate,
 

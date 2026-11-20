@@ -5,10 +5,11 @@
 //
 // The PDF path is deliberately not a full HTML layout engine (no
 // chromedp/headless-browser dependency, per this module's brief): it
-// executes the html/template, then lays the resulting text out block by
-// block with github.com/go-pdf/fpdf. That is enough for a letter -- a
-// title, a few paragraphs, a signature block -- which is everything
-// document_templates is used for today (leave letters); it is not a
+// executes the html/template, then lays the resulting tree out with
+// github.com/go-pdf/fpdf (layout.go). It covers what letters and reports
+// use -- headings, paragraphs with bold runs, alignment and spacing,
+// lists, and tables drawn as real columns (bordered data tables,
+// label/value rows, side-by-side signature blocks) -- and is not a
 // general-purpose HTML renderer.
 package documents
 
@@ -17,12 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"html"
 	"html/template"
 	"io"
 	"net/http"
-	"regexp"
-	"strings"
 
 	"github.com/go-pdf/fpdf"
 )
@@ -45,9 +43,8 @@ type Template struct {
 	// Letterhead, when non-empty, is a JPEG or PNG image (tenant branding
 	// asset) placed above the body -- the kop surat a school letter
 	// conventionally carries. It is placed directly through fpdf rather
-	// than as an <img> tag in Body: htmlToPDF strips all markup down to
-	// plain text (see its doc comment), so a tag here would render
-	// nothing.
+	// than as an <img> tag in Body: the layout does not draw images, so a
+	// tag here would render nothing.
 	Letterhead []byte
 }
 
@@ -121,49 +118,38 @@ func ValidateHTML(body string) error {
 	return nil
 }
 
-var (
-	blockCloseTag = regexp.MustCompile(`(?i)</(p|div|h[1-6]|li|tr)>`)
-	brTag         = regexp.MustCompile(`(?i)<br\s*/?>`)
-	anyTag        = regexp.MustCompile(`<[^>]*>`)
-)
-
-// htmlToPDF extracts the block-separated plain text from rendered HTML and
-// lays it out as a single A4 page of left-aligned, word-wrapped
-// paragraphs, with letterhead (if non-empty, a JPEG or PNG) placed at the
-// top of the page above the text. See the package doc comment for why
-// this is not a full HTML layout engine.
+// htmlToPDF lays rendered HTML out on A4 pages (a new page when the text
+// runs past the bottom margin), with letterhead (if non-empty, a JPEG or
+// PNG) placed at the top of the first page. See layout for the HTML it
+// understands.
 func htmlToPDF(renderedHTML, letterhead []byte) ([]byte, error) {
-	text := string(renderedHTML)
-	text = brTag.ReplaceAllString(text, "\n")
-	text = blockCloseTag.ReplaceAllString(text, "\n")
-	text = anyTag.ReplaceAllString(text, "")
-	text = html.UnescapeString(text)
+	pdf, err := layoutPDF(renderedHTML, letterhead)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	if err := pdf.Output(&buf); err != nil {
+		return nil, fmt.Errorf("write pdf output: %w", err)
+	}
+	return buf.Bytes(), nil
+}
 
+func layoutPDF(renderedHTML, letterhead []byte) (*fpdf.Fpdf, error) {
 	pdf := fpdf.New("P", "mm", "A4", "")
+	pdf.SetMargins(pageMarginMM, pageMarginMM, pageMarginMM)
+	pdf.SetAutoPageBreak(true, pageMarginMM)
 	pdf.AddPage()
-	pdf.SetFont("Helvetica", "", 12)
-	pdf.SetMargins(20, 20, 20)
+	pdf.SetFont("Helvetica", "", bodyFontSize)
 
 	if len(letterhead) > 0 {
 		if err := placeLetterhead(pdf, letterhead); err != nil {
 			return nil, err
 		}
 	}
-
-	for _, line := range strings.Split(text, "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			pdf.Ln(4)
-			continue
-		}
-		pdf.MultiCell(0, 6, line, "", "L", false)
+	if err := newLayout(pdf).render(renderedHTML); err != nil {
+		return nil, err
 	}
-
-	var buf bytes.Buffer
-	if err := pdf.Output(&buf); err != nil {
-		return nil, fmt.Errorf("write pdf output: %w", err)
-	}
-	return buf.Bytes(), nil
+	return pdf, nil
 }
 
 // letterheadHeightMM is a fixed height for the kop surat image, wide

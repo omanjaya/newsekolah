@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -226,5 +226,89 @@ describe("ConfirmDialog", () => {
       />,
     );
     await expectNoAxeViolations(screen.getByRole("dialog"));
+  });
+});
+
+/**
+ * A caller whose action reports progress the way a TanStack mutation does:
+ * `confirming` turns true only after a later tick, so a double click's
+ * second click reaches a button that still looks idle.
+ */
+function MutationHarness({ onConfirm }: { onConfirm: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  return (
+    <ConfirmDialog
+      open
+      onOpenChange={() => undefined}
+      title="Terbitkan SP 1 untuk Siswa Contoh?"
+      confirmLabel="Terbitkan SP 1"
+      cancelLabel="Batal"
+      confirming={confirming}
+      onConfirm={() => {
+        onConfirm();
+        setTimeout(() => {
+          setConfirming(true);
+        }, 0);
+        setTimeout(() => {
+          setConfirming(false);
+        }, 20);
+      }}
+    />
+  );
+}
+
+describe("ConfirmDialog double click", () => {
+  it("runs a synchronous action once for two quick clicks, then allows a retry", async () => {
+    const onConfirm = vi.fn();
+    render(<MutationHarness onConfirm={onConfirm} />);
+    const confirm = screen.getByRole("button", { name: "Terbitkan SP 1" });
+
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+
+    // The action starts, then ends (a failure leaves the dialog open): the
+    // reader can try again.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    });
+    expect(screen.getByRole("button", { name: "Terbitkan SP 1" })).toHaveAttribute("aria-busy");
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Terbitkan SP 1" }));
+    expect(onConfirm).toHaveBeenCalledTimes(2);
+  });
+
+  it("runs an async action once until its promise settles", async () => {
+    let finish: () => void = () => undefined;
+    const onConfirm = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    render(
+      <ConfirmDialog
+        open
+        onOpenChange={() => undefined}
+        title="Hapus Fisika?"
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        onConfirm={onConfirm}
+      />,
+    );
+    const confirm = screen.getByRole("button", { name: "Hapus" });
+
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      finish();
+      await Promise.resolve();
+    });
+    fireEvent.click(confirm);
+    expect(onConfirm).toHaveBeenCalledTimes(2);
   });
 });

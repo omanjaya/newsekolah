@@ -4,7 +4,6 @@ import { ApiError } from "@newsekolah/api-client";
 import {
   Badge,
   Button,
-  ConfirmDialog,
   DataTable,
   Dialog,
   DialogContent,
@@ -22,11 +21,11 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { type ViolationType, useDeleteViolationTypeMutation, useViolationTypesQuery } from "../api";
+import { type ViolationType, useUpdateViolationTypeMutation, useViolationTypesQuery } from "../api";
 
 import { ViolationTypeForm } from "./violation-type-form";
 
@@ -41,12 +40,51 @@ export function ViolationCatalogView(): ReactElement {
   );
   const includeInactive = includeInactiveParam === "true";
   const { data, isLoading, error, refetch } = useViolationTypesQuery(includeInactive);
-  const remove = useDeleteViolationTypeMutation();
+  const { mutateAsync: updateType } = useUpdateViolationTypeMutation();
 
   const [editing, setEditing] = useState<ViolationType | "new" | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<ViolationType | null>(null);
 
   const items = data?.data ?? [];
+
+  // "Nonaktifkan" only switches a type off: it stays listed under
+  // "Tampilkan yang nonaktif" and "Aktifkan" switches it back on. Being
+  // reversible, it runs at once and offers an undo instead of a confirm
+  // dialog (docs/07-ui-ux.md section 5).
+  const setActive = useCallback(
+    (item: ViolationType, isActive: boolean) => {
+      const change = async (active: boolean, offerUndo: boolean): Promise<void> => {
+        try {
+          await updateType({
+            id: item.id,
+            code: item.code,
+            name: item.name,
+            points: item.points,
+            category: item.category,
+            is_active: active,
+          });
+          toast.success(
+            t(active ? "activated" : "deactivated", { name: item.name }),
+            offerUndo
+              ? {
+                  action: {
+                    label: t("undo"),
+                    onClick: () => {
+                      void change(!active, false);
+                    },
+                  },
+                }
+              : undefined,
+          );
+        } catch (error) {
+          toast.error(
+            error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+          );
+        }
+      };
+      void change(isActive, true);
+    },
+    [updateType, toast, t, apiErrorMessage],
+  );
 
   const filters: DataTableFilterDef[] = [
     {
@@ -101,22 +139,20 @@ export function ViolationCatalogView(): ReactElement {
                 >
                   {t("edit")}
                 </DropdownMenuItem>
-                {item.is_active && (
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      setPendingDelete(item);
-                    }}
-                  >
-                    {t("deleteConfirm")}
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setActive(item, !item.is_active);
+                  }}
+                >
+                  {t(item.is_active ? "deactivate" : "activate")}
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           );
         },
       },
     ],
-    [t],
+    [t, setActive],
   );
 
   // It opens in a sheet over the Pelanggaran page (violations-view.tsx),
@@ -176,31 +212,6 @@ export function ViolationCatalogView(): ReactElement {
           )}
         </DialogContent>
       </Dialog>
-
-      <ConfirmDialog
-        open={pendingDelete !== null}
-        onOpenChange={(open) => {
-          if (!open) setPendingDelete(null);
-        }}
-        title={t("deleteTitle")}
-        description={pendingDelete ? t("deleteBody", { name: pendingDelete.name }) : ""}
-        confirmLabel={t("deleteConfirm")}
-        destructive
-        confirming={remove.isPending}
-        onConfirm={async () => {
-          if (!pendingDelete) return;
-          try {
-            await remove.mutateAsync(pendingDelete.id);
-            toast.success(t("deleted"));
-          } catch (error) {
-            toast.error(
-              error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-            );
-          } finally {
-            setPendingDelete(null);
-          }
-        }}
-      />
     </>
   );
 }

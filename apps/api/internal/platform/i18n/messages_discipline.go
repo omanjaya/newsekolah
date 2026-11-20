@@ -17,5 +17,6 @@ func init() {
 	catalog["ATTACHMENT_TOO_LARGE"] = map[string]string{Indonesian: "Ukuran berkas lampiran melebihi batas.", English: "The attachment file exceeds the size limit."}
 	catalog["ATTACHMENT_INVALID_TYPE"] = map[string]string{Indonesian: "Berkas lampiran harus berupa gambar JPEG atau PNG.", English: "The attachment file must be a JPEG or PNG image."}
 	catalog["ATTACHMENT_LIMIT_REACHED"] = map[string]string{Indonesian: "Catatan pelanggaran ini sudah punya maksimal 3 foto bukti.", English: "This violation record already has the maximum of 3 photos."}
+	catalog["SP_THRESHOLDS_NOT_INCREASING"] = map[string]string{Indonesian: "Ambang poin setiap tingkat SP harus lebih besar dari tingkat sebelumnya.", English: "Each warning-letter level needs more points than the level before it."}
 	catalog["REPORT_UNAVAILABLE"] = map[string]string{Indonesian: "Pembuatan laporan PDF belum diaktifkan di server ini.", English: "PDF report generation is not enabled on this server."}
 }

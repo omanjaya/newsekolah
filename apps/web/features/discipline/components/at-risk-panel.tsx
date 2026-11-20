@@ -29,6 +29,7 @@ import {
   type SPCandidate,
   useDisciplinePolicyQuery,
   useIssueWarningLetterMutation,
+  useRefreshDiscipline,
   useSPCandidatesQuery,
 } from "../api";
 import { studentDisciplineHref } from "../href";
@@ -75,6 +76,7 @@ export function AtRiskPanel(): ReactElement {
     offset: pagination.pageIndex * pagination.pageSize,
   });
   const issue = useIssueWarningLetterMutation();
+  const refreshDiscipline = useRefreshDiscipline();
   // A letter gets a number and goes on the record at once, so it asks first.
   const [pendingIssue, setPendingIssue] = useState<PendingIssue | null>(null);
 
@@ -97,7 +99,17 @@ export function AtRiskPanel(): ReactElement {
           toast.success(t("issued", { level: label }));
         },
         // On failure the dialog stays open so the counselor can try again.
+        // "Already issued" means the letter exists (another tab or
+        // counselor got there first): that is done, not a failure.
         onError: (error) => {
+          if (error instanceof ApiError && error.code === "WARNING_LETTER_ALREADY_ISSUED") {
+            setPendingIssue(null);
+            // The list still offers that level: reload it so the row moves
+            // on to the next level, or leaves when none is due.
+            void refreshDiscipline();
+            toast.info(t("alreadyIssued", { level: label }));
+            return;
+          }
           toast.error(
             error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
           );

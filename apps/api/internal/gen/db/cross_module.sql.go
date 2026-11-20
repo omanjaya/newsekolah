@@ -120,6 +120,47 @@ func (q *Queries) AnalyticsListActiveStudents(ctx context.Context, arg Analytics
 	return items, nil
 }
 
+const analyticsListActiveStudentsByIDs = `-- name: AnalyticsListActiveStudentsByIDs :many
+select e.student_user_id, e.class_id
+from enrollments e
+where e.tenant_id = $1 and e.academic_year_id = $2 and e.status = 'active'
+  and e.student_user_id = any($3::uuid[])
+`
+
+type AnalyticsListActiveStudentsByIDsParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	StudentIds     []uuid.UUID `json:"student_ids"`
+}
+
+type AnalyticsListActiveStudentsByIDsRow struct {
+	StudentUserID uuid.UUID `json:"student_user_id"`
+	ClassID       uuid.UUID `json:"class_id"`
+}
+
+// AnalyticsListActiveStudents narrowed to the given students, for
+// rescoring a few students after a change to their record without reading
+// the whole roster.
+func (q *Queries) AnalyticsListActiveStudentsByIDs(ctx context.Context, arg AnalyticsListActiveStudentsByIDsParams) ([]AnalyticsListActiveStudentsByIDsRow, error) {
+	rows, err := q.db.Query(ctx, analyticsListActiveStudentsByIDs, arg.TenantID, arg.AcademicYearID, arg.StudentIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AnalyticsListActiveStudentsByIDsRow{}
+	for rows.Next() {
+		var i AnalyticsListActiveStudentsByIDsRow
+		if err := rows.Scan(&i.StudentUserID, &i.ClassID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const analyticsListActiveTenants = `-- name: AnalyticsListActiveTenants :many
 select id from tenants where status = 'active'
 `
@@ -457,6 +498,29 @@ func (q *Queries) DisciplineStudentSnapshot(ctx context.Context, arg DisciplineS
 		&i.Nis,
 	)
 	return i, err
+}
+
+const disciplineUserHasRole = `-- name: DisciplineUserHasRole :one
+select exists (
+  select 1 from user_roles ur
+  join roles r on r.id = ur.role_id
+  where ur.tenant_id = $1 and ur.user_id = $2 and r.slug = $3
+)::bool as has_role
+`
+
+type DisciplineUserHasRoleParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	UserID   uuid.UUID `json:"user_id"`
+	Slug     string    `json:"slug"`
+}
+
+// cross-module read: user_roles/roles (identity). Counseling treats the
+// principal role as school leadership, alongside the "leadership" duty.
+func (q *Queries) DisciplineUserHasRole(ctx context.Context, arg DisciplineUserHasRoleParams) (bool, error) {
+	row := q.db.QueryRow(ctx, disciplineUserHasRole, arg.TenantID, arg.UserID, arg.Slug)
+	var has_role bool
+	err := row.Scan(&has_role)
+	return has_role, err
 }
 
 const disciplineUserName = `-- name: DisciplineUserName :one

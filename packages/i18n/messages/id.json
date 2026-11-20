@@ -255,6 +255,7 @@
     "UNKNOWN": "Terjadi kesalahan, coba lagi",
     "INTERNAL_ERROR": "Terjadi kesalahan pada server, coba lagi",
     "SSO_NOT_CONFIGURED": "Masuk dengan Google belum diaktifkan untuk sekolah ini",
+    "SP_THRESHOLDS_NOT_INCREASING": "Ambang poin setiap tingkat SP harus lebih besar dari tingkat sebelumnya",
     "SSO_ACCOUNT_NOT_FOUND": "Akun Google ini tidak terhubung dengan akun aktif di sekolah ini",
     "SSO_INVALID_TOKEN": "Gagal memverifikasi akun Google, coba masuk kembali",
     "SSO_CLIENT_SECRET_REQUIRED": "Client secret wajib diisi",

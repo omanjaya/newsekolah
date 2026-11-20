@@ -659,7 +659,7 @@ paths:
     get:
       tags: [discipline]
       operationId: getCounseling
-      x-permission: manage_counseling
+      x-permission: [manage_counseling, view_counseling]
       summary: Open one note (visibility enforced server-side)
       parameters:
         - { name: counselingId, in: path, required: true, schema: { type: string, format: uuid } }
@@ -710,7 +710,7 @@ paths:
     get:
       tags: [discipline]
       operationId: listStudentCounselings
-      x-permission: manage_counseling
+      x-permission: [manage_counseling, view_counseling]
       summary: Notes about one student the caller may read
       parameters:
         - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
@@ -759,11 +759,42 @@ paths:
                   data: { type: array, items: { $ref: "#/components/schemas/Counseling" } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/discipline/counselings/leadership:
+    get:
+      tags: [discipline]
+      operationId: listLeadershipCounselings
+      x-permission: [manage_counseling, view_counseling]
+      summary: Notes any author shared with school leadership (requires the leadership duty, the principal role or duty counselor)
+      parameters:
+        - {
+            name: search,
+            in: query,
+            schema: { type: string, maxLength: 200 },
+            description: "Student name or NIS; ignored under 2 characters",
+          }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 200, default: 50 },
+          }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Notes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Counseling" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /v1/discipline/counselings/{counselingId}/report:
     get:
       tags: [discipline]
       operationId: getCounselingReport
-      x-permission: manage_counseling
+      x-permission: [manage_counseling, view_counseling]
       summary: Printable A4 report for one note (visibility enforced server-side)
       parameters:
         - { name: counselingId, in: path, required: true, schema: { type: string, format: uuid } }
@@ -784,7 +815,7 @@ paths:
     get:
       tags: [discipline]
       operationId: listCounselingAttachments
-      x-permission: manage_counseling
+      x-permission: [manage_counseling, view_counseling]
       summary: Attachments on a note (visibility enforced server-side)
       parameters:
         - { name: counselingId, in: path, required: true, schema: { type: string, format: uuid } }
@@ -856,7 +887,7 @@ paths:
     get:
       tags: [discipline]
       operationId: getCounselingAttachmentUrl
-      x-permission: manage_counseling
+      x-permission: [manage_counseling, view_counseling]
       summary: Short-lived download URL for one attachment (visibility enforced server-side)
       parameters:
         - { name: counselingId, in: path, required: true, schema: { type: string, format: uuid } }
@@ -1040,9 +1071,12 @@ components:
       type: string
       enum: [individual, group, parent, referral]
     CounselingTopic:
+      # No schema default: the request validator would write it into every
+      # optional query parameter that uses this schema (the BK-team list's
+      # topic filter), so an unfiltered list would only show "problem".
+      description: A write that omits it is stored as problem.
       type: string
       enum: [career, problem, personal, learning, social, other]
-      default: problem
     CounselingVisibility:
       type: string
       enum: [counselor, bk_team, leadership]

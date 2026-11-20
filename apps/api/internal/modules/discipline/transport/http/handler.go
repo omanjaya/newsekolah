@@ -24,25 +24,26 @@ func tenantID(ctx context.Context) uuid.UUID { id, _ := httpx.TenantIDFromContex
 func userID(ctx context.Context) uuid.UUID   { id, _ := httpx.UserIDFromContext(ctx); return id }
 
 var errorMap = map[error]*httpx.Error{
-	domain.ErrViolationTypeNotFound:   httpx.ErrViolationTypeNotFound,
-	domain.ErrViolationTypeCodeExists: httpx.ErrViolationTypeCodeExists,
-	domain.ErrViolationTypeInactive:   httpx.ErrViolationTypeInactive,
-	domain.ErrRecordNotFound:          httpx.ErrViolationRecordNotFound,
-	domain.ErrRecordAlreadyVoided:     httpx.ErrViolationRecordVoided,
-	domain.ErrLetterNotFound:          httpx.ErrWarningLetterNotFound,
-	domain.ErrLetterLevelNotDue:       httpx.ErrWarningLetterNotDue,
-	domain.ErrLetterAlreadyIssued:     httpx.ErrWarningLetterIssued,
-	domain.ErrCounselingNotFound:      httpx.ErrCounselingNotFound,
-	domain.ErrCounselingForbidden:     httpx.ErrCounselingForbidden,
-	domain.ErrInvalidInput:            httpx.ErrValidation,
-	domain.ErrNoActiveAcademicYear:    httpx.ErrValidation,
-	domain.ErrStudentNotEnrolled:      httpx.ErrStudentNotEnrolled,
-	domain.ErrStudentInactive:         httpx.ErrStudentInactive,
-	domain.ErrAttachmentNotFound:      httpx.ErrAttachmentNotFound,
-	domain.ErrAttachmentTooLarge:      httpx.ErrAttachmentTooLarge,
-	domain.ErrAttachmentInvalidType:   httpx.ErrAttachmentInvalidType,
-	domain.ErrAttachmentLimitReached:  httpx.ErrAttachmentLimitReached,
-	domain.ErrReportUnavailable:       httpx.ErrReportUnavailable,
+	domain.ErrViolationTypeNotFound:     httpx.ErrViolationTypeNotFound,
+	domain.ErrViolationTypeCodeExists:   httpx.ErrViolationTypeCodeExists,
+	domain.ErrViolationTypeInactive:     httpx.ErrViolationTypeInactive,
+	domain.ErrRecordNotFound:            httpx.ErrViolationRecordNotFound,
+	domain.ErrRecordAlreadyVoided:       httpx.ErrViolationRecordVoided,
+	domain.ErrLetterNotFound:            httpx.ErrWarningLetterNotFound,
+	domain.ErrLetterLevelNotDue:         httpx.ErrWarningLetterNotDue,
+	domain.ErrLetterAlreadyIssued:       httpx.ErrWarningLetterIssued,
+	domain.ErrCounselingNotFound:        httpx.ErrCounselingNotFound,
+	domain.ErrCounselingForbidden:       httpx.ErrCounselingForbidden,
+	domain.ErrInvalidInput:              httpx.ErrValidation,
+	domain.ErrSPThresholdsNotIncreasing: httpx.ErrSPThresholdsNotIncreasing,
+	domain.ErrNoActiveAcademicYear:      httpx.ErrValidation,
+	domain.ErrStudentNotEnrolled:        httpx.ErrStudentNotEnrolled,
+	domain.ErrStudentInactive:           httpx.ErrStudentInactive,
+	domain.ErrAttachmentNotFound:        httpx.ErrAttachmentNotFound,
+	domain.ErrAttachmentTooLarge:        httpx.ErrAttachmentTooLarge,
+	domain.ErrAttachmentInvalidType:     httpx.ErrAttachmentInvalidType,
+	domain.ErrAttachmentLimitReached:    httpx.ErrAttachmentLimitReached,
+	domain.ErrReportUnavailable:         httpx.ErrReportUnavailable,
 }
 
 func mapError(err error) error {
@@ -426,6 +427,14 @@ func (h *DisciplineHandler) ListBKTeamCounselings(ctx context.Context, request a
 		return nil, mapError(err)
 	}
 	return api.ListBKTeamCounselings200JSONResponse{Data: toAPICounselings(notes)}, nil
+}
+
+func (h *DisciplineHandler) ListLeadershipCounselings(ctx context.Context, request api.ListLeadershipCounselingsRequestObject) (api.ListLeadershipCounselingsResponseObject, error) {
+	notes, err := h.service.ListLeadershipCounselings(ctx, tenantID(ctx), userID(ctx), strOr(request.Params.Search), intOr(request.Params.Limit, 50), intOr(request.Params.Offset, 0))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.ListLeadershipCounselings200JSONResponse{Data: toAPICounselings(notes)}, nil
 }
 
 func (h *DisciplineHandler) CreateCounseling(ctx context.Context, request api.CreateCounselingRequestObject) (api.CreateCounselingResponseObject, error) {
