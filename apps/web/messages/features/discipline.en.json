@@ -67,7 +67,7 @@
       "partial": {
         "title": "{count, plural, one {Only # student was recorded} other {Only # students were recorded}}",
         "saved": "Already saved: {names}. They have been removed from the selection.",
-        "rest": "The other students were not recorded. Press Save to record the remaining students."
+        "rest": "The other students were not recorded. Save again to record the remaining students."
       },
       "preview": {
         "title": "Points preview (before saving)",
