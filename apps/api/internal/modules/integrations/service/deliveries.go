@@ -109,7 +109,7 @@ func (s *Service) RetryDelivery(ctx context.Context, tenantID, deliveryID uuid.U
 		if !ok {
 			return errors.New("retry webhook delivery: no transaction bound to context")
 		}
-		if err := s.hooks.UpdateDeliveryAttempt(ctx, tenantID, deliveryID, domain.DeliveryPending, delivery.AttemptCount, nil, "", nil, nil); err != nil {
+		if err := s.hooks.UpdateDeliveryAttempt(ctx, tenantID, deliveryID, domain.DeliveryPending, delivery.AttemptCount, nil, domain.AttemptFailure{}, nil, nil); err != nil {
 			return fmt.Errorf("reset webhook delivery for retry: %w", err)
 		}
 		args := DeliverWebhookArgs{TenantID: tenantID, DeliveryID: deliveryID}
@@ -161,7 +161,7 @@ func (s *Service) GetEndpointForDelivery(ctx context.Context, tenantID, endpoint
 func (s *Service) RecordAttempt(ctx context.Context, tenantID, endpointID, deliveryID uuid.UUID, attempt int, statusCode *int, sendErr error, terminal bool, now time.Time) error {
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		if sendErr == nil {
-			if err := s.hooks.UpdateDeliveryAttempt(ctx, tenantID, deliveryID, domain.DeliverySuccess, attempt, statusCode, "", &now, nil); err != nil {
+			if err := s.hooks.UpdateDeliveryAttempt(ctx, tenantID, deliveryID, domain.DeliverySuccess, attempt, statusCode, domain.AttemptFailure{}, &now, nil); err != nil {
 				return err
 			}
 			return s.hooks.ResetEndpointFailure(ctx, tenantID, endpointID)
@@ -175,7 +175,7 @@ func (s *Service) RecordAttempt(ctx context.Context, tenantID, endpointID, deliv
 		} else {
 			status = domain.DeliveryFailed
 		}
-		if err := s.hooks.UpdateDeliveryAttempt(ctx, tenantID, deliveryID, status, attempt, statusCode, sendErr.Error(), nil, nextAttempt); err != nil {
+		if err := s.hooks.UpdateDeliveryAttempt(ctx, tenantID, deliveryID, status, attempt, statusCode, domain.FailureOf(sendErr), nil, nextAttempt); err != nil {
 			return err
 		}
 		if !terminal {

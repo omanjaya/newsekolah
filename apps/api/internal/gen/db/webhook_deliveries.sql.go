@@ -18,7 +18,7 @@ insert into integration_webhook_deliveries (
 ) values (
   $1, $2, $3, $4, $5, $6, $7, $8
 )
-returning id, tenant_id, endpoint_id, event_type, event_id, payload, status, attempt_count, last_status_code, last_error, delivered_at, next_attempt_at, created_at
+returning id, tenant_id, endpoint_id, event_type, event_id, payload, status, attempt_count, last_status_code, last_error, delivered_at, next_attempt_at, created_at, failure_reason
 `
 
 type CreateWebhookDeliveryParams struct {
@@ -58,12 +58,13 @@ func (q *Queries) CreateWebhookDelivery(ctx context.Context, arg CreateWebhookDe
 		&i.DeliveredAt,
 		&i.NextAttemptAt,
 		&i.CreatedAt,
+		&i.FailureReason,
 	)
 	return i, err
 }
 
 const getWebhookDeliveryByID = `-- name: GetWebhookDeliveryByID :one
-select id, tenant_id, endpoint_id, event_type, event_id, payload, status, attempt_count, last_status_code, last_error, delivered_at, next_attempt_at, created_at from integration_webhook_deliveries where tenant_id = $1 and id = $2
+select id, tenant_id, endpoint_id, event_type, event_id, payload, status, attempt_count, last_status_code, last_error, delivered_at, next_attempt_at, created_at, failure_reason from integration_webhook_deliveries where tenant_id = $1 and id = $2
 `
 
 type GetWebhookDeliveryByIDParams struct {
@@ -88,12 +89,13 @@ func (q *Queries) GetWebhookDeliveryByID(ctx context.Context, arg GetWebhookDeli
 		&i.DeliveredAt,
 		&i.NextAttemptAt,
 		&i.CreatedAt,
+		&i.FailureReason,
 	)
 	return i, err
 }
 
 const listWebhookDeliveries = `-- name: ListWebhookDeliveries :many
-select id, tenant_id, endpoint_id, event_type, event_id, payload, status, attempt_count, last_status_code, last_error, delivered_at, next_attempt_at, created_at from integration_webhook_deliveries
+select id, tenant_id, endpoint_id, event_type, event_id, payload, status, attempt_count, last_status_code, last_error, delivered_at, next_attempt_at, created_at, failure_reason from integration_webhook_deliveries
 where tenant_id = $1
   and ($2::uuid is null or endpoint_id = $2)
   and (not $3::boolean or (created_at, id) < ($4::timestamptz, $5::uuid))
@@ -140,6 +142,7 @@ func (q *Queries) ListWebhookDeliveries(ctx context.Context, arg ListWebhookDeli
 			&i.DeliveredAt,
 			&i.NextAttemptAt,
 			&i.CreatedAt,
+			&i.FailureReason,
 		); err != nil {
 			return nil, err
 		}
@@ -154,7 +157,7 @@ func (q *Queries) ListWebhookDeliveries(ctx context.Context, arg ListWebhookDeli
 const updateWebhookDeliveryAttempt = `-- name: UpdateWebhookDeliveryAttempt :exec
 update integration_webhook_deliveries
 set status = $3, attempt_count = $4, last_status_code = $5, last_error = $6,
-    delivered_at = $7, next_attempt_at = $8
+    delivered_at = $7, next_attempt_at = $8, failure_reason = $9
 where tenant_id = $1 and id = $2
 `
 
@@ -167,6 +170,7 @@ type UpdateWebhookDeliveryAttemptParams struct {
 	LastError      string             `json:"last_error"`
 	DeliveredAt    pgtype.Timestamptz `json:"delivered_at"`
 	NextAttemptAt  pgtype.Timestamptz `json:"next_attempt_at"`
+	FailureReason  string             `json:"failure_reason"`
 }
 
 func (q *Queries) UpdateWebhookDeliveryAttempt(ctx context.Context, arg UpdateWebhookDeliveryAttemptParams) error {
@@ -179,6 +183,7 @@ func (q *Queries) UpdateWebhookDeliveryAttempt(ctx context.Context, arg UpdateWe
 		arg.LastError,
 		arg.DeliveredAt,
 		arg.NextAttemptAt,
+		arg.FailureReason,
 	)
 	return err
 }

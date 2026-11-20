@@ -20,5 +20,5 @@ limit sqlc.arg(page_limit);
 -- name: UpdateWebhookDeliveryAttempt :exec
 update integration_webhook_deliveries
 set status = $3, attempt_count = $4, last_status_code = $5, last_error = $6,
-    delivered_at = $7, next_attempt_at = $8
+    delivered_at = $7, next_attempt_at = $8, failure_reason = $9
 where tenant_id = $1 and id = $2;

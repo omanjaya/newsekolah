@@ -2,6 +2,8 @@ package billing
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -196,4 +198,38 @@ func TestDiscountChangesWriteAuditRecords(t *testing.T) {
 	}
 	require.Contains(t, string(logs[1].Before), "50000")
 	require.Contains(t, string(logs[1].After), "75000")
+}
+
+// TestFeeTypeAuditUsesSnakeCaseKeys is admin-settings-R2's regression
+// test: a fee type's audit payload has the snake_case keys the audit page
+// shows for every other entry, not the domain struct's Go field names,
+// and leaves out the bookkeeping fields the audit row already carries.
+func TestFeeTypeAuditUsesSnakeCaseKeys(t *testing.T) {
+	pg := dbtest.Start(t)
+	mod := newTestBillingModule(pg.AppPool)
+	fx := seedBillingFixture(t, pg.AdminPool, mod)
+	ctx := context.Background()
+
+	feeType, err := mod.Service.GetFeeType(ctx, fx.tenantID, fx.feeTypeID)
+	require.NoError(t, err)
+	feeType.AmountMinor = 175000
+	_, err = mod.Service.UpdateFeeType(ctx, feeType, fx.staffID)
+	require.NoError(t, err)
+
+	logs := auditLogsFor(t, pg.AdminPool, fx.tenantID, fx.feeTypeID)
+	require.Len(t, logs, 2)
+	require.Equal(t, "fee_type.update", logs[0].Action, "ListAuditLogs orders newest first")
+	var before, after map[string]any
+	require.NoError(t, json.Unmarshal(logs[0].Before, &before))
+	require.NoError(t, json.Unmarshal(logs[0].After, &after))
+	require.InDelta(t, 150000, before["amount_minor"], 0)
+	require.InDelta(t, 175000, after["amount_minor"], 0)
+	for _, payload := range []map[string]any{before, after} {
+		for key := range payload {
+			require.Equal(t, strings.ToLower(key), key, "audit keys are snake_case")
+		}
+		for _, noise := range []string{"id", "tenant_id", "created_at", "updated_at", "created_by", "updated_by"} {
+			require.NotContains(t, payload, noise)
+		}
+	}
 }

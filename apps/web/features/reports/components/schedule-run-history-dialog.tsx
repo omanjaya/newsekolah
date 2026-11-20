@@ -103,7 +103,7 @@ export function ScheduleRunHistoryDialog({
             description={t("emptyBody")}
           />
         ) : (
-          <List dense className="max-h-96 overflow-y-auto [--list-inset:0px]">
+          <List dense className="[--list-inset:0px]">
             {items.map((run) => (
               <ListRow
                 key={run.id}

@@ -10406,6 +10406,11 @@ export interface components {
         };
         /** @enum {string} */
         WebhookDeliveryStatus: "pending" | "success" | "failed";
+        /**
+         * @description Why the last attempt failed. http_status: the receiver answered with a non-2xx status (last_status_code). timeout: no answer in time. unreachable: no answer at all (DNS, refused connection, TLS). redirect_refused: the receiver answered with a redirect, which deliveries never follow. endpoint_disabled: the endpoint was disabled, so nothing was sent.
+         * @enum {string}
+         */
+        WebhookDeliveryFailureReason: "http_status" | "timeout" | "unreachable" | "redirect_refused" | "endpoint_disabled" | "unknown";
         WebhookDelivery: {
             /** Format: uuid */
             id: string;
@@ -10415,6 +10420,8 @@ export interface components {
             status: components["schemas"]["WebhookDeliveryStatus"];
             attempt_count: number;
             last_status_code?: number;
+            failure_reason?: components["schemas"]["WebhookDeliveryFailureReason"];
+            /** @description The technical error behind failure_reason, in English, for diagnosis. Show failure_reason to people instead. */
             last_error: string;
             /** Format: date-time */
             delivered_at?: string;

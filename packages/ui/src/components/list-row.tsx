@@ -63,10 +63,15 @@ export interface ListRowProps extends Omit<ComponentPropsWithRef<"li">, "title" 
  * chevron's is (8px into a 32px box, 14px into the 44px touch box), and as
  * muted as the chevron until it is hovered or its menu is open. A button
  * with text keeps its box on the content edge and its own colour.
+ *
+ * The pull never exceeds the row's own inset (`--list-inset`), the
+ * padding it pulls into: in a list with no inset the button would stick
+ * out past the list's edge, make the list scroll sideways, and focusing
+ * it would scroll the start of every row out of view.
  */
 const ICON_ACTION_CLASS =
-  "[&>button[aria-label]:has(>svg:only-child)]:-mr-2 " +
-  "pointer-coarse:[&>button[aria-label]:has(>svg:only-child)]:-mr-3.5 " +
+  "[&>button[aria-label]:has(>svg:only-child)]:-mr-[min(--spacing(2),var(--list-inset))] " +
+  "pointer-coarse:[&>button[aria-label]:has(>svg:only-child)]:-mr-[min(--spacing(3.5),var(--list-inset))] " +
   "[&>button[aria-label]:has(>svg:only-child)]:text-fg-muted " +
   "[&>button[aria-label]:has(>svg:only-child):hover]:text-fg " +
   "[&>button[aria-label]:has(>svg:only-child)[aria-expanded=true]]:text-fg";
