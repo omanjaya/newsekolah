@@ -1,26 +1,18 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import {
-  Button,
-  ConfirmDialog,
-  EmptyState,
-  SkeletonList,
-  domainIcons,
-  useMediaQuery,
-  useToast,
-} from "@newsekolah/ui";
-import { useTranslations } from "next-intl";
+import { Button, EmptyState, SkeletonList, domainIcons, useMediaQuery } from "@newsekolah/ui";
+import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { formatCalendarDateRange } from "../../../lib/format-calendar-date";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
-import { useSimulation } from "../../../lib/simulation/clock";
-import { todayInZone } from "../../../lib/tenant-date";
+import { isoWeekdayOf } from "../../../lib/tenant-date";
 import { usePeriodTodayQuery } from "../../academic/api-enrollment";
 import {
   useClassesQuery,
@@ -30,17 +22,17 @@ import {
   useSubjectsQuery,
 } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
-import {
-  type ScheduleBlock,
-  useCreateScheduleMutation,
-  useDeleteScheduleBlockMutation,
-  useSchedulesQuery,
-} from "../api";
+import { type ScheduleBlock, useScheduleYearQuery, useSchedulesQuery } from "../api";
+import { needsEffectiveDate } from "../block-policy";
 import { useNamedConflict } from "../use-named-conflict";
+import { usePasteBlock } from "../use-paste-block";
+import { useScheduleDates } from "../use-schedule-dates";
+import { cellDate, inWeek } from "../week";
 
 import { CopyBanner } from "./copy-banner";
 import { ScheduleDayGrid } from "./schedule-day-grid";
-import { ScheduleDialogs } from "./schedule-dialogs";
+import { ScheduleDeleteDialogs } from "./schedule-delete-dialogs";
+import { type EditorDates, ScheduleDialogs } from "./schedule-dialogs";
 import { ScheduleMobileAgenda } from "./schedule-mobile-agenda";
 import { ScheduleMobileDayList } from "./schedule-mobile-day-list";
 import { type ScheduleMode, ScheduleScopeBar } from "./schedule-scope-bar";
@@ -51,22 +43,21 @@ type Mode = ScheduleMode;
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
-/** 1 (Monday) through 7 (Sunday), matching the schedule's own numbering. */
-function todayOfWeek(timeZone?: string): number {
-  const jsDay = new Date(`${todayInZone(timeZone)}T12:00:00Z`).getUTCDay();
-  return jsDay === 0 ? 7 : jsDay;
-}
-
 /**
  * Weekly timetable: rows are lesson periods, columns are school days, a
  * block spans its start to end period. Viewable by class or by teacher;
  * teachers land on their own timetable.
+ *
+ * The timetable is effective-dated: a lesson can change from a date on
+ * while every earlier lesson keeps the attendance recorded for it. So the
+ * view always shows one chosen week (one chosen date in the day view), each
+ * day the lessons in effect on its own date, and an edit or a removal of a
+ * lesson with history asks from which date it takes effect.
  */
 export function ScheduleView(): ReactElement {
   const t = useTranslations("app.schedule");
   const tDays = useTranslations("app.common.weekdays");
   const { me } = useSession();
-  const { revision } = useSimulation();
   const year = useActiveYear();
   const canManage = useCan("manage_schedules");
   const isTeacher = me?.roles.some((role) => role.slug === "teacher") ?? false;
@@ -77,20 +68,18 @@ export function ScheduleView(): ReactElement {
     canManage ||
     (me?.permissions.some((p) => p === "view_reports" || p === "manage_attendance") ?? false);
   const isStudent = !canViewAll && me?.profile_kind === "student";
-  const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
+  const format = useFormatter();
   const [mode, setMode] = useState<Mode>(isTeacher ? "teacher" : "class");
-  // The day view opens on today, because that is the day a person almost
-  // always came to look at.
-  const [selectedDay, setSelectedDay] = useState<{ revision: number; day: number } | null>(null);
-  const dayFilter =
-    selectedDay !== null && selectedDay.revision === revision
-      ? selectedDay.day
-      : todayOfWeek(me?.tenant.timezone);
-  const setDayFilter = (day: number) => {
-    setSelectedDay({ revision, day });
-  };
+  const {
+    today: todayIso,
+    dayDate,
+    weekOf,
+    dayOfWeek: dayFilter,
+    setDayDate,
+    setWeekOf,
+  } = useScheduleDates(me?.tenant.timezone);
   const [classId, setClassId] = useState("");
   const [teacherId, setTeacherId] = useState(isTeacher ? (me?.id ?? "") : "");
   const [creating, setCreating] = useState<{ day: number; startSeq: number } | null>(null);
@@ -101,6 +90,8 @@ export function ScheduleView(): ReactElement {
   // what makes filling a week bearable.
   const [copied, setCopied] = useState<ScheduleBlock | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ScheduleBlock | null>(null);
+  // A block with history is removed from a date on, through its own dialog.
+  const [retiring, setRetiring] = useState<ScheduleBlock | null>(null);
   const [mobileDayOverride, setMobileDayOverride] = useState<number | null>(null);
 
   const classes = useClassesQuery();
@@ -112,8 +103,10 @@ export function ScheduleView(): ReactElement {
   const periodNow = usePeriodTodayQuery(year.id);
   const classMap = useLookup(classes.data?.data);
   const subjectMap = useLookup(subjects.data?.data);
-  const remove = useDeleteScheduleBlockMutation();
-  const create = useCreateScheduleMutation();
+  // The year's dates bound every "Berlaku mulai" and the week stepper.
+  const yearSpan = useScheduleYearQuery(year.id, canManage);
+  const yearStart = yearSpan.data?.starts_on;
+  const yearEnd = yearSpan.data?.ends_on;
 
   // A student reads only their own class's timetable; /v1/me names it.
   const effectiveClassId =
@@ -129,7 +122,11 @@ export function ScheduleView(): ReactElement {
     teacherUserId: mode === "day" ? undefined : effectiveTeacherId || undefined,
     dayOfWeek: mode === "day" ? dayFilter : undefined,
     allClasses: mode === "day",
+    asOf: dayDate,
   });
+  // The week the server resolved (it keeps the week inside the year).
+  const weekStart = schedules.data?.week_starts_on ?? weekOf;
+  const editorDates: EditorDates = { today: todayIso, weekStart, yearStart, yearEnd };
   const teacherMap = useDirectoryNames(
     (schedules.data?.data ?? []).map((block) => block.teacher_user_id),
   );
@@ -172,43 +169,6 @@ export function ScheduleView(): ReactElement {
   }, [schedules.data]);
 
   /**
-   * Drops the copied lesson into an empty slot, keeping its class,
-   * subject, teacher and length, and moving only where it sits. The
-   * server refuses a clash, so a paste onto a busy teacher comes back as
-   * its own error rather than being guessed at here.
-   */
-  async function pasteInto(day: number, startSeq: number, intoClassId?: string) {
-    if (!copied) return;
-    const span = copied.end_seq - copied.start_seq;
-    const start = lessonPeriods.find((p) => p.sequence === startSeq);
-    // A lesson does not run through a break, so a paste that would reach
-    // past one is refused rather than quietly drawn over it.
-    const crossesBreak = lessonPeriods.some(
-      (p) => p.is_break && p.sequence > startSeq && p.sequence <= startSeq + span,
-    );
-    const end = lessonPeriods.find((p) => p.sequence === startSeq + span);
-    if (!start || !end || crossesBreak) {
-      toast.error(t("pasteNoRoom"));
-      return;
-    }
-    try {
-      await create.mutateAsync({
-        academic_year_id: year.id,
-        class_id: intoClassId ?? copied.class_id,
-        subject_id: copied.subject_id,
-        teacher_user_id: copied.teacher_user_id,
-        day_of_week: day,
-        start_period_id: start.id,
-        end_period_id: end.id,
-        source: "admin",
-      });
-      toast.success(t("pasted"));
-    } catch (err) {
-      toast.error(await scheduleError(err));
-    }
-  }
-
-  /**
    * A clash names what it clashed with when the server said which, and
    * falls back to the plain message for that code when it did not.
    */
@@ -222,6 +182,14 @@ export function ScheduleView(): ReactElement {
     return err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN");
   }
 
+  const { pasteInto } = usePasteBlock({
+    copied,
+    lessonPeriods,
+    yearId: year.id,
+    dates: editorDates,
+    describeError: scheduleError,
+  });
+
   // Below md the day view and the class/teacher views each mount one of a
   // mobile list and a desktop grid instead of mounting both and hiding
   // one with CSS, so day mode no longer keeps three full grids in the DOM
@@ -229,8 +197,9 @@ export function ScheduleView(): ReactElement {
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   // The phone agenda opens on today when the school meets today, because
-  // "what do I teach now" is the question a teacher opens it with.
-  const today = todayOfWeek(me?.tenant.timezone);
+  // "what do I teach now" is the question a teacher opens it with. In any
+  // other week no day is today.
+  const today = inWeek(weekStart, todayIso) ? isoWeekdayOf(todayIso) : 0;
   const mobileDay =
     mobileDayOverride ?? (activeDays.includes(today) ? today : (activeDays[0] ?? 1));
   const loading = periods.isLoading || schedules.isLoading || classes.isLoading;
@@ -253,18 +222,22 @@ export function ScheduleView(): ReactElement {
     void pasteInto(day, startSeq);
   }
 
-  async function confirmDelete() {
-    if (!pendingDelete) return;
-    try {
-      await remove.mutateAsync(pendingDelete.schedule_ids);
-      toast.success(t("deleted"));
-    } catch (error) {
-      toast.error(
-        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-      );
-    } finally {
-      setPendingDelete(null);
+  /** A block with history is removed from a date on; any other goes entirely. */
+  function requestDelete(block: ScheduleBlock) {
+    if (needsEffectiveDate(block)) {
+      setRetiring(block);
+      return;
     }
+    setPendingDelete(block);
+  }
+
+  /** "Matematika, X-A, Senin": the lesson the retire dialog names. */
+  function lessonName(block: ScheduleBlock): string {
+    return [
+      subjectMap.get(block.subject_id)?.name ?? t("unknownSubject"),
+      classMap.get(block.class_id)?.name ?? t("unknownClass"),
+      tDays(String(block.day_of_week)),
+    ].join(", ");
   }
 
   const { primaryAction, primaryActionCompact, secondaryActions, context } = useScheduleHeader({
@@ -302,9 +275,16 @@ export function ScheduleView(): ReactElement {
             isStudent={isStudent}
             ownTimetableOnly={isTeacher && !canViewAll}
             canViewAll={canViewAll}
-            activeDays={activeDays}
-            dayFilter={dayFilter}
-            onDayFilterChange={setDayFilter}
+            dates={{
+              weekOf: weekStart,
+              onWeekOfChange: setWeekOf,
+              dayDate,
+              onDayDateChange: setDayDate,
+              today: todayIso,
+              weekLabel: formatCalendarDateRange(format, weekStart, cellDate(weekStart, 7)),
+              yearStart,
+              yearEnd,
+            }}
             classOptions={classOptions}
             classId={effectiveClassId}
             onClassChange={setClassId}
@@ -378,11 +358,10 @@ export function ScheduleView(): ReactElement {
             onPaste={handleDayPaste}
             onCopy={setCopied}
             onEdit={setEditing}
-            onDelete={setPendingDelete}
+            onDelete={requestDelete}
             t={t}
-            currentSeq={
-              dayFilter === todayOfWeek(me?.tenant.timezone) ? periodNow.data?.sequence : undefined
-            }
+            currentSeq={dayDate === todayIso ? periodNow.data?.sequence : undefined}
+            weekStart={weekStart}
           />
         ) : (
           <ScheduleMobileDayList
@@ -397,12 +376,13 @@ export function ScheduleView(): ReactElement {
             onPaste={handleDayPaste}
             onCopy={setCopied}
             onEdit={setEditing}
-            onDelete={setPendingDelete}
+            onDelete={requestDelete}
             t={t}
           />
         )
       ) : isDesktop ? (
         <ScheduleWeekGrid
+          weekStart={weekStart}
           activeDays={activeDays}
           lessonPeriods={lessonPeriods}
           blocks={daySeqBlocks}
@@ -416,7 +396,7 @@ export function ScheduleView(): ReactElement {
           onPaste={handleWeekPaste}
           onCopy={setCopied}
           onEdit={setEditing}
-          onDelete={setPendingDelete}
+          onDelete={requestDelete}
           t={t}
           tDays={tDays}
           currentSeq={periodNow.data?.sequence}
@@ -425,6 +405,7 @@ export function ScheduleView(): ReactElement {
         // Outside the day view the agenda answers the same question a day
         // at a time, which is the readable shape on a phone.
         <ScheduleMobileAgenda
+          weekStart={weekStart}
           activeDays={activeDays}
           lessonPeriods={lessonPeriods}
           blocks={daySeqBlocks}
@@ -439,7 +420,7 @@ export function ScheduleView(): ReactElement {
           onPaste={handleWeekPaste}
           onCopy={setCopied}
           onEdit={setEditing}
-          onDelete={setPendingDelete}
+          onDelete={requestDelete}
           copied={copied}
           today={today}
           currentSeq={periodNow.data?.sequence}
@@ -454,6 +435,8 @@ export function ScheduleView(): ReactElement {
         editing={editing}
         effectiveClassId={effectiveClassId}
         effectiveTeacherId={effectiveTeacherId}
+        canManage={canManage}
+        dates={editorDates}
         onCloseCreate={() => {
           setCreating(null);
         }}
@@ -463,17 +446,17 @@ export function ScheduleView(): ReactElement {
         t={t}
       />
 
-      <ConfirmDialog
-        open={pendingDelete !== null}
-        onOpenChange={(open) => {
-          if (!open) setPendingDelete(null);
+      <ScheduleDeleteDialogs
+        pendingDelete={pendingDelete}
+        onCloseDelete={() => {
+          setPendingDelete(null);
         }}
-        title={t("deleteConfirmTitle")}
-        description={t("deleteConfirmBody")}
-        confirmLabel={t("deleteBlock")}
-        tone="danger"
-        confirming={remove.isPending}
-        onConfirm={confirmDelete}
+        retiring={retiring}
+        onCloseRetire={() => {
+          setRetiring(null);
+        }}
+        lessonName={lessonName}
+        dates={editorDates}
       />
     </AppPage>
   );

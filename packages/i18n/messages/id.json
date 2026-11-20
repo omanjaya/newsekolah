@@ -239,7 +239,7 @@
     }
   },
   "errors": {
-    "SCHEDULE_HAS_HISTORY": "Jadwal ini sudah memiliki riwayat presensi atau guru pengganti. Perubahan jadwal dan penghapusan diblokir agar riwayat tetap tersimpan.",
+    "SCHEDULE_HAS_HISTORY": "Jadwal ini sudah punya riwayat presensi atau guru pengganti, jadi perubahannya harus berlaku mulai suatu tanggal. Pertemuan sebelum tanggal itu tetap tercatat dengan jadwal lama.",
     "SCHEDULE_CONFLICT_CLASS": "Jam ini sudah dipakai kelas tersebut untuk mata pelajaran lain. Pilih jam atau kelas yang berbeda.",
     "SCHEDULE_CONFLICT_TEACHER": "Guru ini sudah mengajar kelas lain pada jam yang sama. Pilih jam atau guru yang berbeda.",
     "AUTH_INVALID_CREDENTIALS": "Nama pengguna atau kata sandi salah",
@@ -554,6 +554,12 @@
     "ATTENDANCE_NOT_SCHOOL_DAY": "Tanggal ini hari libur atau tidak ada KBM untuk kelas ini, jadi presensi tidak diisi.",
     "TEACHER_ALREADY_HOMEROOM": "Guru ini sudah menjadi wali kelas lain pada tahun ajaran ini. Akhiri tugas wali kelas itu dulu.",
     "SUBSTITUTE_NOT_TEACHER": "Guru pengganti harus guru aktif pada tahun ajaran ini. Pilih guru lain.",
-    "UPLOAD_STORAGE_UNREACHABLE": "Berkas tidak dapat diunggah ke penyimpanan. Coba lagi; bila terus gagal, hubungi admin sekolah."
+    "UPLOAD_STORAGE_UNREACHABLE": "Berkas tidak dapat diunggah ke penyimpanan. Coba lagi; bila terus gagal, hubungi admin sekolah.",
+    "SCHEDULE_CHANGE_BEFORE_HISTORY": "Tanggal berlaku terlalu awal: jadwal ini sudah punya riwayat sampai tanggal tersebut atau tanggalnya sudah lewat. Pilih tanggal yang lebih akhir.",
+    "SCHEDULE_EFFECTIVE_FROM_INVALID": "Tanggal berlaku harus berada di dalam tahun ajaran jadwal ini.",
+    "SCHEDULE_ENDED": "Jadwal ini sudah tidak berlaku pada tanggal tersebut, jadi tidak bisa diubah lagi.",
+    "SUBSTITUTION_LESSON_NOT_ON_DATE": "Pelajaran ini tidak ada di jadwal pada tanggal yang dipilih. Pilih tanggal lain.",
+    "ATTENDANCE_LESSON_NOT_ON_DATE": "Pelajaran ini tidak ada di jadwal pada tanggal tersebut, karena jadwalnya sudah diubah.",
+    "SUPERVISION_LESSON_NOT_ON_DATE": "Pelajaran ini tidak ada di jadwal pada tanggal observasi yang dipilih."
   }
 }

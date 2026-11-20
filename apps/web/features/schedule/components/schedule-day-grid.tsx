@@ -7,6 +7,7 @@ import type { ScheduleBlock } from "../api";
 import { blockCrossesBreak } from "../break-warning";
 import { isNowWithinBlock } from "../current-period";
 import { periodSpan } from "../period-span";
+import { useEffectiveCaption } from "../use-effective-caption";
 
 import {
   BREAK_ROW,
@@ -44,6 +45,7 @@ export function ScheduleDayGrid({
   onDelete,
   t,
   currentSeq,
+  weekStart,
 }: {
   classes: Named[];
   lessonPeriods: Period[];
@@ -62,7 +64,10 @@ export function ScheduleDayGrid({
   t: (key: string) => string;
   /** Sequence of the period in session now, when the day shown is today. */
   currentSeq?: number;
+  /** The Monday of the week of the date shown, for the blocks' start/end notes. */
+  weekStart: string;
 }): ReactElement {
+  const captionOf = useEffectiveCaption(weekStart);
   return (
     // As tall as the page leaves it on desktop: the grid scrolls inside the
     // card, under day headings that stay in view.
@@ -124,6 +129,7 @@ export function ScheduleDayGrid({
                       canManage={canManage}
                       crossesBreak={blockCrossesBreak(block, lessonPeriods)}
                       breakWarningLabel={t("crossesBreakWarning")}
+                      caption={captionOf(block)}
                       onCopy={onCopy}
                       onEdit={onEdit}
                       onDelete={onDelete}

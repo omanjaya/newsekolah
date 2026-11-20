@@ -1,9 +1,20 @@
+import { queryKeys } from "@newsekolah/api-client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactElement, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useSchedulesQuery, type ScheduleFilter } from "./api";
+
+function scheduleKey(filter: ScheduleFilter) {
+  return queryKeys.schedules({
+    year: filter.academicYearId,
+    class: filter.classId,
+    teacher: filter.teacherUserId,
+    day: filter.dayOfWeek,
+    asOf: filter.asOf,
+  });
+}
 
 const get = vi.hoisted(() => vi.fn());
 vi.mock("../../lib/api/client", () => ({
@@ -45,6 +56,26 @@ describe("useSchedulesQuery", () => {
     expect(get).toHaveBeenCalledWith("/v1/schedules", {
       params: { query: { academic_year_id: "y1", day_of_week: 5 } },
     });
+  });
+
+  it("asks for the week of a date, keyed by it", async () => {
+    const { result } = render({ academicYearId: "y1", classId: "c1", asOf: "2026-11-26" });
+
+    await waitFor(() => {
+      expect(get).toHaveBeenCalledTimes(1);
+    });
+    expect(get).toHaveBeenCalledWith("/v1/schedules", {
+      params: { query: { academic_year_id: "y1", class_id: "c1", as_of: "2026-11-26" } },
+    });
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+  });
+
+  it("keys each week apart, so a new week fetches again", () => {
+    expect(scheduleKey({ academicYearId: "y1", classId: "c1", asOf: "2026-11-26" })).not.toEqual(
+      scheduleKey({ academicYearId: "y1", classId: "c1", asOf: "2026-12-03" }),
+    );
   });
 
   it("narrows a class view to one day", async () => {

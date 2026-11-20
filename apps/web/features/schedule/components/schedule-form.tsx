@@ -4,6 +4,7 @@ import { ApiError } from "@newsekolah/api-client";
 import {
   Alert,
   Button,
+  DatePicker,
   DialogFooter,
   Field,
   Select,
@@ -12,10 +13,11 @@ import {
   useSubmitValidation,
   useToast,
 } from "@newsekolah/ui";
-import { useLocale, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { formatCalendarDate } from "../../../lib/format-calendar-date";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useClassesQuery, useLookup, usePeriodsQuery, useSubjectsQuery } from "../../reference/api";
 import {
@@ -29,7 +31,29 @@ import {
   useScheduleQuery,
 } from "../api";
 import { clockLabel } from "../clock-label";
+import { earliestEffectiveFromOf } from "../effective-error";
 import { useNamedConflict } from "../use-named-conflict";
+
+/**
+ * Whether and how the form asks for the date the lesson or the change
+ * takes effect ("Berlaku mulai"); the timetable is effective-dated.
+ *
+ * - `create`: a new lesson, from a date (default: the slot's date, never
+ *   before today).
+ * - `dated`: a block with recorded attendance or a substitution. The
+ *   change takes effect from a date no earlier than `min`; every lesson
+ *   before it stays as it was taught.
+ * - `none`: a block without history, corrected in place for the whole
+ *   academic year.
+ */
+export interface EffectiveDateConfig {
+  mode: "create" | "dated" | "none";
+  defaultValue: string;
+  min?: string;
+  max?: string;
+  /** The school's today, which the picker marks. */
+  today?: string;
+}
 
 export function ScheduleForm({
   yearId,
@@ -38,6 +62,7 @@ export function ScheduleForm({
   initialClassId,
   initialTeacherId,
   editing,
+  effective,
   onDone,
 }: {
   yearId: string;
@@ -47,6 +72,8 @@ export function ScheduleForm({
   initialTeacherId: string;
   /** The block being changed; omitted means this form creates a new one. */
   editing?: ScheduleBlock;
+  /** Omitted (a reader who may not date a change): no date is asked or sent. */
+  effective?: EffectiveDateConfig;
   onDone: () => void;
 }): ReactElement {
   const t = useTranslations("app.schedule.form");
@@ -59,6 +86,7 @@ export function ScheduleForm({
   const tCommon = useTranslations("app.offlinePage");
   const tValidation = useTranslations("validation");
   const locale = useLocale();
+  const format = useFormatter();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const classes = useClassesQuery();
@@ -89,6 +117,21 @@ export function ScheduleForm({
   const [startId, setStartId] = useState(startDefault?.id ?? "");
   const [endId, setEndId] = useState(endDefault?.id ?? "");
   const [notes, setNotes] = useState("");
+  const [effectiveFrom, setEffectiveFrom] = useState(effective?.defaultValue ?? "");
+  // A block that gained history after the grid loaded comes back from the
+  // server with the earliest date it accepts: the form then asks for a
+  // date from it instead of failing the same way again.
+  const [serverMin, setServerMin] = useState<string | undefined>(undefined);
+  const dateMode = serverMin !== undefined ? "dated" : (effective?.mode ?? "none");
+  const minDate = serverMin ?? effective?.min;
+  const asksDate = effective !== undefined && dateMode !== "none";
+  const showDate = (iso: string) =>
+    formatCalendarDate(format, iso, {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
   // The banner is for what no single field owns: a reversed period range,
   // a timetable clash, a server error. A missing field says so itself.
   const [error, setError] = useState<string | null>(null);
@@ -115,7 +158,21 @@ export function ScheduleForm({
 
   async function submit() {
     setError(null);
-    if (!check(Boolean(classId && subjectId && teacherId && day && startId && endId))) return;
+    if (
+      !check(
+        Boolean(
+          classId &&
+          subjectId &&
+          teacherId &&
+          day &&
+          startId &&
+          endId &&
+          (!asksDate || effectiveFrom),
+        ),
+      )
+    ) {
+      return;
+    }
     const start = lessons.find((p) => p.id === startId);
     const end = lessons.find((p) => p.id === endId);
     if (start && end && end.sequence < start.sequence) {
@@ -132,17 +189,31 @@ export function ScheduleForm({
       end_period_id: endId,
       source: "admin" as const,
       ...(notes.trim() ? { notes: notes.trim() } : {}),
+      ...(asksDate ? { effective_from: effectiveFrom } : {}),
     };
     try {
       if (editing) {
-        await replace.mutateAsync({ scheduleIds: editing.schedule_ids, body });
-        toast.success(t("updated"));
+        const saved = await replace.mutateAsync({ scheduleIds: editing.schedule_ids, body });
+        toast.success(
+          asksDate ? t("updatedFrom", { date: showDate(saved.effective_from) }) : t("updated"),
+        );
       } else {
-        await create.mutateAsync(body);
-        toast.success(t("created"));
+        const saved = await create.mutateAsync(body);
+        toast.success(
+          asksDate ? t("createdFrom", { date: showDate(saved.effective_from) }) : t("created"),
+        );
       }
       onDone();
     } catch (err) {
+      const earliest = earliestEffectiveFromOf(err);
+      if (earliest && effective !== undefined && err instanceof ApiError) {
+        setServerMin(earliest);
+        setEffectiveFrom(earliest);
+        setError(
+          `${apiErrorMessage(err.code)} ${t("effectiveFromHintDated", { date: showDate(earliest) })}`,
+        );
+        return;
+      }
       const named = await namedConflict(
         err,
         { classMap, subjectMap, teacherMap: new Map(), periods: periods.data?.data ?? [] },
@@ -173,6 +244,11 @@ export function ScheduleForm({
       }}
     >
       {error && <Alert variant="danger">{error}</Alert>}
+      {effective !== undefined && dateMode === "dated" && (
+        <Alert variant="info" title={t("historyNoticeTitle")}>
+          {t("historyNoticeBody")}
+        </Alert>
+      )}
       {field(
         t("class"),
         classId,
@@ -231,6 +307,31 @@ export function ScheduleForm({
           <Select options={periodOptions} value={endId} onValueChange={setEndId} />,
         )}
       </div>
+      {asksDate && (
+        <Field
+          label={t("effectiveFrom")}
+          required
+          error={requiredError(effectiveFrom)}
+          hint={
+            dateMode === "dated" && minDate
+              ? t("effectiveFromHintDated", { date: showDate(minDate) })
+              : t("effectiveFromHintCreate")
+          }
+        >
+          <DatePicker
+            value={effectiveFrom}
+            onChange={setEffectiveFrom}
+            min={minDate}
+            max={effective.max}
+            today={effective.today}
+            clearable={false}
+            required
+          />
+        </Field>
+      )}
+      {editing && effective?.mode === "none" && dateMode === "none" && (
+        <p className="text-body-sm text-fg-muted">{t("inPlaceNote")}</p>
+      )}
       {editing && detail.isLoading ? (
         <Skeleton className="h-20 w-full" aria-busy="true" />
       ) : editing && detail.isError ? (

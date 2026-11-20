@@ -4,10 +4,12 @@ import { SegmentedControl, Select } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { DayStepper } from "../../attendance/components/day-stepper";
 import {
   DirectoryPicker,
   useDirectoryPickerLabels,
 } from "../../reference/components/directory-picker";
+import { startOfIsoWeek } from "../week";
 
 export type ScheduleMode = "class" | "teacher" | "day";
 
@@ -16,14 +18,36 @@ interface Option {
   label: string;
 }
 
+/** Which week (class and teacher views) or date (day view) is shown. */
+export interface ScheduleDates {
+  /** The Monday of the week shown. */
+  weekOf: string;
+  onWeekOfChange: (monday: string) => void;
+  /** The date the day view shows. */
+  dayDate: string;
+  onDayDateChange: (date: string) => void;
+  /** The school's today. */
+  today: string;
+  /** The week as read aloud, "16–22 Nov 2026". */
+  weekLabel: string;
+  /** The academic year's span, when known: the steppers stay inside it. */
+  yearStart?: string;
+  yearEnd?: string;
+}
+
+const WEEK_FORMAT: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
+
 /**
- * The view switch and the picker for whichever timetable is shown, as the
- * page's toolbar: the same row for every role, so the timetable below does
- * not move between readers. It offers only what the reader may open: a
- * student has no switch (the toolbar names their class instead), a
- * teacher without school-wide access gets their own timetable instead of a
- * teacher picker, and the whole-school day view is left out for anyone the
- * server would refuse it to.
+ * The view switch, the picker for whichever timetable is shown and the
+ * week (or, in the day view, the date) it is shown for, as the page's
+ * toolbar: the same row for every role, so the timetable below does not
+ * move between readers. The timetable is effective-dated, so a week is
+ * part of what is shown: a lesson changed from a date on looks different
+ * before and after it. It offers only what the reader may open: a student
+ * has no switch (the toolbar names their class instead), a teacher without
+ * school-wide access gets their own timetable instead of a teacher picker,
+ * and the whole-school day view is left out for anyone the server would
+ * refuse it to.
  */
 export function ScheduleScopeBar({
   mode,
@@ -31,9 +55,7 @@ export function ScheduleScopeBar({
   isStudent,
   ownTimetableOnly,
   canViewAll,
-  activeDays,
-  dayFilter,
-  onDayFilterChange,
+  dates,
   classOptions,
   classId,
   onClassChange,
@@ -45,32 +67,59 @@ export function ScheduleScopeBar({
   isStudent: boolean;
   ownTimetableOnly: boolean;
   canViewAll: boolean;
-  activeDays: readonly number[];
-  dayFilter: number;
-  onDayFilterChange: (day: number) => void;
+  dates: ScheduleDates;
   classOptions: Option[];
   classId: string;
   onClassChange: (id: string) => void;
   teacherId: string;
   onTeacherChange: (id: string) => void;
-}): ReactElement | null {
+}): ReactElement {
   const t = useTranslations("app.schedule");
-  const tDays = useTranslations("app.common.weekdays");
   const teacherLabels = useDirectoryPickerLabels(t("pickTeacher"));
-  if (isStudent) return null;
+
+  const stepper =
+    mode === "day" ? (
+      <DayStepper
+        value={dates.dayDate}
+        onChange={dates.onDayDateChange}
+        today={dates.today}
+        min={dates.yearStart}
+        max={dates.yearEnd}
+        labels={{
+          previous: t("previousDay"),
+          next: t("nextDay"),
+          today: t("today"),
+          date: t("pickDate"),
+        }}
+      />
+    ) : (
+      <div className="flex w-full items-center gap-2 sm:w-auto">
+        <DayStepper
+          value={dates.weekOf}
+          onChange={dates.onWeekOfChange}
+          today={dates.today}
+          stepDays={7}
+          normalize={startOfIsoWeek}
+          formatOptions={WEEK_FORMAT}
+          min={dates.yearStart && startOfIsoWeek(dates.yearStart)}
+          max={dates.yearEnd}
+          labels={{
+            previous: t("previousWeek"),
+            next: t("nextWeek"),
+            today: t("thisWeek"),
+            date: t("pickWeek"),
+          }}
+        />
+        <span className="hidden whitespace-nowrap text-body-sm text-fg-muted lg:inline">
+          {t("weekLabel", { range: dates.weekLabel })}
+        </span>
+      </div>
+    );
+
+  if (isStudent) return stepper;
 
   const picker =
-    mode === "day" ? (
-      <Select
-        options={activeDays.map((day) => ({ value: String(day), label: tDays(String(day)) }))}
-        value={String(dayFilter)}
-        onValueChange={(value) => {
-          onDayFilterChange(Number(value));
-        }}
-        aria-label={t("pickDay")}
-        className="w-full sm:w-44"
-      />
-    ) : mode === "class" ? (
+    mode === "class" ? (
       <Select
         options={classOptions}
         value={classId}
@@ -79,7 +128,7 @@ export function ScheduleScopeBar({
         aria-label={t("pickClass")}
         className="w-full sm:w-56"
       />
-    ) : canViewAll ? (
+    ) : mode === "teacher" && canViewAll ? (
       <DirectoryPicker
         profileKind="teacher"
         value={teacherId}
@@ -90,7 +139,7 @@ export function ScheduleScopeBar({
     ) : null;
 
   return (
-    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
+    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
       <SegmentedControl<ScheduleMode>
         aria-label={t("viewLabel")}
         value={mode}
@@ -103,6 +152,7 @@ export function ScheduleScopeBar({
         className="self-start"
       />
       {picker}
+      {stepper}
     </div>
   );
 }

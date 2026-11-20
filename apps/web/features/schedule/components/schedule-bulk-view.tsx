@@ -10,6 +10,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  DatePicker,
   EmptyState,
   Field,
   FileDropzone,
@@ -30,7 +31,8 @@ import { useMemo, useState } from "react";
 import { AppPage } from "../../../components/app-page";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import {
   useClassesQuery,
   useLookup,
@@ -38,9 +40,10 @@ import {
   useSubjectsQuery,
   useTeacherRosterQuery,
 } from "../../reference/api";
-import { useBulkImportSchedulesMutation } from "../api";
+import { useBulkImportSchedulesMutation, useScheduleYearQuery } from "../api";
 import { parseBulkImportCsv, type BulkImportRow } from "../csv-import";
 import { useNamedConflict } from "../use-named-conflict";
+import { defaultEffectiveFrom } from "../week";
 
 import { ClearSchedulesSection } from "./clear-schedules-section";
 
@@ -82,6 +85,17 @@ export function ScheduleBulkView(): ReactElement {
   const year = useActiveYear();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const { me } = useSession();
+  const today = todayInZone(me?.tenant.timezone);
+  const yearSpan = useScheduleYearQuery(year.id, canManage);
+  const yearStart = yearSpan.data?.starts_on;
+  const yearEnd = yearSpan.data?.ends_on;
+  // One "Berlaku mulai" for the whole batch: the imported lessons start on
+  // it (each on its own weekday's first date from it). Before the year
+  // starts that is the year's first day; mid-year it is today, so earlier
+  // weeks are not given lessons nobody recorded attendance for.
+  const [pickedFrom, setPickedFrom] = useState<string | null>(null);
+  const effectiveFrom = pickedFrom ?? defaultEffectiveFrom({ today, yearStart, yearEnd });
 
   const [csvText, setCsvText] = useState("");
   const classes = useClassesQuery();
@@ -130,27 +144,30 @@ export function ScheduleBulkView(): ReactElement {
 
   function handleApply() {
     setImportError(null);
-    bulkImport.mutate(resolvedRows, {
-      onSuccess: (result) => {
-        toast.success(t("importSection.applied", { count: result.data.length }));
-        setCsvText("");
-        setFileName(null);
+    bulkImport.mutate(
+      resolvedRows.map((row) => ({ ...row, effective_from: effectiveFrom })),
+      {
+        onSuccess: (result) => {
+          toast.success(t("importSection.applied", { count: result.data.length }));
+          setCsvText("");
+          setFileName(null);
+        },
+        onError: (error) => {
+          void namedConflict(
+            error,
+            { classMap, subjectMap, teacherMap: new Map(), periods: periods.data?.data ?? [] },
+            tSchedule,
+          ).then((named) => {
+            setImportError(
+              named ??
+                (error instanceof ApiError
+                  ? apiErrorMessage(error.code)
+                  : apiErrorMessage("UNKNOWN")),
+            );
+          });
+        },
       },
-      onError: (error) => {
-        void namedConflict(
-          error,
-          { classMap, subjectMap, teacherMap: new Map(), periods: periods.data?.data ?? [] },
-          tSchedule,
-        ).then((named) => {
-          setImportError(
-            named ??
-              (error instanceof ApiError
-                ? apiErrorMessage(error.code)
-                : apiErrorMessage("UNKNOWN")),
-          );
-        });
-      },
-    });
+    );
   }
 
   return (
@@ -186,6 +203,25 @@ export function ScheduleBulkView(): ReactElement {
               {t("importSection.template")}
             </Button>
           </div>
+
+          <Field
+            label={tSchedule("form.effectiveFrom")}
+            required
+            hint={t("importSection.effectiveFromHint")}
+          >
+            <DatePicker
+              value={effectiveFrom}
+              onChange={(next) => {
+                if (next) setPickedFrom(next);
+              }}
+              min={yearStart}
+              max={yearEnd}
+              today={today}
+              clearable={false}
+              required
+              disabled={!canManage}
+            />
+          </Field>
 
           <Field label={t("importSection.textareaLabel")}>
             <Textarea

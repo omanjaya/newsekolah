@@ -22,6 +22,7 @@ function block(overrides: Partial<ScheduleBlock> = {}): ScheduleBlock {
     start_seq: 1,
     end_seq: 1,
     source: "admin",
+    effective_from: "2026-07-13",
     ...overrides,
   };
 }
@@ -154,11 +155,44 @@ describe("LessonCell", () => {
     expect(screen.getByRole("button", { name: "deleteBlock" })).toBeInTheDocument();
   });
 
-  it("locks edit and delete on a block with attendance history and says why", () => {
+  it("keeps edit and delete open on a block with history: the change takes a date instead", () => {
     const onEdit = vi.fn();
     const onDelete = vi.fn();
     renderCell({
-      block: block({ has_history: true }),
+      block: block({
+        has_history: true,
+        mutation_policy: {
+          can_edit: true,
+          can_delete: true,
+          has_history: true,
+          requires_effective_from: true,
+          min_effective_from: "2026-11-23",
+        },
+      }),
+      span: 1,
+      subject: "Matematika",
+      detail: "Budi",
+      canManage: true,
+      onEdit,
+      onDelete,
+    });
+    const edit = screen.getByRole("button", { name: "editBlock" });
+    expect(edit).not.toHaveAttribute("aria-disabled");
+    edit.click();
+    screen.getByRole("button", { name: "deleteBlock" }).click();
+    expect(onEdit).toHaveBeenCalledTimes(1);
+    expect(onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it("locks edit and delete on a block that has ended and says why", () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    renderCell({
+      block: block({
+        has_history: true,
+        effective_until: "2026-11-16",
+        mutation_policy: { can_edit: false, can_delete: false, has_history: true },
+      }),
       span: 1,
       subject: "Matematika",
       detail: "Budi",
@@ -168,15 +202,27 @@ describe("LessonCell", () => {
     });
     const edit = screen.getByRole("button", { name: "editBlock" });
     const remove = screen.getByRole("button", { name: "deleteBlock" });
-    expect(edit).toHaveAccessibleDescription("blockLocked");
-    expect(remove).toHaveAccessibleDescription("blockLocked");
+    expect(edit).toHaveAccessibleDescription("blockEnded");
+    expect(remove).toHaveAccessibleDescription("blockEnded");
     expect(edit).toHaveAttribute("aria-disabled", "true");
     expect(remove).toHaveAttribute("aria-disabled", "true");
     edit.click();
     remove.click();
     expect(onEdit).not.toHaveBeenCalled();
     expect(onDelete).not.toHaveBeenCalled();
-    // Copying a frozen lesson to another slot is still allowed.
+    // Copying an ended lesson to another slot is still allowed.
     expect(screen.getByRole("button", { name: "copyBlock" })).not.toHaveAttribute("aria-disabled");
+  });
+
+  it("says when a block starts or ends within the week shown", () => {
+    renderCell({
+      block: block(),
+      span: 1,
+      subject: "Matematika",
+      detail: "Budi",
+      canManage: false,
+      caption: "Mulai Kam, 3 Des",
+    });
+    expect(screen.getByText("Mulai Kam, 3 Des")).toBeInTheDocument();
   });
 });

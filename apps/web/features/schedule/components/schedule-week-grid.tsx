@@ -1,15 +1,19 @@
 "use client";
 
 import { Card, cn, Table } from "@newsekolah/ui";
+import { useFormatter } from "next-intl";
 import type { ReactElement } from "react";
 
+import { formatCalendarDate } from "../../../lib/format-calendar-date";
 import { useSession } from "../../../lib/session/session-provider";
 import { useSimulation } from "../../../lib/simulation/clock";
-import { todayInZone } from "../../../lib/tenant-date";
+import { isoWeekdayOf, todayInZone } from "../../../lib/tenant-date";
 import type { ScheduleBlock } from "../api";
 import { blockCrossesBreak } from "../break-warning";
 import { isCurrentPeriodCell, isNowWithinBlock } from "../current-period";
 import { periodSpan } from "../period-span";
+import { useEffectiveCaption } from "../use-effective-caption";
+import { cellDate, inWeek } from "../week";
 
 import {
   BREAK_ROW,
@@ -26,19 +30,17 @@ import {
 } from "./schedule-grid-cells";
 
 /**
- * One class or one teacher across the week. Rows are periods, columns are
- * the days the school runs. The caller mounts this only at md and above,
- * where the agenda takes over below it; the `md:block` here is a defensive
- * fallback for the brief window before the caller's media query sync
- * lands, not the mechanism that hides the other layout.
+ * One class or one teacher across one week (`weekStart`, a Monday): rows
+ * are periods, columns are the days the school runs, each headed with its
+ * date, and each day shows the lessons in effect on that date. Today's
+ * column and the period in session are marked only in the current week.
+ * The caller mounts this only at md and above, where the agenda takes over
+ * below it; the `md:block` here is a defensive fallback for the brief
+ * window before the caller's media query sync lands, not the mechanism
+ * that hides the other layout.
  */
-/** 1 (Monday) through 7 (Sunday), matching the schedule's own numbering. */
-function todayOfWeek(timeZone?: string): number {
-  const jsDay = new Date(`${todayInZone(timeZone)}T12:00:00Z`).getUTCDay();
-  return jsDay === 0 ? 7 : jsDay;
-}
-
 export function ScheduleWeekGrid({
+  weekStart,
   activeDays,
   lessonPeriods,
   blocks,
@@ -57,6 +59,8 @@ export function ScheduleWeekGrid({
   tDays,
   currentSeq,
 }: {
+  /** The Monday of the week shown. */
+  weekStart: string;
   activeDays: readonly number[];
   lessonPeriods: Period[];
   /** Lesson blocks keyed by `${dayOfWeek}:${sequence}`, one entry per
@@ -82,7 +86,12 @@ export function ScheduleWeekGrid({
   // else, and a week grid says nothing about that on its own.
   useSimulation();
   const { me } = useSession();
-  const today = todayOfWeek(me?.tenant.timezone);
+  const format = useFormatter();
+  const captionOf = useEffectiveCaption(weekStart);
+  const todayIso = todayInZone(me?.tenant.timezone);
+  // Outside the current week no column is today's.
+  const today = inWeek(weekStart, todayIso) ? isoWeekdayOf(todayIso) : 0;
+  const weekCurrentSeq = today === 0 ? undefined : currentSeq;
 
   return (
     // As tall as the page leaves it on desktop: the grid scrolls inside the
@@ -99,7 +108,14 @@ export function ScheduleWeekGrid({
             <tr className="text-left text-fg-muted">
               <HeadCell first>{t("periodColumn")}</HeadCell>
               {activeDays.map((day) => (
-                <HeadCell key={day} current={day === today}>
+                <HeadCell
+                  key={day}
+                  current={day === today}
+                  date={formatCalendarDate(format, cellDate(weekStart, day), {
+                    day: "numeric",
+                    month: "short",
+                  })}
+                >
                   {tDays(String(day))}
                 </HeadCell>
               ))}
@@ -108,10 +124,15 @@ export function ScheduleWeekGrid({
           <tbody>
             {lessonPeriods.map((period) => (
               <tr key={period.id} className={cn(period.is_break ? BREAK_ROW : LESSON_ROW)}>
-                <PeriodCell period={period} current={period.sequence === currentSeq} />
+                <PeriodCell period={period} current={period.sequence === weekCurrentSeq} />
                 {activeDays.map((day) => {
                   const block = blocks.get(`${day}:${period.sequence}`);
-                  const isCurrent = isCurrentPeriodCell(day, today, period.sequence, currentSeq);
+                  const isCurrent = isCurrentPeriodCell(
+                    day,
+                    today,
+                    period.sequence,
+                    weekCurrentSeq,
+                  );
                   // A cell already covered by a block that started in
                   // an earlier row emits nothing, break or not.
                   // Emitting one anyway pushed every later cell in the
@@ -150,7 +171,7 @@ export function ScheduleWeekGrid({
                       today={day === today}
                       current={
                         day === today &&
-                        isNowWithinBlock(block.start_seq, block.end_seq, currentSeq)
+                        isNowWithinBlock(block.start_seq, block.end_seq, weekCurrentSeq)
                       }
                       block={block}
                       span={periodSpan(block)}
@@ -163,6 +184,7 @@ export function ScheduleWeekGrid({
                       canManage={canManage}
                       crossesBreak={blockCrossesBreak(block, lessonPeriods)}
                       breakWarningLabel={t("crossesBreakWarning")}
+                      caption={captionOf(block)}
                       onCopy={onCopy}
                       onEdit={onEdit}
                       onDelete={onDelete}

@@ -4,9 +4,9 @@ import type { ReactElement } from "react";
 /**
  * One icon control on a lesson block, labelled for anyone not seeing it.
  * With `lockedReason` the control stays visible and focusable but does
- * nothing, and its tooltip says why (a block with attendance history can
- * no longer be edited or deleted), instead of opening a form that can only
- * fail on save.
+ * nothing, and its tooltip says why (a block that has ended can no longer
+ * be edited or deleted), instead of opening a form that can only fail on
+ * save.
  */
 export function BlockAction({
   label,
