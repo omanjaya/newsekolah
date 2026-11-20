@@ -45,4 +45,23 @@ describe("ChangePasswordPage", () => {
     expect(logout).toHaveBeenCalled();
     expect(replace).toHaveBeenCalledWith("/login");
   });
+
+  // An administrator impersonating an account that must change its password
+  // does not know that password, and signing out here would end their own
+  // session too. They go back to the app, where the impersonation strip
+  // offers the way back to their account.
+  it("sends an impersonation session to the dashboard instead of offering the form", () => {
+    session.mockReturnValue({
+      status: "authenticated",
+      me: {
+        must_change_password: true,
+        impersonated_by: { user_id: "admin-1", name: "Operator" },
+      },
+      isReady: true,
+    });
+    render(<ChangePasswordPage />);
+    expect(replace).toHaveBeenCalledWith("/dashboard");
+    expect(screen.queryByRole("form", { name: "form" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "logout" })).not.toBeInTheDocument();
+  });
 });

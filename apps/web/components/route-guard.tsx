@@ -7,6 +7,7 @@ import type { ReactElement, ReactNode } from "react";
 
 import { isModuleEnabled, type FeatureModule } from "../lib/modules/feature-modules";
 import { isSessionEndedRedirect } from "../lib/session/auth-redirect-flag";
+import { needsForcedPasswordChange } from "../lib/session/forced-password-change";
 import { useSession } from "../lib/session/session-provider";
 import { signInPath } from "../lib/session/sign-in-path";
 
@@ -33,7 +34,9 @@ export interface RouteGuardProps {
  * on anything cached client-side (docs/05-shared-components.md: "RouteGuard:
  * berbasis permission dari server"). Also enforces the forced
  * password-change redirect here so every page under `(app)` gets it for
- * free instead of each page checking `must_change_password` itself.
+ * free instead of each page checking `must_change_password` itself. An
+ * impersonation session is never redirected (needsForcedPasswordChange):
+ * the administrator keeps the shell and its way back to their own account.
  */
 export function RouteGuard({
   children,
@@ -45,6 +48,7 @@ export function RouteGuard({
   const router = useRouter();
   const pathname = usePathname();
   const tStates = useTranslations("common.states");
+  const mustChangePassword = needsForcedPasswordChange(me);
 
   useEffect(() => {
     if (!isReady) return;
@@ -54,12 +58,12 @@ export function RouteGuard({
       router.replace(signInPath(pathname, { sessionEnded: isSessionEndedRedirect() }));
       return;
     }
-    if (me?.must_change_password) {
+    if (mustChangePassword) {
       router.replace("/change-password");
     }
-  }, [status, isReady, me?.must_change_password, pathname, router]);
+  }, [status, isReady, mustChangePassword, pathname, router]);
 
-  if (!isReady || status === "anonymous" || me?.must_change_password) {
+  if (!isReady || status === "anonymous" || mustChangePassword) {
     return <PageSkeleton label={tStates("loading")} />;
   }
 

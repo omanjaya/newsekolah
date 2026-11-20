@@ -9,10 +9,16 @@ import { useEffect } from "react";
 import { useLogoutMutation } from "../../../features/auth/api";
 import { AuthCard } from "../../../features/auth/components/auth-card";
 import { ChangePasswordForm } from "../../../features/auth/components/change-password-form";
+import { needsForcedPasswordChange } from "../../../lib/session/forced-password-change";
 import { forgetAccountOnThisBrowser } from "../../../lib/session/forget-account";
 import { useSession } from "../../../lib/session/session-provider";
 
-/** Only reachable while `must_change_password` is true; see the build brief's forced-change requirement. */
+/**
+ * Only reachable while the session must change its password (the build
+ * brief's forced-change requirement). An impersonation session never must
+ * (needsForcedPasswordChange): it goes to the dashboard, where the
+ * impersonation strip offers the way back to the administrator's account.
+ */
 export default function ChangePasswordPage(): ReactElement {
   const { status, me, isReady } = useSession();
   const router = useRouter();
@@ -21,6 +27,7 @@ export default function ChangePasswordPage(): ReactElement {
   // The h1 is a sentence; the tab gets the short name of the step.
   const tAuth = useTranslations("auth.changePassword");
   const logout = useLogoutMutation();
+  const mustChangePassword = needsForcedPasswordChange(me);
 
   useEffect(() => {
     if (!isReady) return;
@@ -28,10 +35,10 @@ export default function ChangePasswordPage(): ReactElement {
       router.replace("/login");
       return;
     }
-    if (status === "authenticated" && !me?.must_change_password) {
+    if (status === "authenticated" && !mustChangePassword) {
       router.replace("/dashboard");
     }
-  }, [isReady, status, me?.must_change_password, router]);
+  }, [isReady, status, mustChangePassword, router]);
 
   function handleSuccess() {
     router.replace("/dashboard");
@@ -46,7 +53,7 @@ export default function ChangePasswordPage(): ReactElement {
 
   // Waiting for the session, or being redirected away: show the form's
   // shape rather than an empty card.
-  if (!isReady || status !== "authenticated" || !me?.must_change_password) {
+  if (!isReady || status !== "authenticated" || !me || !mustChangePassword) {
     return (
       <AuthCard
         title={t("forcedTitle")}

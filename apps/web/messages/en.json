@@ -116,6 +116,7 @@
         "roleTestingExpired": "Test session ended",
         "impersonation": "{adminName} is operating the account of {name}",
         "impersonationStop": "Stop",
+        "impersonationPendingPassword": "Password not changed",
         "simulation": "Simulated time {time}",
         "simulationOpen": "Adjust",
         "offline": "No connection",
@@ -142,6 +143,7 @@
       },
       "impersonation": {
         "banner": "Operated by {adminName} as {name}, session ends automatically in 30 minutes",
+        "pendingPassword": "This user has not changed their initial password yet",
         "stop": "Stop impersonating"
       },
       "roleTesting": {
