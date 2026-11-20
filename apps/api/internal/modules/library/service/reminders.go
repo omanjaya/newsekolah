@@ -20,7 +20,9 @@ type LoanDueReminderEvent struct {
 	LoanCount    int
 }
 
-func (LoanDueReminderEvent) EventName() string { return "library.loan_due_reminder" }
+// EventName is distinct from platform/events.LibraryLoanDueReminder; see
+// ReservationReadyEvent.EventName.
+func (LoanDueReminderEvent) EventName() string { return "library.loans.due_reminder" }
 
 // SendDueReminders is the daily reminder job's body for one tenant: every
 // active loan due within the policy's due_reminder_days gets folded into
