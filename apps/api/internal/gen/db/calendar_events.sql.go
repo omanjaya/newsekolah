@@ -235,6 +235,73 @@ func (q *Queries) AcademicListCalendarEventsForDate(ctx context.Context, arg Aca
 	return items, nil
 }
 
+const academicListNonTeachingEventsInRange = `-- name: AcademicListNonTeachingEventsInRange :many
+select
+  e.id, e.date, e.end_date, e.kind, e.name,
+  coalesce(array_agg(gl.grade_level_id) filter (where gl.grade_level_id is not null), '{}')::uuid[] as grade_level_ids
+from academic_calendar_events e
+left join academic_calendar_event_grade_levels gl
+  on gl.tenant_id = e.tenant_id and gl.calendar_event_id = e.id
+where e.tenant_id = $1 and e.academic_year_id = $2
+  and e.kind in ('holiday', 'no_school', 'semester_break')
+  and e.date <= $3::date and e.end_date >= $4::date
+group by e.id
+order by e.date
+`
+
+type AcademicListNonTeachingEventsInRangeParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	ToDate         pgtype.Date `json:"to_date"`
+	FromDate       pgtype.Date `json:"from_date"`
+}
+
+type AcademicListNonTeachingEventsInRangeRow struct {
+	ID            uuid.UUID   `json:"id"`
+	Date          pgtype.Date `json:"date"`
+	EndDate       pgtype.Date `json:"end_date"`
+	Kind          string      `json:"kind"`
+	Name          string      `json:"name"`
+	GradeLevelIds []uuid.UUID `json:"grade_level_ids"`
+}
+
+// Every non-teaching calendar event (holiday, no_school, semester_break)
+// overlapping [from_date, to_date], with the grade levels it targets
+// (empty for a school-wide event), so a caller can answer "is this a
+// school day" for a whole date range in one read instead of one
+// AcademicListCalendarEventsForDate per date.
+func (q *Queries) AcademicListNonTeachingEventsInRange(ctx context.Context, arg AcademicListNonTeachingEventsInRangeParams) ([]AcademicListNonTeachingEventsInRangeRow, error) {
+	rows, err := q.db.Query(ctx, academicListNonTeachingEventsInRange,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.ToDate,
+		arg.FromDate,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AcademicListNonTeachingEventsInRangeRow{}
+	for rows.Next() {
+		var i AcademicListNonTeachingEventsInRangeRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Date,
+			&i.EndDate,
+			&i.Kind,
+			&i.Name,
+			&i.GradeLevelIds,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const academicReplaceCalendarEventGradeLevels = `-- name: AcademicReplaceCalendarEventGradeLevels :exec
 delete from academic_calendar_event_grade_levels where tenant_id = $1 and calendar_event_id = $2
 `

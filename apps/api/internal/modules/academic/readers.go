@@ -49,6 +49,10 @@ type CalendarReader interface {
 	// "not a school day". found is false for an ordinary weekend/no-school
 	// weekday with no named event, which is not an error.
 	NonTeachingEventName(ctx context.Context, tenantID, academicYearID uuid.UUID, date time.Time, gradeLevelID *uuid.UUID) (name string, found bool, err error)
+	// SchoolDaysInRange is IsSchoolDay for every date in [from, to] at
+	// once, returning the school days in order -- for a caller judging a
+	// range (a leave letter, a recap window) without one read per date.
+	SchoolDaysInRange(ctx context.Context, tenantID, academicYearID uuid.UUID, from, to time.Time, gradeLevelID *uuid.UUID) ([]time.Time, error)
 }
 
 // TeachingReader is the narrow read surface a module needs to check

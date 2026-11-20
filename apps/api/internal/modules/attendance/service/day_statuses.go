@@ -41,12 +41,17 @@ func dayKey(t time.Time) string { return t.Format("2006-01-02") }
 
 // DayStatusesForStudents returns, for every (student, date) pair, the same
 // status code GetStudentCalendarMonth reports for that student and day,
-// resolved for many students at once with a handful of queries instead of
-// several per student and day. The resolution order mirrors
+// resolved for many students at once. The cost does not grow with the
+// number of pairs: a fixed handful of queries (summaries, enrolments, the
+// weekly pattern, overrides, schedules, submitted sessions, entries), plus
+// the calendar's lesson days for the whole date window -- one class read
+// per distinct class and two calendar reads per distinct grade level
+// (ClassCalendar.TeachingDays). The resolution order mirrors
 // calendarDaysForRange exactly: a materialized daily summary row wins, then
-// an Overrider status (an issued leave letter), then the status computed
-// live from the class's schedules, its submitted sessions and the student's
-// recorded entries via domain.ComputeDailyStatus.
+// an Overrider status (an issued leave letter) on a day with lessons, then
+// the status computed live from the class's schedules, its submitted
+// sessions and the student's recorded entries via
+// domain.ComputeDailyStatus.
 //
 // dates are calendar dates (the time of day is ignored); a date listed twice
 // is answered once.
@@ -118,18 +123,20 @@ func pendingPairs(studentIDs []uuid.UUID, dates []time.Time, resolved map[studen
 	return out
 }
 
-// lessonDays is whether each pending student has lessons on each date,
-// resolved once per class and date: the academic calendar through
-// teachingDay for a student with a class, the weekly pattern for one
-// without.
+// lessonDays is whether each pending student has lessons on each date:
+// the academic calendar (ClassCalendar.TeachingDays, read once for every
+// class over the whole window) for a student with a class, the weekly
+// pattern for one without -- or for everyone when no calendar is wired,
+// teachingDay's fallback.
 type lessonDays struct {
 	classOf  map[uuid.UUID]uuid.UUID // student -> active class
 	weekly   map[int16]bool
+	calendar bool // teaching holds the calendar's answer for every class
 	teaching map[classDate]bool
 }
 
 func (l lessonDays) has(student uuid.UUID, date time.Time) bool {
-	if classID, ok := l.classOf[student]; ok {
+	if classID, ok := l.classOf[student]; ok && l.calendar {
 		return l.teaching[classDate{classID, dayKey(date)}]
 	}
 	return l.weekly[domain.IsoWeekday(date)]
@@ -140,7 +147,7 @@ func (s *Service) loadLessonDays(ctx context.Context, tenantID, yearID uuid.UUID
 	if len(pending) == 0 {
 		return l, nil
 	}
-	students, _ := pairAxes(pending)
+	students, dates := pairAxes(pending)
 	var err error
 	if l.classOf, err = s.repo.ListEnrolledClasses(ctx, tenantID, yearID, students); err != nil {
 		return l, err
@@ -153,22 +160,37 @@ func (s *Service) loadLessonDays(ctx context.Context, tenantID, yearID uuid.UUID
 	for _, w := range weekdays {
 		l.weekly[w] = true
 	}
-	for _, p := range pending {
-		classID, ok := l.classOf[p.StudentUserID]
-		if !ok {
-			continue
+	classIDs := distinctClasses(l.classOf)
+	if s.calendar == nil || len(classIDs) == 0 {
+		return l, nil
+	}
+	from, to := dateBounds(dates)
+	byClass, err := s.calendar.TeachingDays(ctx, tenantID, yearID, classIDs, from, to)
+	if err != nil {
+		return l, err
+	}
+	l.calendar = true
+	for classID, days := range byClass {
+		for _, d := range days {
+			l.teaching[classDate{classID, dayKey(d)}] = true
 		}
-		key := classDate{classID, dayKey(p.Date)}
-		if _, done := l.teaching[key]; done {
-			continue
-		}
-		teaching, _, err := s.teachingDay(ctx, tenantID, yearID, classID, p.Date)
-		if err != nil {
-			return l, err
-		}
-		l.teaching[key] = teaching
 	}
 	return l, nil
+}
+
+// dateBounds returns the earliest and latest of dates (non-empty), compared
+// by their calendar day.
+func dateBounds(dates []time.Time) (from, to time.Time) {
+	from, to = dates[0], dates[0]
+	for _, d := range dates[1:] {
+		if dayKey(d) < dayKey(from) {
+			from = d
+		}
+		if dayKey(d) > dayKey(to) {
+			to = d
+		}
+	}
+	return from, to
 }
 
 // applyOverrides records the Overrider's status for every pending pair it

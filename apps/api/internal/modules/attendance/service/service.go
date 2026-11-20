@@ -379,6 +379,12 @@ type Service struct {
 // module (wiring.ClassCalendar).
 type ClassCalendar interface {
 	IsTeachingDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) (teaching bool, eventName string, err error)
+	// TeachingDays is IsTeachingDay for many classes over [from, to] at
+	// once: for each class, the dates (read by their year, month and day)
+	// it has lessons on. Batch readers (DayStatusesForStudents) use it so
+	// a window of days across every class costs a few reads, not several
+	// per class and date.
+	TeachingDays(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID, from, to time.Time) (map[uuid.UUID][]time.Time, error)
 }
 
 // SetCalendar wires the academic calendar in after construction, so a

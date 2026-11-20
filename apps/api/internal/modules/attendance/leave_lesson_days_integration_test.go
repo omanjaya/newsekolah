@@ -27,6 +27,10 @@ func (c lessonCalendar) IsTeachingDay(_ context.Context, _, _, _ uuid.UUID, date
 	return wd != time.Saturday && wd != time.Sunday, "", nil
 }
 
+func (c lessonCalendar) TeachingDays(ctx context.Context, tenantID, yearID uuid.UUID, classIDs []uuid.UUID, from, to time.Time) (map[uuid.UUID][]time.Time, error) {
+	return teachingDaysByDay(ctx, c, tenantID, yearID, classIDs, from, to)
+}
+
 // rangeOverrider is an issued leave letter for one student over
 // [from, to], answering both the single and the batch Overrider forms the
 // way permits does: for every calendar date of the range.

@@ -37,6 +37,7 @@ func TestClassCalendarScopesHolidaysToTheClassGrade(t *testing.T) {
 	gradeX := insertID(`insert into grade_levels (tenant_id,code,name,sequence) values ($1,'X','X',1)`, tenantID)
 	gradeXI := insertID(`insert into grade_levels (tenant_id,code,name,sequence) values ($1,'XI','XI',2)`, tenantID)
 	classXA := insertID(`insert into classes (tenant_id,academic_year_id,grade_level_id,name) values ($1,$2,$3,'X-A')`, tenantID, yearID, gradeX)
+	classXIA := insertID(`insert into classes (tenant_id,academic_year_id,grade_level_id,name) values ($1,$2,$3,'XI-A')`, tenantID, yearID, gradeXI)
 	for day := 1; day <= 5; day++ {
 		exec(`insert into school_days (tenant_id,academic_year_id,day_of_week,is_active) values ($1,$2,$3,true)`, tenantID, yearID, day)
 	}
@@ -64,4 +65,12 @@ func TestClassCalendarScopesHolidaysToTheClassGrade(t *testing.T) {
 	teaching, _, err = calendar.IsTeachingDay(ctx, tenantID, yearID, classXA, day("2026-11-24"))
 	require.NoError(t, err)
 	require.True(t, teaching)
+
+	// The batch read gives the same answers for a whole range: Tue 24,
+	// Thu 26 and Fri 27 for X-A (Wed 25 is the holiday), and only Tue 24
+	// and Fri 27 for XI-A, whose trip is on Thu 26. The weekend has none.
+	byClass, err := calendar.TeachingDays(ctx, tenantID, yearID, []uuid.UUID{classXA, classXIA, classXA}, day("2026-11-24"), day("2026-11-29"))
+	require.NoError(t, err)
+	require.Equal(t, []time.Time{day("2026-11-24"), day("2026-11-26"), day("2026-11-27")}, byClass[classXA])
+	require.Equal(t, []time.Time{day("2026-11-24"), day("2026-11-27")}, byClass[classXIA])
 }

@@ -143,6 +143,12 @@ type Querier interface {
 	// that grade for the source academic year.
 	AcademicListEnrollmentsByYearAndGradeLevel(ctx context.Context, arg AcademicListEnrollmentsByYearAndGradeLevelParams) ([]Enrollment, error)
 	AcademicListGradeLevels(ctx context.Context, tenantID uuid.UUID) ([]GradeLevel, error)
+	// Every non-teaching calendar event (holiday, no_school, semester_break)
+	// overlapping [from_date, to_date], with the grade levels it targets
+	// (empty for a school-wide event), so a caller can answer "is this a
+	// school day" for a whole date range in one read instead of one
+	// AcademicListCalendarEventsForDate per date.
+	AcademicListNonTeachingEventsInRange(ctx context.Context, arg AcademicListNonTeachingEventsInRangeParams) ([]AcademicListNonTeachingEventsInRangeRow, error)
 	AcademicListPeriodTemplates(ctx context.Context, tenantID uuid.UUID) ([]PeriodTemplate, error)
 	AcademicListPeriodsByTemplate(ctx context.Context, arg AcademicListPeriodsByTemplateParams) ([]Period, error)
 	// Every actively-enrolled student in the source academic year, with the

@@ -44,6 +44,7 @@ type yearRepository interface {
 	DeleteCalendarEvent(ctx context.Context, tenantID, id uuid.UUID) error
 	ListCalendarEvents(ctx context.Context, tenantID, yearID uuid.UUID, kind string, page Page) ([]domain.CalendarEvent, int64, error)
 	ListCalendarEventsForDate(ctx context.Context, tenantID, yearID uuid.UUID, date time.Time) ([]domain.CalendarEvent, error)
+	ListNonTeachingEventsInRange(ctx context.Context, tenantID, yearID uuid.UUID, from, to time.Time) ([]domain.CalendarEvent, error)
 
 	UpsertSchoolDay(ctx context.Context, tenantID, yearID uuid.UUID, dayOfWeek int16, isActive bool) error
 	ListSchoolDays(ctx context.Context, tenantID, yearID uuid.UUID) ([]domain.SchoolDay, error)
@@ -390,6 +391,31 @@ func (s *Service) IsSchoolDay(ctx context.Context, tenantID, yearID uuid.UUID, d
 // holiday/no-school-day/semester-break event covering date, if any -- see
 // domain.NonTeachingEventName. The CalendarReader interface (readers.go)
 // exposes this to other modules the same way IsSchoolDay is exposed.
+// SchoolDaysInRange is IsSchoolDay for every date in [from, to] at once:
+// the dates (midnight UTC, from their own year, month and day) that are
+// school days for gradeLevelID, in order. Two queries for the whole range
+// instead of two per date, for callers that judge many days at once.
+func (s *Service) SchoolDaysInRange(ctx context.Context, tenantID, yearID uuid.UUID, from, to time.Time, gradeLevelID *uuid.UUID) ([]time.Time, error) {
+	var out []time.Time
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		days, err := s.repo.ListSchoolDays(ctx, tenantID, yearID)
+		if err != nil {
+			return err
+		}
+		weekly := make(map[int16]bool, len(days))
+		for _, d := range days {
+			weekly[d.DayOfWeek] = d.IsActive
+		}
+		events, err := s.repo.ListNonTeachingEventsInRange(ctx, tenantID, yearID, from, to)
+		if err != nil {
+			return err
+		}
+		out = domain.SchoolDaysInRange(from, to, weekly, events, gradeLevelID)
+		return nil
+	})
+	return out, err
+}
+
 func (s *Service) NonTeachingEventName(ctx context.Context, tenantID, yearID uuid.UUID, date time.Time, gradeLevelID *uuid.UUID) (string, bool, error) {
 	var (
 		name  string

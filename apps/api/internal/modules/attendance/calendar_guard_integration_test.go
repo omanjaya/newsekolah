@@ -28,6 +28,33 @@ func (h holidayCalendar) IsTeachingDay(_ context.Context, _, _, classID uuid.UUI
 	return true, "", nil
 }
 
+func (h holidayCalendar) TeachingDays(ctx context.Context, tenantID, yearID uuid.UUID, classIDs []uuid.UUID, from, to time.Time) (map[uuid.UUID][]time.Time, error) {
+	return teachingDaysByDay(ctx, h, tenantID, yearID, classIDs, from, to)
+}
+
+// teachingDaysByDay answers ClassCalendar.TeachingDays one day at a time
+// from cal's IsTeachingDay, so a test calendar's batch and single answers
+// always agree (as wiring.ClassCalendar's do).
+func teachingDaysByDay(ctx context.Context, cal service.ClassCalendar, tenantID, yearID uuid.UUID, classIDs []uuid.UUID, from, to time.Time) (map[uuid.UUID][]time.Time, error) {
+	out := make(map[uuid.UUID][]time.Time, len(classIDs))
+	first := time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, time.UTC)
+	last := time.Date(to.Year(), to.Month(), to.Day(), 0, 0, 0, 0, time.UTC)
+	for _, classID := range classIDs {
+		days := []time.Time{}
+		for d := first; !d.After(last); d = d.AddDate(0, 0, 1) {
+			teaching, _, err := cal.IsTeachingDay(ctx, tenantID, yearID, classID, d)
+			if err != nil {
+				return nil, err
+			}
+			if teaching {
+				days = append(days, d)
+			}
+		}
+		out[classID] = days
+	}
+	return out, nil
+}
+
 func sameDate(a, b time.Time) bool {
 	ay, am, ad := a.Date()
 	by, bm, bd := b.Date()
