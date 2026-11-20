@@ -941,6 +941,7 @@
     "emptyLog": "No history yet for this copy.",
     "ongoing": "ongoing",
     "end": "End",
+    "endFor": "End {reader}'s reading session",
     "ended": "Read-in-place session ended",
     "endedAt": "ended {time}",
     "unnamedReader": "Unnamed reader"

@@ -170,6 +170,8 @@ export function ReadInPlaceDialog({
                         <Button
                           size="sm"
                           variant="secondary"
+                          // Every open row has an "End" button: the name says whose.
+                          aria-label={t("endFor", { reader: readerOf(entry) })}
                           loading={end.isPending && end.variables === entry.id}
                           onClick={() => {
                             end.mutate(entry.id, {

@@ -941,6 +941,7 @@
     "emptyLog": "Belum ada riwayat untuk eksemplar ini.",
     "ongoing": "sedang berlangsung",
     "end": "Selesai",
+    "endFor": "Selesai, akhiri sesi baca {reader}",
     "ended": "Sesi baca di tempat diakhiri",
     "endedAt": "selesai {time}",
     "unnamedReader": "Pembaca tanpa nama"
