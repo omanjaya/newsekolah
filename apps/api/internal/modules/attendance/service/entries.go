@@ -344,7 +344,7 @@ func (s *Service) recomputeDailySummaryForClassDate(
 
 	expected := 0
 	if isSchoolDay {
-		count, err := s.schedules.CountSchedulesForClassDay(ctx, tenantID, academicYearID, classID, domain.IsoWeekday(date))
+		count, err := s.schedules.CountSchedulesForClassOn(ctx, tenantID, academicYearID, classID, date)
 		if err != nil {
 			return err
 		}

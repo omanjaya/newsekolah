@@ -469,8 +469,11 @@ type ListSubstitutionsIncomingWithScheduleRow struct {
 // Same rows as ListSubstitutionsIncoming, joined with the covered
 // schedule's class/subject/period so the web substitutions page can render
 // a session-card without a second round trip per row. The join is always
-// safe: substitution_requests.schedule_id cascades on schedule delete, so
-// the referenced schedule row always exists for as long as this row does.
+// safe: substitution_requests.schedule_id restricts schedule deletion
+// (migration 0107), so the referenced row exists for as long as this one
+// does. The join is by id on purpose: a request stays with the schedule
+// version it was made for, which is in effect on its date (migration
+// 0147), even after a later change retired that version.
 func (q *Queries) ListSubstitutionsIncomingWithSchedule(ctx context.Context, arg ListSubstitutionsIncomingWithScheduleParams) ([]ListSubstitutionsIncomingWithScheduleRow, error) {
 	rows, err := q.db.Query(ctx, listSubstitutionsIncomingWithSchedule, arg.TenantID, arg.SubstituteUserID)
 	if err != nil {

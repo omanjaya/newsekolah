@@ -76,6 +76,16 @@ func (r *Repository) IsYearArchived(ctx context.Context, tenantID, academicYearI
 	return r.queries(ctx).IsAcademicYearArchivedRef(ctx, db.IsAcademicYearArchivedRefParams{TenantID: tenantID, ID: academicYearID})
 }
 
+func (r *Repository) GetAcademicYearRef(ctx context.Context, tenantID, academicYearID uuid.UUID) (service.AcademicYearRef, error) {
+	row, err := r.queries(ctx).GetAcademicYearRefForSchedule(ctx, db.GetAcademicYearRefForScheduleParams{TenantID: tenantID, ID: academicYearID})
+	if err != nil {
+		return service.AcademicYearRef{}, err
+	}
+	return service.AcademicYearRef{
+		StartsOn: pdatabase.DateOrZero(row.StartsOn), EndsOn: pdatabase.DateOrZero(row.EndsOn), Archived: row.Archived,
+	}, nil
+}
+
 func (r *Repository) IsSchoolDay(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16) (bool, error) {
 	return r.queries(ctx).IsSchoolDayRef(ctx, db.IsSchoolDayRefParams{
 		TenantID: tenantID, AcademicYearID: academicYearID, DayOfWeek: dayOfWeek,

@@ -20,6 +20,7 @@ import (
 	notificationsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 	schoolservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/school/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 	"github.com/omanjaya/newsekolah/apps/api/internal/wiring"
@@ -42,7 +43,9 @@ func (l permitsScheduleLookup) IsTeacherAssignedNowOrNext(ctx context.Context, t
 		return false, err
 	}
 	dayOfWeek := attendancedomain.IsoWeekday(date)
-	refs, err := l.schedules.ListSchedulesForTeacherDay(ctx, tenantID, yearID, teacherUserID, dayOfWeek)
+	// The timetable version in effect on date's own calendar day in the
+	// school's zone (date arrives in it).
+	refs, err := l.schedules.ListSchedulesForTeacherOn(ctx, tenantID, yearID, teacherUserID, clock.LocalDate(date, date.Location()))
 	if err != nil {
 		return false, err
 	}

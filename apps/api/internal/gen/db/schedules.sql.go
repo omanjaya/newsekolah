@@ -76,38 +76,47 @@ func (q *Queries) CompleteReportScheduleRun(ctx context.Context, arg CompleteRep
 	return err
 }
 
-const countSchedulesByClassDay = `-- name: CountSchedulesByClassDay :many
-select class_id, day_of_week, count(*)::bigint as total
-from schedules
-where tenant_id = $1 and academic_year_id = $2 and class_id = any($3::uuid[])
-group by class_id, day_of_week
+const countSchedulesByClassDates = `-- name: CountSchedulesByClassDates :many
+select s.class_id, d.on_date::date as on_date, count(*)::bigint as total
+from schedules s
+join unnest($3::date[]) as d(on_date)
+  on s.day_of_week = extract(isodow from d.on_date)::smallint
+ and s.effective_range @> d.on_date::date
+where s.tenant_id = $1 and s.academic_year_id = $2 and s.class_id = any($4::uuid[])
+group by s.class_id, d.on_date
 `
 
-type CountSchedulesByClassDayParams struct {
-	TenantID       uuid.UUID   `json:"tenant_id"`
-	AcademicYearID uuid.UUID   `json:"academic_year_id"`
-	ClassIds       []uuid.UUID `json:"class_ids"`
+type CountSchedulesByClassDatesParams struct {
+	TenantID       uuid.UUID     `json:"tenant_id"`
+	AcademicYearID uuid.UUID     `json:"academic_year_id"`
+	Dates          []pgtype.Date `json:"dates"`
+	ClassIds       []uuid.UUID   `json:"class_ids"`
 }
 
-type CountSchedulesByClassDayRow struct {
-	ClassID   uuid.UUID `json:"class_id"`
-	DayOfWeek int16     `json:"day_of_week"`
-	Total     int64     `json:"total"`
+type CountSchedulesByClassDatesRow struct {
+	ClassID uuid.UUID   `json:"class_id"`
+	OnDate  pgtype.Date `json:"on_date"`
+	Total   int64       `json:"total"`
 }
 
-// Batch form of CountSchedulesForClassDay for the analytics recompute: the
-// expected-session count of every (class, weekday) pair among the given
-// classes in one query. A pair with no schedule is absent (count 0).
-func (q *Queries) CountSchedulesByClassDay(ctx context.Context, arg CountSchedulesByClassDayParams) ([]CountSchedulesByClassDayRow, error) {
-	rows, err := q.db.Query(ctx, countSchedulesByClassDay, arg.TenantID, arg.AcademicYearID, arg.ClassIds)
+// Batch form of CountSchedulesForClassOn for the analytics recompute: the
+// expected-session count of every (class, date) pair among the given
+// classes and dates in one query. A pair with no lesson is absent (count 0).
+func (q *Queries) CountSchedulesByClassDates(ctx context.Context, arg CountSchedulesByClassDatesParams) ([]CountSchedulesByClassDatesRow, error) {
+	rows, err := q.db.Query(ctx, countSchedulesByClassDates,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.Dates,
+		arg.ClassIds,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []CountSchedulesByClassDayRow{}
+	items := []CountSchedulesByClassDatesRow{}
 	for rows.Next() {
-		var i CountSchedulesByClassDayRow
-		if err := rows.Scan(&i.ClassID, &i.DayOfWeek, &i.Total); err != nil {
+		var i CountSchedulesByClassDatesRow
+		if err := rows.Scan(&i.ClassID, &i.OnDate, &i.Total); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -118,26 +127,29 @@ func (q *Queries) CountSchedulesByClassDay(ctx context.Context, arg CountSchedul
 	return items, nil
 }
 
-const countSchedulesForClassDay = `-- name: CountSchedulesForClassDay :one
+const countSchedulesForClassOn = `-- name: CountSchedulesForClassOn :one
 select count(*)::bigint from schedules
-where tenant_id = $1 and academic_year_id = $2 and class_id = $3 and day_of_week = $4
+where tenant_id = $1 and academic_year_id = $2 and class_id = $3
+  and day_of_week = extract(isodow from $4::date)::smallint
+  and effective_range @> $4::date
 `
 
-type CountSchedulesForClassDayParams struct {
-	TenantID       uuid.UUID `json:"tenant_id"`
-	AcademicYearID uuid.UUID `json:"academic_year_id"`
-	ClassID        uuid.UUID `json:"class_id"`
-	DayOfWeek      int16     `json:"day_of_week"`
+type CountSchedulesForClassOnParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	ClassID        uuid.UUID   `json:"class_id"`
+	OnDate         pgtype.Date `json:"on_date"`
 }
 
 // Read by the attendance module to compute a day's expected session count
-// for a class (attendance/domain.ComputeDailyStatus's Expected input).
-func (q *Queries) CountSchedulesForClassDay(ctx context.Context, arg CountSchedulesForClassDayParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countSchedulesForClassDay,
+// for a class (attendance/domain.ComputeDailyStatus's Expected input): the
+// versions in effect on that date.
+func (q *Queries) CountSchedulesForClassOn(ctx context.Context, arg CountSchedulesForClassOnParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countSchedulesForClassOn,
 		arg.TenantID,
 		arg.AcademicYearID,
 		arg.ClassID,
-		arg.DayOfWeek,
+		arg.OnDate,
 	)
 	var column_1 int64
 	err := row.Scan(&column_1)
@@ -199,13 +211,16 @@ func (q *Queries) CreateReportSchedule(ctx context.Context, arg CreateReportSche
 }
 
 const createSchedule = `-- name: CreateSchedule :one
+
 insert into schedules (
   tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id,
-  day_of_week, start_period_id, end_period_id, start_seq, end_seq, source, notes, created_by, updated_by
+  day_of_week, start_period_id, end_period_id, start_seq, end_seq, source, notes, created_by, updated_by,
+  effective_from, effective_until
 ) values (
-  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $15
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $15,
+  $16::date, $17::date
 )
-returning id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at
+returning id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at, effective_from, effective_until, effective_range
 `
 
 type CreateScheduleParams struct {
@@ -224,8 +239,14 @@ type CreateScheduleParams struct {
 	Source         string      `json:"source"`
 	Notes          pgtype.Text `json:"notes"`
 	CreatedBy      pgtype.UUID `json:"created_by"`
+	EffectiveFrom  pgtype.Date `json:"effective_from"`
+	EffectiveUntil pgtype.Date `json:"effective_until"`
 }
 
+// A schedule row is one version of a weekly lesson, on the timetable from
+// effective_from through effective_until (both inclusive; null until means
+// to the end of the academic year), per migration 0147. Every read that
+// asks "which lessons are there on date D" filters effective_range @> D.
 func (q *Queries) CreateSchedule(ctx context.Context, arg CreateScheduleParams) (Schedule, error) {
 	row := q.db.QueryRow(ctx, createSchedule,
 		arg.TenantID,
@@ -243,6 +264,8 @@ func (q *Queries) CreateSchedule(ctx context.Context, arg CreateScheduleParams) 
 		arg.Source,
 		arg.Notes,
 		arg.CreatedBy,
+		arg.EffectiveFrom,
+		arg.EffectiveUntil,
 	)
 	var i Schedule
 	err := row.Scan(
@@ -266,6 +289,9 @@ func (q *Queries) CreateSchedule(ctx context.Context, arg CreateScheduleParams) 
 		&i.UpdatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EffectiveFrom,
+		&i.EffectiveUntil,
+		&i.EffectiveRange,
 	)
 	return i, err
 }
@@ -373,7 +399,7 @@ func (q *Queries) GetReportScheduleRun(ctx context.Context, arg GetReportSchedul
 }
 
 const getScheduleByID = `-- name: GetScheduleByID :one
-select id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at from schedules where tenant_id = $1 and id = $2 for update
+select id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at, effective_from, effective_until, effective_range from schedules where tenant_id = $1 and id = $2 for update
 `
 
 type GetScheduleByIDParams struct {
@@ -405,6 +431,9 @@ func (q *Queries) GetScheduleByID(ctx context.Context, arg GetScheduleByIDParams
 		&i.UpdatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EffectiveFrom,
+		&i.EffectiveUntil,
+		&i.EffectiveRange,
 	)
 	return i, err
 }
@@ -599,38 +628,51 @@ func (q *Queries) ListReportSchedules(ctx context.Context, tenantID uuid.UUID) (
 	return items, nil
 }
 
-const listScheduleIDsWithHistory = `-- name: ListScheduleIDsWithHistory :many
-select s.id from schedules s
+const listScheduleHistory = `-- name: ListScheduleHistory :many
+select s.id,
+  greatest(
+    (select max(a.date) from attendance_sessions a
+     where a.schedule_id = s.id and attendance_session_recorded(a.id)),
+    (select max(r.date) from substitution_requests r
+     where r.schedule_id = s.id and r.status in ('pending', 'accepted'))
+  )::date as history_until
+from schedules s
 where s.tenant_id = $1 and s.id = any($2::uuid[])
   and (exists (select 1 from attendance_sessions a
                where a.schedule_id = s.id and attendance_session_recorded(a.id))
        or exists (select 1 from substitution_requests r where r.schedule_id = s.id))
 `
 
-type ListScheduleIDsWithHistoryParams struct {
+type ListScheduleHistoryParams struct {
 	TenantID uuid.UUID   `json:"tenant_id"`
 	Ids      []uuid.UUID `json:"ids"`
 }
 
-// Which of the given schedules already have a recorded attendance session
-// (submitted, or holding an entry or a journal) or a substitution request:
-// the history guard (migrations 0107 and 0144) refuses to change or delete
-// those, so the grid and the single-schedule policy say so before the
-// admin fills a form. A session only opened, with nothing recorded, is a
-// placeholder the guard clears instead.
-func (q *Queries) ListScheduleIDsWithHistory(ctx context.Context, arg ListScheduleIDsWithHistoryParams) ([]uuid.UUID, error) {
-	rows, err := q.db.Query(ctx, listScheduleIDsWithHistory, arg.TenantID, arg.Ids)
+type ListScheduleHistoryRow struct {
+	ID           uuid.UUID   `json:"id"`
+	HistoryUntil pgtype.Date `json:"history_until"`
+}
+
+// Which of the given schedules have history -- a recorded attendance
+// session (submitted, or holding an entry or a journal) or any
+// substitution request -- and the last date it binds: the latest recorded
+// session or pending/accepted substitution. A change on such a version
+// must take effect after that date (migration 0147's history guard); a
+// session only opened, with nothing recorded, is a placeholder and binds
+// nothing.
+func (q *Queries) ListScheduleHistory(ctx context.Context, arg ListScheduleHistoryParams) ([]ListScheduleHistoryRow, error) {
+	rows, err := q.db.Query(ctx, listScheduleHistory, arg.TenantID, arg.Ids)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []uuid.UUID{}
+	items := []ListScheduleHistoryRow{}
 	for rows.Next() {
-		var id uuid.UUID
-		if err := rows.Scan(&id); err != nil {
+		var i ListScheduleHistoryRow
+		if err := rows.Scan(&i.ID, &i.HistoryUntil); err != nil {
 			return nil, err
 		}
-		items = append(items, id)
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -639,7 +681,9 @@ func (q *Queries) ListScheduleIDsWithHistory(ctx context.Context, arg ListSchedu
 }
 
 const listSchedulesByAcademicYear = `-- name: ListSchedulesByAcademicYear :many
-select id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at from schedules where tenant_id = $1 and academic_year_id = $2 order by day_of_week, start_seq
+select id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at, effective_from, effective_until, effective_range from schedules where tenant_id = $1 and academic_year_id = $2
+order by day_of_week, start_seq, id
+for update
 `
 
 type ListSchedulesByAcademicYearParams struct {
@@ -647,6 +691,7 @@ type ListSchedulesByAcademicYearParams struct {
 	AcademicYearID uuid.UUID `json:"academic_year_id"`
 }
 
+// Every version of the year, locked for an effective-dated clear.
 func (q *Queries) ListSchedulesByAcademicYear(ctx context.Context, arg ListSchedulesByAcademicYearParams) ([]Schedule, error) {
 	rows, err := q.db.Query(ctx, listSchedulesByAcademicYear, arg.TenantID, arg.AcademicYearID)
 	if err != nil {
@@ -677,6 +722,9 @@ func (q *Queries) ListSchedulesByAcademicYear(ctx context.Context, arg ListSched
 			&i.UpdatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.EffectiveFrom,
+			&i.EffectiveUntil,
+			&i.EffectiveRange,
 		); err != nil {
 			return nil, err
 		}
@@ -688,20 +736,31 @@ func (q *Queries) ListSchedulesByAcademicYear(ctx context.Context, arg ListSched
 	return items, nil
 }
 
-const listSchedulesByClass = `-- name: ListSchedulesByClass :many
-select id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at from schedules
+const listSchedulesByClassForWeek = `-- name: ListSchedulesByClassForWeek :many
+select id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at, effective_from, effective_until, effective_range from schedules
 where tenant_id = $1 and academic_year_id = $2 and class_id = $3
+  and effective_range @> ($4::date + (day_of_week - 1)::int)
 order by day_of_week, start_seq
 `
 
-type ListSchedulesByClassParams struct {
-	TenantID       uuid.UUID `json:"tenant_id"`
-	AcademicYearID uuid.UUID `json:"academic_year_id"`
-	ClassID        uuid.UUID `json:"class_id"`
+type ListSchedulesByClassForWeekParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	ClassID        uuid.UUID   `json:"class_id"`
+	WeekStart      pgtype.Date `json:"week_start"`
 }
 
-func (q *Queries) ListSchedulesByClass(ctx context.Context, arg ListSchedulesByClassParams) ([]Schedule, error) {
-	rows, err := q.db.Query(ctx, listSchedulesByClass, arg.TenantID, arg.AcademicYearID, arg.ClassID)
+// A class's timetable for the Monday-Sunday week starting week_start: each
+// weekday lists the versions in effect on that weekday's own date, so a
+// change that starts mid-week shows the old lesson before it and the new
+// one from it.
+func (q *Queries) ListSchedulesByClassForWeek(ctx context.Context, arg ListSchedulesByClassForWeekParams) ([]Schedule, error) {
+	rows, err := q.db.Query(ctx, listSchedulesByClassForWeek,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.ClassID,
+		arg.WeekStart,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -730,6 +789,9 @@ func (q *Queries) ListSchedulesByClass(ctx context.Context, arg ListSchedulesByC
 			&i.UpdatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.EffectiveFrom,
+			&i.EffectiveUntil,
+			&i.EffectiveRange,
 		); err != nil {
 			return nil, err
 		}
@@ -742,7 +804,7 @@ func (q *Queries) ListSchedulesByClass(ctx context.Context, arg ListSchedulesByC
 }
 
 const listSchedulesByDay = `-- name: ListSchedulesByDay :many
-select id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at from schedules
+select id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at, effective_from, effective_until, effective_range from schedules
 where tenant_id = $1 and academic_year_id = $2 and day_of_week = $3
 order by start_seq
 `
@@ -753,6 +815,9 @@ type ListSchedulesByDayParams struct {
 	DayOfWeek      int16     `json:"day_of_week"`
 }
 
+// Every version of one weekday, whatever its dates: the conflict check
+// reads this and domain.DetectConflict compares only versions whose
+// effective ranges overlap, the way the exclusion constraints do.
 func (q *Queries) ListSchedulesByDay(ctx context.Context, arg ListSchedulesByDayParams) ([]Schedule, error) {
 	rows, err := q.db.Query(ctx, listSchedulesByDay, arg.TenantID, arg.AcademicYearID, arg.DayOfWeek)
 	if err != nil {
@@ -783,6 +848,9 @@ func (q *Queries) ListSchedulesByDay(ctx context.Context, arg ListSchedulesByDay
 			&i.UpdatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.EffectiveFrom,
+			&i.EffectiveUntil,
+			&i.EffectiveRange,
 		); err != nil {
 			return nil, err
 		}
@@ -794,20 +862,28 @@ func (q *Queries) ListSchedulesByDay(ctx context.Context, arg ListSchedulesByDay
 	return items, nil
 }
 
-const listSchedulesByTeacher = `-- name: ListSchedulesByTeacher :many
-select id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at from schedules
-where tenant_id = $1 and academic_year_id = $2 and teacher_user_id = $3
-order by day_of_week, start_seq
+const listSchedulesByDayOn = `-- name: ListSchedulesByDayOn :many
+select id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at, effective_from, effective_until, effective_range from schedules
+where tenant_id = $1 and academic_year_id = $2 and day_of_week = $3
+  and effective_range @> $4::date
+order by start_seq
 `
 
-type ListSchedulesByTeacherParams struct {
-	TenantID       uuid.UUID `json:"tenant_id"`
-	AcademicYearID uuid.UUID `json:"academic_year_id"`
-	TeacherUserID  uuid.UUID `json:"teacher_user_id"`
+type ListSchedulesByDayOnParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	DayOfWeek      int16       `json:"day_of_week"`
+	OnDate         pgtype.Date `json:"on_date"`
 }
 
-func (q *Queries) ListSchedulesByTeacher(ctx context.Context, arg ListSchedulesByTeacherParams) ([]Schedule, error) {
-	rows, err := q.db.Query(ctx, listSchedulesByTeacher, arg.TenantID, arg.AcademicYearID, arg.TeacherUserID)
+// Every class's lessons on one date (the per-day grid).
+func (q *Queries) ListSchedulesByDayOn(ctx context.Context, arg ListSchedulesByDayOnParams) ([]Schedule, error) {
+	rows, err := q.db.Query(ctx, listSchedulesByDayOn,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.DayOfWeek,
+		arg.OnDate,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -836,6 +912,139 @@ func (q *Queries) ListSchedulesByTeacher(ctx context.Context, arg ListSchedulesB
 			&i.UpdatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.EffectiveFrom,
+			&i.EffectiveUntil,
+			&i.EffectiveRange,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSchedulesByTeacherForWeek = `-- name: ListSchedulesByTeacherForWeek :many
+select id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at, effective_from, effective_until, effective_range from schedules
+where tenant_id = $1 and academic_year_id = $2 and teacher_user_id = $3
+  and effective_range @> ($4::date + (day_of_week - 1)::int)
+order by day_of_week, start_seq
+`
+
+type ListSchedulesByTeacherForWeekParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	TeacherUserID  uuid.UUID   `json:"teacher_user_id"`
+	WeekStart      pgtype.Date `json:"week_start"`
+}
+
+// ListSchedulesByClassForWeek for one teacher.
+func (q *Queries) ListSchedulesByTeacherForWeek(ctx context.Context, arg ListSchedulesByTeacherForWeekParams) ([]Schedule, error) {
+	rows, err := q.db.Query(ctx, listSchedulesByTeacherForWeek,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.TeacherUserID,
+		arg.WeekStart,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Schedule{}
+	for rows.Next() {
+		var i Schedule
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.AcademicYearID,
+			&i.TermID,
+			&i.ClassID,
+			&i.SubjectID,
+			&i.TeacherUserID,
+			&i.RoomID,
+			&i.DayOfWeek,
+			&i.StartPeriodID,
+			&i.EndPeriodID,
+			&i.StartSeq,
+			&i.EndSeq,
+			&i.PeriodRange,
+			&i.Source,
+			&i.Notes,
+			&i.CreatedBy,
+			&i.UpdatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.EffectiveFrom,
+			&i.EffectiveUntil,
+			&i.EffectiveRange,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSchedulesForTeacherOn = `-- name: ListSchedulesForTeacherOn :many
+select id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at, effective_from, effective_until, effective_range from schedules
+where tenant_id = $1 and academic_year_id = $2 and teacher_user_id = $3
+  and day_of_week = extract(isodow from $4::date)::smallint
+  and effective_range @> $4::date
+order by start_seq
+`
+
+type ListSchedulesForTeacherOnParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	TeacherUserID  uuid.UUID   `json:"teacher_user_id"`
+	OnDate         pgtype.Date `json:"on_date"`
+}
+
+// A teacher's own lessons on one date: the version of each lesson in
+// effect that day, on that date's weekday.
+func (q *Queries) ListSchedulesForTeacherOn(ctx context.Context, arg ListSchedulesForTeacherOnParams) ([]Schedule, error) {
+	rows, err := q.db.Query(ctx, listSchedulesForTeacherOn,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.TeacherUserID,
+		arg.OnDate,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Schedule{}
+	for rows.Next() {
+		var i Schedule
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.AcademicYearID,
+			&i.TermID,
+			&i.ClassID,
+			&i.SubjectID,
+			&i.TeacherUserID,
+			&i.RoomID,
+			&i.DayOfWeek,
+			&i.StartPeriodID,
+			&i.EndPeriodID,
+			&i.StartSeq,
+			&i.EndSeq,
+			&i.PeriodRange,
+			&i.Source,
+			&i.Notes,
+			&i.CreatedBy,
+			&i.UpdatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.EffectiveFrom,
+			&i.EffectiveUntil,
+			&i.EffectiveRange,
 		); err != nil {
 			return nil, err
 		}
@@ -1029,6 +1238,57 @@ func (q *Queries) ListStaffAttendanceScheduleDays(ctx context.Context, arg ListS
 	return items, nil
 }
 
+const retireSchedule = `-- name: RetireSchedule :one
+update schedules set effective_until = $4::date, updated_by = $3
+where tenant_id = $1 and id = $2
+returning id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at, effective_from, effective_until, effective_range
+`
+
+type RetireScheduleParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	ID             uuid.UUID   `json:"id"`
+	UpdatedBy      pgtype.UUID `json:"updated_by"`
+	EffectiveUntil pgtype.Date `json:"effective_until"`
+}
+
+// Ends one version on effective_until (its last lesson date): the row and
+// everything recorded against it stay, it simply no longer occurs later.
+func (q *Queries) RetireSchedule(ctx context.Context, arg RetireScheduleParams) (Schedule, error) {
+	row := q.db.QueryRow(ctx, retireSchedule,
+		arg.TenantID,
+		arg.ID,
+		arg.UpdatedBy,
+		arg.EffectiveUntil,
+	)
+	var i Schedule
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AcademicYearID,
+		&i.TermID,
+		&i.ClassID,
+		&i.SubjectID,
+		&i.TeacherUserID,
+		&i.RoomID,
+		&i.DayOfWeek,
+		&i.StartPeriodID,
+		&i.EndPeriodID,
+		&i.StartSeq,
+		&i.EndSeq,
+		&i.PeriodRange,
+		&i.Source,
+		&i.Notes,
+		&i.CreatedBy,
+		&i.UpdatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.EffectiveFrom,
+		&i.EffectiveUntil,
+		&i.EffectiveRange,
+	)
+	return i, err
+}
+
 const setReportScheduleEnabled = `-- name: SetReportScheduleEnabled :one
 update report_schedules set enabled = $3 where tenant_id = $1 and id = $2 returning id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at, format
 `
@@ -1118,27 +1378,30 @@ const updateSchedule = `-- name: UpdateSchedule :one
 update schedules set
   term_id = $3, class_id = $4, subject_id = $5, teacher_user_id = $6, room_id = $7,
   day_of_week = $8, start_period_id = $9, end_period_id = $10, start_seq = $11, end_seq = $12,
-  source = $13, notes = $14, updated_by = $15
+  source = $13, notes = $14, updated_by = $15,
+  effective_from = $16::date, effective_until = $17::date
 where tenant_id = $1 and id = $2
-returning id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at
+returning id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at, effective_from, effective_until, effective_range
 `
 
 type UpdateScheduleParams struct {
-	TenantID      uuid.UUID   `json:"tenant_id"`
-	ID            uuid.UUID   `json:"id"`
-	TermID        pgtype.UUID `json:"term_id"`
-	ClassID       uuid.UUID   `json:"class_id"`
-	SubjectID     uuid.UUID   `json:"subject_id"`
-	TeacherUserID uuid.UUID   `json:"teacher_user_id"`
-	RoomID        pgtype.UUID `json:"room_id"`
-	DayOfWeek     int16       `json:"day_of_week"`
-	StartPeriodID uuid.UUID   `json:"start_period_id"`
-	EndPeriodID   uuid.UUID   `json:"end_period_id"`
-	StartSeq      int16       `json:"start_seq"`
-	EndSeq        int16       `json:"end_seq"`
-	Source        string      `json:"source"`
-	Notes         pgtype.Text `json:"notes"`
-	UpdatedBy     pgtype.UUID `json:"updated_by"`
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	ID             uuid.UUID   `json:"id"`
+	TermID         pgtype.UUID `json:"term_id"`
+	ClassID        uuid.UUID   `json:"class_id"`
+	SubjectID      uuid.UUID   `json:"subject_id"`
+	TeacherUserID  uuid.UUID   `json:"teacher_user_id"`
+	RoomID         pgtype.UUID `json:"room_id"`
+	DayOfWeek      int16       `json:"day_of_week"`
+	StartPeriodID  uuid.UUID   `json:"start_period_id"`
+	EndPeriodID    uuid.UUID   `json:"end_period_id"`
+	StartSeq       int16       `json:"start_seq"`
+	EndSeq         int16       `json:"end_seq"`
+	Source         string      `json:"source"`
+	Notes          pgtype.Text `json:"notes"`
+	UpdatedBy      pgtype.UUID `json:"updated_by"`
+	EffectiveFrom  pgtype.Date `json:"effective_from"`
+	EffectiveUntil pgtype.Date `json:"effective_until"`
 }
 
 func (q *Queries) UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error) {
@@ -1158,6 +1421,8 @@ func (q *Queries) UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) 
 		arg.Source,
 		arg.Notes,
 		arg.UpdatedBy,
+		arg.EffectiveFrom,
+		arg.EffectiveUntil,
 	)
 	var i Schedule
 	err := row.Scan(
@@ -1181,6 +1446,9 @@ func (q *Queries) UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) 
 		&i.UpdatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EffectiveFrom,
+		&i.EffectiveUntil,
+		&i.EffectiveRange,
 	)
 	return i, err
 }

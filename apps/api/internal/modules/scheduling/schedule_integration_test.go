@@ -107,26 +107,36 @@ func TestScheduleBlockMutationsPreserveHistory(t *testing.T) {
 	require.ErrorIs(t, err, domain.ErrConflictClass)
 	require.Equal(t, 3, count("schedules"))
 	// Users cannot mutate another teacher's block or pass arbitrary row groups.
-	require.ErrorIs(t, svc.DeleteScheduleBlock(ctx, tenant, c.ID, []uuid.UUID{c.ID, d.ID}, service.Actor{UserID: substitute}), domain.ErrTeacherEditForbidden)
-	require.ErrorIs(t, svc.DeleteScheduleBlock(ctx, tenant, c.ID, []uuid.UUID{a.ID, c.ID}, actor), domain.ErrInvalidScheduleBlock)
+	require.ErrorIs(t, svc.DeleteScheduleBlock(ctx, tenant, c.ID, []uuid.UUID{c.ID, d.ID}, nil, service.Actor{UserID: substitute}), domain.ErrTeacherEditForbidden)
+	require.ErrorIs(t, svc.DeleteScheduleBlock(ctx, tenant, c.ID, []uuid.UUID{a.ID, c.ID}, nil, actor), domain.ErrInvalidScheduleBlock)
 	require.Equal(t, 3, count("schedules"))
 	// A submitted attendance session on the second row must protect both rows of a delete.
 	exec(`insert into attendance_sessions (tenant_id,academic_year_id,schedule_id,date,class_id,subject_id,teacher_user_id,start_period_id,end_period_id,submitted_at) values ($1,$2,$3,'2026-09-15',$4,$5,$6,$7,$7,now())`, tenant, year, d.ID, class, subject, teacher, p2)
-	require.ErrorIs(t, svc.DeleteScheduleBlock(ctx, tenant, c.ID, []uuid.UUID{c.ID, d.ID}, actor), domain.ErrScheduleHasHistory)
+	require.ErrorIs(t, svc.DeleteScheduleBlock(ctx, tenant, c.ID, []uuid.UUID{c.ID, d.ID}, nil, actor), domain.ErrScheduleHasHistory)
 	require.Equal(t, 3, count("schedules"))
 	require.Equal(t, 1, count("attendance_sessions"))
-	// The grid and the single-schedule policy announce the freeze up front
-	// instead of offering Edit and Delete only to fail on save.
-	blocks, err := svc.ListByClass(ctx, tenant, year, class, nil)
+	// The grid and the single-schedule policy announce the history up
+	// front: an admin may still change the block, from a date after it; a
+	// teacher acting on their own lesson may not touch it at all.
+	list, err := svc.ListBlocks(ctx, tenant, service.BlockQuery{AcademicYearID: year, ClassID: uuid.NullUUID{UUID: class, Valid: true}}, actor)
 	require.NoError(t, err)
-	for _, block := range blocks {
+	for _, block := range list.Blocks {
 		require.Equal(t, block.DayOfWeek == 2, block.HasHistory, "day %d", block.DayOfWeek)
+		require.NotNil(t, block.Policy)
+		require.Equal(t, block.HasHistory, block.Policy.RequiresEffectiveFrom, "day %d", block.DayOfWeek)
 	}
 	policy := svc.MutationPolicyFor(ctx, tenant, d, actor)
 	require.True(t, policy.HasHistory)
-	require.False(t, policy.CanEdit)
-	require.False(t, policy.CanDelete)
+	require.True(t, policy.CanEdit)
+	require.True(t, policy.CanDelete)
+	require.True(t, policy.RequiresEffectiveFrom)
+	require.NotNil(t, policy.MinEffectiveFrom)
+	teacherPolicy := svc.MutationPolicyFor(ctx, tenant, d, service.Actor{UserID: teacher})
+	require.True(t, teacherPolicy.HasHistory)
+	require.False(t, teacherPolicy.CanEdit)
+	require.False(t, teacherPolicy.CanDelete)
 	require.True(t, svc.MutationPolicyFor(ctx, tenant, a, actor).CanEdit, "a block without history stays editable")
+	require.False(t, svc.MutationPolicyFor(ctx, tenant, a, actor).RequiresEffectiveFrom)
 	changed := input
 	changed.DayOfWeek = 3
 	changed.StartPeriodID = p2
@@ -140,7 +150,7 @@ func TestScheduleBlockMutationsPreserveHistory(t *testing.T) {
 	_, err = svc.UpdateScheduleBlock(ctx, tenant, d.ID, []uuid.UUID{d.ID, c.ID}, changed, actor)
 	require.ErrorIs(t, err, domain.ErrScheduleHasHistory)
 	require.Equal(t, 3, count("schedules"))
-	require.ErrorIs(t, svc.ClearAcademicYear(ctx, tenant, year), domain.ErrScheduleHasHistory)
+	require.ErrorIs(t, svc.ClearAcademicYear(ctx, tenant, year, nil, actor), domain.ErrScheduleHasHistory)
 	require.Equal(t, 3, count("schedules"))
 	require.Equal(t, 1, count("attendance_sessions"))
 	// Even cancelled substitutions remain historical records.
@@ -153,7 +163,7 @@ func TestScheduleBlockMutationsPreserveHistory(t *testing.T) {
 	require.Equal(t, 5, count("schedules"))
 	require.Equal(t, 1, count("substitution_requests"))
 	g, h := createPair(5)
-	require.NoError(t, svc.DeleteScheduleBlock(ctx, tenant, g.ID, []uuid.UUID{g.ID, h.ID}, actor))
+	require.NoError(t, svc.DeleteScheduleBlock(ctx, tenant, g.ID, []uuid.UUID{g.ID, h.ID}, nil, actor))
 	require.Equal(t, 5, count("schedules"))
 	t.Run("journal DOCX export applies tenant RLS and caller scope", func(t *testing.T) {
 		exec(`insert into class_journals (tenant_id,academic_year_id,teacher_user_id,written_by_user_id,class_id,subject_id,lesson_date,topic,activities) values ($1,$2,$3,$3,$4,$5,'2026-09-14','Teacher topic','Discussion'), ($1,$2,$6,$6,$4,$5,'2026-09-15','Other teacher topic','Practice')`, tenant, year, teacher, class, subject, substitute)
@@ -395,10 +405,10 @@ func TestPlaceholderSessionsDoNotFreezeTheSchedule(t *testing.T) {
 	monday := create(1)
 	openSession(monday, "2026-09-14")
 	openSession(monday, "2026-09-21")
-	blocks, err := svc.ListByClass(ctx, tenant, year, class, nil)
+	list, err := svc.ListBlocks(ctx, tenant, service.BlockQuery{AcademicYearID: year, ClassID: uuid.NullUUID{UUID: class, Valid: true}}, actor)
 	require.NoError(t, err)
-	require.Len(t, blocks, 1)
-	require.False(t, blocks[0].HasHistory, "an opened but empty session is not history")
+	require.Len(t, list.Blocks, 1)
+	require.False(t, list.Blocks[0].HasHistory, "an opened but empty session is not history")
 	policy := svc.MutationPolicyFor(ctx, tenant, monday, actor)
 	require.True(t, policy.CanEdit)
 	require.True(t, policy.CanDelete)

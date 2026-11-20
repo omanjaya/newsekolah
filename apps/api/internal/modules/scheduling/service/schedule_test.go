@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/require"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
@@ -124,7 +125,7 @@ func TestEnforceTeacherWindowDurationDeadline(t *testing.T) {
 	})
 }
 
-// TestFilterByDay covers the helper ListByClass/ListByTeacher now use to
+// TestFilterByDay covers the helper ListBlocks uses to
 // combine their own filter with an optional day_of_week: a nil day leaves
 // every schedule in place (single-filter behaviour, unchanged), and a
 // given day narrows to exactly the matching rows -- this is what makes
@@ -145,4 +146,133 @@ func TestFilterByDay(t *testing.T) {
 
 	noMatch := int16(7)
 	require.Empty(t, filterByDay(schedules, &noMatch))
+}
+
+// fakeYearRepo answers GetAcademicYearRef for the as_of clamping tests.
+type fakeYearRepo struct {
+	Repository
+	year AcademicYearRef
+}
+
+func (f fakeYearRepo) GetAcademicYearRef(context.Context, uuid.UUID, uuid.UUID) (AcademicYearRef, error) {
+	return f.year, nil
+}
+
+func date(value string) time.Time {
+	d, err := time.Parse(time.DateOnly, value)
+	if err != nil {
+		panic(err)
+	}
+	return d
+}
+
+// A timetable read without as_of shows today's week in the school's time
+// zone; any as_of is moved into the academic year, so a read before it
+// starts shows its first week and one after it ends its last.
+func TestAsOfDefaultsToTodayAndIsClampedToTheYear(t *testing.T) {
+	year := AcademicYearRef{StartsOn: date("2026-07-13"), EndsOn: date("2027-06-30")}
+	// 23:30 UTC on Thursday 19 November is already Friday 20 November in
+	// Asia/Makassar.
+	svc := &Service{repo: fakeYearRepo{year: year}, clock: clock.Frozen{At: time.Date(2026, 11, 19, 23, 30, 0, 0, time.UTC)}}
+	ctx := tenant.WithTenant(context.Background(), tenant.Tenant{Timezone: "Asia/Makassar"})
+
+	got, err := svc.asOfInYear(ctx, uuid.New(), uuid.New(), nil)
+	require.NoError(t, err)
+	require.Equal(t, date("2026-11-20"), got)
+
+	before := date("2026-01-05")
+	got, err = svc.asOfInYear(ctx, uuid.New(), uuid.New(), &before)
+	require.NoError(t, err)
+	require.Equal(t, year.StartsOn, got)
+
+	after := date("2027-08-01")
+	got, err = svc.asOfInYear(ctx, uuid.New(), uuid.New(), &after)
+	require.NoError(t, err)
+	require.Equal(t, year.EndsOn, got)
+
+	simulated := clock.WithTime(ctx, time.Date(2027, 2, 1, 1, 0, 0, 0, time.UTC))
+	got, err = svc.asOfInYear(simulated, uuid.New(), uuid.New(), nil)
+	require.NoError(t, err)
+	require.Equal(t, date("2027-02-01"), got, "the time simulation moves today")
+}
+
+// Only a schedule manager may date a change; a teacher's self-service
+// write is refused before anything is read.
+func TestEffectiveFromIsAdminOnly(t *testing.T) {
+	svc := &Service{clock: clock.Real{}}
+	teacher := Actor{UserID: uuid.New()}
+	from := date("2026-11-23")
+	in := ScheduleInput{AcademicYearID: uuid.New(), EffectiveFrom: &from}
+	ctx := context.Background()
+
+	_, err := svc.CreateSchedule(ctx, uuid.New(), in, teacher)
+	require.ErrorIs(t, err, domain.ErrEffectiveDateAdminOnly)
+	_, err = svc.UpdateScheduleBlock(ctx, uuid.New(), uuid.New(), []uuid.UUID{uuid.New()}, in, teacher)
+	require.ErrorIs(t, err, domain.ErrEffectiveDateAdminOnly)
+	require.ErrorIs(t, svc.DeleteScheduleBlock(ctx, uuid.New(), uuid.New(), []uuid.UUID{uuid.New()}, &from, teacher), domain.ErrEffectiveDateAdminOnly)
+	require.ErrorIs(t, svc.ClearAcademicYear(ctx, uuid.New(), uuid.New(), &from, teacher), domain.ErrEffectiveDateAdminOnly)
+}
+
+func TestEffectiveDatesStayInsideTheYear(t *testing.T) {
+	year := AcademicYearRef{StartsOn: date("2026-07-15"), EndsOn: date("2027-06-30")}
+	require.ErrorIs(t, requireInYear(year, date("2026-07-14")), domain.ErrEffectiveFromOutOfYear)
+	require.ErrorIs(t, requireInYear(year, date("2027-07-01")), domain.ErrEffectiveFromOutOfYear)
+	require.NoError(t, requireInYear(year, date("2027-06-30")))
+
+	// Default: the year's first date on the lesson's weekday.
+	start, err := startDate(year, 1, nil)
+	require.NoError(t, err)
+	require.Equal(t, date("2026-07-20"), start, "the year starts on a Wednesday; its first Monday is the 20th")
+	start, err = startDate(year, 3, nil)
+	require.NoError(t, err)
+	require.Equal(t, date("2026-07-15"), start)
+
+	// A Thursday lesson from Wednesday 30 June 2027 would start after the
+	// year ends.
+	last := date("2027-06-30")
+	_, err = startDate(year, 4, &last)
+	require.ErrorIs(t, err, domain.ErrEffectiveFromOutOfYear)
+}
+
+// The database's guards reach callers as the errors the service's own
+// checks return: the named exclusion constraints as the two conflicts, the
+// range history guard as a too-early change, the in-effect trigger as an
+// ended lesson.
+func TestMapConstraintError(t *testing.T) {
+	cases := []struct {
+		err  *pgconn.PgError
+		want error
+	}{
+		{&pgconn.PgError{Code: "23P01", ConstraintName: "ex_schedules_teacher_slot"}, domain.ErrConflictTeacher},
+		{&pgconn.PgError{Code: "23P01", ConstraintName: "ex_schedules_class_slot"}, domain.ErrConflictClass},
+		{&pgconn.PgError{Code: "23503", ConstraintName: "schedule_history_guard"}, domain.ErrScheduleHasHistory},
+		{&pgconn.PgError{Code: "23503", ConstraintName: "attendance_sessions_schedule_id_fkey"}, domain.ErrScheduleHasHistory},
+		{&pgconn.PgError{Code: "23503", ConstraintName: "schedule_history_range"}, domain.ErrScheduleChangeBeforeHistory},
+		{&pgconn.PgError{Code: "23514", ConstraintName: "schedule_in_effect"}, domain.ErrScheduleEnded},
+	}
+	for _, tc := range cases {
+		require.ErrorIs(t, mapConstraintError(tc.err), tc.want, tc.err.ConstraintName)
+	}
+}
+
+// A manager may change a lesson with history from its earliest date on,
+// never one that has ended or whose remaining dates are all bound.
+func TestManagerPolicy(t *testing.T) {
+	today := date("2026-11-20")
+	require.Equal(t, MutationPolicy{CanEdit: true, CanDelete: true}, managerPolicy(nil, false, today, today))
+
+	earliest := date("2026-11-27")
+	policy := managerPolicy(nil, true, earliest, today)
+	require.True(t, policy.CanEdit)
+	require.True(t, policy.RequiresEffectiveFrom)
+	require.Equal(t, earliest, *policy.MinEffectiveFrom)
+
+	ended := date("2026-11-19")
+	policy = managerPolicy(&ended, true, today, today)
+	require.False(t, policy.CanEdit)
+	require.Equal(t, domain.ErrScheduleEnded.Error(), policy.Reason)
+
+	bound := date("2026-11-26")
+	policy = managerPolicy(&bound, true, earliest, today)
+	require.False(t, policy.CanDelete, "every remaining date is bound by history")
 }

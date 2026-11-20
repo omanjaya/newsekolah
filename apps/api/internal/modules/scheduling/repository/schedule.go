@@ -3,8 +3,10 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
@@ -18,7 +20,8 @@ func (r *Repository) CreateSchedule(ctx context.Context, s domain.Schedule) (dom
 		ClassID: s.ClassID, SubjectID: s.SubjectID, TeacherUserID: s.TeacherUserID, RoomID: pdatabase.NullUUID(s.RoomID),
 		DayOfWeek: s.DayOfWeek, StartPeriodID: s.StartPeriodID, EndPeriodID: s.EndPeriodID,
 		StartSeq: s.StartSeq, EndSeq: s.EndSeq, Source: string(s.Source), Notes: pdatabase.Text(s.Notes),
-		CreatedBy: pdatabase.NullUUID(s.CreatedBy),
+		CreatedBy:     pdatabase.NullUUID(s.CreatedBy),
+		EffectiveFrom: pdatabase.Date(s.EffectiveFrom), EffectiveUntil: nullDate(s.EffectiveUntil),
 	})
 	if err != nil {
 		return domain.Schedule{}, err
@@ -32,7 +35,18 @@ func (r *Repository) UpdateSchedule(ctx context.Context, s domain.Schedule) (dom
 		SubjectID: s.SubjectID, TeacherUserID: s.TeacherUserID, RoomID: pdatabase.NullUUID(s.RoomID),
 		DayOfWeek: s.DayOfWeek, StartPeriodID: s.StartPeriodID, EndPeriodID: s.EndPeriodID,
 		StartSeq: s.StartSeq, EndSeq: s.EndSeq, Source: string(s.Source), Notes: pdatabase.Text(s.Notes),
-		UpdatedBy: pdatabase.NullUUID(s.UpdatedBy),
+		UpdatedBy:     pdatabase.NullUUID(s.UpdatedBy),
+		EffectiveFrom: pdatabase.Date(s.EffectiveFrom), EffectiveUntil: nullDate(s.EffectiveUntil),
+	})
+	if err != nil {
+		return domain.Schedule{}, err
+	}
+	return toSchedule(row), nil
+}
+
+func (r *Repository) RetireSchedule(ctx context.Context, tenantID, id uuid.UUID, until time.Time, updatedBy uuid.NullUUID) (domain.Schedule, error) {
+	row, err := r.queries(ctx).RetireSchedule(ctx, db.RetireScheduleParams{
+		TenantID: tenantID, ID: id, EffectiveUntil: pdatabase.Date(until), UpdatedBy: pdatabase.NullUUID(updatedBy),
 	})
 	if err != nil {
 		return domain.Schedule{}, err
@@ -68,9 +82,9 @@ func (r *Repository) ListSchedulesByAcademicYear(ctx context.Context, tenantID, 
 	return toSchedules(rows), nil
 }
 
-func (r *Repository) ListSchedulesByClass(ctx context.Context, tenantID, academicYearID, classID uuid.UUID) ([]domain.Schedule, error) {
-	rows, err := r.queries(ctx).ListSchedulesByClass(ctx, db.ListSchedulesByClassParams{
-		TenantID: tenantID, AcademicYearID: academicYearID, ClassID: classID,
+func (r *Repository) ListSchedulesByClassForWeek(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, weekStart time.Time) ([]domain.Schedule, error) {
+	rows, err := r.queries(ctx).ListSchedulesByClassForWeek(ctx, db.ListSchedulesByClassForWeekParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, ClassID: classID, WeekStart: pdatabase.Date(weekStart),
 	})
 	if err != nil {
 		return nil, err
@@ -78,9 +92,19 @@ func (r *Repository) ListSchedulesByClass(ctx context.Context, tenantID, academi
 	return toSchedules(rows), nil
 }
 
-func (r *Repository) ListSchedulesByTeacher(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID) ([]domain.Schedule, error) {
-	rows, err := r.queries(ctx).ListSchedulesByTeacher(ctx, db.ListSchedulesByTeacherParams{
-		TenantID: tenantID, AcademicYearID: academicYearID, TeacherUserID: teacherID,
+func (r *Repository) ListSchedulesByTeacherForWeek(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID, weekStart time.Time) ([]domain.Schedule, error) {
+	rows, err := r.queries(ctx).ListSchedulesByTeacherForWeek(ctx, db.ListSchedulesByTeacherForWeekParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, TeacherUserID: teacherID, WeekStart: pdatabase.Date(weekStart),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return toSchedules(rows), nil
+}
+
+func (r *Repository) ListSchedulesByDayOn(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, date time.Time) ([]domain.Schedule, error) {
+	rows, err := r.queries(ctx).ListSchedulesByDayOn(ctx, db.ListSchedulesByDayOnParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, DayOfWeek: dayOfWeek, OnDate: pdatabase.Date(date),
 	})
 	if err != nil {
 		return nil, err
@@ -98,29 +122,54 @@ func (r *Repository) ListSchedulesByDay(ctx context.Context, tenantID, academicY
 	return toSchedules(rows), nil
 }
 
-func (r *Repository) ScheduleIDsWithHistory(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]uuid.UUID, error) {
-	if len(ids) == 0 {
-		return nil, nil
-	}
-	return r.queries(ctx).ListScheduleIDsWithHistory(ctx, db.ListScheduleIDsWithHistoryParams{TenantID: tenantID, Ids: ids})
-}
-
-func (r *Repository) CountSchedulesForClassDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, dayOfWeek int16) (int64, error) {
-	return r.queries(ctx).CountSchedulesForClassDay(ctx, db.CountSchedulesForClassDayParams{
-		TenantID: tenantID, AcademicYearID: academicYearID, ClassID: classID, DayOfWeek: dayOfWeek,
-	})
-}
-
-func (r *Repository) CountSchedulesByClassDay(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID) ([]service.ClassDayCount, error) {
-	rows, err := r.queries(ctx).CountSchedulesByClassDay(ctx, db.CountSchedulesByClassDayParams{
-		TenantID: tenantID, AcademicYearID: academicYearID, ClassIds: classIDs,
+func (r *Repository) ListSchedulesForTeacherOn(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID, date time.Time) ([]domain.Schedule, error) {
+	rows, err := r.queries(ctx).ListSchedulesForTeacherOn(ctx, db.ListSchedulesForTeacherOnParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, TeacherUserID: teacherID, OnDate: pdatabase.Date(date),
 	})
 	if err != nil {
 		return nil, err
 	}
-	out := make([]service.ClassDayCount, len(rows))
+	return toSchedules(rows), nil
+}
+
+func (r *Repository) ListScheduleHistory(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]domain.History, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	rows, err := r.queries(ctx).ListScheduleHistory(ctx, db.ListScheduleHistoryParams{TenantID: tenantID, Ids: ids})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.History, len(rows))
 	for i, row := range rows {
-		out[i] = service.ClassDayCount{ClassID: row.ClassID, DayOfWeek: row.DayOfWeek, Count: row.Total}
+		out[i] = domain.History{ScheduleID: row.ID, Until: datePtr(row.HistoryUntil)}
+	}
+	return out, nil
+}
+
+func (r *Repository) CountSchedulesForClassOn(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) (int64, error) {
+	return r.queries(ctx).CountSchedulesForClassOn(ctx, db.CountSchedulesForClassOnParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, ClassID: classID, OnDate: pdatabase.Date(date),
+	})
+}
+
+func (r *Repository) CountSchedulesByClassDates(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID, dates []time.Time) ([]service.ClassDateCount, error) {
+	if len(classIDs) == 0 || len(dates) == 0 {
+		return nil, nil
+	}
+	pgDates := make([]pgtype.Date, len(dates))
+	for i, d := range dates {
+		pgDates[i] = pdatabase.Date(d)
+	}
+	rows, err := r.queries(ctx).CountSchedulesByClassDates(ctx, db.CountSchedulesByClassDatesParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, ClassIds: classIDs, Dates: pgDates,
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.ClassDateCount, len(rows))
+	for i, row := range rows {
+		out[i] = service.ClassDateCount{ClassID: row.ClassID, Date: pdatabase.DateOrZero(row.OnDate), Count: row.Total}
 	}
 	return out, nil
 }

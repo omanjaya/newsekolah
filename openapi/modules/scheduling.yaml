@@ -20,6 +20,13 @@ paths:
           in: query
           description: 1 (Monday) through 7 (Sunday)
           schema: { type: integer, minimum: 1, maximum: 7 }
+        - name: as_of
+          in: query
+          description: >-
+            Any date in the week to show. Each weekday lists the lessons in effect on that weekday's date in the
+            same Monday-Sunday week, so a change that takes effect mid-week shows the old lesson before it and the
+            new one from it. Default: today in the school's time zone. Clamped to the academic year.
+          schema: { type: string, format: date }
       responses:
         "200":
           description: Schedule blocks
@@ -27,11 +34,15 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [data]
+                required: [data, week_starts_on]
                 properties:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/ScheduleBlock" }
+                  week_starts_on:
+                    type: string
+                    format: date
+                    description: The Monday of the week the blocks were resolved for.
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
     post:
@@ -90,7 +101,11 @@ paths:
       tags: [scheduling]
       operationId: clearSchedules
       x-permission: manage_schedules
-      summary: Delete every schedule for one academic year
+      summary: Clear one academic year's timetable, entirely or from a date on
+      description: >-
+        Without effective_from every schedule of the year is deleted, which fails with SCHEDULE_HAS_HISTORY when
+        any of them has history. With it the timetable is cleared from that date on: each lesson ends on its last
+        date before it (or goes when it has none) and every earlier week keeps its lessons and history.
       requestBody:
         required: true
         content:
@@ -100,6 +115,10 @@ paths:
               required: [academic_year_id]
               properties:
                 academic_year_id: { type: string, format: uuid }
+                effective_from:
+                  type: string
+                  format: date
+                  description: First date the timetable is empty. Not before today nor on or before a date with history.
       responses:
         "204": { description: Cleared }
         "409": { $ref: "#/components/responses/ScheduleConflict" }
@@ -156,6 +175,11 @@ paths:
       operationId: updateSchedule
       x-permission: authenticated
       summary: Update a schedule (admin, or the owning teacher within the edit deadline)
+      description: >-
+        With effective_from in the body the change takes effect from that date: the block ends on its last lesson
+        before it and a new version (a new id, returned) starts on its first lesson on or after it. Without it the
+        block is corrected in place for the whole academic year, which fails with SCHEDULE_HAS_HISTORY once it has
+        history.
       parameters:
         - name: schedule_ids
           in: query
@@ -187,6 +211,10 @@ paths:
       operationId: deleteSchedule
       x-permission: authenticated
       summary: Delete a schedule (admin, or the owning teacher within the edit deadline)
+      description: >-
+        Without effective_from the block is deleted outright, which fails with SCHEDULE_HAS_HISTORY once it has
+        history. With effective_from (manage_schedules only) the block is removed from that date on: earlier dates
+        keep it, with everything recorded against it.
       parameters:
         - name: schedule_ids
           in: query
@@ -198,6 +226,10 @@ paths:
             minItems: 1
             maxItems: 100
             items: { type: string, format: uuid }
+        - name: effective_from
+          in: query
+          description: Remove the block from this date on; earlier dates keep it. See MutationPolicy.min_effective_from.
+          schema: { type: string, format: date }
       responses:
         "204": { description: Deleted }
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -239,6 +271,9 @@ paths:
       operationId: createSubstitution
       x-permission: view_schedules
       summary: Request a substitute for one dated occurrence of my own schedule
+      description: >-
+        The date must fall on the schedule's weekday and inside its effective dates; a date after this version of
+        the lesson ended (or before it started) is refused with SUBSTITUTION_LESSON_NOT_ON_DATE.
       requestBody:
         required: true
         content:
@@ -490,7 +525,12 @@ paths:
 components:
   responses:
     ScheduleConflict:
-      description: Schedule overlaps another lesson, the year is archived, or recorded attendance/substitution history prevents mutation
+      description: >-
+        Schedule overlaps another lesson (SCHEDULE_CONFLICT_CLASS / SCHEDULE_CONFLICT_TEACHER, details name the
+        clashing lesson and its effective dates), the year is archived (SCHEDULE_YEAR_ARCHIVED), history prevents
+        an undated change (SCHEDULE_HAS_HISTORY, details give the earliest effective_from), the change date is too
+        early (SCHEDULE_CHANGE_BEFORE_HISTORY, details give the earliest effective_from), or the lesson already
+        ended (SCHEDULE_ENDED).
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
@@ -512,7 +552,16 @@ components:
         can_delete: { type: boolean }
         has_history:
           type: boolean
-          description: The schedule has an attendance session or a substitution request, so it can no longer be edited or deleted (the history is kept).
+          description: >-
+            The schedule has recorded attendance or a substitution request; changes must carry effective_from and
+            leave earlier dates as they were.
+        requires_effective_from:
+          type: boolean
+          description: An edit or delete must say from which date it takes effect (effective_from).
+        min_effective_from:
+          type: string
+          format: date
+          description: The earliest effective_from the server accepts (today, or the day after the last history date).
         reason: { type: string }
     Schedule:
       type: object
@@ -526,6 +575,7 @@ components:
         - start_period_id
         - end_period_id
         - source
+        - effective_from
         - created_at
         - updated_at
       properties:
@@ -541,6 +591,14 @@ components:
         end_period_id: { type: string, format: uuid }
         source: { $ref: "#/components/schemas/ScheduleSource" }
         notes: { type: string }
+        effective_from:
+          type: string
+          format: date
+          description: First date this version of the lesson is on the timetable (on its weekday).
+        effective_until:
+          type: string
+          format: date
+          description: Last date this version is on the timetable (inclusive); absent while it runs to the end of the year.
         mutation_policy: { $ref: "#/components/schemas/MutationPolicy" }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
@@ -556,6 +614,7 @@ components:
           start_seq,
           end_seq,
           source,
+          effective_from,
         ]
       properties:
         schedule_ids:
@@ -569,9 +628,22 @@ components:
         start_seq: { type: integer }
         end_seq: { type: integer }
         source: { $ref: "#/components/schemas/ScheduleSource" }
+        effective_from:
+          type: string
+          format: date
+          description: First date the block is on the timetable.
+        effective_until:
+          type: string
+          format: date
+          description: Last date the block is on the timetable (inclusive); absent while it runs to the end of the year.
         has_history:
           type: boolean
-          description: Some schedule in the block has an attendance session or a substitution request, so the block can no longer be edited or deleted.
+          description: >-
+            Some schedule in the block has recorded attendance or a substitution request: it can no longer be
+            corrected in place, only changed or removed from a date after that history.
+        mutation_policy:
+          $ref: "#/components/schemas/MutationPolicy"
+          description: What the caller may do with the block; present for callers with manage_schedules.
     ScheduleWriteRequest:
       type: object
       required:
@@ -596,6 +668,13 @@ components:
         end_period_id: { type: string, format: uuid }
         source: { $ref: "#/components/schemas/ScheduleSource" }
         notes: { type: string, maxLength: 500 }
+        effective_from:
+          type: string
+          format: date
+          description: >-
+            Create and bulk import: first date the lesson is on the timetable (default: the start of the academic
+            year), moved to the next date on its weekday. Update: the date the change takes effect; omit it to
+            correct the block in place (SCHEDULE_HAS_HISTORY once it has history). manage_schedules only.
     SubstitutionStatus:
       type: string
       enum: [pending, accepted, rejected, cancelled]

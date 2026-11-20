@@ -9,6 +9,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -105,7 +106,41 @@ var (
 					WithDetails(httpx.ErrorDetail{Field: "substitute_user_id", Code: "IS_REQUESTER"})
 	errSubstituteNotTeacher = httpx.NewError(http.StatusBadRequest, "SUBSTITUTE_NOT_TEACHER").
 				WithDetails(httpx.ErrorDetail{Field: "substitute_user_id", Code: "NOT_TEACHER"})
+	errSubstitutionLessonNotOnDate = httpx.NewError(http.StatusBadRequest, "SUBSTITUTION_LESSON_NOT_ON_DATE").
+					WithDetails(httpx.ErrorDetail{Field: "date", Code: "NOT_ON_TIMETABLE"})
+
+	// Effective dating: a change to a lesson with history takes effect
+	// from a date, never in the past nor over what was recorded.
+	errScheduleEffectiveFromInvalid = httpx.NewError(http.StatusBadRequest, "SCHEDULE_EFFECTIVE_FROM_INVALID").
+					WithDetails(httpx.ErrorDetail{Field: "effective_from", Code: "OUT_OF_YEAR"})
+	errScheduleEnded = httpx.NewError(http.StatusConflict, "SCHEDULE_ENDED")
 )
+
+// withMinEffectiveFrom names the earliest effective_from the server would
+// accept, so the editor can offer it: SCHEDULE_HAS_HISTORY (an undated
+// change, code REQUIRED) and SCHEDULE_CHANGE_BEFORE_HISTORY (a date too
+// early, code BEFORE_MIN). Without a known date (a race the database
+// caught) the error goes out bare.
+func withMinEffectiveFrom(status int, code, detailCode string, earliest *time.Time) error {
+	out := httpx.NewError(status, code)
+	if earliest == nil {
+		return out
+	}
+	return out.WithDetails(httpx.ErrorDetail{Field: "effective_from", Code: detailCode, Message: earliest.Format(time.DateOnly)})
+}
+
+// minEffectiveFrom reads the earliest date a typed history error carries.
+func minEffectiveFrom(err error) *time.Time {
+	var needsDate *domain.HistoryRequiresDateError
+	if errors.As(err, &needsDate) {
+		return &needsDate.Min
+	}
+	var tooEarly *domain.ChangeTooEarlyError
+	if errors.As(err, &tooEarly) {
+		return &tooEarly.Min
+	}
+	return nil
+}
 
 // mapScheduleError translates a scheduling/domain sentinel error into the
 // stable *httpx.Error the API contract promises; anything unrecognized
@@ -120,13 +155,22 @@ func withConflictDetails(base *httpx.Error, err error) error {
 		return base
 	}
 	with := conflict.With
-	return httpx.NewError(base.Status, base.Code).WithDetails(
-		httpx.ErrorDetail{Field: "class_id", Code: with.ClassID.String(), Message: conflict.ClassName},
-		httpx.ErrorDetail{Field: "subject_id", Code: with.SubjectID.String(), Message: conflict.SubjectName},
-		httpx.ErrorDetail{Field: "teacher_user_id", Code: with.TeacherUserID.String(), Message: conflict.TeacherName},
-		httpx.ErrorDetail{Field: "start_seq", Code: strconv.Itoa(int(with.StartSeq)), Message: conflict.StartPeriodName},
-		httpx.ErrorDetail{Field: "end_seq", Code: strconv.Itoa(int(with.EndSeq)), Message: conflict.EndPeriodName},
-	)
+	details := []httpx.ErrorDetail{
+		{Field: "class_id", Code: with.ClassID.String(), Message: conflict.ClassName},
+		{Field: "subject_id", Code: with.SubjectID.String(), Message: conflict.SubjectName},
+		{Field: "teacher_user_id", Code: with.TeacherUserID.String(), Message: conflict.TeacherName},
+		{Field: "start_seq", Code: strconv.Itoa(int(with.StartSeq)), Message: conflict.StartPeriodName},
+		{Field: "end_seq", Code: strconv.Itoa(int(with.EndSeq)), Message: conflict.EndPeriodName},
+	}
+	// The clashing version's dates let the editor say "until 26 Nov" when
+	// the slot frees up later.
+	if !with.EffectiveFrom.IsZero() {
+		details = append(details, httpx.ErrorDetail{Field: "effective_from", Code: with.EffectiveFrom.Format(time.DateOnly)})
+	}
+	if with.EffectiveUntil != nil {
+		details = append(details, httpx.ErrorDetail{Field: "effective_until", Code: with.EffectiveUntil.Format(time.DateOnly)})
+	}
+	return httpx.NewError(base.Status, base.Code).WithDetails(details...)
 }
 
 // becomes a generic 500 rather than leaking internals.
@@ -151,7 +195,15 @@ func mapScheduleError(err error) error {
 	case errors.Is(err, domain.ErrPeriodNotFound), errors.Is(err, domain.ErrPeriodIsBreak), errors.Is(err, domain.ErrPeriodTemplateDay):
 		return errSchedulePeriodInvalid
 	case errors.Is(err, domain.ErrScheduleHasHistory):
-		return httpx.WrapError(409, "SCHEDULE_HAS_HISTORY", err)
+		return withMinEffectiveFrom(http.StatusConflict, "SCHEDULE_HAS_HISTORY", "REQUIRED", minEffectiveFrom(err))
+	case errors.Is(err, domain.ErrScheduleChangeBeforeHistory):
+		return withMinEffectiveFrom(http.StatusConflict, "SCHEDULE_CHANGE_BEFORE_HISTORY", "BEFORE_MIN", minEffectiveFrom(err))
+	case errors.Is(err, domain.ErrEffectiveFromOutOfYear):
+		return errScheduleEffectiveFromInvalid
+	case errors.Is(err, domain.ErrScheduleEnded):
+		return errScheduleEnded
+	case errors.Is(err, domain.ErrEffectiveDateAdminOnly):
+		return httpx.ErrForbidden
 	case errors.Is(err, domain.ErrInvalidScheduleBlock):
 		return httpx.ErrValidation
 	case errors.Is(err, domain.ErrYearArchived):
@@ -186,6 +238,8 @@ func mapSubstitutionError(err error) error {
 		return errSubstituteIsRequester
 	case errors.Is(err, domain.ErrSubstituteNotTeacher):
 		return errSubstituteNotTeacher
+	case errors.Is(err, domain.ErrSubstitutionNotScheduled):
+		return errSubstitutionLessonNotOnDate
 	default:
 		var appErr *httpx.Error
 		if errors.As(err, &appErr) {
@@ -241,6 +295,11 @@ func toAPIMutationPolicy(p service.MutationPolicy) *api.MutationPolicy {
 		hasHistory := true
 		out.HasHistory = &hasHistory
 	}
+	if p.RequiresEffectiveFrom {
+		requires := true
+		out.RequiresEffectiveFrom = &requires
+	}
+	out.MinEffectiveFrom = apiDatePtr(p.MinEffectiveFrom)
 	if p.Reason != "" {
 		reason := p.Reason
 		out.Reason = &reason
@@ -263,6 +322,8 @@ func toAPISchedule(s domain.Schedule, policy *service.MutationPolicy) api.Schedu
 		UpdatedAt:      s.UpdatedAt,
 		TermId:         nullUUIDPtr(s.TermID),
 		RoomId:         nullUUIDPtr(s.RoomID),
+		EffectiveFrom:  openapi_types.Date{Time: s.EffectiveFrom},
+		EffectiveUntil: apiDatePtr(s.EffectiveUntil),
 	}
 	if s.Notes != "" {
 		notes := s.Notes
@@ -274,23 +335,36 @@ func toAPISchedule(s domain.Schedule, policy *service.MutationPolicy) api.Schedu
 	return out
 }
 
-func toAPIBlock(b domain.Block) api.ScheduleBlock {
+func toAPIBlock(b service.ListedBlock) api.ScheduleBlock {
 	var hasHistory *bool
 	if b.HasHistory {
 		hasHistory = &b.HasHistory
 	}
-	return api.ScheduleBlock{
-		HasHistory:    hasHistory,
-		ScheduleIds:   b.ScheduleIDs,
-		ClassId:       b.ClassID,
-		SubjectId:     b.SubjectID,
-		TeacherUserId: b.TeacherUserID,
-		RoomId:        nullUUIDPtr(b.RoomID),
-		DayOfWeek:     int(b.DayOfWeek),
-		StartSeq:      int(b.StartSeq),
-		EndSeq:        int(b.EndSeq),
-		Source:        api.ScheduleSource(b.Source),
+	out := api.ScheduleBlock{
+		HasHistory:     hasHistory,
+		ScheduleIds:    b.ScheduleIDs,
+		ClassId:        b.ClassID,
+		SubjectId:      b.SubjectID,
+		TeacherUserId:  b.TeacherUserID,
+		RoomId:         nullUUIDPtr(b.RoomID),
+		DayOfWeek:      int(b.DayOfWeek),
+		StartSeq:       int(b.StartSeq),
+		EndSeq:         int(b.EndSeq),
+		Source:         api.ScheduleSource(b.Source),
+		EffectiveFrom:  openapi_types.Date{Time: b.EffectiveFrom},
+		EffectiveUntil: apiDatePtr(b.EffectiveUntil),
 	}
+	if b.Policy != nil {
+		out.MutationPolicy = toAPIMutationPolicy(*b.Policy)
+	}
+	return out
+}
+
+func apiDatePtr(t *time.Time) *openapi_types.Date {
+	if t == nil {
+		return nil
+	}
+	return &openapi_types.Date{Time: *t}
 }
 
 func toAPISubstitution(s domain.Substitution) api.Substitution {

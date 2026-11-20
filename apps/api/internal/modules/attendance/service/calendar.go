@@ -181,7 +181,7 @@ func (s *Service) calendarDaysForRange(
 		expected, submitted := 0, 0
 		if hasClass {
 			if hasLessons {
-				count, err := s.schedules.CountSchedulesForClassDay(ctx, tenantID, academicYearID, classID, domain.IsoWeekday(d))
+				count, err := s.schedules.CountSchedulesForClassOn(ctx, tenantID, academicYearID, classID, d)
 				if err != nil {
 					return nil, err
 				}
@@ -399,7 +399,7 @@ func (s *Service) buildRoster(ctx context.Context, tenantID, academicYearID, cla
 	}
 	expected := 0
 	if isSchoolDay {
-		count, err := s.schedules.CountSchedulesForClassDay(ctx, tenantID, academicYearID, classID, domain.IsoWeekday(date))
+		count, err := s.schedules.CountSchedulesForClassOn(ctx, tenantID, academicYearID, classID, date)
 		if err != nil {
 			return nil, 0, 0, err
 		}

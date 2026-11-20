@@ -21,5 +21,6 @@ func (s SupervisionSchedule) GetSchedule(ctx context.Context, tenantID, schedule
 	}
 	return supervisionservice.ScheduleRef{
 		ID: ref.ID, ClassID: ref.ClassID, SubjectID: ref.SubjectID, TeacherUserID: ref.TeacherUserID, DayOfWeek: ref.DayOfWeek,
+		EffectiveFrom: ref.EffectiveFrom, EffectiveUntil: ref.EffectiveUntil,
 	}, nil
 }

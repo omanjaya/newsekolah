@@ -361,13 +361,14 @@ type Querier interface {
 	// A lost loan also gets returned_at (the time it was closed) but the book
 	// never came back, so only status 'returned' counts as a return.
 	CountReturnsBetween(ctx context.Context, arg CountReturnsBetweenParams) (int32, error)
-	// Batch form of CountSchedulesForClassDay for the analytics recompute: the
-	// expected-session count of every (class, weekday) pair among the given
-	// classes in one query. A pair with no schedule is absent (count 0).
-	CountSchedulesByClassDay(ctx context.Context, arg CountSchedulesByClassDayParams) ([]CountSchedulesByClassDayRow, error)
+	// Batch form of CountSchedulesForClassOn for the analytics recompute: the
+	// expected-session count of every (class, date) pair among the given
+	// classes and dates in one query. A pair with no lesson is absent (count 0).
+	CountSchedulesByClassDates(ctx context.Context, arg CountSchedulesByClassDatesParams) ([]CountSchedulesByClassDatesRow, error)
 	// Read by the attendance module to compute a day's expected session count
-	// for a class (attendance/domain.ComputeDailyStatus's Expected input).
-	CountSchedulesForClassDay(ctx context.Context, arg CountSchedulesForClassDayParams) (int64, error)
+	// for a class (attendance/domain.ComputeDailyStatus's Expected input): the
+	// versions in effect on that date.
+	CountSchedulesForClassOn(ctx context.Context, arg CountSchedulesForClassOnParams) (int64, error)
 	CountStillOnCampusInRange(ctx context.Context, arg CountStillOnCampusInRangeParams) (int32, error)
 	CountStocktakeScans(ctx context.Context, arg CountStocktakeScansParams) (int32, error)
 	CountSubmittedSessionsByClassDate(ctx context.Context, arg CountSubmittedSessionsByClassDateParams) (int64, error)
@@ -474,6 +475,10 @@ type Querier interface {
 	CreateReservation(ctx context.Context, arg CreateReservationParams) (LibraryReservation, error)
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 	CreateScanToken(ctx context.Context, arg CreateScanTokenParams) (ScanToken, error)
+	// A schedule row is one version of a weekly lesson, on the timetable from
+	// effective_from through effective_until (both inclusive; null until means
+	// to the end of the academic year), per migration 0147. Every read that
+	// asks "which lessons are there on date D" filters effective_range @> D.
 	CreateSchedule(ctx context.Context, arg CreateScheduleParams) (Schedule, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateStaffAttendanceCorrection(ctx context.Context, arg CreateStaffAttendanceCorrectionParams) (StaffAttendanceCorrection, error)
@@ -651,6 +656,10 @@ type Querier interface {
 	// opened_at range, so the caller needs the active academic year's own
 	// calendar bounds to build one.
 	GetAcademicYearRange(ctx context.Context, arg GetAcademicYearRangeParams) (GetAcademicYearRangeRow, error)
+	// The year's date span bounds a schedule version's effective dates: the
+	// default start of a new lesson, the window a change date must fall in,
+	// and the week a timetable read falls back to.
+	GetAcademicYearRefForSchedule(ctx context.Context, arg GetAcademicYearRefForScheduleParams) (GetAcademicYearRefForScheduleRow, error)
 	GetAcceptedSubstitutionForScheduleDate(ctx context.Context, arg GetAcceptedSubstitutionForScheduleDateParams) (SubstitutionRequest, error)
 	GetAchievement(ctx context.Context, arg GetAchievementParams) (StudentAchievement, error)
 	GetAcquisitionSource(ctx context.Context, arg GetAcquisitionSourceParams) (LibraryAcquisitionSource, error)
@@ -1177,7 +1186,7 @@ type Querier interface {
 	// academic.AcademicListClassesByYearAndGradeLevel's own scoping rule.
 	ListClassesByGradeLevelForAttendance(ctx context.Context, arg ListClassesByGradeLevelForAttendanceParams) ([]ListClassesByGradeLevelForAttendanceRow, error)
 	// Every non-deleted class of the academic year that has no schedule row
-	// straddling now_time on day_of_week -- the monitor snapshot shows these
+	// in effect on on_date straddling now_time on day_of_week -- the monitor snapshot shows these
 	// as "no schedule" cards instead of silently omitting them.
 	ListClassesWithoutCurrentPeriodScheduleForAttendance(ctx context.Context, arg ListClassesWithoutCurrentPeriodScheduleForAttendanceParams) ([]ListClassesWithoutCurrentPeriodScheduleForAttendanceRow, error)
 	ListCollectionCategories(ctx context.Context, tenantID uuid.UUID) ([]LibraryCollectionCategory, error)
@@ -1202,7 +1211,8 @@ type Querier interface {
 	ListCounselingsForStudent(ctx context.Context, arg ListCounselingsForStudentParams) ([]Counseling, error)
 	// Every schedule occurrence whose period is currently running (start
 	// period's starts_at through end period's ends_at straddle now_time, in
-	// the tenant's own timezone), left-joined with today's attendance session
+	// the tenant's own timezone) in the version in effect on the date,
+	// left-joined with today's attendance session
 	// if one has been opened -- the raw input to the monitor snapshot's
 	// per-class submission cards. Also carries the governing period's own
 	// name/times (the monitor's "current period" banner is this period,
@@ -1455,17 +1465,32 @@ type Querier interface {
 	// itself is a points range (min_points/max_points) the service derives
 	// from the policy, since only Go holds the level ladder.
 	ListSPCandidates(ctx context.Context, arg ListSPCandidatesParams) ([]ListSPCandidatesRow, error)
-	// Which of the given schedules already have a recorded attendance session
-	// (submitted, or holding an entry or a journal) or a substitution request:
-	// the history guard (migrations 0107 and 0144) refuses to change or delete
-	// those, so the grid and the single-schedule policy say so before the
-	// admin fills a form. A session only opened, with nothing recorded, is a
-	// placeholder the guard clears instead.
-	ListScheduleIDsWithHistory(ctx context.Context, arg ListScheduleIDsWithHistoryParams) ([]uuid.UUID, error)
+	// Which of the given schedules have history -- a recorded attendance
+	// session (submitted, or holding an entry or a journal) or any
+	// substitution request -- and the last date it binds: the latest recorded
+	// session or pending/accepted substitution. A change on such a version
+	// must take effect after that date (migration 0147's history guard); a
+	// session only opened, with nothing recorded, is a placeholder and binds
+	// nothing.
+	ListScheduleHistory(ctx context.Context, arg ListScheduleHistoryParams) ([]ListScheduleHistoryRow, error)
+	// Every version of the year, locked for an effective-dated clear.
 	ListSchedulesByAcademicYear(ctx context.Context, arg ListSchedulesByAcademicYearParams) ([]Schedule, error)
-	ListSchedulesByClass(ctx context.Context, arg ListSchedulesByClassParams) ([]Schedule, error)
+	// A class's timetable for the Monday-Sunday week starting week_start: each
+	// weekday lists the versions in effect on that weekday's own date, so a
+	// change that starts mid-week shows the old lesson before it and the new
+	// one from it.
+	ListSchedulesByClassForWeek(ctx context.Context, arg ListSchedulesByClassForWeekParams) ([]Schedule, error)
+	// Every version of one weekday, whatever its dates: the conflict check
+	// reads this and domain.DetectConflict compares only versions whose
+	// effective ranges overlap, the way the exclusion constraints do.
 	ListSchedulesByDay(ctx context.Context, arg ListSchedulesByDayParams) ([]Schedule, error)
-	ListSchedulesByTeacher(ctx context.Context, arg ListSchedulesByTeacherParams) ([]Schedule, error)
+	// Every class's lessons on one date (the per-day grid).
+	ListSchedulesByDayOn(ctx context.Context, arg ListSchedulesByDayOnParams) ([]Schedule, error)
+	// ListSchedulesByClassForWeek for one teacher.
+	ListSchedulesByTeacherForWeek(ctx context.Context, arg ListSchedulesByTeacherForWeekParams) ([]Schedule, error)
+	// A teacher's own lessons on one date: the version of each lesson in
+	// effect that day, on that date's weekday.
+	ListSchedulesForTeacherOn(ctx context.Context, arg ListSchedulesForTeacherOnParams) ([]Schedule, error)
 	// The per-session detail rows behind the daily report (docs/analysis/
 	// backend-inventory.md section 1.10's "detail per jadwal x siswa"): every
 	// session already opened for a class on a date, with the subject/teacher/
@@ -1528,8 +1553,11 @@ type Querier interface {
 	// Same rows as ListSubstitutionsIncoming, joined with the covered
 	// schedule's class/subject/period so the web substitutions page can render
 	// a session-card without a second round trip per row. The join is always
-	// safe: substitution_requests.schedule_id cascades on schedule delete, so
-	// the referenced schedule row always exists for as long as this row does.
+	// safe: substitution_requests.schedule_id restricts schedule deletion
+	// (migration 0107), so the referenced row exists for as long as this one
+	// does. The join is by id on purpose: a request stays with the schedule
+	// version it was made for, which is in effect on its date (migration
+	// 0147), even after a later change retired that version.
 	ListSubstitutionsIncomingWithSchedule(ctx context.Context, arg ListSubstitutionsIncomingWithScheduleParams) ([]ListSubstitutionsIncomingWithScheduleRow, error)
 	ListSubstitutionsOutgoing(ctx context.Context, arg ListSubstitutionsOutgoingParams) ([]SubstitutionRequest, error)
 	ListSubstitutionsOutgoingWithSchedule(ctx context.Context, arg ListSubstitutionsOutgoingWithScheduleParams) ([]ListSubstitutionsOutgoingWithScheduleRow, error)
@@ -1768,6 +1796,9 @@ type Querier interface {
 	ResetWebhookEndpointFailure(ctx context.Context, arg ResetWebhookEndpointFailureParams) error
 	RespondSubstitutionRequest(ctx context.Context, arg RespondSubstitutionRequestParams) (SubstitutionRequest, error)
 	RestoreUser(ctx context.Context, arg RestoreUserParams) error
+	// Ends one version on effective_until (its last lesson date): the row and
+	// everything recorded against it stay, it simply no longer occurs later.
+	RetireSchedule(ctx context.Context, arg RetireScheduleParams) (Schedule, error)
 	ReturnLoan(ctx context.Context, arg ReturnLoanParams) (LibraryLoan, error)
 	RevokeAPIKey(ctx context.Context, arg RevokeAPIKeyParams) (IntegrationApiKey, error)
 	// Marks the document issued for an entity as no longer valid, so the

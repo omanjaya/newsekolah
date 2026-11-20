@@ -11,6 +11,7 @@ func init() {
 	catalog["SUPERVISION_SCORE_COUNT_MISMATCH"] = map[string]string{Indonesian: "Jumlah skor tidak sesuai dengan jumlah butir instrumen.", English: "The number of scores does not match the number of instrument items."}
 	catalog["SUPERVISION_SCORE_OUT_OF_RANGE"] = map[string]string{Indonesian: "Skor berada di luar rentang yang diizinkan.", English: "The score is outside the allowed range."}
 	catalog["SUPERVISION_LESSON_DAY_MISMATCH"] = map[string]string{Indonesian: "Tanggal observasi tidak jatuh pada hari pelajaran yang dipilih.", English: "The observation date does not fall on the chosen lesson's weekday."}
+	catalog["SUPERVISION_LESSON_NOT_ON_DATE"] = map[string]string{Indonesian: "Pelajaran ini tidak ada di jadwal pada tanggal observasi yang dipilih.", English: "This lesson is not on the timetable on the chosen observation date."}
 	catalog["SUPERVISION_SCHEDULED_EXISTS"] = map[string]string{Indonesian: "Pelajaran ini sudah dijadwalkan untuk observasi pada tanggal tersebut.", English: "This lesson is already scheduled for observation on that date."}
 	catalog["SUPERVISION_CRITERION_KEY_DUPLICATE"] = map[string]string{Indonesian: "Kode kriteria harus unik dalam satu instrumen.", English: "Criterion codes must be unique within an instrument."}
 	catalog["SUPERVISION_CRITERION_NAME_DUPLICATE"] = map[string]string{Indonesian: "Nama kriteria harus unik dalam satu instrumen.", English: "Criterion names must be unique within an instrument."}

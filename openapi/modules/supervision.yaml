@@ -103,6 +103,9 @@ paths:
       operationId: scheduleObservation
       x-permission: manage_supervision
       summary: Plan a visit to a specific lesson, resolved through the scheduling module
+      description: >-
+        lesson_date must fall on the lesson's weekday and inside the effective dates of that version of the lesson
+        (SUPERVISION_LESSON_NOT_ON_DATE otherwise).
       parameters:
         - { name: cycleId, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:

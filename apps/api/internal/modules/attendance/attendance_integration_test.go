@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
 
@@ -89,6 +90,9 @@ type world struct {
 	student1ID, student2ID               uuid.UUID
 	scheduleTodayID, scheduleYesterdayID uuid.UUID
 	today, yesterday                     time.Time
+	// scheduleFrom is the effective_from every fixture schedule starts on:
+	// the academic year's first day (migration 0147).
+	scheduleFrom pgtype.Date
 	// gradeLevelID and periodID are classID's own grade level and the
 	// all-day period every schedule in this fixture uses -- exposed so a
 	// test can seed a second class in the same grade level (the
@@ -123,6 +127,7 @@ func seedWorld(t *testing.T, ctx context.Context, pool *pgxpool.Pool, slug strin
 	})
 	require.NoError(t, err)
 	w.yearID = year.ID
+	w.scheduleFrom = year.StartsOn
 
 	var gradeLevelID uuid.UUID
 	require.NoError(t, pool.QueryRow(ctx,
@@ -218,6 +223,7 @@ func seedWorld(t *testing.T, ctx context.Context, pool *pgxpool.Pool, slug strin
 	scheduleToday, err := q.CreateSchedule(ctx, db.CreateScheduleParams{
 		TenantID: w.tenantID, AcademicYearID: w.yearID, ClassID: w.classID, SubjectID: w.subjectID, TeacherUserID: w.teacherID,
 		DayOfWeek: domain.IsoWeekday(w.today), StartPeriodID: periodID, EndPeriodID: periodID, StartSeq: 1, EndSeq: 1, Source: "admin",
+		EffectiveFrom: w.scheduleFrom,
 	})
 	require.NoError(t, err)
 	w.scheduleTodayID = scheduleToday.ID
@@ -225,6 +231,7 @@ func seedWorld(t *testing.T, ctx context.Context, pool *pgxpool.Pool, slug strin
 	scheduleYesterday, err := q.CreateSchedule(ctx, db.CreateScheduleParams{
 		TenantID: w.tenantID, AcademicYearID: w.yearID, ClassID: w.classID, SubjectID: w.subjectID, TeacherUserID: w.teacherID,
 		DayOfWeek: domain.IsoWeekday(w.yesterday), StartPeriodID: periodID, EndPeriodID: periodID, StartSeq: 1, EndSeq: 1, Source: "admin",
+		EffectiveFrom: w.scheduleFrom,
 	})
 	require.NoError(t, err)
 	w.scheduleYesterdayID = scheduleYesterday.ID

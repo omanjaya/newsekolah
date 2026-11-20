@@ -1,6 +1,10 @@
 package domain
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"time"
+)
 
 var (
 	ErrScheduleHasHistory   = errors.New("schedule has attendance or substitution history")
@@ -13,6 +17,12 @@ var (
 	ErrPeriodIsBreak        = errors.New("a break period cannot be scheduled as a lesson")
 	ErrPeriodTemplateDay    = errors.New("period does not belong to the template assigned to this day of week")
 	ErrYearArchived         = errors.New("academic year is archived")
+
+	// Effective dating (effective.go).
+	ErrScheduleEnded               = errors.New("the lesson is no longer on the timetable from that date")
+	ErrEffectiveFromOutOfYear      = errors.New("the effective date lies outside the academic year")
+	ErrEffectiveDateAdminOnly      = errors.New("only a schedule manager may date a change")
+	ErrScheduleChangeBeforeHistory = errors.New("the change would take effect on or before a date the lesson already has history for")
 
 	// ErrConflictClass and ErrConflictTeacher map to HTTP 409
 	// SCHEDULE_CONFLICT_CLASS / SCHEDULE_CONFLICT_TEACHER in transport,
@@ -39,6 +49,7 @@ var (
 	ErrSubstitutionNotSubstitute    = errors.New("only the invited substitute may respond to this request")
 	ErrSubstitutionAlreadyResponded = errors.New("substitution request has already been responded to")
 	ErrSubstitutionScheduleMismatch = errors.New("substitution request does not belong to the given schedule")
+	ErrSubstitutionNotScheduled     = errors.New("the lesson is not on the timetable on that date")
 
 	ErrJournalNotFound        = errors.New("class journal not found")
 	ErrJournalNotOwner        = errors.New("only the teaching teacher may write this journal")
@@ -46,3 +57,28 @@ var (
 	ErrJournalMissingTopic    = errors.New("topic is required")
 	ErrJournalMissingActivity = errors.New("activities is required")
 )
+
+// HistoryRequiresDateError is ErrScheduleHasHistory for a change sent
+// without a date: Min is the earliest date the same change may take effect
+// from, so the caller can offer it.
+type HistoryRequiresDateError struct {
+	Min time.Time
+}
+
+func (e *HistoryRequiresDateError) Error() string {
+	return fmt.Sprintf("%s: date the change from %s or later", ErrScheduleHasHistory, e.Min.Format(time.DateOnly))
+}
+
+func (e *HistoryRequiresDateError) Unwrap() error { return ErrScheduleHasHistory }
+
+// ChangeTooEarlyError is ErrScheduleChangeBeforeHistory naming the earliest
+// date the change may take effect from instead.
+type ChangeTooEarlyError struct {
+	Min time.Time
+}
+
+func (e *ChangeTooEarlyError) Error() string {
+	return fmt.Sprintf("%s: earliest %s", ErrScheduleChangeBeforeHistory, e.Min.Format(time.DateOnly))
+}
+
+func (e *ChangeTooEarlyError) Unwrap() error { return ErrScheduleChangeBeforeHistory }

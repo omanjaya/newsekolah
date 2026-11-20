@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
@@ -50,7 +51,18 @@ func (r *Repository) OpenSession(ctx context.Context, s domain.Session) (domain.
 		}
 		return existing, false, nil
 	}
+	if notInEffect(err) {
+		return domain.Session{}, false, domain.ErrLessonNotOnDate
+	}
 	return domain.Session{}, false, err
+}
+
+// notInEffect reports migration 0147's require_schedule_in_effect refusing
+// a session dated outside its schedule version (a change committed between
+// the service's own check and the insert).
+func notInEffect(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23514" && pgErr.ConstraintName == "schedule_in_effect"
 }
 
 func (r *Repository) reread(ctx context.Context, s domain.Session) (domain.Session, bool, error) {

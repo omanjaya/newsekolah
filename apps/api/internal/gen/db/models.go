@@ -1362,6 +1362,9 @@ type Schedule struct {
 	UpdatedBy      pgtype.UUID               `json:"updated_by"`
 	CreatedAt      pgtype.Timestamptz        `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz        `json:"updated_at"`
+	EffectiveFrom  pgtype.Date               `json:"effective_from"`
+	EffectiveUntil pgtype.Date               `json:"effective_until"`
+	EffectiveRange pgtype.Range[pgtype.Date] `json:"effective_range"`
 }
 
 type SchoolActivity struct {

@@ -2,8 +2,10 @@ package http
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
@@ -55,7 +57,18 @@ func toScheduleInput(body api.ScheduleWriteRequest) (service.ScheduleInput, erro
 	if body.Notes != nil {
 		in.Notes = *body.Notes
 	}
+	in.EffectiveFrom = datePtr(body.EffectiveFrom)
 	return in, nil
+}
+
+// datePtr unwraps an optional wire date into the calendar date the
+// service compares (midnight UTC).
+func datePtr(d *openapi_types.Date) *time.Time {
+	if d == nil {
+		return nil
+	}
+	t := d.Time
+	return &t
 }
 
 func (h *SchedulingHandler) ListSchedules(ctx context.Context, request api.ListSchedulesRequestObject) (api.ListSchedulesResponseObject, error) {
@@ -69,49 +82,49 @@ func (h *SchedulingHandler) ListSchedules(ctx context.Context, request api.ListS
 	}
 
 	// A day filter combines with class_id or teacher_user_id when both are
-	// given (e.g. a student's "today" request: class_id + day_of_week), so
-	// it is resolved once up front rather than inside the switch below --
-	// previously the switch matched class_id or teacher_user_id first and
-	// never looked at day_of_week at all, silently returning every weekday.
-	var day *int16
+	// given (e.g. a student's "today" request: class_id + day_of_week).
+	query := service.BlockQuery{AcademicYearID: params.AcademicYearId, AsOf: datePtr(params.AsOf)}
 	if params.DayOfWeek != nil {
 		d, dayErr := toDayOfWeek(*params.DayOfWeek)
 		if dayErr != nil {
 			return nil, dayErr
 		}
-		day = &d
+		query.DayOfWeek = &d
 	}
 
-	var blocks []domain.Block
 	switch {
 	case params.ClassId != nil:
 		if !scope.canViewClass(*params.ClassId) {
 			return nil, httpx.ErrForbidden
 		}
-		blocks, err = h.service.ListByClass(ctx, tenantID, params.AcademicYearId, *params.ClassId, day)
-		blocks = scope.filterOwnTeacher(blocks)
+		query.ClassID = uuid.NullUUID{UUID: *params.ClassId, Valid: true}
 	case params.TeacherUserId != nil:
 		if !scope.canViewTeacher(*params.TeacherUserId) {
 			return nil, httpx.ErrForbidden
 		}
-		blocks, err = h.service.ListByTeacher(ctx, tenantID, params.AcademicYearId, *params.TeacherUserId, day)
-	case day != nil:
+		query.TeacherUserID = uuid.NullUUID{UUID: *params.TeacherUserId, Valid: true}
+	case query.DayOfWeek != nil:
 		if !scope.fullAccess {
 			return nil, httpx.ErrForbidden
 		}
-		blocks, err = h.service.ListByDay(ctx, tenantID, params.AcademicYearId, *day)
 	default:
 		return nil, httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "class_id", Code: "REQUIRED"})
 	}
+
+	list, err := h.service.ListBlocks(ctx, tenantID, query, service.Actor{UserID: userID, CanManage: scope.canManage})
 	if err != nil {
 		return nil, mapScheduleError(err)
+	}
+	blocks := list.Blocks
+	if query.ClassID.Valid {
+		blocks = scope.filterOwnTeacher(blocks)
 	}
 
 	data := make([]api.ScheduleBlock, len(blocks))
 	for i, b := range blocks {
 		data[i] = toAPIBlock(b)
 	}
-	return api.ListSchedules200JSONResponse{Data: data}, nil
+	return api.ListSchedules200JSONResponse{Data: data, WeekStartsOn: openapi_types.Date{Time: list.WeekStart}}, nil
 }
 
 // viewScope is who is reading the schedule grid and what they may see,
@@ -123,6 +136,7 @@ func (h *SchedulingHandler) ListSchedules(ctx context.Context, request api.ListS
 // filtering in the old app never needed to.
 type viewScope struct {
 	fullAccess bool // manage_schedules, view_reports, or manage_attendance: no restriction
+	canManage  bool // manage_schedules: the grid also carries each block's mutation policy
 	userID     uuid.UUID
 	isTeacher  bool
 	isStudent  bool
@@ -169,11 +183,11 @@ func (v viewScope) canViewTeacher(teacherUserID uuid.UUID) bool {
 // own lessons in it, for a teacher without fullAccess: they may look at
 // any class (canViewClass always allows it), but only see the part of its
 // timetable they teach.
-func (v viewScope) filterOwnTeacher(blocks []domain.Block) []domain.Block {
+func (v viewScope) filterOwnTeacher(blocks []service.ListedBlock) []service.ListedBlock {
 	if v.fullAccess || !v.isTeacher {
 		return blocks
 	}
-	out := make([]domain.Block, 0, len(blocks))
+	out := make([]service.ListedBlock, 0, len(blocks))
 	for _, b := range blocks {
 		if b.TeacherUserID == v.userID {
 			out = append(out, b)
@@ -188,7 +202,7 @@ func (h *SchedulingHandler) resolveViewScope(ctx context.Context, tenantID, user
 		return viewScope{}, httpx.ErrInternal
 	}
 	if perms.Has(authz.PermManageSchedules) || perms.Has(authz.PermViewReports) || perms.Has(authz.PermManageAttendance) {
-		return viewScope{fullAccess: true}, nil
+		return viewScope{fullAccess: true, canManage: perms.Has(authz.PermManageSchedules)}, nil
 	}
 
 	scope := viewScope{userID: userID}
@@ -289,7 +303,12 @@ func (h *SchedulingHandler) BulkImportSchedules(ctx context.Context, request api
 
 func (h *SchedulingHandler) ClearSchedules(ctx context.Context, request api.ClearSchedulesRequestObject) (api.ClearSchedulesResponseObject, error) {
 	tenantID := tenantIDFromContext(ctx)
-	if err := h.service.ClearAcademicYear(ctx, tenantID, request.Body.AcademicYearId); err != nil {
+	userID, _ := httpx.UserIDFromContext(ctx)
+	actor, err := h.actorFor(ctx, tenantID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if err := h.service.ClearAcademicYear(ctx, tenantID, request.Body.AcademicYearId, datePtr(request.Body.EffectiveFrom), actor); err != nil {
 		return nil, mapScheduleError(err)
 	}
 	return api.ClearSchedules204Response{}, nil
@@ -359,7 +378,7 @@ func (h *SchedulingHandler) DeleteSchedule(ctx context.Context, request api.Dele
 	if request.Params.ScheduleIds != nil {
 		ids = *request.Params.ScheduleIds
 	}
-	if err := h.service.DeleteScheduleBlock(ctx, tenantID, request.ScheduleId, ids, actor); err != nil {
+	if err := h.service.DeleteScheduleBlock(ctx, tenantID, request.ScheduleId, ids, datePtr(request.Params.EffectiveFrom), actor); err != nil {
 		return nil, mapScheduleError(err)
 	}
 	return api.DeleteSchedule204Response{}, nil

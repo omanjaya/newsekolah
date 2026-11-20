@@ -34,6 +34,13 @@ where tenant_id = $1 and academic_year_id = $2 and day_of_week = $3;
 -- name: IsAcademicYearArchivedRef :one
 select (archived_at is not null)::bool from academic_years where tenant_id = $1 and id = $2;
 
+-- name: GetAcademicYearRefForSchedule :one
+-- The year's date span bounds a schedule version's effective dates: the
+-- default start of a new lesson, the window a change date must fall in,
+-- and the week a timetable read falls back to.
+select starts_on, ends_on, (archived_at is not null)::bool as archived
+from academic_years where tenant_id = $1 and id = $2;
+
 -- name: IsSchoolDayRef :one
 select coalesce(
   (select is_active from school_days where tenant_id = $1 and academic_year_id = $2 and day_of_week = $3),

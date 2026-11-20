@@ -20,8 +20,27 @@ func toSchedule(row db.Schedule) domain.Schedule {
 		StartSeq: row.StartSeq, EndSeq: row.EndSeq, Source: domain.Source(row.Source),
 		Notes: pdatabase.TextOrEmpty(row.Notes), CreatedBy: pdatabase.UUIDOrNil(row.CreatedBy),
 		UpdatedBy: pdatabase.UUIDOrNil(row.UpdatedBy), CreatedAt: pdatabase.TimeOrZero(row.CreatedAt),
-		UpdatedAt: pdatabase.TimeOrZero(row.UpdatedAt),
+		UpdatedAt:     pdatabase.TimeOrZero(row.UpdatedAt),
+		EffectiveFrom: pdatabase.DateOrZero(row.EffectiveFrom), EffectiveUntil: datePtr(row.EffectiveUntil),
 	}
+}
+
+// datePtr and nullDate map a nullable Postgres date to *time.Time (a
+// calendar date at midnight UTC) and back; the generated effective_range
+// column is never read, effective_from/effective_until carry the same.
+func datePtr(d pgtype.Date) *time.Time {
+	if !d.Valid {
+		return nil
+	}
+	t := d.Time
+	return &t
+}
+
+func nullDate(t *time.Time) pgtype.Date {
+	if t == nil {
+		return pgtype.Date{}
+	}
+	return pdatabase.Date(*t)
 }
 
 func toSubstitution(row db.SubstitutionRequest) domain.Substitution {

@@ -28,7 +28,10 @@ select
      where u.tenant_id = $1 and u.deleted_at is null and up.kind = 'student')::int as students,
   (select count(*) from enrollments e where e.tenant_id = $1 and e.academic_year_id = sqlc.narg(year_id)::uuid and e.status = 'active')::int as enrollments,
   (select count(*) from teaching_assignments ta where ta.tenant_id = $1 and ta.academic_year_id = sqlc.narg(year_id)::uuid and ta.is_active)::int as teaching_assignments,
-  (select count(*) from schedules sc where sc.tenant_id = $1 and sc.academic_year_id = sqlc.narg(year_id)::uuid)::int as schedules,
+  -- Lessons still on the timetable: a timetable cleared from a date on
+  -- (migration 0147) leaves only ended versions behind.
+  (select count(*) from schedules sc where sc.tenant_id = $1 and sc.academic_year_id = sqlc.narg(year_id)::uuid
+     and (sc.effective_until is null or sc.effective_until >= current_date))::int as schedules,
   (select count(*) from duty_assignments da where da.tenant_id = $1 and da.academic_year_id = sqlc.narg(year_id)::uuid and da.is_active)::int as duty_assignments;
 
 -- name: UpdateTenantProfile :one

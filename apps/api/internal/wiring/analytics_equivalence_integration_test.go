@@ -427,6 +427,21 @@ func TestDayStatusesMatchStudentCalendar(t *testing.T) {
 	w := seedAnalyticsWorld(t, pg.AdminPool, students, 8, now)
 	stack := buildAnalyticsStack(pg.AppPool, now)
 
+	// A mid-window timetable change (migration 0147): one class's first
+	// lesson of every day leaves the timetable from 15 October, so its
+	// expected lesson count differs before and after that date; both reads
+	// must count the versions in effect on each date.
+	var changedClass uuid.UUID
+	require.NoError(t, pg.AdminPool.QueryRow(ctx,
+		`select class_id from schedules where tenant_id = $1 order by class_id limit 1`, w.tenantID).Scan(&changedClass))
+	_, err := pg.AdminPool.Exec(ctx,
+		`delete from attendance_sessions where date >= '2026-10-15' and schedule_id in
+		   (select id from schedules where tenant_id = $1 and class_id = $2 and start_seq = 1)`, w.tenantID, changedClass)
+	require.NoError(t, err)
+	_, err = pg.AdminPool.Exec(ctx,
+		`update schedules set effective_until = '2026-10-14' where tenant_id = $1 and class_id = $2 and start_seq = 1`, w.tenantID, changedClass)
+	require.NoError(t, err)
+
 	// Every calendar day of September and October, past and future.
 	var dates []time.Time
 	for d := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC); d.Before(time.Date(2026, 11, 1, 0, 0, 0, 0, time.UTC)); d = d.AddDate(0, 0, 1) {

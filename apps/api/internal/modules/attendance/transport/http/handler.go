@@ -87,6 +87,7 @@ var (
 	errMonitorTokenInvalid      = httpx.NewError(http.StatusUnauthorized, "ATTENDANCE_MONITOR_TOKEN_INVALID")
 	errSessionNotStarted        = httpx.NewError(http.StatusConflict, "ATTENDANCE_SESSION_NOT_STARTED")
 	errNotSchoolDay             = httpx.NewError(http.StatusUnprocessableEntity, "ATTENDANCE_NOT_SCHOOL_DAY")
+	errLessonNotOnDate          = httpx.NewError(http.StatusConflict, "ATTENDANCE_LESSON_NOT_ON_DATE")
 	errJournalIncomplete        = httpx.NewError(http.StatusBadRequest, "ATTENDANCE_JOURNAL_INCOMPLETE")
 )
 
@@ -117,6 +118,8 @@ func mapAttendanceError(err error) error {
 		return errSessionNotStarted
 	case errors.Is(err, domain.ErrNotSchoolDay):
 		return errNotSchoolDay
+	case errors.Is(err, domain.ErrLessonNotOnDate):
+		return errLessonNotOnDate
 	case errors.Is(err, domain.ErrCorrectionWindowClosed):
 		return errCorrectionWindowClosed
 	case errors.Is(err, domain.ErrCorrectionNotAllowed):

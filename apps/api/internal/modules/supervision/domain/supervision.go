@@ -24,6 +24,7 @@ var (
 	ErrScoreOutOfRange      = errors.New("score outside the instrument's scale")
 	ErrLessonNotResolved    = errors.New("scheduled lesson could not be resolved")
 	ErrLessonDayMismatch    = errors.New("lesson date falls on a different weekday than the lesson")
+	ErrLessonNotOnDate      = errors.New("the lesson is not on the timetable on that date")
 	ErrScheduledExists      = errors.New("this lesson is already scheduled for observation on that date")
 	ErrCriterionKeyTaken    = errors.New("two criteria share one key")
 	ErrCriterionNameTaken   = errors.New("two criteria share one name")
@@ -212,6 +213,23 @@ func (s ScheduledObservation) MatchesLessonDay(lessonDayOfWeek int16) error {
 		return ErrLessonDayMismatch
 	}
 	return nil
+}
+
+// MatchesLessonDates checks the visit date against the dates this version
+// of the lesson is on the timetable (both bounds inclusive, until nil when
+// open-ended): a lesson changed from a date on is a different version
+// after it, so a visit is planned against the one in effect that day.
+func (s ScheduledObservation) MatchesLessonDates(from time.Time, until *time.Time) error {
+	d := calendarDate(s.LessonDate)
+	if d.Before(calendarDate(from)) || (until != nil && d.After(calendarDate(*until))) {
+		return ErrLessonNotOnDate
+	}
+	return nil
+}
+
+func calendarDate(t time.Time) time.Time {
+	y, m, d := t.Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 }
 
 // IsoWeekday maps a date to 1 = Monday .. 7 = Sunday, the weekday numbering

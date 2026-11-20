@@ -31,6 +31,14 @@ type PeriodRef struct {
 	IsBreak    bool
 }
 
+// AcademicYearRef is the date span of an academic year, which bounds the
+// effective dates of its schedule versions.
+type AcademicYearRef struct {
+	StartsOn time.Time
+	EndsOn   time.Time
+	Archived bool
+}
+
 // ClassRef and SubjectRef are the minimal academic facts scheduling needs
 // to validate a request and to build conflict-error details.
 type ClassRef struct {
@@ -68,16 +76,30 @@ type Repository interface {
 	UpdateSchedule(ctx context.Context, s domain.Schedule) (domain.Schedule, error)
 	GetScheduleByID(ctx context.Context, tenantID, id uuid.UUID) (domain.Schedule, error)
 	DeleteSchedule(ctx context.Context, tenantID, id uuid.UUID) error
+	// RetireSchedule ends one version on until (its last lesson date).
+	RetireSchedule(ctx context.Context, tenantID, id uuid.UUID, until time.Time, updatedBy uuid.NullUUID) (domain.Schedule, error)
 	DeleteSchedulesByAcademicYear(ctx context.Context, tenantID, academicYearID uuid.UUID) error
+	// ListSchedulesByAcademicYear returns every version of the year,
+	// locked FOR UPDATE.
 	ListSchedulesByAcademicYear(ctx context.Context, tenantID, academicYearID uuid.UUID) ([]domain.Schedule, error)
-	ListSchedulesByClass(ctx context.Context, tenantID, academicYearID, classID uuid.UUID) ([]domain.Schedule, error)
-	ListSchedulesByTeacher(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID) ([]domain.Schedule, error)
+	// ListSchedulesByClassForWeek and ListSchedulesByTeacherForWeek return,
+	// for each weekday of the week starting weekStart, the versions in
+	// effect on that weekday's date.
+	ListSchedulesByClassForWeek(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, weekStart time.Time) ([]domain.Schedule, error)
+	ListSchedulesByTeacherForWeek(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID, weekStart time.Time) ([]domain.Schedule, error)
+	// ListSchedulesByDayOn returns every class's versions in effect on date.
+	ListSchedulesByDayOn(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, date time.Time) ([]domain.Schedule, error)
+	// ListSchedulesByDay returns every version of one weekday, whatever
+	// its dates, for the conflict check.
 	ListSchedulesByDay(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16) ([]domain.Schedule, error)
-	CountSchedulesForClassDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, dayOfWeek int16) (int64, error)
-	// ScheduleIDsWithHistory returns which of ids have an attendance session
-	// or a substitution request.
-	ScheduleIDsWithHistory(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]uuid.UUID, error)
-	CountSchedulesByClassDay(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID) ([]ClassDayCount, error)
+	// ListSchedulesForTeacherOn returns a teacher's versions in effect on date.
+	ListSchedulesForTeacherOn(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID, date time.Time) ([]domain.Schedule, error)
+	CountSchedulesForClassOn(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) (int64, error)
+	// ListScheduleHistory returns which of ids have history (a recorded
+	// attendance session or a substitution request) and the last date it
+	// binds.
+	ListScheduleHistory(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]domain.History, error)
+	CountSchedulesByClassDates(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID, dates []time.Time) ([]ClassDateCount, error)
 
 	CreateSubstitution(ctx context.Context, s domain.Substitution) (domain.Substitution, error)
 	GetSubstitutionByID(ctx context.Context, tenantID, id uuid.UUID) (domain.Substitution, error)
@@ -125,6 +147,7 @@ type Repository interface {
 	GetPeriodTemplateForDay(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16) (uuid.UUID, error)
 	IsSchoolDay(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16) (bool, error)
 	IsYearArchived(ctx context.Context, tenantID, academicYearID uuid.UUID) (bool, error)
+	GetAcademicYearRef(ctx context.Context, tenantID, academicYearID uuid.UUID) (AcademicYearRef, error)
 	HasTeachingAssignment(ctx context.Context, tenantID, academicYearID, teacherID, subjectID, classID uuid.UUID) (bool, error)
 	IsActiveTeacher(ctx context.Context, tenantID, academicYearID, userID uuid.UUID) (bool, error)
 	GetStudentActiveClassID(ctx context.Context, tenantID, academicYearID, studentID uuid.UUID) (uuid.UUID, bool, error)

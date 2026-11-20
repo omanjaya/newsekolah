@@ -36,16 +36,22 @@ type ScheduleRef = service.ScheduleRef
 // HandOver is a type alias for the same reason ScheduleRef is.
 type HandOver = service.HandOver
 
-// ClassDayCount is a type alias for the same reason ScheduleRef is.
-type ClassDayCount = service.ClassDayCount
+// ClassDateCount is a type alias for the same reason ScheduleRef is.
+type ClassDateCount = service.ClassDateCount
 
 // ScheduleReader lets the attendance module read schedule data it needs
 // (today's schedules for a teacher, a schedule by ID) without importing
 // scheduling's repository directly, per the same "interface yang diekspor
 // modul" pattern as AccessChecker.
+//
+// Schedules are effective-dated (migration 0147): every read that asks
+// which lessons take place on a date takes that date and returns the
+// version in effect then, never every version of the weekday. GetSchedule
+// resolves one exact version by id, whatever its dates.
 type ScheduleReader interface {
 	GetSchedule(ctx context.Context, tenantID, scheduleID uuid.UUID) (ScheduleRef, error)
-	ListSchedulesForTeacherDay(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID, dayOfWeek int16) ([]ScheduleRef, error)
+	// ListSchedulesForTeacherOn lists a teacher's own lessons on date.
+	ListSchedulesForTeacherOn(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID, date time.Time) ([]ScheduleRef, error)
 	// ListAcceptedSubstitutionsForSubstituteDate returns the schedule each
 	// accepted substitution for substituteUserID on date covers, so
 	// attendance's "today's sessions" list can merge in a teacher's
@@ -55,10 +61,12 @@ type ScheduleReader interface {
 	// own lessons on date that an accepted substitution hands to someone
 	// else, so the list marks them handed over instead of unfilled.
 	ListHandOversForTeacherDate(ctx context.Context, tenantID, teacherUserID uuid.UUID, date time.Time) ([]HandOver, error)
-	CountSchedulesForClassDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, dayOfWeek int16) (int64, error)
-	// CountSchedulesByClassDay is CountSchedulesForClassDay for many
-	// classes and every weekday in one query, for tenant-level batch jobs.
-	CountSchedulesByClassDay(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID) ([]ClassDayCount, error)
+	// CountSchedulesForClassOn counts a class's lessons on date: the
+	// expected-session count of its daily status.
+	CountSchedulesForClassOn(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) (int64, error)
+	// CountSchedulesByClassDates is CountSchedulesForClassOn for many
+	// classes and dates in one query, for tenant-level batch jobs.
+	CountSchedulesByClassDates(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID, dates []time.Time) ([]ClassDateCount, error)
 }
 
 // JournalInput and JournalRef are type aliases to their service package
