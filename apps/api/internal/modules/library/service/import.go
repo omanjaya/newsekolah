@@ -79,11 +79,11 @@ func codeSet(m map[string]uuid.UUID) map[string]bool {
 
 // ImportPreviewRow is one row's outcome in an import preview.
 type ImportPreviewRow struct {
-	RowNumber int
-	Status    string // "new_title" | "existing_title" | "error"
-	Message   string
-	Title     string
-	Copies    int
+	RowNumber   int
+	Status      string // "new_title" | "existing_title" | "error"
+	MessageCode domain.ImportRowMessage
+	Title       string
+	Copies      int
 }
 
 // ImportPreviewSummary totals an import preview's rows by outcome.
@@ -142,27 +142,27 @@ func (s *Service) PreviewImport(ctx context.Context, tenantID uuid.UUID, rawRows
 	preview := ImportPreview{Rows: make([]ImportPreviewRow, 0, len(rawRows))}
 	for _, raw := range rawRows {
 		row := domain.ImportRowFromRaw(raw, mapping)
-		copies, message, ok := domain.ValidateImportRow(row, refs.validation)
+		copies, code, ok := domain.ValidateImportRow(row, refs.validation)
 		if !ok {
 			preview.Summary.Errors++
-			preview.Rows = append(preview.Rows, ImportPreviewRow{RowNumber: row.RowNumber, Status: "error", Message: message, Title: row.Title})
+			preview.Rows = append(preview.Rows, ImportPreviewRow{RowNumber: row.RowNumber, Status: "error", MessageCode: code, Title: row.Title})
 			continue
 		}
 		_, found, err := s.findDedupeTitle(ctx, tenantID, row.ISBN, row.Title, row.Author)
 		if err != nil {
 			preview.Summary.Errors++
-			preview.Rows = append(preview.Rows, ImportPreviewRow{RowNumber: row.RowNumber, Status: "error", Message: "Gagal memeriksa judul yang sudah ada.", Title: row.Title})
+			preview.Rows = append(preview.Rows, ImportPreviewRow{RowNumber: row.RowNumber, Status: "error", MessageCode: domain.ImportMsgDedupeFailed, Title: row.Title})
 			continue
 		}
-		status, message := "new_title", "Judul baru, "+strconv.Itoa(copies)+" eksemplar akan dibuat."
+		status, code := "new_title", domain.ImportMsgNewTitle
 		if found {
-			status, message = "existing_title", "Judul sudah ada, "+strconv.Itoa(copies)+" eksemplar akan ditambahkan."
+			status, code = "existing_title", domain.ImportMsgExistingTitle
 			preview.Summary.ExistingTitles++
 		} else {
 			preview.Summary.NewTitles++
 		}
 		preview.Summary.Copies += copies
-		preview.Rows = append(preview.Rows, ImportPreviewRow{RowNumber: row.RowNumber, Status: status, Message: message, Title: row.Title, Copies: copies})
+		preview.Rows = append(preview.Rows, ImportPreviewRow{RowNumber: row.RowNumber, Status: status, MessageCode: code, Title: row.Title, Copies: copies})
 	}
 	return preview, nil
 }

@@ -744,6 +744,21 @@
         "status": "Status",
         "message": "Message"
       },
+      "rowMessage": {
+        "NEW_TITLE": "New title, {copies} copies will be created.",
+        "EXISTING_TITLE": "Title already exists, {copies} copies will be added.",
+        "TITLE_REQUIRED": "Title is required.",
+        "MATERIAL_TYPE_UNKNOWN": "Material type code not recognised.",
+        "CATEGORY_UNKNOWN": "Category code not recognised.",
+        "ACCESS_UNKNOWN": "Access value not recognised.",
+        "LOCATION_UNKNOWN": "Location code not recognised.",
+        "SOURCE_UNKNOWN": "Source code not recognised.",
+        "PUBLISH_YEAR_NOT_NUMBER": "Publish year must be a number.",
+        "PRICE_NOT_NUMBER": "Price must be a number.",
+        "COPIES_INVALID": "Number of copies must be a whole number, at least 1.",
+        "DEDUPE_FAILED": "Could not check for an existing title. Try reviewing again.",
+        "unknown": "This row cannot be imported."
+      },
       "status": {
         "new_title": "New title",
         "existing_title": "Existing title",

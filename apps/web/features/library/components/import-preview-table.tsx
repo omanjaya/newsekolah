@@ -5,7 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { BookCopy, BookPlus, BookUp, CircleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 import type { LibraryImportPreview } from "../import-api";
 
@@ -30,6 +30,16 @@ export function ImportPreviewTable({
   const t = useTranslations("app.library.import.preview");
   const errorCount = preview.summary.errors;
   const importableCount = preview.summary.new_titles + preview.summary.existing_titles;
+
+  // The API sends a stable code per row; a code this build does not know
+  // yet still reads as a sentence instead of a raw key.
+  const rowMessage = useCallback(
+    (row: PreviewRow): string => {
+      const key = `rowMessage.${row.message_code}`;
+      return t.has(key) ? t(key, { copies: row.copies }) : t("rowMessage.unknown");
+    },
+    [t],
+  );
 
   const columns = useMemo<ColumnDef<PreviewRow>[]>(
     () => [
@@ -74,13 +84,14 @@ export function ImportPreviewTable({
         ),
       },
       {
-        accessorKey: "message",
+        id: "message",
+        accessorFn: (row) => rowMessage(row),
         header: t("columns.message"),
         enableSorting: false,
-        cell: ({ row }) => row.original.message || "-",
+        cell: ({ row }) => rowMessage(row.original),
       },
     ],
-    [t],
+    [t, rowMessage],
   );
 
   return (

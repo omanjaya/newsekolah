@@ -1359,11 +1359,18 @@ components:
           description: "Internal field name -> source column name, for a sheet using its own headers (INLISLite export aliases included)."
     LibraryImportPreviewRow:
       type: object
-      required: [row_number, status, message, title, copies]
+      required: [row_number, status, message_code, title, copies]
       properties:
         row_number: { type: integer }
         status: { type: string, enum: [new_title, existing_title, error] }
-        message: { type: string }
+        message_code:
+          type: string
+          description:
+            What the row will do or why it cannot be imported, as a stable code the client
+            translates (NEW_TITLE, EXISTING_TITLE, TITLE_REQUIRED, MATERIAL_TYPE_UNKNOWN,
+            CATEGORY_UNKNOWN, ACCESS_UNKNOWN, LOCATION_UNKNOWN, SOURCE_UNKNOWN,
+            PUBLISH_YEAR_NOT_NUMBER, PRICE_NOT_NUMBER, COPIES_INVALID, DEDUPE_FAILED). NEW_TITLE and
+            EXISTING_TITLE go with the row's copies count.
         title: { type: string }
         copies: { type: integer }
     LibraryImportPreview:

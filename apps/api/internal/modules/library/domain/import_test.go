@@ -84,48 +84,31 @@ func TestValidateImportRow(t *testing.T) {
 		t.Errorf("expected a valid row with copies=1, got copies=%d msg=%q ok=%v", copies, msg, ok)
 	}
 
-	noTitle := ImportRow{MaterialTypeCode: "buku", CategoryCode: "fiksi"}
-	if _, _, ok := ValidateImportRow(noTitle, refs); ok {
-		t.Error("expected a missing title to fail validation")
-	}
-
-	unknownMaterial := ImportRow{Title: "Judul", MaterialTypeCode: "majalah", CategoryCode: "fiksi"}
-	if _, _, ok := ValidateImportRow(unknownMaterial, refs); ok {
-		t.Error("expected an unknown material type code to fail validation")
-	}
-
-	unknownCategory := ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "referensi"}
-	if _, _, ok := ValidateImportRow(unknownCategory, refs); ok {
-		t.Error("expected an unknown category code to fail validation")
-	}
-
-	badAccess := ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "fiksi", Access: "dipinjamkan"}
-	if _, _, ok := ValidateImportRow(badAccess, refs); ok {
-		t.Error("expected an invalid access value to fail validation")
-	}
 	goodAccess := ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "fiksi", Access: "loanable"}
 	if _, _, ok := ValidateImportRow(goodAccess, refs); !ok {
 		t.Error("expected a valid access value to pass validation")
 	}
 
-	unknownLocation := ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "fiksi", LocationCode: "rak-z"}
-	if _, _, ok := ValidateImportRow(unknownLocation, refs); ok {
-		t.Error("expected an unknown location code to fail validation")
+	// Each failing row reports its own code, which the web translates.
+	failing := []struct {
+		name string
+		row  ImportRow
+		want ImportRowMessage
+	}{
+		{"missing title", ImportRow{MaterialTypeCode: "buku", CategoryCode: "fiksi"}, ImportMsgTitleRequired},
+		{"unknown material type", ImportRow{Title: "Judul", MaterialTypeCode: "majalah", CategoryCode: "fiksi"}, ImportMsgMaterialTypeUnknown},
+		{"unknown category", ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "referensi"}, ImportMsgCategoryUnknown},
+		{"invalid access", ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "fiksi", Access: "dipinjamkan"}, ImportMsgAccessUnknown},
+		{"unknown location", ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "fiksi", LocationCode: "rak-z"}, ImportMsgLocationUnknown},
+		{"unknown source", ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "fiksi", SourceCode: "hibah"}, ImportMsgSourceUnknown},
+		{"non-numeric publish year", ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "fiksi", PublishYear: "abcd"}, ImportMsgPublishYearNotNumber},
+		{"non-numeric price", ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "fiksi", Price: "mahal"}, ImportMsgPriceNotNumber},
+		{"zero copies", ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "fiksi", Copies: "0"}, ImportMsgCopiesInvalid},
 	}
-
-	badYear := ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "fiksi", PublishYear: "abcd"}
-	if _, _, ok := ValidateImportRow(badYear, refs); ok {
-		t.Error("expected a non-numeric publish year to fail validation")
-	}
-
-	badPrice := ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "fiksi", Price: "mahal"}
-	if _, _, ok := ValidateImportRow(badPrice, refs); ok {
-		t.Error("expected a non-numeric price to fail validation")
-	}
-
-	zeroCopies := ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "fiksi", Copies: "0"}
-	if _, _, ok := ValidateImportRow(zeroCopies, refs); ok {
-		t.Error("expected copies=0 to fail validation")
+	for _, tc := range failing {
+		if _, msg, ok := ValidateImportRow(tc.row, refs); ok || msg != tc.want {
+			t.Errorf("%s: got ok=%v msg=%q, want a failure with %q", tc.name, ok, msg, tc.want)
+		}
 	}
 
 	explicitCopies := ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "fiksi", Copies: "5"}

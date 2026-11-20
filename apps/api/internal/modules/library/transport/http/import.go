@@ -65,7 +65,7 @@ func toAPIImportPreview(p service.ImportPreview) api.LibraryImportPreview {
 	rows := make([]api.LibraryImportPreviewRow, len(p.Rows))
 	for i, r := range p.Rows {
 		rows[i] = api.LibraryImportPreviewRow{
-			RowNumber: r.RowNumber, Status: api.LibraryImportPreviewRowStatus(r.Status), Message: r.Message,
+			RowNumber: r.RowNumber, Status: api.LibraryImportPreviewRowStatus(r.Status), MessageCode: string(r.MessageCode),
 			Title: r.Title, Copies: r.Copies,
 		}
 	}

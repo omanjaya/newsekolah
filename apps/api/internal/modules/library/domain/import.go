@@ -198,6 +198,29 @@ type ImportValidationRefs struct {
 	SourceCodes       map[string]bool
 }
 
+// ImportRowMessage explains one import preview row as a stable code the
+// client translates (the web's app.library.import.preview.rowMessage),
+// never as a prose sentence, so the admin reads it in their own language.
+type ImportRowMessage string
+
+const (
+	ImportMsgTitleRequired        ImportRowMessage = "TITLE_REQUIRED"
+	ImportMsgMaterialTypeUnknown  ImportRowMessage = "MATERIAL_TYPE_UNKNOWN"
+	ImportMsgCategoryUnknown      ImportRowMessage = "CATEGORY_UNKNOWN"
+	ImportMsgAccessUnknown        ImportRowMessage = "ACCESS_UNKNOWN"
+	ImportMsgLocationUnknown      ImportRowMessage = "LOCATION_UNKNOWN"
+	ImportMsgSourceUnknown        ImportRowMessage = "SOURCE_UNKNOWN"
+	ImportMsgPublishYearNotNumber ImportRowMessage = "PUBLISH_YEAR_NOT_NUMBER"
+	ImportMsgPriceNotNumber       ImportRowMessage = "PRICE_NOT_NUMBER"
+	ImportMsgCopiesInvalid        ImportRowMessage = "COPIES_INVALID"
+	// ImportMsgDedupeFailed: the lookup for an existing title failed.
+	ImportMsgDedupeFailed ImportRowMessage = "DEDUPE_FAILED"
+	// ImportMsgNewTitle and ImportMsgExistingTitle describe a valid row;
+	// the row's copies count goes with them.
+	ImportMsgNewTitle      ImportRowMessage = "NEW_TITLE"
+	ImportMsgExistingTitle ImportRowMessage = "EXISTING_TITLE"
+)
+
 // ValidateImportRow is a pure, database-free check of one row: title is
 // required, material type and category codes must exist, access (if
 // given) must be a real value, location/source (if given) must exist,
@@ -209,42 +232,42 @@ type ImportValidationRefs struct {
 // rule set harder to read in one place.
 //
 //nolint:gocyclo // field-by-field validation: each branch checks one independent
-func ValidateImportRow(row ImportRow, refs ImportValidationRefs) (copies int, message string, ok bool) {
+func ValidateImportRow(row ImportRow, refs ImportValidationRefs) (copies int, message ImportRowMessage, ok bool) {
 	if strings.TrimSpace(row.Title) == "" {
-		return 0, "Judul wajib diisi.", false
+		return 0, ImportMsgTitleRequired, false
 	}
 	materialCode := strings.ToLower(strings.TrimSpace(row.MaterialTypeCode))
 	if materialCode == "" || !refs.MaterialTypeCodes[materialCode] {
-		return 0, "Jenis bahan (kode) tidak dikenali.", false
+		return 0, ImportMsgMaterialTypeUnknown, false
 	}
 	categoryCode := strings.ToLower(strings.TrimSpace(row.CategoryCode))
 	if categoryCode == "" || !refs.CategoryCodes[categoryCode] {
-		return 0, "Kategori (kode) tidak dikenali.", false
+		return 0, ImportMsgCategoryUnknown, false
 	}
 	if access := strings.TrimSpace(row.Access); access != "" && !CopyAccess(access).Valid() {
-		return 0, "Akses tidak dikenali.", false
+		return 0, ImportMsgAccessUnknown, false
 	}
 	if code := strings.ToLower(strings.TrimSpace(row.LocationCode)); code != "" && !refs.LocationCodes[code] {
-		return 0, "Lokasi (kode) tidak dikenali.", false
+		return 0, ImportMsgLocationUnknown, false
 	}
 	if code := strings.ToLower(strings.TrimSpace(row.SourceCode)); code != "" && !refs.SourceCodes[code] {
-		return 0, "Sumber (kode) tidak dikenali.", false
+		return 0, ImportMsgSourceUnknown, false
 	}
 	if y := strings.TrimSpace(row.PublishYear); y != "" {
 		if _, err := strconv.Atoi(y); err != nil {
-			return 0, "Tahun terbit harus berupa angka.", false
+			return 0, ImportMsgPublishYearNotNumber, false
 		}
 	}
 	if p := strings.TrimSpace(row.Price); p != "" {
 		if _, err := strconv.Atoi(p); err != nil {
-			return 0, "Harga harus berupa angka.", false
+			return 0, ImportMsgPriceNotNumber, false
 		}
 	}
 	copies = 1
 	if c := strings.TrimSpace(row.Copies); c != "" {
 		n, err := strconv.Atoi(c)
 		if err != nil || n < 1 {
-			return 0, "Jumlah eksemplar harus berupa angka minimal 1.", false
+			return 0, ImportMsgCopiesInvalid, false
 		}
 		copies = n
 	}

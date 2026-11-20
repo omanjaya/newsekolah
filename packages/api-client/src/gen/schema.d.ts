@@ -10584,7 +10584,8 @@ export interface components {
             row_number: number;
             /** @enum {string} */
             status: "new_title" | "existing_title" | "error";
-            message: string;
+            /** @description What the row will do or why it cannot be imported, as a stable code the client translates (NEW_TITLE, EXISTING_TITLE, TITLE_REQUIRED, MATERIAL_TYPE_UNKNOWN, CATEGORY_UNKNOWN, ACCESS_UNKNOWN, LOCATION_UNKNOWN, SOURCE_UNKNOWN, PUBLISH_YEAR_NOT_NUMBER, PRICE_NOT_NUMBER, COPIES_INVALID, DEDUPE_FAILED). NEW_TITLE and EXISTING_TITLE go with the row's copies count. */
+            message_code: string;
             title: string;
             copies: number;
         };

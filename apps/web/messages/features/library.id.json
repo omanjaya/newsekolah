@@ -744,6 +744,21 @@
         "status": "Status",
         "message": "Keterangan"
       },
+      "rowMessage": {
+        "NEW_TITLE": "Judul baru, {copies} eksemplar akan dibuat.",
+        "EXISTING_TITLE": "Judul sudah ada, {copies} eksemplar akan ditambahkan.",
+        "TITLE_REQUIRED": "Judul wajib diisi.",
+        "MATERIAL_TYPE_UNKNOWN": "Kode jenis bahan tidak dikenali.",
+        "CATEGORY_UNKNOWN": "Kode kategori tidak dikenali.",
+        "ACCESS_UNKNOWN": "Akses tidak dikenali.",
+        "LOCATION_UNKNOWN": "Kode lokasi tidak dikenali.",
+        "SOURCE_UNKNOWN": "Kode sumber tidak dikenali.",
+        "PUBLISH_YEAR_NOT_NUMBER": "Tahun terbit harus berupa angka.",
+        "PRICE_NOT_NUMBER": "Harga harus berupa angka.",
+        "COPIES_INVALID": "Jumlah eksemplar harus berupa angka, minimal 1.",
+        "DEDUPE_FAILED": "Gagal memeriksa judul yang sudah ada. Coba tinjau ulang.",
+        "unknown": "Baris ini tidak bisa diimpor."
+      },
       "status": {
         "new_title": "Judul baru",
         "existing_title": "Judul sudah ada",
