@@ -87,6 +87,10 @@ const saved: Journal = {
   reflection: "Titik puncak membingungkan",
 } as Journal;
 
+function draftScope(lessonDate: string, journalId: string | null = null) {
+  return { classId: "c1", subjectId: "m1", lessonDate, journalId };
+}
+
 function renderForm() {
   render(
     <JournalForm
@@ -155,11 +159,13 @@ describe("JournalForm", () => {
     render(<JournalForm onOpenExisting={onOpenExisting} onDone={vi.fn()} />);
 
     fill("Duplikat hari ini", "Uji duplikat");
-    expect(loadJournalDraft("me", "c1", "m1", today)?.topic).toBe("Duplikat hari ini");
+    // An entry that clashes with a saved journal can never be saved, so its
+    // text is not kept as a draft.
+    expect(loadJournalDraft("me", draftScope(today))).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "openExisting" }));
 
     expect(onOpenExisting).toHaveBeenCalledWith(existing);
-    expect(loadJournalDraft("me", "c1", "m1", today)).toBeNull();
+    expect(loadJournalDraft("me", draftScope(today))).toBeNull();
     expect(screen.getByRole("combobox", { name: "class" })).toHaveTextContent("X-A");
     expect(screen.getByRole("combobox", { name: "subject" })).toHaveTextContent("Matematika");
 
@@ -182,13 +188,59 @@ describe("JournalForm", () => {
 
   it("leaves no draft of an opened journal's own text", () => {
     render(<JournalForm initial={saved} onDone={vi.fn()} />);
-    expect(loadJournalDraft("me", "c1", "m1", "2026-11-20")).toBeNull();
+    expect(loadJournalDraft("me", draftScope("2026-11-20", "j1"))).toBeNull();
 
     // A real change is still kept, for a dropped connection.
     fireEvent.change(screen.getByRole("textbox", { name: "topic" }), {
       target: { value: "Fungsi kuadrat (revisi)" },
     });
-    expect(loadJournalDraft("me", "c1", "m1", "2026-11-20")?.topic).toBe("Fungsi kuadrat (revisi)");
+    expect(loadJournalDraft("me", draftScope("2026-11-20", "j1"))?.topic).toBe(
+      "Fungsi kuadrat (revisi)",
+    );
+    expect(loadJournalDraft("me", draftScope("2026-11-20"))).toBeNull();
+  });
+
+  // F22: a duplicate typed for a lesson that already has a journal, refused
+  // and then cancelled, must not be offered later in that journal's editor,
+  // where restoring it would overwrite the saved text.
+  it("does not offer a refused duplicate's text to the saved journal's editor", () => {
+    sameDay.value = [saved];
+    renderForm();
+    fill("Duplikat dibatalkan", "Kegiatan duplikat");
+    fireEvent.click(screen.getByRole("button", { name: "submit" }));
+    expect(toast.error).toHaveBeenCalledWith("JOURNAL_CONFLICT");
+    fireEvent.click(screen.getByRole("button", { name: "cancel" }));
+    cleanup();
+
+    render(<JournalForm initial={saved} onDone={vi.fn()} />);
+
+    expect(screen.queryByText("draftFoundTitle")).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "topic" })).toHaveValue("Fungsi kuadrat");
+    expect(screen.getByRole("textbox", { name: "activities" })).toHaveValue("Menggambar grafik");
+    expect(screen.getByRole("textbox", { name: "reflection" })).toHaveValue(
+      "Titik puncak membingungkan",
+    );
+  });
+
+  // A new entry mirrored before the same-day check knew of the saved
+  // journal (or before someone else saved it) stays a new-entry draft; the
+  // saved journal's editor never offers it, and the refused save drops it.
+  it("keeps a new entry's earlier draft away from the saved journal and drops it on refusal", () => {
+    renderForm();
+    fill("Ditulis sebelum dicek", "Kegiatan");
+    expect(loadJournalDraft("me", draftScope("2026-11-20"))?.topic).toBe("Ditulis sebelum dicek");
+    cleanup();
+
+    render(<JournalForm initial={saved} onDone={vi.fn()} />);
+    expect(screen.queryByText("draftFoundTitle")).not.toBeInTheDocument();
+    cleanup();
+
+    sameDay.value = [saved];
+    renderForm();
+    fireEvent.click(screen.getByRole("button", { name: "draftRestore" }));
+    fireEvent.click(screen.getByRole("button", { name: "submit" }));
+    expect(toast.error).toHaveBeenCalledWith("JOURNAL_CONFLICT");
+    expect(loadJournalDraft("me", draftScope("2026-11-20"))).toBeNull();
   });
 
   it("sends one request for a double click on Simpan", () => {
