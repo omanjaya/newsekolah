@@ -26,7 +26,7 @@ import {
   useToast,
 } from "@newsekolah/ui";
 import { Download } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
@@ -39,6 +39,7 @@ import {
   useEraporPreviewQuery,
   useTermsQuery,
 } from "../api";
+import { scoreText } from "../lib/format-score";
 
 const MAX_ROWS_SHOWN = 10;
 
@@ -109,6 +110,7 @@ export function EraporExport({
   onOpenGradebook,
 }: EraporExportProps): ReactElement {
   const t = useTranslations("app.grading.erapor");
+  const locale = useLocale();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const terms = useTermsQuery();
@@ -343,7 +345,7 @@ export function EraporExport({
                       <TableRow key={`${row.nisn}-${row.subject_code}`}>
                         <TableCell>{row.nisn}</TableCell>
                         <TableCell>{row.subject_code}</TableCell>
-                        <TableCell>{row.score}</TableCell>
+                        <TableCell>{scoreText(row.score, locale)}</TableCell>
                         <TableCell>{row.predicate}</TableCell>
                       </TableRow>
                     ))}

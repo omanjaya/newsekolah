@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 
-import { formatScore } from "./format-score";
+import { formatScore, scoreText } from "./format-score";
 
 it("uses a decimal comma for the Indonesian locale", () => {
   expect(formatScore(88, "id")).toBe("88,0");
@@ -21,4 +21,11 @@ it("keeps the scale's precision instead of rounding to one decimal", () => {
 
 it("never shows a score just under the KKTP as the KKTP itself", () => {
   expect(formatScore(74.96, "id", 2)).toBe("74,96");
+});
+
+it("writes a stored score exactly, in the locale's separator, for an editable cell", () => {
+  expect(scoreText(8.5, "id")).toBe("8,5");
+  expect(scoreText(77.55, "id")).toBe("77,55");
+  expect(scoreText(88, "id")).toBe("88");
+  expect(scoreText(91.25, "en")).toBe("91.25");
 });

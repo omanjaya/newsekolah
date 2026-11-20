@@ -10,6 +10,7 @@ import { useDraftOwner } from "../../../lib/drafts/draft-owner";
 import { useUnsavedChangesProtection } from "../../../lib/navigation/use-unsaved-changes-protection";
 import { useSession } from "../../../lib/session/session-provider";
 import type { AssessmentComponent, Gradebook, GradebookStudent } from "../api";
+import { scoreText } from "../lib/format-score";
 import { isMultiCellPaste } from "../lib/gradebook-paste";
 import {
   computeLiveAverage,
@@ -130,7 +131,7 @@ export function GradebookTable({
     const edited = edits[componentId]?.[student.student_user_id];
     if (edited !== undefined) return edited;
     const original = student.scores[componentId];
-    return original === undefined ? "" : String(original);
+    return original === undefined ? "" : scoreText(original, locale);
   }
 
   // Live, edit-aware view of every visible student's merged scores, average

@@ -153,6 +153,27 @@ describe("EraporExport preview states", () => {
     expect(screen.getByText("reason.no_score")).toBeInTheDocument();
     expect(screen.getByText("reason.subject_not_published")).toBeInTheDocument();
   });
+
+  it("shows a row's score with the locale's decimal comma, exactly as the file carries it", () => {
+    previewMock.mockReturnValue({
+      data: {
+        rows: [
+          { nisn: "0091234568", subject_code: "MAT", score: 55.08, predicate: "D" },
+          { nisn: "0091234569", subject_code: "MAT", score: 80, predicate: "B" },
+        ],
+        skipped: [],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch,
+    });
+    renderExport();
+
+    expect(screen.getByRole("cell", { name: "55,08" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "80" })).toBeInTheDocument();
+    expect(screen.queryByText("55.08")).not.toBeInTheDocument();
+  });
 });
 
 describe("EraporExport class scope", () => {

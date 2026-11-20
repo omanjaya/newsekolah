@@ -130,3 +130,31 @@ describe("GradebookTable draft", () => {
     expect(screen.queryByText("draftFoundTitle")).not.toBeInTheDocument();
   });
 });
+
+describe("GradebookTable saved scores", () => {
+  it("shows a saved decimal with the Indonesian comma, as the teacher typed it", () => {
+    render(
+      <GradebookTable
+        sheet={{
+          ...sheet,
+          students: [{ student_user_id: "s1", name: "Citra", scores: { c1: 8.5 } }],
+        }}
+        canManage
+        search=""
+        onSearchChange={vi.fn()}
+        onEditComponent={vi.fn()}
+        onManualOverride={vi.fn()}
+        starBalances={new Map()}
+        onGiveStar={vi.fn()}
+        onAddComponent={vi.fn()}
+      />,
+    );
+    const input = scoreInput();
+    expect(input).toHaveValue("8,5");
+
+    // Tabbing through the untouched cell leaves nothing pending.
+    fireEvent.focus(input);
+    fireEvent.blur(input);
+    expect(loadGradebookDraft(OWNER, SHEET_KEY)).toBeNull();
+  });
+});

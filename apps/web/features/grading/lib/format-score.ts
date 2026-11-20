@@ -27,3 +27,17 @@ export function formatScore(
     maxFractionDigits: max,
   });
 }
+
+/**
+ * A stored score written out exactly, with the locale's decimal separator
+ * and nothing else: no grouping, rounding or padding ("8,5" and "77,55" in
+ * id, "8.5" in en, "88" for a whole score). It is the text an editable
+ * score cell starts from, so a saved 8.5 reads back the way the teacher
+ * typed it and the way the averages beside it read; formatScore would pad
+ * it to "88,0" and make an untouched cell look edited. It also shows a
+ * value exactly as an export file carries it, only in the viewer's locale.
+ */
+export function scoreText(value: number, locale = "id"): string {
+  const text = String(value);
+  return locale === "en" ? text : text.replace(".", ",");
+}
