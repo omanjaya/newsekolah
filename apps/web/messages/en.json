@@ -1551,7 +1551,10 @@
           "cancel": "Cancel",
           "description": "Write where you are going and which periods you will miss.",
           "returns": "I will come back to school afterwards",
-          "returnsHint": "Untick this if you go home and will not be back today. Security records your return at the gate."
+          "returnsHint": "Untick this if you go home and will not be back today. Security records your return at the gate.",
+          "refusedTitle": "This exit permit cannot be submitted",
+          "onLeaveToday": "You already have a leave letter for today, so you cannot request an exit permit.",
+          "alreadyToday": "You already have an exit permit today."
         },
         "approve": {
           "title": "Approve the duty stage",

@@ -125,6 +125,8 @@
   "permits.exited": "Sudah keluar gerbang",
   "permits.returns": "Saya kembali ke sekolah setelah urusan selesai",
   "permits.no_periods_left": "Jam pelajaran hari ini sudah selesai. Izin keluar hanya untuk jam yang sedang berjalan atau yang akan datang.",
+  "permits.on_leave_today": "Anda sudah memiliki surat izin tidak masuk untuk hari ini, jadi tidak bisa mengajukan izin keluar.",
+  "permits.already_today": "Anda sudah memiliki izin keluar hari ini.",
   "permits.lessons_over": "Jam pelajaran izin ini sudah selesai, jadi QR gerbang tidak bisa ditampilkan lagi. Izin ini kedaluwarsa dengan sendirinya.",
   "permits.no_return": "Tidak kembali ke sekolah",
   "permits.not_back": "Belum kembali, paling lambat pukul {time}",

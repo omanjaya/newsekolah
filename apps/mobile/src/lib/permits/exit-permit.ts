@@ -45,6 +45,26 @@ export function endLessons<T extends { id: string }>(lessons: readonly T[], star
   return start < 0 ? [...lessons] : lessons.slice(start);
 }
 
+/**
+ * The app's own key for a refusal of the student's own request, worded to
+ * the student, or null to use the shared error catalog. That catalog says
+ * "Siswa ini ...", which reads right for the duty teacher recording a
+ * permit for someone else but not for the student (as on the web,
+ * apps/web/features/permits/components/exit-permit-detail.tsx).
+ */
+export function ownExitRefusalKey(
+  code: string | undefined,
+): "permits.on_leave_today" | "permits.already_today" | null {
+  switch (code) {
+    case "STUDENT_ON_LEAVE_TODAY":
+      return "permits.on_leave_today";
+    case "EXIT_PERMIT_ALREADY_TODAY":
+      return "permits.already_today";
+    default:
+      return null;
+  }
+}
+
 export interface ExitReturnFields {
   exited_at?: string;
   return_required: boolean;

@@ -125,6 +125,8 @@
   "permits.exited": "Left through the gate",
   "permits.returns": "I will come back to school afterwards",
   "permits.no_periods_left": "Today's lessons are over. An exit permit covers only the lesson running now or the ones still to come.",
+  "permits.on_leave_today": "You already have a leave letter for today, so you cannot request an exit permit.",
+  "permits.already_today": "You already have an exit permit today.",
   "permits.lessons_over": "This permit's lessons are over, so its gate QR can no longer be shown. The permit expires on its own.",
   "permits.no_return": "Not coming back to school",
   "permits.not_back": "Not back yet, due by {time}",
