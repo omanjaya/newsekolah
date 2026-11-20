@@ -81,12 +81,14 @@
       "recipientLimit": "Up to 10 recipients.",
       "cancel": "Cancel",
       "submit": "Save",
-      "saved": "Schedule saved."
+      "saved": "Schedule saved.",
+      "recipientsHint": "Only emails of this school's user accounts; set them under Users and access.",
+      "recipientNotUser": "{email} is not the email of a user account at this school."
     },
     "runs": {
       "title": "Run history",
       "emptyTitle": "No runs yet",
-      "emptyBody": "This schedule has not been due yet.",
+      "emptyBody": "This schedule has not run yet. History appears once its next send time has passed.",
       "status": {
         "pending": "Pending",
         "success": "Sent",
@@ -97,7 +99,11 @@
         "upload_failed": "The report could not be stored.",
         "send_failed": "The email could not be sent to the recipients.",
         "unknown": "The send failed."
-      }
+      },
+      "dueAt": "Due {time}",
+      "ranAt": "Ran {time}",
+      "notRunYet": "Not run yet",
+      "download": "Download report"
     },
     "scheduleName": "{report}, {cadence}",
     "rowActions": "Actions for {name}",

@@ -3,7 +3,23 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), update: vi.fn() }));
+const SYSTEM_ROLES = [
+  { id: "role-admin", slug: "admin", name: "Admin Sekolah", is_system: true },
+  { id: "role-teacher", slug: "teacher", name: "Guru", is_system: true },
+  { id: "role-staff", slug: "staff", name: "Pegawai", is_system: true },
+  { id: "role-student", slug: "student", name: "Siswa", is_system: true },
+];
+const ALL_ROLES = [
+  ...SYSTEM_ROLES,
+  { id: "role-bk", slug: "guru_bk", name: "Guru BK", is_system: false },
+];
+
+const mocks = vi.hoisted(() => ({
+  create: vi.fn(),
+  update: vi.fn(),
+  can: vi.fn<() => boolean>(),
+  roles: { current: [] as { id: string; slug: string; name: string; is_system: boolean }[] },
+}));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, params?: Record<string, unknown>) =>
@@ -14,19 +30,10 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { id: "me", roles: [{ slug: "admin" }] } }),
+  useCan: () => mocks.can(),
 }));
 vi.mock("../api", () => ({
-  useRolesQuery: () => ({
-    data: {
-      data: [
-        { id: "role-admin", slug: "admin", name: "Admin Sekolah", is_system: true },
-        { id: "role-teacher", slug: "teacher", name: "Guru", is_system: true },
-        { id: "role-staff", slug: "staff", name: "Pegawai", is_system: true },
-        { id: "role-student", slug: "student", name: "Siswa", is_system: true },
-        { id: "role-bk", slug: "guru_bk", name: "Guru BK", is_system: false },
-      ],
-    },
-  }),
+  useRolesQuery: () => ({ data: { data: mocks.roles.current }, isLoading: false }),
   useCreateUserMutation: () => ({ mutateAsync: mocks.create, isPending: false }),
   useUpdateUserMutation: () => ({ mutateAsync: mocks.update, isPending: false }),
 }));
@@ -63,6 +70,8 @@ beforeAll(() => {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.create.mockResolvedValue({});
+  mocks.can.mockReturnValue(true);
+  mocks.roles.current = ALL_ROLES;
 });
 
 async function optionsOf(user: ReturnType<typeof userEvent.setup>, label: string) {
@@ -142,5 +151,24 @@ describe("UserForm primary role by kind", () => {
     expect(screen.getByRole("combobox", { name: "primaryRole" })).toHaveTextContent(
       "Admin Sekolah",
     );
+  });
+});
+
+describe("UserForm custom roles hint", () => {
+  beforeEach(() => {
+    mocks.roles.current = SYSTEM_ROLES;
+  });
+
+  it("tells an admin who cannot create roles to ask the Super Admin", () => {
+    mocks.can.mockReturnValue(false);
+    render(<UserForm onDone={vi.fn()} />);
+    expect(screen.getByText("noCustomRolesAskSuperAdmin")).toBeInTheDocument();
+    expect(screen.queryByText("noCustomRoles")).not.toBeInTheDocument();
+  });
+
+  it("points a role manager at the roles page", () => {
+    mocks.can.mockReturnValue(true);
+    render(<UserForm onDone={vi.fn()} />);
+    expect(screen.getByText("noCustomRoles")).toBeInTheDocument();
   });
 });

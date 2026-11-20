@@ -17,7 +17,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useSession } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
   type AdminUser,
   type ProfileKind,
@@ -55,6 +55,10 @@ export function UserForm({
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const { me } = useSession();
+  // Only a holder of manage_permissions (Super Admin by default) can create
+  // a custom role; everyone else is told whom to ask, not sent to a page
+  // where the action does not exist for them.
+  const canCreateRoles = useCan("manage_permissions");
   const roles = useRolesQuery();
   const create = useCreateUserMutation();
   const update = useUpdateUserMutation();
@@ -262,7 +266,9 @@ export function UserForm({
           <legend className="font-medium">{t("additionalRoles")}</legend>
           <p className="text-fg-muted">{t("additionalRolesHint")}</p>
           {customRoles.length === 0 ? (
-            <p className="text-fg-muted">{t("noCustomRoles")}</p>
+            <p className="text-fg-muted">
+              {canCreateRoles ? t("noCustomRoles") : t("noCustomRolesAskSuperAdmin")}
+            </p>
           ) : (
             <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
               {customRoles.map((role) => {

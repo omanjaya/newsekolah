@@ -3,12 +3,13 @@ import type { ReactElement, ReactNode } from "react";
 
 import { getMessagesForNamespaces } from "../../../lib/i18n/get-messages";
 import { APP_NAMESPACES } from "../../../lib/i18n/namespace-sets";
+import { getRequestLocale } from "../../../lib/i18n/request-locale.server";
 import { getTenantBrandingServer } from "../../../lib/tenant/get-branding.server";
 
 /** This workspace embeds library views; the full catalog stays scoped to these routes. */
 export default async function Layout({ children }: { children: ReactNode }): Promise<ReactElement> {
   const branding = await getTenantBrandingServer();
-  const locale = branding?.locale ?? "id";
+  const locale = await getRequestLocale(branding?.locale);
   return (
     <NextIntlClientProvider
       locale={locale}

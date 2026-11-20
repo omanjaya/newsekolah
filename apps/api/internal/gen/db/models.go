@@ -1689,7 +1689,7 @@ type User struct {
 	Status             string             `json:"status"`
 	MustChangePassword bool               `json:"must_change_password"`
 	LastLoginAt        pgtype.Timestamptz `json:"last_login_at"`
-	Locale             string             `json:"locale"`
+	Locale             pgtype.Text        `json:"locale"`
 	AvatarAssetID      pgtype.UUID        `json:"avatar_asset_id"`
 	CreatedAt          pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`

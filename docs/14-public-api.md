@@ -60,7 +60,7 @@ Sebelum endpoint disimpan, `service.RegisterEndpoint` menolak:
 - **URL yang hostnya diselesaikan (atau, sebagai alamat literal, memang berupa) alamat loopback, link-local, atau privat** (`domain.IsDisallowedAddress`, dicek lewat `net.LookupHost` pada host yang bukan alamat IP literal). Ini mencegah pendaftaran endpoint yang menjadikan worker pengiriman webhook sebagai alat probe jaringan internal API sendiri (SSRF). Pengecekan yang sama berjalan setiap kali endpoint diedit.
 - Jenis peristiwa yang tidak ada di katalog.
 
-Rahasia penandatanganan (signing secret) dibuat acak 256-bit sekali, dienkripsi saat disimpan dengan AES-256-GCM (`platform/crypto.Sealer`, kunci yang sama dipakai modul lain untuk data sensitif) sehingga tidak pernah tersimpan sebagai teks biasa, dan hanya dibuka kembali sesaat sebelum menandatangani satu pengiriman. Rahasia tidak pernah ditampilkan lagi setelah dibuat; sekolah yang ingin rahasia baru mendaftarkan endpoint baru.
+Rahasia penandatanganan (signing secret) dibuat acak 256-bit sekali, berbentuk `whsec_` diikuti 43 karakter base64url (`domain.EncodeSigningSecret`), dienkripsi saat disimpan dengan AES-256-GCM (`platform/crypto.Sealer`, kunci yang sama dipakai modul lain untuk data sensitif) sehingga tidak pernah tersimpan sebagai teks biasa, dan hanya dibuka kembali sesaat sebelum menandatangani satu pengiriman. Respons 201 pendaftaran berbentuk `{ webhook_endpoint, signing_secret }`: hanya di situ rahasia dikembalikan, dan web menampilkannya sekali dengan tombol salin. Kunci HMAC adalah seluruh string `signing_secret` apa adanya (termasuk awalan `whsec_`), tanpa didekode. Rahasia tidak pernah ditampilkan lagi setelah dibuat; sekolah yang ingin rahasia baru mendaftarkan endpoint baru.
 
 ### 2.2 Skema tanda tangan
 

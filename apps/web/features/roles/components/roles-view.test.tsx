@@ -159,5 +159,18 @@ describe("RolesView", () => {
     render(<RolesView />);
     expect(screen.getByText("systemHintReadOnly")).toBeInTheDocument();
     expect(screen.queryByText("systemHint")).not.toBeInTheDocument();
+    // Says who can create a role, instead of a page with no way forward.
+    expect(screen.getByText("readOnlyNotice")).toBeInTheDocument();
+  });
+
+  it("shows no read-only notice to a reader who can manage roles", () => {
+    can.mockReturnValue(true);
+    rolesQuery.mockReturnValue({
+      data: { data: [{ ...roles[0], is_system: true }] },
+      isLoading: false,
+      isError: false,
+    });
+    render(<RolesView />);
+    expect(screen.queryByText("readOnlyNotice")).not.toBeInTheDocument();
   });
 });

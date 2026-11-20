@@ -44,18 +44,13 @@ func (s *Service) CreateUser(ctx context.Context, tenantID, actorID uuid.UUID, i
 			return err
 		}
 
-		locale := in.Locale
-		if locale == "" {
-			locale = "id"
-		}
-
 		// Every freshly created account must change its password at first
 		// login, whether the admin chose one or it was randomly generated
 		// (the latter is never returned to anyone -- reset-password is the
 		// only way to hand this user a usable credential).
 		user, err := s.repo.CreateUserRecord(ctx, NewUserRecord{
 			TenantID: tenantID, Username: username, Email: in.Email, Phone: in.Phone,
-			PasswordHash: hash, Name: in.Name, Locale: locale, MustChangePassword: true,
+			PasswordHash: hash, Name: in.Name, Locale: in.Locale, MustChangePassword: true,
 		})
 		if err != nil {
 			return fmt.Errorf("create user: %w", err)
@@ -119,7 +114,14 @@ func (s *Service) UpdateUser(ctx context.Context, tenantID, actorID, userID uuid
 			return err
 		}
 
-		if err := s.repo.UpdateUserBasic(ctx, tenantID, userID, in.Name, in.Email, in.Phone, in.Locale); err != nil {
+		// An absent locale keeps the stored preference (which may be none):
+		// the admin user form does not edit it, so an edit never sets or
+		// clears the user's own choice.
+		locale := in.Locale
+		if locale == "" {
+			locale = before.Locale
+		}
+		if err := s.repo.UpdateUserBasic(ctx, tenantID, userID, in.Name, in.Email, in.Phone, locale); err != nil {
 			return fmt.Errorf("update user: %w", err)
 		}
 		if err := s.writeProfile(ctx, tenantID, userID, in.ProfileKind, in.Profile); err != nil {
@@ -137,7 +139,7 @@ func (s *Service) UpdateUser(ctx context.Context, tenantID, actorID, userID uuid
 
 		view, err = s.toUserAdminView(ctx, tenantID, UserAdminRow{
 			ID: userID, Username: before.Username, Email: in.Email, Phone: in.Phone, Name: in.Name,
-			Status: before.Status, ProfileKind: in.ProfileKind, Locale: in.Locale,
+			Status: before.Status, ProfileKind: in.ProfileKind, Locale: locale,
 			MustChangePassword: before.MustChangePassword, LastLoginAt: before.LastLoginAt, CreatedAt: before.CreatedAt,
 		})
 		if err != nil {

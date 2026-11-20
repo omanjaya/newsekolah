@@ -122,28 +122,31 @@ func (q *Queries) GetUserProfile(ctx context.Context, arg GetUserProfileParams) 
 }
 
 const updateOwnProfile = `-- name: UpdateOwnProfile :exec
-update users set username = $3, name = $4, email = $5, phone = $6, locale = $7 where tenant_id = $1 and id = $2
+update users
+set username = $1, name = $2, email = $3, phone = $4, locale = nullif($5::text, '')
+where tenant_id = $6 and id = $7
 `
 
 type UpdateOwnProfileParams struct {
-	TenantID uuid.UUID   `json:"tenant_id"`
-	ID       uuid.UUID   `json:"id"`
 	Username string      `json:"username"`
 	Name     string      `json:"name"`
 	Email    pgtype.Text `json:"email"`
 	Phone    pgtype.Text `json:"phone"`
 	Locale   string      `json:"locale"`
+	TenantID uuid.UUID   `json:"tenant_id"`
+	ID       uuid.UUID   `json:"id"`
 }
 
+// An empty locale stores NULL: no preference, the school's language applies.
 func (q *Queries) UpdateOwnProfile(ctx context.Context, arg UpdateOwnProfileParams) error {
 	_, err := q.db.Exec(ctx, updateOwnProfile,
-		arg.TenantID,
-		arg.ID,
 		arg.Username,
 		arg.Name,
 		arg.Email,
 		arg.Phone,
 		arg.Locale,
+		arg.TenantID,
+		arg.ID,
 	)
 	return err
 }

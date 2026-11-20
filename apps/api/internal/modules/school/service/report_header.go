@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
@@ -98,7 +99,10 @@ func (s *Service) UpdateReportHeader(ctx context.Context, tenantID, actorID uuid
 		return domain.ReportHeader{}, fmt.Errorf("marshal report header: %w", err)
 	}
 	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return s.repo.SetTenantSettingJSON(ctx, tenantID, actorID, reportHeaderSettingKey, raw)
+		if err := s.repo.SetTenantSettingJSON(ctx, tenantID, actorID, reportHeaderSettingKey, raw); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "report_header.update", "tenant", tenantID, nil, json.RawMessage(raw))
 	})
 	if err != nil {
 		return domain.ReportHeader{}, err

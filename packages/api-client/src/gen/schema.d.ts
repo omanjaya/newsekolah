@@ -7056,6 +7056,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/reports/schedules/{scheduleId}/runs/{runId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A short-lived link to the file one run produced
+         * @description Lets an admin fetch the rendered export when the email did not go out. 404 when the run is unknown or never stored a file (it failed before upload, or is still pending).
+         */
+        get: operations["getReportScheduleRunDownload"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schedules": {
         parameters: {
             query?: never;
@@ -10124,6 +10144,11 @@ export interface components {
             name: string;
             /** Format: uri */
             avatar_url?: string;
+            /**
+             * @description The user's own language preference (users.locale), set on the profile page. Clients render in it ahead of the tenant's default language. Omitted when the user never chose one, so the tenant's language applies.
+             * @enum {string}
+             */
+            locale?: "id" | "en";
             /** @enum {string} */
             profile_kind?: "student" | "teacher" | "staff";
             roles: components["schemas"]["Role"][];
@@ -10244,6 +10269,11 @@ export interface components {
             api_key: components["schemas"]["APIKey"];
             /** @description The plaintext key, shown exactly once. Only its hash is stored. */
             token: string;
+        };
+        WebhookEndpointCreated: {
+            webhook_endpoint: components["schemas"]["WebhookEndpoint"];
+            /** @description The HMAC-SHA256 signing secret, shown exactly once. Receivers use the whole string (including the whsec_ prefix) as the HMAC key. Only its sealed ciphertext is stored. */
+            signing_secret: string;
         };
         WebhookEndpointCreate: {
             url: string;
@@ -18882,8 +18912,11 @@ export interface operations {
                     /** Format: email */
                     email?: string;
                     phone?: string;
-                    /** @enum {string} */
-                    locale?: "id" | "en";
+                    /**
+                     * @description The caller's language preference. Omit to keep the stored one; an empty string clears it so the tenant's language applies again.
+                     * @enum {string}
+                     */
+                    locale?: "id" | "en" | "";
                     detail?: components["schemas"]["UserProfileFields"];
                 };
             };
@@ -20415,7 +20448,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WebhookEndpoint"];
+                    "application/json": components["schemas"]["WebhookEndpointCreated"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -26908,6 +26941,35 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    getReportScheduleRunDownload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scheduleId: string;
+                runId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Download link */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Presigned link, valid for 15 minutes. */
+                        url: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     listSchedules: {

@@ -136,6 +136,10 @@ func (h *Handler) toAPIMe(ctx context.Context, tenantID uuid.UUID, me service.Me
 		avatar := me.AvatarURL
 		result.AvatarUrl = &avatar
 	}
+	if me.Locale != "" {
+		locale := api.MeLocale(me.Locale)
+		result.Locale = &locale
+	}
 	if me.ProfileKind != "" {
 		kind := api.MeProfileKind(me.ProfileKind)
 		result.ProfileKind = &kind

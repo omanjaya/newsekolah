@@ -51,11 +51,14 @@ type StudentClassRepository interface {
 // excludes tenant branding, which belongs to the school module. The
 // transport layer for GET /v1/me composes the two.
 type MeResult struct {
-	UserID             uuid.UUID
-	Username           string
-	Email              string
-	Name               string
-	AvatarURL          string
+	UserID    uuid.UUID
+	Username  string
+	Email     string
+	Name      string
+	AvatarURL string
+	// Locale is the user's own language preference, "" when they never
+	// chose one and the school's language applies.
+	Locale             string
 	ProfileKind        domain.ProfileKind
 	Detail             UserProfileFields
 	Roles              []domain.Role
@@ -127,6 +130,7 @@ func (s *Service) me(ctx context.Context, user domain.User) (MeResult, error) {
 		Email:              user.Email,
 		Name:               user.Name,
 		AvatarURL:          user.AvatarURL,
+		Locale:             user.Locale,
 		Roles:              roles,
 		Permissions:        principal.Effective().Slice(),
 		Duties:             duties,

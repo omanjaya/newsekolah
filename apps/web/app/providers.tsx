@@ -18,6 +18,7 @@ import { isAuthRedirecting, markAuthRedirect } from "../lib/session/auth-redirec
 import { endSession } from "../lib/session/end-session";
 import { SessionProvider } from "../lib/session/session-provider";
 import { signInPath } from "../lib/session/sign-in-path";
+import { UserLocaleSync } from "../lib/session/user-locale-sync";
 import { SimulationSync } from "../lib/simulation/simulation-sync";
 import { TenantProvider, type TenantBranding } from "../lib/tenant/tenant-provider";
 import { ThemeProvider } from "../lib/theme/theme-provider";
@@ -87,6 +88,7 @@ export function AppProviders({
           <SessionProvider>
             <SimulationSync />
             <AccountBoundary />
+            <UserLocaleSync />
             <ThemeProvider>
               {/*
                 Every internal link a shared component renders (breadcrumbs,

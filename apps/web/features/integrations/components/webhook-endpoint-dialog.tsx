@@ -29,6 +29,8 @@ import {
 import { useWebhookEventLabel } from "../lib/use-webhook-event-label";
 import { offeredWebhookEvents } from "../lib/webhook-event-modules";
 
+import { ShownOnceSecretContent } from "./shown-once-secret";
+
 /**
  * One dialog for both registering a new endpoint and editing an existing
  * one: the fields are identical (docs/14-public-api.md never rotates the
@@ -37,6 +39,10 @@ import { offeredWebhookEvents } from "../lib/webhook-event-modules";
  * `key` tied to the target (see webhook-endpoints-panel.tsx), so state only
  * ever needs to be seeded once, in its initializer, never re-seeded via an
  * effect for a prop that cannot change under a live instance.
+ *
+ * Registering returns the signing secret exactly once, so a create does
+ * not close the dialog: it switches to a show-once step with the secret
+ * the receiver needs to verify X-Newsekolah-Signature.
  */
 export function WebhookEndpointDialog({
   open,
@@ -60,6 +66,7 @@ export function WebhookEndpointDialog({
   const [url, setUrl] = useState(endpoint?.url ?? "");
   const [description, setDescription] = useState(endpoint?.description ?? "");
   const [selected, setSelected] = useState<Set<string>>(new Set(endpoint?.event_types ?? []));
+  const [signingSecret, setSigningSecret] = useState<string | null>(null);
 
   const isEditing = endpoint !== undefined;
   const pending = createEndpoint.isPending || updateEndpoint.isPending;
@@ -76,16 +83,37 @@ export function WebhookEndpointDialog({
       if (isEditing) {
         await updateEndpoint.mutateAsync({ id: endpoint.id, body });
         toast.success(t("updated"));
+        onOpenChange(false);
       } else {
-        await createEndpoint.mutateAsync(body);
+        const created = await createEndpoint.mutateAsync(body);
         toast.success(t("created"));
+        setSigningSecret(created.signing_secret);
       }
-      onOpenChange(false);
     } catch (error) {
       toast.error(
         error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
       );
     }
+  }
+
+  if (signingSecret !== null) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <ShownOnceSecretContent
+          title={t("secretTitle")}
+          warning={t("secretWarning")}
+          label={t("secretLabel")}
+          secret={signingSecret}
+          copyLabel={t("copySecret")}
+          copiedMessage={t("secretCopied")}
+          copyFailedMessage={t("secretCopyFailed")}
+          doneLabel={t("secretDone")}
+          onDone={() => {
+            onOpenChange(false);
+          }}
+        />
+      </Dialog>
+    );
   }
 
   return (

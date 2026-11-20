@@ -2,7 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import { Field, FormError, FormSection, Input, Select, useToast } from "@newsekolah/ui";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
@@ -12,27 +12,39 @@ import { useUpdateProfileMutation } from "../api";
 
 import { ProfileSaveBar } from "./profile-save-bar";
 
+/** The select's value for "no preference": the school's language applies. */
+const FOLLOW_SCHOOL = "school";
+type LocaleChoice = "id" | "en" | typeof FOLLOW_SCHOOL;
+
+function toLocaleChoice(value: string | undefined): LocaleChoice {
+  return value === "id" || value === "en" ? value : FOLLOW_SCHOOL;
+}
+
 /**
- * `Me` exposes name, username and email (see the schema in
- * packages/api-client's generated types) -- phone and locale are
- * write-only from this screen's point of view, so those two fields start
- * blank/at the current UI locale rather than pretending to show a stored
- * value the API never sends back. The save bar rises once a field changed.
+ * `Me` exposes name, username, email and the language preference (see the
+ * schema in packages/api-client's generated types) -- phone is write-only
+ * from this screen's point of view, so it starts blank rather than
+ * pretending to show a stored value the API never sends back. The language
+ * select shows the stored preference, or "use the school's language" when
+ * the user never chose one, and is sent only when it changed, so saving
+ * another field never overwrites it. Going back to the school's language
+ * sends an empty locale, which clears the preference. Once saved,
+ * `UserLocaleSync` switches the app. The save bar rises once a field
+ * changed.
  */
 export function EditProfileForm(): ReactElement | null {
   const { me } = useSession();
   const t = useTranslations("app.profile.edit");
-  const uiLocale = useLocale();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const update = useUpdateProfileMutation();
 
-  const initialLocale: "id" | "en" = uiLocale === "en" ? "en" : "id";
+  const initialLocale = toLocaleChoice(me?.locale);
   const [username, setUsername] = useState(me?.username ?? "");
   const [name, setName] = useState(me?.name ?? "");
   const [email, setEmail] = useState(me?.email ?? "");
   const [phone, setPhone] = useState("");
-  const [locale, setLocale] = useState<"id" | "en">(initialLocale);
+  const [locale, setLocale] = useState<LocaleChoice>(initialLocale);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; username?: string }>({});
 
@@ -59,7 +71,7 @@ export function EditProfileForm(): ReactElement | null {
         name: name.trim(),
         ...(email.trim() ? { email: email.trim() } : {}),
         ...(phone.trim() ? { phone: phone.trim() } : {}),
-        locale,
+        ...(locale !== initialLocale ? { locale: locale === FOLLOW_SCHOOL ? "" : locale } : {}),
       });
       setPhone("");
       toast.success(t("saved"));
@@ -122,12 +134,13 @@ export function EditProfileForm(): ReactElement | null {
         <Field label={t("localeLabel")}>
           <Select
             options={[
+              { value: FOLLOW_SCHOOL, label: t("localeSchool") },
               { value: "id", label: t("localeId") },
               { value: "en", label: t("localeEn") },
             ]}
             value={locale}
             onValueChange={(v) => {
-              setLocale(v === "en" ? "en" : "id");
+              setLocale(toLocaleChoice(v));
             }}
           />
         </Field>

@@ -1,5 +1,8 @@
 -- name: UpdateOwnProfile :exec
-update users set username = $3, name = $4, email = $5, phone = $6, locale = $7 where tenant_id = $1 and id = $2;
+-- An empty locale stores NULL: no preference, the school's language applies.
+update users
+set username = @username, name = @name, email = @email, phone = @phone, locale = nullif(@locale::text, '')
+where tenant_id = @tenant_id and id = @id;
 
 -- name: GetUserProfile :one
 select * from user_profiles where tenant_id = $1 and user_id = $2;

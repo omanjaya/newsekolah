@@ -43,6 +43,19 @@ update report_schedule_runs
 set status = $3, failure_code = $4, error_message = $5, object_key = $6, ran_at = $7
 where tenant_id = $1 and id = $2;
 
+-- name: ListLatestReportScheduleRunDueAt :many
+-- The newest claimed slot per schedule of a tenant, so the schedule list
+-- can show a due-but-unclaimed slot as the next run instead of jumping to
+-- the following one.
+select schedule_id, max(due_at)::timestamptz as due_at
+from report_schedule_runs
+where tenant_id = $1
+group by schedule_id;
+
+-- name: GetReportScheduleRun :one
+select * from report_schedule_runs
+where tenant_id = $1 and schedule_id = $2 and id = $3;
+
 -- name: ListReportScheduleRuns :many
 select * from report_schedule_runs
 where tenant_id = $1 and schedule_id = $2

@@ -11,8 +11,12 @@ update users set password_hash = $3, must_change_password = $4 where tenant_id =
 update users set last_login_at = $3 where tenant_id = $1 and id = $2;
 
 -- name: CreateUser :one
+-- An empty locale stores NULL: no preference, the school's language applies.
 insert into users (tenant_id, username, email, phone, password_hash, name, status, must_change_password, locale)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+values (
+  @tenant_id, @username, @email, @phone, @password_hash, @name, @status, @must_change_password,
+  nullif(@locale::text, '')
+)
 returning *;
 
 -- name: CreateUserProfile :exec

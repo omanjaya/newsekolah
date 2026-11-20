@@ -9,6 +9,7 @@ import "./globals.css";
 import { ALLOW_INDEXING } from "../lib/env";
 import { getMessagesForNamespaces } from "../lib/i18n/get-messages";
 import { ROOT_NAMESPACES } from "../lib/i18n/namespace-sets";
+import { getRequestLocale } from "../lib/i18n/request-locale.server";
 import { TITLE_SEPARATOR } from "../lib/page-title-format";
 import { getTenantBrandingServer } from "../lib/tenant/get-branding.server";
 import { PRODUCT_NAME_FALLBACK } from "../lib/tenant/product-name";
@@ -61,7 +62,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }): Promise<ReactElement> {
   const branding = await getTenantBrandingServer();
-  const locale = branding?.locale ?? "id";
+  const locale = await getRequestLocale(branding?.locale);
   // Only the namespaces every route needs (docs/16-audit-performa-web.md
   // item 11) — `(app)/layout.tsx` and `(app)/library/layout.tsx` carry the
   // rest, scoped to where they're actually read. See lib/i18n/namespace-sets.ts.

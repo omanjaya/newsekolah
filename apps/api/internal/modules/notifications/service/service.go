@@ -36,7 +36,9 @@ type Repository interface {
 
 	GetSettings(ctx context.Context, tenantID, userID uuid.UUID) (Settings, bool, error)
 	UpsertSettings(ctx context.Context, tenantID, userID uuid.UUID, in SettingsUpdate) (Settings, error)
-	ListUsersDueForDigest(ctx context.Context, tenantID uuid.UUID, tenantLocalHour int) ([]Settings, error)
+	// ListUsersDueForDigest skips a user whose last digest run is at or
+	// after hourStart, the start of the current tenant-local hour.
+	ListUsersDueForDigest(ctx context.Context, tenantID uuid.UUID, tenantLocalHour int, hourStart time.Time) ([]Settings, error)
 	MarkDigestSent(ctx context.Context, tenantID, userID uuid.UUID, at time.Time) error
 
 	UpsertPushDevice(ctx context.Context, tenantID, userID uuid.UUID, reg PushDeviceRegistration, expiresAt time.Time) (domain.PushDevice, error)

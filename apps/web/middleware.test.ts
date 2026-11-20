@@ -7,6 +7,7 @@ vi.mock("./lib/env", () => ({ API_INTERNAL_URL: "http://api.internal" }));
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe("middleware CSP", () => {
@@ -17,6 +18,22 @@ describe("middleware CSP", () => {
     expect(frameSrc).toContain("blob:");
     expect(frameSrc).toContain("https://accounts.google.com");
     expect(csp).toContain("frame-ancestors 'none'");
+  });
+
+  // A presigned upload goes straight from the browser to object storage,
+  // and stored images load from it: with only the API's endpoint set (the
+  // local stack), a plain-http MinIO must still be allowed in both.
+  it("allows uploads to and images from the storage origin the API signs against", async () => {
+    vi.stubEnv("NEXT_PUBLIC_S3_PUBLIC_ORIGIN", "");
+    vi.stubEnv("S3_PUBLIC_ENDPOINT", "");
+    vi.stubEnv("S3_ENDPOINT", "127.0.0.1:9000");
+    vi.stubEnv("S3_USE_SSL", "false");
+    const response = await middleware(new NextRequest("https://school.example/settings"));
+    const directives = (response.headers.get("Content-Security-Policy") ?? "").split("; ");
+    const connectSrc = directives.find((d) => d.startsWith("connect-src")) ?? "";
+    const imgSrc = directives.find((d) => d.startsWith("img-src")) ?? "";
+    expect(connectSrc.split(" ")).toContain("http://127.0.0.1:9000");
+    expect(imgSrc.split(" ")).toContain("http://127.0.0.1:9000");
   });
 });
 

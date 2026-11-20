@@ -255,7 +255,7 @@ func toDomainUser(row db.User) domain.User {
 		PasswordHash:       row.PasswordHash,
 		Status:             domain.UserStatus(row.Status),
 		MustChangePassword: row.MustChangePassword,
-		Locale:             row.Locale,
+		Locale:             row.Locale.String,
 	}
 }
 

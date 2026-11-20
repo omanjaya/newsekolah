@@ -23,6 +23,10 @@ x-api-env: &api-env
   BASE_DOMAIN: localhost
   APP_ORIGINS: http://localhost:3000
   S3_ENDPOINT: minio:9000
+  # Presigned URLs go to the browser, which cannot resolve "minio": sign
+  # them against the published port instead. The web service allows the
+  # same origin in its CSP (NEXT_PUBLIC_S3_PUBLIC_ORIGIN below).
+  S3_PUBLIC_ENDPOINT: http://localhost:9000
   S3_BUCKET: newsekolah
   S3_ACCESS_KEY: minioadmin
   S3_SECRET_KEY: minioadmin
@@ -181,6 +185,9 @@ services:
       # Server components talk to the API over the compose network; the
       # browser uses the published port above.
       API_INTERNAL_URL: http://api:8080
+      # Object storage the browser uploads to and loads stored images from
+      # (the API's S3_PUBLIC_ENDPOINT above); the CSP allows it.
+      NEXT_PUBLIC_S3_PUBLIC_ORIGIN: http://localhost:9000
       NEXT_TELEMETRY_DISABLED: "1"
       WATCHPACK_POLLING: "true"
     ports: ["3000:3000"]

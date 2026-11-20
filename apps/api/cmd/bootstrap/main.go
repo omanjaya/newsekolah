@@ -126,7 +126,7 @@ func run(logger *slog.Logger, tenantSlug, tenantName, educationLevel, adminUsern
 		user, err = tq.CreateUser(ctx, db.CreateUserParams{
 			TenantID: tenant.ID, Username: adminUsername, Email: database.Text(adminEmail),
 			PasswordHash: passwordHash, Name: adminName, Status: "active",
-			MustChangePassword: true, Locale: "id",
+			MustChangePassword: true,
 		})
 		if err != nil {
 			return fmt.Errorf("create admin user: %w", err)

@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/billing/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 )
 
 func (s *Service) ListFeeTypes(ctx context.Context, tenantID uuid.UUID, includeInactive bool) ([]domain.FeeType, error) {
@@ -61,8 +62,10 @@ func (s *Service) CreateFeeType(ctx context.Context, t domain.FeeType, actorUser
 			return err
 		}
 		t.AcademicYearID = yearID
-		out, err = s.repo.CreateFeeType(ctx, t)
-		return err
+		if out, err = s.repo.CreateFeeType(ctx, t); err != nil {
+			return err
+		}
+		return audit.Record(ctx, t.TenantID, "fee_type.create", "fee_type", out.ID, nil, out)
 	})
 	return out, err
 }
@@ -86,8 +89,10 @@ func (s *Service) UpdateFeeType(ctx context.Context, t domain.FeeType, actorUser
 			return domain.ErrFeeTypeNotFound
 		}
 		t.AcademicYearID = current.AcademicYearID
-		out, err = s.repo.UpdateFeeType(ctx, t)
-		return err
+		if out, err = s.repo.UpdateFeeType(ctx, t); err != nil {
+			return err
+		}
+		return audit.Record(ctx, t.TenantID, "fee_type.update", "fee_type", out.ID, current, out)
 	})
 	return out, err
 }
@@ -100,7 +105,17 @@ func (s *Service) DeleteFeeType(ctx context.Context, tenantID, id uuid.UUID) err
 		return err
 	}
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return s.repo.DeleteFeeType(ctx, tenantID, id)
+		current, ok, err := s.repo.GetFeeType(ctx, tenantID, id)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return domain.ErrFeeTypeNotFound
+		}
+		if err := s.repo.DeleteFeeType(ctx, tenantID, id); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "fee_type.delete", "fee_type", id, current, nil)
 	})
 }
 
@@ -151,7 +166,11 @@ func (s *Service) CreateDiscount(ctx context.Context, d domain.Discount, actorUs
 		}
 		var err error
 		out, err = s.repo.CreateDiscount(ctx, d)
-		return err
+		if err != nil {
+			return err
+		}
+		// A discount lowers what a family owes: every change is audited.
+		return audit.Record(ctx, d.TenantID, "discount.create", "discount", out.ID, nil, out)
 	})
 	return out, err
 }
@@ -175,7 +194,10 @@ func (s *Service) UpdateDiscount(ctx context.Context, d domain.Discount) (domain
 		}
 		d.FeeTypeID, d.StudentUserID = current.FeeTypeID, current.StudentUserID
 		out, err = s.repo.UpdateDiscount(ctx, d)
-		return err
+		if err != nil {
+			return err
+		}
+		return audit.Record(ctx, d.TenantID, "discount.update", "discount", out.ID, current, out)
 	})
 	return out, err
 }
@@ -185,6 +207,16 @@ func (s *Service) DeleteDiscount(ctx context.Context, tenantID, id uuid.UUID) er
 		return err
 	}
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return s.repo.DeleteDiscount(ctx, tenantID, id)
+		current, ok, err := s.repo.GetDiscount(ctx, tenantID, id)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return domain.ErrDiscountNotFound
+		}
+		if err := s.repo.DeleteDiscount(ctx, tenantID, id); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "discount.delete", "discount", id, current, nil)
 	})
 }

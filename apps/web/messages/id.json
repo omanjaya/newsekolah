@@ -467,6 +467,7 @@
         "phoneLabel": "Telepon",
         "phonePlaceholder": "Isi nomor baru",
         "localeLabel": "Bahasa pilihan",
+        "localeSchool": "Ikuti bahasa sekolah",
         "localeId": "Bahasa Indonesia",
         "localeEn": "Bahasa Inggris",
         "requiredError": "Nama lengkap wajib diisi.",
@@ -1883,7 +1884,8 @@
           "additionalRoles": "Peran tambahan",
           "additionalRolesHint": "Peran tambahan hanya bisa peran khusus (bukan peran sistem).",
           "noCustomRoles": "Belum ada peran khusus. Buat di Pengaturan > Peran dan akses.",
-          "kindRoleMismatch": "Peran utama ini tidak cocok untuk jenis {kind}. Pengguna jenis Siswa harus berperan utama Siswa, dan peran Siswa hanya untuk jenis Siswa."
+          "kindRoleMismatch": "Peran utama ini tidak cocok untuk jenis {kind}. Pengguna jenis Siswa harus berperan utama Siswa, dan peran Siswa hanya untuk jenis Siswa.",
+          "noCustomRolesAskSuperAdmin": "Belum ada peran khusus. Minta superadmin sekolah membuatnya di Pengaturan > Peran dan akses."
         },
         "import": {
           "searchPlaceholder": "Cari nama atau nama pengguna",
@@ -2245,6 +2247,7 @@
       "system": "Bawaan",
       "systemHint": "Peran bawaan tidak bisa diubah. Untuk kombinasi izin lain, buat peran baru.",
       "systemHintReadOnly": "Peran bawaan, hanya bisa dilihat.",
+      "readOnlyNotice": "Hanya superadmin yang bisa membuat peran dan mengubah izin. Hubungi superadmin sekolah bila butuh peran baru.",
       "deleteRole": "Hapus peran",
       "deleteBody": "Peran {name} akan dihapus. Pengguna yang memilikinya kehilangan izin dari peran ini.",
       "deleted": "Peran dihapus",

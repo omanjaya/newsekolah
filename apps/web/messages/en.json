@@ -467,6 +467,7 @@
         "phoneLabel": "Phone",
         "phonePlaceholder": "Enter a new number",
         "localeLabel": "Preferred language",
+        "localeSchool": "Use the school's language",
         "localeId": "Indonesian",
         "localeEn": "English",
         "requiredError": "Full name is required.",
@@ -1885,7 +1886,8 @@
           "additionalRoles": "Additional roles",
           "additionalRolesHint": "Additional roles can only be custom roles (not system roles).",
           "noCustomRoles": "No custom roles yet. Create one under Settings > Roles and access.",
-          "kindRoleMismatch": "This primary role does not fit the {kind} type. A Student user must have Student as the primary role, and only a Student user may have it."
+          "kindRoleMismatch": "This primary role does not fit the {kind} type. A Student user must have Student as the primary role, and only a Student user may have it.",
+          "noCustomRolesAskSuperAdmin": "No custom roles yet. Ask your school's superadmin to create one in Settings > Roles and access."
         },
         "import": {
           "searchPlaceholder": "Search name or username",
@@ -2247,6 +2249,7 @@
       "system": "Built-in",
       "systemHint": "Built-in roles cannot be changed. For another combination of permissions, create a new role.",
       "systemHintReadOnly": "Built-in role, view only.",
+      "readOnlyNotice": "Only a superadmin can create roles and change permissions. Ask your school's superadmin when you need a new role.",
       "deleteRole": "Delete role",
       "deleteBody": "The {name} role will be deleted. Users holding it lose its permissions.",
       "deleted": "Role deleted",

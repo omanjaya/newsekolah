@@ -129,7 +129,10 @@ func (h *IntegrationsHandler) CreateWebhookEndpoint(ctx context.Context, request
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return api.CreateWebhookEndpoint201JSONResponse(toWebhookEndpoint(created)), nil
+	return api.CreateWebhookEndpoint201JSONResponse{
+		WebhookEndpoint: toWebhookEndpoint(created.Endpoint),
+		SigningSecret:   created.SigningSecret,
+	}, nil
 }
 
 func (h *IntegrationsHandler) UpdateWebhookEndpoint(ctx context.Context, request api.UpdateWebhookEndpointRequestObject) (api.UpdateWebhookEndpointResponseObject, error) {

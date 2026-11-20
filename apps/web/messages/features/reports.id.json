@@ -81,12 +81,14 @@
       "recipientLimit": "Maksimal 10 penerima.",
       "cancel": "Batal",
       "submit": "Simpan",
-      "saved": "Jadwal disimpan."
+      "saved": "Jadwal disimpan.",
+      "recipientsHint": "Hanya email akun pengguna sekolah ini; email diatur di Pengguna dan akses.",
+      "recipientNotUser": "{email} bukan email akun pengguna sekolah ini."
     },
     "runs": {
       "title": "Riwayat pengiriman",
       "emptyTitle": "Belum ada riwayat",
-      "emptyBody": "Jadwal ini belum pernah jatuh tempo.",
+      "emptyBody": "Jadwal ini belum dijalankan. Riwayat muncul setelah jam kirim berikutnya lewat.",
       "status": {
         "pending": "Menunggu",
         "success": "Terkirim",
@@ -97,7 +99,11 @@
         "upload_failed": "Laporan gagal disimpan.",
         "send_failed": "Email gagal dikirim ke penerima.",
         "unknown": "Pengiriman gagal."
-      }
+      },
+      "dueAt": "Jadwal {time}",
+      "ranAt": "Dijalankan {time}",
+      "notRunYet": "Belum dijalankan",
+      "download": "Unduh laporan"
     },
     "scheduleName": "{report}, {cadence}",
     "rowActions": "Aksi untuk {name}",

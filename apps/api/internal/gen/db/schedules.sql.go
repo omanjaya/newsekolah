@@ -343,6 +343,35 @@ func (q *Queries) GetReportSchedule(ctx context.Context, arg GetReportSchedulePa
 	return i, err
 }
 
+const getReportScheduleRun = `-- name: GetReportScheduleRun :one
+select id, tenant_id, schedule_id, due_at, status, error_message, object_key, ran_at, created_at, failure_code from report_schedule_runs
+where tenant_id = $1 and schedule_id = $2 and id = $3
+`
+
+type GetReportScheduleRunParams struct {
+	TenantID   uuid.UUID `json:"tenant_id"`
+	ScheduleID uuid.UUID `json:"schedule_id"`
+	ID         uuid.UUID `json:"id"`
+}
+
+func (q *Queries) GetReportScheduleRun(ctx context.Context, arg GetReportScheduleRunParams) (ReportScheduleRun, error) {
+	row := q.db.QueryRow(ctx, getReportScheduleRun, arg.TenantID, arg.ScheduleID, arg.ID)
+	var i ReportScheduleRun
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ScheduleID,
+		&i.DueAt,
+		&i.Status,
+		&i.ErrorMessage,
+		&i.ObjectKey,
+		&i.RanAt,
+		&i.CreatedAt,
+		&i.FailureCode,
+	)
+	return i, err
+}
+
 const getScheduleByID = `-- name: GetScheduleByID :one
 select id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at from schedules where tenant_id = $1 and id = $2 for update
 `
@@ -442,6 +471,41 @@ func (q *Queries) ListEnabledReportSchedulesForHour(ctx context.Context, arg Lis
 			&i.UpdatedAt,
 			&i.Format,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLatestReportScheduleRunDueAt = `-- name: ListLatestReportScheduleRunDueAt :many
+select schedule_id, max(due_at)::timestamptz as due_at
+from report_schedule_runs
+where tenant_id = $1
+group by schedule_id
+`
+
+type ListLatestReportScheduleRunDueAtRow struct {
+	ScheduleID uuid.UUID          `json:"schedule_id"`
+	DueAt      pgtype.Timestamptz `json:"due_at"`
+}
+
+// The newest claimed slot per schedule of a tenant, so the schedule list
+// can show a due-but-unclaimed slot as the next run instead of jumping to
+// the following one.
+func (q *Queries) ListLatestReportScheduleRunDueAt(ctx context.Context, tenantID uuid.UUID) ([]ListLatestReportScheduleRunDueAtRow, error) {
+	rows, err := q.db.Query(ctx, listLatestReportScheduleRunDueAt, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLatestReportScheduleRunDueAtRow{}
+	for rows.Next() {
+		var i ListLatestReportScheduleRunDueAtRow
+		if err := rows.Scan(&i.ScheduleID, &i.DueAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

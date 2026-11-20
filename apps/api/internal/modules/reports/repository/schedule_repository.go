@@ -155,6 +155,33 @@ func (r *ScheduleRepository) CompleteRun(ctx context.Context, tenantID, runID uu
 	return nil
 }
 
+func (r *ScheduleRepository) LatestClaimedSlots(ctx context.Context, tenantID uuid.UUID) (map[uuid.UUID]time.Time, error) {
+	rows, err := r.queries(ctx).ListLatestReportScheduleRunDueAt(ctx, tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("list latest report schedule runs: %w", err)
+	}
+	out := make(map[uuid.UUID]time.Time, len(rows))
+	for _, row := range rows {
+		if row.DueAt.Valid {
+			out[row.ScheduleID] = row.DueAt.Time
+		}
+	}
+	return out, nil
+}
+
+func (r *ScheduleRepository) GetRun(ctx context.Context, tenantID, scheduleID, runID uuid.UUID) (domain.Run, bool, error) {
+	row, err := r.queries(ctx).GetReportScheduleRun(ctx, db.GetReportScheduleRunParams{
+		TenantID: tenantID, ScheduleID: scheduleID, ID: runID,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Run{}, false, nil
+	}
+	if err != nil {
+		return domain.Run{}, false, fmt.Errorf("get report schedule run: %w", err)
+	}
+	return toRun(row), true, nil
+}
+
 func (r *ScheduleRepository) ListRuns(ctx context.Context, tenantID, scheduleID uuid.UUID, limit int) ([]domain.Run, error) {
 	rows, err := r.queries(ctx).ListReportScheduleRuns(ctx, db.ListReportScheduleRunsParams{
 		TenantID: tenantID, ScheduleID: scheduleID, Limit: int32(limit), //nolint:gosec // bounded by the service to <= 200

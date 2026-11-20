@@ -4,9 +4,21 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/base64"
 	"encoding/hex"
 	"strconv"
 )
+
+// SigningSecretPrefix marks a webhook signing secret so it is recognisable
+// when pasted into a receiver's configuration.
+const SigningSecretPrefix = "whsec_"
+
+// EncodeSigningSecret turns random bytes into the signing secret shown to
+// the school once at registration. The HMAC key is this whole string's
+// bytes (prefix included), so a receiver uses it verbatim.
+func EncodeSigningSecret(random []byte) string {
+	return SigningSecretPrefix + base64.RawURLEncoding.EncodeToString(random)
+}
 
 // SignatureHeader is the HTTP header a webhook delivery carries its
 // signature in (docs/14-public-api.md documents the verification steps for

@@ -3,6 +3,7 @@ package wiring
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"testing"
 	"time"
@@ -36,6 +37,20 @@ func (m *memoryScheduleStorage) PutObject(_ context.Context, objectKey string, _
 
 func (m *memoryScheduleStorage) PresignedGetURL(_ context.Context, objectKey string, _ time.Duration) (*url.URL, error) {
 	return url.Parse("https://storage.test/" + objectKey)
+}
+
+// PresignedGetURLAsAttachment echoes the requested download headers in
+// the query string, the way S3 signs them, so a test can assert on them.
+func (m *memoryScheduleStorage) PresignedGetURLAsAttachment(_ context.Context, objectKey string, _ time.Duration, contentType, filename string) (*url.URL, error) {
+	link, err := url.Parse("https://storage.test/" + objectKey)
+	if err != nil {
+		return nil, err
+	}
+	link.RawQuery = url.Values{
+		"response-content-type":        {contentType},
+		"response-content-disposition": {fmt.Sprintf("attachment; filename=%q", filename)},
+	}.Encode()
+	return link, nil
 }
 
 // failingScheduleStorage refuses every upload, as an unreachable S3 would.

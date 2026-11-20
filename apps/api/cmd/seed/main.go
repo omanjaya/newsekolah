@@ -49,6 +49,11 @@ type userSeed struct {
 }
 
 var systemUsers = []userSeed{
+	// superadmin: the one account that holds manage_permissions, as the
+	// first account of a real tenant does (cmd/bootstrap). Admin Sekolah
+	// deliberately lacks it (authz.RoleDefaults), so without this account
+	// nobody in the demo school could create a custom role.
+	{"superadmin", "Super Admin Contoh", "super_admin"},
 	{"admin", "Admin Contoh", "admin"},
 	{"guru", "Guru Contoh", "teacher"},
 	{"gurubk", "Guru BK Contoh", "teacher"},
@@ -61,6 +66,9 @@ var systemUsers = []userSeed{
 	{"gurupiket", "Guru Piket Contoh", "teacher"},
 	{"wakepsek", "Wakil Kepala Sekolah Contoh", "teacher"},
 	{"satpam", "Satpam Contoh", "staff"},
+	// bendahara: the treasurer. Billing comes from the bursar duty, not
+	// the staff role (authz.DutyTypeDefaults), so satpam never sees bills.
+	{"bendahara", "Bendahara Contoh", "staff"},
 	{"pustakawan", "Pustakawan Contoh", "librarian"},
 	{"siswa", "Siswa Contoh", "student"},
 	// siswa2: a second homeroom-class student, so a leave request opened
@@ -314,7 +322,7 @@ func seedUsers(ctx context.Context, q *db.Queries, tenantID uuid.UUID, roleIDs m
 
 		user, err = q.CreateUser(ctx, db.CreateUserParams{
 			TenantID: tenantID, Username: us.username, PasswordHash: hash, Name: us.name,
-			Status: "active", MustChangePassword: false, Locale: "id",
+			Status: "active", MustChangePassword: false,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("create user %s: %w", us.username, err)

@@ -62,7 +62,10 @@ type UpdateMyProfileInput struct {
 	Name     string
 	Email    string
 	Phone    string
-	Locale   string
+	// Locale is the caller's language preference: nil keeps the stored
+	// one, "" clears it (the school's language applies again), "id" or
+	// "en" sets it.
+	Locale *string
 	// Detail is always applied in full (an upsert into user_profiles plus
 	// whichever kind-specific table applies to the caller's existing
 	// profile_kind), the same convention UpdateUser's Profile field uses.
@@ -105,7 +108,12 @@ func (s *Service) UpdateMyProfile(ctx context.Context, tenantID, userID uuid.UUI
 			}
 		}
 
-		if err := s.repo.UpdateOwnProfileRecord(ctx, tenantID, userID, username, in.Name, email, in.Phone, in.Locale); err != nil {
+		// An absent locale keeps the stored preference, which may be none.
+		locale := user.Locale
+		if in.Locale != nil {
+			locale = *in.Locale
+		}
+		if err := s.repo.UpdateOwnProfileRecord(ctx, tenantID, userID, username, in.Name, email, in.Phone, locale); err != nil {
 			return fmt.Errorf("update own profile: %w", err)
 		}
 		if row.ProfileKind.Valid() {

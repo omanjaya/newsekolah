@@ -15,12 +15,15 @@ func (h *Handler) UpdateMyProfile(ctx context.Context, request api.UpdateMyProfi
 	userID, _ := httpx.UserIDFromContext(ctx)
 	b := request.Body
 
-	email, locale := "", ""
+	email := ""
 	if b.Email != nil {
 		email = string(*b.Email)
 	}
+	// Absent keeps the stored preference; "" clears it.
+	var locale *string
 	if b.Locale != nil {
-		locale = string(*b.Locale)
+		value := string(*b.Locale)
+		locale = &value
 	}
 	me, err := h.service.UpdateMyProfile(ctx, tenantID, userID, service.UpdateMyProfileInput{
 		Username: strOf(b.Username), Name: strOf(b.Name), Email: email, Phone: strOf(b.Phone), Locale: locale,

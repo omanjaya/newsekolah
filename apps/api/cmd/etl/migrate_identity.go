@@ -247,7 +247,7 @@ func (st *Store) migrateUsers(
 					targetUser, err = q.CreateUser(ctx, db.CreateUserParams{
 						TenantID: tenantID, Username: username, Email: email, Phone: phoneArg,
 						Name: mapping.CleanName(u.Name), PasswordHash: placeholderHash, Status: mapStatus(u.Status),
-						MustChangePassword: true, Locale: "id",
+						MustChangePassword: true,
 					})
 					if err != nil {
 						return fmt.Errorf("create user: %w", err)
@@ -259,7 +259,7 @@ func (st *Store) migrateUsers(
 					targetUser = existing
 					if err := q.UpdateUserBasic(ctx, db.UpdateUserBasicParams{
 						TenantID: tenantID, ID: targetUser.ID, Name: mapping.CleanName(u.Name),
-						Email: email, Phone: phoneArg, Locale: targetUser.Locale,
+						Email: email, Phone: phoneArg, Locale: targetUser.Locale.String,
 					}); err != nil {
 						return fmt.Errorf("update user: %w", err)
 					}

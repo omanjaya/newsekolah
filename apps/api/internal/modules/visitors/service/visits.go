@@ -78,7 +78,7 @@ func (s *Service) CheckIn(ctx context.Context, tenantID, guardUserID uuid.UUID, 
 		}
 		created.BadgeNumber, created.BadgeAssetID = badge.Number, badge.AssetID
 		out = created
-		return nil
+		return s.recordAudit(ctx, tenantID, "visitor_visit.check_in", "visitor_visit", created.ID)
 	})
 	if err != nil {
 		return domain.Visit{}, err
@@ -144,7 +144,7 @@ func (s *Service) CheckOut(ctx context.Context, tenantID, id, guardUserID uuid.U
 			return err
 		}
 		out = updated
-		return nil
+		return s.recordAudit(ctx, tenantID, "visitor_visit.check_out", "visitor_visit", id)
 	})
 	if err != nil {
 		return domain.Visit{}, err

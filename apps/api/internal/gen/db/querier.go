@@ -455,6 +455,7 @@ type Querier interface {
 	CreateTenantPolicy(ctx context.Context, arg CreateTenantPolicyParams) (TenantPolicy, error)
 	CreateTenantPolicyForPermits(ctx context.Context, arg CreateTenantPolicyForPermitsParams) (TenantPolicy, error)
 	CreateTitle(ctx context.Context, arg CreateTitleParams) (LibraryTitle, error)
+	// An empty locale stores NULL: no preference, the school's language applies.
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserProfile(ctx context.Context, arg CreateUserProfileParams) error
 	CreateViolation(ctx context.Context, arg CreateViolationParams) (LibraryViolation, error)
@@ -774,6 +775,7 @@ type Querier interface {
 	GetPublication(ctx context.Context, arg GetPublicationParams) (GradePublication, error)
 	GetPushDeviceByID(ctx context.Context, arg GetPushDeviceByIDParams) (PushDevice, error)
 	GetReportSchedule(ctx context.Context, arg GetReportScheduleParams) (ReportSchedule, error)
+	GetReportScheduleRun(ctx context.Context, arg GetReportScheduleRunParams) (ReportScheduleRun, error)
 	GetReportScheduleTenantTimezone(ctx context.Context, id uuid.UUID) (string, error)
 	GetReservation(ctx context.Context, arg GetReservationParams) (LibraryReservation, error)
 	// The ready reservation currently holding this copy, if any -- lets Borrow
@@ -1257,6 +1259,10 @@ type Querier interface {
 	// working across the school needs the class beside the name.
 	ListLateArrivalsForReview(ctx context.Context, arg ListLateArrivalsForReviewParams) ([]ListLateArrivalsForReviewRow, error)
 	ListLatestLoans(ctx context.Context, arg ListLatestLoansParams) ([]LibraryLoan, error)
+	// The newest claimed slot per schedule of a tenant, so the schedule list
+	// can show a due-but-unclaimed slot as the next run instead of jumping to
+	// the following one.
+	ListLatestReportScheduleRunDueAt(ctx context.Context, tenantID uuid.UUID) ([]ListLatestReportScheduleRunDueAtRow, error)
 	ListLeaveDocuments(ctx context.Context, arg ListLeaveDocumentsParams) ([]LeaveDocument, error)
 	ListLeaveRequestsBySubject(ctx context.Context, arg ListLeaveRequestsBySubjectParams) ([]ListLeaveRequestsBySubjectRow, error)
 	// The reviewer's queue: in-progress requests from classes where the
@@ -1489,7 +1495,10 @@ type Querier interface {
 	ListUserRoleSlugs(ctx context.Context, userID uuid.UUID) ([]string, error)
 	ListUsersAdmin(ctx context.Context, arg ListUsersAdminParams) ([]ListUsersAdminRow, error)
 	// Drives the hourly digest periodic job: every user whose configured
-	// digest hour is the current tenant-local hour.
+	// digest hour is the current tenant-local hour and who was not already
+	// handled in it (hour_start is the start of that local hour). The job runs
+	// on the hour and again on every worker start, so the same hour can be
+	// evaluated more than once.
 	ListUsersDueForDigest(ctx context.Context, arg ListUsersDueForDigestParams) ([]NotificationSetting, error)
 	ListViolationAttachments(ctx context.Context, arg ListViolationAttachmentsParams) ([]ViolationAttachment, error)
 	// The admin list: optional class (via active enrollment), date range and
@@ -1792,6 +1801,7 @@ type Querier interface {
 	UpdateMemberProfile(ctx context.Context, arg UpdateMemberProfileParams) (LibraryMember, error)
 	UpdateMemberStatus(ctx context.Context, arg UpdateMemberStatusParams) (LibraryMember, error)
 	UpdateMemberType(ctx context.Context, arg UpdateMemberTypeParams) (LibraryMemberType, error)
+	// An empty locale stores NULL: no preference, the school's language applies.
 	UpdateOwnProfile(ctx context.Context, arg UpdateOwnProfileParams) error
 	UpdatePartner(ctx context.Context, arg UpdatePartnerParams) (LibraryPartner, error)
 	UpdateReportSchedule(ctx context.Context, arg UpdateReportScheduleParams) (ReportSchedule, error)
@@ -1799,6 +1809,7 @@ type Querier interface {
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)
 	UpdateTenantProfile(ctx context.Context, arg UpdateTenantProfileParams) (Tenant, error)
 	UpdateTitle(ctx context.Context, arg UpdateTitleParams) (LibraryTitle, error)
+	// An empty locale stores NULL: no preference, the school's language applies.
 	UpdateUserBasic(ctx context.Context, arg UpdateUserBasicParams) error
 	UpdateUserLastLogin(ctx context.Context, arg UpdateUserLastLoginParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error

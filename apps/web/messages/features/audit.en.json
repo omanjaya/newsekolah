@@ -123,12 +123,78 @@
       "update_own_profile": "Updated own profile",
       "import_create": "Created a user by import",
       "import_commit": "Committed a user import",
-      "import_update": "Updated users by import"
+      "import_update": "Updated users by import",
+      "change_password": "Changed the password"
     },
     "violation": {
       "void": "Voided a violation"
     },
-    "read": "Viewed a record"
+    "read": "Viewed a record",
+    "announcement": {
+      "create": "Created an announcement",
+      "update": "Edited an announcement",
+      "publish": "Published an announcement",
+      "schedule": "Scheduled an announcement",
+      "archive": "Archived an announcement",
+      "delete": "Deleted an announcement"
+    },
+    "tenant_branding": {
+      "update": "Changed the school branding",
+      "logo_update": "Replaced the school logo",
+      "favicon_update": "Replaced the school tab icon"
+    },
+    "report_header": {
+      "update": "Changed the report header"
+    },
+    "school_profile": {
+      "update": "Changed the school profile"
+    },
+    "webhook_endpoint": {
+      "create": "Added a webhook endpoint",
+      "update": "Edited a webhook endpoint",
+      "delete": "Deleted a webhook endpoint"
+    },
+    "api_key": {
+      "create": "Created an API key",
+      "revoke": "Revoked an API key"
+    },
+    "fee_type": {
+      "create": "Created a fee type",
+      "update": "Edited a fee type",
+      "delete": "Deleted a fee type"
+    },
+    "discount": {
+      "create": "Created a discount",
+      "update": "Edited a discount",
+      "delete": "Deleted a discount"
+    },
+    "bill": {
+      "generate": "Generated bills"
+    },
+    "document_template": {
+      "create": "Created a document template",
+      "update": "Edited a document template",
+      "set_default": "Made a document template the default"
+    },
+    "report_schedule": {
+      "create": "Created a report schedule",
+      "update": "Edited a report schedule",
+      "delete": "Deleted a report schedule",
+      "enable": "Turned a report schedule on",
+      "disable": "Turned a report schedule off"
+    },
+    "session": {
+      "revoke": "Ended a session"
+    },
+    "visitor_visit": {
+      "check_in": "Checked a visitor in",
+      "check_out": "Checked a visitor out"
+    },
+    "visitor_incident": {
+      "create": "Recorded an incident",
+      "update": "Edited an incident",
+      "close": "Closed an incident"
+    }
   },
   "entityTypes": {
     "user": "User",
@@ -149,6 +215,15 @@
     "leave_request": "Leave request",
     "document": "Document",
     "visitor_visit": "Visitor visit",
-    "warning_letter": "Warning letter"
+    "warning_letter": "Warning letter",
+    "announcement": "Announcement",
+    "webhook_endpoint": "Webhook endpoint",
+    "api_key": "API key",
+    "fee_type": "Fee type",
+    "discount": "Discount",
+    "bill": "Bill",
+    "document_template": "Document template",
+    "report_schedule": "Report schedule",
+    "session": "Session"
   }
 }

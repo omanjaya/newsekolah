@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/integrations/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 )
 
 // RegisterEndpointInput is what a school administrator submits to add a
@@ -20,23 +21,36 @@ type RegisterEndpointInput struct {
 	EventTypes  []string
 }
 
+// RegisteredEndpoint is what RegisterEndpoint hands back: the stored
+// endpoint plus its plaintext signing secret, the only moment the secret
+// exists outside its sealed ciphertext (the same show-once rule as an API
+// key's token).
+type RegisteredEndpoint struct {
+	Endpoint      domain.WebhookEndpoint
+	SigningSecret string
+}
+
 // RegisterEndpoint validates the URL and event types, refuses a URL that
 // resolves to a private or loopback address (docs/14-public-api.md: never
 // let a webhook registration turn the delivery worker into an SSRF probe
 // of the platform's own network), and seals a freshly generated signing
-// secret before it ever reaches storage.
-func (s *Service) RegisterEndpoint(ctx context.Context, tenantID, createdBy uuid.UUID, in RegisterEndpointInput) (domain.WebhookEndpoint, error) {
+// secret before it ever reaches storage. The plaintext secret is returned
+// once so the receiver can verify X-Newsekolah-Signature.
+func (s *Service) RegisterEndpoint(ctx context.Context, tenantID, createdBy uuid.UUID, in RegisterEndpointInput) (RegisteredEndpoint, error) {
 	if err := s.validateEndpointInput(ctx, in); err != nil {
-		return domain.WebhookEndpoint{}, err
+		return RegisteredEndpoint{}, err
 	}
 
-	secret := make([]byte, 32)
-	if _, err := rand.Read(secret); err != nil {
-		return domain.WebhookEndpoint{}, fmt.Errorf("generate webhook signing secret: %w", err)
+	random := make([]byte, 32)
+	if _, err := rand.Read(random); err != nil {
+		return RegisteredEndpoint{}, fmt.Errorf("generate webhook signing secret: %w", err)
 	}
-	ciphertext, err := s.sealer.Seal(secret)
+	secret := domain.EncodeSigningSecret(random)
+	// The HMAC key is the secret string's bytes exactly as shown to the
+	// school, so a receiver uses it verbatim without decoding anything.
+	ciphertext, err := s.sealer.Seal([]byte(secret))
 	if err != nil {
-		return domain.WebhookEndpoint{}, fmt.Errorf("seal webhook signing secret: %w", err)
+		return RegisteredEndpoint{}, fmt.Errorf("seal webhook signing secret: %w", err)
 	}
 
 	endpoint := domain.WebhookEndpoint{
@@ -52,13 +66,15 @@ func (s *Service) RegisterEndpoint(ctx context.Context, tenantID, createdBy uuid
 	var created domain.WebhookEndpoint
 	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		created, err = s.hooks.CreateEndpoint(ctx, endpoint, ciphertext)
-		return err
+		if created, err = s.hooks.CreateEndpoint(ctx, endpoint, ciphertext); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "webhook_endpoint.create", "webhook_endpoint", created.ID, nil, toAuditEndpoint(created))
 	})
 	if err != nil {
-		return domain.WebhookEndpoint{}, fmt.Errorf("register webhook endpoint: %w", err)
+		return RegisteredEndpoint{}, fmt.Errorf("register webhook endpoint: %w", err)
 	}
-	return created, nil
+	return RegisteredEndpoint{Endpoint: created, SigningSecret: secret}, nil
 }
 
 func (s *Service) ListEndpoints(ctx context.Context, tenantID uuid.UUID) ([]domain.WebhookEndpoint, error) {
@@ -83,16 +99,29 @@ func (s *Service) UpdateEndpoint(ctx context.Context, tenantID, endpointID uuid.
 
 	var updated domain.WebhookEndpoint
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
-		updated, err = s.hooks.UpdateEndpoint(ctx, tenantID, endpointID, in.URL, in.Description, in.EventTypes)
-		return err
+		before, err := s.hooks.GetEndpoint(ctx, tenantID, endpointID)
+		if err != nil {
+			return err
+		}
+		if updated, err = s.hooks.UpdateEndpoint(ctx, tenantID, endpointID, in.URL, in.Description, in.EventTypes); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "webhook_endpoint.update", "webhook_endpoint", endpointID,
+			toAuditEndpoint(before.Endpoint), toAuditEndpoint(updated))
 	})
 	return updated, err
 }
 
 func (s *Service) DeleteEndpoint(ctx context.Context, tenantID, endpointID uuid.UUID) error {
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return s.hooks.DeleteEndpoint(ctx, tenantID, endpointID)
+		before, err := s.hooks.GetEndpoint(ctx, tenantID, endpointID)
+		if err != nil {
+			return err
+		}
+		if err := s.hooks.DeleteEndpoint(ctx, tenantID, endpointID); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "webhook_endpoint.delete", "webhook_endpoint", endpointID, toAuditEndpoint(before.Endpoint), nil)
 	})
 }
 

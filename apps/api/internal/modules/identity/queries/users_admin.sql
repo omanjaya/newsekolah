@@ -53,9 +53,10 @@ select * from teacher_profiles where tenant_id = $1 and user_id = $2;
 select * from staff_profiles where tenant_id = $1 and user_id = $2;
 
 -- name: UpdateUserBasic :exec
+-- An empty locale stores NULL: no preference, the school's language applies.
 update users
-set name = $3, email = $4, phone = $5, locale = $6
-where tenant_id = $1 and id = $2 and deleted_at is null;
+set name = @name, email = @email, phone = @phone, locale = nullif(@locale::text, '')
+where tenant_id = @tenant_id and id = @id and deleted_at is null;
 
 -- name: SetUserStatus :exec
 update users set status = $3 where tenant_id = $1 and id = $2;

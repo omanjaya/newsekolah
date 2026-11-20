@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
@@ -35,6 +38,10 @@ type ScheduleRepository interface {
 	ClaimRun(ctx context.Context, tenantID, scheduleID uuid.UUID, dueAt time.Time) (domain.Run, bool, error)
 	CompleteRun(ctx context.Context, tenantID, runID uuid.UUID, outcome domain.RunOutcome, ranAt time.Time) error
 	ListRuns(ctx context.Context, tenantID, scheduleID uuid.UUID, limit int) ([]domain.Run, error)
+	GetRun(ctx context.Context, tenantID, scheduleID, runID uuid.UUID) (domain.Run, bool, error)
+	// LatestClaimedSlots maps each schedule of the tenant with at least one
+	// run to the newest due_at it has a run row for.
+	LatestClaimedSlots(ctx context.Context, tenantID uuid.UUID) (map[uuid.UUID]time.Time, error)
 
 	ListActiveTenants(ctx context.Context) ([]TenantRef, error)
 	TenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
@@ -69,10 +76,12 @@ type RecipientChecker interface {
 
 // ScheduleStorage is the narrow slice of platform/storage.Client the
 // schedule feature needs: write the rendered workbook, then hand back a
-// link a recipient can use without an account.
+// link a recipient can use without an account, or one that downloads the
+// file as an attachment for the in-app run history.
 type ScheduleStorage interface {
 	PutObject(ctx context.Context, objectKey string, content []byte, contentType string) error
 	PresignedGetURL(ctx context.Context, objectKey string, ttl time.Duration) (*url.URL, error)
+	PresignedGetURLAsAttachment(ctx context.Context, objectKey string, ttl time.Duration, contentType, filename string) (*url.URL, error)
 }
 
 // ScheduleInput is what a caller supplies to create or update a schedule;
@@ -185,7 +194,7 @@ func (s *ScheduleService) checkRecipients(ctx context.Context, tenantID uuid.UUI
 			return fmt.Errorf("check recipient %s: %w", email, err)
 		}
 		if !ok {
-			return fmt.Errorf("%w: %s", domain.ErrRecipientNotTenantUser, email)
+			return domain.RecipientNotTenantUserError{Email: email}
 		}
 	}
 	return nil
@@ -212,8 +221,10 @@ func (s *ScheduleService) CreateSchedule(ctx context.Context, tenantID, requeste
 	var out domain.Schedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = s.repo.CreateSchedule(ctx, sched)
-		return err
+		if out, err = s.repo.CreateSchedule(ctx, sched); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "report_schedule.create", "report_schedule", out.ID, nil, out)
 	})
 	return out, err
 }
@@ -242,9 +253,14 @@ func (s *ScheduleService) UpdateSchedule(ctx context.Context, tenantID, requeste
 
 	var out domain.Schedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
-		out, err = s.repo.UpdateSchedule(ctx, sched)
-		return err
+		before, _, err := s.repo.GetSchedule(ctx, tenantID, id)
+		if err != nil {
+			return err
+		}
+		if out, err = s.repo.UpdateSchedule(ctx, sched); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "report_schedule.update", "report_schedule", id, before, out)
 	})
 	return out, err
 }
@@ -288,9 +304,13 @@ type ScheduleView struct {
 // listed again once the module is back on).
 func (s *ScheduleService) ListSchedulesWithNextRun(ctx context.Context, tenantID uuid.UUID) ([]ScheduleView, error) {
 	var scheds []domain.Schedule
+	var claimed map[uuid.UUID]time.Time
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		scheds, err = s.repo.ListSchedules(ctx, tenantID)
+		if scheds, err = s.repo.ListSchedules(ctx, tenantID); err != nil {
+			return err
+		}
+		claimed, err = s.repo.LatestClaimedSlots(ctx, tenantID)
 		return err
 	})
 	if err != nil {
@@ -307,7 +327,7 @@ func (s *ScheduleService) ListSchedulesWithNextRun(ctx context.Context, tenantID
 		if !on {
 			continue
 		}
-		out = append(out, ScheduleView{Schedule: sched, NextRunAt: sched.NextRunAfter(now, loc)})
+		out = append(out, ScheduleView{Schedule: sched, NextRunAt: sched.NextRun(now, loc, claimed[sched.ID])})
 	}
 	return out, nil
 }
@@ -317,7 +337,14 @@ func (s *ScheduleService) DeleteSchedule(ctx context.Context, tenantID, id uuid.
 		return err
 	}
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return s.repo.DeleteSchedule(ctx, tenantID, id)
+		before, _, err := s.repo.GetSchedule(ctx, tenantID, id)
+		if err != nil {
+			return err
+		}
+		if err := s.repo.DeleteSchedule(ctx, tenantID, id); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "report_schedule.delete", "report_schedule", id, before, nil)
 	})
 }
 
@@ -328,8 +355,14 @@ func (s *ScheduleService) SetEnabled(ctx context.Context, tenantID, id uuid.UUID
 	var out domain.Schedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = s.repo.SetEnabled(ctx, tenantID, id, enabled)
-		return err
+		if out, err = s.repo.SetEnabled(ctx, tenantID, id, enabled); err != nil {
+			return err
+		}
+		action := "report_schedule.disable"
+		if enabled {
+			action = "report_schedule.enable"
+		}
+		return audit.RecordSimple(ctx, tenantID, action, "report_schedule", id)
 	})
 	return out, err
 }
@@ -349,6 +382,57 @@ func (s *ScheduleService) ListRuns(ctx context.Context, tenantID, scheduleID uui
 	})
 	return runs, err
 }
+
+// RunDownloadURL is a short-lived link to the file a run rendered, for an
+// admin to fetch when the email did not go out. The link serves the file
+// as an attachment, so the browser downloads it and the app stays on the
+// page that opened it. ErrRunFileMissing when the run has no stored file
+// (it failed before upload, or is still pending).
+func (s *ScheduleService) RunDownloadURL(ctx context.Context, tenantID, scheduleID, runID uuid.UUID) (string, error) {
+	if err := s.requireScheduleAvailable(ctx, tenantID, scheduleID); err != nil {
+		return "", err
+	}
+	var run domain.Run
+	var found bool
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		run, found, err = s.repo.GetRun(ctx, tenantID, scheduleID, runID)
+		return err
+	})
+	if err != nil {
+		return "", err
+	}
+	if !found {
+		return "", domain.ErrRunNotFound
+	}
+	if run.ObjectKey == "" || s.storage == nil {
+		return "", domain.ErrRunFileMissing
+	}
+	contentType, filename := runFileAttachment(run, s.tenantLocation(ctx, tenantID))
+	link, err := s.storage.PresignedGetURLAsAttachment(ctx, run.ObjectKey, runDownloadTTL, contentType, filename)
+	if err != nil {
+		return "", fmt.Errorf("sign run download link: %w", err)
+	}
+	return link.String(), nil
+}
+
+// runFileAttachment names a run's stored file for download: the format
+// comes from the object key's extension (runOne writes "<slot>.<format>"),
+// the date is the slot's tenant-local day, e.g. "laporan-2026-11-20.xlsx".
+func runFileAttachment(run domain.Run, loc *time.Location) (contentType, filename string) {
+	format := domain.Format(strings.TrimPrefix(path.Ext(run.ObjectKey), "."))
+	contentType = XLSXContentType
+	if format == domain.FormatPDF {
+		contentType = PDFContentType
+	} else {
+		format = domain.FormatXLSX
+	}
+	return contentType, fmt.Sprintf("laporan-%s.%s", run.DueAt.In(loc).Format("2006-01-02"), format)
+}
+
+// runDownloadTTL is how long an in-app download link stays valid: long
+// enough to start the download, short enough not to be worth sharing.
+const runDownloadTTL = 15 * time.Minute
 
 // NextRunAt is the schedule's next due instant, for the UI's "next run"
 // column; it needs the tenant's timezone, which the caller (transport)

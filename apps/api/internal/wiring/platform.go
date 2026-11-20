@@ -57,7 +57,7 @@ func (p PlatformIdentity) ProvisionAdmin(ctx context.Context, tenantID uuid.UUID
 
 	user, err := p.Identity.CreateUser(ctx, tenantID, uuid.Nil, identityservice.CreateUserInput{
 		UserWriteInput: identityservice.UserWriteInput{
-			Name: in.Name, Email: in.Email, Locale: "id", ProfileKind: identitydomain.ProfileStaff,
+			Name: in.Name, Email: in.Email, ProfileKind: identitydomain.ProfileStaff,
 			Roles: []identitydomain.RoleGrant{{Slug: adminRoleSlug, IsPrimary: true}},
 		},
 		Username: in.Username, Password: password,

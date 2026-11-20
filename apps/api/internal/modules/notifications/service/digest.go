@@ -23,7 +23,9 @@ type DigestBatch struct {
 
 // ComputeDueDigests loops every active tenant (never a cross-tenant query,
 // per docs/08-security.md section 4) looking for users whose configured
-// digest hour matches that tenant's current local hour.
+// digest hour matches that tenant's current local hour and who were not
+// already handled in that hour: the job also runs on every worker start,
+// so a restart inside a digest hour must not send a second digest.
 func (s *Service) ComputeDueDigests(ctx context.Context) ([]DigestBatch, error) {
 	tenants, err := s.repo.ListActiveTenants(ctx)
 	if err != nil {
@@ -35,13 +37,13 @@ func (s *Service) ComputeDueDigests(ctx context.Context) ([]DigestBatch, error) 
 	now := s.clock.Now()
 
 	for _, t := range tenants {
-		loc := s.tenantLocation(ctx, t.ID)
-		hour := now.In(loc).Hour()
+		local := now.In(s.tenantLocation(ctx, t.ID))
+		hourStart := time.Date(local.Year(), local.Month(), local.Day(), local.Hour(), 0, 0, 0, local.Location())
 
 		var due []Settings
 		err := s.withTx(ctx, t.ID, func(ctx context.Context) error {
 			var err error
-			due, err = s.repo.ListUsersDueForDigest(ctx, t.ID, hour)
+			due, err = s.repo.ListUsersDueForDigest(ctx, t.ID, local.Hour(), hourStart)
 			return err
 		})
 		if err != nil {

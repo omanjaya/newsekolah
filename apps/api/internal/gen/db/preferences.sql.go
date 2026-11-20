@@ -76,17 +76,22 @@ func (q *Queries) ListNotificationPreferencesForUser(ctx context.Context, arg Li
 const listUsersDueForDigest = `-- name: ListUsersDueForDigest :many
 select user_id, tenant_id, quiet_hours_start, quiet_hours_end, digest_enabled, digest_hour, last_digest_at, updated_at from notification_settings
 where tenant_id = $1 and digest_enabled and digest_hour = $2
+  and (last_digest_at is null or last_digest_at < $3::timestamptz)
 `
 
 type ListUsersDueForDigestParams struct {
-	TenantID   uuid.UUID `json:"tenant_id"`
-	DigestHour int16     `json:"digest_hour"`
+	TenantID   uuid.UUID          `json:"tenant_id"`
+	DigestHour int16              `json:"digest_hour"`
+	HourStart  pgtype.Timestamptz `json:"hour_start"`
 }
 
 // Drives the hourly digest periodic job: every user whose configured
-// digest hour is the current tenant-local hour.
+// digest hour is the current tenant-local hour and who was not already
+// handled in it (hour_start is the start of that local hour). The job runs
+// on the hour and again on every worker start, so the same hour can be
+// evaluated more than once.
 func (q *Queries) ListUsersDueForDigest(ctx context.Context, arg ListUsersDueForDigestParams) ([]NotificationSetting, error) {
-	rows, err := q.db.Query(ctx, listUsersDueForDigest, arg.TenantID, arg.DigestHour)
+	rows, err := q.db.Query(ctx, listUsersDueForDigest, arg.TenantID, arg.DigestHour, arg.HourStart)
 	if err != nil {
 		return nil, err
 	}

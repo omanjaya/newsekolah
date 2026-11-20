@@ -30,7 +30,8 @@ export interface UpdateProfileInput {
   name?: string;
   email?: string;
   phone?: string;
-  locale?: "id" | "en";
+  /** Omit to keep the stored preference; "" clears it so the school's language applies. */
+  locale?: "id" | "en" | "";
   /** The student/teacher/staff detail record; only sent when the screen edits it. */
   detail?: UserProfileFields;
 }

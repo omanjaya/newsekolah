@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 import { API_INTERNAL_URL } from "./lib/env";
+import { storageOriginFromEnv } from "./lib/security/storage-origin";
 import {
   ACCESS_COOKIE_MAX_AGE_SECONDS,
   ACCESS_COOKIE_NAME,
@@ -39,24 +40,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     // NEXT_PUBLIC_API_URL missing or invalid: connect-src falls back to 'self' only.
   }
 
-  // Origin presigned S3/MinIO URLs are signed against (api's
-  // S3_PUBLIC_ENDPOINT, docs/08-security.md section 6 and
-  // apps/api/internal/platform/storage.Config.PublicEndpoint), only needed
-  // here when it differs from this app's own origin: a same-origin
-  // deployment (the VPS setup, both behind https://sion.nouma.id) is
-  // already covered by 'self' below, and img-src already allows any
-  // https: origin, so this only ever widens connect-src (browser-side PUT
-  // uploads to the presigned URL). Read from a NEXT_PUBLIC_* var, passed
-  // through at runtime as well as build time (infra/docker/Dockerfile,
-  // docker-compose.prod.yml), the same way NEXT_PUBLIC_API_URL already is
-  // above.
-  const s3PublicUrl = process.env.NEXT_PUBLIC_S3_PUBLIC_ORIGIN ?? "";
-  let s3PublicOrigin = "";
-  try {
-    if (s3PublicUrl) s3PublicOrigin = new URL(s3PublicUrl).origin;
-  } catch {
-    // NEXT_PUBLIC_S3_PUBLIC_ORIGIN missing or invalid: connect-src omits it.
-  }
+  // Origin presigned S3/MinIO URLs point at (lib/security/storage-origin.ts
+  // reads it from the same settings the API signs with). Browser-side PUT
+  // uploads need it in connect-src and stored images in img-src: img-src
+  // otherwise allows only https:, which leaves out a plain-http storage
+  // origin such as local MinIO. A same-origin deployment (the VPS setup,
+  // both behind https://sion.nouma.id) is already covered by 'self'.
+  const storageOrigin = storageOriginFromEnv(process.env);
 
   const csp = [
     "default-src 'self'",
@@ -68,9 +58,9 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     // tenant's SSO configuration is known.
     `script-src 'self' 'nonce-${nonce}' https://accounts.google.com${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https:",
+    `img-src ${["'self'", "data:", "https:", storageOrigin].filter(Boolean).join(" ")}`,
     "font-src 'self' data:",
-    `connect-src ${["'self'", "https://accounts.google.com", apiOrigin, wsOrigin, s3PublicOrigin].filter(Boolean).join(" ")}`,
+    `connect-src ${["'self'", "https://accounts.google.com", apiOrigin, wsOrigin, storageOrigin].filter(Boolean).join(" ")}`,
     // blob: lets the report-header settings page show its generated PDF
     // preview in an iframe (a same-origin object URL, never remote content).
     "frame-src https://accounts.google.com blob:",

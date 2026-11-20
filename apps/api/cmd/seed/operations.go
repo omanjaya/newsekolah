@@ -143,7 +143,8 @@ func seedOperations(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, tena
 	// review the leave-request chain, picket/counselor/leadership review
 	// the exit-permit chain (seedWorkflowDefinitions below trims that
 	// chain to just these three duty-scoped stages), security scans the
-	// gate, and librarian staffs the library desk.
+	// gate, librarian staffs the library desk, and bursar runs the
+	// billing cash desk.
 	for _, d := range []struct {
 		username, slug string
 	}{
@@ -152,6 +153,7 @@ func seedOperations(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, tena
 		{"wakepsek", "leadership"},
 		{"satpam", "security"},
 		{"pustakawan", "librarian"},
+		{"bendahara", "bursar"},
 	} {
 		user, ok := users[d.username]
 		if !ok {

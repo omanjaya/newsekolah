@@ -8,6 +8,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
+	platformjobs "github.com/omanjaya/newsekolah/apps/api/internal/platform/jobs"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/notify"
 )
 
@@ -55,9 +56,14 @@ func Register(workers *river.Workers, deps Dependencies) error {
 // active tenant itself -- see service.ComputeDueDigests and friends).
 func PeriodicJobs() []*river.PeriodicJob {
 	return []*river.PeriodicJob{
-		river.NewPeriodicJob(river.PeriodicInterval(1*time.Hour), func() (river.JobArgs, *river.InsertOpts) {
+		// On the hour (a user's digest hour starts at hh:00, not at the
+		// boot minute), and once on start for an hour that began while
+		// the worker was down. A user already handled in the current local
+		// hour is skipped (ListUsersDueForDigest compares last_digest_at
+		// with the start of that hour), so a restart sends no second digest.
+		river.NewPeriodicJob(platformjobs.EveryHourOnTheHour(), func() (river.JobArgs, *river.InsertOpts) {
 			return service.RunDigestArgs{}, nil
-		}, &river.PeriodicJobOpts{ID: "notifications_run_digest"}),
+		}, &river.PeriodicJobOpts{ID: "notifications_run_digest", RunOnStart: true}),
 
 		river.NewPeriodicJob(river.PeriodicInterval(6*time.Hour), func() (river.JobArgs, *river.InsertOpts) {
 			return service.PruneDevicesArgs{}, nil
