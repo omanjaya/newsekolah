@@ -66,7 +66,7 @@ func (h *TenantHandler) PreviewTenantReportHeader(ctx context.Context, request a
 	if err != nil {
 		return nil, mapReportHeaderError(err)
 	}
-	now := clock.Now(ctx, h.clock)
+	now := previewDay(ctx, h.clock)
 	if sig != nil {
 		sig.Date = reportdoc.FormatDate(locale, now)
 	}
@@ -88,6 +88,14 @@ func (h *TenantHandler) PreviewTenantReportHeader(ctx context.Context, request a
 			Body: bytes.NewReader(out), ContentLength: int64(len(out)),
 		}, nil
 	}
+}
+
+// previewDay is the date the sample report is signed and scoped on: the
+// school's own calendar day for the request's business instant, not the
+// UTC date of that instant (still yesterday before 08:00 in
+// Asia/Makassar).
+func previewDay(ctx context.Context, c clock.Clock) time.Time {
+	return clock.LocalDate(clock.Now(ctx, c), tenant.LocationFromContext(ctx))
 }
 
 // previewLabels is previewDocument's own tiny id/en vocabulary -- it is a
