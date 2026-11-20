@@ -40,8 +40,13 @@ import { minutesToTimeInput, timeInputToMinutes } from "../time";
 import { EmployeeCombobox } from "./employee-combobox";
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
-/** From `sm` up the week is a five-column table; below it, one card per day. */
-const WIDE_LAYOUT_QUERY = "(min-width: 640px)";
+/**
+ * From `lg` up the week is a five-column table; below it, one card per
+ * day. The table needs about 620px, and from `md` the app shell's sidebar
+ * takes 15rem, so below `lg` the content column is narrower than the table
+ * and the grace minutes would sit off-screen in a sideways scroller.
+ */
+const WIDE_LAYOUT_QUERY = "(min-width: 1024px)";
 
 function defaultDay(weekday: number): ScheduleDay {
   return {
@@ -132,8 +137,8 @@ function WeeklyScheduleForm({ employeeId }: { employeeId: string }): ReactElemen
     return <QueryError retry={() => schedule.refetch()} error={schedule.error} />;
   }
 
-  // One day's controls, laid out as a table row from `sm` up and as a card
-  // of labelled fields on a phone, where five columns do not fit and the
+  // One day's controls, laid out as a table row from `lg` up and as a card
+  // of labelled fields below it, where five columns do not fit and the
   // grace minutes would sit off-screen in a sideways scroller.
   function controlsFor(day: ScheduleDay) {
     const name = t(`schedule.weekdays.${day.weekday}`);
@@ -218,7 +223,7 @@ function WeeklyScheduleForm({ employeeId }: { employeeId: string }): ReactElemen
           </TableBody>
         </Table>
       ) : (
-        <div className="flex flex-col gap-3" data-testid="schedule-day-cards">
+        <div className="grid gap-3 sm:grid-cols-2" data-testid="schedule-day-cards">
           {days.map((day) => {
             const controls = controlsFor(day);
             return (

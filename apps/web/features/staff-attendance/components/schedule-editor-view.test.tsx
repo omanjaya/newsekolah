@@ -1,5 +1,5 @@
 import type * as UiModule from "@newsekolah/ui";
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeAll, beforeEach, expect, it, vi } from "vitest";
 
@@ -60,14 +60,19 @@ beforeAll(() => {
   );
 });
 
-// Whether the viewport is `sm` or wider; the editor lays the week out as a
-// table there and as day cards on a phone.
-let wideViewport = true;
+// The viewport width in px; the editor lays the week out as a table from
+// `lg` (1024px) up and as day cards below it.
+let viewportWidth = 1280;
+
+function matchesWidth(query: string): boolean {
+  const minWidth = /\(min-width: (\d+)px\)/.exec(query)?.[1];
+  return minWidth !== undefined && viewportWidth >= Number(minWidth);
+}
 
 beforeEach(() => {
-  wideViewport = true;
+  viewportWidth = 1280;
   vi.stubGlobal("matchMedia", (query: string) => ({
-    matches: query === "(min-width: 640px)" ? wideViewport : false,
+    matches: matchesWidth(query),
     media: query,
     addEventListener: () => undefined,
     removeEventListener: () => undefined,
@@ -156,7 +161,7 @@ it("offers staff who have no work schedule yet, so a fresh school can give the f
 });
 
 it("lays the week out as day cards on a phone, with every field of a working day on screen", async () => {
-  wideViewport = false;
+  viewportWidth = 390;
   scheduleState.days = [
     { weekday: 1, is_working_day: true, start_minute: 480, end_minute: 960, grace_minutes: 10 },
   ];
@@ -179,7 +184,20 @@ it("lays the week out as day cards on a phone, with every field of a working day
   expect(within(cards).getAllByRole("combobox", { name: "schedule.startFor" })).toHaveLength(2);
 });
 
-it("keeps the five-column table from sm up", async () => {
+it("keeps the day cards on a tablet, where the sidebar leaves the table too little room", async () => {
+  // From md the shell's 15rem sidebar leaves about 480-730px for content,
+  // narrower than the five-column table.
+  for (const width of [640, 768, 1023]) {
+    viewportWidth = width;
+    cleanup();
+    await openFormFor("Satpam Contoh");
+    expect(screen.queryByRole("table"), `${width}px`).not.toBeInTheDocument();
+    expect(screen.getByTestId("schedule-day-cards")).toBeInTheDocument();
+  }
+});
+
+it("lays the week out as the five-column table from lg up", async () => {
+  viewportWidth = 1024;
   await openFormFor("Satpam Contoh");
   expect(screen.getByRole("table")).toBeInTheDocument();
   expect(screen.queryByTestId("schedule-day-cards")).not.toBeInTheDocument();
