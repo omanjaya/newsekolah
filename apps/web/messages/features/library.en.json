@@ -229,9 +229,13 @@
       "scanHint": "Or scan a member card to start.",
       "endSession": "Done",
       "hintTitle": "No member is being served",
-      "hintBody": "Scan a member card in the field above, or search for their name, to start lending, returning or renewing books.",
+      "hintBody": "Scan a member card in the field above, or search for their name, to start lending. To return or renew, pick the mode and scan the book barcode right away.",
       "notFound": "Card or code \"{code}\" was not recognized",
       "ambiguous": "Code \"{code}\" matches more than one member. Pick from the search.",
+      "unpaidFine": "Unpaid fine on record",
+      "unpaidFineBlocks": "Unpaid fine, lending blocked",
+      "quota": "{count} of {max} loans used",
+      "copyNotCard": "\"{code}\" is a book barcode. Scan a member card first to lend.",
       "lookupFailed": "Member lookup failed, try again",
       "sanctions": "Member fines and sanctions"
     },
@@ -261,7 +265,8 @@
       "removeFromList": "Remove {barcode} from the list",
       "confirmBorrow": "Lend {count} copies",
       "reason": {
-        "notAvailable": "Already on loan",
+        "onLoan": "Already on loan",
+        "notAvailable": "Not available to borrow",
         "notLoanable": "Read in place only, cannot be borrowed"
       },
       "borrowedDue": "Borrowed, due {date}",
@@ -343,6 +348,7 @@
     "result": {
       "memberTitle": "Serving {name}",
       "memberAttention": "Membership is {status}. Check before lending.",
+      "memberUnpaidFine": "The member still has an unpaid fine. Settle it under Fines and sanctions before lending.",
       "memberNext": {
         "borrow": "Scan the books to lend.",
         "return": "Scan the books being returned.",

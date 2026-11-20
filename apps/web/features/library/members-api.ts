@@ -13,12 +13,14 @@ export type LibraryMember = components["schemas"]["LibraryMember"];
 export type LibraryMemberStatus = components["schemas"]["LibraryMemberStatus"];
 export type LibraryMemberRegister = components["schemas"]["LibraryMemberRegister"];
 export type LibraryBulkRegisterResult = components["schemas"]["LibraryBulkRegisterResult"];
+export type LibraryMemberBorrowingStatus = components["schemas"]["LibraryMemberBorrowingStatus"];
 
 const keys = {
   memberTypes: () => ["library", "member-types"] as const,
   members: (params: { status?: string; memberTypeId?: string; search?: string }) =>
     ["library", "members", params] as const,
   member: (userId: string) => ["library", "members", "detail", userId] as const,
+  borrowingStatus: (userId: string) => ["library", "members", "borrowing-status", userId] as const,
 };
 
 function useInvalidate() {
@@ -111,6 +113,24 @@ export function useLibraryMemberQuery(userId: string) {
   return useQuery({
     queryKey: keys.member(userId),
     queryFn: () => client.GET("/v1/library/members/{userId}", { params: { path: { userId } } }),
+    enabled: Boolean(userId),
+  });
+}
+
+/**
+ * The limits a borrow by this member enforces today (dated loan rules, the
+ * member type, then the policy, resolved by the server exactly as it lends),
+ * the quota already in use, and whether an unpaid fine stands in the way.
+ * Under the `["library"]` key, so every circulation write refreshes it.
+ */
+export function useLibraryMemberBorrowingStatusQuery(userId: string) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.borrowingStatus(userId),
+    queryFn: () =>
+      client.GET("/v1/library/members/{userId}/borrowing-status", {
+        params: { path: { userId } },
+      }),
     enabled: Boolean(userId),
   });
 }

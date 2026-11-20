@@ -55,7 +55,12 @@ export function LoanDeskView(): ReactElement {
   const items = session.basket[session.mode];
   const pendingBorrow = confirmableItems(session.basket.borrow).length;
   const canUndo = hasUndoableItem(items);
-  const attention = memberNeedsAttention(session.memberStatus);
+  const statusAttention = memberNeedsAttention(session.memberStatus);
+  const fineBlocks = session.borrowingStatus?.unpaid_fine_blocks_loans ?? false;
+  const attention = statusAttention || fineBlocks;
+  // Returns and renewals need no member, so their basket shows on an
+  // idle desk too; lending starts with a member card.
+  const showBasket = session.member !== null || session.mode !== "borrow";
 
   const last = deskLastResult({
     scanError: session.scanError,
@@ -80,9 +85,11 @@ export function LoanDeskView(): ReactElement {
       tone: last.attention ? "warning" : "success",
       title: t("result.memberTitle", { name: last.name }),
       description:
-        last.attention && session.memberStatus
+        statusAttention && session.memberStatus
           ? t("result.memberAttention", { status: tStatus(session.memberStatus) })
-          : t(`result.memberNext.${session.mode}`),
+          : fineBlocks
+            ? t("result.memberUnpaidFine")
+            : t(`result.memberNext.${session.mode}`),
       key: `member:${memberId ?? ""}:${session.mode}`,
     };
   }
@@ -114,20 +121,23 @@ export function LoanDeskView(): ReactElement {
           />
 
           <Card data-testid="desk-session">
-            {session.member ? (
+            {showBasket ? (
               <>
-                <div className="p-5">
-                  <DeskMemberPanel
-                    member={session.member}
-                    memberStatus={session.memberStatus}
-                    onOpenReceipt={() => {
-                      session.setReceiptOpen(true);
-                    }}
-                    onClear={session.endSession}
-                  />
-                </div>
+                {session.member && (
+                  <div className="p-5">
+                    <DeskMemberPanel
+                      member={session.member}
+                      memberStatus={session.memberStatus}
+                      borrowing={session.borrowingStatus}
+                      onOpenReceipt={() => {
+                        session.setReceiptOpen(true);
+                      }}
+                      onClear={session.endSession}
+                    />
+                  </div>
+                )}
                 <CardHeader
-                  className="border-t border-line pt-4"
+                  className={session.member ? "border-t border-line pt-4" : undefined}
                   action={
                     <Button
                       variant="ghost"

@@ -78,9 +78,20 @@ export function useFindMemberByCodeMutation(
         params: { query: { q: code.trim() } },
       });
       const members = result.data.flatMap((entry) => (entry.member ? [entry.member] : []));
-      return matchMemberByCode(members, code, fields);
+      const match = matchMemberByCode(members, code, fields);
+      // A book barcode scanned where a card was expected is not unknown:
+      // say so, so the desk can ask for the card instead.
+      if (match.status === "none" && isCopyBarcode(result.data, code)) {
+        return { status: "copy" as const };
+      }
+      return match;
     },
   });
+}
+
+function isCopyBarcode(entries: readonly LibraryLookupResult[], code: string): boolean {
+  const wanted = code.trim().toLowerCase();
+  return entries.some((entry) => entry.copy?.barcode.trim().toLowerCase() === wanted);
 }
 
 /** Borrows several scanned barcodes for one member in a single visit. */

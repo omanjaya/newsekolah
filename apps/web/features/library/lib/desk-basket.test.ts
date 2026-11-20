@@ -5,6 +5,7 @@ import {
   addBasketItem,
   classifyBorrowCopy,
   confirmableItems,
+  confirmableItemsInScanOrder,
   hasUndoableItem,
   isBasketSettled,
   matchDeskShortcut,
@@ -75,6 +76,17 @@ describe("removeBasketItem / updateBasketItem", () => {
   });
 });
 
+describe("confirmableItemsInScanOrder", () => {
+  it("submits the books oldest scan first, so the first scanned gets the remaining quota", () => {
+    let basket: DeskBasketItem[] = [];
+    for (const barcode of ["A", "B", "C"]) basket = addBasketItem(basket, item(barcode));
+    basket = updateBasketItem(basket, "B", { state: "blocked" });
+    expect(basket.map((i) => i.barcode)).toEqual(["C", "B", "A"]);
+    expect(confirmableItemsInScanOrder(basket).map((i) => i.barcode)).toEqual(["A", "C"]);
+    expect(basket.map((i) => i.barcode)).toEqual(["C", "B", "A"]);
+  });
+});
+
 describe("confirmableItems / isBasketSettled", () => {
   it("confirmableItems keeps only pending items", () => {
     const items = [
@@ -101,10 +113,25 @@ describe("confirmableItems / isBasketSettled", () => {
 });
 
 describe("classifyBorrowCopy", () => {
-  it("blocks a copy that is not available", () => {
+  it("blocks a copy on loan as on loan", () => {
     expect(classifyBorrowCopy({ status: "on_loan", access: "loanable" })).toEqual({
       blocked: true,
-      reasonKey: "notAvailable",
+      reasonKey: "onLoan",
+    });
+  });
+
+  it("blocks a damaged, lost or in-repair copy as not available, not as on loan", () => {
+    for (const status of ["damaged", "lost", "in_repair", "processing", "unknown"]) {
+      expect(classifyBorrowCopy({ status, access: "loanable" })).toEqual({
+        blocked: true,
+        reasonKey: "notAvailable",
+      });
+    }
+  });
+
+  it("leaves a reserved copy to the server, which lends it to the member it is held for", () => {
+    expect(classifyBorrowCopy({ status: "reserved", access: "loanable" })).toEqual({
+      blocked: false,
     });
   });
 

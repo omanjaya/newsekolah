@@ -63,6 +63,16 @@ export function confirmableItems(items: DeskBasketItem[]): DeskBasketItem[] {
   return items.filter((item) => item.state === "pending");
 }
 
+/**
+ * `confirmableItems` oldest scan first, the order Confirm submits. The
+ * basket is stored newest first (for display and undo), but the server
+ * spends the member's remaining quota in request order, so the books
+ * scanned first must be sent first.
+ */
+export function confirmableItemsInScanOrder(items: DeskBasketItem[]): DeskBasketItem[] {
+  return confirmableItems(items).reverse();
+}
+
 /** True once every basket item has a final result (or the basket is empty), so the session can offer a receipt. */
 export function isBasketSettled(items: DeskBasketItem[]): boolean {
   return (
@@ -78,24 +88,32 @@ export function updateBasketItem(
   return items.map((item) => (item.barcode === barcode ? { ...item, ...patch } : item));
 }
 
+export type BorrowBlockReason = "onLoan" | "notAvailable" | "notLoanable";
+
 /**
  * Whether a copy found for the Pinjam mode can be added as a pending
  * (loanable) item, and if not, a machine-readable reason key to translate.
+ * A reserved copy is not blocked here: it is lendable to the member whose
+ * ready reservation holds it, which only the server knows, so Confirm lets
+ * the server decide and shows its reason on the row if it refuses.
  * Return/Renew modes have no equivalent client-side check: whether a copy
- * is actually on loan to this member is only known once Confirm calls the
- * server, so every scan for those two modes is added as "pending".
+ * is actually on loan to this member is only known once the server is
+ * called, so every scan for those two modes goes straight to it.
  */
 export function classifyBorrowCopy(copy: {
   status: string;
   access: string;
-}): { blocked: false } | { blocked: true; reasonKey: "notAvailable" | "notLoanable" } {
+}): { blocked: false } | { blocked: true; reasonKey: BorrowBlockReason } {
   if (copy.access === "reference" || copy.access === "read_in_place") {
     return { blocked: true, reasonKey: "notLoanable" };
   }
-  if (copy.status !== "available") {
-    return { blocked: true, reasonKey: "notAvailable" };
+  if (copy.status === "available" || copy.status === "reserved") {
+    return { blocked: false };
   }
-  return { blocked: false };
+  if (copy.status === "on_loan") {
+    return { blocked: true, reasonKey: "onLoan" };
+  }
+  return { blocked: true, reasonKey: "notAvailable" };
 }
 
 /** Alt+1/2/3 switches mode, Alt+Z undoes the last scan -- combinations a hardware scanner never emits (it only ever sends plain characters plus Enter). */

@@ -41,6 +41,7 @@ function baseSession(overrides: Partial<DeskSession> = {}): DeskSession {
     setMode: vi.fn(),
     member: null,
     memberStatus: null,
+    borrowingStatus: null,
     selectMember: vi.fn(),
     endSession: vi.fn(),
     basket: { borrow: [], return: [], renew: [] },
@@ -173,6 +174,56 @@ describe("LoanDeskView", () => {
     expect(within(aside).getByTestId("desk-tile-returnsToday")).toBeInTheDocument();
     expect(within(aside).getByTestId("desk-tile-overdue")).toBeInTheDocument();
     expect(within(aside).getByTestId("desk-tile-visitsToday")).toBeInTheDocument();
+  });
+
+  it("takes book barcodes for a return with no member, and shows what was returned", () => {
+    deskSession.mockReturnValue(
+      baseSession({
+        mode: "return",
+        basket: {
+          borrow: [],
+          return: [
+            {
+              barcode: "2026/00012",
+              title: "Matematika",
+              state: "done",
+              detail: "basket.returnedOnTime",
+            },
+          ],
+          renew: [],
+        },
+      }),
+    );
+    const { container } = render(<LoanDeskView />);
+
+    expect(screen.getByRole("textbox", { name: "modes.scanLabel.return" })).toHaveFocus();
+    expect(screen.queryByText("member.hintTitle")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "basket.heading.return" })).toBeInTheDocument();
+    const live = container.querySelector('[aria-live="polite"][aria-atomic="true"]');
+    expect(live).toHaveTextContent("Matematika");
+  });
+
+  it("warns about an unpaid fine and shows the quota in use before lending", () => {
+    deskSession.mockReturnValue(
+      baseSession({
+        member,
+        borrowingStatus: {
+          allow_loans: true,
+          max_loan_items: 2,
+          max_loan_days: 7,
+          active_loan_count: 1,
+          has_unpaid_fine: true,
+          unpaid_fine_blocks_loans: true,
+        },
+      }),
+    );
+    const { container } = render(<LoanDeskView />);
+
+    expect(screen.getByText("member.unpaidFineBlocks")).toBeInTheDocument();
+    expect(screen.getByText("member.quota")).toBeInTheDocument();
+    const live = container.querySelector('[aria-live="polite"][aria-atomic="true"]');
+    expect(live).toHaveTextContent("result.memberUnpaidFine");
+    expect(live?.querySelector('[data-tone="warning"]')).not.toBeNull();
   });
 
   it("drops the figures card when the dashboard query has not resolved and is not loading", () => {
