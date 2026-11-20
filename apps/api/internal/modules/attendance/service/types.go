@@ -111,6 +111,11 @@ type SessionSummary struct {
 	// StartsAt is when the session's first period begins on its date, so
 	// a client can tell a lesson that has not started from one to fill.
 	StartsAt time.Time
+	// EditableUntil is SessionDetail.EditableUntil for the list's viewer
+	// (ListSessionsOptions.Viewer): past it the session is locked for
+	// them. Nil without a viewer, for a lesson with no session yet, or
+	// when the viewer may not save it at all.
+	EditableUntil *time.Time
 }
 
 // DaySessions is one teacher's sessions for a date. HolidayName names the

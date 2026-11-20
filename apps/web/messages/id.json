@@ -1147,6 +1147,7 @@
       "statusUpcoming": "Belum bisa diisi",
       "statusSavedAt": "Tersimpan pukul {time}",
       "statusLocked": "Terkunci",
+      "statusMissed": "Terkunci, belum diisi",
       "ongoingBadge": "Sedang berlangsung",
       "nextBadge": "Berikutnya",
       "fillProgress": "{entered}/{roster} diisi",
@@ -1297,6 +1298,7 @@
         "recapAllClear": "Tahun ini: tidak ada catatan."
       },
       "daySummary": "{total, plural, other {# sesi}} · {saved} tersimpan · {pending} belum diisi",
+      "dayMissed": "{count} terkunci belum diisi",
       "dayHandedOver": "{count} digantikan guru pengganti",
       "otherSessions": "Sesi lainnya",
       "daySessions": "Sesi mengajar",

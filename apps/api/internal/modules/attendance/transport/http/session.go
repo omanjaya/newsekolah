@@ -14,19 +14,19 @@ func (h *AttendanceHandler) ListMyAttendanceToday(ctx context.Context, request a
 	userID, _ := httpx.UserIDFromContext(ctx)
 	params := request.Params
 
+	actor, err := h.actorFor(ctx, tenantID, userID)
+	if err != nil {
+		return nil, err
+	}
 	teacherID := userID
 	if params.TeacherUserId != nil {
-		actor, err := h.actorFor(ctx, tenantID, userID)
-		if err != nil {
-			return nil, err
-		}
 		if !actor.CanManage {
 			return nil, httpx.ErrForbidden
 		}
 		teacherID = *params.TeacherUserId
 	}
 
-	opts := service.ListSessionsOptions{}
+	opts := service.ListSessionsOptions{Viewer: &actor}
 	if params.Date != nil {
 		opts.Date = &params.Date.Time
 	}

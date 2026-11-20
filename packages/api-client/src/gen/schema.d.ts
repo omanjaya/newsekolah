@@ -9111,6 +9111,11 @@ export interface components {
              * @description When the session's first period begins on its date. Attendance cannot be saved before it.
              */
             starts_at?: string;
+            /**
+             * Format: date-time
+             * @description The last instant the viewer may save this session, the same deadline the session detail gives in editable_until (normal mode for its own teacher or accepted substitute, correction for anyone else). After it the session is locked for the viewer. Absent for a lesson on a later day with no session yet, or when the viewer may not save it at all.
+             */
+            editable_until?: string;
         };
         AttendanceRosterItem: {
             /** Format: uuid */

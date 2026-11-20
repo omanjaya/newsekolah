@@ -20,6 +20,11 @@ import (
 type ListSessionsOptions struct {
 	Date        *time.Time
 	CurrentOnly bool
+	// Viewer, when set, is who reads the list: each opened session then
+	// carries the viewer's own save deadline (SessionSummary.EditableUntil),
+	// the same one the session detail gives, so the list's badge never
+	// calls a session locked that the editor still saves, or the reverse.
+	Viewer *Actor
 }
 
 // ListSessions returns every session teacherUserID should see for
@@ -164,16 +169,36 @@ func (s *Service) ListDay(ctx context.Context, tenantID, teacherUserID uuid.UUID
 			if err != nil {
 				return err
 			}
+			editableUntil, err := s.listedEditableUntil(ctx, tenantID, opts.Viewer, session)
+			if err != nil {
+				return err
+			}
 
 			day.Sessions = append(day.Sessions, SessionSummary{
 				Session: session, IsSubstitute: occ.isSubstitute,
 				RosterCount: len(students), EnteredCount: countEnrolledEntries(entries, students),
-				HandedOverTo: handedOverTo, StartsAt: startsAt,
+				HandedOverTo: handedOverTo, StartsAt: startsAt, EditableUntil: editableUntil,
 			})
 		}
 		return nil
 	})
 	return day, err
+}
+
+// listedEditableUntil is the last instant viewer may save a listed session,
+// resolved exactly as the session detail does (saveWindowInput and
+// viewerSaveMode). Nil with no viewer, for a lesson on a later day that
+// has no session yet, or when the viewer may not save it at all.
+func (s *Service) listedEditableUntil(ctx context.Context, tenantID uuid.UUID, viewer *Actor, session domain.Session) (*time.Time, error) {
+	if viewer == nil || session.ID == uuid.Nil {
+		return nil, nil
+	}
+	window, _, err := s.saveWindowInput(ctx, tenantID, *viewer, session)
+	if err != nil {
+		return nil, err
+	}
+	_, until := viewerSaveMode(window)
+	return until, nil
 }
 
 // listedSession is the session a list row stands for. A lesson today or

@@ -1147,6 +1147,7 @@
       "statusUpcoming": "Not open yet",
       "statusSavedAt": "Saved at {time}",
       "statusLocked": "Locked",
+      "statusMissed": "Locked, not filled",
       "ongoingBadge": "In progress",
       "nextBadge": "Next",
       "fillProgress": "{entered}/{roster} filled",
@@ -1299,6 +1300,7 @@
         "recapAllClear": "This year: nothing to note."
       },
       "daySummary": "{total, plural, one {# session} other {# sessions}} · {saved} saved · {pending} to fill",
+      "dayMissed": "{count} locked, not filled",
       "dayHandedOver": "{count} handed to a substitute",
       "otherSessions": "Other sessions",
       "daySessions": "Teaching sessions",

@@ -3,32 +3,81 @@ import { describe, expect, it } from "vitest";
 import { classifyPeriodTiming, deriveFillStatus, findNextSessionId } from "./session-schedule";
 
 describe("deriveFillStatus", () => {
-  it("is empty when nothing has been submitted", () => {
-    expect(deriveFillStatus(undefined, "2026-09-24", "2026-09-24")).toBe("empty");
+  const TODAY = "2026-09-24";
+  // 10:00 on the 24th in Makassar (UTC+8).
+  const NOW = new Date("2026-09-24T02:00:00Z");
+  const OPEN = "2026-10-01T23:59:59+08:00";
+  const base = { date: TODAY, today: TODAY, now: NOW, editableUntil: OPEN };
+
+  it("is empty when nothing has been submitted and the viewer may still save", () => {
+    expect(deriveFillStatus(base)).toBe("empty");
   });
 
-  it("is saved when submitted today", () => {
-    expect(deriveFillStatus("2026-09-24T07:12:00Z", "2026-09-24", "2026-09-24")).toBe("saved");
+  it("is saved when submitted and still within the viewer's save deadline", () => {
+    expect(deriveFillStatus({ ...base, submittedAt: "2026-09-24T07:12:00Z" })).toBe("saved");
   });
 
-  it("is locked when submitted on a date before today", () => {
-    expect(deriveFillStatus("2026-09-20T07:12:00Z", "2026-09-20", "2026-09-24")).toBe("locked");
+  it("stays saved on an earlier date while the deadline is open, since the editor still saves it", () => {
+    expect(
+      deriveFillStatus({
+        ...base,
+        date: "2026-09-20",
+        submittedAt: "2026-09-20T07:12:00Z",
+        editableUntil: "2026-09-27T23:59:59+08:00",
+      }),
+    ).toBe("saved");
+  });
+
+  it("stays empty on an earlier date while the deadline is open", () => {
+    expect(
+      deriveFillStatus({ ...base, date: "2026-09-20", editableUntil: "2026-09-27T23:59:59+08:00" }),
+    ).toBe("empty");
+  });
+
+  it("is locked once the deadline has passed for a submitted session", () => {
+    expect(
+      deriveFillStatus({
+        ...base,
+        date: "2026-09-10",
+        submittedAt: "2026-09-10T07:12:00Z",
+        editableUntil: "2026-09-17T23:59:59+08:00",
+      }),
+    ).toBe("locked");
+  });
+
+  it("is missed, not still to fill, once the deadline closed an unsaved session", () => {
+    expect(
+      deriveFillStatus({ ...base, date: "2026-09-10", editableUntil: "2026-09-17T23:59:59+08:00" }),
+    ).toBe("missed");
+  });
+
+  it("treats a session the viewer may not save at all as closed", () => {
+    expect(deriveFillStatus({ ...base, editableUntil: undefined })).toBe("missed");
+    expect(
+      deriveFillStatus({ ...base, editableUntil: undefined, submittedAt: "2026-09-24T01:00:00Z" }),
+    ).toBe("locked");
   });
 
   it("is handed over when an accepted substitute fills it instead", () => {
-    expect(deriveFillStatus(undefined, "2026-09-24", "2026-09-24", true)).toBe("handedOver");
+    expect(deriveFillStatus({ ...base, handedOver: true })).toBe("handedOver");
   });
 
   it("shows the handover on a later day too, not only on the day itself", () => {
-    expect(deriveFillStatus(undefined, "2026-09-25", "2026-09-24", true)).toBe("handedOver");
+    expect(
+      deriveFillStatus({ ...base, date: "2026-09-25", handedOver: true, editableUntil: undefined }),
+    ).toBe("handedOver");
   });
 
   it("is upcoming for a lesson on a later day, which cannot be filled yet", () => {
-    expect(deriveFillStatus(undefined, "2026-09-25", "2026-09-24")).toBe("upcoming");
+    expect(deriveFillStatus({ ...base, date: "2026-09-25", editableUntil: undefined })).toBe(
+      "upcoming",
+    );
   });
 
   it("stays upcoming for a later-day lesson that was already submitted", () => {
-    expect(deriveFillStatus("2026-09-24T02:09:48Z", "2026-09-25", "2026-09-24")).toBe("upcoming");
+    expect(
+      deriveFillStatus({ ...base, date: "2026-09-25", submittedAt: "2026-09-24T02:09:48Z" }),
+    ).toBe("upcoming");
   });
 });
 
