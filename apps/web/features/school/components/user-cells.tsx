@@ -7,6 +7,15 @@ import type { ReactElement } from "react";
 import type { AdminUser } from "../api";
 
 /**
+ * True when the roles include super_admin. Only a super admin may edit,
+ * reset, archive or restore such an account (the API answers anyone else
+ * with SUPER_ADMIN_TARGET_FORBIDDEN), and nobody may impersonate it.
+ */
+export function holdsSuperAdmin(roles: readonly { slug: string }[]): boolean {
+  return roles.some((role) => role.slug === "super_admin");
+}
+
+/**
  * The account's kind. A system account (the platform's Super Admin) has no
  * school profile and so no kind: it reads "No profile", never a bare key.
  */

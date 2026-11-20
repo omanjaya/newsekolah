@@ -29,6 +29,7 @@ var adminErrorMap = map[error]error{
 	domain.ErrUserAlreadyExists:           httpx.ErrUserAlreadyExists,
 	domain.ErrCannotArchiveSelf:           httpx.ErrUserCannotArchiveSelf,
 	domain.ErrOnlySuperAdminGrants:        httpx.ErrOnlySuperAdminCanGrantSuperAdmin,
+	domain.ErrSuperAdminTargetForbidden:   httpx.ErrSuperAdminTargetForbidden,
 	domain.ErrNoPrimaryRole:               httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "roles", Code: "PRIMARY_ROLE_REQUIRED"}),
 	domain.ErrPrimaryRoleNotSystem:        httpx.ErrPrimaryRoleNotSystem,
 	domain.ErrKindRoleMismatch:            httpx.ErrUserKindRoleMismatch,

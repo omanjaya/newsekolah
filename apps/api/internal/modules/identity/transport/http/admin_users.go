@@ -91,14 +91,16 @@ func (h *Handler) ArchiveUser(ctx context.Context, request api.ArchiveUserReques
 }
 
 func (h *Handler) RestoreUser(ctx context.Context, request api.RestoreUserRequestObject) (api.RestoreUserResponseObject, error) {
-	if err := h.service.RestoreUser(ctx, tenantIDFromContext(ctx), request.UserId); err != nil {
+	actorID, _ := httpx.UserIDFromContext(ctx)
+	if err := h.service.RestoreUser(ctx, tenantIDFromContext(ctx), actorID, request.UserId); err != nil {
 		return nil, mapAdminError(err)
 	}
 	return api.RestoreUser204Response{}, nil
 }
 
 func (h *Handler) AdminResetPassword(ctx context.Context, request api.AdminResetPasswordRequestObject) (api.AdminResetPasswordResponseObject, error) {
-	token, err := h.service.ResetPasswordByAdmin(ctx, tenantIDFromContext(ctx), request.UserId)
+	actorID, _ := httpx.UserIDFromContext(ctx)
+	token, err := h.service.ResetPasswordByAdmin(ctx, tenantIDFromContext(ctx), actorID, request.UserId)
 	if err != nil {
 		return nil, mapAdminError(err)
 	}

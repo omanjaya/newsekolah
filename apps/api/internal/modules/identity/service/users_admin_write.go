@@ -92,6 +92,9 @@ func (s *Service) UpdateUser(ctx context.Context, tenantID, actorID, userID uuid
 		if err != nil {
 			return domain.ErrUserNotFound
 		}
+		if err := s.requireCanManage(ctx, actorID, userID); err != nil {
+			return err
+		}
 		beforeView, err := s.toUserAdminView(ctx, tenantID, before)
 		if err != nil {
 			return err
@@ -184,6 +187,9 @@ func (s *Service) ArchiveUser(ctx context.Context, tenantID, actorID, userID uui
 		if _, err := s.repo.GetUserAdminByID(ctx, tenantID, userID); err != nil {
 			return domain.ErrUserNotFound
 		}
+		if err := s.requireCanManage(ctx, actorID, userID); err != nil {
+			return err
+		}
 		if err := s.repo.ArchiveUserRecord(ctx, tenantID, userID); err != nil {
 			return fmt.Errorf("archive user: %w", err)
 		}
@@ -192,10 +198,13 @@ func (s *Service) ArchiveUser(ctx context.Context, tenantID, actorID, userID uui
 }
 
 // RestoreUser reverses ArchiveUser.
-func (s *Service) RestoreUser(ctx context.Context, tenantID, userID uuid.UUID) error {
+func (s *Service) RestoreUser(ctx context.Context, tenantID, actorID, userID uuid.UUID) error {
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		if _, err := s.repo.GetUserAdminByID(ctx, tenantID, userID); err != nil {
 			return domain.ErrUserNotFound
+		}
+		if err := s.requireCanManage(ctx, actorID, userID); err != nil {
+			return err
 		}
 		if err := s.repo.RestoreUserRecord(ctx, tenantID, userID); err != nil {
 			return fmt.Errorf("restore user: %w", err)
@@ -207,12 +216,16 @@ func (s *Service) RestoreUser(ctx context.Context, tenantID, userID uuid.UUID) e
 // ResetPasswordByAdmin creates a one-time set-password token for userID and
 // returns it in plaintext exactly once; only its SHA-256 hash is stored
 // (docs/08-security.md section 2: "admin reset menghasilkan tautan
-// set-password, bukan password").
-func (s *Service) ResetPasswordByAdmin(ctx context.Context, tenantID, userID uuid.UUID) (string, error) {
+// set-password, bukan password"). Only a super admin may reset a super
+// admin's password: the token is that account's access.
+func (s *Service) ResetPasswordByAdmin(ctx context.Context, tenantID, actorID, userID uuid.UUID) (string, error) {
 	var token string
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		if _, err := s.repo.GetUserAdminByID(ctx, tenantID, userID); err != nil {
 			return domain.ErrUserNotFound
+		}
+		if err := s.requireCanManage(ctx, actorID, userID); err != nil {
+			return err
 		}
 
 		var hash []byte
@@ -232,6 +245,21 @@ func (s *Service) ResetPasswordByAdmin(ctx context.Context, tenantID, userID uui
 		return audit.RecordSimple(ctx, tenantID, "user.reset_password", "user", userID)
 	})
 	return token, err
+}
+
+// requireCanManage applies domain.ValidateManageTarget: a super admin
+// account is changed only by a super admin. The actor's roles are read
+// only when the target is a super admin, which is rare.
+func (s *Service) requireCanManage(ctx context.Context, actorID, userID uuid.UUID) error {
+	targetIsSuper, err := s.isSuperAdmin(ctx, userID)
+	if err != nil || !targetIsSuper {
+		return err
+	}
+	actorIsSuper, err := s.isSuperAdmin(ctx, actorID)
+	if err != nil {
+		return err
+	}
+	return domain.ValidateManageTarget(actorIsSuper, targetIsSuper)
 }
 
 func ptrAuditUser(a auditUser) *auditUser { return &a }

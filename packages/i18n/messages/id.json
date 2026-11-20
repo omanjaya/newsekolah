@@ -428,6 +428,7 @@
     "STUDENT_INACTIVE": "Akun siswa ini tidak aktif.",
     "USER_CANNOT_ARCHIVE_SELF": "Anda tidak bisa mengarsipkan akun Anda sendiri.",
     "ONLY_SUPER_ADMIN_CAN_GRANT_SUPER_ADMIN": "Hanya super admin yang bisa memberikan peran super admin.",
+    "SUPER_ADMIN_TARGET_FORBIDDEN": "Hanya super admin yang bisa mengubah akun super admin.",
     "ROLE_SYSTEM_IMMUTABLE": "Peran bawaan sistem tidak bisa diubah atau dihapus.",
     "ROLE_IN_USE": "Peran ini masih dipakai pengguna. Pindahkan penggunanya ke peran lain dulu.",
     "UNKNOWN_PERMISSION": "Ada izin yang tidak dikenali. Muat ulang halaman lalu pilih izin lagi.",

@@ -30,6 +30,10 @@ var (
 	ErrInvalidProfileKind   = errors.New("invalid profile kind")
 	ErrKindRoleMismatch     = errors.New("a student profile needs the student primary role, and only a student profile may hold it")
 	ErrTooManyDirectoryIDs  = errors.New("too many ids in one directory lookup")
+	// ErrSuperAdminTargetForbidden refuses a school admin editing,
+	// archiving, restoring or resetting the password of a super admin
+	// account: that would strip its role or hand its access to them.
+	ErrSuperAdminTargetForbidden = errors.New("only a super admin can change a super admin account")
 
 	// Roles and permissions
 	ErrRoleNotFound          = errors.New("role not found")

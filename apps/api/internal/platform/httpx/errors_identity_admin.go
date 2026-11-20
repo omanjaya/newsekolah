@@ -9,6 +9,7 @@ var (
 	ErrUserAlreadyExists                = NewError(http.StatusConflict, "USER_ALREADY_EXISTS")
 	ErrUserCannotArchiveSelf            = NewError(http.StatusBadRequest, "USER_CANNOT_ARCHIVE_SELF")
 	ErrOnlySuperAdminCanGrantSuperAdmin = NewError(http.StatusForbidden, "ONLY_SUPER_ADMIN_CAN_GRANT_SUPER_ADMIN")
+	ErrSuperAdminTargetForbidden        = NewError(http.StatusForbidden, "SUPER_ADMIN_TARGET_FORBIDDEN")
 	ErrRoleSystemImmutable              = NewError(http.StatusBadRequest, "ROLE_SYSTEM_IMMUTABLE")
 	ErrRoleInUse                        = NewError(http.StatusConflict, "ROLE_IN_USE")
 	ErrUnknownPermission                = NewError(http.StatusBadRequest, "UNKNOWN_PERMISSION")

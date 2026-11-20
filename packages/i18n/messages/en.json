@@ -428,6 +428,7 @@
     "STUDENT_INACTIVE": "This student's account is not active.",
     "USER_CANNOT_ARCHIVE_SELF": "You cannot archive your own account.",
     "ONLY_SUPER_ADMIN_CAN_GRANT_SUPER_ADMIN": "Only a super admin can grant the super admin role.",
+    "SUPER_ADMIN_TARGET_FORBIDDEN": "Only a super admin can change a super admin account.",
     "ROLE_SYSTEM_IMMUTABLE": "Built-in system roles cannot be changed or deleted.",
     "ROLE_IN_USE": "This role is still assigned to users. Move them to another role first.",
     "UNKNOWN_PERMISSION": "A permission is not recognized. Reload the page and pick the permissions again.",

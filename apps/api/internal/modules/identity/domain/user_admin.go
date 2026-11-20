@@ -146,6 +146,20 @@ func PrimaryRoleSlug(grants []RoleGrant) string {
 	return ""
 }
 
+// ValidateManageTarget refuses an admin who is not a super admin changing
+// a super admin account (editing it, archiving or restoring it, or
+// resetting its password): ValidateRoleGrants only stops granting
+// super_admin, not replacing the roles of an account that holds it, and
+// a set-password token for it would hand the platform's top access to a
+// school admin. Like ValidateImpersonationTarget, the target's standing
+// decides.
+func ValidateManageTarget(actorIsSuperAdmin, targetIsSuperAdmin bool) error {
+	if targetIsSuperAdmin && !actorIsSuperAdmin {
+		return ErrSuperAdminTargetForbidden
+	}
+	return nil
+}
+
 // ValidateArchiveTarget rejects an admin archiving their own account, the
 // one self-service action that must go through "change password" /
 // "delete my account" flows instead (docs/analysis/backend-inventory.md

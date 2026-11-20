@@ -174,3 +174,10 @@ func TestValidateArchiveTarget(t *testing.T) {
 	require.ErrorIs(t, ValidateArchiveTarget(self, self), ErrCannotArchiveSelf)
 	require.NoError(t, ValidateArchiveTarget(self, other))
 }
+
+func TestValidateManageTarget(t *testing.T) {
+	require.ErrorIs(t, ValidateManageTarget(false, true), ErrSuperAdminTargetForbidden)
+	require.NoError(t, ValidateManageTarget(true, true))
+	require.NoError(t, ValidateManageTarget(false, false))
+	require.NoError(t, ValidateManageTarget(true, false))
+}

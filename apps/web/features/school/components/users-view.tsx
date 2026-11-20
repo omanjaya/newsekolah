@@ -51,7 +51,7 @@ import { useImpersonateUserMutation } from "../duties-api";
 
 import { useArchiveUserAction } from "./archive-user-dialog";
 import { ResetPasswordFlow } from "./reset-password-flow";
-import { UserKindCell, UserRolesCell, UserStatusCell } from "./user-cells";
+import { holdsSuperAdmin, UserKindCell, UserRolesCell, UserStatusCell } from "./user-cells";
 import { UserForm } from "./user-form";
 
 const KINDS: ProfileKind[] = ["teacher", "staff", "student"];
@@ -72,6 +72,7 @@ export function UsersView(): ReactElement {
   const canEdit = useCan("edit_users");
   const canArchive = useCan("delete_users");
   const canImpersonate = useCan("impersonate_users");
+  const viewerIsSuperAdmin = holdsSuperAdmin(me?.roles ?? []);
   const impersonate = useImpersonateUserMutation();
   const [impersonating, setImpersonating] = useState<AdminUser | null>(null);
 
@@ -217,9 +218,13 @@ export function UsersView(): ReactElement {
         cell: ({ row }) => {
           const user = row.original;
           const restore = user.status === "inactive";
+          const targetIsSuperAdmin = holdsSuperAdmin(user.roles);
+          const manageable = viewerIsSuperAdmin || !targetIsSuperAdmin;
+          const impersonable =
+            canImpersonate && !targetIsSuperAdmin && user.status === "active" && user.id !== me?.id;
           // The form edits a school profile; saving a system account with
           // none there would turn it into a teacher.
-          const editable = user.profile_kind !== undefined;
+          const editable = manageable && user.profile_kind !== undefined;
           const items: RowActionsMenuItem[] = [
             ...(canEdit && editable
               ? [
@@ -232,7 +237,7 @@ export function UsersView(): ReactElement {
                   },
                 ]
               : []),
-            ...(canEdit
+            ...(canEdit && manageable
               ? [
                   {
                     label: t("actions.resetPassword"),
@@ -243,7 +248,7 @@ export function UsersView(): ReactElement {
                   },
                 ]
               : []),
-            ...(canImpersonate && user.status === "active" && user.id !== me?.id
+            ...(impersonable
               ? [
                   {
                     label: t("actions.impersonate"),
@@ -254,7 +259,7 @@ export function UsersView(): ReactElement {
                   },
                 ]
               : []),
-            ...(canArchive
+            ...(canArchive && manageable
               ? [
                   {
                     label: restore ? t("actions.restore") : t("actions.archive"),
@@ -274,7 +279,7 @@ export function UsersView(): ReactElement {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fail/reset/archive are stable enough per render
-    [t, canEdit, canArchive, canImpersonate, me?.id, compact],
+    [t, canEdit, canArchive, canImpersonate, viewerIsSuperAdmin, me?.id, compact],
   );
 
   const items = data?.data ?? [];

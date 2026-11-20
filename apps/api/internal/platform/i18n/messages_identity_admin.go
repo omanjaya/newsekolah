@@ -23,6 +23,10 @@ var identityAdminCatalog = map[string]map[string]string{
 		Indonesian: "Hanya super admin yang bisa memberikan peran super admin.",
 		English:    "Only a super admin can grant the super admin role.",
 	},
+	"SUPER_ADMIN_TARGET_FORBIDDEN": {
+		Indonesian: "Hanya super admin yang bisa mengubah akun super admin.",
+		English:    "Only a super admin can change a super admin account.",
+	},
 	"ROLE_SYSTEM_IMMUTABLE": {
 		Indonesian: "Slug dan nama role sistem tidak bisa diubah.",
 		English:    "A system role's slug and name cannot be changed.",

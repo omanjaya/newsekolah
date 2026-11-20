@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   canCreate: true,
   archiveMutate: vi.fn(),
   archiveMutateAsync: vi.fn(),
+  viewerRoles: [{ slug: "admin" }] as { slug: string }[],
 }));
 
 vi.mock("next-intl", () => ({
@@ -20,7 +21,7 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: () => mocks.canCreate,
-  useSession: () => ({ me: { id: "me" } }),
+  useSession: () => ({ me: { id: "me", roles: mocks.viewerRoles } }),
 }));
 vi.mock("../../../lib/view-state/view-state-provider", () => ({
   useRememberedViewState: () => ["", vi.fn()],
@@ -296,6 +297,7 @@ describe("UsersView system account", () => {
 
   beforeEach(() => {
     mocks.canCreate = true;
+    mocks.viewerRoles = [{ slug: "admin" }];
     mocks.useUsersQuery.mockReset();
     mocks.useUsersQuery.mockReturnValue({
       data: { data: [operator] },
@@ -315,6 +317,7 @@ describe("UsersView system account", () => {
   });
 
   it("does not offer the school user form for an account with no profile", async () => {
+    mocks.viewerRoles = [{ slug: "super_admin" }];
     const user = userEvent.setup();
     render(<UsersView />);
 
@@ -323,6 +326,20 @@ describe("UsersView system account", () => {
     await user.click(menu);
 
     expect(await screen.findByRole("menuitem", { name: "actions.resetPassword" })).toBeVisible();
+    expect(screen.getByRole("menuitem", { name: "actions.archive" })).toBeVisible();
     expect(screen.queryByRole("menuitem", { name: "actions.edit" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "actions.impersonate" })).not.toBeInTheDocument();
+  });
+
+  // The API refuses a school admin resetting, archiving or editing the
+  // Super Admin (SUPER_ADMIN_TARGET_FORBIDDEN): a set-password token for it
+  // would hand over the platform's top access. The row offers none of it.
+  it("offers a school admin no action on the super admin account", () => {
+    mocks.viewerRoles = [{ slug: "admin" }];
+    render(<UsersView />);
+
+    expect(
+      screen.queryByRole("button", { name: "actions.menuFor:Operator Uji" }),
+    ).not.toBeInTheDocument();
   });
 });
