@@ -280,7 +280,7 @@ func toAPIMyExitPermit(it service.MyExitPermit) api.MyExitPermit {
 		Id: inst.Id, Kind: inst.Kind, Status: inst.Status, CurrentStageIndex: inst.CurrentStageIndex,
 		CurrentStage: inst.CurrentStage, Stages: inst.Stages, SubjectUserId: inst.SubjectUserId,
 		ClassId: inst.ClassId, OpenedAt: inst.OpenedAt, ClosedAt: inst.ClosedAt, Events: inst.Events,
-		Destination: it.Permit.Destination, ExitedAt: it.Permit.ExitedAt,
+		Destination: it.Permit.Destination, EndPeriodId: it.Permit.EndPeriodID, ExitedAt: it.Permit.ExitedAt,
 		ReturnRequired: it.Permit.ReturnRequired, ExpectedReturnAt: it.Permit.ExpectedReturnAt, ReturnedAt: it.Permit.ReturnedAt,
 	}
 }

@@ -1,3 +1,4 @@
+import { isoToZonedLocal } from "../../../lib/tenant-date";
 import { clockRange } from "../../schedule/clock-label";
 
 /** The fields of a timetable period an exit permit's range is picked from. */
@@ -79,4 +80,23 @@ export function endAfterStartChange(
 ): string {
   if (!endId) return startId;
   return endPeriodOptions(options, startId).some((o) => o.value === endId) ? endId : startId;
+}
+
+/**
+ * Whether an exit permit's last lesson has ended on the school's clock at
+ * `now`: its stages and gate QR are then refused (EXIT_PERMIT_WINDOW_CLOSED),
+ * and the permit waits for the expiry job. A permit opened on an earlier
+ * school day is over whatever the time now, as the API reads it (the
+ * permit's own local day). False while the periods are unknown.
+ */
+export function permitLessonsOver(
+  permit: { end_period_id: string; opened_at: string },
+  periods: readonly Pick<LessonPeriod, "id" | "ends_at">[] | undefined,
+  now: Date,
+  timeZone?: string,
+): boolean {
+  const today = isoToZonedLocal(now, timeZone);
+  if (isoToZonedLocal(permit.opened_at, timeZone).slice(0, 10) < today.slice(0, 10)) return true;
+  const end = periods?.find((p) => p.id === permit.end_period_id);
+  return end ? lessonEnded(end, today.slice(11, 16)) : false;
 }

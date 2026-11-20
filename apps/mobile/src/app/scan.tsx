@@ -14,6 +14,7 @@ import {
   useScanExitPermitStage,
   useScanGate,
   useScanLateArrivalStage,
+  usePeriods,
 } from "@/lib/api/hooks";
 import { decodeScanPayload } from "@/features/scan/payload";
 import {
@@ -22,9 +23,30 @@ import {
   type LibraryScanParams,
 } from "@/features/scan/library-scan";
 import { t } from "@/i18n/t";
-import { permitAwaitingDeskApproval } from "@/lib/permits/exit-permit";
+import {
+  deskApprovalTarget,
+  deskRefusal,
+  permitLessonsOver,
+  type DeskRefusal,
+} from "@/lib/permits/exit-permit";
 
 type Pending = { token: string; kind?: string; instanceId?: string } | null;
+
+/** Why the duty desk's QR approved nothing for the scanning student. */
+function deskRefusalMessage(refusal: DeskRefusal): string {
+  switch (refusal.reason) {
+    case "scanStage":
+      return t("scan.permit_at_other_stage").replaceAll("{stage}", refusal.stage);
+    case "awaitingReview":
+      return t("scan.permit_awaiting_review").replaceAll("{stage}", refusal.stage);
+    case "awaitingGate":
+      return t("scan.permit_awaiting_gate");
+    case "lessonsOver":
+      return t("scan.permit_lessons_over");
+    case "none":
+      return t("scan.no_permit_awaiting_desk");
+  }
+}
 
 /**
  * Full-screen scanner (docs/07-ui-ux.md "Scanner"), shared by every role
@@ -35,7 +57,7 @@ type Pending = { token: string; kind?: string; instanceId?: string } | null;
  * no mode fall to the attendance action picker below.
  */
 export default function ScanRoute(): React.JSX.Element {
-  const { activeTabGroup } = useAuth();
+  const { activeTabGroup, me } = useAuth();
   const isStudent = activeTabGroup === "student";
   const params = useLocalSearchParams<LibraryScanParams>();
   const libraryMode = isLibraryScanMode(params.mode);
@@ -46,6 +68,7 @@ export default function ScanRoute(): React.JSX.Element {
   const [busy, setBusy] = useState(false);
   const permits = useMyExitPermits(isStudent);
   const late = useCurrentLateArrival(isStudent);
+  const periods = usePeriods();
   const entry = useScanClassroomEntry();
   const openLate = useOpenLateArrival();
   const stage = useScanExitPermitStage();
@@ -84,12 +107,21 @@ export default function ScanRoute(): React.JSX.Element {
             // the desk, never a late arrival. A failed lookup throws into
             // the generic error below instead of reading as "no permit".
             const { data: mine } = await permits.refetch({ throwOnError: true });
-            const waiting = permitAwaitingDeskApproval(mine?.data ?? []);
-            if (!waiting) {
-              showToast(t("scan.no_permit_awaiting_desk"), "error");
+            const target = deskApprovalTarget(mine?.data ?? []);
+            if (target.kind !== "ready") {
+              // A permit whose last lesson has ended takes no further stage
+              // and no gate QR (as the exit permit screen reads it), so
+              // neither is advice that can work.
+              let over = false;
+              if (target.kind !== "none") {
+                const lessons = periods.data ?? (await periods.refetch()).data;
+                const endPeriod = lessons?.find((p) => p.id === target.permit.end_period_id);
+                over = permitLessonsOver(target.permit, endPeriod, new Date(), me?.tenant.timezone);
+              }
+              showToast(deskRefusalMessage(deskRefusal(target, over)), "error");
               return;
             }
-            await stage.mutateAsync({ id: waiting.id, token });
+            await stage.mutateAsync({ id: target.permit.id, token });
           } else if (id && id === activePermit?.id) {
             await stage.mutateAsync({ id, token });
           } else if (activeLate) {

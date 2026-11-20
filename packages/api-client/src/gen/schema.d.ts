@@ -11714,9 +11714,11 @@ export interface components {
             /** @description The permit is from an earlier day: its exit day ended with no return on record. It stays listed for a week so staff can follow it up, and its return can no longer be recorded. */
             unrecorded: boolean;
         };
-        /** @description One of the student's own exit permits in their history: the workflow instance plus where they went and when they passed the gate, so a row can say so without opening the permit. */
+        /** @description One of the student's own exit permits in their history: the workflow instance plus where they went, its last lesson and when they passed the gate, so a row can say so without opening the permit. */
         MyExitPermit: components["schemas"]["WorkflowInstance"] & {
             destination: string;
+            /** Format: uuid */
+            end_period_id: string;
             /** Format: date-time */
             exited_at?: string;
             return_required: boolean;

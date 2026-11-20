@@ -5,6 +5,7 @@ import {
   endPeriodOptions,
   lessonEnded,
   lessonPeriodOptions,
+  permitLessonsOver,
   upcomingLessonPeriods,
 } from "./lesson-period-options";
 
@@ -49,6 +50,35 @@ describe("lessonEnded", () => {
   it("is true from the minute the lesson ends", () => {
     expect(lessonEnded({ ends_at: "08:45:00" }, "08:44")).toBe(false);
     expect(lessonEnded({ ends_at: "08:45:00" }, "08:45")).toBe(true);
+  });
+});
+
+describe("permitLessonsOver", () => {
+  const zone = "Asia/Jakarta";
+  // 09:00 on the school's clock (UTC+7).
+  const now = new Date("2027-01-20T02:00:00Z");
+  const today = "2027-01-20T00:30:00Z";
+
+  it("is over once the permit's last lesson has ended", () => {
+    expect(permitLessonsOver({ end_period_id: "p2", opened_at: today }, periods, now, zone)).toBe(
+      true,
+    );
+    expect(permitLessonsOver({ end_period_id: "p3", opened_at: today }, periods, now, zone)).toBe(
+      false,
+    );
+  });
+
+  it("is over for a permit opened on an earlier school day", () => {
+    const yesterday = "2027-01-19T00:30:00Z";
+    expect(
+      permitLessonsOver({ end_period_id: "p3", opened_at: yesterday }, periods, now, zone),
+    ).toBe(true);
+  });
+
+  it("is not over while the periods are unknown", () => {
+    expect(permitLessonsOver({ end_period_id: "p2", opened_at: today }, undefined, now, zone)).toBe(
+      false,
+    );
   });
 });
 
