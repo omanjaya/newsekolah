@@ -115,3 +115,42 @@ it("keeps the compact dashboard preview as a flat row list, not a card grid", ()
 
   expect(screen.queryByTestId("announcement-feed-cards")).not.toBeInTheDocument();
 });
+
+it("opens, reads and scrolls to the announcement a notification focuses", () => {
+  const scrollIntoView = vi.fn();
+  Element.prototype.scrollIntoView = scrollIntoView;
+  query.mockReturnValue({
+    data: { data: [item({ id: "a1", title: "Lain" }), item({ id: "a2", title: "Fokus" })] },
+    isLoading: false,
+    isError: false,
+  });
+  render(<AnnouncementFeed focusId="a2" />);
+
+  expect(screen.getByTestId("announcement-feed-card-a2")).toHaveAttribute("aria-expanded", "true");
+  expect(screen.getByTestId("announcement-feed-card-a1")).toHaveAttribute("aria-expanded", "false");
+  expect(markRead).toHaveBeenCalledTimes(1);
+  expect(markRead).toHaveBeenCalledWith("a2");
+  expect(scrollIntoView).toHaveBeenCalledTimes(1);
+  expect(screen.queryByText("focusMissingTitle")).not.toBeInTheDocument();
+});
+
+it("says calmly when the focused announcement is not in the feed, instead of a 404", () => {
+  query.mockReturnValue({
+    data: { data: [item({ id: "a1" })] },
+    isLoading: false,
+    isError: false,
+  });
+  render(<AnnouncementFeed focusId="not-yet-visible" />);
+
+  expect(screen.getByText("focusMissingTitle")).toBeInTheDocument();
+  expect(screen.getByTestId("announcement-feed-card-a1")).toBeInTheDocument();
+  expect(markRead).not.toHaveBeenCalled();
+});
+
+it("keeps the notice beside the empty state when the feed is empty", () => {
+  query.mockReturnValue({ data: { data: [] }, isLoading: false, isError: false });
+  render(<AnnouncementFeed focusId="gone" />);
+
+  expect(screen.getByText("focusMissingTitle")).toBeInTheDocument();
+  expect(screen.getByText("feedEmptyTitle")).toBeInTheDocument();
+});

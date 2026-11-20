@@ -827,6 +827,8 @@
       "tabManage": "Manage",
       "feedEmptyTitle": "No announcements yet",
       "feedEmptyBody": "School announcements addressed to you will show up here.",
+      "focusMissingTitle": "This announcement is not showing right now",
+      "focusMissingBody": "It has not started showing yet, has ended, or is no longer addressed to you. Your other announcements are below.",
       "pinned": "Pinned",
       "unread": "New",
       "manageEmptyTitle": "No announcements created yet",
@@ -876,6 +878,7 @@
         "deleteDone": "Announcement deleted",
         "publishConfirmTitle": "Publish announcement",
         "publishConfirmBody": "\"{title}\" will be sent to {audience}. The content cannot change after publishing.",
+        "publishConfirmBodyLater": "\"{title}\" is published now, but shows and is sent to {audience} only from {date}. The content cannot change after publishing.",
         "deleteConfirmTitle": "Delete announcement",
         "deleteConfirmBody": "\"{title}\" will be removed from the list."
       },
