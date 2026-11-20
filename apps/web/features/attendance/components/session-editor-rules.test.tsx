@@ -148,6 +148,25 @@ describe("SessionEditor -- who saves in which mode", () => {
     expect(saveMutateAsync).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent("reasonRequired");
   });
+
+  it("follows save_mode correction for an unsubmitted lesson opened without ?mode=correction", async () => {
+    saveMutateAsync.mockResolvedValue(session());
+    render(
+      <SessionEditor session={session({ save_mode: "correction" })} openedInCorrection={false} />,
+    );
+
+    fireEvent.change(screen.getByRole("textbox", { name: "reasonPlaceholder" }), {
+      target: { value: "Wali kelas mengisi" },
+    });
+    clickSave();
+
+    await waitFor(() => {
+      expect(saveMutateAsync).toHaveBeenCalledTimes(1);
+    });
+    const [body] = saveMutateAsync.mock.calls[0] as [{ mode: string; reason?: string }];
+    expect(body.mode).toBe("correction");
+    expect(body.reason).toBe("Wali kelas mengisi");
+  });
 });
 
 describe("SessionEditor -- saving", () => {

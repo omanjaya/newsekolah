@@ -132,10 +132,14 @@ export function SessionEditor({
 
   // The API says which mode this viewer saves in: the lesson's own teacher
   // (or accepted substitute) keeps re-saving in normal mode after the
-  // first save; only a homeroom teacher or corrector opening someone
-  // else's lesson goes through correction, with a reason.
+  // first save; a homeroom teacher or corrector opening someone else's
+  // lesson -- submitted or not -- goes through correction, with a reason.
+  // Only a response without save_mode (an older API) falls back to the
+  // submitted state.
   const isCorrection =
-    openedInCorrection || (Boolean(session.submitted_at) && session.save_mode !== "normal");
+    openedInCorrection ||
+    session.save_mode === "correction" ||
+    (session.save_mode === undefined && Boolean(session.submitted_at));
   // Nothing can be recorded before the lesson starts.
   const notStartedYet =
     session.starts_at !== undefined && now.getTime() < Date.parse(session.starts_at);

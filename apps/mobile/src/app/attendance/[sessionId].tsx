@@ -56,10 +56,14 @@ function Editor({ session }: { session: SessionDetail }): React.JSX.Element {
   const [topic, setTopic] = useState(session.journal_topic ?? "");
   const [activities, setActivities] = useState(session.journal_activities ?? "");
   const [reason, setReason] = useState("");
-  // The lesson's own teacher keeps re-saving in normal mode after the
-  // first save; the API says so in save_mode. Only someone correcting
-  // another teacher's lesson needs correction mode and a reason.
-  const isCorrection = Boolean(session.submitted_at) && session.save_mode !== "normal";
+  // The API says which mode this viewer saves in (save_mode): the lesson's
+  // own teacher keeps re-saving in normal mode after the first save, while
+  // a homeroom teacher or corrector on someone else's lesson -- submitted
+  // or not -- needs correction mode and a reason. Only a response without
+  // save_mode (an older API) falls back to the submitted state.
+  const isCorrection =
+    session.save_mode === "correction" ||
+    (session.save_mode === undefined && Boolean(session.submitted_at));
 
   const visible = session.roster.filter((r) => {
     if (search && !r.name.toLowerCase().includes(search.toLowerCase())) return false;
@@ -97,8 +101,17 @@ function Editor({ session }: { session: SessionDetail }): React.JSX.Element {
 
     setSubmitting(true);
     try {
-      await save.mutateAsync(body);
-      showToast(t("attendance.saved"), "success");
+      const saved = await save.mutateAsync(body);
+      // A leave letter or exit permit keeps its status whatever was sent;
+      // say whose, rather than a plain "saved" the teacher would misread.
+      const kept = overriddenNames(saved.overridden_student_ids, session.roster);
+      if (kept.length > 0) {
+        showToast(t("attendance.saved"), "default", {
+          description: t("attendance.overridden_by_leave").replace("{names}", kept.join(", ")),
+        });
+      } else {
+        showToast(t("attendance.saved"), "success");
+      }
       router.back();
     } catch (error) {
       if (error instanceof ApiError) {
@@ -139,17 +152,24 @@ function Editor({ session }: { session: SessionDetail }): React.JSX.Element {
         contentContainerStyle={{ paddingBottom: 220 }}
         renderItem={({ item, index }) => {
           const current = statuses[item.student_user_id] ?? defaultCode;
+          const lockNote = rowLockNote(item);
           return (
             <View className="gap-2 border-b border-line px-4 py-3 dark:border-line-dark">
               <View className="flex-row items-center gap-2">
                 <Text className="w-6 text-right text-xs text-ink/50">{index + 1}</Text>
                 <Text className="flex-1 text-base text-ink dark:text-ink-dark">{item.name}</Text>
-                {item.blocked ? <Lock size={14} color="#5E625B" /> : null}
+                {lockNote ? <Lock size={14} color="#5E625B" /> : null}
               </View>
-              {item.blocked ? (
-                <Text className="pl-8 text-xs text-ink/60 dark:text-ink-dark/60">
-                  {item.blocked_reason ?? t("attendance.locked")}
-                </Text>
+              {lockNote ? (
+                <View className="gap-1 pl-8">
+                  {item.locked && !item.blocked && item.current_status ? (
+                    <Text className="text-sm font-medium text-ink dark:text-ink-dark">
+                      {session.statuses.find((s) => s.code === item.current_status)?.label ??
+                        item.current_status}
+                    </Text>
+                  ) : null}
+                  <Text className="text-xs text-ink/60 dark:text-ink-dark/60">{lockNote}</Text>
+                </View>
               ) : (
                 <View className="flex-row pl-8" accessibilityRole="radiogroup">
                   {session.statuses.map((s) => {
@@ -228,4 +248,32 @@ function Editor({ session }: { session: SessionDetail }): React.JSX.Element {
       </View>
     </View>
   );
+}
+
+type RosterItem = SessionDetail["roster"][number];
+
+/**
+ * Why a roster row cannot be changed, or null when it can: a late arrival
+ * still under review (blocked) is left out of the save, and a leave letter
+ * or exit permit (locked) decides the day's status whatever is sent.
+ */
+function rowLockNote(item: RosterItem): string | null {
+  if (item.blocked) {
+    return item.blocked_reason === "late_arrival_in_progress"
+      ? t("attendance.blocked_late_arrival")
+      : t("attendance.locked");
+  }
+  if (item.locked) {
+    if (item.source === "leave") return t("attendance.locked_leave");
+    if (item.source === "permit") return t("attendance.locked_permit");
+    return t("attendance.locked");
+  }
+  return null;
+}
+
+/** The names of the students whose requested status a save replaced. */
+function overriddenNames(ids: string[] | undefined, roster: RosterItem[]): string[] {
+  if (!ids || ids.length === 0) return [];
+  const wanted = new Set(ids);
+  return roster.filter((r) => wanted.has(r.student_user_id)).map((r) => r.name);
 }
