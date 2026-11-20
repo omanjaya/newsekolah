@@ -120,6 +120,8 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrTPExportCodeExists:   httpx.ErrTPExportCodeExists,
 	domain.ErrTPKindNotEligible:    httpx.ErrTPKindNotEligible,
 	domain.ErrTPMappingNotFound:    httpx.ErrTPMappingNotFound,
+	domain.ErrTPRangeInvalid:       httpx.ErrTPRangeInvalid,
+	domain.ErrTPRangesOverlap:      httpx.ErrTPRangesOverlap,
 	domain.ErrModuleDisabled:       httpx.ErrGradingModuleDisabled,
 	domain.ErrInvalidScope:         httpx.ErrGradebookInvalidScope,
 	reportdoc.ErrUnknownColumn:     httpx.ErrGradebookUnknownColumn,

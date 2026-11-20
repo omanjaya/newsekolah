@@ -204,8 +204,19 @@ func TestValidateTPMapping(t *testing.T) {
 	scale := domain.DefaultScale()
 	require.NoError(t, domain.ValidateTPMapping(scale, domain.TPMapping{ExportCode: "TP1", RMin: 0, RMax: 74, TMin: 75, TMax: 100}))
 	require.ErrorIs(t, domain.ValidateTPMapping(scale, domain.TPMapping{ExportCode: "", RMin: 0, RMax: 74, TMin: 75, TMax: 100}), domain.ErrInvalidInput)
-	require.ErrorIs(t, domain.ValidateTPMapping(scale, domain.TPMapping{ExportCode: "TP1", RMin: 80, RMax: 74, TMin: 75, TMax: 100}), domain.ErrInvalidInput)
-	require.ErrorIs(t, domain.ValidateTPMapping(scale, domain.TPMapping{ExportCode: "TP1", RMin: 0, RMax: 74, TMin: 75, TMax: 200}), domain.ErrInvalidInput)
+	require.ErrorIs(t, domain.ValidateTPMapping(scale, domain.TPMapping{ExportCode: "TP1", RMin: 80, RMax: 74, TMin: 75, TMax: 100}), domain.ErrTPRangeInvalid)
+	require.ErrorIs(t, domain.ValidateTPMapping(scale, domain.TPMapping{ExportCode: "TP1", RMin: 0, RMax: 74, TMin: 75, TMax: 200}), domain.ErrTPRangeInvalid)
+	require.NoError(t, domain.ValidateTPMapping(scale, domain.TPMapping{ExportCode: "TP3", RMin: 0, RMax: 59.5, TMin: 60, TMax: 100}), "decimal bounds are fine")
+	require.NoError(t, domain.ValidateTPMapping(scale, domain.TPMapping{ExportCode: "TP3", RMin: 60, RMax: 100, TMin: 0, TMax: 59}), "T may sit below R")
+}
+
+// A score must never be Remedial and Tuntas at once: the two ranges may
+// not share a single point.
+func TestValidateTPMappingRefusesOverlappingRanges(t *testing.T) {
+	scale := domain.DefaultScale()
+	require.ErrorIs(t, domain.ValidateTPMapping(scale, domain.TPMapping{ExportCode: "TP1", RMin: 0, RMax: 80, TMin: 75, TMax: 100}), domain.ErrTPRangesOverlap)
+	require.ErrorIs(t, domain.ValidateTPMapping(scale, domain.TPMapping{ExportCode: "TP1", RMin: 0, RMax: 74, TMin: 74, TMax: 100}), domain.ErrTPRangesOverlap, "sharing 74")
+	require.ErrorIs(t, domain.ValidateTPMapping(scale, domain.TPMapping{ExportCode: "TP1", RMin: 0, RMax: 100, TMin: 40, TMax: 60}), domain.ErrTPRangesOverlap, "T inside R")
 }
 
 func TestValidateStar(t *testing.T) {

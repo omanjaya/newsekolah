@@ -279,7 +279,12 @@
     "save": "Save",
     "saved": "Mapping saved.",
     "remove": "Remove",
-    "deleted": "Mapping removed."
+    "deleted": "Mapping removed.",
+    "problem": {
+      "incomplete": "Fill in all four R and T bounds.",
+      "invalid": "Each range must lie between {min} and {max}, with its lower bound no higher than its upper bound.",
+      "overlap": "The R and T ranges overlap. A score cannot fall in both, e.g. R 0-74 and T 75-100."
+    }
   },
   "noAssignmentsTitle": "No classes assigned to you yet",
   "noAssignmentsBody": "The gradebook opens once an admin assigns the classes and subjects you teach under Teaching assignments.",

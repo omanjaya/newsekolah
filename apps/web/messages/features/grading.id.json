@@ -279,7 +279,12 @@
     "save": "Simpan",
     "saved": "Pemetaan tersimpan.",
     "remove": "Hapus",
-    "deleted": "Pemetaan dihapus."
+    "deleted": "Pemetaan dihapus.",
+    "problem": {
+      "incomplete": "Isi keempat batas rentang R dan T.",
+      "invalid": "Setiap rentang harus berada di antara {min} dan {max}, dengan batas bawah tidak lebih besar dari batas atas.",
+      "overlap": "Rentang R dan T tumpang tindih. Satu nilai tidak boleh masuk ke keduanya, mis. R 0-74 dan T 75-100."
+    }
   },
   "noAssignmentsTitle": "Belum ada kelas yang Anda ajar",
   "noAssignmentsBody": "Lembar nilai terbuka setelah admin menetapkan kelas dan mapel yang Anda ajar di Penugasan mengajar.",

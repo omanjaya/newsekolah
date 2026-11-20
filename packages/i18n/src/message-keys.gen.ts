@@ -319,6 +319,8 @@ export type MessageKey =
   | "errors.TP_EXPORT_CODE_EXISTS"
   | "errors.TP_KIND_NOT_ELIGIBLE"
   | "errors.TP_MAPPING_NOT_FOUND"
+  | "errors.TP_RANGES_OVERLAP"
+  | "errors.TP_RANGE_INVALID"
   | "errors.UNKNOWN"
   | "errors.UNKNOWN_PERMISSION"
   | "errors.UPLOAD_FILE_TOO_LARGE"
@@ -765,6 +767,8 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.TP_EXPORT_CODE_EXISTS",
   "errors.TP_KIND_NOT_ELIGIBLE",
   "errors.TP_MAPPING_NOT_FOUND",
+  "errors.TP_RANGES_OVERLAP",
+  "errors.TP_RANGE_INVALID",
   "errors.UNKNOWN",
   "errors.UNKNOWN_PERMISSION",
   "errors.UPLOAD_FILE_TOO_LARGE",

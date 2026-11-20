@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next-intl", () => ({
@@ -11,10 +11,11 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
 
 const gradebookQuery = vi.hoisted(() => vi.fn());
 const mappingsQuery = vi.hoisted(() => vi.fn());
+const saveMutate = vi.hoisted(() => vi.fn());
 vi.mock("../api", () => ({
   useGradebookQuery: gradebookQuery,
   useTPMappingsQuery: mappingsQuery,
-  useSaveTPMappingMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useSaveTPMappingMutation: () => ({ mutate: saveMutate, isPending: false }),
   useDeleteTPMappingMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
@@ -39,7 +40,7 @@ function load() {
     isLoading: false,
     data: {
       term_id: "term-2",
-      scale: {},
+      scale: { min: 0, max: 100, round_decimal: 2 },
       components: [
         { id: "c1", code: "TP1", kind: "formative" },
         { id: "c2", code: "UAS", kind: "summative" },
@@ -68,6 +69,7 @@ afterEach(() => {
   cleanup();
   gradebookQuery.mockReset();
   mappingsQuery.mockReset();
+  saveMutate.mockReset();
   layout.width = 960;
 });
 
@@ -169,5 +171,37 @@ describe("TPMappingEditor", () => {
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
     expect(screen.getByRole("group", { name: "columns.tRange" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "save" })).toBeInTheDocument();
+  });
+
+  it("refuses R and T ranges that share a score, and says so", () => {
+    load();
+    render(<TPMappingEditor classId="class-1" subjectId="subject-1" />);
+
+    const rMax = screen.getByLabelText("columns.rMax");
+    fireEvent.change(rMax, { target: { value: "80" } });
+    fireEvent.blur(rMax);
+    fireEvent.click(screen.getByRole("button", { name: "save" }));
+
+    expect(saveMutate).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("problem.overlap");
+    expect(rMax).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it.each(["59,5", "59.5"])("saves a decimal bound typed as %s as 59.5", (typed) => {
+    load();
+    render(<TPMappingEditor classId="class-1" subjectId="subject-1" />);
+
+    const rMax = screen.getByLabelText("columns.rMax");
+    fireEvent.focus(rMax);
+    fireEvent.change(rMax, { target: { value: typed } });
+    fireEvent.blur(rMax);
+    const tMin = screen.getByLabelText("columns.tMin");
+    fireEvent.focus(tMin);
+    fireEvent.change(tMin, { target: { value: "60" } });
+    fireEvent.blur(tMin);
+    fireEvent.click(screen.getByRole("button", { name: "save" }));
+
+    expect(saveMutate).toHaveBeenCalledTimes(1);
+    expect(saveMutate.mock.calls[0]?.[0]).toMatchObject({ r_max: 59.5, t_min: 60 });
   });
 });

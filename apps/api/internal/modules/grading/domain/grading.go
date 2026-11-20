@@ -30,6 +30,8 @@ var (
 	ErrTPExportCodeExists   = errors.New("TP export code already used in this class and subject")
 	ErrTPKindNotEligible    = errors.New("component kind is not eligible for TP mapping")
 	ErrTPMappingNotFound    = errors.New("TP mapping not found")
+	ErrTPRangeInvalid       = errors.New("TP range is reversed or outside the grading scale")
+	ErrTPRangesOverlap      = errors.New("TP R and T ranges overlap")
 	ErrModuleDisabled       = errors.New("grading module is disabled for this tenant")
 
 	// ErrInvalidScope is the gradebook export's scope selection error:
@@ -338,16 +340,22 @@ type TPMapping struct {
 // ValidateTPMapping enforces the old app's mapping rules
 // (grading_extended.go:221): the export code is required (the caller
 // normalizes it to upper case first), and both the R and T ranges must be
-// valid sub-ranges of the tenant's scale.
+// valid sub-ranges of the tenant's scale. The two ranges must also be
+// disjoint: a score in both would be Remedial and Tuntas at once (the
+// export reads only T, so the stored R range would silently lie). Each
+// rule has its own error so the teacher is told which one failed.
 func ValidateTPMapping(scale Scale, m TPMapping) error {
 	if m.ExportCode == "" || len(m.ExportCode) > 32 {
 		return ErrInvalidInput
 	}
 	if m.RMin < scale.Min || m.RMax > scale.Max || m.RMin > m.RMax {
-		return ErrInvalidInput
+		return ErrTPRangeInvalid
 	}
 	if m.TMin < scale.Min || m.TMax > scale.Max || m.TMin > m.TMax {
-		return ErrInvalidInput
+		return ErrTPRangeInvalid
+	}
+	if m.RMin <= m.TMax && m.TMin <= m.RMax {
+		return ErrTPRangesOverlap
 	}
 	return nil
 }

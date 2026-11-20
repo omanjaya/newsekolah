@@ -17,6 +17,8 @@ var (
 	ErrTPExportCodeExists     = NewError(http.StatusConflict, "TP_EXPORT_CODE_EXISTS")
 	ErrTPKindNotEligible      = NewError(http.StatusBadRequest, "TP_KIND_NOT_ELIGIBLE")
 	ErrTPMappingNotFound      = NewError(http.StatusNotFound, "TP_MAPPING_NOT_FOUND")
+	ErrTPRangeInvalid         = NewError(http.StatusBadRequest, "TP_RANGE_INVALID")
+	ErrTPRangesOverlap        = NewError(http.StatusBadRequest, "TP_RANGES_OVERLAP")
 	ErrGradingModuleDisabled  = NewError(http.StatusNotFound, "GRADING_MODULE_DISABLED")
 	ErrGradebookInvalidScope  = NewError(http.StatusBadRequest, "GRADEBOOK_INVALID_SCOPE")
 	ErrGradebookUnknownColumn = NewError(http.StatusBadRequest, "GRADEBOOK_REPORT_UNKNOWN_COLUMN")

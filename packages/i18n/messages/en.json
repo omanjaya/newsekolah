@@ -353,6 +353,8 @@
     "GRADE_RANGE_OVERLAP": "These ranges overlap; adjust them so no score falls in two ranges",
     "TP_EXPORT_CODE_EXISTS": "This export code is already used by another component in this class, subject and term",
     "TP_KIND_NOT_ELIGIBLE": "Only formative components (or the tenant's configured TP kind) can be mapped",
+    "TP_RANGE_INVALID": "The R or T range is reversed or outside the school grading scale",
+    "TP_RANGES_OVERLAP": "The R and T ranges overlap; a score cannot fall in both",
     "PRIMARY_ROLE_NOT_SYSTEM": "The primary role must be a system role, not a custom one",
     "ADDITIONAL_ROLE_MUST_BE_CUSTOM": "Additional roles must be custom roles, not system roles",
     "LEAVE_PERMISSION_REQUIRES_DUTY": "Reviewing leave requests and issuing leave letters cannot be granted directly to the teacher role, that access comes from a duty assignment",
