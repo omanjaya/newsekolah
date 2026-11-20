@@ -56,8 +56,9 @@ type SubstitutionResponded struct {
 	Accepted         bool
 }
 
-// EventName matches platform/events.SubstitutionResponded; see
-// SubstitutionRequested.EventName's comment.
+// EventName deliberately differs from platform/events.SubstitutionResponded
+// ("substitution.responded"), the Envelope name notifications consumes; see
+// SubstitutionRequested.EventName's comment for why the two must not match.
 func (SubstitutionResponded) EventName() string { return "scheduling.substitution.responded" }
 
 // RequestSubstitution validates and creates a substitution request. Only
