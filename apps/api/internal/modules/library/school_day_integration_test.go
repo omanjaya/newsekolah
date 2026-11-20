@@ -70,18 +70,20 @@ func TestMemberRegistrationUsesTheSchoolsDay(t *testing.T) {
 }
 
 // TestLateAndOverdueCountTheSchoolsDay proves a return or an overdue check
-// before 08:00 WITA reads the school's day: a book due on 20 Nov returned
-// at 07:00 WITA on 21 Nov (still 20 Nov in UTC) is a late return, and at
-// that moment an unreturned one due on 20 Nov is overdue.
+// before 08:00 WITA reads the school's day: a book due on Thu 19 Nov
+// returned at 07:00 WITA on Fri 20 Nov (still 19 Nov in UTC) is a late
+// return, and at that moment an unreturned one due on 19 Nov is overdue by
+// one working day. (A Friday due date would put the dawn on a Saturday,
+// which the default policy closes, so no working day would be late yet.)
 func TestLateAndOverdueCountTheSchoolsDay(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx := context.Background()
 	w := witaWorld(t, ctx, pg, "late")
-	svc := service.New(pg.AppPool, repository.New(pg.AppPool), nil, nil, clock.Frozen{At: time.Date(2026, 11, 20, 23, 0, 0, 0, time.UTC)})
+	svc := service.New(pg.AppPool, repository.New(pg.AppPool), nil, nil, clock.Frozen{At: time.Date(2026, 11, 19, 23, 0, 0, 0, time.UTC)})
 
 	_, err := pg.AdminPool.Exec(ctx, `insert into library_loans
 		(tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, status)
-		values ($1, $2, $3, $4, $4, '2026-11-13T02:00:00Z', '2026-11-20', '2026-11-20T23:00:00Z', 'returned')`,
+		values ($1, $2, $3, $4, $4, '2026-11-12T02:00:00Z', '2026-11-19', '2026-11-19T23:00:00Z', 'returned')`,
 		w.tenantID, w.copyID, w.titleID, w.memberUserID)
 	require.NoError(t, err)
 
@@ -94,16 +96,25 @@ func TestLateAndOverdueCountTheSchoolsDay(t *testing.T) {
 		values ($1, $2, $3, 'on_loan') returning id`, w.tenantID, w.titleID, "OVD-"+uuid.NewString()[:8]).Scan(&copy2))
 	_, err = pg.AdminPool.Exec(ctx, `insert into library_loans
 		(tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, status)
-		values ($1, $2, $3, $4, $4, '2026-11-13T02:00:00Z', '2026-11-20', 'active')`,
+		values ($1, $2, $3, $4, $4, '2026-11-12T02:00:00Z', '2026-11-19', 'active')`,
 		w.tenantID, copy2, w.titleID, w.memberUserID)
+	require.NoError(t, err)
+
+	// The report shows the fine Return would really charge, and the
+	// default policy keeps currency fines off (a late return then suspends
+	// or warns), so turn them on to see the day counted in the fine.
+	policy, err := svc.Policy(ctx, w.tenantID)
+	require.NoError(t, err)
+	policy.FineCurrencyEnabled = true
+	_, err = svc.UpdatePolicy(ctx, w.tenantID, w.memberUserID, policy)
 	require.NoError(t, err)
 
 	overdue, err := svc.OverdueMembers(ctx, w.tenantID)
 	require.NoError(t, err)
-	require.Len(t, overdue, 1, "at 07:00 WITA on 21 Nov a loan due on 20 Nov is overdue")
-	policy, err := svc.Policy(ctx, w.tenantID)
-	require.NoError(t, err)
-	require.Equal(t, policy.FinePerDay, overdue[0].TotalFine, "one day late")
+	require.Len(t, overdue, 1, "at 07:00 WITA on 20 Nov a loan due on 19 Nov is overdue")
+	// The member's type charges 1000 per working day late
+	// (seedSimulatedLibraryWorld), the same fine Return would charge now.
+	require.Equal(t, 1000, overdue[0].TotalFine, "one working day late")
 }
 
 // TestReturnAtDawnAfterTheDueDateIsLate proves Return itself reads the
