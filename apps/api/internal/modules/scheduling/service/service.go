@@ -104,6 +104,8 @@ type Repository interface {
 
 	CreateJournal(ctx context.Context, j domain.Journal) (domain.Journal, error)
 	UpdateJournal(ctx context.Context, j domain.Journal) (domain.Journal, error)
+	UpsertJournal(ctx context.Context, j domain.Journal) (domain.Journal, error)
+	GetLatestJournalForClassSubjectBeforeDate(ctx context.Context, tenantID, academicYearID, classID, subjectID uuid.UUID, before time.Time) (domain.Journal, bool, error)
 	GetJournalByID(ctx context.Context, tenantID, id uuid.UUID) (domain.Journal, error)
 	GetJournalByUnique(ctx context.Context, tenantID, academicYearID, teacherID, classID, subjectID uuid.UUID, lessonDate time.Time) (domain.Journal, bool, error)
 	ListJournalsFiltered(ctx context.Context, tenantID, academicYearID uuid.UUID, f JournalFilter) ([]domain.Journal, error)

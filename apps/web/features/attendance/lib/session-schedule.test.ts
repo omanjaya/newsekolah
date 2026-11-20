@@ -19,8 +19,12 @@ describe("deriveFillStatus", () => {
     expect(deriveFillStatus(undefined, "2026-09-24", "2026-09-24", true)).toBe("handedOver");
   });
 
-  it("is upcoming for an unfilled lesson on a date that has not arrived", () => {
+  it("is upcoming for a lesson on a later day, which cannot be filled yet", () => {
     expect(deriveFillStatus(undefined, "2026-09-25", "2026-09-24")).toBe("upcoming");
+  });
+
+  it("stays upcoming for a later-day lesson that was already submitted", () => {
+    expect(deriveFillStatus("2026-09-24T02:09:48Z", "2026-09-25", "2026-09-24")).toBe("upcoming");
   });
 });
 

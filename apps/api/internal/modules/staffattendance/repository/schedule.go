@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -49,6 +50,38 @@ func (r *Repository) ListRosterEmployees(ctx context.Context, tenantID uuid.UUID
 		out[i] = service.EmployeeRef{ID: row.ID, Name: row.Name}
 	}
 	return out, nil
+}
+
+func (r *Repository) ListRecapEmployees(ctx context.Context, tenantID uuid.UUID, from, to time.Time) ([]service.EmployeeRef, error) {
+	rows, err := r.queries(ctx).ListStaffAttendanceRecapEmployees(ctx, db.ListStaffAttendanceRecapEmployeesParams{
+		TenantID: tenantID, FromDate: pdatabase.Date(from), ToDate: pdatabase.Date(to),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.EmployeeRef, len(rows))
+	for i, row := range rows {
+		out[i] = service.EmployeeRef{ID: row.ID, Name: row.Name}
+	}
+	return out, nil
+}
+
+func (r *Repository) ListCandidateEmployees(ctx context.Context, tenantID uuid.UUID) ([]service.CandidateRef, error) {
+	rows, err := r.queries(ctx).ListStaffAttendanceCandidates(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.CandidateRef, len(rows))
+	for i, row := range rows {
+		out[i] = service.CandidateRef{EmployeeRef: service.EmployeeRef{ID: row.ID, Name: row.Name}, HasSchedule: row.HasSchedule}
+	}
+	return out, nil
+}
+
+func (r *Repository) IsCandidateEmployee(ctx context.Context, tenantID, employeeUserID uuid.UUID) (bool, error) {
+	return r.queries(ctx).IsStaffAttendanceCandidate(ctx, db.IsStaffAttendanceCandidateParams{
+		TenantID: tenantID, ID: employeeUserID,
+	})
 }
 
 func (r *Repository) GetEmployeeName(ctx context.Context, tenantID, employeeUserID uuid.UUID) (string, error) {

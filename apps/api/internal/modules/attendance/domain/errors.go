@@ -13,9 +13,11 @@ var (
 	ErrSaveWindowClosed       = errors.New("the same-day save window for this session has closed")
 	ErrCorrectionNotAllowed   = errors.New("user is not permitted to correct attendance for this class")
 	ErrCorrectionWindowClosed = errors.New("the correction window for this session has closed")
-	// ErrSessionNotStarted refuses opening or saving a session dated after
-	// the school's today: attendance is recorded on the day, not ahead.
-	ErrSessionNotStarted = errors.New("the session's date has not arrived yet")
+	// ErrSessionNotStarted refuses attendance for a lesson that has not
+	// begun yet (a later date, or a later period today): nothing can be
+	// observed about it, and a status recorded ahead of time would flow
+	// into homeroom and the reports as real.
+	ErrSessionNotStarted = errors.New("the lesson has not started yet")
 	// ErrNotSchoolDay refuses a session on a date the academic calendar
 	// marks as a holiday, no-school day or semester break for its class.
 	ErrNotSchoolDay = errors.New("the session's date is not a school day for its class")

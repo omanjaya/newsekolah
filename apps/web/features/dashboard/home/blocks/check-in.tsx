@@ -31,6 +31,7 @@ import {
   useScanStaffAttendanceMutation,
   useStaffAttendanceMyHistoryQuery,
 } from "../../../staff-attendance/api";
+import { DepartureConfirmDialog } from "../../../staff-attendance/components/departure-confirm-dialog";
 import { shiftDateISO } from "../../../staff-attendance/time";
 import { EMPTY_BLOCK, type Me, type PersonaBlock } from "../types";
 
@@ -113,6 +114,7 @@ function CheckInCard({
   const apiErrorMessage = useApiErrorMessage();
   const [scanned, setScanned] = useState<AttendanceRecord | null>(null);
   const [completeDate, setCompleteDate] = useState<string | null>(null);
+  const [confirmingDeparture, setConfirmingDeparture] = useState(false);
 
   const current = (scanned?.date === today ? scanned : null) ?? record;
   const hasArrival = Boolean(current?.arrival_at);
@@ -124,10 +126,12 @@ function CheckInCard({
   function handleScan() {
     scan.mutate(undefined, {
       onSuccess: (saved) => {
+        setConfirmingDeparture(false);
         setScanned(saved);
         toast.success(saved.departure_at ? tSelf("departureSaved") : tSelf("arrivalSaved"));
       },
       onError: (error) => {
+        setConfirmingDeparture(false);
         const code = error instanceof ApiError ? error.code : "UNKNOWN";
         if (code === "STAFF_ATTENDANCE_ALREADY_SCANNED") setCompleteDate(today);
         toast.error(apiErrorMessage(code));
@@ -178,11 +182,21 @@ function CheckInCard({
                 className="w-full"
                 icon={<LogOut />}
                 loading={scan.isPending}
-                onClick={handleScan}
+                onClick={() => {
+                  setConfirmingDeparture(true);
+                }}
               >
                 {t("checkOut")}
               </Button>
             )}
+            <DepartureConfirmDialog
+              open={confirmingDeparture}
+              onOpenChange={setConfirmingDeparture}
+              arrivalAt={current?.arrival_at}
+              timeZone={timeZone}
+              confirming={scan.isPending}
+              onConfirm={handleScan}
+            />
           </>
         ) : (
           // Before the first tap there are no times to show: one row with

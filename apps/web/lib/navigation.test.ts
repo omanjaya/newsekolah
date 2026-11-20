@@ -315,6 +315,8 @@ describe("navigation registry: per-role audiences", () => {
       "supervision-my-report",
       "settings-audit",
       "reports",
+      // The daily and monthly attendance recaps: view_reports opens them.
+      "attendance-reports",
     ]) {
       expect(keys).toContain(key);
     }
@@ -322,11 +324,8 @@ describe("navigation registry: per-role audiences", () => {
     // Never an operator/administrator: no settings, master data,
     // grade-editing (only the read-only "grading" entry itself, asserted
     // above), counseling, user management, workflow or permits-actor
-    // screen. Attendance reports open with manage_attendance (the
-    // principal reads attendance on /reports), and the late-arrival
-    // check-in is a student's screen.
+    // screen. The late-arrival check-in is a student's screen.
     for (const key of [
-      "attendance-reports",
       "late-arrivals",
       "settings-roles",
       "school-users",

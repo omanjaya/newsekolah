@@ -26,7 +26,8 @@
   "employeePicker": {
     "placeholder": "Pilih pegawai",
     "search": "Cari nama pegawai",
-    "empty": "Tidak ada pegawai yang cocok"
+    "empty": "Tidak ada pegawai yang cocok",
+    "noSchedule": "Belum ada jadwal kerja"
   },
   "today": {
     "dateLabel": "Tanggal",
@@ -207,6 +208,8 @@
     "unscheduledHint": "Jadwal kerja Anda belum diatur. Hubungi admin untuk mengaturnya.",
     "noRecord": "Belum ada catatan",
     "unscheduledHintManage": "Jadwal kerja Anda belum diatur.",
-    "openSchedule": "Atur jadwal kerja"
+    "openSchedule": "Atur jadwal kerja",
+    "confirmDepartureTitle": "Catat kepulangan sekarang?",
+    "confirmDepartureBody": "Kedatangan Anda tercatat pukul {time}. Setelah kepulangan dicatat, hanya admin yang bisa mengoreksinya."
   }
 }

@@ -72,6 +72,14 @@ func toAPIEmployees(refs []service.EmployeeRef) []api.StaffAttendanceEmployee {
 	return out
 }
 
+func toAPIEmployeeOptions(refs []service.CandidateRef) []api.StaffAttendanceEmployeeOption {
+	out := make([]api.StaffAttendanceEmployeeOption, len(refs))
+	for i, r := range refs {
+		out[i] = api.StaffAttendanceEmployeeOption{Id: r.ID, Name: r.Name, HasSchedule: r.HasSchedule}
+	}
+	return out
+}
+
 func toAPIMonthlyRecap(recap service.MonthlyRecap) api.StaffAttendanceMonthlyRecap {
 	totals := make(map[string]int, len(recap.StatusTotals))
 	for code, n := range recap.StatusTotals {

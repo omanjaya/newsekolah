@@ -10,4 +10,6 @@ var (
 	ErrNoActiveAcademicYear     = errors.New("tenant has no active academic year")
 	ErrModuleDisabled           = errors.New("staff attendance module is disabled for this tenant")
 	ErrAlreadyScannedBothWays   = errors.New("employee has already scanned both arrival and departure for this date")
+	ErrDepartureTooSoon         = errors.New("departure scanned too soon after arrival")
+	ErrEmployeeNotEligible      = errors.New("only an active teacher or staff member can have a work schedule")
 )

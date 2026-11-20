@@ -36,6 +36,8 @@ import {
 } from "../api";
 import { shiftDateISO } from "../time";
 
+import { DepartureConfirmDialog } from "./departure-confirm-dialog";
+
 const STATUS_TOKEN: Partial<Record<AttendanceRecord["status_code"], StatusName>> = {
   present: "present",
   late: "late",
@@ -79,6 +81,7 @@ export function SelfCheckInView(): ReactElement {
 
   const [scanned, setScanned] = useState<AttendanceRecord | null>(null);
   const [completeDate, setCompleteDate] = useState<string | null>(null);
+  const [confirmingDeparture, setConfirmingDeparture] = useState(false);
 
   const weekDays = useMemo(() => [...(week.data?.data ?? [])].reverse(), [week.data]);
   const record =
@@ -115,10 +118,12 @@ export function SelfCheckInView(): ReactElement {
   function handleScan() {
     scan.mutate(undefined, {
       onSuccess: (saved) => {
+        setConfirmingDeparture(false);
         setScanned(saved);
         toast.success(saved.departure_at ? t("departureSaved") : t("arrivalSaved"));
       },
       onError: (error) => {
+        setConfirmingDeparture(false);
         const code = error instanceof ApiError ? error.code : "UNKNOWN";
         if (code === "STAFF_ATTENDANCE_ALREADY_SCANNED") setCompleteDate(today);
         toast.error(apiErrorMessage(code));
@@ -203,11 +208,24 @@ export function SelfCheckInView(): ReactElement {
             variant={holiday ? "secondary" : "primary"}
             icon={hasArrival ? <LogOut /> : <LogIn />}
             loading={scan.isPending}
-            onClick={handleScan}
+            onClick={() => {
+              // Departure is asked for first: the same button just recorded
+              // arrival, and only an admin can undo a recorded departure.
+              if (hasArrival) setConfirmingDeparture(true);
+              else handleScan();
+            }}
           >
             {hasArrival ? t("recordDeparture") : t("recordArrival")}
           </Button>
         )}
+        <DepartureConfirmDialog
+          open={confirmingDeparture}
+          onOpenChange={setConfirmingDeparture}
+          arrivalAt={record?.arrival_at}
+          timeZone={timeZone}
+          confirming={scan.isPending}
+          onConfirm={handleScan}
+        />
 
         <p className="text-body-sm text-fg-muted">{t("hint")}</p>
       </Card>

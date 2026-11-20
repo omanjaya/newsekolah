@@ -65,6 +65,11 @@ paths:
               schema: { $ref: "#/components/schemas/AttendanceSessionDetail" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: The date is after today, so the lesson has not happened yet (ATTENDANCE_SESSION_NOT_STARTED)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
   /v1/attendance/sessions/{sessionId}:
     parameters:
       - name: sessionId
@@ -111,7 +116,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409":
-          description: The save or correction window for this session has closed
+          description: >
+            The save or correction window for this session has closed, or the
+            lesson has not started yet (ATTENDANCE_SESSION_NOT_STARTED)
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
@@ -447,6 +454,10 @@ components:
             type: integer,
             description: "How many of the roster already have an entry recorded for this session.",
           }
+        starts_at:
+          type: string
+          format: date-time
+          description: When the session's first period begins on its date. Attendance cannot be saved before it.
     AttendanceRosterItem:
       type: object
       required: [student_user_id, name]
@@ -464,6 +475,11 @@ components:
         notes: { type: string }
         blocked: { type: boolean }
         blocked_reason: { type: string }
+        locked:
+          type: boolean
+          description:
+            An issued leave letter or exit permit decides this student's status for the day (source says which); a
+            save keeps that status whatever is sent.
     AttendanceSessionDetail:
       allOf:
         - $ref: "#/components/schemas/AttendanceSessionSummary"
@@ -487,6 +503,18 @@ components:
                 Students silently skipped by the last save because Blocker reported an unresolved workflow for them
                 (e.g. a pending late-arrival review); neither saved nor rejected.
               items: { type: string, format: uuid }
+            overridden_student_ids:
+              type: array
+              description:
+                Students whose requested status the last save replaced with the one their leave letter or exit permit
+                sets.
+              items: { type: string, format: uuid }
+            save_mode:
+              type: string
+              enum: [normal, correction]
+              description:
+                The mode this viewer saves the session in. normal for its own teacher or accepted substitute, who may
+                keep re-saving until the correction deadline; correction (with a reason) for anyone else.
     SaveAttendanceEntriesRequest:
       type: object
       required: [entries]

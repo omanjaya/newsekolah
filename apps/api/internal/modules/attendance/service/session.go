@@ -152,10 +152,15 @@ func (s *Service) ListDay(ctx context.Context, tenantID, teacherUserID uuid.UUID
 			if err != nil {
 				return err
 			}
+			startsAt, err := s.periodStartAt(ctx, tenantID, session)
+			if err != nil {
+				return err
+			}
 
 			day.Sessions = append(day.Sessions, SessionSummary{
 				Session: session, IsSubstitute: occ.isSubstitute,
-				RosterCount: len(students), EnteredCount: len(entries), HandedOverTo: handedOverTo,
+				RosterCount: len(students), EnteredCount: countEnrolledEntries(entries, students),
+				HandedOverTo: handedOverTo, StartsAt: startsAt,
 			})
 		}
 		return nil
@@ -227,6 +232,13 @@ func (s *Service) periodIsRunning(ctx context.Context, tenantID uuid.UUID, start
 func (s *Service) OpenSession(ctx context.Context, tenantID uuid.UUID, actor Actor, scheduleID uuid.UUID, date time.Time, mode domain.SaveMode) (SessionDetail, error) {
 	var detail SessionDetail
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		// A lesson on a later day has not happened yet: opening it would
+		// create a placeholder session nothing can be recorded in.
+		today := clock.Now(ctx, s.clock).In(s.tenantLocation(ctx, tenantID)).Format(time.DateOnly)
+		if date.Format(time.DateOnly) > today {
+			return domain.ErrSessionNotStarted
+		}
+
 		schedule, err := s.schedules.GetSchedule(ctx, tenantID, scheduleID)
 		if err != nil {
 			return err
@@ -270,9 +282,28 @@ func (s *Service) OpenSession(ctx context.Context, tenantID uuid.UUID, actor Act
 			return err
 		}
 		detail, err = s.buildSessionDetail(ctx, tenantID, session, policy)
+		if err != nil {
+			return err
+		}
+		detail.SaveMode, err = s.viewerSaveMode(ctx, tenantID, actor, session)
 		return err
 	})
 	return detail, err
+}
+
+// viewerSaveMode is the mode actor saves session in: normal for whoever
+// passes the per-schedule access check (its own teacher, or an accepted
+// substitute for that date), who SaveEntries lets keep re-saving in normal
+// mode until the correction deadline; correction for anyone else.
+func (s *Service) viewerSaveMode(ctx context.Context, tenantID uuid.UUID, actor Actor, session domain.Session) (domain.SaveMode, error) {
+	ok, err := s.access.HasAccess(ctx, tenantID, session.ScheduleID, actor.UserID, session.Date)
+	if err != nil {
+		return "", err
+	}
+	if ok {
+		return domain.SaveModeNormal, nil
+	}
+	return domain.SaveModeCorrection, nil
 }
 
 // GetSessionDetail reads one session's full recording payload. A caller
@@ -286,14 +317,12 @@ func (s *Service) GetSessionDetail(ctx context.Context, tenantID uuid.UUID, acto
 			return err
 		}
 
-		if !actor.CanViewAll {
-			ok, err := s.access.HasAccess(ctx, tenantID, session.ScheduleID, actor.UserID, session.Date)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				return domain.ErrNoAccess
-			}
+		saveMode, err := s.viewerSaveMode(ctx, tenantID, actor, session)
+		if err != nil {
+			return err
+		}
+		if !actor.CanViewAll && saveMode != domain.SaveModeNormal {
+			return domain.ErrNoAccess
 		}
 
 		policy, err := s.loadStatusPolicy(ctx, tenantID)
@@ -301,6 +330,7 @@ func (s *Service) GetSessionDetail(ctx context.Context, tenantID uuid.UUID, acto
 			return err
 		}
 		detail, err = s.buildSessionDetail(ctx, tenantID, session, policy)
+		detail.SaveMode = saveMode
 		return err
 	})
 	return detail, err
@@ -314,22 +344,26 @@ func (s *Service) GetSessionDetail(ctx context.Context, tenantID uuid.UUID, acto
 //
 //nolint:gocyclo // TODO(attendance): split into smaller steps; kept linear for auditability of the rule order
 func (s *Service) buildSessionDetail(ctx context.Context, tenantID uuid.UUID, session domain.Session, policy domain.StatusPolicy) (SessionDetail, error) {
-	priorCount, err := s.repo.CountSessionsBeforeDate(ctx, tenantID, session.ScheduleID, session.Date)
+	// The meeting number counts this class and subject's earlier lessons
+	// that were actually held, whichever weekday's schedule row they came
+	// from; the previous topic is the last journal written for them.
+	priorCount, err := s.repo.CountHeldMeetingsBeforeDate(ctx, tenantID, session.AcademicYearID, session.ClassID, session.SubjectID, session.Date)
 	if err != nil {
 		return SessionDetail{}, err
 	}
 
 	var previousJournalTopic string
-	if prevSession, found, err := s.repo.GetLatestSessionBeforeDate(ctx, tenantID, session.ScheduleID, session.Date); err != nil {
+	if journal, found, err := s.journals.GetLatestJournalBefore(
+		ctx, tenantID, session.AcademicYearID, session.ClassID, session.SubjectID, session.Date,
+	); err != nil {
 		return SessionDetail{}, err
 	} else if found {
-		if journal, jfound, jerr := s.journals.GetJournalForLesson(
-			ctx, tenantID, session.AcademicYearID, session.TeacherUserID, session.ClassID, session.SubjectID, prevSession.Date,
-		); jerr != nil {
-			return SessionDetail{}, jerr
-		} else if jfound {
-			previousJournalTopic = journal.Topic
-		}
+		previousJournalTopic = journal.Topic
+	}
+
+	startsAt, err := s.periodStartAt(ctx, tenantID, session)
+	if err != nil {
+		return SessionDetail{}, err
 	}
 
 	students, err := s.repo.ListActiveEnrollments(ctx, tenantID, session.AcademicYearID, session.ClassID)
@@ -392,6 +426,15 @@ func (s *Service) buildSessionDetail(ctx context.Context, tenantID uuid.UUID, se
 			item.BlockedReason = reason
 		}
 
+		// An issued leave letter or exit permit decides the day's status
+		// whatever is picked here (SaveEntries applies the same Override),
+		// so the row says so up front instead of looking editable.
+		if code, source, ok, err := s.overrider.Override(ctx, tenantID, student.ID, session.Date); err != nil {
+			return SessionDetail{}, err
+		} else if ok {
+			item.CurrentStatus, item.Source, item.Locked = code, source, true
+		}
+
 		roster = append(roster, item)
 	}
 
@@ -408,7 +451,39 @@ func (s *Service) buildSessionDetail(ctx context.Context, tenantID uuid.UUID, se
 		Session: session, IsSubstitute: session.SubstituteUserID.Valid, MeetingNumber: int(priorCount) + 1,
 		PreviousJournalTopic: previousJournalTopic, Statuses: policy.Statuses, Roster: roster,
 		JournalTopic: journalTopic, JournalActivities: journalActivities, JournalReflection: journalReflection,
+		StartsAt: startsAt,
 	}, nil
+}
+
+// countEnrolledEntries counts the entries recorded for students still on
+// the class roster: an entry kept for someone who has since left the
+// class is history, not progress, so "filled" can never exceed the roster
+// or look complete while a current student is still unrecorded.
+func countEnrolledEntries(entries []domain.Entry, students []StudentRef) int {
+	enrolled := make(map[uuid.UUID]struct{}, len(students))
+	for _, st := range students {
+		enrolled[st.ID] = struct{}{}
+	}
+	n := 0
+	for _, e := range entries {
+		if _, ok := enrolled[e.StudentUserID]; ok {
+			n++
+		}
+	}
+	return n
+}
+
+// periodStartAt resolves the wall-clock instant a session's first period
+// starts on its own date, in the tenant's timezone: nothing can be
+// recorded for the lesson before it.
+func (s *Service) periodStartAt(ctx context.Context, tenantID uuid.UUID, session domain.Session) (time.Time, error) {
+	loc := s.tenantLocation(ctx, tenantID)
+	start, err := s.repo.GetPeriodStartTime(ctx, tenantID, session.StartPeriodID)
+	if err != nil {
+		return time.Time{}, err
+	}
+	y, m, d := session.Date.Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, loc).Add(start), nil
 }
 
 // saveWindowGrace is the old system's "end_time:59" tolerance

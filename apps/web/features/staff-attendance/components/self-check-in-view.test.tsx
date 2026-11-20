@@ -1,5 +1,5 @@
 import type * as UiModule from "@newsekolah/ui";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SelfCheckInView } from "./self-check-in-view";
@@ -218,5 +218,38 @@ describe("SelfCheckInView -- the way to the school-wide board", () => {
     render(<SelfCheckInView />);
 
     expect(screen.queryByRole("link", { name: "navLabel" })).not.toBeInTheDocument();
+  });
+});
+
+describe("SelfCheckInView -- departure right after arrival", () => {
+  it("asks before recording departure and sends nothing until confirmed", () => {
+    weekQuery.mockReturnValue({
+      data: {
+        data: [record({ status_code: "present", arrival_at: "2026-09-24T00:06:55Z" })],
+      },
+      isLoading: false,
+      isError: false,
+    });
+    render(<SelfCheckInView />);
+
+    // The second tap lands on the button that just recorded arrival.
+    fireEvent.click(screen.getByRole("button", { name: "recordDeparture" }));
+    expect(scanMutation).not.toHaveBeenCalled();
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent("confirmDepartureTitle");
+    // The body names the recorded arrival time.
+    expect(dialog).toHaveTextContent(/confirmDepartureBody:07[.:]06/);
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "recordDeparture" }));
+    expect(scanMutation).toHaveBeenCalledTimes(1);
+  });
+
+  it("records arrival straight away", () => {
+    weekQuery.mockReturnValue({ data: { data: [] }, isLoading: false, isError: false });
+    render(<SelfCheckInView />);
+
+    fireEvent.click(screen.getByRole("button", { name: "recordArrival" }));
+    expect(scanMutation).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

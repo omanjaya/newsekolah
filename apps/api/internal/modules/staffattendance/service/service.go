@@ -33,6 +33,11 @@ type Repository interface {
 	UpsertScheduleDay(ctx context.Context, tenantID, employeeUserID, actorID uuid.UUID, day domain.ScheduleDay) (domain.ScheduleDay, error)
 	ListScheduleDays(ctx context.Context, tenantID, employeeUserID uuid.UUID) ([]domain.ScheduleDay, error)
 	ListRosterEmployees(ctx context.Context, tenantID uuid.UUID) ([]EmployeeRef, error)
+	ListCandidateEmployees(ctx context.Context, tenantID uuid.UUID) ([]CandidateRef, error)
+	// ListRecapEmployees is the roster plus anyone with a record in
+	// [from, to), ordered by name.
+	ListRecapEmployees(ctx context.Context, tenantID uuid.UUID, from, to time.Time) ([]EmployeeRef, error)
+	IsCandidateEmployee(ctx context.Context, tenantID, employeeUserID uuid.UUID) (bool, error)
 	GetEmployeeName(ctx context.Context, tenantID, employeeUserID uuid.UUID) (string, error)
 
 	// Records.

@@ -50,7 +50,10 @@ func (s *Service) GetMonthlyRecap(ctx context.Context, tenantID, employeeUserID 
 }
 
 // GetAllEmployeesMonthlyRecap is every tracked employee's monthly recap for
-// month, in roster order -- the tenant-wide counterpart to GetMonthlyRecap,
+// month, ordered by name -- the roster plus anyone with a record that month
+// who has no work schedule yet (a check-in, manual entry or import made
+// before the first schedule), the same people the day board shows. It is
+// the tenant-wide counterpart to GetMonthlyRecap,
 // used by the administrative export that covers the whole staff at once
 // rather than one employee at a time.
 func (s *Service) GetAllEmployeesMonthlyRecap(ctx context.Context, tenantID uuid.UUID, month string) ([]MonthlyRecap, error) {
@@ -64,7 +67,7 @@ func (s *Service) GetAllEmployeesMonthlyRecap(ctx context.Context, tenantID uuid
 		if err := s.assertEnabled(ctx, tenantID); err != nil {
 			return err
 		}
-		roster, err := s.repo.ListRosterEmployees(ctx, tenantID)
+		roster, err := s.repo.ListRecapEmployees(ctx, tenantID, from, to)
 		if err != nil {
 			return err
 		}

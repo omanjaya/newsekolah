@@ -51,7 +51,10 @@
     "draftFoundTitle": "Draf tersimpan ditemukan",
     "draftFoundBody": "Draf terakhir disimpan pukul {time}.",
     "draftRestore": "Pulihkan draf",
-    "draftDismiss": "Abaikan"
+    "draftDismiss": "Abaikan",
+    "existsTitle": "Pelajaran ini sudah punya jurnal",
+    "existsBody": "Menyimpan jurnal baru tidak akan menimpanya. Buka jurnal itu untuk mengubahnya.",
+    "openExisting": "Buka jurnal itu"
   },
   "recent": {
     "title": "Perlu diisi",

@@ -29,6 +29,7 @@ func TestSimulatedStaffScanUsesSchoolDayAndTime(t *testing.T) {
 		TenantID: school.ID, Username: "tester", PasswordHash: "x", Name: "Tester", Status: "active", Locale: "id",
 	})
 	require.NoError(t, err)
+	require.NoError(t, q.CreateUserProfile(ctx, db.CreateUserProfileParams{UserID: employee.ID, TenantID: school.ID, Kind: "staff"}))
 	ctx = tenant.WithTenant(ctx, tenant.Tenant{ID: school.ID, Timezone: school.Timezone})
 	mod := Register(Dependencies{Pool: pg.AppPool, Years: stubYears{}, Calendar: stubCalendar{}, Leave: stubLeave{}})
 	_, err = mod.Service.ReplaceWeeklySchedule(ctx, school.ID, employee.ID, employee.ID, []service.ScheduleDayInput{

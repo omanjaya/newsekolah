@@ -12,6 +12,7 @@ import {
   TabsList,
   TabsTrigger,
   cn,
+  useSubmitValidation,
   useToast,
 } from "@newsekolah/ui";
 import { useRouter } from "next/navigation";
@@ -24,7 +25,8 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useUnsavedChangesProtection } from "../../../lib/navigation/use-unsaved-changes-protection";
 import { useSession } from "../../../lib/session/session-provider";
-import { businessNow } from "../../../lib/simulation/clock";
+import { businessNow, useBusinessNow } from "../../../lib/simulation/clock";
+import { todayInZone } from "../../../lib/tenant-date";
 import { type ViolationType, useViolationTypesQuery } from "../../discipline/api";
 import { useClassesQuery, useLookup, useSubjectsQuery } from "../../reference/api";
 import { type SessionDetail, useSaveEntriesMutation } from "../api";
@@ -35,6 +37,7 @@ import {
 } from "../lib/attendance-draft";
 import { studentsToMarkPresent } from "../lib/bulk-actions";
 import { computeJournalChangeCount, computeRosterChanges } from "../lib/change-tracking";
+import { attendanceListHref, overriddenNames } from "../lib/session-save";
 
 import { SessionJournalPanel } from "./session-journal-panel";
 import { SessionRosterHeader } from "./session-roster-header";
@@ -102,7 +105,16 @@ export function SessionEditor({
   const [formError, setFormError] = useState<string | null>(null);
   const [savedSuccessfully, setSavedSuccessfully] = useState(false);
   const [draftOffer, setDraftOffer] = useState<{ savedAt: string } | null>(null);
+  // A save stopped by a half-filled journal shows the journal's field
+  // errors and focuses the first, once the journal tab has mounted it.
+  const {
+    ref: journalRef,
+    attempted: journalAttempted,
+    check: checkJournal,
+  } = useSubmitValidation<HTMLDivElement>();
+  const tValidation = useTranslations("validation");
   const violationTypes = useViolationTypesQuery();
+  const now = useBusinessNow();
   const disciplineOn = useModuleEnabled("discipline");
 
   // Offer to restore an in-progress draft the browser still has from
@@ -118,7 +130,23 @@ export function SessionEditor({
     setDraftOffer(draft ? { savedAt: draft.savedAt } : null);
   }, [draftOwner, session.id]);
 
-  const isCorrection = Boolean(session.submitted_at) || openedInCorrection;
+  // The API says which mode this viewer saves in: the lesson's own teacher
+  // (or accepted substitute) keeps re-saving in normal mode after the
+  // first save; a homeroom teacher or corrector opening someone else's
+  // lesson -- submitted or not -- goes through correction, with a reason.
+  // Only a response without save_mode (an older API) falls back to the
+  // submitted state.
+  const isCorrection =
+    openedInCorrection ||
+    session.save_mode === "correction" ||
+    (session.save_mode === undefined && Boolean(session.submitted_at));
+  // Nothing can be recorded before the lesson starts.
+  const notStartedYet =
+    session.starts_at !== undefined && now.getTime() < Date.parse(session.starts_at);
+  // A journal is optional, but once either required field is filled both are.
+  const journalStarted = topic.trim() !== "" || activities.trim() !== "";
+  const journalComplete = topic.trim() !== "" && activities.trim() !== "";
+
   const presentCodes = useMemo(
     () => new Set(session.statuses.filter((s) => s.counts_as_present).map((s) => s.code)),
     [session.statuses],
@@ -232,12 +260,18 @@ export function SessionEditor({
 
   async function submit() {
     setFormError(null);
+    if (notStartedYet) return;
+    if (!checkJournal(!journalStarted || journalComplete)) {
+      setActiveTab("journal");
+      setFormError(t("journalIncomplete"));
+      return;
+    }
     if (isCorrection && reason.trim() === "") {
       setFormError(t("reasonRequired"));
       return;
     }
     try {
-      await save.mutateAsync({
+      const saved = await save.mutateAsync({
         mode: isCorrection ? "correction" : "normal",
         ...(isCorrection ? { reason: reason.trim() } : {}),
         entries: session.roster
@@ -251,7 +285,7 @@ export function SessionEditor({
               ? { violation_ids: violations[item.student_user_id] }
               : {}),
           })),
-        ...(topic.trim()
+        ...(journalComplete
           ? {
               journal: {
                 topic: topic.trim(),
@@ -268,7 +302,14 @@ export function SessionEditor({
           time: formatTime(businessNow(), { locale, timeZone: me?.tenant.timezone }),
         }),
       );
-      router.push("/attendance");
+      // A student covered by a leave letter keeps the letter's status
+      // whatever was sent; say so rather than let the success stand alone.
+      const kept = overriddenNames(saved.overridden_student_ids, session.roster);
+      if (kept.length > 0) {
+        toast.warning(t("overriddenByLeave", { names: kept.join(", ") }));
+      }
+      // Back to the day the lesson belongs to, not always today.
+      router.push(attendanceListHref(session.date, todayInZone(me?.tenant.timezone)));
     } catch (error) {
       setFormError(
         error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
@@ -280,7 +321,7 @@ export function SessionEditor({
   const subjectName = subjectMap.get(session.subject_id)?.name ?? "";
   // The journal's state is one dot on its tab: saved with this session
   // already, or written now and saved together with the roster.
-  const journalFilled = topic.trim() !== "";
+  const journalFilled = journalComplete;
 
   return (
     <SessionRosterHeader
@@ -295,6 +336,7 @@ export function SessionEditor({
       disabled={save.isPending}
       floating={
         <SessionSaveBar
+          disabled={notStartedYet}
           isCorrection={isCorrection}
           reason={reason}
           onReasonChange={setReason}
@@ -306,6 +348,13 @@ export function SessionEditor({
         />
       }
     >
+      {notStartedYet && session.starts_at && (
+        <Alert tone="info" title={t("notStartedTitle")}>
+          {t("notStartedBody", {
+            time: formatTime(session.starts_at, { locale, timeZone: me?.tenant.timezone }),
+          })}
+        </Alert>
+      )}
       {draftOffer && (
         <Alert
           variant="warning"
@@ -328,7 +377,12 @@ export function SessionEditor({
       )}
 
       {/* PageShell pads the page clear of the fixed save bar. */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col gap-3">
+      <Tabs
+        ref={journalRef}
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="flex flex-col gap-3"
+      >
         <div className="flex items-center gap-2">
           <TabsList aria-label={t("tabsLabel")} className="shrink-0">
             <TabsTrigger value="roster">{t("tabRoster")}</TabsTrigger>
@@ -386,6 +440,12 @@ export function SessionEditor({
             onTopicChange={setTopic}
             onActivitiesChange={setActivities}
             onReflectionChange={setReflection}
+            requiredError={
+              journalStarted
+                ? (value) =>
+                    journalAttempted && !value.trim() ? tValidation("required") : undefined
+                : undefined
+            }
           />
         </TabsContent>
       </Tabs>

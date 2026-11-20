@@ -34,6 +34,13 @@ func (s *Service) ReplaceWeeklySchedule(
 		if err := s.assertEnabled(ctx, tenantID); err != nil {
 			return err
 		}
+		eligible, err := s.repo.IsCandidateEmployee(ctx, tenantID, employeeUserID)
+		if err != nil {
+			return err
+		}
+		if !eligible {
+			return domain.ErrEmployeeNotEligible
+		}
 		for _, in := range days {
 			day := domain.ScheduleDay{
 				EmployeeUserID: employeeUserID, Weekday: in.Weekday, IsWorkingDay: in.IsWorkingDay,
@@ -54,8 +61,7 @@ func (s *Service) ReplaceWeeklySchedule(
 }
 
 // ListRoster returns every employee this module currently tracks (has at
-// least one schedule day configured), for the schedule editor's employee
-// picker.
+// least one schedule day configured).
 func (s *Service) ListRoster(ctx context.Context, tenantID uuid.UUID) ([]EmployeeRef, error) {
 	var out []EmployeeRef
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -64,6 +70,23 @@ func (s *Service) ListRoster(ctx context.Context, tenantID uuid.UUID) ([]Employe
 		}
 		var err error
 		out, err = s.repo.ListRosterEmployees(ctx, tenantID)
+		return err
+	})
+	return out, err
+}
+
+// ListCandidates returns every active teacher and staff member, flagged
+// with whether they already have a work schedule, for the module's
+// employee pickers. ListRoster cannot serve them: nobody is on it until a
+// schedule exists, so a fresh tenant could never give anyone a first one.
+func (s *Service) ListCandidates(ctx context.Context, tenantID uuid.UUID) ([]CandidateRef, error) {
+	var out []CandidateRef
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if err := s.assertEnabled(ctx, tenantID); err != nil {
+			return err
+		}
+		var err error
+		out, err = s.repo.ListCandidateEmployees(ctx, tenantID)
 		return err
 	})
 	return out, err

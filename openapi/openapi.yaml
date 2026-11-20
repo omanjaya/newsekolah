@@ -3199,6 +3199,12 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "409":
+          description: The date is after today, so the lesson has not happened yet (ATTENDANCE_SESSION_NOT_STARTED)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /v1/attendance/sessions/{sessionId}:
     parameters:
       - name: sessionId
@@ -3258,7 +3264,9 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "409":
-          description: The save or correction window for this session has closed
+          description: >
+            The save or correction window for this session has closed, or the lesson has not started yet
+            (ATTENDANCE_SESSION_NOT_STARTED)
           content:
             application/json:
               schema:
@@ -16473,7 +16481,11 @@ paths:
         - journals
       operationId: upsertJournal
       x-permission: authenticated
-      summary: Create or update the journal for a class/subject/date (unique per day)
+      summary: Create a journal for a class/subject/date (unique per day), or edit one by id
+      description: >
+        Without `id` this only creates: a lesson that already has a journal answers 409 JOURNAL_CONFLICT instead of
+        replacing it, unless the stored journal says exactly the same (a repeated submit), which is returned unchanged.
+        With `id` it edits that journal, its lesson included.
       requestBody:
         required: true
         content:
@@ -16491,6 +16503,14 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: The lesson already has a different journal (JOURNAL_CONFLICT)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /v1/journals/export:
     get:
       tags:
@@ -16621,6 +16641,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /v1/staff-attendance/employees:
+    get:
+      tags:
+        - staff-attendance
+      operationId: listStaffAttendanceEmployees
+      x-permission: view_staff_attendance
+      summary: Every active teacher and staff member, for the module's employee pickers
+      description: >
+        Unlike the roster, this includes people with no work schedule yet, so the schedule editor can give someone their
+        first one. has_schedule tells the two apart.
+      responses:
+        "200":
+          description: Employees
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaffAttendanceEmployeeOption"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Module disabled for this tenant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /v1/staff-attendance/schedules/{employeeId}:
     parameters:
       - name: employeeId
@@ -16681,6 +16733,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
   /v1/staff-attendance/today:
     get:
       tags:
@@ -16728,7 +16782,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/StaffAttendanceRecord"
         "409":
-          description: Both arrival and departure are already recorded for today
+          description: >
+            Both arrival and departure are already recorded for today (STAFF_ATTENDANCE_ALREADY_SCANNED), or this
+            departure comes less than five minutes after arrival (STAFF_ATTENDANCE_DEPARTURE_TOO_SOON)
           content:
             application/json:
               schema:
@@ -20407,6 +20463,10 @@ components:
         entered_count:
           type: integer
           description: How many of the roster already have an entry recorded for this session.
+        starts_at:
+          type: string
+          format: date-time
+          description: When the session's first period begins on its date. Attendance cannot be saved before it.
     AttendanceRosterItem:
       type: object
       required:
@@ -20443,6 +20503,10 @@ components:
           type: boolean
         blocked_reason:
           type: string
+        locked:
+          type: boolean
+          description: An issued leave letter or exit permit decides this student's status for the day (source says which); a save
+            keeps that status whatever is sent.
     AttendanceSessionDetail:
       allOf:
         - $ref: "#/components/schemas/AttendanceSessionSummary"
@@ -20477,6 +20541,19 @@ components:
               items:
                 type: string
                 format: uuid
+            overridden_student_ids:
+              type: array
+              description: Students whose requested status the last save replaced with the one their leave letter or exit permit sets.
+              items:
+                type: string
+                format: uuid
+            save_mode:
+              type: string
+              enum:
+                - normal
+                - correction
+              description: The mode this viewer saves the session in. normal for its own teacher or accepted substitute, who may keep
+                re-saving until the correction deadline; correction (with a reason) for anyone else.
     SaveAttendanceEntriesRequest:
       type: object
       required:
@@ -27391,6 +27468,10 @@ components:
         - topic
         - activities
       properties:
+        id:
+          type: string
+          format: uuid
+          description: The journal being edited. Leave it out to create a new one.
         academic_year_id:
           type: string
           format: uuid
@@ -27421,6 +27502,21 @@ components:
           format: uuid
         name:
           type: string
+    StaffAttendanceEmployeeOption:
+      type: object
+      required:
+        - id
+        - name
+        - has_schedule
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        has_schedule:
+          type: boolean
+          description: Whether this person already has at least one work schedule day.
     StaffAttendanceScheduleDay:
       type: object
       required:

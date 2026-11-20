@@ -278,9 +278,6 @@ type Querier interface {
 	CountActiveUsersByProfileKind(ctx context.Context, tenantID uuid.UUID) ([]CountActiveUsersByProfileKindRow, error)
 	CountAnnouncementReads(ctx context.Context, arg CountAnnouncementReadsParams) (int64, error)
 	CountAssignmentsForDutyType(ctx context.Context, arg CountAssignmentsForDutyTypeParams) (int64, error)
-	// The input to "meeting_number" in the session payload: how many prior
-	// meetings this schedule has already had, so meeting_number = count + 1.
-	CountAttendanceSessionsForScheduleBeforeDate(ctx context.Context, arg CountAttendanceSessionsForScheduleBeforeDateParams) (int64, error)
 	CountAvailableCopies(ctx context.Context, arg CountAvailableCopiesParams) (int32, error)
 	CountCollectionCategoryUsage(ctx context.Context, arg CountCollectionCategoryUsageParams) (int32, error)
 	CountCopiesAddedInPeriod(ctx context.Context, arg CountCopiesAddedInPeriodParams) (int32, error)
@@ -302,6 +299,11 @@ type Querier interface {
 	// Size of ListExitPermitsForApproval's queue for the same caller. Keep the
 	// where clause identical to that query: the inbox badge must match the list.
 	CountExitPermitsForApproval(ctx context.Context, arg CountExitPermitsForApprovalParams) (int32, error)
+	// The input to "meeting_number" in the session payload: how many earlier
+	// meetings of this class and subject were actually held (submitted) this
+	// year, across every weekday's schedule row, so meeting_number = count + 1.
+	// A session opened only by browsing the list is not a meeting.
+	CountHeldAttendanceMeetingsBeforeDate(ctx context.Context, arg CountHeldAttendanceMeetingsBeforeDateParams) (int64, error)
 	// Backs the admin dashboard's pending queues (leave requests, exit
 	// permits, late arrivals all share this table -- see the kind check
 	// constraint).
@@ -716,9 +718,10 @@ type Querier interface {
 	GetLastVisitForMember(ctx context.Context, arg GetLastVisitForMemberParams) (LibraryVisit, error)
 	GetLateArrival(ctx context.Context, arg GetLateArrivalParams) (LateArrival, error)
 	GetLatestActivitiesPolicy(ctx context.Context, tenantID uuid.UUID) (GetLatestActivitiesPolicyRow, error)
-	// The previous meeting of this schedule, used to look up its journal for
-	// "previous_journal_topic".
-	GetLatestAttendanceSessionBeforeDate(ctx context.Context, arg GetLatestAttendanceSessionBeforeDateParams) (AttendanceSession, error)
+	// The last journal written for a class and subject before date, whoever
+	// wrote it and on whichever weekday: the attendance editor's "previous
+	// meeting's topic".
+	GetLatestJournalForClassSubjectBeforeDate(ctx context.Context, arg GetLatestJournalForClassSubjectBeforeDateParams) (ClassJournal, error)
 	GetLatestLibraryPolicy(ctx context.Context, tenantID uuid.UUID) (LibraryPolicy, error)
 	GetLatestTenantPolicy(ctx context.Context, arg GetLatestTenantPolicyParams) (TenantPolicy, error)
 	GetLatestTenantPolicyForPermits(ctx context.Context, arg GetLatestTenantPolicyForPermitsParams) (TenantPolicy, error)
@@ -958,6 +961,9 @@ type Querier interface {
 	// docs/testing-time-simulation.md), so a simulated future date can never
 	// extend a session's real-world lifetime.
 	IsSessionActive(ctx context.Context, arg IsSessionActiveParams) (pgtype.Bool, error)
+	// A work schedule may only be given to an active user with a teacher or
+	// staff profile.
+	IsStaffAttendanceCandidate(ctx context.Context, arg IsStaffAttendanceCandidateParams) (bool, error)
 	// Missing rule: classroom-entry tokens may only be consumed by a student
 	// profile (a teacher or any other staff scanning it is not "entering
 	// class late"), matching the old app's QR consumer check.
@@ -1363,7 +1369,18 @@ type Querier interface {
 	// session already opened for a class on a date, with the subject/teacher/
 	// period names a report needs, ordered by when the period runs.
 	ListSessionDetailsForClassDateAttendance(ctx context.Context, arg ListSessionDetailsForClassDateAttendanceParams) ([]ListSessionDetailsForClassDateAttendanceRow, error)
+	// Everyone the schedule editor, manual entry, recap and import pickers may
+	// choose: active users with a teacher or staff profile, the same
+	// eligibility identity's ListStaffOptions uses, with no row cap. The
+	// roster above cannot feed those pickers, since nobody is on it until a
+	// schedule exists; has_schedule tells the two sets apart.
+	ListStaffAttendanceCandidates(ctx context.Context, tenantID uuid.UUID) ([]ListStaffAttendanceCandidatesRow, error)
 	ListStaffAttendanceCorrectionsByRecord(ctx context.Context, arg ListStaffAttendanceCorrectionsByRecordParams) ([]StaffAttendanceCorrection, error)
+	// Everyone a monthly recap covers: the roster above plus anyone with a
+	// record in [from_date, to_date) -- a check-in, manual entry or import made
+	// before that person was given a work schedule is still a real record the
+	// recap must not drop.
+	ListStaffAttendanceRecapEmployees(ctx context.Context, arg ListStaffAttendanceRecapEmployeesParams) ([]ListStaffAttendanceRecapEmployeesRow, error)
 	ListStaffAttendanceRecordsByDate(ctx context.Context, arg ListStaffAttendanceRecordsByDateParams) ([]StaffAttendanceRecord, error)
 	ListStaffAttendanceRecordsByEmployeeRange(ctx context.Context, arg ListStaffAttendanceRecordsByEmployeeRangeParams) ([]StaffAttendanceRecord, error)
 	// The module's own roster: every user who has at least one schedule day
@@ -1720,6 +1737,8 @@ type Querier interface {
 	UpdateExtracurricular(ctx context.Context, arg UpdateExtracurricularParams) (Extracurricular, error)
 	UpdateFeeType(ctx context.Context, arg UpdateFeeTypeParams) (FeeType, error)
 	UpdateIncident(ctx context.Context, arg UpdateIncidentParams) (VisitorIncident, error)
+	// Edits one journal by id, its lesson (class, subject, date) included; a
+	// lesson that already has another journal fails on the unique key.
 	UpdateJournal(ctx context.Context, arg UpdateJournalParams) (ClassJournal, error)
 	UpdateLateArrivalReview(ctx context.Context, arg UpdateLateArrivalReviewParams) (LateArrival, error)
 	UpdateLocation(ctx context.Context, arg UpdateLocationParams) (LibraryLocation, error)
@@ -1748,6 +1767,10 @@ type Querier interface {
 	UpsertAttendanceEntry(ctx context.Context, arg UpsertAttendanceEntryParams) (AttendanceEntry, error)
 	UpsertGoogleSSOConfig(ctx context.Context, arg UpsertGoogleSSOConfigParams) (SsoGoogleConfig, error)
 	UpsertGrade(ctx context.Context, arg UpsertGradeParams) (Grade, error)
+	// The attendance editor's write: one atomic statement, so two saves of the
+	// same lesson racing each other update one row instead of the second
+	// insert failing on the unique key.
+	UpsertJournal(ctx context.Context, arg UpsertJournalParams) (ClassJournal, error)
 	UpsertMfaTotp(ctx context.Context, arg UpsertMfaTotpParams) (MfaTotp, error)
 	UpsertNotificationPreference(ctx context.Context, arg UpsertNotificationPreferenceParams) error
 	UpsertNotificationSettings(ctx context.Context, arg UpsertNotificationSettingsParams) (NotificationSetting, error)

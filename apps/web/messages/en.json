@@ -1138,6 +1138,7 @@
       "statusUpcoming": "Not open yet",
       "statusSavedAt": "Saved at {time}",
       "statusLocked": "Locked",
+      "statusUpcoming": "Not held yet",
       "ongoingBadge": "In progress",
       "nextBadge": "Next",
       "fillProgress": "{entered}/{roster} filled",
@@ -1266,7 +1267,18 @@
         },
         "tabsLabel": "Session sections",
         "markedAllPresent": "Everyone marked present",
-        "rosterLabel": "Students"
+        "rosterLabel": "Students",
+        "journalIncomplete": "Fill in both the journal topic and activities, or leave both empty.",
+        "notStartedTitle": "The lesson has not started",
+        "notStartedBody": "Attendance can be recorded from {time}.",
+        "overriddenByLeave": "{names} kept the status set by their leave letter, not the one you chose.",
+        "blockedReasons": {
+          "late_arrival_in_progress": "Late, waiting for the late-arrival pass to be completed"
+        },
+        "locked": {
+          "leave": "Set by a leave letter; change it through the letter",
+          "permit": "Set by an exit permit; change it through the permit"
+        }
       },
       "editor": {
         "saveSummary": "{total} students · {changed} changed from present",

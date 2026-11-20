@@ -1,6 +1,8 @@
 package http
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
@@ -44,7 +46,16 @@ func toAPISessionSummary(s service.SessionSummary) api.AttendanceSessionSummary 
 		SubjectId: sess.SubjectID, TeacherUserId: sess.TeacherUserID, SubstituteUserId: nullUUIDPtr(sess.SubstituteUserID),
 		StartPeriodId: sess.StartPeriodID, EndPeriodId: sess.EndPeriodID, IsSubstitute: s.IsSubstitute, SubmittedAt: sess.SubmittedAt,
 		RosterCount: &rosterCount, EnteredCount: &enteredCount, HandedOverToUserId: nullUUIDPtr(s.HandedOverTo),
+		StartsAt: timePtrOrNil(s.StartsAt),
 	}
+}
+
+// timePtrOrNil renders a zero time as an absent field.
+func timePtrOrNil(t time.Time) *time.Time {
+	if t.IsZero() {
+		return nil
+	}
+	return &t
 }
 
 func toAPIRosterItem(r service.RosterItem) api.AttendanceRosterItem {
@@ -60,6 +71,10 @@ func toAPIRosterItem(r service.RosterItem) api.AttendanceRosterItem {
 		blocked := true
 		item.Blocked = &blocked
 		item.BlockedReason = strPtrOrNil(r.BlockedReason)
+	}
+	if r.Locked {
+		locked := true
+		item.Locked = &locked
 	}
 	if len(r.YearCounts) > 0 {
 		counts := r.YearCounts
@@ -88,6 +103,14 @@ func toAPISessionDetail(d service.SessionDetail) api.AttendanceSessionDetail {
 	}
 	if len(d.SkippedBlockedStudentIDs) > 0 {
 		out.SkippedBlockedStudentIds = &d.SkippedBlockedStudentIDs
+	}
+	if len(d.OverriddenStudentIDs) > 0 {
+		out.OverriddenStudentIds = &d.OverriddenStudentIDs
+	}
+	out.StartsAt = timePtrOrNil(d.StartsAt)
+	if d.SaveMode != "" {
+		mode := api.AttendanceSessionDetailSaveMode(d.SaveMode)
+		out.SaveMode = &mode
 	}
 	return out
 }

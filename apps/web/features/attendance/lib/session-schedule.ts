@@ -1,18 +1,20 @@
 /**
  * A lesson's fill state, for the session list's status badge
  * (docs/07-ui-ux.md). "handedOver" is one of the teacher's own lessons an
- * accepted substitute fills instead; "upcoming" is a lesson on a date that
- * has not arrived, which cannot be recorded ahead of the day.
+ * accepted substitute fills instead; "upcoming" is a lesson on a later day,
+ * which cannot be recorded ahead of the day.
  */
 export type SessionFillStatus = "empty" | "saved" | "locked" | "handedOver" | "upcoming";
 
 /**
- * Derives the badge state from what the list already has: no submission
- * yet is "empty" (or "handedOver" / "upcoming", see SessionFillStatus); a submission on a past date is treated as
- * "locked" because reopening it always goes through the correction
- * workflow (`session-editor.tsx`'s `isCorrection`), while a submission on
- * today's date is "saved" -- still freely revisitable for the rest of the
- * lesson. Dates compare as "YYYY-MM-DD" strings, which sort correctly
+ * Derives the badge state from what the list already has: a lesson on a
+ * later day has not happened, so it is "upcoming" and cannot be opened
+ * (the API refuses to record it) -- even if an older build let someone
+ * submit it already; otherwise no submission yet is "empty" (or
+ * "handedOver" when a substitute fills it); a submission on a past date is
+ * treated as "locked", while a submission on today's date is "saved" --
+ * still freely revisitable for the rest of the lesson. Dates compare as
+ * "YYYY-MM-DD" strings, which sort correctly
  * lexicographically.
  */
 export function deriveFillStatus(
@@ -21,10 +23,8 @@ export function deriveFillStatus(
   today: string,
   handedOver = false,
 ): SessionFillStatus {
-  if (!submittedAt) {
-    if (handedOver) return "handedOver";
-    return date > today ? "upcoming" : "empty";
-  }
+  if (date > today) return "upcoming";
+  if (!submittedAt) return handedOver ? "handedOver" : "empty";
   return date < today ? "locked" : "saved";
 }
 

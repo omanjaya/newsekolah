@@ -13,17 +13,24 @@ import { businessNow } from "../../lib/simulation/clock";
 import { useStaffAttendanceTodayLive } from "./realtime";
 
 export type Employee = components["schemas"]["StaffAttendanceEmployee"];
+export type EmployeeOption = components["schemas"]["StaffAttendanceEmployeeOption"];
 export type ScheduleDay = components["schemas"]["StaffAttendanceScheduleDay"];
 export type AttendanceRecord = components["schemas"]["StaffAttendanceRecord"];
 export type ManualEntry = components["schemas"]["StaffAttendanceManualEntry"];
 export type CorrectionRequest = components["schemas"]["StaffAttendanceCorrectionRequest"];
 export type MonthlyRecap = components["schemas"]["StaffAttendanceMonthlyRecap"];
 
-export function useStaffAttendanceRosterQuery() {
+/**
+ * Every active teacher and staff member, whether or not they have a work
+ * schedule yet: what the module's pickers choose from. The roster (people
+ * with a schedule) cannot feed them, since nobody is on it until a first
+ * schedule is saved.
+ */
+export function useStaffAttendanceEmployeesQuery() {
   const client = useApiClient();
   return useQuery({
-    queryKey: queryKeys.staffAttendanceRoster(),
-    queryFn: () => client.GET("/v1/staff-attendance/roster"),
+    queryKey: queryKeys.staffAttendanceEmployees(),
+    queryFn: () => client.GET("/v1/staff-attendance/employees"),
   });
 }
 
@@ -53,6 +60,9 @@ export function useReplaceStaffAttendanceScheduleMutation(employeeId: string) {
         queryKey: queryKeys.staffAttendanceSchedule(employeeId),
       });
       void queryClient.invalidateQueries({ queryKey: queryKeys.staffAttendanceRoster() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.staffAttendanceEmployees() });
+      // A first schedule puts the employee on the day board.
+      void queryClient.invalidateQueries({ queryKey: ["staff-attendance", "today"] });
     },
 
     meta: { errorToast: false },

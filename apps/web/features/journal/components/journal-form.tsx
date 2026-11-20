@@ -24,17 +24,19 @@ import { useSimulation } from "../../../lib/simulation/clock";
 import { todayInZone } from "../../../lib/tenant-date";
 import { useTeachingAssignmentsForTeacherQuery } from "../../academic/api-offerings";
 import { useClassesQuery, useSubjectsQuery } from "../../reference/api";
-import { useUpsertJournalMutation, type Journal } from "../api";
+import { useJournalsQuery, useUpsertJournalMutation, type Journal } from "../api";
 import { clearJournalDraft, loadJournalDraft, saveJournalDraft } from "../lib/journal-draft";
 
 import { JournalFields } from "./journal-fields";
 
 /**
- * Creates or replaces a journal entry: the API upserts by class/subject/date.
- * `prefill*` fills in class/subject/date without locking them the way an
- * existing `initial` entry does -- used when this opens from a specific
- * lesson on the "recent lessons" panel, so the teacher lands with almost
- * nothing left to pick.
+ * Writes a new journal entry, or edits `initial`. A lesson (class, subject,
+ * date) has one journal: a new entry for a lesson that already has one is
+ * not sent (the API would refuse it rather than replace the first); the
+ * form says so and offers to open that journal instead. `prefill*` fills in
+ * class/subject/date without locking them the way an existing `initial`
+ * entry does -- used when this opens from a specific lesson on the "recent
+ * lessons" panel, so the teacher lands with almost nothing left to pick.
  */
 export function JournalForm({
   initial,
@@ -58,6 +60,12 @@ export function JournalForm({
   const { revision } = useSimulation();
   const year = useActiveYear();
   const upsert = useUpsertJournalMutation();
+  // The journal being edited: `initial`, or the existing one the teacher
+  // chose to open when a new entry turned out to clash with it.
+  const [editing, setEditing] = useState<Journal | undefined>(initial);
+  // A double click fires the second submit before `isPending` re-renders
+  // the button busy; this guard is synchronous, so only one request goes.
+  const inFlight = useRef(false);
 
   const [classId, setClassId] = useState(initial?.class_id ?? prefillClassId ?? "");
   const [subjectId, setSubjectId] = useState(initial?.subject_id ?? prefillSubjectId ?? "");
@@ -89,7 +97,7 @@ export function JournalForm({
   // prefilled one (from the recent-lessons panel) already knows exactly
   // which lesson it is for, so it is locked too -- only a from-scratch
   // "Jurnal baru" entry needs the picker scoped down to taught pairs.
-  const locked = initial !== undefined || prefillClassId !== undefined;
+  const locked = editing !== undefined || prefillClassId !== undefined;
   const scoped = pairs.length > 0 && !locked;
 
   const classOptions = useMemo(() => {
@@ -119,6 +127,26 @@ export function JournalForm({
       : subjectOptions.length === 1
         ? (subjectOptions[0]?.value ?? "")
         : "";
+
+  // A new entry checks whether its lesson already has a journal, so the
+  // teacher finds out before typing it all, not after a refused save.
+  const sameDay = useJournalsQuery(undefined, 0, 50, undefined, lessonDate, lessonDate);
+  const existing =
+    editing === undefined
+      ? sameDay.data?.data.find(
+          (j) =>
+            j.class_id === effectiveClassId &&
+            j.subject_id === effectiveSubjectId &&
+            j.lesson_date === lessonDate,
+        )
+      : undefined;
+
+  function openExisting(journal: Journal) {
+    setEditing(journal);
+    setTopic(journal.topic);
+    setActivities(journal.activities);
+    setReflection(journal.reflection ?? "");
+  }
 
   const canSubmit =
     effectiveClassId !== "" &&
@@ -176,8 +204,15 @@ export function JournalForm({
   }
 
   function submit() {
+    if (existing) {
+      toast.error(apiErrorMessage("JOURNAL_CONFLICT"));
+      return;
+    }
+    if (inFlight.current) return;
+    inFlight.current = true;
     upsert.mutate(
       {
+        ...(editing ? { id: editing.id } : {}),
         academic_year_id: year.id,
         class_id: effectiveClassId,
         subject_id: effectiveSubjectId,
@@ -193,9 +228,17 @@ export function JournalForm({
           onDone();
         },
         onError: (error) => {
+          // Someone saved this lesson's journal meanwhile: the same-day
+          // check above picks it up and offers to open it.
+          if (error instanceof ApiError && error.code === "JOURNAL_CONFLICT") {
+            void sameDay.refetch();
+          }
           toast.error(
             error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
           );
+        },
+        onSettled: () => {
+          inFlight.current = false;
         },
       },
     );
@@ -212,6 +255,25 @@ export function JournalForm({
         submit();
       }}
     >
+      {existing && (
+        <Alert
+          variant="warning"
+          title={t("existsTitle")}
+          action={
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => {
+                openExisting(existing);
+              }}
+            >
+              {t("openExisting")}
+            </Button>
+          }
+        >
+          {t("existsBody")}
+        </Alert>
+      )}
       {draftOffer && (
         <Alert
           variant="warning"

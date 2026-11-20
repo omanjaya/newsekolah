@@ -1138,6 +1138,7 @@
       "statusUpcoming": "Belum bisa diisi",
       "statusSavedAt": "Tersimpan pukul {time}",
       "statusLocked": "Terkunci",
+      "statusUpcoming": "Belum berlangsung",
       "ongoingBadge": "Sedang berlangsung",
       "nextBadge": "Berikutnya",
       "fillProgress": "{entered}/{roster} diisi",
@@ -1266,7 +1267,16 @@
         },
         "tabsLabel": "Bagian sesi",
         "markedAllPresent": "Semua siswa ditandai hadir",
-        "rosterLabel": "Daftar siswa"
+        "rosterLabel": "Daftar siswa",
+        "journalIncomplete": "Lengkapi topik dan kegiatan jurnal, atau kosongkan keduanya.",
+        "notStartedTitle": "Pelajaran belum dimulai",
+        "notStartedBody": "Presensi bisa dicatat mulai pukul {time}.",
+        "overriddenByLeave": "Status {names} tetap mengikuti surat izin, bukan pilihan Anda.",
+        "blockedReasons": { "late_arrival_in_progress": "Terlambat, menunggu izin masuk selesai" },
+        "locked": {
+          "leave": "Mengikuti surat izin; ubah lewat surat izinnya",
+          "permit": "Mengikuti izin keluar; ubah lewat izinnya"
+        }
       },
       "editor": {
         "saveSummary": "{total} siswa · {changed} diubah dari hadir",

@@ -165,9 +165,9 @@ describe("consolidated workspaces", () => {
     expect(teacher.some((item) => item.key === "library-catalogue")).toBe(true);
   });
 
-  it("does not offer an attendance-report fallback that its legacy route guard refuses", () => {
+  it("offers a view_reports reader the attendance report, which its route now opens", () => {
     const items = menu(["view_reports"], "staff");
-    expect(items.some((item) => item.key === "attendance")).toBe(false);
+    expect(items.find((item) => item.key === "attendance")?.href).toBe("/attendance/reports");
     expect(items.find((item) => item.key === "reports")?.href).toBe("/reports");
   });
 });

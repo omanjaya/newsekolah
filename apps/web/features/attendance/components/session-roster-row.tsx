@@ -86,6 +86,20 @@ export const SessionRosterRow = memo(function SessionRosterRow({
   // 36 rows of "Hadir" do not each carry an empty text box.
   const [noteExpanded, setNoteExpanded] = useState(!isPresent || draftNote !== "");
   const noteVisible = !isPresent || noteExpanded;
+  // A row is frozen while a late arrival is still open (blocked) or when a
+  // leave letter or exit permit decides the day (locked): the save keeps
+  // that status whatever is picked, so the row does not pretend otherwise.
+  const locked = Boolean(item.locked) && !item.blocked;
+  const frozen = Boolean(item.blocked) || locked;
+  const lockNote = item.blocked
+    ? item.blocked_reason && t.has(`blockedReasons.${item.blocked_reason}`)
+      ? t(`blockedReasons.${item.blocked_reason}`)
+      : t("blocked")
+    : locked
+      ? item.source === "leave" || item.source === "permit"
+        ? t(`locked.${item.source}`)
+        : t("blocked")
+      : null;
 
   return (
     <li
@@ -122,13 +136,13 @@ export const SessionRosterRow = memo(function SessionRosterRow({
                 {t("previousStatus", { status: previousStatusNote })}
               </span>
             )}
-            {item.blocked && (
+            {lockNote && (
               <span className="flex items-center gap-1 text-caption font-normal text-fg-muted">
                 <Lock className="size-3" aria-hidden="true" />
-                {item.blocked_reason ?? t("blocked")}
+                {lockNote}
               </span>
             )}
-            {!item.blocked && item.source && item.source !== "teacher" && (
+            {!frozen && item.source && item.source !== "teacher" && (
               <span className="text-caption font-normal text-fg-muted">
                 {t(`source.${item.source}`)}
               </span>
@@ -140,12 +154,12 @@ export const SessionRosterRow = memo(function SessionRosterRow({
             statuses={statuses}
             value={currentStatus}
             label={item.name}
-            disabled={Boolean(item.blocked) || disabled}
+            disabled={frozen || disabled}
             onChange={(statusCode) => {
               onStatusChange(item.student_user_id, statusCode);
             }}
           />
-          {!item.blocked && (
+          {!frozen && (
             <SessionRowActionsMenu
               studentName={item.name}
               noteActive={noteVisible}
@@ -164,7 +178,7 @@ export const SessionRosterRow = memo(function SessionRosterRow({
           )}
         </div>
       </div>
-      {!item.blocked && noteVisible && (
+      {!frozen && noteVisible && (
         <div className="md:pl-11">
           <Input
             value={draftNote}

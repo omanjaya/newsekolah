@@ -26,7 +26,8 @@
   "employeePicker": {
     "placeholder": "Select an employee",
     "search": "Search employee name",
-    "empty": "No matching employees"
+    "empty": "No matching employees",
+    "noSchedule": "No work schedule yet"
   },
   "today": {
     "dateLabel": "Date",
@@ -207,6 +208,8 @@
     "unscheduledHint": "Your work schedule has not been set up yet. Contact the admin to set it.",
     "noRecord": "Nothing recorded",
     "unscheduledHintManage": "Your work schedule has not been set up yet.",
-    "openSchedule": "Set the work schedule"
+    "openSchedule": "Set the work schedule",
+    "confirmDepartureTitle": "Record your departure now?",
+    "confirmDepartureBody": "Your arrival was recorded at {time}. Once your departure is recorded, only an admin can correct it."
   }
 }

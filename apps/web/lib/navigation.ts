@@ -261,11 +261,11 @@ export const navigation: NavItem[] = [
     labelKey: "app.attendanceReports.navLabel",
     href: "/attendance/reports",
     icon: FileBarChart,
-    // The permission the route checks: the "mine" tab lists a teacher's own
-    // sessions, so any teacher who takes attendance has a report here and
-    // gets the tab; view_reports only adds the school-wide tabs inside the
-    // page. A reader with view_reports alone reads attendance on /reports.
-    permission: "manage_attendance",
+    // The "mine" tab lists a teacher's own sessions, so any teacher who
+    // takes attendance (manage_attendance) has a report here; the daily and
+    // monthly tabs are for a view_reports reader such as the principal, who
+    // has no other screen with the monthly recap per class or student.
+    anyPermission: ["manage_attendance", "view_reports"],
     group: GROUP.academic,
   },
   {

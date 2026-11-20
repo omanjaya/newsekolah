@@ -87,6 +87,7 @@ var (
 	errMonitorTokenInvalid      = httpx.NewError(http.StatusUnauthorized, "ATTENDANCE_MONITOR_TOKEN_INVALID")
 	errSessionNotStarted        = httpx.NewError(http.StatusUnprocessableEntity, "ATTENDANCE_SESSION_NOT_STARTED")
 	errNotSchoolDay             = httpx.NewError(http.StatusUnprocessableEntity, "ATTENDANCE_NOT_SCHOOL_DAY")
+	errJournalIncomplete        = httpx.NewError(http.StatusBadRequest, "ATTENDANCE_JOURNAL_INCOMPLETE")
 )
 
 // mapAttendanceError translates an attendance/domain sentinel error into
@@ -123,7 +124,7 @@ func mapAttendanceError(err error) error {
 	case errors.Is(err, domain.ErrCorrectionReasonRequired):
 		return errCorrectionReasonRequired
 	case errors.Is(err, domain.ErrJournalRequired):
-		return httpx.ErrValidation
+		return errJournalIncomplete
 	case errors.Is(err, domain.ErrNoActiveAcademicYear):
 		return errNoActiveYear
 	case errors.Is(err, domain.ErrInvalidMonth):

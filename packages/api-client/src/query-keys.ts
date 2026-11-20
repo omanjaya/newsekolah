@@ -86,6 +86,7 @@ export const queryKeys = {
   tenantNotificationDefault: (kind: string) => ["tenant", "notification-defaults", kind] as const,
 
   staffAttendanceRoster: () => ["staff-attendance", "roster"] as const,
+  staffAttendanceEmployees: () => ["staff-attendance", "employees"] as const,
   staffAttendanceSchedule: (employeeId: string) =>
     ["staff-attendance", "schedule", employeeId] as const,
   staffAttendanceToday: (date: string) => ["staff-attendance", "today", date] as const,

@@ -8,12 +8,14 @@ import type { SessionFillStatus } from "./session-schedule";
  * "Buka"; a submitted lesson -- saved or locked -- always shows the
  * "Tersimpan" badge, which stays clickable to open or correct it.
  */
-export type SessionCardAction = "fill" | "open" | "saved";
+export type SessionCardAction = "fill" | "open" | "saved" | "upcoming";
 
 export function deriveSessionCardAction(
   fillStatus: SessionFillStatus,
   timing: "ongoing" | "next" | null,
 ): SessionCardAction {
+  // A lesson on a later day has nothing to record yet.
+  if (fillStatus === "upcoming") return "upcoming";
   if (fillStatus !== "empty") return "saved";
   return timing === "ongoing" ? "fill" : "open";
 }

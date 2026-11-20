@@ -21,6 +21,10 @@ type SaveWindowInput struct {
 	Now time.Time
 	// SessionDate is the calendar date the session was held.
 	SessionDate time.Time
+	// PeriodStartAt is the wall-clock instant the session's first period
+	// starts on SessionDate. Nothing may be saved before it, in either
+	// mode. The zero value sets no lower bound.
+	PeriodStartAt time.Time
 	// PeriodEndAt is the wall-clock instant the session's last period
 	// ends on SessionDate, plus the tenant's configured grace period
 	// already added in.
@@ -48,7 +52,7 @@ type SaveWindowInput struct {
 // ResolveSaveWindow decides whether a save in the given mode is currently
 // allowed, returning a domain error identifying why not.
 func ResolveSaveWindow(in SaveWindowInput, mode SaveMode) error {
-	if SessionNotStarted(in.SessionDate, in.Now) {
+	if SessionNotStarted(in.SessionDate, in.Now) || in.Now.Before(in.PeriodStartAt) {
 		return ErrSessionNotStarted
 	}
 	switch mode {

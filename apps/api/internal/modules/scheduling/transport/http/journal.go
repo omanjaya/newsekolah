@@ -81,6 +81,9 @@ func toJournalInput(body api.JournalWriteRequest) service.JournalInput {
 	if body.Reflection != nil {
 		in.Reflection = *body.Reflection
 	}
+	if body.Id != nil {
+		in.ID = uuid.NullUUID{UUID: *body.Id, Valid: true}
+	}
 	return in
 }
 
@@ -93,7 +96,7 @@ func (h *SchedulingHandler) UpsertJournal(ctx context.Context, request api.Upser
 	// by AccessChecker in an upstream module once that check is wired --
 	// today, only self-service journals are supported, so teacher and
 	// writer are the same user.
-	out, err := h.service.UpsertJournal(ctx, tenantID, userID, userID, toJournalInput(*request.Body))
+	out, err := h.service.SaveJournal(ctx, tenantID, userID, userID, toJournalInput(*request.Body))
 	if err != nil {
 		return nil, mapJournalError(err)
 	}

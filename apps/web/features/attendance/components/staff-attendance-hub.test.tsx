@@ -54,7 +54,9 @@ it("offers only links the route guard lets the principal open", () => {
   for (const link of screen.queryAllByRole("link")) {
     expect(canOpenPath(link.getAttribute("href") ?? "", access)).toBe(true);
   }
-  expect(screen.queryByRole("link", { name: "openReports" })?.getAttribute("href")).not.toBe(
+  // view_reports opens the attendance reports (daily and monthly recaps).
+  expect(screen.getByRole("link", { name: "openReports" })).toHaveAttribute(
+    "href",
     "/attendance/reports",
   );
 });

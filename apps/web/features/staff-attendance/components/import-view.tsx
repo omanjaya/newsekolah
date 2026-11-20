@@ -28,7 +28,7 @@ import type { ChangeEvent, ReactElement } from "react";
 import { useRef, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useImportStaffAttendanceMutation, useStaffAttendanceRosterQuery } from "../api";
+import { useImportStaffAttendanceMutation, useStaffAttendanceEmployeesQuery } from "../api";
 import { type ImportProblem, type ParsedImportRow, parseImportCsv } from "../import-csv";
 
 import { EmployeeCombobox } from "./employee-combobox";
@@ -59,7 +59,7 @@ export function StaffAttendanceImportView(): ReactElement {
   const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const roster = useStaffAttendanceRosterQuery();
+  const roster = useStaffAttendanceEmployeesQuery();
   const importRecords = useImportStaffAttendanceMutation();
   const fileInput = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);

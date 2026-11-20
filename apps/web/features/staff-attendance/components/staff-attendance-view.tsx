@@ -18,7 +18,7 @@ import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { DayStepper } from "../../attendance/components/day-stepper";
-import { todayInZone, useStaffAttendanceRosterQuery } from "../api";
+import { todayInZone, useStaffAttendanceEmployeesQuery } from "../api";
 
 import { EmployeeRecapView } from "./employee-recap-view";
 import { StaffAttendanceImportView } from "./import-view";
@@ -49,8 +49,11 @@ export function StaffAttendanceView(): ReactElement {
   const [date, setDate] = useDateFilter("date", today);
   const [manualOpen, setManualOpen] = useState(false);
 
-  const roster = useStaffAttendanceRosterQuery();
-  const employees = roster.data?.data ?? [];
+  // Every active teacher and staff member, so the schedule editor can give
+  // someone their first schedule and staff who checked in before having
+  // one can still be entered, corrected and recapped.
+  const candidates = useStaffAttendanceEmployeesQuery();
+  const employees = candidates.data?.data ?? [];
   const onBoard = tab === "today";
 
   const secondaryActions: PageHeaderAction[] = employee

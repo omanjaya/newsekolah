@@ -75,4 +75,5 @@ type JournalRef = service.JournalRef
 type JournalService interface {
 	UpsertJournal(ctx context.Context, tenantID, teacherUserID, writerUserID uuid.UUID, in JournalInput) (JournalRef, error)
 	GetJournalForLesson(ctx context.Context, tenantID, academicYearID, teacherUserID, classID, subjectID uuid.UUID, lessonDate time.Time) (JournalRef, bool, error)
+	GetLatestJournalBefore(ctx context.Context, tenantID, academicYearID, classID, subjectID uuid.UUID, before time.Time) (JournalRef, bool, error)
 }

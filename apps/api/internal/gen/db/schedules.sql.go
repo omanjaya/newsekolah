@@ -380,6 +380,30 @@ func (q *Queries) GetScheduleByID(ctx context.Context, arg GetScheduleByIDParams
 	return i, err
 }
 
+const isStaffAttendanceCandidate = `-- name: IsStaffAttendanceCandidate :one
+select exists(
+  select 1 from users u
+  join user_profiles up on up.user_id = u.id and up.kind in ('teacher', 'staff')
+  where u.tenant_id = $1 and u.id = $2
+    and u.deleted_at is null
+    and u.status = 'active'
+)::boolean
+`
+
+type IsStaffAttendanceCandidateParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// A work schedule may only be given to an active user with a teacher or
+// staff profile.
+func (q *Queries) IsStaffAttendanceCandidate(ctx context.Context, arg IsStaffAttendanceCandidateParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isStaffAttendanceCandidate, arg.TenantID, arg.ID)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const listEnabledReportSchedulesForHour = `-- name: ListEnabledReportSchedulesForHour :many
 select id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at, format from report_schedules where tenant_id = $1 and enabled and hour = $2
 `
@@ -746,6 +770,107 @@ func (q *Queries) ListSchedulesByTeacher(ctx context.Context, arg ListSchedulesB
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listStaffAttendanceCandidates = `-- name: ListStaffAttendanceCandidates :many
+select u.id, u.name,
+  exists(
+    select 1 from staff_attendance_schedules s
+    where s.tenant_id = u.tenant_id and s.employee_user_id = u.id
+  )::boolean as has_schedule
+from users u
+where u.tenant_id = $1
+  and u.deleted_at is null
+  and u.status = 'active'
+  and exists (
+    select 1 from user_profiles up
+    where up.user_id = u.id and up.kind in ('teacher', 'staff')
+  )
+order by u.name
+`
+
+type ListStaffAttendanceCandidatesRow struct {
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	HasSchedule bool      `json:"has_schedule"`
+}
+
+// Everyone the schedule editor, manual entry, recap and import pickers may
+// choose: active users with a teacher or staff profile, the same
+// eligibility identity's ListStaffOptions uses, with no row cap. The
+// roster above cannot feed those pickers, since nobody is on it until a
+// schedule exists; has_schedule tells the two sets apart.
+func (q *Queries) ListStaffAttendanceCandidates(ctx context.Context, tenantID uuid.UUID) ([]ListStaffAttendanceCandidatesRow, error) {
+	rows, err := q.db.Query(ctx, listStaffAttendanceCandidates, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListStaffAttendanceCandidatesRow{}
+	for rows.Next() {
+		var i ListStaffAttendanceCandidatesRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.HasSchedule); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listStaffAttendanceRecapEmployees = `-- name: ListStaffAttendanceRecapEmployees :many
+select u.id, u.name
+from users u
+where u.tenant_id = $1
+  and (
+    exists (
+      select 1 from staff_attendance_schedules s
+      where s.tenant_id = u.tenant_id and s.employee_user_id = u.id
+    )
+    or exists (
+      select 1 from staff_attendance_records r
+      where r.tenant_id = u.tenant_id and r.employee_user_id = u.id
+        and r.date >= $2 and r.date < $3
+    )
+  )
+order by u.name
+`
+
+type ListStaffAttendanceRecapEmployeesParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	FromDate pgtype.Date `json:"from_date"`
+	ToDate   pgtype.Date `json:"to_date"`
+}
+
+type ListStaffAttendanceRecapEmployeesRow struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+// Everyone a monthly recap covers: the roster above plus anyone with a
+// record in [from_date, to_date) -- a check-in, manual entry or import made
+// before that person was given a work schedule is still a real record the
+// recap must not drop.
+func (q *Queries) ListStaffAttendanceRecapEmployees(ctx context.Context, arg ListStaffAttendanceRecapEmployeesParams) ([]ListStaffAttendanceRecapEmployeesRow, error) {
+	rows, err := q.db.Query(ctx, listStaffAttendanceRecapEmployees, arg.TenantID, arg.FromDate, arg.ToDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListStaffAttendanceRecapEmployeesRow{}
+	for rows.Next() {
+		var i ListStaffAttendanceRecapEmployeesRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
