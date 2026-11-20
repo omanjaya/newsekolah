@@ -159,6 +159,7 @@ export type MessageKey =
   | "errors.EVIDENCE_TOO_LARGE"
   | "errors.EXIT_PERMIT_ALREADY_TODAY"
   | "errors.EXIT_PERMIT_NOT_ISSUED"
+  | "errors.EXIT_PERMIT_PERIOD_PASSED"
   | "errors.EXPECTED_GUEST_NOT_FOUND"
   | "errors.EXPECTED_GUEST_RESOLVED"
   | "errors.EXTRACURRICULAR_COACH_ONLY"
@@ -640,6 +641,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.EVIDENCE_TOO_LARGE",
   "errors.EXIT_PERMIT_ALREADY_TODAY",
   "errors.EXIT_PERMIT_NOT_ISSUED",
+  "errors.EXIT_PERMIT_PERIOD_PASSED",
   "errors.EXPECTED_GUEST_NOT_FOUND",
   "errors.EXPECTED_GUEST_RESOLVED",
   "errors.EXTRACURRICULAR_COACH_ONLY",

@@ -73,7 +73,7 @@ func (s *Service) RecordExitPermitByStaff(ctx context.Context, in RecordExitPerm
 		if err := s.requireNotOnLeaveToday(ctx, in.TenantID, in.StudentUserID); err != nil {
 			return err
 		}
-		if err := s.validatePeriodRange(ctx, in.TenantID, in.StartPeriodID, in.EndPeriodID); err != nil {
+		if _, _, err := s.validatePeriodRange(ctx, in.TenantID, in.StartPeriodID, in.EndPeriodID); err != nil {
 			return err
 		}
 		studentName, err := s.repo.GetUserName(ctx, in.TenantID, in.StudentUserID)

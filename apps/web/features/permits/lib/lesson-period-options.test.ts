@@ -4,6 +4,7 @@ import {
   endAfterStartChange,
   endPeriodOptions,
   lessonPeriodOptions,
+  upcomingLessonPeriods,
 } from "./lesson-period-options";
 
 const periods = [
@@ -20,6 +21,26 @@ describe("lessonPeriodOptions", () => {
       { value: "p2", label: "Jam 2 (08.00 – 08.45)" },
       { value: "p3", label: "Jam 3 (08.45 – 09.30)" },
     ]);
+  });
+});
+
+describe("upcomingLessonPeriods", () => {
+  it("drops the lessons that have already ended", () => {
+    expect(upcomingLessonPeriods(periods, "08:10").map((p) => p.id)).toEqual(["p2", "p3"]);
+  });
+
+  it("drops a lesson at the minute it ends, as the API does", () => {
+    expect(upcomingLessonPeriods(periods, "07:45").map((p) => p.id)).toEqual(["b1", "p2", "p3"]);
+    expect(upcomingLessonPeriods(periods, "07:44").map((p) => p.id)).toEqual([
+      "p1",
+      "b1",
+      "p2",
+      "p3",
+    ]);
+  });
+
+  it("leaves nothing once the school day is over", () => {
+    expect(upcomingLessonPeriods(periods, "11:30")).toEqual([]);
   });
 });
 

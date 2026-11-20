@@ -1538,6 +1538,7 @@
           "pick": "Pick",
           "stagesHint": "After submitting, see the teacher at each stage, then scan the approval QR they show. The gate QR appears after the last stage.",
           "requiredError": "Destination and period range are required.",
+          "noPeriodsLeft": "Today's lessons are over. An exit permit covers only the lesson running now or the ones still to come.",
           "created": "Exit permit requested",
           "submit": "Submit",
           "required": "Required.",

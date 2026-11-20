@@ -14442,6 +14442,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "409":
           $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
   /v1/exit-permits/staff-record:
     post:
       tags:
@@ -14643,6 +14645,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
   /v1/exit-permits/{instanceId}/gate-scan:
     post:
       tags:

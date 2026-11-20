@@ -33,6 +33,8 @@ import { useEffect, useRef, useState } from "react";
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
+import { useBusinessNow } from "../../../lib/simulation/clock";
+import { isoToZonedLocal } from "../../../lib/tenant-date";
 import { usePeriodsQuery } from "../../reference/api";
 import {
   type ExitPermitDetail as ExitPermitDetailData,
@@ -47,6 +49,7 @@ import {
   endAfterStartChange,
   endPeriodOptions,
   lessonPeriodOptions,
+  upcomingLessonPeriods,
 } from "../lib/lesson-period-options";
 
 import { StageScanDialog } from "./stage-scan-dialog";
@@ -63,9 +66,18 @@ export function CreateForm({
   const locale = useLocale();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const { me } = useSession();
   const periods = usePeriodsQuery();
   const create = useCreateExitPermitMutation();
-  const options = lessonPeriodOptions(periods.data?.data ?? [], locale);
+  // Only the lessons still running or to come on the school's clock (the
+  // simulated one under the time simulation): the API refuses a window
+  // that is already over.
+  const schoolTime = isoToZonedLocal(useBusinessNow(), me?.tenant.timezone).slice(11, 16);
+  const options = lessonPeriodOptions(
+    upcomingLessonPeriods(periods.data?.data ?? [], schoolTime),
+    locale,
+  );
+  const dayOver = periods.isSuccess && options.length === 0;
   const [destination, setDestination] = useState("");
   const [startId, setStartId] = useState("");
   const [endId, setEndId] = useState("");
@@ -100,6 +112,7 @@ export function CreateForm({
       }}
     >
       {error && <FormError>{error}</FormError>}
+      {dayOver && <p className="text-body-sm text-fg-muted">{t("noPeriodsLeft")}</p>}
       <FormSection>
         <Field
           label={t("destination")}

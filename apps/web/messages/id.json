@@ -1536,6 +1536,7 @@
           "pick": "Pilih",
           "stagesHint": "Setelah diajukan, temui guru di setiap tahap, lalu pindai QR persetujuan yang ia tampilkan. QR gerbang muncul setelah tahap terakhir.",
           "requiredError": "Tujuan dan rentang jam wajib diisi.",
+          "noPeriodsLeft": "Jam pelajaran hari ini sudah selesai. Izin keluar hanya untuk jam yang sedang berjalan atau yang akan datang.",
           "created": "Izin keluar diajukan",
           "submit": "Ajukan",
           "required": "Wajib diisi.",

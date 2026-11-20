@@ -44,6 +44,7 @@ var (
 	errStageMismatch       = httpx.NewError(http.StatusConflict, "WORKFLOW_STAGE_MISMATCH")
 	errLeaveReason         = httpx.NewError(http.StatusBadRequest, "LEAVE_REASON_REQUIRED")
 	errStudentOnLeave      = httpx.NewError(http.StatusConflict, "STUDENT_ON_LEAVE_TODAY")
+	errExitPeriodPassed    = httpx.NewError(http.StatusUnprocessableEntity, "EXIT_PERMIT_PERIOD_PASSED")
 )
 
 var permitErrorMap = map[error]error{
@@ -86,6 +87,7 @@ var permitErrorMap = map[error]error{
 	domain.ErrReasonTooLong:                errReasonTooLong,
 	domain.ErrLeaveReasonRequired:          errLeaveReason,
 	domain.ErrStudentOnLeaveToday:          errStudentOnLeave,
+	domain.ErrExitPermitPeriodPassed:       errExitPeriodPassed,
 }
 
 func mapError(err error) error {

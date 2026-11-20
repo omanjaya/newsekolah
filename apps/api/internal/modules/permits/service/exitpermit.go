@@ -64,8 +64,19 @@ func (s *Service) CreateExitPermit(ctx context.Context, in CreateExitPermitInput
 			return err
 		}
 
-		if err := s.validatePeriodRange(ctx, in.TenantID, in.StartPeriodID, in.EndPeriodID); err != nil {
+		start, _, err := s.validatePeriodRange(ctx, in.TenantID, in.StartPeriodID, in.EndPeriodID)
+		if err != nil {
 			return err
+		}
+		// A request is for leaving now or later today: the first period
+		// must still be running or ahead on the school's own clock. A
+		// window that is already over is refused rather than sent up the
+		// approval chain, whose gate scan would mark those past periods D.
+		// The duty teacher's desk record (RecordExitPermitByStaff) is
+		// exempt: it writes down an exit as it happens.
+		now := s.tenantNow(ctx, in.TenantID)
+		if !combineDateAndDuration(now, start.EndsAt).After(now) {
+			return domain.ErrExitPermitPeriodPassed
 		}
 
 		studentName, err := s.repo.GetUserName(ctx, in.TenantID, in.StudentUserID)
@@ -105,19 +116,20 @@ func (s *Service) CreateExitPermit(ctx context.Context, in CreateExitPermitInput
 // after startPeriodID's within the same template -- the only ordering
 // concept periods carries, since two templates need not share a day
 // layout. Bug fix vs. the old app, which compared period IDs directly.
-func (s *Service) validatePeriodRange(ctx context.Context, tenantID, startPeriodID, endPeriodID uuid.UUID) error {
-	start, err := s.repo.GetPeriod(ctx, tenantID, startPeriodID)
+// It returns both periods for the caller's time checks.
+func (s *Service) validatePeriodRange(ctx context.Context, tenantID, startPeriodID, endPeriodID uuid.UUID) (start, end PeriodInfo, err error) {
+	start, err = s.repo.GetPeriod(ctx, tenantID, startPeriodID)
 	if err != nil {
-		return fmt.Errorf("look up start period: %w", err)
+		return PeriodInfo{}, PeriodInfo{}, fmt.Errorf("look up start period: %w", err)
 	}
-	end, err := s.repo.GetPeriod(ctx, tenantID, endPeriodID)
+	end, err = s.repo.GetPeriod(ctx, tenantID, endPeriodID)
 	if err != nil {
-		return fmt.Errorf("look up end period: %w", err)
+		return PeriodInfo{}, PeriodInfo{}, fmt.Errorf("look up end period: %w", err)
 	}
 	if start.TemplateID != end.TemplateID || end.Sequence <= start.Sequence {
-		return domain.ErrPeriodRangeInvalid
+		return PeriodInfo{}, PeriodInfo{}, domain.ErrPeriodRangeInvalid
 	}
-	return nil
+	return start, end, nil
 }
 
 // ExitPermitScan is what a student calls after scanning the current
@@ -259,7 +271,14 @@ func (s *Service) IssueGateToken(ctx context.Context, tenantID, instanceID, issu
 		// wall-clock time of day in the tenant's own timezone, and
 		// combineDateAndDuration needs a same-timezone date to combine it
 		// with (docs/analysis/backend-inventory.md 1.15).
-		periodEndsAt := combineDateAndDuration(s.tenantNow(ctx, tenantID), endPeriod.EndsAt)
+		now := s.tenantNow(ctx, tenantID)
+		periodEndsAt := combineDateAndDuration(now, endPeriod.EndsAt)
+		// Once the window is over there is nothing left to leave for:
+		// refuse instead of minting a short-lived token whose scan would
+		// mark the past periods D.
+		if !periodEndsAt.After(now) {
+			return domain.ErrExitPermitPeriodPassed
+		}
 
 		result, err = s.IssueScanToken(ctx, IssueScanTokenInput{
 			TenantID: tenantID, Purpose: domain.PurposeGateExit,

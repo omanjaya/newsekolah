@@ -33,6 +33,20 @@ export function lessonPeriodOptions(
     }));
 }
 
+/**
+ * The lessons a student may still ask to leave: those that have not ended
+ * by `schoolTime` ("HH:mm", the school's wall clock now). The API refuses
+ * a request whose first lesson is already over (EXIT_PERMIT_PERIOD_PASSED),
+ * so the form offers only the running lesson and the ones still to come.
+ * A lesson ending at 07:45 drops out at 07:45, as the API's check does.
+ */
+export function upcomingLessonPeriods<T extends LessonPeriod>(
+  periods: readonly T[],
+  schoolTime: string,
+): T[] {
+  return periods.filter((p) => p.ends_at.slice(0, 5) > schoolTime);
+}
+
 /** The options a range may end on: the start lesson and every one after it. */
 export function endPeriodOptions(
   options: readonly LessonPeriodOption[],

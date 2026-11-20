@@ -167,6 +167,9 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
+        # EXIT_PERMIT_PERIOD_PASSED: the first period has already ended
+        # on the school's clock.
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
 
   /v1/exit-permits/staff-record:
     post:
@@ -306,6 +309,8 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
+        # EXIT_PERMIT_PERIOD_PASSED: the permit's last period is over.
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
 
   /v1/exit-permits/{instanceId}/gate-scan:
     post:
