@@ -893,6 +893,7 @@
         "startsAt": "Tampil mulai",
         "startsAtHint": "Kosongkan untuk tampil segera setelah terbit. Isi lalu pilih Jadwalkan agar terbit otomatis.",
         "endsAt": "Tampil sampai",
+        "endsBeforeStart": "Tampil sampai harus setelah tampil mulai",
         "pinned": "Sematkan di atas",
         "cancel": "Batal",
         "saveDraft": "Simpan draf",

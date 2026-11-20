@@ -2,6 +2,7 @@ package service
 
 import (
 	"html"
+	"regexp"
 	"strings"
 	"time"
 
@@ -39,14 +40,23 @@ func (in Input) validate() error {
 		return domain.ErrInvalidInput
 	}
 	if in.StartsAt != nil && in.EndsAt != nil && !in.EndsAt.After(*in.StartsAt) {
-		return domain.ErrInvalidInput
+		return domain.ErrEndsBeforeStart
 	}
 	return in.Audience.Validate()
 }
 
+// textBreak matches the tags that end a line or a block of text. Stripping
+// them alone would glue the words on either side together
+// ("hadir.</p><p>Pakaian" -> "hadir.Pakaian"), so each gets a space
+// first; inline tags (<strong>, <a>) are stripped without one, so a word
+// that is partly bold stays one word.
+var textBreak = regexp.MustCompile(`(?i)<br\s*/?>|</(p|div|li|h[1-6]|blockquote|pre|tr|td|th)\s*>`)
+
 func sanitize(bodyHTML string) (cleanHTML, text string) {
 	cleanHTML = htmlPolicy.Sanitize(bodyHTML)
-	text = html.UnescapeString(textPolicy.Sanitize(bodyHTML))
+	text = html.UnescapeString(textPolicy.Sanitize(textBreak.ReplaceAllStringFunc(bodyHTML, func(tag string) string {
+		return tag + " "
+	})))
 	text = strings.Join(strings.Fields(text), " ")
 	return cleanHTML, text
 }

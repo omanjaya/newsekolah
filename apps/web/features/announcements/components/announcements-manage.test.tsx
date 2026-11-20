@@ -188,3 +188,45 @@ describe("AnnouncementsManage empty and row states", () => {
     expect(within(menu).getByRole("separator")).toBeInTheDocument();
   });
 });
+
+describe("AnnouncementsManage read column", () => {
+  it("shows the read count the list carries, and an unknown one as '-', never a false 0", () => {
+    mocks.useAnnouncementsQuery.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: "a1",
+            title: "Dibaca",
+            status: "published",
+            audience: { type: "all" },
+            created_at: "2026-11-01T00:00:00Z",
+            recipient_count: 13,
+            read_count: 1,
+          },
+          {
+            id: "a2",
+            title: "Tanpa hitungan",
+            status: "published",
+            audience: { type: "all" },
+            created_at: "2026-11-01T00:00:00Z",
+            recipient_count: 13,
+          },
+        ],
+        page: { next_cursor: "" },
+      },
+      isLoading: false,
+    });
+    render(<AnnouncementsManage creating={false} onCreatingChange={vi.fn()} />);
+
+    const rowOf = (title: string) => {
+      const tr = screen
+        .getAllByText(title)
+        .map((el) => el.closest("tr"))
+        .find((el): el is HTMLTableRowElement => el !== null);
+      if (!tr) throw new Error(`no table row for ${title}`);
+      return tr;
+    };
+    expect(within(rowOf("Dibaca")).getByText("reach")).toBeInTheDocument();
+    expect(within(rowOf("Tanpa hitungan")).queryByText("reach")).not.toBeInTheDocument();
+  });
+});

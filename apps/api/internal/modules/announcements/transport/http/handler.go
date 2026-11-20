@@ -40,6 +40,7 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrAudienceEmpty:      httpx.ErrAnnouncementAudienceEmpty,
 	domain.ErrInvalidAudience:    httpx.ErrValidation,
 	domain.ErrInvalidInput:       httpx.ErrValidation,
+	domain.ErrEndsBeforeStart:    httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "ends_at", Code: "BEFORE_START"}),
 }
 
 func mapError(err error) error {
@@ -74,7 +75,10 @@ func (h *AnnouncementsHandler) ListAnnouncements(ctx context.Context, request ap
 	}
 	out := api.ListAnnouncements200JSONResponse{Data: make([]api.Announcement, len(page.Items))}
 	for i, a := range page.Items {
-		out.Data[i] = toAPI(a, nil)
+		// Every row carries its read count, 0 included, so the list's
+		// "read" column never has to guess.
+		reads := page.ReadCounts[a.ID]
+		out.Data[i] = toAPI(a, &reads)
 	}
 	out.Page.NextCursor = page.NextCursor
 	return out, nil

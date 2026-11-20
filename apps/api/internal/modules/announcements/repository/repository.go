@@ -163,6 +163,21 @@ func (r *Repository) CountReads(ctx context.Context, tenantID, announcementID uu
 	return n, nil
 }
 
+func (r *Repository) CountReadsByIDs(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (map[uuid.UUID]int64, error) {
+	out := make(map[uuid.UUID]int64, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+	rows, err := r.queries(ctx).CountAnnouncementReadsByIDs(ctx, db.CountAnnouncementReadsByIDsParams{TenantID: tenantID, AnnouncementIds: ids})
+	if err != nil {
+		return nil, fmt.Errorf("count announcement reads by ids: %w", err)
+	}
+	for _, row := range rows {
+		out[row.AnnouncementID] = row.ReadCount
+	}
+	return out, nil
+}
+
 func (r *Repository) ReadIDsForUser(ctx context.Context, tenantID, userID uuid.UUID, ids []uuid.UUID) ([]uuid.UUID, error) {
 	out, err := r.queries(ctx).ListReadAnnouncementIDsForUser(ctx, db.ListReadAnnouncementIDsForUserParams{TenantID: tenantID, UserID: userID, AnnouncementIds: ids})
 	if err != nil {

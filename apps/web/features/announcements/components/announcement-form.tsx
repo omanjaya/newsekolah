@@ -40,27 +40,11 @@ import {
   useCreateAnnouncementMutation,
   useUpdateAnnouncementMutation,
 } from "../api";
+import { htmlToText, textToHtml } from "../lib/body-text";
 import { describeAudience } from "../lib/describe-audience";
 
 const ROLE_SLUGS = ["student", "teacher", "staff"] as const;
 type AudienceType = "all" | "roles" | "classes";
-
-/** Plain text from the editor becomes one paragraph per blank-line block. */
-function textToHtml(text: string): string {
-  return text
-    .split(/\n{2,}/)
-    .map((block) => block.trim())
-    .filter(Boolean)
-    .map(
-      (block) =>
-        `<p>${block
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/\n/g, "<br>")}</p>`,
-    )
-    .join("");
-}
 
 export function AnnouncementForm({
   initial,
@@ -88,7 +72,12 @@ export function AnnouncementForm({
 
   const [activeTab, setActiveTab] = useState<"compose" | "preview">("compose");
   const [title, setTitle] = useState(initial?.title ?? "");
-  const [body, setBody] = useState(initial?.body_text ?? "");
+  // The editor opens on the stored HTML read back as text, so its
+  // paragraphs and line breaks survive an edit; body_text is a flattened
+  // copy for previews and notifications, not the source.
+  const [body, setBody] = useState(() =>
+    initial ? (initial.body_html ? htmlToText(initial.body_html) : initial.body_text) : "",
+  );
   const [audienceType, setAudienceType] = useState<AudienceType>(
     (initial?.audience.type as AudienceType | undefined) ?? "all",
   );
@@ -103,6 +92,13 @@ export function AnnouncementForm({
   );
   const startsAtIso = zonedLocalToIso(startsAt, timeZone);
   const endsAtIso = zonedLocalToIso(endsAt, timeZone);
+  // A window that ends before (or when) it starts would show the
+  // announcement to nobody; the server refuses it too.
+  const windowInvalid = Boolean(
+    startsAtIso && endsAtIso && Date.parse(endsAtIso) <= Date.parse(startsAtIso),
+  );
+  // The server's own answer for the same check, kept until the dates change.
+  const [serverEndsError, setServerEndsError] = useState(false);
   // The banner carries only the server's answer: a missing title, body or
   // audience is marked on its own field once Save has been pressed.
   const [error, setError] = useState<string | null>(null);
@@ -113,6 +109,8 @@ export function AnnouncementForm({
   const requiredError = (value: string) =>
     attempted && !value.trim() ? tValidation("required") : undefined;
   const audienceError = attempted && audienceMissing ? t("audienceError") : undefined;
+  const endsAtError =
+    (attempted && windowInvalid) || serverEndsError ? t("endsBeforeStart") : undefined;
 
   const pending = create.isPending || update.isPending;
 
@@ -122,7 +120,8 @@ export function AnnouncementForm({
 
   async function submit() {
     setError(null);
-    if (!check(Boolean(title.trim() && body.trim()) && !audienceMissing)) {
+    setServerEndsError(false);
+    if (!check(Boolean(title.trim() && body.trim()) && !audienceMissing && !windowInvalid)) {
       // The fields live on the compose tab: bring it back so the first
       // missing one can take focus.
       setActiveTab("compose");
@@ -147,6 +146,13 @@ export function AnnouncementForm({
       toast.success(initial ? t("updated") : t("created"));
       onSaved(saved);
     } catch (err) {
+      if (err instanceof ApiError && (err.details ?? []).some((d) => d.field === "ends_at")) {
+        // Named by the server: mark the field, not a banner.
+        setServerEndsError(true);
+        setActiveTab("compose");
+        check(false);
+        return;
+      }
       setError(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
     }
   }
@@ -271,9 +277,21 @@ export function AnnouncementForm({
               label={t("startsAt")}
               hint={t("startsAtHint")}
               value={startsAt}
-              onChange={setStartsAt}
+              onChange={(next) => {
+                setStartsAt(next);
+                setServerEndsError(false);
+              }}
             />
-            <DateTimeField label={t("endsAt")} value={endsAt} onChange={setEndsAt} />
+            <DateTimeField
+              label={t("endsAt")}
+              value={endsAt}
+              minDate={startsAt ? startsAt.slice(0, 10) : undefined}
+              error={endsAtError}
+              onChange={(next) => {
+                setEndsAt(next);
+                setServerEndsError(false);
+              }}
+            />
             <Field label={t("pinned")} orientation="horizontal" className="col-span-full">
               <Switch checked={pinned} onCheckedChange={setPinned} />
             </Field>
@@ -345,16 +363,21 @@ function DateTimeField({
   label,
   hint,
   value,
+  minDate,
+  error,
   onChange,
 }: {
   label: string;
   hint?: string;
   value: string;
+  /** The first date the calendar offers, "YYYY-MM-DD". */
+  minDate?: string;
+  error?: string;
   onChange: (value: string) => void;
 }): ReactElement {
   const [date = "", time = ""] = value.split("T");
   return (
-    <Field label={label} hint={hint}>
+    <Field label={label} hint={hint} error={error}>
       {(control) => (
         <div
           className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]"
@@ -364,6 +387,8 @@ function DateTimeField({
         >
           <DatePicker
             value={date === "" ? null : date}
+            min={minDate}
+            aria-invalid={control["aria-invalid"]}
             onChange={(next) => {
               onChange(next ? `${next}T${time || "00:00"}` : "");
             }}
@@ -371,6 +396,7 @@ function DateTimeField({
           <TimePicker
             value={time === "" ? null : time}
             disabled={date === ""}
+            aria-invalid={control["aria-invalid"]}
             onChange={(next) => {
               if (date) onChange(`${date}T${next}`);
             }}

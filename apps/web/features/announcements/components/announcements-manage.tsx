@@ -158,10 +158,13 @@ export function AnnouncementsManage({
         id: "reach",
         header: t("columns.reach"),
         enableSorting: false,
+        // The admin list always carries read_count; a row without one is
+        // unknown, not unread, so it shows "-" rather than a false 0.
         cell: ({ row }) =>
-          row.original.status === "published" || row.original.status === "archived"
+          (row.original.status === "published" || row.original.status === "archived") &&
+          row.original.read_count !== undefined
             ? t("reach", {
-                read: row.original.read_count ?? 0,
+                read: row.original.read_count,
                 total: row.original.recipient_count,
               })
             : "-",

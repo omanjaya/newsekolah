@@ -1,5 +1,6 @@
+import { ApiError } from "@newsekolah/api-client";
 import type * as UiModule from "@newsekolah/ui";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
@@ -191,4 +192,87 @@ it("marks an empty audience on the audience picker, not in a banner", async () =
   const boxes = screen.getAllByRole("checkbox");
   expect(boxes[0]).toHaveAttribute("aria-invalid", "true");
   expect(boxes[0]).toHaveFocus();
+});
+
+const SAVED = {
+  id: "a1",
+  title: "Upacara",
+  body_html:
+    "<p>Seluruh warga sekolah wajib hadir.</p><p>Pakaian: seragam putih abu-abu.<br>Bawa topi.</p>",
+  // The flattened copy older rows still carry; the editor must not use it.
+  body_text: "Seluruh warga sekolah wajib hadir.Pakaian: seragam putih abu-abu.Bawa topi.",
+  audience: { type: "all" as const },
+  is_pinned: false,
+  status: "draft" as const,
+  recipient_count: 0,
+  created_at: "2026-11-01T00:00:00Z",
+};
+
+it("opens a saved announcement with its paragraphs and lines, and saving it unchanged keeps them", async () => {
+  update.mockResolvedValue({ id: "a1" });
+  const user = userEvent.setup();
+  render(<AnnouncementForm initial={SAVED} onSaved={vi.fn()} onCancel={vi.fn()} />);
+
+  expect(screen.getByRole("textbox", { name: /body/ })).toHaveValue(
+    "Seluruh warga sekolah wajib hadir.\n\nPakaian: seragam putih abu-abu.\nBawa topi.",
+  );
+
+  await user.click(screen.getByRole("button", { name: "saveChanges" }));
+  const [vars] = update.mock.calls[0] as [{ body: { body_html: string } }];
+  expect(vars.body.body_html).toBe(SAVED.body_html);
+});
+
+it("marks an end before the start on the end field and focuses it, even from the preview tab", async () => {
+  update.mockReset();
+  const user = userEvent.setup();
+  render(
+    <AnnouncementForm
+      initial={{
+        ...SAVED,
+        // 25 and 22 November, 07:00 in Asia/Jakarta.
+        starts_at: "2026-11-25T00:00:00Z",
+        ends_at: "2026-11-22T00:00:00Z",
+      }}
+      onSaved={vi.fn()}
+      onCancel={vi.fn()}
+    />,
+  );
+
+  // Submitting from the preview: the compose tab, where the field lives,
+  // is hidden until the form switches back to it.
+  await user.click(screen.getByRole("tab", { name: "tabPreview" }));
+  await user.click(screen.getByRole("button", { name: "saveChanges" }));
+
+  expect(update).not.toHaveBeenCalled();
+  const group = await screen.findByRole("group", { name: "endsAt" });
+  expect(group).toHaveAccessibleDescription("endsBeforeStart");
+  const [datePicker] = within(group).getAllByRole("combobox");
+  expect(datePicker).toHaveAttribute("aria-invalid", "true");
+  await vi.waitFor(() => {
+    expect(datePicker).toHaveFocus();
+  });
+  // No banner for what the field says itself.
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
+
+it("puts the server's ends_at answer on the end field instead of a generic banner", async () => {
+  update.mockReset();
+  update.mockRejectedValue(
+    new ApiError({
+      status: 400,
+      code: "VALIDATION_FAILED",
+      message: "x",
+      details: [{ field: "ends_at", code: "BEFORE_START" }],
+    }),
+  );
+  const user = userEvent.setup();
+  render(<AnnouncementForm initial={SAVED} onSaved={vi.fn()} onCancel={vi.fn()} />);
+
+  await user.click(screen.getByRole("button", { name: "saveChanges" }));
+
+  const group = await screen.findByRole("group", { name: "endsAt" });
+  await vi.waitFor(() => {
+    expect(group).toHaveAccessibleDescription("endsBeforeStart");
+  });
+  expect(screen.queryByText("VALIDATION_FAILED")).not.toBeInTheDocument();
 });

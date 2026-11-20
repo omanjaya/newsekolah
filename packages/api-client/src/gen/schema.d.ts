@@ -8743,6 +8743,7 @@ export interface components {
             /** Format: date-time */
             published_at?: string;
             recipient_count: number;
+            /** @description How many recipients have read it. Always present (0 included) on the admin list and the detail; absent from other responses. */
             read_count?: number;
             /** Format: date-time */
             created_at: string;
