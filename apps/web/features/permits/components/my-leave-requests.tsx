@@ -31,7 +31,7 @@ import {
   useMyLeaveRequestsQuery,
 } from "../api";
 import { buildLeaveMineTiles, countLeaveMineStatuses } from "../lib/leave-mine-tiles";
-import { countDays, formatDayRange } from "../lib/permit-dates";
+import { formatDayRange } from "../lib/permit-dates";
 
 import { LeaveRequestDetail } from "./leave-request-detail";
 import { SubmitForm } from "./leave-request-submit-form";
@@ -198,7 +198,7 @@ function ActiveLeaveCard({
       title={t(`categories.${item.category}`)}
       meta={[
         formatDayRange(item.starts_on, item.ends_on, locale),
-        t("days", { count: countDays(item.starts_on, item.ends_on) }),
+        t("days", { count: item.school_days }),
       ].join(" · ")}
       action={
         <Button variant="secondary" onClick={onOpen} className="w-full sm:w-auto">
@@ -232,7 +232,7 @@ function LeaveRequestRow({
   const t = useTranslations("app.permits.leave");
   const meta = [
     formatDayRange(item.starts_on, item.ends_on, locale),
-    t("days", { count: countDays(item.starts_on, item.ends_on) }),
+    t("days", { count: item.school_days }),
     ...(item.letter_number ? [t("letterNumberShort", { number: item.letter_number })] : []),
   ].join(" · ");
   return (

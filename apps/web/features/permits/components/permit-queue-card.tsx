@@ -18,7 +18,7 @@ import { useState } from "react";
 
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { StudentLink } from "../../students/components/student-link";
-import { countDays, formatDayRange } from "../lib/permit-dates";
+import { formatDayRange } from "../lib/permit-dates";
 import type { PermitQueueRow } from "../lib/permit-queue";
 
 import { WorkflowStatusBadge } from "./workflow-stepper";
@@ -78,7 +78,7 @@ export function PermitQueueCard({
       ? [
           t(row.type),
           formatDayRange(row.leave.starts_on, row.leave.ends_on, locale),
-          tLeave("days", { count: countDays(row.leave.starts_on, row.leave.ends_on) }),
+          tLeave("days", { count: row.leave.school_days }),
         ].join(" · ")
       : `${t(row.type)} · ${formatDateTime(row.openedAt, { locale, timeZone })}`;
   const busy = approving || rejecting;

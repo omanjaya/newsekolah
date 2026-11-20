@@ -35,7 +35,7 @@ import {
   useReviewLeaveRequestMutation,
   useUploadEvidenceMutation,
 } from "../api";
-import { countDays, formatDayRange } from "../lib/permit-dates";
+import { formatDayRange } from "../lib/permit-dates";
 
 import { isLeaveRequestMissing } from "./leave-request-not-found";
 import { WorkflowStepper } from "./workflow-stepper";
@@ -125,7 +125,7 @@ export function LeaveRequestDetail({
           <p className="text-heading text-fg">{t(`categories.${data.category}`)}</p>
           <p className="text-body-sm text-fg-muted">
             {formatDayRange(data.starts_on, data.ends_on, locale)} ·{" "}
-            {t("days", { count: countDays(data.starts_on, data.ends_on) })}
+            {t("days", { count: data.school_days })}
           </p>
         </div>
       )}

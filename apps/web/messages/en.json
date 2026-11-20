@@ -1757,7 +1757,7 @@
           "letterPending": "Waiting for the letter",
           "detail": "View details"
         },
-        "days": "{count, plural, one {# day} other {# days}}",
+        "days": "{count, plural, one {# school day} other {# school days}}",
         "submittedAt": "Submitted {time}",
         "awaitingLetter": "Approved by the homeroom teacher, waiting for the letter",
         "historyTitle": "Request history",

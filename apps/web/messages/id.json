@@ -1755,7 +1755,7 @@
           "letterPending": "Menunggu surat",
           "detail": "Lihat detail"
         },
-        "days": "{count, plural, other {# hari}}",
+        "days": "{count, plural, other {# hari sekolah}}",
         "submittedAt": "Diajukan {time}",
         "awaitingLetter": "Disetujui wali kelas, menunggu surat izin diterbitkan",
         "historyTitle": "Riwayat pengajuan",

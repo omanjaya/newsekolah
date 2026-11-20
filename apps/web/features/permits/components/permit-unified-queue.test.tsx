@@ -89,6 +89,7 @@ function leaveItem(id: string) {
     starts_on: "2026-09-29",
     ends_on: "2026-09-29",
     opened_at: "2026-09-29T00:10:00Z",
+    school_days: 1,
   };
 }
 

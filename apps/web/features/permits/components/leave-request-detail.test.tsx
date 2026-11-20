@@ -73,6 +73,7 @@ function leave(status: string, stageIndex: number, overrides: Record<string, unk
     category: "sick",
     starts_on: "2026-11-18",
     ends_on: "2026-11-19",
+    school_days: 2,
     student_name: "Siswa Contoh",
     class_name: "X-A",
     reason: "Demam",
