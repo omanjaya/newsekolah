@@ -1925,7 +1925,10 @@ type Querier interface {
 	// created_at is the service clock's instant rather than now(), so a
 	// simulated school day dates a first schedule the way it dates scans:
 	// days before it have no schedule to be absent from. An update keeps the
-	// original created_at.
+	// original created_at, except when it turns a day off into a working day:
+	// the editor stores all seven weekdays on the first save, so an off
+	// weekday already has a row, and keeping its date would make every past
+	// occurrence of that weekday an absence it never was.
 	UpsertStaffAttendanceScheduleDay(ctx context.Context, arg UpsertStaffAttendanceScheduleDayParams) (StaffAttendanceSchedule, error)
 	UpsertStaffProfile(ctx context.Context, arg UpsertStaffProfileParams) error
 	UpsertStudentProfile(ctx context.Context, arg UpsertStudentProfileParams) error

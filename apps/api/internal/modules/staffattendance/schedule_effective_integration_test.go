@@ -178,3 +178,79 @@ func TestFirstScheduleRejudgesAnUnscheduledCheckIn(t *testing.T) {
 		require.NotContains(t, row, "23:00")
 	}
 }
+
+// TestFutureMonthRecapKeepsTheEmployeeName: a month that has not started
+// has no days, yet its recap and per-employee export still name the
+// employee rather than falling back to the raw user ID.
+func TestFutureMonthRecapKeepsTheEmployeeName(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx, schoolID, employee, loc := makassarStaff(t, pg, "Satpam Contoh")
+	mod := Register(Dependencies{Pool: pg.AppPool, Years: stubYears{}, Calendar: stubCalendar{}, Leave: stubLeave{}})
+
+	readAt := clock.WithTime(ctx, time.Date(2026, 11, 20, 12, 0, 0, 0, loc))
+	_, err := mod.Service.ReplaceWeeklySchedule(readAt, schoolID, employee, employee, weekdaysSchedule(8*60, 16*60, 10))
+	require.NoError(t, err)
+
+	recap, err := mod.Service.GetMonthlyRecap(readAt, schoolID, employee, "2027-01")
+	require.NoError(t, err)
+	require.Empty(t, recap.Days)
+	require.Equal(t, "Satpam Contoh", recap.EmployeeName)
+
+	xlsx, err := mod.Service.ExportMonthlyRecapReport(readAt, schoolID, employee, "2027-01", reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatXLSX})
+	require.NoError(t, err)
+	f, err := excelize.OpenReader(bytes.NewReader(xlsx))
+	require.NoError(t, err)
+	defer f.Close() //nolint:errcheck
+	require.Equal(t, []string{"Satpam Contoh"}, f.GetSheetList(), "the sheet is titled with the name, not the UUID")
+	rows, err := f.GetRows(f.GetSheetList()[0])
+	require.NoError(t, err)
+	foundName := false
+	for _, row := range rows {
+		for _, cell := range row {
+			require.NotContains(t, cell, employee.String())
+			if cell == "Satpam Contoh" {
+				foundName = true
+			}
+		}
+	}
+	require.True(t, foundName, "the scope line names the employee")
+}
+
+// TestEnablingAnOffWeekdayIsNotRetroactive: the editor stores all seven
+// weekdays on the first save, so Saturday already has an "off" row. Turning
+// Saturday on later must date it from that save: earlier Saturdays had no
+// working schedule and are unscheduled, not absent.
+func TestEnablingAnOffWeekdayIsNotRetroactive(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx, schoolID, employee, loc := makassarStaff(t, pg, "Satpam Contoh")
+	mod := Register(Dependencies{Pool: pg.AppPool, Years: stubYears{}, Calendar: stubCalendar{}, Leave: stubLeave{}})
+
+	firstSave := clock.WithTime(ctx, time.Date(2026, 11, 2, 7, 0, 0, 0, loc))
+	_, err := mod.Service.ReplaceWeeklySchedule(firstSave, schoolID, employee, employee, weekdaysSchedule(8*60, 16*60, 10))
+	require.NoError(t, err)
+
+	withSaturday := weekdaysSchedule(8*60, 16*60, 10)
+	withSaturday[5].IsWorkingDay = true
+	secondSave := clock.WithTime(ctx, time.Date(2026, 11, 20, 12, 0, 0, 0, loc))
+	_, err = mod.Service.ReplaceWeeklySchedule(secondSave, schoolID, employee, employee, withSaturday)
+	require.NoError(t, err)
+
+	// Saving the same week again keeps Saturday dated from the second save.
+	_, err = mod.Service.ReplaceWeeklySchedule(clock.WithTime(ctx, time.Date(2026, 11, 25, 12, 0, 0, 0, loc)), schoolID, employee, employee, withSaturday)
+	require.NoError(t, err)
+
+	readAt := clock.WithTime(ctx, time.Date(2026, 11, 28, 18, 0, 0, 0, loc))
+	recap, err := mod.Service.GetMonthlyRecap(readAt, schoolID, employee, "2026-11")
+	require.NoError(t, err)
+	require.Len(t, recap.Days, 28)
+	statusOn := func(day int) domain.StatusCode {
+		return recap.Days[day-1].StatusCode
+	}
+	require.Equal(t, domain.StatusUnscheduled, statusOn(7), "Saturday 7 Nov was a day off then")
+	require.Equal(t, domain.StatusUnscheduled, statusOn(14), "Saturday 14 Nov was a day off then")
+	require.Equal(t, domain.StatusAbsent, statusOn(21), "Saturday is a working day from 20 Nov")
+	require.Equal(t, domain.StatusAbsent, statusOn(28))
+	require.Equal(t, domain.StatusAbsent, statusOn(9), "Monday keeps the date of the first save")
+	require.Equal(t, domain.StatusHoliday, statusOn(8), "Sunday stays off")
+	require.Equal(t, domain.StatusUnscheduled, statusOn(1), "1 Nov is before any schedule")
+}

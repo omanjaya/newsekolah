@@ -45,10 +45,10 @@ type ScheduleDay struct {
 	StartMinute    int
 	EndMinute      int
 	GraceMinutes   int
-	// CreatedAt is when this weekday was first given a schedule row. A
-	// schedule is not retroactive: a day before it existed has no
-	// expectation to be absent from (see InEffectOn). Zero means "always
-	// in effect".
+	// CreatedAt is when this weekday was first given a schedule row, or
+	// when it last turned from a day off into a working day. A schedule is
+	// not retroactive: a day before it existed has no expectation to be
+	// absent from (see InEffectOn). Zero means "always in effect".
 	CreatedAt time.Time
 }
 
