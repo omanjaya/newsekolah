@@ -513,6 +513,7 @@
     "EVIDENCE_REQUIRED": "Lampirkan bukti sebelum mengirim.",
     "EVIDENCE_TOO_LARGE": "Berkas bukti lebih dari 6 MB. Pilih berkas yang lebih kecil.",
     "EVIDENCE_INVALID_TYPE": "Berkas bukti harus gambar JPEG atau PNG. Pilih berkas lain.",
-    "VIOLATION_INVALID": "Jenis pelanggaran tidak valid. Pilih jenis lain."
+    "VIOLATION_INVALID": "Jenis pelanggaran tidak valid. Pilih jenis lain.",
+    "UPLOAD_STORAGE_UNREACHABLE": "Berkas tidak dapat diunggah ke penyimpanan. Coba lagi; bila terus gagal, hubungi admin sekolah."
   }
 }

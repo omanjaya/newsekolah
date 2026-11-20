@@ -513,6 +513,7 @@
     "EVIDENCE_REQUIRED": "Attach evidence before submitting.",
     "EVIDENCE_TOO_LARGE": "The evidence file is larger than 6 MB. Pick a smaller file.",
     "EVIDENCE_INVALID_TYPE": "The evidence must be a JPEG or PNG image. Pick another file.",
-    "VIOLATION_INVALID": "The violation type is not valid. Pick another type."
+    "VIOLATION_INVALID": "The violation type is not valid. Pick another type.",
+    "UPLOAD_STORAGE_UNREACHABLE": "The file could not be uploaded to storage. Try again; if it keeps failing, contact the school administrator."
   }
 }

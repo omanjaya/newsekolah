@@ -33,8 +33,18 @@ export function uploadToPresignedUrl(
       }
       reject(new ApiError({ status: xhr.status, code: "UNKNOWN", message: "Upload failed" }));
     };
+    // The PUT never reached object storage: the storage origin is not
+    // allowed by the page's CSP (a deployment setting) or cannot be reached
+    // at all. Its own code, so the message does not blame the user's
+    // connection for what is usually a server-side configuration problem.
     xhr.onerror = () => {
-      reject(new ApiError({ status: 0, code: "NETWORK", message: "Network error" }));
+      reject(
+        new ApiError({
+          status: 0,
+          code: "UPLOAD_STORAGE_UNREACHABLE",
+          message: "Object storage unreachable",
+        }),
+      );
     };
 
     xhr.send(file);

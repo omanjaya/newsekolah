@@ -324,6 +324,7 @@ export type MessageKey =
   | "errors.UPLOAD_FILE_TOO_LARGE"
   | "errors.UPLOAD_INVALID_FILE_TYPE"
   | "errors.UPLOAD_NOT_CONFIGURED"
+  | "errors.UPLOAD_STORAGE_UNREACHABLE"
   | "errors.USER_ALREADY_EXISTS"
   | "errors.USER_CANNOT_ARCHIVE_SELF"
   | "errors.VALIDATION_FAILED"
@@ -770,6 +771,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.UPLOAD_FILE_TOO_LARGE",
   "errors.UPLOAD_INVALID_FILE_TYPE",
   "errors.UPLOAD_NOT_CONFIGURED",
+  "errors.UPLOAD_STORAGE_UNREACHABLE",
   "errors.USER_ALREADY_EXISTS",
   "errors.USER_CANNOT_ARCHIVE_SELF",
   "errors.VALIDATION_FAILED",

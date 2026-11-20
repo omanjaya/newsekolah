@@ -453,9 +453,12 @@ S3_REGION=us-east-1
 
 `docker-compose.prod.yml` reads `S3_PUBLIC_ENDPOINT` straight through to `api`/`worker`, and reuses
 the same value as `NEXT_PUBLIC_S3_PUBLIC_ORIGIN` for the `web` build/runtime so
-`apps/web/middleware.ts`'s CSP allows it in `connect-src` — a no-op here since it is the same
-origin as the site itself (already covered by `'self'`), but required if `S3_PUBLIC_ENDPOINT` is
-ever a different origin than the web app.
+`apps/web/middleware.ts`'s CSP allows it in `connect-src` and `img-src` — a no-op here since it is
+the same origin as the site itself (already covered by `'self'`), but required if
+`S3_PUBLIC_ENDPOINT` is ever a different origin than the web app. Without
+`NEXT_PUBLIC_S3_PUBLIC_ORIGIN`, the web server falls back to `S3_PUBLIC_ENDPOINT` and then
+`S3_ENDPOINT` from its own environment (`apps/web/lib/security/storage-origin.ts`), the same order
+the API signs presigned URLs in.
 
 ## Monitoring
 
