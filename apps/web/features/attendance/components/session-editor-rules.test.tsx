@@ -273,6 +273,28 @@ describe("SessionEditor -- a lesson handed to a substitute", () => {
     expect(screen.getByRole("button", { name: "saveCorrection" })).toBeEnabled();
   });
 
+  // The API grants correction on a handed-over lesson before it starts,
+  // but refuses the save until then, so the notice says when it opens.
+  it("says when a correctable lesson opens instead of offering correction before it starts", () => {
+    syncSimulationIdentity(superadmin());
+    setSimulation("frozen", new Date("2026-09-16T00:30:00Z")); // 07.30 in Asia/Jakarta
+    render(
+      <SessionEditor
+        session={session({
+          starts_at: "2026-09-16T01:00:00Z",
+          save_mode: "correction",
+          editable_until: "2026-09-23T16:59:59Z",
+          handed_over_to_user_id: "substitute",
+        })}
+        openedInCorrection={false}
+      />,
+    );
+
+    expect(screen.getByText("notStartedTitle")).toBeInTheDocument();
+    expect(screen.queryByText("handedOverCorrectionBody")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "saveCorrection" })).toBeDisabled();
+  });
+
   it("warns that the correction window closed once its deadline passes", () => {
     syncSimulationIdentity(superadmin());
     setSimulation("frozen", new Date("2026-09-24T03:00:00Z"));
