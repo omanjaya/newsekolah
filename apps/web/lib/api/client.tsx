@@ -6,7 +6,7 @@ import { createContext, useContext, useMemo } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { API_URL } from "../env";
-import { getSimulationTime } from "../simulation/clock";
+import { getSimulationTime, refuseSimulation } from "../simulation/clock";
 
 import { getAccessToken, setAccessToken } from "./access-token";
 
@@ -58,6 +58,7 @@ export function ApiClientProvider({
       onAccessToken: setAccessToken,
       getLocale: () => locale,
       getSimulationTime,
+      onSimulationRefused: refuseSimulation,
       onUnauthorized: () => {
         setAccessToken(null);
         onUnauthorized({ client: created, queryClient });

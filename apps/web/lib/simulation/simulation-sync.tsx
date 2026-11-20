@@ -27,13 +27,15 @@ export function SimulationSync(): null {
   // page load resolves the reader's identity; with no simulation in play
   // that changes nothing, and invalidating then cancelled and refetched
   // every query, the server-seeded branding included (the public branding
-  // endpoint allows 60 requests a minute per IP).
+  // endpoint allows 60 requests a minute per IP). `me` is refetched too:
+  // the duties it lists, and the permissions they grant, are the ones
+  // active on the business day. Its new answer resolves the same identity,
+  // so it does not move the clock again.
   useEffect(() => {
     if (clockRevision !== previousRevision.current) {
       previousRevision.current = clockRevision;
       const filter = {
-        predicate: (query: { queryKey: readonly unknown[] }) =>
-          query.queryKey[0] !== "me" && query.queryKey[0] !== "auth",
+        predicate: (query: { queryKey: readonly unknown[] }) => query.queryKey[0] !== "auth",
       };
       void queryClient.cancelQueries(filter).then(() => queryClient.invalidateQueries(filter));
     }

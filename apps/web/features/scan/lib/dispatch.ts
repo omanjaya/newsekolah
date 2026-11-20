@@ -36,13 +36,16 @@ export type ScanRoute =
  * "library_visit". The scan-token purpose names are accepted as aliases,
  * as the mobile scanner does. "approve" does not say which workflow the
  * instance belongs to, so the dispatcher decides at scan time
- * (useScanDispatch), the way the mobile scanner does.
+ * (useScanDispatch), the way the mobile scanner does. The duty desk's
+ * "approve_stage" QR names no instance at all: it approves the scanning
+ * student's own exit permit waiting on the desk, which the dispatcher
+ * looks up (features/permits/lib/desk-approval.ts).
  */
 const KIND_ACTION: Record<string, { action: ScanAction; needsInstance: boolean }> = {
   classroom_entry: { action: "classroom_entry", needsInstance: false },
   late_arrival: { action: "late_arrival", needsInstance: false },
   approve: { action: "approve_stage", needsInstance: true },
-  approve_stage: { action: "approve_stage", needsInstance: true },
+  approve_stage: { action: "approve_stage", needsInstance: false },
   gate: { action: "gate_exit", needsInstance: true },
   gate_exit: { action: "gate_exit", needsInstance: true },
   library_visit: { action: "library_visit", needsInstance: false },

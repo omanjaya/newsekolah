@@ -43,7 +43,7 @@ function createMemoryTokenStore(initialRefreshToken: string | null): TokenStore 
 }
 
 describe("createApiClient", () => {
-  it("scopes simulation to business requests and reads its latest instant per request", async () => {
+  it("scopes simulation to everything but authentication and reads its latest instant per request", async () => {
     const seen: [string, string | null][] = [];
     server.use(
       http.get(`${BASE_URL}/v1/me`, ({ request }) => {
@@ -71,11 +71,51 @@ describe("createApiClient", () => {
     current = "2026-10-01T01:00:00.000Z";
     await client.GET("/v1/tenant/branding");
     await client.POST("/v1/auth/logout");
+    // `/v1/me` names the duties active on the business day, so it follows
+    // the simulated clock; only authentication requests never do.
     expect(seen).toEqual([
-      ["me", null],
+      ["me", "2026-09-30T00:00:00.000Z"],
       ["business", "2026-09-30T00:00:00.000Z"],
       ["business", "2026-10-01T01:00:00.000Z"],
       ["auth", null],
+    ]);
+  });
+  it("reads /v1/me again without the clock once the server refuses it", async () => {
+    const seen: [string, string | null][] = [];
+    server.use(
+      http.get(`${BASE_URL}/v1/me`, ({ request }) => {
+        const clock = request.headers.get("x-simulation-time");
+        seen.push(["me", clock]);
+        return clock
+          ? HttpResponse.json(errorBody("FORBIDDEN"), { status: 403 })
+          : HttpResponse.json({ id: "u1" });
+      }),
+      http.get(`${BASE_URL}/v1/tenant/branding`, ({ request }) => {
+        seen.push(["business", request.headers.get("x-simulation-time")]);
+        return HttpResponse.json(errorBody("FORBIDDEN"), { status: 403 });
+      }),
+    );
+    const onSimulationRefused = vi.fn();
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => "token",
+      clientHeader: "web/1.0.0",
+      getSimulationTime: () => "2026-09-30T00:00:00.000Z",
+      onSimulationRefused,
+    });
+
+    await expect(client.GET("/v1/me")).resolves.toEqual({ id: "u1" });
+    expect(onSimulationRefused).toHaveBeenCalledTimes(1);
+    // Any other refused request is a plain permission answer, left alone.
+    await expect(client.GET("/v1/tenant/branding")).rejects.toMatchObject({
+      status: 403,
+      code: "FORBIDDEN",
+    });
+    expect(onSimulationRefused).toHaveBeenCalledTimes(1);
+    expect(seen).toEqual([
+      ["me", "2026-09-30T00:00:00.000Z"],
+      ["me", null],
+      ["business", "2026-09-30T00:00:00.000Z"],
     ]);
   });
   it("attaches Authorization, Accept-Language, X-Client, and X-Tenant headers", async () => {

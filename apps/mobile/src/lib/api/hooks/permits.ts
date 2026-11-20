@@ -1,11 +1,15 @@
 // Scan tokens and a student's own permits: exit permits, late arrivals,
 // planned leave requests. Duty/homeroom review of these lives in
 // ./review.ts instead, since it is a different audience and permission.
-import { queryKeys } from "@newsekolah/api-client";
+import { ApiError, queryKeys } from "@newsekolah/api-client";
+import { apiErrorMessageKey } from "@newsekolah/i18n";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { showToast } from "@/components/ui/Toast";
+import { isAuthRedirecting } from "@/lib/api/auth-redirect-flag";
 import { getApiClient } from "@/lib/api/client";
+import { ownExitRefusalKey } from "@/lib/permits/exit-permit";
 import { useLiveInvalidate } from "@/lib/realtime";
-import { t } from "@/i18n/t";
+import { t, tShared } from "@/i18n/t";
 import type { LateArrivalDetail, LeaveCategory, ScanPurpose } from "./types";
 
 /**
@@ -84,7 +88,14 @@ export function useCreateExitPermit() {
       return_required: boolean;
     }) => getApiClient().POST("/v1/exit-permits", { body }),
     onSuccess: invalidate,
-    meta: { successMessage: t("permits.created") },
+    // A refusal of the student's own request is worded to the student
+    // (ownExitRefusalKey); any other error reads as the shared catalog has it.
+    onError: (error) => {
+      if (isAuthRedirecting()) return;
+      const own = ownExitRefusalKey(error instanceof ApiError ? error.code : undefined);
+      showToast(own ? t(own) : tShared(apiErrorMessageKey(error)), "error");
+    },
+    meta: { successMessage: t("permits.created"), errorToast: false },
   });
 }
 

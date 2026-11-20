@@ -12,6 +12,8 @@ import { cookieTokenStore, type TokenStore } from "./token-store.js";
 
 const MUTATING_METHODS: readonly HttpMethod[] = ["post", "put", "patch", "delete"];
 
+const SIMULATION_TIME_HEADER = "X-Simulation-Time";
+
 /**
  * 401 codes that say the access token is dead, not that the request was
  * wrong, so a refresh is worth one try. AUTH_SESSION_REVOKED is the common
@@ -53,8 +55,23 @@ export interface CreateApiClientOptions {
   clientHeader: string;
   /** Returns a BCP 47 locale for `Accept-Language`. Defaults to "id". */
   getLocale?: () => string;
-  /** Optional per-request test clock; never attached to authentication requests. */
+  /**
+   * Optional per-request test clock, sent as `X-Simulation-Time`. Never
+   * attached to authentication requests (`/v1/auth/*`). `/v1/me` does carry
+   * it: the reader's duties, and the permissions they grant, are the ones
+   * active on the business day, so a simulated day must reach it too. The
+   * app returns a value only once `/v1/me` has shown the actor may simulate.
+   */
   getSimulationTime?: () => string | null;
+  /**
+   * Called when the server refuses the test clock on `/v1/me` (403
+   * FORBIDDEN: the actor may no longer simulate, e.g. platform_superadmin
+   * was revoked mid-session). The app must stop sending the clock here,
+   * since the server refuses every request that carries it. The client
+   * then sends that `/v1/me` once more without the clock, so the reader's
+   * identity, and with it whether they may simulate, can still be read.
+   */
+  onSimulationRefused?: () => void;
 }
 
 /**
@@ -364,6 +381,28 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
   // once that request is no longer reachable.
   const retrySeeds = new WeakMap<Request, Request>();
 
+  /**
+   * `/v1/me` is how the app learns whether the reader may simulate at all,
+   * so it must not stay locked out by the clock it sends: once the actor
+   * loses the right to simulate, the server answers 403 to every request
+   * carrying the clock, `/v1/me` included, and the app would never see the
+   * permissions that turn the clock off. Any other 403 is returned as is.
+   */
+  async function recoverRefusedSimulation(request: Request, response: Response) {
+    if (
+      new URL(request.url).pathname !== "/v1/me" ||
+      !request.headers.has(SIMULATION_TIME_HEADER) ||
+      (await parseErrorFromResponse(response)).code !== "FORBIDDEN"
+    ) {
+      return response;
+    }
+    options.onSimulationRefused?.();
+    const seed = retrySeeds.get(request) ?? request;
+    const retryHeaders = new Headers(seed.headers);
+    retryHeaders.delete(SIMULATION_TIME_HEADER);
+    return fetch(new Request(seed, { headers: retryHeaders }));
+  }
+
   const middleware: Middleware = {
     async onRequest({ request }) {
       if (!(await currentToken())) {
@@ -379,9 +418,9 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
         request.headers.set("X-Tenant", options.tenantSlug);
       }
       const requestPath = new URL(request.url).pathname;
-      if (!requestPath.startsWith("/v1/auth/") && requestPath !== "/v1/me") {
+      if (!requestPath.startsWith("/v1/auth/")) {
         const simulationTime = options.getSimulationTime?.();
-        if (simulationTime) request.headers.set("X-Simulation-Time", simulationTime);
+        if (simulationTime) request.headers.set(SIMULATION_TIME_HEADER, simulationTime);
       }
       const method = request.method.toLowerCase() as HttpMethod;
       if (MUTATING_METHODS.includes(method) && !request.headers.has("Idempotency-Key")) {
@@ -391,6 +430,9 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
       return request;
     },
     async onResponse({ request, response }) {
+      if (response.status === 403) {
+        return recoverRefusedSimulation(request, response);
+      }
       if (response.status !== 401) {
         return response;
       }

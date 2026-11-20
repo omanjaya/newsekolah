@@ -1,3 +1,4 @@
+import { ApiError } from "@newsekolah/api-client";
 import type * as UiModule from "@newsekolah/ui";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -50,7 +51,7 @@ vi.mock("../api", () => ({
   useCreateExitPermitMutation: () => ({ mutateAsync: mocks.create, isPending: false }),
 }));
 
-import { CreateForm } from "./exit-permit-detail";
+import { CreateForm } from "./exit-permit-create-form";
 
 beforeAll(() => {
   // Radix Select reads pointer-capture and scroll APIs jsdom does not implement.
@@ -112,6 +113,47 @@ describe("CreateForm periods", () => {
       end_period_id: "p7",
       return_required: false,
     });
+  });
+
+  // The shared catalog's "Siswa ini ..." is worded for the duty teacher
+  // recording a permit; the student submitting their own is addressed as
+  // "Anda", under a title for a refused request, not "check the fields".
+  it.each([
+    ["STUDENT_ON_LEAVE_TODAY", "onLeaveToday"],
+    ["EXIT_PERMIT_ALREADY_TODAY", "alreadyToday"],
+  ])("speaks to the student when the API refuses with %s", async (code, own) => {
+    mocks.now = new Date("2027-01-13T03:00:00Z");
+    mocks.create.mockRejectedValue(new ApiError({ status: 409, code, message: code }));
+    const user = userEvent.setup();
+    render(<CreateForm onDone={vi.fn()} />);
+
+    await user.type(screen.getByRole("textbox", { name: /destination/ }), "Puskesmas");
+    await user.click(screen.getByRole("combobox", { name: "from" }));
+    await user.click(screen.getByRole("option", { name: "Jam 6 (11.00 – 11.45)" }));
+    await user.click(screen.getByRole("button", { name: "submit" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("refusedTitle");
+    expect(alert).toHaveTextContent(own);
+    expect(alert).not.toHaveTextContent(code);
+  });
+
+  it("keeps the shared wording and the form title for any other error", async () => {
+    mocks.now = new Date("2027-01-13T03:00:00Z");
+    mocks.create.mockRejectedValue(
+      new ApiError({ status: 422, code: "VALIDATION_FAILED", message: "invalid" }),
+    );
+    const user = userEvent.setup();
+    render(<CreateForm onDone={vi.fn()} />);
+
+    await user.type(screen.getByRole("textbox", { name: /destination/ }), "Puskesmas");
+    await user.click(screen.getByRole("combobox", { name: "from" }));
+    await user.click(screen.getByRole("option", { name: "Jam 6 (11.00 – 11.45)" }));
+    await user.click(screen.getByRole("button", { name: "submit" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("VALIDATION_FAILED");
+    expect(alert).not.toHaveTextContent("refusedTitle");
   });
 
   it("says the school day is over when no lesson is left", () => {

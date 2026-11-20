@@ -1552,7 +1552,10 @@
           "cancel": "Batal",
           "description": "Tulis tujuan dan jam pelajaran yang akan ditinggalkan.",
           "returns": "Saya kembali ke sekolah setelah urusan selesai",
-          "returnsHint": "Hapus centang bila Anda pulang dan tidak kembali hari ini. Satpam mencatat jam kembali Anda di gerbang."
+          "returnsHint": "Hapus centang bila Anda pulang dan tidak kembali hari ini. Satpam mencatat jam kembali Anda di gerbang.",
+          "refusedTitle": "Izin keluar belum bisa diajukan",
+          "onLeaveToday": "Anda sudah memiliki surat izin tidak masuk untuk hari ini, jadi tidak bisa mengajukan izin keluar.",
+          "alreadyToday": "Anda sudah memiliki izin keluar hari ini."
         },
         "approve": {
           "title": "Setujui tahap piket",

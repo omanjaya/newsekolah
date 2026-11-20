@@ -45,6 +45,46 @@ export function endLessons<T extends { id: string }>(lessons: readonly T[], star
   return start < 0 ? [...lessons] : lessons.slice(start);
 }
 
+/**
+ * The app's own key for a refusal of the student's own request, worded to
+ * the student, or null to use the shared error catalog. That catalog says
+ * "Siswa ini ...", which reads right for the duty teacher recording a
+ * permit for someone else but not for the student (as on the web,
+ * apps/web/features/permits/lib/own-exit-refusal.ts).
+ */
+export function ownExitRefusalKey(
+  code: string | undefined,
+): "permits.on_leave_today" | "permits.already_today" | null {
+  switch (code) {
+    case "STUDENT_ON_LEAVE_TODAY":
+      return "permits.on_leave_today";
+    case "EXIT_PERMIT_ALREADY_TODAY":
+      return "permits.already_today";
+    default:
+      return null;
+  }
+}
+
+/**
+ * The student's own exit permit the duty desk's approval QR would approve
+ * (as apps/web/features/permits/lib/desk-approval.ts): that QR names no
+ * permit, and the API accepts it only for an in-progress exit permit whose
+ * current stage is a QR scan any teacher may approve.
+ */
+export function permitAwaitingDeskApproval<
+  T extends {
+    status: string;
+    current_stage?: { approver_rule: string; verification: string };
+  },
+>(permits: readonly T[]): T | undefined {
+  return permits.find(
+    (p) =>
+      p.status === "in_progress" &&
+      p.current_stage?.verification === "qr_scan" &&
+      p.current_stage.approver_rule === "any_teacher",
+  );
+}
+
 export interface ExitReturnFields {
   exited_at?: string;
   return_required: boolean;

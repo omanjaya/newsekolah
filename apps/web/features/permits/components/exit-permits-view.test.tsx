@@ -56,9 +56,9 @@ vi.mock("../api", () => ({
 // has to say which permit the page put on it.
 vi.mock("./exit-permit-detail", () => ({
   ActiveExitPermitCard: ({ id }: { id: string }) => <div data-testid="status-card">{id}</div>,
-  CreateForm: () => null,
   ExitPermitDetail: () => null,
 }));
+vi.mock("./exit-permit-create-form", () => ({ CreateForm: () => null }));
 vi.mock("./exit-permit-panels", () => ({ GatePanel: () => <div data-testid="gate-panel" /> }));
 vi.mock("./desk-qr-panel", () => ({
   DeskQrPanel: ({

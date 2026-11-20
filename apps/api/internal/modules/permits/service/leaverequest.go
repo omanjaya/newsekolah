@@ -476,6 +476,11 @@ type leaveLetterExtras struct {
 	schoolDays int
 }
 
+// leaveReasonTrailingPunct is what may end a student's own reason but not
+// the letter's sentence around it: sentence and clause marks, an ellipsis,
+// and the spaces between them. Closing brackets and quotes stay.
+const leaveReasonTrailingPunct = " \t\n.,;:!?…"
+
 // leaveLetterVars is the variable map a leave letter template renders
 // with (leaveLetterTemplateVariables lists the names). "category" is the
 // Indonesian display name, never the raw enum; "category_code" keeps the
@@ -483,14 +488,15 @@ type leaveLetterExtras struct {
 // "reason_detail" is the student's own text for an "other" request and
 // empty otherwise: every other category's reason is its fixed label
 // (domain.DefaultReasonFor), which would only repeat the category. Its
-// trailing full stops are trimmed because the sentence the built-in
-// template puts it in supplies its own ("ke luar kota.." otherwise).
+// trailing sentence punctuation (leaveReasonTrailingPunct) is trimmed
+// because the sentence the built-in template puts it in supplies its own
+// full stop ("ke luar kota.." or "di Makassar!." otherwise).
 // "days" counts school days only: a weekend or holiday inside the range is
 // not a day of leave, and attendance records none for it.
 func leaveLetterVars(lr domain.LeaveRequest, x leaveLetterExtras) map[string]any {
 	detail := ""
 	if _, fixed := domain.DefaultReasonFor(lr.Category); !fixed {
-		detail = strings.TrimRight(strings.TrimSpace(lr.Reason), ". ")
+		detail = strings.TrimRight(strings.TrimSpace(lr.Reason), leaveReasonTrailingPunct)
 	}
 	return map[string]any{
 		"letter_number": x.number, "student_name": lr.StudentNameSnapshot, "class_name": lr.ClassNameSnapshot,

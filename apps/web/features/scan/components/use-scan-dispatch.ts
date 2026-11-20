@@ -10,12 +10,14 @@ import { formatDisplayName } from "../../../lib/text/format-name";
 import { useScanLibraryKioskVisitMutation } from "../../library/visits-api";
 import {
   useCurrentLateArrivalQuery,
+  useMyExitPermitsQuery,
   useOpenLateArrivalMutation,
   useScanClassroomEntryMutation,
   useScanExitPermitStageMutation,
   useScanGateMutation,
   useScanLateArrivalStageMutation,
 } from "../../permits/api";
+import { permitAwaitingDeskApproval } from "../../permits/lib/desk-approval";
 import { classifyScanFailure, expiredScanMessageKey, resolveScanRoute } from "../lib/dispatch";
 import type { ScanRoute } from "../lib/dispatch";
 
@@ -46,6 +48,9 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
   // Disabled: only refetched on demand to learn whether a late arrival is
   // already open, which decides between "open" and "confirm stage".
   const currentLate = useCurrentLateArrivalQuery(false);
+  // Disabled too: read on demand for the duty desk's approval QR, which
+  // names no permit, to find the student's own permit waiting on the desk.
+  const myExitPermits = useMyExitPermitsQuery(false);
 
   const run = useCallback(
     async (route: Exclude<ScanRoute, { action: "unknown" }>): Promise<string> => {
@@ -56,6 +61,16 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
           return t("results.classroom_entry", { teacher: data.teacher_name });
         }
         case "approve_stage": {
+          if (!instanceId) {
+            // The duty desk's QR: it approves the scanning student's own
+            // exit permit, never a late arrival (the API accepts it only
+            // for an exit permit's any-teacher stage).
+            const { data: mine } = await myExitPermits.refetch({ throwOnError: true });
+            const permit = permitAwaitingDeskApproval(mine?.data ?? []);
+            if (!permit) throw new NoPermitAwaitingDeskError();
+            const data = await exitStage.mutateAsync({ id: permit.id, token });
+            return t("results.exit_stage", { student: formatDisplayName(data.student_name) });
+          }
           // The approver panel encodes the same "approve" payload for an
           // exit permit and a late arrival. Only the scanning student's own
           // late arrival can be the target of a late-arrival stage, so a
@@ -99,7 +114,17 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
         }
       }
     },
-    [t, classroomEntry, exitStage, gate, openLate, lateStage, libraryVisit, currentLate],
+    [
+      t,
+      classroomEntry,
+      exitStage,
+      gate,
+      openLate,
+      lateStage,
+      libraryVisit,
+      currentLate,
+      myExitPermits,
+    ],
   );
 
   return useCallback(
@@ -114,6 +139,9 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
       } catch (error) {
         if (error instanceof LateArrivalBusyError) {
           return { key, ok: false, message: t("failures.lateArrivalBusy") };
+        }
+        if (error instanceof NoPermitAwaitingDeskError) {
+          return { key, ok: false, message: t("failures.noPermitAwaitingDesk") };
         }
         if (error instanceof ApiError) {
           return {
@@ -133,3 +161,6 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
 }
 
 class LateArrivalBusyError extends Error {}
+
+/** A desk approval QR scanned while no own exit permit waits on the desk. */
+class NoPermitAwaitingDeskError extends Error {}

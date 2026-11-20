@@ -34,7 +34,8 @@ import { useCanSubmitPermit } from "../lib/use-can-submit-permit";
 
 import { DeskLog, useDeskLog } from "./desk-log";
 import { DeskQrPanel } from "./desk-qr-panel";
-import { ActiveExitPermitCard, CreateForm, ExitPermitDetail } from "./exit-permit-detail";
+import { CreateForm } from "./exit-permit-create-form";
+import { ActiveExitPermitCard, ExitPermitDetail } from "./exit-permit-detail";
 import { GatePanel } from "./exit-permit-panels";
 import { ReviewInboxBanner } from "./review-inbox-banner";
 import { WorkflowStatusBadge } from "./workflow-stepper";

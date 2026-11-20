@@ -92,6 +92,34 @@ describe("SimulationSync", () => {
       expect(invalidate).toHaveBeenCalledTimes(1);
     });
     expect(client.getQueryState(["attendance", "today"])?.isInvalidated).toBe(true);
-    expect(client.getQueryState(["me"])?.isInvalidated).toBe(false);
+    // The reader's duties, and the permissions they grant, are the ones
+    // active on the business day: `me` is read again under the new clock.
+    expect(client.getQueryState(["me"])?.isInvalidated).toBe(true);
+  });
+
+  it("does not move the clock again when the refetched reader arrives", async () => {
+    const client = new QueryClient();
+    client.setQueryData(["me"], user(true));
+    const view = renderSync(client);
+    session.me = user(true);
+    session.isReady = true;
+    await act(async () => {
+      view.rerender();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      setSimulation("frozen", new Date("2026-09-28T00:00:00Z"));
+      await Promise.resolve();
+    });
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+
+    // A fresh `/v1/me` answer: a new object for the same reader.
+    session.me = user(true);
+    await act(async () => {
+      view.rerender();
+      await Promise.resolve();
+    });
+
+    expect(invalidate).not.toHaveBeenCalled();
   });
 });
