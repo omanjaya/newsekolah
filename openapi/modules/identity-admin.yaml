@@ -210,6 +210,10 @@ paths:
       operationId: impersonateUser
       x-permission: impersonate_users
       summary: Start a 30-minute impersonation session as this user
+      description: |
+        From the web, with the admin's own refresh cookie, the admin's login is parked in a
+        protected continuation cookie (as role testing does): the impersonation then refreshes up
+        to its fixed end, so a reload keeps it, and stopping it restores the admin's session.
       parameters:
         - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -240,7 +244,22 @@ paths:
       operationId: stopImpersonation
       x-permission: authenticated
       summary: End the current impersonation session immediately
+      description: |
+        An impersonation started from the web parks the admin's own login in the protected
+        continuation cookie; stopping it then returns 200 with the admin's restored tokens, a
+        rotated refresh cookie and an expired continuation cookie. Without a usable continuation
+        (a mobile client, or a session started before the continuation existed) the session is
+        only revoked and the response is 204.
       responses:
+        "200":
+          description: Stopped; the admin's own session is restored
+          headers:
+            Set-Cookie:
+              description: Rotated refresh and expired continuation cookies
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthTokens" }
         "204": { description: Stopped }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }

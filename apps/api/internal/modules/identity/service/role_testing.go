@@ -22,6 +22,12 @@ var ErrRoleTestingUnavailable = errors.New("role testing unavailable")
 
 // RoleTestingProof is encrypted into an HttpOnly browser cookie. The parked
 // login session's refresh credential never appears in a JSON response.
+//
+// The same continuation carries a school admin's impersonation started from
+// the web (StartImpersonationWithReturn): Impersonation marks it, so it
+// needs the impersonate_users permission instead of platform_superadmin,
+// cannot be switched to another test account, and does not show the
+// role-testing controls.
 type RoleTestingProof struct {
 	TenantID        uuid.UUID `json:"tenant_id"`
 	ActorID         uuid.UUID `json:"actor_id"`
@@ -30,6 +36,7 @@ type RoleTestingProof struct {
 	ChildSessionID  uuid.UUID `json:"child_session_id"`
 	Deadline        time.Time `json:"deadline"`
 	SelectedRole    string    `json:"selected_role"`
+	Impersonation   bool      `json:"impersonation,omitempty"`
 }
 
 type RoleTestingRole struct {
@@ -94,6 +101,22 @@ func (s *Service) encodeRoleTestingProof(proof RoleTestingProof) (string, error)
 }
 
 func (s *Service) roleTestingPermission(ctx context.Context, tenantID, userID uuid.UUID) (bool, error) {
+	return s.holdsRolePermission(ctx, tenantID, userID, authz.PermPlatformSuperadmin)
+}
+
+// proofPermission is the permission the proof's actor must still hold for
+// the continuation to be used: platform_superadmin for role testing, and
+// impersonate_users (or platform_superadmin) for an impersonation.
+func (s *Service) proofPermission(ctx context.Context, tenantID uuid.UUID, proof RoleTestingProof) (bool, error) {
+	if proof.Impersonation {
+		return s.holdsRolePermission(ctx, tenantID, proof.ActorID, authz.PermImpersonateUsers, authz.PermPlatformSuperadmin)
+	}
+	return s.roleTestingPermission(ctx, tenantID, proof.ActorID)
+}
+
+// holdsRolePermission reports whether one of userID's roles grants any of
+// codes.
+func (s *Service) holdsRolePermission(ctx context.Context, tenantID, userID uuid.UUID, codes ...string) (bool, error) {
 	roles, err := s.repo.ListRolesForUser(ctx, tenantID, userID)
 	if err != nil {
 		return false, err
@@ -102,13 +125,15 @@ func (s *Service) roleTestingPermission(ctx context.Context, tenantID, userID uu
 	for i, role := range roles {
 		roleIDs[i] = role.ID
 	}
-	codes, err := s.repo.ListPermissionCodesForRoles(ctx, roleIDs)
+	granted, err := s.repo.ListPermissionCodesForRoles(ctx, roleIDs)
 	if err != nil {
 		return false, err
 	}
-	for _, code := range codes {
-		if code == authz.PermPlatformSuperadmin {
-			return true, nil
+	for _, held := range granted {
+		for _, code := range codes {
+			if held == code {
+				return true, nil
+			}
 		}
 	}
 	return false, nil
@@ -135,7 +160,7 @@ func (s *Service) validateRoleTestingProof(ctx context.Context, tenantID uuid.UU
 	if err != nil || !actor.CanAuthenticate() {
 		return domain.Session{}, domain.Session{}, ErrRoleTestingUnavailable
 	}
-	allowed, err := s.roleTestingPermission(ctx, tenantID, proof.ActorID)
+	allowed, err := s.proofPermission(ctx, tenantID, proof)
 	if err != nil || !allowed {
 		return domain.Session{}, domain.Session{}, ErrRoleTestingUnavailable
 	}
@@ -155,6 +180,21 @@ func validChildRoleTestingSession(session domain.Session, proof RoleTestingProof
 }
 
 func (s *Service) roleTestingRoot(ctx context.Context, tenantID, actorID, sessionID uuid.UUID, refresh string, now time.Time) (domain.Session, domain.User, error) {
+	root, actor, err := s.continuationRoot(ctx, tenantID, actorID, sessionID, refresh, now)
+	if err != nil {
+		return domain.Session{}, domain.User{}, err
+	}
+	allowed, err := s.roleTestingPermission(ctx, tenantID, actorID)
+	if err != nil || !allowed {
+		return domain.Session{}, domain.User{}, ErrRoleTestingUnavailable
+	}
+	return root, actor, nil
+}
+
+// continuationRoot is the admin's own live web login that a continuation
+// parks: the session the request's access token names, proven by its
+// refresh cookie.
+func (s *Service) continuationRoot(ctx context.Context, tenantID, actorID, sessionID uuid.UUID, refresh string, now time.Time) (domain.Session, domain.User, error) {
 	if s.mfaSealer == nil || refresh == "" {
 		return domain.Session{}, domain.User{}, ErrRoleTestingUnavailable
 	}
@@ -164,10 +204,6 @@ func (s *Service) roleTestingRoot(ctx context.Context, tenantID, actorID, sessio
 	}
 	actor, err := s.repo.GetUserByID(ctx, tenantID, actorID)
 	if err != nil || !actor.CanAuthenticate() {
-		return domain.Session{}, domain.User{}, ErrRoleTestingUnavailable
-	}
-	allowed, err := s.roleTestingPermission(ctx, tenantID, actorID)
-	if err != nil || !allowed {
 		return domain.Session{}, domain.User{}, ErrRoleTestingUnavailable
 	}
 	return root, actor, nil
@@ -294,6 +330,10 @@ func (s *Service) SwitchRoleTesting(ctx context.Context, tenantID, currentChildI
 	if err != nil {
 		return RoleTestingStartResult{}, err
 	}
+	if proof.Impersonation {
+		// An impersonation acts as the one account it started with.
+		return RoleTestingStartResult{}, ErrRoleTestingUnavailable
+	}
 	var result RoleTestingStartResult
 	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		_, current, err := s.validateRoleTestingProof(ctx, tenantID, proof, childRefresh)
@@ -345,10 +385,14 @@ func (s *Service) RestoreRoleTesting(ctx context.Context, tenantID uuid.UUID, ra
 		if err != nil {
 			return err
 		}
-		if err := s.repo.RevokeSession(ctx, tenantID, child.ID, "role_testing_stopped"); err != nil {
+		reason, action := "role_testing_stopped", "role_testing.stop"
+		if proof.Impersonation {
+			reason, action = "impersonation_stopped", "impersonation.stop"
+		}
+		if err := s.repo.RevokeSession(ctx, tenantID, child.ID, reason); err != nil {
 			return err
 		}
-		return audit.Record(audit.WithPrincipal(ctx, proof.ActorID, child.UserID), tenantID, "role_testing.stop", "user", child.UserID, nil,
+		return audit.Record(audit.WithPrincipal(ctx, proof.ActorID, child.UserID), tenantID, action, "user", child.UserID, nil,
 			map[string]any{"actor_user_id": proof.ActorID})
 	})
 	if err == nil {
@@ -466,7 +510,8 @@ func (s *Service) roleTestingAdmin(ctx context.Context, tenantID, userID, sessio
 		return userID, true
 	}
 	proof, err := s.DecodeRoleTestingProof(rawProof)
-	if err != nil {
+	if err != nil || proof.Impersonation {
+		// An impersonation is not role testing: no role-testing controls.
 		return uuid.Nil, false
 	}
 	_, child, err := s.validateRoleTestingProof(ctx, tenantID, proof, childRefresh)

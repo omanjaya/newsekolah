@@ -3019,7 +3019,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Start a 30-minute impersonation session as this user */
+        /**
+         * Start a 30-minute impersonation session as this user
+         * @description From the web, with the admin's own refresh cookie, the admin's login is parked in a
+         *     protected continuation cookie (as role testing does): the impersonation then refreshes up
+         *     to its fixed end, so a reload keeps it, and stopping it restores the admin's session.
+         */
         post: operations["impersonateUser"];
         delete?: never;
         options?: never;
@@ -3036,7 +3041,14 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** End the current impersonation session immediately */
+        /**
+         * End the current impersonation session immediately
+         * @description An impersonation started from the web parks the admin's own login in the protected
+         *     continuation cookie; stopping it then returns 200 with the admin's restored tokens, a
+         *     rotated refresh cookie and an expired continuation cookie. Without a usable continuation
+         *     (a mobile client, or a session started before the continuation existed) the session is
+         *     only revoked and the response is 204.
+         */
         post: operations["stopImpersonation"];
         delete?: never;
         options?: never;
@@ -18849,6 +18861,17 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Stopped; the admin's own session is restored */
+            200: {
+                headers: {
+                    /** @description Rotated refresh and expired continuation cookies */
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthTokens"];
+                };
+            };
             /** @description Stopped */
             204: {
                 headers: {
