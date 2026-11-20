@@ -39,6 +39,33 @@ func DrawWrappedRow(pdf *fpdf.Fpdf, widths []float64, texts []string, onNewPage 
 	pdf.SetXY(left, y+height)
 }
 
+// WrappedRowHeight is how tall DrawWrappedRow draws a row of these texts,
+// measured with the current font, so a caller can check how much room a
+// table needs before it starts drawing.
+func WrappedRowHeight(pdf *fpdf.Fpdf, widths []float64, texts []string) float64 {
+	return pdfRowHeight(pdf, widths, texts)
+}
+
+// KeepTogether starts a new page when a block of the given height would
+// cross the bottom of the content area, and reports whether it did. A
+// table calls it before its heading with the height of the heading, the
+// header row and the first row, so the heading and the header are never
+// left at the foot of a page without a row under them. A block taller
+// than an empty page is drawn where it is rather than after a blank page.
+func KeepTogether(pdf *fpdf.Fpdf, height float64) bool {
+	_, pageH := pdf.GetPageSize()
+	limit := pageH - pdfContentBottomMM
+	if pdf.GetY()+height <= limit {
+		return false
+	}
+	_, top, _, _ := pdf.GetMargins()
+	if pdf.GetY() <= top || top+height > limit {
+		return false
+	}
+	pdf.AddPage()
+	return true
+}
+
 // WrappedCellLines is how many lines text takes in a DrawWrappedRow cell
 // of the given column width, measured with the current font. A layout test
 // uses it to check that every header label fits its column on one line:

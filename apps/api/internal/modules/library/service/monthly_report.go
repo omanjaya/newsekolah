@@ -303,44 +303,23 @@ func renderMonthlyReportPDF(report MonthlyReport, letterhead *reportdoc.Letterhe
 	}
 	pdf.Ln(3)
 
-	// Every row wraps its cells inside their columns (a long title used to
-	// run over the author and count columns and off the page), and a row
-	// that does not fit starts a new page under a repeated header.
-	writeTable := func(table monthlyReportTable, rows [][]string) {
-		pdf.SetFont("Helvetica", "B", 11)
-		pdf.CellFormat(0, 7, table.title, "", 1, "L", false, 0, "")
-		drawHeader := func() {
-			pdf.SetFont(monthlyReportHeaderFont())
-			reportdoc.DrawWrappedRow(pdf, table.widths, table.headers, nil)
-			pdf.SetFont("Helvetica", "", 8)
-		}
-		drawHeader()
-		if len(rows) == 0 {
-			reportdoc.DrawWrappedRow(pdf, []float64{sumWidths(table.widths)}, []string{"Tidak ada data."}, drawHeader)
-		}
-		for _, row := range rows {
-			reportdoc.DrawWrappedRow(pdf, table.widths, row, drawHeader)
-		}
-		pdf.Ln(3)
-	}
-
 	titleRows := make([][]string, len(report.TopTitles))
 	for i, t := range report.TopTitles {
 		titleRows[i] = []string{strconv.Itoa(i + 1), t.Title.Title.Title, t.Title.Author, strconv.Itoa(t.LoanCount)}
 	}
-	writeTable(monthlyTopTitlesTable, titleRows)
+	writeMonthlyReportTable(pdf, monthlyTopTitlesTable, titleRows)
 
 	borrowerRows := make([][]string, len(report.TopBorrowers))
 	for i, b := range report.TopBorrowers {
 		borrowerRows[i] = []string{strconv.Itoa(i + 1), b.MemberName, b.ClassName, strconv.Itoa(b.LoanCount)}
 	}
-	writeTable(monthlyTopBorrowersTable, borrowerRows)
+	writeMonthlyReportTable(pdf, monthlyTopBorrowersTable, borrowerRows)
 
 	classRows := make([][]string, len(report.VisitsPerClass))
 	for i, c := range report.VisitsPerClass {
 		classRows[i] = []string{c.ClassName, strconv.Itoa(c.Count)}
 	}
-	writeTable(monthlyVisitsPerClassTable, classRows)
+	writeMonthlyReportTable(pdf, monthlyVisitsPerClassTable, classRows)
 
 	pdf.Ln(10)
 	pdf.SetFont("Helvetica", "", 9)
@@ -404,6 +383,56 @@ var (
 	}
 	monthlyReportTables = []monthlyReportTable{monthlyTopTitlesTable, monthlyTopBorrowersTable, monthlyVisitsPerClassTable}
 )
+
+// monthlyReportHeadingMM is the height of a table's heading line.
+const monthlyReportHeadingMM = 7.0
+
+// monthlyReportEmptyRow is the single row a table without data prints.
+var monthlyReportEmptyRow = []string{"Tidak ada data."}
+
+// writeMonthlyReportTable draws one table of the monthly report. Every row
+// wraps its cells inside their columns (a long title used to run over the
+// author and count columns and off the page), and a row that does not fit
+// starts a new page under a repeated header. The heading, the header row
+// and the first row move to the next page together, so a heading and an
+// empty header are never left at the foot of a page.
+func writeMonthlyReportTable(pdf *fpdf.Fpdf, table monthlyReportTable, rows [][]string) {
+	reportdoc.KeepTogether(pdf, monthlyReportTableStartHeight(pdf, table, rows))
+
+	pdf.SetFont("Helvetica", "B", 11)
+	pdf.CellFormat(0, monthlyReportHeadingMM, table.title, "", 1, "L", false, 0, "")
+	drawHeader := func() {
+		pdf.SetFont(monthlyReportHeaderFont())
+		reportdoc.DrawWrappedRow(pdf, table.widths, table.headers, nil)
+		pdf.SetFont(monthlyReportBodyFont())
+	}
+	drawHeader()
+	if len(rows) == 0 {
+		reportdoc.DrawWrappedRow(pdf, []float64{sumWidths(table.widths)}, monthlyReportEmptyRow, drawHeader)
+	}
+	for _, row := range rows {
+		reportdoc.DrawWrappedRow(pdf, table.widths, row, drawHeader)
+	}
+	pdf.Ln(3)
+}
+
+// monthlyReportTableStartHeight is the room a table needs before its first
+// row is down: the heading, the header row and the first (or the empty)
+// row, each measured in the font it is drawn in.
+func monthlyReportTableStartHeight(pdf *fpdf.Fpdf, table monthlyReportTable, rows [][]string) float64 {
+	pdf.SetFont(monthlyReportHeaderFont())
+	height := monthlyReportHeadingMM + reportdoc.WrappedRowHeight(pdf, table.widths, table.headers)
+	pdf.SetFont(monthlyReportBodyFont())
+	if len(rows) == 0 {
+		return height + reportdoc.WrappedRowHeight(pdf, []float64{sumWidths(table.widths)}, monthlyReportEmptyRow)
+	}
+	return height + reportdoc.WrappedRowHeight(pdf, table.widths, rows[0])
+}
+
+// monthlyReportBodyFont is the font the tables' data rows are drawn in.
+func monthlyReportBodyFont() (family, style string, size float64) {
+	return "Helvetica", "", 8
+}
 
 // monthlyReportHeaderFont is the font the tables' header rows are drawn in.
 func monthlyReportHeaderFont() (family, style string, size float64) {
