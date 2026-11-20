@@ -3,7 +3,7 @@
 import { Slot, Slottable } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Loader2 } from "lucide-react";
-import { forwardRef, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { forwardRef, useId, useState, type ButtonHTMLAttributes, type ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
 
@@ -71,6 +71,14 @@ export interface IconButtonProps
   tooltipSide?: "top" | "right" | "bottom" | "left";
   /** Shows a spinner and disables the button, keeping its full fill. */
   loading?: boolean;
+  /**
+   * Makes the button unavailable for a reason worth telling: it stays
+   * focusable and hoverable (aria-disabled, not disabled) but ignores
+   * clicks, and the reason is its tooltip -- on mouse hover as well as on
+   * keyboard focus -- and its accessible description. A plain `disabled`
+   * button takes no pointer events, so a mouse user would never see why.
+   */
+  disabledReason?: string;
   /** Renders onto the single child element (a `Link`) instead of a `<button>`. */
   asChild?: boolean;
 }
@@ -119,6 +127,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     tooltipSide = "top",
     title,
     loading,
+    disabledReason,
     asChild,
     disabled,
     type,
@@ -130,6 +139,9 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
   const label = props["aria-label"];
   const expanded = props["aria-expanded"] === true || props["aria-expanded"] === "true";
   const inactive = Boolean(disabled) || Boolean(loading);
+  // Unavailable with a reason: still reachable, so the reason can show.
+  const explained = disabledReason !== undefined && !inactive;
+  const reasonId = useId();
   const tooltipState = useTooltipOpen(expanded, inactive);
   const Comp = asChild ? Slot : "button";
 
@@ -143,6 +155,13 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     tooltipState.release();
     props.onBlur?.(event);
   };
+  const handleClick: ButtonHTMLAttributes<HTMLButtonElement>["onClick"] = (event) => {
+    if (explained) {
+      event.preventDefault();
+      return;
+    }
+    props.onClick?.(event);
+  };
 
   const button = (
     <Comp
@@ -151,17 +170,22 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
         iconButtonVariants({ variant, size }),
         // Busy, not unavailable: the fill stays, like Button's.
         loading && "disabled:opacity-100 aria-disabled:opacity-100",
+        // Hover has to reach it for the reason's tooltip to open.
+        explained && "aria-disabled:pointer-events-auto cursor-not-allowed",
         className,
       )}
       {...(asChild
         ? { "aria-disabled": inactive || undefined }
         : { type: type ?? "button", disabled: inactive })}
       aria-busy={loading ?? undefined}
-      // The tooltip repeats the accessible name; describing the button with
-      // it as well would make a screen reader say the name twice.
-      aria-describedby={props["aria-describedby"]}
       title={tooltip === false ? title : undefined}
       {...props}
+      {...(explained ? { "aria-disabled": true } : {})}
+      // The tooltip repeats the accessible name; describing the button with
+      // it as well would make a screen reader say the name twice. A reason
+      // is not the name, so it does describe the button.
+      aria-describedby={explained ? reasonId : props["aria-describedby"]}
+      onClick={handleClick}
       onPointerEnter={handlePointerEnter}
       onBlur={handleBlur}
     >
@@ -169,8 +193,22 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       <Slottable>{children}</Slottable>
     </Comp>
   );
+  const reason = explained ? (
+    <span id={reasonId} className="sr-only">
+      {disabledReason}
+    </span>
+  ) : null;
 
-  if (tooltip === false) return button;
+  if (tooltip === false) {
+    return reason ? (
+      <>
+        {button}
+        {reason}
+      </>
+    ) : (
+      button
+    );
+  }
 
   // The tree keeps this shape while the button turns disabled or busy and
   // back (the tooltip is held shut instead), so React keeps the same DOM
@@ -180,9 +218,10 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       <Tooltip open={tooltipState.open} onOpenChange={tooltipState.onOpenChange}>
         <TooltipTrigger asChild>{button}</TooltipTrigger>
         <TooltipContent side={tooltipSide}>
-          {typeof tooltip === "string" ? tooltip : (title ?? label)}
+          {explained ? disabledReason : typeof tooltip === "string" ? tooltip : (title ?? label)}
         </TooltipContent>
       </Tooltip>
+      {reason}
     </EnsureTooltipProvider>
   );
 });

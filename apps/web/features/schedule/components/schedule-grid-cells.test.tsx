@@ -166,8 +166,10 @@ describe("LessonCell", () => {
       onEdit,
       onDelete,
     });
-    const edit = screen.getByRole("button", { name: "editBlock: blockLocked" });
-    const remove = screen.getByRole("button", { name: "deleteBlock: blockLocked" });
+    const edit = screen.getByRole("button", { name: "editBlock" });
+    const remove = screen.getByRole("button", { name: "deleteBlock" });
+    expect(edit).toHaveAccessibleDescription("editBlock: blockLocked");
+    expect(remove).toHaveAccessibleDescription("deleteBlock: blockLocked");
     expect(edit).toHaveAttribute("aria-disabled", "true");
     expect(remove).toHaveAttribute("aria-disabled", "true");
     edit.click();
