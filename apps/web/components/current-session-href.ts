@@ -9,10 +9,13 @@ import { businessNow } from "../lib/simulation/clock";
 export const ATTENDANCE_HREF = "/attendance";
 
 interface SessionLike {
-  id: string;
+  /** Absent on a lesson nobody has opened yet (only ever a later day's). */
+  id?: string;
   start_period_id: string;
   end_period_id: string;
   submitted_at?: string | null;
+  /** Set when an accepted substitute fills this lesson instead. */
+  handed_over_to_user_id?: string | null;
 }
 
 interface PeriodLike {
@@ -24,7 +27,8 @@ interface PeriodLike {
 /**
  * The session a teacher's "Isi presensi" opens, the one the home hero
  * offers: the session running now while it is still unsubmitted, else the
- * next one today, else the attendance list.
+ * next one today, else the attendance list. A lesson handed to a
+ * substitute is theirs to fill, so it is never offered here.
  */
 export function currentSessionHref(
   sessions: readonly SessionLike[],
@@ -32,11 +36,13 @@ export function currentSessionHref(
   nowMinutes: number,
 ): string {
   const byId = new Map(periods.map((period) => [period.id, period]));
-  const ranges = sessions.map((session) => ({
-    session,
-    start: parseClock(byId.get(session.start_period_id)?.starts_at ?? "00:00"),
-    end: parseClock(byId.get(session.end_period_id)?.ends_at ?? "00:00"),
-  }));
+  const ranges = sessions
+    .filter((session) => session.id !== undefined && !session.handed_over_to_user_id)
+    .map((session) => ({
+      session,
+      start: parseClock(byId.get(session.start_period_id)?.starts_at ?? "00:00"),
+      end: parseClock(byId.get(session.end_period_id)?.ends_at ?? "00:00"),
+    }));
   // A running session that is already submitted asks for nothing more.
   const open = ranges.filter(
     (range) =>
@@ -44,7 +50,7 @@ export function currentSessionHref(
       (range.start <= nowMinutes && nowMinutes < range.end && !range.session.submitted_at),
   );
   const picked = pickCurrentOrNext(open, nowMinutes);
-  return picked ? `${ATTENDANCE_HREF}/${picked.item.session.id}` : ATTENDANCE_HREF;
+  return picked?.item.session.id ? `${ATTENDANCE_HREF}/${picked.item.session.id}` : ATTENDANCE_HREF;
 }
 
 /**

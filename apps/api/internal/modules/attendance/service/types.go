@@ -57,8 +57,12 @@ type RosterItem struct {
 // attendance session -- everything AttendanceSessionDetail in the OpenAPI
 // contract needs.
 type SessionDetail struct {
-	Session              domain.Session
-	IsSubstitute         bool
+	Session      domain.Session
+	IsSubstitute bool
+	// HandedOverTo is set when the viewer is the lesson's own teacher and
+	// an accepted substitution hands it to another teacher, who fills it:
+	// the viewer may look but no longer saves it as its owner.
+	HandedOverTo         uuid.NullUUID
 	MeetingNumber        int
 	PreviousJournalTopic string
 	Statuses             []domain.StatusDef
@@ -165,6 +169,10 @@ type DailyReportSessionEntry struct {
 	Name          string
 	StatusCode    string
 	Notes         string
+	// LeftClass is true for a student no longer actively enrolled in the
+	// session's class: the entry is still that lesson's record, but the
+	// student is not on the class roster the report's student table lists.
+	LeftClass bool
 }
 
 // DailyReportSession is one session's detail row in a daily report or the

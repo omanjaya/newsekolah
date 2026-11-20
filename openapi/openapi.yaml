@@ -20949,7 +20949,6 @@ components:
     AttendanceSessionSummary:
       type: object
       required:
-        - id
         - schedule_id
         - date
         - class_id
@@ -20962,6 +20961,8 @@ components:
         id:
           type: string
           format: uuid
+          description: The session's ID. Absent on a lesson on a later day that nobody has opened yet -- listing a day never opens
+            a session ahead of it, since attendance cannot be recorded before the lesson's date.
         schedule_id:
           type: string
           format: uuid
@@ -20991,8 +20992,8 @@ components:
         handed_over_to_user_id:
           type: string
           format: uuid
-          description: Set on one of the teacher's own lessons that an accepted substitution hands to this teacher; the substitute
-            fills it.
+          description: Set on one of the viewer's own lessons that an accepted substitution hands to another teacher (this ID).
+            That substitute fills it; the viewer may still open it but no longer saves it as its owner.
         submitted_at:
           type: string
           format: date-time
@@ -21051,10 +21052,14 @@ components:
         - $ref: "#/components/schemas/AttendanceSessionSummary"
         - type: object
           required:
+            - id
             - meeting_number
             - statuses
             - roster
           properties:
+            id:
+              type: string
+              format: uuid
             meeting_number:
               type: integer
             previous_journal_topic:
@@ -21262,6 +21267,10 @@ components:
           type: string
         notes:
           type: string
+        left_class:
+          type: boolean
+          description: True for a student no longer actively enrolled in the session's class (moved or left since). The entry is
+            still that lesson's record, but the report's student list, the class's current roster, leaves them out.
     AttendanceDailyReportSession:
       type: object
       required:

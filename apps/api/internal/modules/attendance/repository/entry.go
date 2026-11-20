@@ -47,6 +47,7 @@ func (r *Repository) ListEntryReportRowsBySessions(ctx context.Context, tenantID
 	for _, row := range rows {
 		out[row.SessionID] = append(out[row.SessionID], service.DailyReportSessionEntry{
 			StudentUserID: row.StudentUserID, Name: row.StudentName, StatusCode: row.StatusCode, Notes: pdatabase.TextOrEmpty(row.Notes),
+			LeftClass: row.LeftClass,
 		})
 	}
 	return out, nil

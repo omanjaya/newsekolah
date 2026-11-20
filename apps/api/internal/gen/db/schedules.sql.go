@@ -602,7 +602,8 @@ func (q *Queries) ListReportSchedules(ctx context.Context, tenantID uuid.UUID) (
 const listScheduleIDsWithHistory = `-- name: ListScheduleIDsWithHistory :many
 select s.id from schedules s
 where s.tenant_id = $1 and s.id = any($2::uuid[])
-  and (exists (select 1 from attendance_sessions a where a.schedule_id = s.id)
+  and (exists (select 1 from attendance_sessions a
+               where a.schedule_id = s.id and attendance_session_recorded(a.id))
        or exists (select 1 from substitution_requests r where r.schedule_id = s.id))
 `
 
@@ -611,10 +612,12 @@ type ListScheduleIDsWithHistoryParams struct {
 	Ids      []uuid.UUID `json:"ids"`
 }
 
-// Which of the given schedules already have an attendance session or a
-// substitution request: the history guard (migration 0107) refuses to
-// change or delete those, so the grid and the single-schedule policy say
-// so before the admin fills a form.
+// Which of the given schedules already have a recorded attendance session
+// (submitted, or holding an entry or a journal) or a substitution request:
+// the history guard (migrations 0107 and 0143) refuses to change or delete
+// those, so the grid and the single-schedule policy say so before the
+// admin fills a form. A session only opened, with nothing recorded, is a
+// placeholder the guard clears instead.
 func (q *Queries) ListScheduleIDsWithHistory(ctx context.Context, arg ListScheduleIDsWithHistoryParams) ([]uuid.UUID, error) {
 	rows, err := q.db.Query(ctx, listScheduleIDsWithHistory, arg.TenantID, arg.Ids)
 	if err != nil {

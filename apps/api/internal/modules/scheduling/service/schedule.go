@@ -299,7 +299,8 @@ func (s *Service) markHistory(ctx context.Context, tenantID uuid.UUID, blocks []
 type MutationPolicy struct {
 	CanEdit   bool
 	CanDelete bool
-	// HasHistory is true when the schedule has an attendance session or a
+	// HasHistory is true when the schedule has a recorded attendance
+	// session (submitted, or holding an entry or a journal) or a
 	// substitution request: the history guard then refuses every edit and
 	// delete, whoever asks, so the actions are not offered at all.
 	HasHistory bool

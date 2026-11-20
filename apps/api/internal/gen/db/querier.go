@@ -1225,7 +1225,12 @@ type Querier interface {
 	ListEntriesBySession(ctx context.Context, arg ListEntriesBySessionParams) ([]AttendanceEntry, error)
 	// Batch read behind the daily report: every entry of every given session
 	// with the student's display name, in one round trip instead of one entries
-	// query per session plus one name lookup per student.
+	// query per session plus one name lookup per student. left_class marks an
+	// entry of a student no longer actively enrolled in the session's class
+	// (moved or left since): the entry stays a true record of that lesson,
+	// but the report's student table -- the class's current roster -- no
+	// longer lists them, so the detail says why the name is there. Those rows
+	// come after the current roster's.
 	ListEntryReportRowsBySessions(ctx context.Context, arg ListEntryReportRowsBySessionsParams) ([]ListEntryReportRowsBySessionsRow, error)
 	// Every status code recorded for one student across the given date's
 	// submitted sessions -- the raw input to attendance/domain.ComputeDailyStatus.
@@ -1436,10 +1441,12 @@ type Querier interface {
 	// itself is a points range (min_points/max_points) the service derives
 	// from the policy, since only Go holds the level ladder.
 	ListSPCandidates(ctx context.Context, arg ListSPCandidatesParams) ([]ListSPCandidatesRow, error)
-	// Which of the given schedules already have an attendance session or a
-	// substitution request: the history guard (migration 0107) refuses to
-	// change or delete those, so the grid and the single-schedule policy say
-	// so before the admin fills a form.
+	// Which of the given schedules already have a recorded attendance session
+	// (submitted, or holding an entry or a journal) or a substitution request:
+	// the history guard (migrations 0107 and 0143) refuses to change or delete
+	// those, so the grid and the single-schedule policy say so before the
+	// admin fills a form. A session only opened, with nothing recorded, is a
+	// placeholder the guard clears instead.
 	ListScheduleIDsWithHistory(ctx context.Context, arg ListScheduleIDsWithHistoryParams) ([]uuid.UUID, error)
 	ListSchedulesByAcademicYear(ctx context.Context, arg ListSchedulesByAcademicYearParams) ([]Schedule, error)
 	ListSchedulesByClass(ctx context.Context, arg ListSchedulesByClassParams) ([]Schedule, error)

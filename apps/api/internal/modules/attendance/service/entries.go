@@ -41,7 +41,7 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 			return err
 		}
 
-		window, err := s.saveWindowInput(ctx, tenantID, actor, session)
+		window, handedOverTo, err := s.saveWindowInput(ctx, tenantID, actor, session)
 		if err != nil {
 			return err
 		}
@@ -204,6 +204,7 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 		detail.SkippedBlockedStudentIDs = skippedBlocked
 		detail.OverriddenStudentIDs = overridden
 		detail.SaveMode, detail.EditableUntil = viewerSaveMode(window)
+		detail.HandedOverTo = handedOverTo
 
 		if s.events != nil {
 			_ = s.events.Publish(ctx, Submitted{
@@ -242,26 +243,35 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 // deadline, all on the tenant's wall clock and the business clock (which a
 // superadmin's time simulation moves). SaveEntries judges a save with it,
 // and the session detail tells the viewer the same window up front.
-func (s *Service) saveWindowInput(ctx context.Context, tenantID uuid.UUID, actor Actor, session domain.Session) (domain.SaveWindowInput, error) {
+//
+// handedOverTo is set when actor is the lesson's own teacher and an
+// accepted substitution hands this occurrence to someone else: the
+// substitute fills it, so the teacher no longer saves it as its owner and
+// keeps only the correction rights a homeroom teacher or corrector has.
+func (s *Service) saveWindowInput(ctx context.Context, tenantID uuid.UUID, actor Actor, session domain.Session) (window domain.SaveWindowInput, handedOverTo uuid.NullUUID, err error) {
 	accessOK, err := s.access.HasAccess(ctx, tenantID, session.ScheduleID, actor.UserID, session.Date)
 	if err != nil {
-		return domain.SaveWindowInput{}, err
+		return domain.SaveWindowInput{}, uuid.NullUUID{}, err
+	}
+	handedOverTo, err = s.handedOverTo(ctx, tenantID, actor.UserID, session)
+	if err != nil {
+		return domain.SaveWindowInput{}, uuid.NullUUID{}, err
 	}
 	homeroomClassID, hasHomeroom, err := s.repo.GetHomeroomClassForTeacher(ctx, tenantID, session.AcademicYearID, actor.UserID, session.Date)
 	if err != nil {
-		return domain.SaveWindowInput{}, err
+		return domain.SaveWindowInput{}, uuid.NullUUID{}, err
 	}
 	periodEnd, err := s.periodEndAt(ctx, tenantID, session)
 	if err != nil {
-		return domain.SaveWindowInput{}, err
+		return domain.SaveWindowInput{}, uuid.NullUUID{}, err
 	}
 	periodStart, err := s.periodStartAt(ctx, tenantID, session)
 	if err != nil {
-		return domain.SaveWindowInput{}, err
+		return domain.SaveWindowInput{}, uuid.NullUUID{}, err
 	}
 	correctionDays, configured, err := s.repo.GetCorrectionDays(ctx, tenantID)
 	if err != nil {
-		return domain.SaveWindowInput{}, err
+		return domain.SaveWindowInput{}, uuid.NullUUID{}, err
 	}
 	if !configured {
 		correctionDays = defaultCorrectionDays
@@ -270,8 +280,26 @@ func (s *Service) saveWindowInput(ctx context.Context, tenantID uuid.UUID, actor
 		Now: clock.Now(ctx, s.clock).In(s.tenantLocation(ctx, tenantID)), SessionDate: session.Date,
 		PeriodStartAt: periodStart, PeriodEndAt: periodEnd, CorrectionDays: correctionDays,
 		IsGlobalCorrector: actor.IsGlobalCorrector, IsHomeroomOfClass: hasHomeroom && homeroomClassID == session.ClassID,
-		IsScheduleOwner: accessOK,
-	}, nil
+		IsScheduleOwner: accessOK && !handedOverTo.Valid,
+	}, handedOverTo, nil
+}
+
+// handedOverTo is the substitute an accepted substitution hands session's
+// lesson to, when userID is that lesson's own teacher; invalid otherwise.
+func (s *Service) handedOverTo(ctx context.Context, tenantID, userID uuid.UUID, session domain.Session) (uuid.NullUUID, error) {
+	if userID != session.TeacherUserID {
+		return uuid.NullUUID{}, nil
+	}
+	handOvers, err := s.schedules.ListHandOversForTeacherDate(ctx, tenantID, userID, session.Date)
+	if err != nil {
+		return uuid.NullUUID{}, err
+	}
+	for _, h := range handOvers {
+		if h.ScheduleID == session.ScheduleID && h.SubstituteUserID != userID {
+			return uuid.NullUUID{UUID: h.SubstituteUserID, Valid: true}, nil
+		}
+	}
+	return uuid.NullUUID{}, nil
 }
 
 // viewerSaveMode is the mode the viewer described by window saves in --
