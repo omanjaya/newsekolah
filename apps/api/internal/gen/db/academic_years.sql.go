@@ -165,6 +165,35 @@ func (q *Queries) AcademicGetYearByID(ctx context.Context, arg AcademicGetYearBy
 	return i, err
 }
 
+const academicGetYearByIDForUpdate = `-- name: AcademicGetYearByIDForUpdate :one
+select id, tenant_id, label, starts_on, ends_on, is_active, created_at, updated_at, archived_at from academic_years where tenant_id = $1 and id = $2 for update
+`
+
+type AcademicGetYearByIDForUpdateParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// Locks the year row for the rest of the transaction, so two term writes
+// for the same year run one after the other and each sees the other's
+// dates before its overlap check.
+func (q *Queries) AcademicGetYearByIDForUpdate(ctx context.Context, arg AcademicGetYearByIDForUpdateParams) (AcademicYear, error) {
+	row := q.db.QueryRow(ctx, academicGetYearByIDForUpdate, arg.TenantID, arg.ID)
+	var i AcademicYear
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Label,
+		&i.StartsOn,
+		&i.EndsOn,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ArchivedAt,
+	)
+	return i, err
+}
+
 const academicListYears = `-- name: AcademicListYears :many
 select academic_years.id, academic_years.tenant_id, academic_years.label, academic_years.starts_on, academic_years.ends_on, academic_years.is_active, academic_years.created_at, academic_years.updated_at, academic_years.archived_at, count(*) over () as total_count
 from academic_years

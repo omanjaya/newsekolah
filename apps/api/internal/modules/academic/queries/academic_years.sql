@@ -12,6 +12,12 @@ returning *;
 -- name: AcademicGetYearByID :one
 select * from academic_years where tenant_id = $1 and id = $2;
 
+-- name: AcademicGetYearByIDForUpdate :one
+-- Locks the year row for the rest of the transaction, so two term writes
+-- for the same year run one after the other and each sees the other's
+-- dates before its overlap check.
+select * from academic_years where tenant_id = $1 and id = $2 for update;
+
 -- name: AcademicGetActiveYear :one
 select * from academic_years where tenant_id = $1 and is_active limit 1;
 

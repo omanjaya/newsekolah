@@ -50,6 +50,11 @@ type Querier interface {
 	AcademicDeletePeriod(ctx context.Context, arg AcademicDeletePeriodParams) error
 	AcademicDeletePeriodTemplate(ctx context.Context, arg AcademicDeletePeriodTemplateParams) error
 	AcademicDeleteSubjectOffering(ctx context.Context, arg AcademicDeleteSubjectOfferingParams) error
+	// Runs before AcademicDeleteGradeLevel: the foreign key's ON DELETE SET
+	// NULL would otherwise turn each of the grade's offerings into an "all
+	// grades" one, colliding with ux_subject_offerings_year_subject_grade
+	// wherever the subject already has one.
+	AcademicDeleteSubjectOfferingsForGradeLevel(ctx context.Context, arg AcademicDeleteSubjectOfferingsForGradeLevelParams) error
 	AcademicDeleteTeachingAssignment(ctx context.Context, arg AcademicDeleteTeachingAssignmentParams) error
 	AcademicDeleteTeachingAssignmentsForTeacherInYear(ctx context.Context, arg AcademicDeleteTeachingAssignmentsForTeacherInYearParams) error
 	AcademicDeleteTerm(ctx context.Context, arg AcademicDeleteTermParams) error
@@ -103,6 +108,10 @@ type Querier interface {
 	AcademicGetUserNameForExport(ctx context.Context, arg AcademicGetUserNameForExportParams) (string, error)
 	AcademicGetWeekdayAssignment(ctx context.Context, arg AcademicGetWeekdayAssignmentParams) (PeriodDayAssignment, error)
 	AcademicGetYearByID(ctx context.Context, arg AcademicGetYearByIDParams) (AcademicYear, error)
+	// Locks the year row for the rest of the transaction, so two term writes
+	// for the same year run one after the other and each sees the other's
+	// dates before its overlap check.
+	AcademicGetYearByIDForUpdate(ctx context.Context, arg AcademicGetYearByIDForUpdateParams) (AcademicYear, error)
 	AcademicIsActiveStudent(ctx context.Context, arg AcademicIsActiveStudentParams) (bool, error)
 	AcademicIsActiveTeacher(ctx context.Context, arg AcademicIsActiveTeacherParams) (bool, error)
 	// Every class in an academic year, unpaginated: used by the new-academic-

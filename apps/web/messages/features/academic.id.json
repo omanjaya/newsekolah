@@ -99,7 +99,7 @@
     "codeRequired": "Isi kode tingkat, misalnya X.",
     "nameRequired": "Isi nama tingkat, misalnya Kelas X.",
     "deleteTitle": "Hapus tingkat kelas ini?",
-    "deleteBody": "\"{name}\" akan dihapus. Tidak bisa dihapus jika masih dipakai kelas.",
+    "deleteBody": "\"{name}\" akan dihapus beserta mapel tahun ajaran khusus tingkat ini. Tidak bisa dihapus jika masih dipakai kelas.",
     "applyTemplate": "Pakai templat",
     "applyTemplateBody": "Membuat tingkat kelas standar untuk jenjang yang dipilih. Kode yang sudah ada akan dilewati, tidak digandakan.",
     "apply": "Terapkan",

@@ -145,6 +145,24 @@ func (q *Queries) AcademicDeleteGradeLevel(ctx context.Context, arg AcademicDele
 	return err
 }
 
+const academicDeleteSubjectOfferingsForGradeLevel = `-- name: AcademicDeleteSubjectOfferingsForGradeLevel :exec
+delete from subject_offerings where tenant_id = $1 and grade_level_id = $2
+`
+
+type AcademicDeleteSubjectOfferingsForGradeLevelParams struct {
+	TenantID     uuid.UUID   `json:"tenant_id"`
+	GradeLevelID pgtype.UUID `json:"grade_level_id"`
+}
+
+// Runs before AcademicDeleteGradeLevel: the foreign key's ON DELETE SET
+// NULL would otherwise turn each of the grade's offerings into an "all
+// grades" one, colliding with ux_subject_offerings_year_subject_grade
+// wherever the subject already has one.
+func (q *Queries) AcademicDeleteSubjectOfferingsForGradeLevel(ctx context.Context, arg AcademicDeleteSubjectOfferingsForGradeLevelParams) error {
+	_, err := q.db.Exec(ctx, academicDeleteSubjectOfferingsForGradeLevel, arg.TenantID, arg.GradeLevelID)
+	return err
+}
+
 const academicDeleteTrack = `-- name: AcademicDeleteTrack :exec
 delete from tracks where tenant_id = $1 and id = $2
 `

@@ -1,0 +1,3 @@
+-- Irreversible data repair: which terms had their start moved one day
+-- later was not recorded, and moving them back would only reintroduce the
+-- overlap. Nothing to undo.

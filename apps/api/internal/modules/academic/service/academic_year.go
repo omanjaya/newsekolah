@@ -22,6 +22,7 @@ type yearRepository interface {
 	CreateYear(ctx context.Context, tenantID uuid.UUID, label string, startsOn, endsOn time.Time) (domain.AcademicYear, error)
 	UpdateYear(ctx context.Context, tenantID, id uuid.UUID, label string, startsOn, endsOn time.Time) (domain.AcademicYear, error)
 	GetYearByID(ctx context.Context, tenantID, id uuid.UUID) (domain.AcademicYear, error)
+	GetYearByIDForUpdate(ctx context.Context, tenantID, id uuid.UUID) (domain.AcademicYear, error)
 	GetActiveYear(ctx context.Context, tenantID uuid.UUID) (domain.AcademicYear, bool, error)
 	ListYears(ctx context.Context, tenantID uuid.UUID, search string, includeArchived bool, page Page) ([]domain.AcademicYear, int64, error)
 	DeactivateAllYears(ctx context.Context, tenantID uuid.UUID) error
@@ -235,7 +236,7 @@ func (s *Service) CreateTerm(ctx context.Context, tenantID, yearID uuid.UUID, na
 		term, err = s.repo.CreateTerm(ctx, domain.Term{
 			TenantID: tenantID, AcademicYearID: yearID, Name: name, Sequence: sequence, StartsOn: startsOn, EndsOn: endsOn,
 		})
-		return mapTermWriteError(mapUniqueViolation(err, domain.ErrTermSequenceTaken))
+		return mapCheckViolation(mapUniqueViolation(err, domain.ErrTermSequenceTaken), domain.ErrFieldTooLong)
 	})
 	return term, err
 }
@@ -257,17 +258,25 @@ func (s *Service) UpdateTerm(ctx context.Context, tenantID, id uuid.UUID, name s
 			return err
 		}
 		term, err = s.repo.UpdateTerm(ctx, tenantID, id, name, startsOn, endsOn)
-		return mapNotFound(mapTermWriteError(err), domain.ErrTermNotFound)
+		return mapNotFound(mapCheckViolation(err, domain.ErrFieldTooLong), domain.ErrTermNotFound)
 	})
 	return term, err
 }
 
-// checkTermPlacement loads the term's academic year and its other terms
-// and applies domain.ValidateTermPlacement: the dates must lie within the
-// year and share no day with another term. excludeID is the term being
-// edited (uuid.Nil for a new one).
+// checkTermPlacement locks the term's academic year, loads its other
+// terms and applies domain.ValidateTermPlacement: the dates must lie
+// within the year and share no day with another term. excludeID is the
+// term being edited (uuid.Nil for a new one).
+//
+// The year row lock (held until the transaction ends) is what makes the
+// check safe under concurrency: two CreateTerm/UpdateTerm calls for the
+// same year queue on it, so the second one lists the first one's
+// committed dates instead of racing past it. A database exclusion
+// constraint would have done the same, but adding one fails on years that
+// already hold overlapping terms, which the API accepted before this
+// check existed.
 func (s *Service) checkTermPlacement(ctx context.Context, tenantID, yearID, excludeID uuid.UUID, startsOn, endsOn time.Time) error {
-	year, err := s.repo.GetYearByID(ctx, tenantID, yearID)
+	year, err := s.repo.GetYearByIDForUpdate(ctx, tenantID, yearID)
 	if err != nil {
 		return mapNotFound(err, domain.ErrAcademicYearNotFound)
 	}
@@ -276,14 +285,6 @@ func (s *Service) checkTermPlacement(ctx context.Context, tenantID, yearID, excl
 		return err
 	}
 	return domain.ValidateTermPlacement(year, siblings, excludeID, startsOn, endsOn)
-}
-
-// mapTermWriteError maps the terms table's own constraints: the length
-// check to ErrFieldTooLong and the no-overlap exclusion constraint
-// (migrations/0129_terms_no_overlap) to ErrTermOverlap, for two saves that
-// raced past checkTermPlacement.
-func mapTermWriteError(err error) error {
-	return mapExclusionViolation(mapCheckViolation(err, domain.ErrFieldTooLong), domain.ErrTermOverlap)
 }
 
 func (s *Service) DeleteTerm(ctx context.Context, tenantID, id uuid.UUID) error {

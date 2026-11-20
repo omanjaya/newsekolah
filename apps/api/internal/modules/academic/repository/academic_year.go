@@ -40,6 +40,16 @@ func (r *Repository) GetYearByID(ctx context.Context, tenantID, id uuid.UUID) (d
 	return toAcademicYear(row), nil
 }
 
+// GetYearByIDForUpdate is GetYearByID that also row-locks the year until
+// the surrounding transaction ends.
+func (r *Repository) GetYearByIDForUpdate(ctx context.Context, tenantID, id uuid.UUID) (domain.AcademicYear, error) {
+	row, err := r.queries(ctx).AcademicGetYearByIDForUpdate(ctx, db.AcademicGetYearByIDForUpdateParams{TenantID: tenantID, ID: id})
+	if err != nil {
+		return domain.AcademicYear{}, err
+	}
+	return toAcademicYear(row), nil
+}
+
 func (r *Repository) GetActiveYear(ctx context.Context, tenantID uuid.UUID) (domain.AcademicYear, bool, error) {
 	row, err := r.queries(ctx).AcademicGetActiveYear(ctx, tenantID)
 	if err != nil {

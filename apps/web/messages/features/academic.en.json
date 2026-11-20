@@ -99,7 +99,7 @@
     "codeRequired": "Enter the grade level's code, for example X.",
     "nameRequired": "Enter the grade level's name, for example Grade X.",
     "deleteTitle": "Delete this grade level?",
-    "deleteBody": "\"{name}\" will be deleted. It cannot be deleted while a class still references it.",
+    "deleteBody": "\"{name}\" will be deleted, along with the subject offerings made for this grade level. It cannot be deleted while a class still references it.",
     "applyTemplate": "Apply template",
     "applyTemplateBody": "Creates the standard grade levels for the education level you pick. Codes that already exist are skipped, not duplicated.",
     "apply": "Apply",

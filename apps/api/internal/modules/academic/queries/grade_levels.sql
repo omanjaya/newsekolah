@@ -23,6 +23,13 @@ select * from grade_levels where tenant_id = $1 order by sequence;
 -- name: AcademicDeleteGradeLevel :exec
 delete from grade_levels where tenant_id = $1 and id = $2;
 
+-- name: AcademicDeleteSubjectOfferingsForGradeLevel :exec
+-- Runs before AcademicDeleteGradeLevel: the foreign key's ON DELETE SET
+-- NULL would otherwise turn each of the grade's offerings into an "all
+-- grades" one, colliding with ux_subject_offerings_year_subject_grade
+-- wherever the subject already has one.
+delete from subject_offerings where tenant_id = $1 and grade_level_id = $2;
+
 -- name: AcademicCountClassesForGradeLevel :one
 select count(*) from classes where tenant_id = $1 and grade_level_id = $2 and deleted_at is null;
 

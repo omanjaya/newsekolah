@@ -2,6 +2,7 @@ package academic
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
 )
 
@@ -22,8 +22,6 @@ func date(y int, m time.Month, d int) time.Time {
 // TestCreateAndUpdateTermRejectOverlapAndOutsideYear reproduces the
 // "Semester X tumpang" save (1 Dec - 30 Jan across both semesters), which
 // used to be accepted, and the API-only gap of a term outside its year.
-// It also proves the database exclusion constraint backs the service check
-// up for a write that never went through it.
 func TestCreateAndUpdateTermRejectOverlapAndOutsideYear(t *testing.T) {
 	pg := dbtest.Start(t)
 	fx := seedRosterFixture(t, pg.AdminPool) // year 2026-07-01 .. 2027-06-30
@@ -51,13 +49,48 @@ func TestCreateAndUpdateTermRejectOverlapAndOutsideYear(t *testing.T) {
 	terms, err := svc.ListTerms(ctx, fx.tenantID, fx.yearID)
 	require.NoError(t, err)
 	require.Len(t, terms, 2)
+}
 
-	// The backstop: a direct insert that skips the service check.
-	_, err = db.New(pg.AdminPool).AcademicCreateTerm(ctx, db.AcademicCreateTermParams{
-		TenantID: fx.tenantID, AcademicYearID: fx.yearID, Name: "Langsung", Sequence: 4,
-		StartsOn: database.Date(date(2026, 12, 20)), EndsOn: database.Date(date(2026, 12, 31)),
-	})
-	require.ErrorContains(t, err, "ex_terms_no_overlap")
+// TestConcurrentOverlappingTermsSaveOnlyOne proves the year row lock in
+// checkTermPlacement: several overlapping terms saved at the same moment
+// must not all slip past the overlap check. Exactly one is saved and every
+// other one is refused with ErrTermOverlap.
+func TestConcurrentOverlappingTermsSaveOnlyOne(t *testing.T) {
+	pg := dbtest.Start(t)
+	fx := seedRosterFixture(t, pg.AdminPool)
+	ctx := context.Background()
+	svc := Register(pg.AppPool, clock.Real{}).Service
+
+	const writers = 6
+	errs := make(chan error, writers)
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+	for i := range writers {
+		wg.Add(1)
+		go func(seq int16) {
+			defer wg.Done()
+			<-start
+			_, err := svc.CreateTerm(ctx, fx.tenantID, fx.yearID, "Semester", seq, date(2026, 7, 13), date(2026, 12, 20))
+			errs <- err
+		}(int16(i + 1))
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+
+	saved := 0
+	for err := range errs {
+		if err == nil {
+			saved++
+			continue
+		}
+		require.ErrorIs(t, err, domain.ErrTermOverlap)
+	}
+	require.Equal(t, 1, saved)
+
+	terms, err := svc.ListTerms(ctx, fx.tenantID, fx.yearID)
+	require.NoError(t, err)
+	require.Len(t, terms, 1)
 }
 
 // TestCreateAcademicYearDefaultTermsDoNotOverlap proves a year created
@@ -120,6 +153,47 @@ func TestSubjectOfferingIsUniquePerYearSubjectGrade(t *testing.T) {
 	offerings, err := svc.ListSubjectOfferings(ctx, fx.tenantID, fx.yearID)
 	require.NoError(t, err)
 	require.Len(t, offerings, 3)
+}
+
+// TestDeleteGradeLevelRemovesItsSubjectOfferings reproduces the 500 a
+// grade delete used to hit once offerings became unique per year, subject
+// and grade: the foreign key's ON DELETE SET NULL turned the grade's
+// "Kimia / Kelas XI" offering into a second "all grades" Kimia offering.
+// The grade's own offerings are now removed with it, and the subject's
+// "all grades" offering stays.
+func TestDeleteGradeLevelRemovesItsSubjectOfferings(t *testing.T) {
+	pg := dbtest.Start(t)
+	fx := seedRosterFixture(t, pg.AdminPool)
+	ctx := context.Background()
+	q := db.New(pg.AdminPool)
+	svc := Register(pg.AppPool, clock.Real{}).Service
+
+	kimia, err := q.AcademicCreateSubject(ctx, db.AcademicCreateSubjectParams{TenantID: fx.tenantID, Code: "KIM", Name: "Kimia"})
+	require.NoError(t, err)
+	gradeXI, err := svc.CreateGradeLevel(ctx, fx.tenantID, "XI", "Kelas XI", 2)
+	require.NoError(t, err)
+
+	allGrades, err := svc.CreateSubjectOffering(ctx, domain.SubjectOffering{
+		TenantID: fx.tenantID, AcademicYearID: fx.yearID, SubjectID: kimia.ID, HoursPerWeek: 2,
+	})
+	require.NoError(t, err)
+	_, err = svc.CreateSubjectOffering(ctx, domain.SubjectOffering{
+		TenantID: fx.tenantID, AcademicYearID: fx.yearID, SubjectID: kimia.ID, GradeLevelID: &gradeXI.ID, HoursPerWeek: 3,
+	})
+	require.NoError(t, err)
+
+	require.NoError(t, svc.DeleteGradeLevel(ctx, fx.tenantID, gradeXI.ID))
+
+	_, err = svc.GetGradeLevel(ctx, fx.tenantID, gradeXI.ID)
+	require.ErrorIs(t, err, domain.ErrGradeLevelNotFound)
+	offerings, err := svc.ListSubjectOfferings(ctx, fx.tenantID, fx.yearID)
+	require.NoError(t, err)
+	require.Len(t, offerings, 1)
+	require.Equal(t, allGrades.ID, offerings[0].ID)
+	require.Nil(t, offerings[0].GradeLevelID)
+
+	// A grade a class still uses is refused as before.
+	require.ErrorIs(t, svc.DeleteGradeLevel(ctx, fx.tenantID, fx.gradeLevelID), domain.ErrHasDependents)
 }
 
 // TestHomeroomDutyFromClassFormUsesSchoolDate reproduces a homeroom duty

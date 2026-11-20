@@ -27,21 +27,6 @@ const postgresForeignKeyViolation = "23503"
 // surfaces as an unmapped 500.
 const postgresCheckViolation = "23514"
 
-// postgresExclusionViolation is Postgres's SQLSTATE for an exclusion
-// constraint violation (23P01) -- e.g. terms' ex_terms_no_overlap.
-const postgresExclusionViolation = "23P01"
-
-func mapExclusionViolation(err error, domainErr error) error {
-	if err == nil {
-		return nil
-	}
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) && pgErr.Code == postgresExclusionViolation {
-		return domainErr
-	}
-	return err
-}
-
 func mapUniqueViolation(err error, domainErr error) error {
 	if err == nil {
 		return nil

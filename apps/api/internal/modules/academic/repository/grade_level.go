@@ -73,6 +73,14 @@ func (r *Repository) DeleteGradeLevel(ctx context.Context, tenantID, id uuid.UUI
 	return r.queries(ctx).AcademicDeleteGradeLevel(ctx, db.AcademicDeleteGradeLevelParams{TenantID: tenantID, ID: id})
 }
 
+// DeleteSubjectOfferingsForGradeLevel removes every subject offering, in
+// any academic year, made for one grade level.
+func (r *Repository) DeleteSubjectOfferingsForGradeLevel(ctx context.Context, tenantID, id uuid.UUID) error {
+	return r.queries(ctx).AcademicDeleteSubjectOfferingsForGradeLevel(ctx, db.AcademicDeleteSubjectOfferingsForGradeLevelParams{
+		TenantID: tenantID, GradeLevelID: pgtype.UUID{Bytes: id, Valid: true},
+	})
+}
+
 func (r *Repository) CountClassesForGradeLevel(ctx context.Context, tenantID, id uuid.UUID) (int64, error) {
 	return r.queries(ctx).AcademicCountClassesForGradeLevel(ctx, db.AcademicCountClassesForGradeLevelParams{TenantID: tenantID, GradeLevelID: id})
 }

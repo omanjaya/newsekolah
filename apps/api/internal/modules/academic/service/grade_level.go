@@ -15,6 +15,7 @@ type gradeRepository interface {
 	GetGradeLevelByID(ctx context.Context, tenantID, id uuid.UUID) (domain.GradeLevel, error)
 	ListGradeLevels(ctx context.Context, tenantID uuid.UUID) ([]domain.GradeLevel, error)
 	DeleteGradeLevel(ctx context.Context, tenantID, id uuid.UUID) error
+	DeleteSubjectOfferingsForGradeLevel(ctx context.Context, tenantID, id uuid.UUID) error
 	CountClassesForGradeLevel(ctx context.Context, tenantID, id uuid.UUID) (int64, error)
 
 	CreateTrack(ctx context.Context, tenantID uuid.UUID, code, name string) (domain.Track, error)
@@ -83,7 +84,10 @@ func validateGradeLevelFields(code, name string) error {
 
 // DeleteGradeLevel refuses to remove a grade level that any class still
 // references (409 ACADEMIC_HAS_DEPENDENTS), per the module's dependent-data
-// rule.
+// rule. The grade's subject offerings go with it: an offering for a grade
+// that no longer exists means nothing, and letting the foreign key null
+// its grade instead would turn it into an "all grades" offering, which
+// collides with the one the subject may already have.
 func (s *Service) DeleteGradeLevel(ctx context.Context, tenantID, id uuid.UUID) error {
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		count, err := s.repo.CountClassesForGradeLevel(ctx, tenantID, id)
@@ -93,7 +97,12 @@ func (s *Service) DeleteGradeLevel(ctx context.Context, tenantID, id uuid.UUID) 
 		if count > 0 {
 			return domain.ErrHasDependents
 		}
-		return s.repo.DeleteGradeLevel(ctx, tenantID, id)
+		if err := s.repo.DeleteSubjectOfferingsForGradeLevel(ctx, tenantID, id); err != nil {
+			return err
+		}
+		// Backstop: any unique collision left on the cascade is a
+		// dependent-data conflict (409), never a 500.
+		return mapUniqueViolation(s.repo.DeleteGradeLevel(ctx, tenantID, id), domain.ErrHasDependents)
 	})
 }
 
