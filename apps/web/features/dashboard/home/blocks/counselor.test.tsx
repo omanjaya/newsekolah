@@ -139,6 +139,36 @@ describe("useCounselorBlock", () => {
     expect(result.current.tiles.find((t) => t.key === "counselor.leave")?.value).toBe("1");
   });
 
+  it("links each leave row to its request and offers the letter where it waits", () => {
+    const issuerOnly = { permissions: ["issue_leave_letters"] } as unknown as Me;
+    leaveReviewQueueQuery.mockReturnValue(
+      refetchable({
+        data: {
+          data: [
+            { instance_id: "a", student_name: "Siswa A", class_name: "X-A", awaiting_letter: true },
+            {
+              instance_id: "b",
+              student_name: "Siswa B",
+              class_name: "X-B",
+              awaiting_letter: false,
+            },
+          ],
+        },
+      }),
+    );
+    spCandidatesQuery.mockReturnValue(refetchable({}));
+
+    const { result } = renderHook(() => useCounselorBlock(issuerOnly, true));
+    render(<>{result.current.main.map((slot) => slot.node)}</>);
+
+    const letterRow = screen.getByRole("link", { name: /Siswa A/ });
+    expect(letterRow).toHaveAttribute("href", "/leave-requests/a");
+    expect(letterRow.closest("li")).toHaveTextContent("counselor.issueLetter");
+    const reviewRow = screen.getByRole("link", { name: /Siswa B/ });
+    expect(reviewRow).toHaveAttribute("href", "/leave-requests/b");
+    expect(reviewRow.closest("li")).toHaveTextContent("counselor.review");
+  });
+
   it("does not render the leave section, only the SP section, without review_leave_requests", () => {
     const meWithoutReview = { permissions: ["issue_warning_letters"] } as unknown as Me;
     leaveReviewQueueQuery.mockReturnValue(refetchable({}));

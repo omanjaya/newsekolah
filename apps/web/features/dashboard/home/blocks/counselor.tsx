@@ -42,6 +42,8 @@ type StudentRisk = components["schemas"]["StudentRisk"];
 // The inbox's leave queue, where the requests at the counselor's stage are
 // listed and their letters issued.
 const LEAVE_REQUESTS_HREF = "/inbox?type=leave";
+// One request's detail page, where its letter is issued.
+const LEAVE_REQUEST_DETAIL_HREF = "/leave-requests";
 const WARNING_LETTERS_HREF = "/discipline/warning-letters";
 const COUNSELING_HREF = "/discipline/counseling";
 const ANALYTICS_HREF = "/analytics";
@@ -349,10 +351,14 @@ function CounselorQueueCard({
               {(leaveItems ?? []).slice(0, QUEUE_PREVIEW_SIZE).map((item) => (
                 <ListRow
                   key={item.instance_id}
-                  href={`${LEAVE_REQUESTS_HREF}/${item.instance_id}`}
+                  href={`${LEAVE_REQUEST_DETAIL_HREF}/${item.instance_id}`}
                   title={item.student_name}
                   meta={item.class_name}
-                  trailing={t("counselor.review")}
+                  trailing={
+                    item.awaiting_letter === true
+                      ? t("counselor.issueLetter")
+                      : t("counselor.review")
+                  }
                 />
               ))}
             </List>
