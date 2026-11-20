@@ -8,6 +8,7 @@ import {
   Button,
   Input,
   Select,
+  useSingleFlight,
   useSubmitValidation,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
@@ -50,6 +51,34 @@ export function MemberRegisterForm({
 
   const userLabels = useDirectoryPickerLabels(t("userPlaceholder"));
 
+  // A double click on Daftarkan sent two registrations: the first was
+  // saved and the second came back "already a member", leaving an error
+  // dialog over a member who had just been registered. The button's
+  // `loading` only takes effect after a re-render, too late for the
+  // second click; the single-flight guard holds from the first.
+  const submit = useSingleFlight(async () => {
+    setError("");
+    setUserError("");
+    setMemberNoError("");
+    if (!check(Boolean(userId && memberTypeId))) return;
+    try {
+      await register.mutateAsync({
+        user_id: userId,
+        member_type_id: memberTypeId,
+        member_no: memberNo.trim() || undefined,
+        notes: notes.trim() || undefined,
+      });
+    } catch (err) {
+      const code = err instanceof ApiError ? err.code : "UNKNOWN";
+      const message = apiErrorMessage(code);
+      if (code === "LIBRARY_MEMBER_ALREADY_EXISTS") setUserError(message);
+      else if (code === "LIBRARY_MEMBER_NO_COLLISION") setMemberNoError(message);
+      else setError(message);
+      return;
+    }
+    onDone(true);
+  });
+
   return (
     <form
       ref={ref}
@@ -57,30 +86,7 @@ export function MemberRegisterForm({
       noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        setError("");
-        setUserError("");
-        setMemberNoError("");
-        if (!check(Boolean(userId && memberTypeId))) return;
-        register.mutate(
-          {
-            user_id: userId,
-            member_type_id: memberTypeId,
-            member_no: memberNo.trim() || undefined,
-            notes: notes.trim() || undefined,
-          },
-          {
-            onSuccess: () => {
-              onDone(true);
-            },
-            onError: (err) => {
-              const code = err instanceof ApiError ? err.code : "UNKNOWN";
-              const message = apiErrorMessage(code);
-              if (code === "LIBRARY_MEMBER_ALREADY_EXISTS") setUserError(message);
-              else if (code === "LIBRARY_MEMBER_NO_COLLISION") setMemberNoError(message);
-              else setError(message);
-            },
-          },
-        );
+        void submit();
       }}
     >
       <Field label={t("role")}>

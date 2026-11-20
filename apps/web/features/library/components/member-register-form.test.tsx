@@ -1,6 +1,6 @@
 import { ApiError } from "@newsekolah/api-client";
 import type * as Ui from "@newsekolah/ui";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -53,7 +53,7 @@ vi.mock("../members-api", () => ({
     data: { data: mocks.memberTypes },
     isLoading: false,
   }),
-  useRegisterLibraryMemberMutation: () => ({ mutate: mocks.register, isPending: false }),
+  useRegisterLibraryMemberMutation: () => ({ mutateAsync: mocks.register, isPending: false }),
 }));
 
 import { MemberRegisterForm } from "./member-register-form";
@@ -133,9 +133,44 @@ describe("MemberRegisterForm", () => {
       await user.click(screen.getByRole("button", { name: "submit" }));
       expect(mocks.register).toHaveBeenCalledWith(
         expect.objectContaining({ user_id: "picked-1", member_type_id: "type-student" }),
-        expect.anything(),
       );
     });
+  });
+
+  // A double click on Daftarkan sent two POSTs before the button showed
+  // it was busy: the first registered the member, the second came back
+  // "already a member" and left an error dialog over the new member.
+  it("registers once on a double submit and closes as registered", async () => {
+    mocks.memberTypes = [{ id: "type-student", name: "Siswa", default_for_role: "student" }];
+    let resolve: () => void = () => undefined;
+    mocks.register.mockImplementation(
+      () =>
+        new Promise<void>((done) => {
+          resolve = done;
+        }),
+    );
+    const onDone = vi.fn();
+    const user = userEvent.setup();
+    const { container } = render(<MemberRegisterForm onDone={onDone} />);
+    await user.click(screen.getByRole("combobox", { name: "userPlaceholder" }));
+
+    // Both submits land before any re-render, as two clicks a few ms apart
+    // do; the mocked mutation never reports isPending.
+    const form = container.querySelector("form");
+    if (!form) throw new Error("form not rendered");
+    act(() => {
+      fireEvent.submit(form);
+      fireEvent.submit(form);
+    });
+    expect(mocks.register).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolve();
+      await Promise.resolve();
+    });
+    expect(onDone).toHaveBeenCalledTimes(1);
+    expect(onDone).toHaveBeenCalledWith(true);
+    expect(screen.queryByText("LIBRARY_MEMBER_ALREADY_EXISTS")).not.toBeInTheDocument();
   });
 
   // A taken number and a user who is already a member used to come back
@@ -148,11 +183,7 @@ describe("MemberRegisterForm", () => {
     });
 
     function rejectWith(code: string) {
-      mocks.register.mockImplementation(
-        (_body: unknown, opts: { onError: (err: unknown) => void }) => {
-          opts.onError(new ApiError({ status: 409, code, message: code }));
-        },
-      );
+      mocks.register.mockRejectedValue(new ApiError({ status: 409, code, message: code }));
     }
 
     async function fillAndSubmit(memberNo?: string) {
