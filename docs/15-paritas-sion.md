@@ -346,7 +346,7 @@ Aplikasi web dijalankan dengan build produksi dan data seed, lalu diaudit langsu
 | Perbaikan 4                                                        | 38 (8 sisa, 30 baru, sebagian ganda)                  | 38 diperbaiki; verifikasi langsung: 31 tuntas, 7 sebagian                                                                      |
 | Perbaikan 5                                                        | 27 (7 sisa, 20 baru, hampir semua polesan)            | 27 diperbaiki; verifikasi langsung: 24 dari 26 tuntas                                                                          |
 | Perbaikan 6                                                        | 13 (2 sisa, 11 baru)                                  | 13 diperbaiki; verifikasi langsung: 17 dari 18 tuntas (riwayat izin keluar diukur di 320/360/390 px, id dan en, 120 kombinasi) |
-| Perbaikan 7                                                        | 12 (1 sisa, 11 baru, sebagian ganda)                  | sedang dikerjakan                                                                                                              |
+| Perbaikan 7                                                        | 12 (1 sisa, 11 baru, sebagian ganda)                  | 12 diperbaiki (`78ebcf4`); setelah itu fokus beralih ke uji alur kerja, lihat bagian berikutnya                                |
 
 Skor audit 2 terhadap patokan "sangat profesional": konsistensi 8,2; autentikasi dan halaman publik 8; shell dan beranda, mengajar, izin dan kedisiplinan, administrasi sekolah, pengaturan 7,5; perpustakaan 7,2; nilai dan siswa 6,5.
 
@@ -365,6 +365,30 @@ Belum terlihat langsung karena data seed kosong dan audit tidak boleh mengubah d
 Temuan nyata di luar UI yang tertangkap selama putaran ini: pemblokir presensi untuk siswa terlambat membandingkan tanggal lokal sekolah dengan `opened_date` (tanggal UTC), sehingga keterlambatan sebelum pukul 08.00 WITA tidak memblokir presensi hari itu; kini memakai `local_date`, dengan uji regresi pukul 07.30 lokal. Uji `TestLateArrivalStopsBlockingAttendanceWhilePermitsIsOff` yang gagal setiap malam setelah pukul 16.00 UTC berasal dari kekeliruan tanggal yang sama. Pembatas laju Redis bergeser terus di bawah lalu lintas tetap (kini jendela tetap). Galat bind parameter jalur (UUID rusak) kini dijawab amplop JSON `VALIDATION_FAILED`, bukan teks polos.
 
 Catatan lingkungan: setelah build ulang, server `next start` lama harus benar-benar dimatikan. Server lama yang masih memegang port 3000 menyajikan HTML yang menunjuk chunk yang sudah diganti (400), sehingga tidak ada halaman yang terhidrasi.
+
+## Pembaruan 20 November: uji alur kerja dengan data nyata dan uji waktu
+
+Putaran UI sudah mengerucut (99, 53, 38, 27, 13, 12 temuan), jadi pengujian beralih dari tampilan ke fungsi: apakah sekolah benar-benar bisa memakai aplikasi ini. Penguji per area menjalankan alur kerja dari awal sampai akhir dengan data nyata di stack lokal. Mereka membuat, menyetujui, mengembalikan, dan menghapus data sebagai peran sebenarnya, lalu memeriksa layar hilir milik peran lain. Setiap bug yang dilaporkan direproduksi ulang oleh agen lain sebelum dihitung.
+
+| Putaran                                          | Bug terkonfirmasi                                                                                                                                                                                                              | Hasil                                                                                                        |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| Uji alur 1 (11 area)                             | 126 (F1-F126), termasuk blocker: impor pengguna crash, pemilih pegawai di presensi pegawai kosong, panic di ambang SP, guru mentor tidak bisa membuka kelompoknya, admin tidak bisa menyunting pengguna (`users_locale_check`) | 126 diperbaiki di 11 cabang, ditinjau adversarial, digabung di `0a56804`; uji ulang langsung sedang berjalan |
+| Uji waktu 1 (jam nyata)                          | 18 (T1-T18), 8 di antaranya baru di luar F                                                                                                                                                                                     | masuk putaran perbaikan waktu                                                                                |
+| Uji waktu 2 (simulasi waktu `X-Simulation-Time`) | 25 (S1-S25), 4 tumpang tindih dengan F/T                                                                                                                                                                                       | masuk putaran perbaikan waktu                                                                                |
+
+Uji waktu memakai fitur simulasi waktu milik sistem (header `X-Simulation-Time`, hanya untuk pemegang `platform_superadmin`), bukan menunggu jam berjalan. Penguji memajukan jam per 15 menit, per jam, atau per hari sambil menyamar sebagai pustakawan, guru, dan siswa.
+
+Pola bug terbesar: tanggal kalender dihitung dari tanggal UTC, bukan tanggal lokal sekolah. Di Asia/Makassar (UTC+8), apa pun sebelum pukul 08.00 WITA jatuh ke hari sebelumnya. Contohnya: jatuh tempo pinjaman maju sehari, perpanjangan di hari jatuh tempo ditolak, kunjungan perpustakaan tercatat di hari sebelumnya, dan batas simpan presensi baru tutup pukul 08.00 keesokan harinya. Putaran perbaikan waktu menyertakan penyisiran khusus atas pola ini di semua modul API, dan setiap kasus diuji dengan jam dibekukan di 23.30 UTC.
+
+Penggabungan 11 cabang perbaikan menimbulkan konflik di presensi, notifikasi, analitik, impor perpustakaan, dan mesin PDF. Konflik diselesaikan dengan mempertahankan maksud kedua sisi. Migrasi yang bertabrakan dinomori ulang menjadi 0129-0139. Validasi di `0a56804`:
+
+- `go build`, `go vet`, dan `go test ./...` dengan integrasi Postgres: 86 paket lulus.
+- `pnpm typecheck`, `pnpm lint`, dan `pnpm test` lulus: web 495 berkas dan 2.977 uji, ui 790, mobile 133.
+
+Catatan lingkungan lokal:
+
+- Unggahan memakai server S3 tiruan (moto) di port 9000, karena MinIO tidak tersedia di kontainer.
+- Akun `operator` (peran Super Admin, kata sandi sama dengan akun seed) hanya dibuat di basis data uji lokal untuk simulasi waktu. Akun ini bukan bagian dari seed.
 
 ## Yang tersisa
 
