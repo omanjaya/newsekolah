@@ -24,20 +24,20 @@ func init() {
 		English:    "This request conflicts with the substitution's existing state.",
 	}
 	catalog["SCHEDULE_HAS_HISTORY"] = map[string]string{
-		Indonesian: "Jadwal ini sudah memiliki riwayat presensi atau guru pengganti. Ubah jadwal mulai tanggal tertentu agar riwayatnya tetap tersimpan.",
-		English:    "This schedule already has attendance or substitution history. Change it from a given date so the history is kept.",
+		Indonesian: "Jadwal ini sudah memiliki riwayat presensi atau guru pengganti. Perubahan jadwal dan penghapusan diblokir agar riwayat tetap tersimpan.",
+		English:    "This schedule has attendance or substitution history. Schedule changes and deletion are blocked to preserve the records.",
 	}
 	catalog["SCHEDULE_YEAR_ARCHIVED"] = map[string]string{
 		Indonesian: "Tahun ajaran jadwal ini sudah diarsipkan, jadi jadwalnya tidak bisa diubah.",
 		English:    "This schedule's academic year is archived, so it cannot be changed.",
 	}
 	catalog["SCHEDULE_DAY_NOT_SCHOOL_DAY"] = map[string]string{
-		Indonesian: "Hari ini bukan hari sekolah aktif. Pilih hari lain atau aktifkan harinya di pengaturan hari sekolah.",
-		English:    "This day is not an active school day. Pick another day or enable it in the school-day settings.",
+		Indonesian: "Hari yang dipilih bukan hari sekolah aktif. Pilih hari lain atau aktifkan harinya di pengaturan hari sekolah.",
+		English:    "The selected day is not an active school day. Pick another day or enable it in the school-day settings.",
 	}
 	catalog["SCHEDULE_PERIOD_INVALID"] = map[string]string{
-		Indonesian: "Jam pelajaran yang dipilih tidak berlaku untuk hari ini atau merupakan jam istirahat.",
-		English:    "The selected period does not apply to this day or is a break.",
+		Indonesian: "Jam pelajaran yang dipilih tidak berlaku untuk hari tersebut atau merupakan jam istirahat. Pilih jam lain.",
+		English:    "The selected period does not apply to that day or is a break. Pick another period.",
 	}
 	catalog["SUBSTITUTION_WEEKDAY_MISMATCH"] = map[string]string{
 		Indonesian: "Tanggal yang dipilih tidak jatuh pada hari jadwal pelajaran ini.",
