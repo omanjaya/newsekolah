@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, useToast } from "@newsekolah/ui";
+import { Badge, Button, useToast } from "@newsekolah/ui";
 import { UserRoundCog } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -172,9 +172,13 @@ export function ImpersonationBanner(): ReactElement | null {
   const adminName = me.impersonated_by.name ?? "admin";
   // The account still has to set its own password; the admin is not sent to
   // that step (needsForcedPasswordChange), so the strip says it is pending.
+  // The strip's detail is hidden on a phone and is the first part the
+  // ellipsis cuts, so the note is a badge beside the Stop button, visible at
+  // every width, and leads the detail (and its tooltip) in full.
+  const pendingPassword = me.must_change_password;
   const detail = [
+    pendingPassword ? t("pendingPassword") : null,
     t("banner", { name: me.name, adminName }),
-    me.must_change_password ? t("pendingPassword") : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -184,9 +188,16 @@ export function ImpersonationBanner(): ReactElement | null {
       title={tStrip("impersonation", { adminName, name: me.name })}
       detail={detail}
       action={
-        <Button size="sm" variant="secondary" loading={stop.isPending} onClick={handleStop}>
-          {tStrip("impersonationStop")}
-        </Button>
+        <>
+          {pendingPassword && (
+            <Badge tone="danger" size="sm" title={t("pendingPassword")}>
+              {tStrip("impersonationPendingPassword")}
+            </Badge>
+          )}
+          <Button size="sm" variant="secondary" loading={stop.isPending} onClick={handleStop}>
+            {tStrip("impersonationStop")}
+          </Button>
+        </>
       }
     />
   );

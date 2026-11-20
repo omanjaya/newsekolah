@@ -116,6 +116,7 @@
         "roleTestingExpired": "Sesi uji berakhir",
         "impersonation": "{adminName} mengoperasikan akun {name}",
         "impersonationStop": "Hentikan",
+        "impersonationPendingPassword": "Sandi belum diganti",
         "simulation": "Waktu simulasi {time}",
         "simulationOpen": "Atur",
         "offline": "Tidak ada koneksi",

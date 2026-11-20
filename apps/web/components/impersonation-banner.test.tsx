@@ -230,7 +230,14 @@ describe("ImpersonationBanner", () => {
     try {
       renderStrip();
 
-      expect(screen.getByRole("status")).toHaveTextContent("pendingPassword");
+      // The strip's detail is hidden below `sm` and is cut first by the
+      // ellipsis, so the note also stands beside the Stop button, outside it.
+      const note = screen.getByText("impersonationPendingPassword");
+      expect(note.closest(".hidden")).toBeNull();
+      expect(note.closest("p")).toBeNull();
+      expect(note.closest("[title]")).toHaveAttribute("title", "pendingPassword");
+      // The full sentence leads the detail, ahead of the long banner text.
+      expect(screen.getByRole("status")).toHaveTextContent("pendingPassword · banner");
       expect(screen.getByRole("button", { name: "impersonationStop" })).toBeEnabled();
     } finally {
       account.must_change_password = false;
@@ -241,5 +248,6 @@ describe("ImpersonationBanner", () => {
     renderStrip();
 
     expect(screen.getByRole("status")).not.toHaveTextContent("pendingPassword");
+    expect(screen.queryByText("impersonationPendingPassword")).toBeNull();
   });
 });
