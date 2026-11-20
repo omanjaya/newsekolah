@@ -56,13 +56,11 @@ export function useReplaceStaffAttendanceScheduleMutation(employeeId: string) {
         body: { days },
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.staffAttendanceSchedule(employeeId),
-      });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.staffAttendanceRoster() });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.staffAttendanceEmployees() });
-      // A first schedule puts the employee on the day board.
-      void queryClient.invalidateQueries({ queryKey: ["staff-attendance", "today"] });
+      // Everything in the module reads the schedule: the roster and the
+      // pickers, the day board (a first schedule puts the employee on it),
+      // the history and recap (unrecorded days are judged against it) and
+      // the records the API re-judges when a first schedule is saved.
+      void queryClient.invalidateQueries({ queryKey: ["staff-attendance"] });
     },
 
     meta: { errorToast: false },

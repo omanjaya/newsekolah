@@ -96,6 +96,10 @@ function WeeklyScheduleForm({ employeeId }: { employeeId: string }): ReactElemen
   // per employee, since this component is keyed by employeeId), set during
   // render rather than in an effect, per react-hooks/set-state-in-effect.
   const [seeded, setSeeded] = useState(false);
+  // Whether the server holds a schedule for this person at all: the form
+  // seeds an all-off week for someone who has none, which matches nothing
+  // saved and must not read as "the schedule is saved".
+  const [persisted, setPersisted] = useState(false);
   const loaded = schedule.data?.data;
   if (!seeded && loaded) {
     const seed = WEEKDAYS.map(
@@ -104,8 +108,14 @@ function WeeklyScheduleForm({ employeeId }: { employeeId: string }): ReactElemen
     setSeeded(true);
     setDays(seed);
     setSaved(seed);
+    setPersisted(loaded.length > 0);
   }
   const dirty = JSON.stringify(days) !== JSON.stringify(saved);
+  const status = dirty
+    ? t("schedule.unsaved")
+    : persisted
+      ? t("schedule.upToDate")
+      : t("schedule.notSet");
 
   function updateDay(weekday: number, patch: Partial<ScheduleDay>) {
     setDays((prev) => prev.map((d) => (d.weekday === weekday ? { ...d, ...patch } : d)));
@@ -154,7 +164,7 @@ function WeeklyScheduleForm({ employeeId }: { employeeId: string }): ReactElemen
                       if (value)
                         updateDay(day.weekday, { start_minute: timeInputToMinutes(value) });
                     }}
-                    className="w-28"
+                    className="w-36"
                   />
                 </TableCell>
                 <TableCell>
@@ -165,7 +175,7 @@ function WeeklyScheduleForm({ employeeId }: { employeeId: string }): ReactElemen
                     onChange={(value) => {
                       if (value) updateDay(day.weekday, { end_minute: timeInputToMinutes(value) });
                     }}
-                    className="w-28"
+                    className="w-36"
                   />
                 </TableCell>
                 <TableCell>
@@ -190,9 +200,7 @@ function WeeklyScheduleForm({ employeeId }: { employeeId: string }): ReactElemen
       <p className="text-body-sm text-fg-muted">{t("schedule.endHint")}</p>
       {canManage && (
         <FormActions align="between">
-          <p className="text-body-sm text-fg-muted">
-            {dirty ? t("schedule.unsaved") : t("schedule.upToDate")}
-          </p>
+          <p className="text-body-sm text-fg-muted">{status}</p>
           <Button
             loading={replaceMutation.isPending}
             disabled={!dirty}
@@ -200,6 +208,7 @@ function WeeklyScheduleForm({ employeeId }: { employeeId: string }): ReactElemen
               replaceMutation.mutate(days, {
                 onSuccess: () => {
                   setSaved(days);
+                  setPersisted(true);
                   toast.success(t("schedule.saved"));
                 },
                 onError: (error) => {

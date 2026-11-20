@@ -53,6 +53,14 @@ func (s *Service) Scan(ctx context.Context, tenantID, employeeUserID uuid.UUID) 
 	if err != nil {
 		return RecordView{}, err
 	}
+	s.publishRecordsChanged(tenantID, employeeUserID)
+	return out, nil
+}
+
+// publishRecordsChanged tells every open day board that employeeUserID's
+// records changed, after a self-service scan or after a first schedule
+// re-judged their earlier check-ins.
+func (s *Service) publishRecordsChanged(tenantID, employeeUserID uuid.UUID) {
 	if s.realtime != nil {
 		// Roster board (docs/analysis/realtime-plan-2026-09-25.md section 2,
 		// opportunity #8): there is no "hr" role (authz.RoleDefaults has
@@ -68,7 +76,6 @@ func (s *Service) Scan(ctx context.Context, tenantID, employeeUserID uuid.UUID) 
 			_ = s.realtime.PublishRole(tenantID, role, "staff_attendance.scanned", payload)
 		}
 	}
-	return out, nil
 }
 
 // staffAttendanceScannedPayload is the minimal payload pushed after a
@@ -198,7 +205,7 @@ func (s *Service) GetTodayBoard(ctx context.Context, tenantID uuid.UUID, date *t
 				out = append(out, toRecordView(rec, emp.Name))
 				continue
 			}
-			result, holidayName, err := s.computeStatus(ctx, tenantID, emp.ID, resolved, nil, nil)
+			result, holidayName, err := s.derivedStatus(ctx, tenantID, emp.ID, resolved)
 			if err != nil {
 				return err
 			}
@@ -267,13 +274,21 @@ func (s *Service) employeeHistory(ctx context.Context, tenantID, employeeUserID 
 		byDate[r.Date.Format("2006-01-02")] = r
 	}
 
+	// A day still to come has nothing to report yet: it is left out rather
+	// than derived as absent, so a recap of the current month only counts
+	// the days that have happened. A stored record on a later date (a
+	// manual entry made ahead) is still listed.
+	today := clock.LocalDate(clock.Now(ctx, s.clock), staffLocation(ctx))
 	out := make([]RecordView, 0, 31)
 	for d := from; d.Before(to); d = d.AddDate(0, 0, 1) {
 		if rec, ok := byDate[d.Format("2006-01-02")]; ok {
 			out = append(out, toRecordView(rec, name))
 			continue
 		}
-		result, holidayName, err := s.computeStatus(ctx, tenantID, employeeUserID, d, nil, nil)
+		if dateLabel(d).After(today) {
+			continue
+		}
+		result, holidayName, err := s.derivedStatus(ctx, tenantID, employeeUserID, d)
 		if err != nil {
 			return nil, err
 		}
@@ -283,4 +298,12 @@ func (s *Service) employeeHistory(ctx context.Context, tenantID, employeeUserID 
 		})
 	}
 	return out, nil
+}
+
+// dateLabel is d's calendar date as a midnight-UTC time.Time, the form
+// clock.LocalDate returns, so two dates compare by calendar day whatever
+// location either was parsed in.
+func dateLabel(d time.Time) time.Time {
+	y, m, day := d.Date()
+	return time.Date(y, m, day, 0, 0, 0, 0, time.UTC)
 }

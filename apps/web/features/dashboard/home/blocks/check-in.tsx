@@ -33,6 +33,7 @@ import {
 } from "../../../staff-attendance/api";
 import { DepartureConfirmDialog } from "../../../staff-attendance/components/departure-confirm-dialog";
 import { shiftDateISO } from "../../../staff-attendance/time";
+import { useScannedRecord } from "../../../staff-attendance/use-scanned-record";
 import { EMPTY_BLOCK, type Me, type PersonaBlock } from "../types";
 
 const CHECK_IN_HREF = "/check-in";
@@ -79,6 +80,7 @@ export function useCheckInBlock(me: Me, active: boolean): PersonaBlock {
             error={history.error}
             refetch={history.refetch}
             record={history.data?.data.find((day) => day.date === today) ?? null}
+            recordUpdatedAt={history.dataUpdatedAt}
             scan={scan}
           />
         ),
@@ -95,6 +97,7 @@ function CheckInCard({
   error,
   refetch,
   record,
+  recordUpdatedAt,
   scan,
 }: {
   today: string;
@@ -104,6 +107,7 @@ function CheckInCard({
   error: unknown;
   refetch: () => unknown;
   record: AttendanceRecord | null;
+  recordUpdatedAt: number;
   scan: ReturnType<typeof useScanStaffAttendanceMutation>;
 }): ReactElement {
   const t = useTranslations("app.dashboardDuty.checkIn");
@@ -112,11 +116,10 @@ function CheckInCard({
   const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const [scanned, setScanned] = useState<AttendanceRecord | null>(null);
+  const [current, setScanned] = useScannedRecord(today, record, recordUpdatedAt);
   const [completeDate, setCompleteDate] = useState<string | null>(null);
   const [confirmingDeparture, setConfirmingDeparture] = useState(false);
 
-  const current = (scanned?.date === today ? scanned : null) ?? record;
   const hasArrival = Boolean(current?.arrival_at);
   const done = completeDate === today || Boolean(current?.departure_at);
   const time = (iso: string | null | undefined) =>

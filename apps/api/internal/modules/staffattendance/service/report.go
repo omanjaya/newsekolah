@@ -27,6 +27,8 @@ func statusLabel(code domain.StatusCode) string {
 		return "Libur"
 	case domain.StatusIncomplete:
 		return "Belum lengkap"
+	case domain.StatusUnscheduled:
+		return "Jadwal belum diatur"
 	default:
 		return string(code)
 	}
@@ -87,16 +89,18 @@ func monthlyRecapColumns() []reportdoc.Column {
 
 // monthlyRecapSection turns one employee's MonthlyRecap into a reportdoc
 // Section: one row per day, plus a totals footer row carrying the two
-// figures the old hand-written export printed below the table.
-func monthlyRecapSection(recap MonthlyRecap) reportdoc.Section {
+// figures the old hand-written export printed below the table. Arrival
+// and departure are wall-clock times in loc, the school's zone, the same
+// times the day board shows: the stored instants are UTC.
+func monthlyRecapSection(recap MonthlyRecap, loc *time.Location) reportdoc.Section {
 	rows := make([][]any, len(recap.Days))
 	for i, day := range recap.Days {
 		arrival, departure := "", ""
 		if day.ArrivalAt != nil {
-			arrival = day.ArrivalAt.Format("15:04")
+			arrival = day.ArrivalAt.In(loc).Format("15:04")
 		}
 		if day.DepartureAt != nil {
-			departure = day.DepartureAt.Format("15:04")
+			departure = day.DepartureAt.In(loc).Format("15:04")
 		}
 		rows[i] = []any{day.Date, statusLabel(day.StatusCode), arrival, departure, day.LateMinutes, day.EarlyLeaveMinutes, sourceLabel(day.Source)}
 	}
@@ -160,7 +164,7 @@ func (s *Service) ExportMonthlyRecapReport(ctx context.Context, tenantID, employ
 		Title:           "Rekap Bulanan Presensi Pegawai",
 		Scope:           []reportdoc.ScopeLine{{Label: "Bulan", Value: monthScopeValue(locale, month)}, {Label: "Pegawai", Value: recap.EmployeeName}},
 		Columns:         monthlyRecapColumns(),
-		Sections:        []reportdoc.Section{monthlyRecapSection(recap)},
+		Sections:        []reportdoc.Section{monthlyRecapSection(recap, staffLocation(ctx))},
 		PageLabelFormat: reportdoc.PageLabel(locale),
 		EmptyRowsLabel:  reportdoc.EmptyRowsLabelFor(locale),
 	}
@@ -176,9 +180,10 @@ func (s *Service) ExportAllEmployeesMonthlyRecapReport(ctx context.Context, tena
 	if err != nil {
 		return nil, err
 	}
+	loc := staffLocation(ctx)
 	sections := make([]reportdoc.Section, len(recaps))
 	for i, recap := range recaps {
-		sections[i] = monthlyRecapSection(recap)
+		sections[i] = monthlyRecapSection(recap, loc)
 	}
 	doc := reportdoc.Document{
 		Title:           "Rekap Bulanan Presensi Pegawai",

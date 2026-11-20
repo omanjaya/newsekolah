@@ -1187,29 +1187,42 @@ func (q *Queries) UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) 
 
 const upsertStaffAttendanceScheduleDay = `-- name: UpsertStaffAttendanceScheduleDay :one
 insert into staff_attendance_schedules (
-  tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_by, updated_by
+  tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_by, updated_by,
+  created_at
 )
-values ($1, $2, $3, $4, $5, $6, $7, $8, $8)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $8, $9)
 on conflict (tenant_id, employee_user_id, weekday) do update set
   is_working_day = excluded.is_working_day,
   start_minute = excluded.start_minute,
   end_minute = excluded.end_minute,
   grace_minutes = excluded.grace_minutes,
-  updated_by = excluded.updated_by
+  updated_by = excluded.updated_by,
+  created_at = case
+    when not staff_attendance_schedules.is_working_day and excluded.is_working_day then excluded.created_at
+    else staff_attendance_schedules.created_at
+  end
 returning id, tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_at, updated_at, created_by, updated_by
 `
 
 type UpsertStaffAttendanceScheduleDayParams struct {
-	TenantID       uuid.UUID   `json:"tenant_id"`
-	EmployeeUserID uuid.UUID   `json:"employee_user_id"`
-	Weekday        int16       `json:"weekday"`
-	IsWorkingDay   bool        `json:"is_working_day"`
-	StartMinute    int16       `json:"start_minute"`
-	EndMinute      int16       `json:"end_minute"`
-	GraceMinutes   int16       `json:"grace_minutes"`
-	CreatedBy      pgtype.UUID `json:"created_by"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	EmployeeUserID uuid.UUID          `json:"employee_user_id"`
+	Weekday        int16              `json:"weekday"`
+	IsWorkingDay   bool               `json:"is_working_day"`
+	StartMinute    int16              `json:"start_minute"`
+	EndMinute      int16              `json:"end_minute"`
+	GraceMinutes   int16              `json:"grace_minutes"`
+	CreatedBy      pgtype.UUID        `json:"created_by"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 }
 
+// created_at is the service clock's instant rather than now(), so a
+// simulated school day dates a first schedule the way it dates scans:
+// days before it have no schedule to be absent from. An update keeps the
+// original created_at, except when it turns a day off into a working day:
+// the editor stores all seven weekdays on the first save, so an off
+// weekday already has a row, and keeping its date would make every past
+// occurrence of that weekday an absence it never was.
 func (q *Queries) UpsertStaffAttendanceScheduleDay(ctx context.Context, arg UpsertStaffAttendanceScheduleDayParams) (StaffAttendanceSchedule, error) {
 	row := q.db.QueryRow(ctx, upsertStaffAttendanceScheduleDay,
 		arg.TenantID,
@@ -1220,6 +1233,7 @@ func (q *Queries) UpsertStaffAttendanceScheduleDay(ctx context.Context, arg Upse
 		arg.EndMinute,
 		arg.GraceMinutes,
 		arg.CreatedBy,
+		arg.CreatedAt,
 	)
 	var i StaffAttendanceSchedule
 	err := row.Scan(

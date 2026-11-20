@@ -35,6 +35,14 @@ describe("TimePicker", () => {
     expect(input).toHaveClass("text-ellipsis");
   });
 
+  it("never ellipsizes a time, so 08.00 and 08.30 cannot both read as 08.…", () => {
+    render(<LabelledTimePicker value="08:30" locale="id-ID" placeholder="Jam datang" />);
+    const input = screen.getByRole("combobox", { name: "Jam mulai" });
+
+    expect(input).toHaveValue("08.30");
+    expect(input).not.toHaveClass("text-ellipsis");
+  });
+
   it("normalises a typed time on blur and shows the Indonesian separator", async () => {
     const onChange = vi.fn();
     render(<LabelledTimePicker onChange={onChange} name="start" />);

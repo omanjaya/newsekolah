@@ -35,6 +35,7 @@ import {
   useStaffAttendanceMyHistoryQuery,
 } from "../api";
 import { shiftDateISO } from "../time";
+import { useScannedRecord } from "../use-scanned-record";
 
 import { DepartureConfirmDialog } from "./departure-confirm-dialog";
 
@@ -58,7 +59,7 @@ function DayStatus({ status, label }: { status: AttendanceRecord["status_code"];
  * one action, full width and low on a phone screen. "Today" and "this
  * week" both come from `useStaffAttendanceMyHistoryQuery` (self-service, no
  * `view_staff_attendance` permission needed); the screen shows the scan
- * result at once while the refetch is in flight.
+ * result at once while the refetch is in flight, then follows the server.
  */
 export function SelfCheckInView(): ReactElement {
   const now = useBusinessNow();
@@ -79,15 +80,15 @@ export function SelfCheckInView(): ReactElement {
   const to = shiftDateISO(today, 1); // exclusive end, so `today` is included
   const week = useStaffAttendanceMyHistoryQuery(from, to);
 
-  const [scanned, setScanned] = useState<AttendanceRecord | null>(null);
   const [completeDate, setCompleteDate] = useState<string | null>(null);
   const [confirmingDeparture, setConfirmingDeparture] = useState(false);
 
   const weekDays = useMemo(() => [...(week.data?.data ?? [])].reverse(), [week.data]);
-  const record =
-    (scanned?.date === today ? scanned : null) ??
-    weekDays.find((day) => day.date === today) ??
-    null;
+  const [record, setScanned] = useScannedRecord(
+    today,
+    weekDays.find((day) => day.date === today) ?? null,
+    week.dataUpdatedAt,
+  );
 
   const hasArrival = Boolean(record?.arrival_at);
   const done = completeDate === today || Boolean(record?.departure_at);

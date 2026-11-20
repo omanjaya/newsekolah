@@ -67,6 +67,7 @@ describe("SelfCheckInView -- unscheduled vs. holiday", () => {
   it("does not carry a completed scan into the next simulated school day", () => {
     weekQuery.mockImplementation(() => ({
       data: { data: [record({ date: clockDay.value })] },
+      dataUpdatedAt: 0,
       isLoading: false,
       isError: false,
     }));
@@ -192,6 +193,40 @@ describe("SelfCheckInView -- after arriving", () => {
     render(<SelfCheckInView />);
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(screen.queryByText("thisWeekEmpty")).not.toBeInTheDocument();
+  });
+});
+
+describe("SelfCheckInView -- a schedule saved after the arrival scan", () => {
+  it("follows the refetched day once it is newer than the scan response", () => {
+    let today = record();
+    let updatedAt = 0;
+    weekQuery.mockImplementation(() => ({
+      data: { data: [today] },
+      dataUpdatedAt: updatedAt,
+      isLoading: false,
+      isError: false,
+    }));
+    scanMutation.mockImplementation(
+      (_input: undefined, options: { onSuccess: (saved: unknown) => void }) => {
+        options.onSuccess(record({ arrival_at: "2026-09-24T01:00:00Z" }));
+      },
+    );
+    const view = render(<SelfCheckInView />);
+    fireEvent.click(screen.getByRole("button", { name: "recordArrival" }));
+    // The scan response shows at once, before any refetch.
+    expect(screen.getAllByText("unscheduledHint")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "recordDeparture" })).toBeEnabled();
+
+    // The admin saves a first schedule; the API re-judges the arrival as
+    // late, and a later my-history refetch brings that back.
+    today = record({ status_code: "late", arrival_at: "2026-09-24T01:00:00Z", late_minutes: 50 });
+    updatedAt = Date.now() + 1000;
+    view.rerender(<SelfCheckInView />);
+
+    expect(screen.queryByText("unscheduledHint")).not.toBeInTheDocument();
+    expect(screen.getByText("lateBy:50")).toBeInTheDocument();
+    // The card's pill and the week's row agree on the same day.
+    expect(screen.getAllByText("late")).toHaveLength(2);
   });
 });
 

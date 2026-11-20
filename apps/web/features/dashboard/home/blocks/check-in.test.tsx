@@ -132,6 +132,38 @@ describe("useCheckInBlock", () => {
     expect(screen.getByText("done")).toBeInTheDocument();
   });
 
+  it("follows a refetched day once it is newer than the arrival scan", () => {
+    let updatedAt = 0;
+    let today: Record<string, unknown> = {
+      date: "2026-09-26",
+      status_code: "unscheduled",
+      arrival_at: null,
+      departure_at: null,
+      late_minutes: 0,
+    };
+    historyQuery.mockImplementation(() => ({ ...history(today), dataUpdatedAt: updatedAt }));
+    mutate.mockImplementation(
+      (_input: undefined, options: { onSuccess: (saved: unknown) => void }) => {
+        options.onSuccess({ ...today, arrival_at: "2026-09-26T01:00:00Z" });
+      },
+    );
+
+    const hook = renderHook(() => useCheckInBlock(me, true));
+    const view = render(<>{hook.result.current.side[0]?.node}</>);
+    fireEvent.click(screen.getByRole("button", { name: "checkIn" }));
+    expect(screen.getByText("unscheduled")).toBeInTheDocument();
+
+    // A schedule saved after the scan re-judges the arrival as late.
+    today = { ...today, status_code: "late", arrival_at: "2026-09-26T01:00:00Z", late_minutes: 50 };
+    updatedAt = Date.now() + 1000;
+    hook.rerender();
+    view.rerender(<>{hook.result.current.side[0]?.node}</>);
+
+    expect(screen.queryByText("unscheduled")).not.toBeInTheDocument();
+    expect(screen.getByText("late")).toBeInTheDocument();
+    expect(screen.getByText("lateBy")).toBeInTheDocument();
+  });
+
   it("returns EMPTY_BLOCK and keeps the history query idle while staff attendance is off", () => {
     historyQuery.mockReturnValue(history(undefined));
     const off = { ...me, disabled_modules: ["staff_attendance"] };

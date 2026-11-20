@@ -1,14 +1,26 @@
 -- name: UpsertStaffAttendanceScheduleDay :one
+-- created_at is the service clock's instant rather than now(), so a
+-- simulated school day dates a first schedule the way it dates scans:
+-- days before it have no schedule to be absent from. An update keeps the
+-- original created_at, except when it turns a day off into a working day:
+-- the editor stores all seven weekdays on the first save, so an off
+-- weekday already has a row, and keeping its date would make every past
+-- occurrence of that weekday an absence it never was.
 insert into staff_attendance_schedules (
-  tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_by, updated_by
+  tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_by, updated_by,
+  created_at
 )
-values ($1, $2, $3, $4, $5, $6, $7, $8, $8)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $8, $9)
 on conflict (tenant_id, employee_user_id, weekday) do update set
   is_working_day = excluded.is_working_day,
   start_minute = excluded.start_minute,
   end_minute = excluded.end_minute,
   grace_minutes = excluded.grace_minutes,
-  updated_by = excluded.updated_by
+  updated_by = excluded.updated_by,
+  created_at = case
+    when not staff_attendance_schedules.is_working_day and excluded.is_working_day then excluded.created_at
+    else staff_attendance_schedules.created_at
+  end
 returning *;
 
 -- name: ListStaffAttendanceScheduleDays :many

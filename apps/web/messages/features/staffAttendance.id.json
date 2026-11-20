@@ -92,6 +92,7 @@
     "endHint": "Isi jam selesai lebih awal dari jam mulai untuk shift yang melewati tengah malam.",
     "unsaved": "Ada perubahan yang belum disimpan",
     "upToDate": "Jadwal sudah tersimpan",
+    "notSet": "Belum ada jadwal kerja. Aktifkan hari kerja, lalu simpan.",
     "save": "Simpan jadwal",
     "saved": "Jadwal tersimpan",
     "weekdays": {
