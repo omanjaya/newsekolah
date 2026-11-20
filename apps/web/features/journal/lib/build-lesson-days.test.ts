@@ -35,6 +35,56 @@ describe("buildLessonDays", () => {
     expect(groups.map((g) => g.date)).toEqual(["2026-09-23", "2026-09-21"]);
   });
 
+  it("lists each date with the version of a lesson in effect on it", () => {
+    // Monday's lesson changed teacher from Monday 21 September: the old
+    // version ends on the 14th, the new one starts on the 21st. Both are
+    // read (two weeks), and a version read twice is listed once.
+    const versions = [
+      {
+        scheduleId: "old",
+        classId: "class-1",
+        subjectId: "subject-1",
+        dayOfWeek: 1,
+        effectiveFrom: "2026-07-13",
+        effectiveUntil: "2026-09-14",
+      },
+      {
+        scheduleId: "new",
+        classId: "class-1",
+        subjectId: "subject-1",
+        dayOfWeek: 1,
+        effectiveFrom: "2026-09-21",
+      },
+      {
+        scheduleId: "new",
+        classId: "class-1",
+        subjectId: "subject-1",
+        dayOfWeek: 1,
+        effectiveFrom: "2026-09-21",
+      },
+    ];
+    const groups = buildLessonDays("2026-09-23", 10, activeWeekdays, versions, new Set());
+    expect(groups.map((g) => [g.date, g.lessons.map((l) => l.scheduleId)])).toEqual([
+      ["2026-09-21", ["new"]],
+      ["2026-09-14", ["old"]],
+    ]);
+  });
+
+  it("drops a lesson removed before a date from the days after it", () => {
+    const removed = [
+      {
+        scheduleId: "gone",
+        classId: "class-1",
+        subjectId: "subject-1",
+        dayOfWeek: 3,
+        effectiveFrom: "2026-07-15",
+        effectiveUntil: "2026-09-16",
+      },
+    ];
+    const groups = buildLessonDays("2026-09-23", 8, activeWeekdays, removed, new Set());
+    expect(groups.map((g) => g.date)).toEqual(["2026-09-16"]);
+  });
+
   it("skips a day outside the active school-day set even if a block exists", () => {
     const groups = buildLessonDays("2026-09-21", 1, new Set([2, 3, 4, 5]), monday, new Set());
     expect(groups).toHaveLength(0);

@@ -2,6 +2,7 @@ package domain
 
 import (
 	"sort"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -22,16 +23,21 @@ type Block struct {
 	StartSeq      int16
 	EndSeq        int16
 	Source        Source
-	// HasHistory is true when any schedule in the block has an attendance
-	// session or a substitution request, which freezes it (migration
-	// 0107's history guard): it can no longer be edited or deleted.
+	// EffectiveFrom and EffectiveUntil are the dates every row of the block
+	// shares (rows with different dates never merge).
+	EffectiveFrom  time.Time
+	EffectiveUntil *time.Time
+	// HasHistory is true when any schedule in the block has a recorded
+	// attendance session or a substitution request (migrations 0107, 0144
+	// and 0147) or a supervision visit: it can no longer be rewritten in
+	// place, only changed or removed from a date after that history.
 	HasHistory bool
 }
 
 // MergeContiguous groups schedules (already scoped to one class or one
 // teacher's grid, spanning possibly several days) into Blocks: it sorts by
 // day then start period, then folds a schedule into the previous block
-// when class, subject, teacher, room, and source all match AND its start
+// when class, subject, teacher, room, source and effective dates all match AND its start
 // period immediately follows the previous block's end period. Two
 // same-subject schedules separated by a different lesson in between, or by
 // a gap, stay separate blocks.
@@ -52,15 +58,17 @@ func MergeContiguous(schedules []Schedule) []Block {
 			continue
 		}
 		blocks = append(blocks, Block{
-			ScheduleIDs:   []uuid.UUID{s.ID},
-			ClassID:       s.ClassID,
-			SubjectID:     s.SubjectID,
-			TeacherUserID: s.TeacherUserID,
-			RoomID:        s.RoomID,
-			DayOfWeek:     s.DayOfWeek,
-			StartSeq:      s.StartSeq,
-			EndSeq:        s.EndSeq,
-			Source:        s.Source,
+			ScheduleIDs:    []uuid.UUID{s.ID},
+			ClassID:        s.ClassID,
+			SubjectID:      s.SubjectID,
+			TeacherUserID:  s.TeacherUserID,
+			RoomID:         s.RoomID,
+			DayOfWeek:      s.DayOfWeek,
+			StartSeq:       s.StartSeq,
+			EndSeq:         s.EndSeq,
+			Source:         s.Source,
+			EffectiveFrom:  s.EffectiveFrom,
+			EffectiveUntil: s.EffectiveUntil,
 		})
 	}
 	return blocks
@@ -79,5 +87,14 @@ func sameGroup(b Block, s Schedule) bool {
 		b.SubjectID == s.SubjectID &&
 		b.TeacherUserID == s.TeacherUserID &&
 		b.RoomID == s.RoomID &&
-		b.Source == s.Source
+		b.Source == s.Source &&
+		b.EffectiveFrom.Equal(s.EffectiveFrom) &&
+		sameUntil(b.EffectiveUntil, s.EffectiveUntil)
+}
+
+func sameUntil(a, b *time.Time) bool {
+	if a == nil || b == nil {
+		return a == nil && b == nil
+	}
+	return a.Equal(*b)
 }

@@ -166,7 +166,11 @@ func seedOperations(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, tena
 	if err := ensureTeaching(ctx, academicSvc, tenantID, yearID, teacher.ID, subjects[demoSubjectCode].ID, class.ID); err != nil {
 		return err
 	}
-	if err := ensureTimetable(ctx, schedulingSvc, tenantID, yearID, teacher.ID, subjects[demoSubjectCode].ID, class.ID, periods); err != nil {
+	year, err := q.GetAcademicYearByID(ctx, db.GetAcademicYearByIDParams{TenantID: tenantID, ID: yearID})
+	if err != nil {
+		return fmt.Errorf("lookup academic year: %w", err)
+	}
+	if err := ensureTimetable(ctx, schedulingSvc, tenantID, yearID, database.DateOrZero(year.StartsOn), teacher.ID, subjects[demoSubjectCode].ID, class.ID, periods); err != nil {
 		return err
 	}
 	logger.Info("operational data ready", "class", class.Name, "teacher", teacher.Username, "student", student.Username)
@@ -384,12 +388,18 @@ func ensureTeaching(ctx context.Context, svc *academicservice.Service, tenantID,
 // (attendance/service/monitor.go's ListCurrentPeriodScheduleCards) covers
 // the whole school day, not just its first 90 minutes -- the e2e
 // simulation (apps/web/e2e/simulation) can then run at any daytime hour.
-func ensureTimetable(ctx context.Context, svc *schedulingservice.Service, tenantID, yearID, teacherID, subjectID, classID uuid.UUID, periods []academicdomain.Period) error {
-	existing, err := svc.ListByTeacher(ctx, tenantID, yearID, teacherID, nil)
+//
+// The timetable runs from yearStart: the demo's earlier weeks hold the
+// lessons the rest of the seed (and the simulation) records against,
+// where a lesson created without a date would only start from today.
+func ensureTimetable(ctx context.Context, svc *schedulingservice.Service, tenantID, yearID uuid.UUID, yearStart time.Time, teacherID, subjectID, classID uuid.UUID, periods []academicdomain.Period) error {
+	existing, err := svc.ListBlocks(ctx, tenantID, schedulingservice.BlockQuery{
+		AcademicYearID: yearID, TeacherUserID: uuid.NullUUID{UUID: teacherID, Valid: true},
+	}, schedulingservice.Actor{UserID: teacherID})
 	if err != nil {
 		return fmt.Errorf("list schedules: %w", err)
 	}
-	if len(existing) > 0 {
+	if len(existing.Blocks) > 0 {
 		return nil
 	}
 	lessons := make([]academicdomain.Period, 0, len(periods))
@@ -406,6 +416,7 @@ func ensureTimetable(ctx context.Context, svc *schedulingservice.Service, tenant
 		_, err := svc.CreateSchedule(ctx, tenantID, schedulingservice.ScheduleInput{
 			AcademicYearID: yearID, ClassID: classID, SubjectID: subjectID, TeacherUserID: teacherID,
 			DayOfWeek: dow, StartPeriodID: lessons[0].ID, EndPeriodID: lessons[len(lessons)-1].ID, Source: schedulingdomain.SourceAdmin,
+			EffectiveFrom: &yearStart,
 		}, actor)
 		if err != nil {
 			return fmt.Errorf("create schedule for weekday %d: %w", dow, err)

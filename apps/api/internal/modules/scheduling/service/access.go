@@ -63,8 +63,8 @@ func (s *Service) ListTeacherOptions(ctx context.Context, tenantID, academicYear
 }
 
 // HasAccess implements scheduling.AccessChecker: true for the schedule's
-// own teacher, true for a teacher holding an accepted substitution for
-// that exact schedule and date.
+// own teacher on a date the version is in effect, true for a teacher
+// holding an accepted substitution for that exact schedule and date.
 func (s *Service) HasAccess(ctx context.Context, tenantID, scheduleID, userID uuid.UUID, date time.Time) (bool, error) {
 	var allowed bool
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -72,7 +72,7 @@ func (s *Service) HasAccess(ctx context.Context, tenantID, scheduleID, userID uu
 		if err != nil {
 			return err
 		}
-		if sched.TeacherUserID == userID {
+		if sched.TeacherUserID == userID && sched.EffectiveOn(date) {
 			allowed = true
 			return nil
 		}

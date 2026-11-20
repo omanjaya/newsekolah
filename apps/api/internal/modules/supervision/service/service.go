@@ -63,6 +63,10 @@ type ScheduleRef struct {
 	TeacherUserID uuid.UUID
 	// DayOfWeek is the lesson's ISO weekday, 1 = Monday .. 7 = Sunday.
 	DayOfWeek int16
+	// EffectiveFrom and EffectiveUntil are the dates this version of the
+	// lesson is on the timetable (both inclusive; nil until is open-ended).
+	EffectiveFrom  time.Time
+	EffectiveUntil *time.Time
 }
 
 // ScheduleReader is the scheduling module reached through a wiring

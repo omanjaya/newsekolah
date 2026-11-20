@@ -24,8 +24,24 @@ func init() {
 		English:    "This request conflicts with the substitution's existing state.",
 	}
 	catalog["SCHEDULE_HAS_HISTORY"] = map[string]string{
-		Indonesian: "Jadwal ini sudah memiliki riwayat presensi atau guru pengganti. Perubahan jadwal dan penghapusan diblokir agar riwayat tetap tersimpan.",
-		English:    "This schedule has attendance or substitution history. Schedule changes and deletion are blocked to preserve the records.",
+		Indonesian: "Jadwal ini sudah punya riwayat presensi, guru pengganti, atau kunjungan supervisi, jadi perubahannya harus berlaku mulai suatu tanggal. Pertemuan sebelum tanggal itu tetap tercatat dengan jadwal lama.",
+		English:    "This schedule has attendance, substitution or supervision history, so a change must take effect from a date. Lessons before that date keep the old schedule.",
+	}
+	catalog["SCHEDULE_CHANGE_BEFORE_HISTORY"] = map[string]string{
+		Indonesian: "Tanggal berlaku terlalu awal: jadwal ini sudah punya riwayat sampai tanggal tersebut, pelajarannya hari ini sudah dimulai, atau tanggalnya sudah lewat. Pilih tanggal yang lebih akhir.",
+		English:    "The effective date is too early: this schedule has history up to that date, its lesson today has already begun, or the date has passed. Pick a later date.",
+	}
+	catalog["SCHEDULE_EFFECTIVE_FROM_INVALID"] = map[string]string{
+		Indonesian: "Tanggal berlaku harus berada di dalam tahun ajaran jadwal ini.",
+		English:    "The effective date must fall within this schedule's academic year.",
+	}
+	catalog["SCHEDULE_ENDED"] = map[string]string{
+		Indonesian: "Jadwal ini sudah tidak berlaku, jadi tidak bisa diubah atau dihapus lagi.",
+		English:    "This schedule is no longer in effect, so it can no longer be changed or removed.",
+	}
+	catalog["SUBSTITUTION_LESSON_NOT_ON_DATE"] = map[string]string{
+		Indonesian: "Pelajaran ini tidak ada di jadwal pada tanggal yang dipilih.",
+		English:    "This lesson is not on the timetable on the selected date.",
 	}
 	catalog["SCHEDULE_YEAR_ARCHIVED"] = map[string]string{
 		Indonesian: "Tahun ajaran jadwal ini sudah diarsipkan, jadi jadwalnya tidak bisa diubah.",

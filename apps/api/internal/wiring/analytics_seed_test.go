@@ -111,8 +111,9 @@ func seedAnalyticsWorld(t *testing.T, pool *pgxpool.Pool, students, classes int,
 	// Weekly timetable: three lessons a day Monday to Friday per class, each
 	// class with its own teacher so the anti-clash constraints hold.
 	exec(`insert into schedules (tenant_id, academic_year_id, class_id, subject_id, teacher_user_id, day_of_week,
-	                             start_period_id, end_period_id, start_seq, end_seq, source)
-	      select $1, $2, c.id, sub.id, t.id, d, p.id, p.id, p.sequence, p.sequence, 'admin'
+	                             start_period_id, end_period_id, start_seq, end_seq, source, effective_from)
+	      select $1, $2, c.id, sub.id, t.id, d, p.id, p.id, p.sequence, p.sequence, 'admin',
+	             (select starts_on from academic_years where id = $2)
 	      from seed_class c
 	      join seed_teacher t on t.rn = c.rn
 	      cross join generate_series(1, 5) d

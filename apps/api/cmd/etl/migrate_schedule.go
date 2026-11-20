@@ -200,7 +200,10 @@ func (st *Store) migrateSchedules(
 		}
 
 		existingID, found, err := st.selectID(ctx,
-			`select id from schedules where academic_year_id = $1 and class_id = $2 and day_of_week = $3 and start_seq = $4`,
+			// The version still on the timetable (migration 0147): a
+			// retired one keeps its own history and is never reused.
+			`select id from schedules where academic_year_id = $1 and class_id = $2 and day_of_week = $3 and start_seq = $4
+			   and effective_until is null`,
 			academicYearID, class.targetClassID, dayOfWeek, period.sequence,
 		)
 		if err != nil {
@@ -242,10 +245,15 @@ func (st *Store) insertSchedule(
 	var id uuid.UUID
 	err := st.withRowSavepoint(ctx, func() error {
 		return st.tx.QueryRow(ctx,
+			// A SION lesson covers its whole academic year: it starts on
+			// the year's first date on its weekday (migration 0147), so
+			// the attendance pass can file every legacy session under it.
 			`insert into schedules (
 			   tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id,
-			   day_of_week, start_period_id, end_period_id, start_seq, end_seq, source
-			 ) values ($1, $2, $3, $4, $5, $6, $7, $8, $8, $9, $9, 'import')
+			   day_of_week, start_period_id, end_period_id, start_seq, end_seq, source, effective_from
+			 ) values ($1, $2, $3, $4, $5, $6, $7, $8, $8, $9, $9, 'import',
+			   (select ay.starts_on + (($7::int - extract(isodow from ay.starts_on)::int + 7) % 7)
+			    from academic_years ay where ay.id = $2))
 			 returning id`,
 			tenantID, academicYearID, termID, classID, subjectID, teacherUserID,
 			dayOfWeek, period.targetPeriodID, period.sequence,

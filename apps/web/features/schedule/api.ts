@@ -8,6 +8,7 @@ import { useApiClient } from "../../lib/api/client";
 export type ScheduleBlock = components["schemas"]["ScheduleBlock"];
 export type ScheduleWrite = components["schemas"]["ScheduleWriteRequest"];
 export type TeacherOption = components["schemas"]["UserOption"];
+export type MutationPolicy = components["schemas"]["MutationPolicy"];
 
 export interface ScheduleFilter {
   academicYearId: string;
@@ -24,6 +25,13 @@ export interface ScheduleFilter {
    * 403 by accident.
    */
   allClasses?: boolean;
+  /**
+   * Any date ("YYYY-MM-DD") in the week to show: the timetable is
+   * effective-dated, so each weekday lists the lessons in effect on its own
+   * date in that Monday-Sunday week. Omitted, the server shows the school's
+   * current week.
+   */
+  asOf?: string;
   /** Set false to skip the request, e.g. for a viewer without schedule access. */
   enabled?: boolean;
 }
@@ -60,6 +68,7 @@ export function useSchedulesQuery(filter: ScheduleFilter) {
       class: filter.classId,
       teacher: filter.teacherUserId,
       day: filter.dayOfWeek,
+      asOf: filter.asOf,
     }),
     queryFn: () =>
       client.GET("/v1/schedules", {
@@ -69,6 +78,7 @@ export function useSchedulesQuery(filter: ScheduleFilter) {
             ...(filter.classId ? { class_id: filter.classId } : {}),
             ...(filter.teacherUserId ? { teacher_user_id: filter.teacherUserId } : {}),
             ...(filter.dayOfWeek ? { day_of_week: filter.dayOfWeek } : {}),
+            ...(filter.asOf ? { as_of: filter.asOf } : {}),
           },
         },
       }),
@@ -76,6 +86,22 @@ export function useSchedulesQuery(filter: ScheduleFilter) {
     // Timetables change a few times per semester, not per navigation: the
     // global 30s staleTime would otherwise refetch the whole grid on every
     // window focus.
+    staleTime: 5 * 60_000,
+  });
+}
+
+/**
+ * The academic year's dates bound every "Berlaku mulai" picker of the
+ * timetable editor. Read only for a schedule manager (the editor's only
+ * user); the server validates the dates either way.
+ */
+export function useScheduleYearQuery(academicYearId: string, enabled: boolean) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: ["academic", "years", academicYearId, "span"] as const,
+    queryFn: () =>
+      client.GET("/v1/academic/years/{yearId}", { params: { path: { yearId: academicYearId } } }),
+    enabled: enabled && academicYearId !== "",
     staleTime: 5 * 60_000,
   });
 }
@@ -118,7 +144,12 @@ export function useCreateScheduleMutation() {
   });
 }
 
-/** Replaces every row of a merged block in one server transaction. */
+/**
+ * Replaces every row of a merged block in one server transaction. With
+ * `body.effective_from` the change takes effect from that date (the old
+ * version keeps every earlier date) and the response is the new version;
+ * without it the block is corrected in place for the whole year.
+ */
 export function useReplaceScheduleBlockMutation() {
   const client = useApiClient();
   const invalidate = useInvalidateSchedules();
@@ -133,19 +164,39 @@ export function useReplaceScheduleBlockMutation() {
       });
     },
     onSuccess: invalidate,
+    // The form shows the refusal itself (a clash, or a date too early with
+    // the earliest one offered), so no second message as a toast.
+    meta: { errorToast: false },
   });
 }
 
-/** Deletes a merged block atomically; the server protects recorded history. */
+/**
+ * Deletes a merged block atomically. With `effectiveFrom` the block only
+ * leaves the timetable from that date on, keeping every earlier date and
+ * its history; without it the block goes entirely, which the server
+ * refuses once the block has history.
+ */
 export function useDeleteScheduleBlockMutation() {
   const client = useApiClient();
   const invalidate = useInvalidateSchedules();
   return useMutation({
-    mutationFn: (scheduleIds: string[]) => {
+    mutationFn: ({
+      scheduleIds,
+      effectiveFrom,
+    }: {
+      scheduleIds: string[];
+      effectiveFrom?: string;
+    }) => {
       const scheduleId = scheduleIds[0];
       if (!scheduleId) throw new Error("A schedule block must contain at least one row");
       return client.DELETE("/v1/schedules/{scheduleId}", {
-        params: { path: { scheduleId }, query: { schedule_ids: scheduleIds } },
+        params: {
+          path: { scheduleId },
+          query: {
+            schedule_ids: scheduleIds,
+            ...(effectiveFrom ? { effective_from: effectiveFrom } : {}),
+          },
+        },
         querySerializer: { array: { style: "form", explode: false } },
       });
     },
@@ -166,13 +217,29 @@ export function useBulkImportSchedulesMutation() {
   });
 }
 
-/** Deletes every schedule of one academic year. Irreversible; the caller must confirm first. */
+/**
+ * Clears one academic year's timetable from `effectiveFrom` on, keeping
+ * every earlier week and its history (or, without a date, deletes it
+ * entirely, which the server refuses once anything has history). The
+ * caller must confirm first.
+ */
 export function useClearSchedulesMutation() {
   const client = useApiClient();
   const invalidate = useInvalidateSchedules();
   return useMutation({
-    mutationFn: (academicYearId: string) =>
-      client.POST("/v1/schedules/clear", { body: { academic_year_id: academicYearId } }),
+    mutationFn: ({
+      academicYearId,
+      effectiveFrom,
+    }: {
+      academicYearId: string;
+      effectiveFrom?: string;
+    }) =>
+      client.POST("/v1/schedules/clear", {
+        body: {
+          academic_year_id: academicYearId,
+          ...(effectiveFrom ? { effective_from: effectiveFrom } : {}),
+        },
+      }),
     onSuccess: invalidate,
 
     meta: { errorToast: false },

@@ -78,10 +78,7 @@ export function ObservationDetailView({ observationId }: { observationId: string
   const scheduled = scheduledForTeacher.data?.data.find(
     (s) => s.id === observation.data?.scheduled_id,
   );
-  const lesson = useLessonContext(
-    observation.data?.teacher_user_id ?? "",
-    scheduled?.schedule_id ?? "",
-  );
+  const lesson = useLessonContext(scheduled?.schedule_id ?? "");
   const respond = useRespondToObservationMutation();
 
   const [teacherResponse, setTeacherResponse] = useState("");

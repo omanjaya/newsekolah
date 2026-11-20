@@ -1,11 +1,12 @@
 "use client";
 
 import { cn } from "@newsekolah/ui";
-import { AlertTriangle, Copy, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, CalendarClock, Copy, Pencil, Plus, Trash2 } from "lucide-react";
 import { useLocale } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 
 import type { ScheduleBlock } from "../api";
+import { blockLockedReasonKey } from "../block-policy";
 import { formatPeriodTime } from "../period-span";
 import { SUBJECT_TONE_CLASSES, subjectTone } from "../subject-tone";
 
@@ -86,10 +87,13 @@ export function HeadCell({
   children,
   first,
   current,
+  date,
 }: {
   children: ReactNode;
   first?: boolean;
   current?: boolean;
+  /** The column's date in the week shown, "16 Nov", beside its day name. */
+  date?: string;
 }): ReactElement {
   return (
     <th
@@ -106,6 +110,7 @@ export function HeadCell({
       )}
     >
       {children}
+      {date && <span className="ml-1.5 text-caption font-normal tabular-nums">{date}</span>}
     </th>
   );
 }
@@ -238,6 +243,11 @@ function BreakWarningBadge({ label }: { label: string }): ReactElement {
  * icons. A touch screen has no hover to wait for, so there they stay
  * visible, on their own light backing for the same contrast reason as
  * `BreakWarningBadge`.
+ *
+ * The timetable is effective-dated: `caption` says when a block that does
+ * not cover the whole week shown starts or ends, and edit and delete stay
+ * offered for a block with history (they ask for the date the change takes
+ * effect); only a block that has ended is locked, saying why.
  */
 export function LessonCell({
   block,
@@ -249,6 +259,7 @@ export function LessonCell({
   current,
   crossesBreak,
   breakWarningLabel,
+  caption,
   onCopy,
   onEdit,
   onDelete,
@@ -266,12 +277,16 @@ export function LessonCell({
   /** True when this block's periods touch a break; see break-warning.ts. */
   crossesBreak?: boolean;
   breakWarningLabel?: string;
+  /** "Mulai Kam, 3 Des" or "Sampai Kam, 26 Nov"; see `useEffectiveCaption`. */
+  caption?: string;
   onCopy: (block: ScheduleBlock) => void;
   onEdit: (block: ScheduleBlock) => void;
   onDelete: (block: ScheduleBlock) => void;
   t: (key: string) => string;
 }): ReactElement {
   const tone = subjectTone(block.subject_id);
+  const lockedKey = blockLockedReasonKey(block);
+  const lockedReason = lockedKey ? t(lockedKey) : undefined;
   return (
     <td rowSpan={span} className={cn(CELL, "p-1", today && "bg-accent/5", current && CURRENT_EDGE)}>
       <div
@@ -291,6 +306,12 @@ export function LessonCell({
           <span className="truncate text-caption font-normal">{detail}</span>
           <LessonSubstitutionAction block={block} compact />
         </div>
+        {caption && (
+          <span className="flex items-center gap-1 truncate text-caption font-normal">
+            <CalendarClock className="size-3 shrink-0" aria-hidden="true" />
+            <span className="truncate">{caption}</span>
+          </span>
+        )}
         {canManage && (
           <div
             className={cn(
@@ -309,7 +330,7 @@ export function LessonCell({
             <BlockAction
               label={t("editBlock")}
               icon={<Pencil className="size-3.5" aria-hidden="true" />}
-              lockedReason={block.has_history ? t("blockLocked") : undefined}
+              lockedReason={lockedReason}
               onClick={() => {
                 onEdit(block);
               }}
@@ -318,7 +339,7 @@ export function LessonCell({
               label={t("deleteBlock")}
               danger
               icon={<Trash2 className="size-3.5" aria-hidden="true" />}
-              lockedReason={block.has_history ? t("blockLocked") : undefined}
+              lockedReason={lockedReason}
               onClick={() => {
                 onDelete(block);
               }}

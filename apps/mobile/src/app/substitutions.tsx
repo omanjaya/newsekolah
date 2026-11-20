@@ -159,7 +159,7 @@ function SubstitutionForm({
   const [note, setNote] = useState("");
 
   const weekday = isoWeekday(date);
-  const mySchedules = useMySchedules(weekday ?? 0);
+  const mySchedules = useMySchedules(weekday ?? 0, date);
   const debouncedQuery = useDebouncedValue(substituteQuery, 300);
   const directory = useDirectory("teacher", debouncedQuery);
 

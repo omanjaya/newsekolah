@@ -13,6 +13,28 @@ export function useActiveYearId(): string {
   return me?.active_academic_year?.id ?? "";
 }
 
+/**
+ * Today as "YYYY-MM-DD" on the school's own calendar (`timeZone`, the
+ * tenant's), falling back to the device's date when the zone cannot be
+ * read. The timetable is effective-dated, so a schedule read names the
+ * week it is for.
+ */
+export function schoolToday(timeZone?: string, now: Date = new Date()): string {
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(now);
+    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+    return `${get("year")}-${get("month")}-${get("day")}`;
+  } catch {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${String(now.getFullYear())}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  }
+}
+
 export function useClasses() {
   const yearId = useActiveYearId();
   return useQuery({
@@ -79,21 +101,30 @@ export function useDirectory(profileKind: "teacher", search: string) {
 
 // My own schedule blocks for one weekday -- used by the substitution form
 // so a teacher picks which of their own classes needs a stand-in instead
-// of typing a schedule id by hand.
+// of typing a schedule id by hand. `date` ("YYYY-MM-DD", the date asked
+// for) picks the week, so the lessons offered are the ones in effect then.
 
-export function useMySchedules(dayOfWeek: number) {
+export function useMySchedules(dayOfWeek: number, date?: string) {
   const yearId = useActiveYearId();
   const { me } = useAuth();
+  // An empty date (none picked yet) reads this week.
+  const asOf = date !== undefined && date !== "" ? date : schoolToday(me?.tenant.timezone);
   return useQuery({
     queryKey: queryKeys.schedules({
       academic_year_id: yearId,
       teacher_user_id: me?.id,
       day_of_week: dayOfWeek,
+      as_of: asOf,
     }),
     queryFn: () =>
       getApiClient().GET("/v1/schedules", {
         params: {
-          query: { academic_year_id: yearId, teacher_user_id: me?.id, day_of_week: dayOfWeek },
+          query: {
+            academic_year_id: yearId,
+            teacher_user_id: me?.id,
+            day_of_week: dayOfWeek,
+            as_of: asOf,
+          },
         },
       }),
     enabled: yearId !== "" && Boolean(me?.id),
@@ -111,7 +142,10 @@ export function useTeachers() {
 /** The signed-in student's own class schedule for one weekday, used for the
  * home screen's "next lesson" card and today's schedule list. class_id
  * comes from `me.current_class` (only set for students with an active
- * enrollment); the query stays disabled otherwise rather than guessing. */
+ * enrollment); the query stays disabled otherwise rather than guessing.
+ * No as_of: the server reads its own current week (clock.Now in the
+ * school's time zone, time simulation included), so the week is never
+ * one the device's clock picked while the weekday came from elsewhere. */
 export function useMyTodaySchedule(dayOfWeek: number) {
   const yearId = useActiveYearId();
   const { me } = useAuth();
@@ -124,7 +158,13 @@ export function useMyTodaySchedule(dayOfWeek: number) {
     }),
     queryFn: () =>
       getApiClient().GET("/v1/schedules", {
-        params: { query: { academic_year_id: yearId, class_id: classId, day_of_week: dayOfWeek } },
+        params: {
+          query: {
+            academic_year_id: yearId,
+            class_id: classId,
+            day_of_week: dayOfWeek,
+          },
+        },
       }),
     enabled: yearId !== "" && Boolean(classId),
   });

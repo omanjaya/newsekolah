@@ -12,6 +12,32 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getAcademicYearRefForSchedule = `-- name: GetAcademicYearRefForSchedule :one
+select starts_on, ends_on, (archived_at is not null)::bool as archived
+from academic_years where tenant_id = $1 and id = $2
+`
+
+type GetAcademicYearRefForScheduleParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+type GetAcademicYearRefForScheduleRow struct {
+	StartsOn pgtype.Date `json:"starts_on"`
+	EndsOn   pgtype.Date `json:"ends_on"`
+	Archived bool        `json:"archived"`
+}
+
+// The year's date span bounds a schedule version's effective dates: the
+// default start of a new lesson, the window a change date must fall in,
+// and the week a timetable read falls back to.
+func (q *Queries) GetAcademicYearRefForSchedule(ctx context.Context, arg GetAcademicYearRefForScheduleParams) (GetAcademicYearRefForScheduleRow, error) {
+	row := q.db.QueryRow(ctx, getAcademicYearRefForSchedule, arg.TenantID, arg.ID)
+	var i GetAcademicYearRefForScheduleRow
+	err := row.Scan(&i.StartsOn, &i.EndsOn, &i.Archived)
+	return i, err
+}
+
 const getClassRefForSchedule = `-- name: GetClassRefForSchedule :one
 
 select id, tenant_id, academic_year_id, name, homeroom_teacher_id

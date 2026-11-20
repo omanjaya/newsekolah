@@ -24,6 +24,7 @@ function block(overrides: Partial<ScheduleBlock> = {}): ScheduleBlock {
     start_seq: 1,
     end_seq: 1,
     source: "admin",
+    effective_from: "2026-07-13",
     ...overrides,
   };
 }

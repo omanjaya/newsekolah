@@ -107,6 +107,7 @@ func TestAcceptedSubstitutionAppearsUnderSimulatedDay(t *testing.T) {
 	otherSchedule, err := q.CreateSchedule(ctx, db.CreateScheduleParams{
 		TenantID: w.tenantID, AcademicYearID: w.yearID, ClassID: w.classID, SubjectID: w.subjectID, TeacherUserID: w.otherTeacherID,
 		DayOfWeek: domain.IsoWeekday(subDate), StartPeriodID: w.periodID, EndPeriodID: w.periodID, StartSeq: 1, EndSeq: 1, Source: "admin",
+		EffectiveFrom: w.scheduleFrom,
 	})
 	require.NoError(t, err)
 

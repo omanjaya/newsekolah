@@ -27,6 +27,16 @@ type ScheduleRef struct {
 	StartPeriodID  uuid.UUID
 	EndPeriodID    uuid.UUID
 	DayOfWeek      int16
+	// EffectiveFrom and EffectiveUntil bound the version (both inclusive;
+	// nil until is open-ended): attendance only opens a session, and
+	// supervision only plans a visit, on a date the version is in effect.
+	EffectiveFrom  time.Time
+	EffectiveUntil *time.Time
+}
+
+// EffectiveOn reports whether this version is on the timetable on date.
+func (r ScheduleRef) EffectiveOn(date time.Time) bool {
+	return domain.DateRangeContains(r.EffectiveFrom, r.EffectiveUntil, date)
 }
 
 // ScheduleReaderAdapter implements scheduling.ScheduleReader over a
@@ -51,17 +61,17 @@ func (a *ScheduleReaderAdapter) GetSchedule(ctx context.Context, tenantID, sched
 	return toRef(sched), nil
 }
 
-func (a *ScheduleReaderAdapter) ListSchedulesForTeacherDay(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID, dayOfWeek int16) ([]ScheduleRef, error) {
+// ListSchedulesForTeacherOn returns a teacher's own lessons on date: the
+// version of each lesson in effect that day.
+func (a *ScheduleReaderAdapter) ListSchedulesForTeacherOn(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID, date time.Time) ([]ScheduleRef, error) {
 	var out []ScheduleRef
 	err := a.svc.withTx(ctx, tenantID, func(ctx context.Context) error {
-		schedules, err := a.svc.repo.ListSchedulesByTeacher(ctx, tenantID, academicYearID, teacherUserID)
+		schedules, err := a.svc.repo.ListSchedulesForTeacherOn(ctx, tenantID, academicYearID, teacherUserID, date)
 		if err != nil {
 			return err
 		}
 		for _, sched := range schedules {
-			if sched.DayOfWeek == dayOfWeek {
-				out = append(out, toRef(sched))
-			}
+			out = append(out, toRef(sched))
 		}
 		return nil
 	})
@@ -72,6 +82,8 @@ func (a *ScheduleReaderAdapter) ListSchedulesForTeacherDay(ctx context.Context, 
 // accepted substitution for substituteUserID on date covers, for
 // attendance's "today's sessions" list (own schedules plus accepted
 // substitutions).
+// A request stays with the version it was made for, which is in effect on
+// its date (migration 0147), so no date filter applies here.
 func (a *ScheduleReaderAdapter) ListAcceptedSubstitutionsForSubstituteDate(ctx context.Context, tenantID, substituteUserID uuid.UUID, date time.Time) ([]ScheduleRef, error) {
 	var out []ScheduleRef
 	err := a.svc.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -91,11 +103,13 @@ func (a *ScheduleReaderAdapter) ListAcceptedSubstitutionsForSubstituteDate(ctx c
 	return out, err
 }
 
-func (a *ScheduleReaderAdapter) CountSchedulesForClassDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, dayOfWeek int16) (int64, error) {
+// CountSchedulesForClassOn counts a class's lessons on date: the versions
+// in effect that day.
+func (a *ScheduleReaderAdapter) CountSchedulesForClassOn(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) (int64, error) {
 	var out int64
 	err := a.svc.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = a.svc.repo.CountSchedulesForClassDay(ctx, tenantID, academicYearID, classID, dayOfWeek)
+		out, err = a.svc.repo.CountSchedulesForClassOn(ctx, tenantID, academicYearID, classID, date)
 		return err
 	})
 	return out, err
@@ -127,21 +141,21 @@ func (a *ScheduleReaderAdapter) ListHandOversForTeacherDate(ctx context.Context,
 	return out, err
 }
 
-// ClassDayCount is how many schedules one class has on one weekday: the
+// ClassDateCount is how many lessons one class has on one date: the
 // expected-session count attendance's daily status needs.
-type ClassDayCount struct {
-	ClassID   uuid.UUID
-	DayOfWeek int16
-	Count     int64
+type ClassDateCount struct {
+	ClassID uuid.UUID
+	Date    time.Time
+	Count   int64
 }
 
-// CountSchedulesByClassDay is CountSchedulesForClassDay for many classes
-// and every weekday at once. Pairs with no schedule are omitted.
-func (a *ScheduleReaderAdapter) CountSchedulesByClassDay(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID) ([]ClassDayCount, error) {
-	var out []ClassDayCount
+// CountSchedulesByClassDates is CountSchedulesForClassOn for many classes
+// and dates at once. Pairs with no lesson are omitted.
+func (a *ScheduleReaderAdapter) CountSchedulesByClassDates(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID, dates []time.Time) ([]ClassDateCount, error) {
+	var out []ClassDateCount
 	err := a.svc.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = a.svc.repo.CountSchedulesByClassDay(ctx, tenantID, academicYearID, classIDs)
+		out, err = a.svc.repo.CountSchedulesByClassDates(ctx, tenantID, academicYearID, classIDs, dates)
 		return err
 	})
 	return out, err
@@ -151,6 +165,6 @@ func toRef(sched domain.Schedule) ScheduleRef {
 	return ScheduleRef{
 		ID: sched.ID, AcademicYearID: sched.AcademicYearID, ClassID: sched.ClassID, SubjectID: sched.SubjectID,
 		TeacherUserID: sched.TeacherUserID, StartPeriodID: sched.StartPeriodID, EndPeriodID: sched.EndPeriodID,
-		DayOfWeek: sched.DayOfWeek,
+		DayOfWeek: sched.DayOfWeek, EffectiveFrom: sched.EffectiveFrom, EffectiveUntil: sched.EffectiveUntil,
 	}
 }

@@ -37,10 +37,12 @@ func (e *ConflictError) Unwrap() error { return e.Kind }
 // (which existing schedule it clashes with) instead of parsing a Postgres
 // constraint-violation message.
 //
-// existing must already be filtered to the same tenant and academic year;
-// DetectConflict itself only compares day of week and period range, and
-// excludes selfID (candidate's own current row, when updating) from the
-// comparison.
+// existing must already be filtered to the same tenant and academic year
+// and hold every version of the day, whatever its dates; DetectConflict
+// itself compares day of week, period range and effective dates (two
+// versions that never share a date never clash, so a lesson can take over
+// a slot from the day after the old one ends), and excludes selfID
+// (candidate's own current row, when updating) from the comparison.
 func DetectConflict(existing []Schedule, candidate Schedule, selfID uuid.UUID) error {
 	for _, other := range existing {
 		if other.ID == selfID {
@@ -49,7 +51,7 @@ func DetectConflict(existing []Schedule, candidate Schedule, selfID uuid.UUID) e
 		if other.DayOfWeek != candidate.DayOfWeek {
 			continue
 		}
-		if !candidate.overlapsPeriods(other) {
+		if !candidate.overlapsPeriods(other) || !candidate.overlapsDates(other) {
 			continue
 		}
 		if other.ClassID == candidate.ClassID {

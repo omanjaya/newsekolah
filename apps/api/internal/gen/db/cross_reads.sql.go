@@ -520,6 +520,7 @@ where c.tenant_id = $1 and c.academic_year_id = $2 and c.deleted_at is null
     join periods sp on sp.id = s.start_period_id
     join periods ep on ep.id = s.end_period_id
     where s.tenant_id = $1 and s.academic_year_id = $2 and s.class_id = c.id and s.day_of_week = $3
+      and s.effective_range @> $5::date
       and sp.starts_at <= $4 and ep.ends_at >= $4
   )
 order by c.name
@@ -530,6 +531,7 @@ type ListClassesWithoutCurrentPeriodScheduleForAttendanceParams struct {
 	AcademicYearID uuid.UUID   `json:"academic_year_id"`
 	DayOfWeek      int16       `json:"day_of_week"`
 	StartsAt       pgtype.Time `json:"starts_at"`
+	OnDate         pgtype.Date `json:"on_date"`
 }
 
 type ListClassesWithoutCurrentPeriodScheduleForAttendanceRow struct {
@@ -538,7 +540,7 @@ type ListClassesWithoutCurrentPeriodScheduleForAttendanceRow struct {
 }
 
 // Every non-deleted class of the academic year that has no schedule row
-// straddling now_time on day_of_week -- the monitor snapshot shows these
+// in effect on on_date straddling now_time on day_of_week -- the monitor snapshot shows these
 // as "no schedule" cards instead of silently omitting them.
 func (q *Queries) ListClassesWithoutCurrentPeriodScheduleForAttendance(ctx context.Context, arg ListClassesWithoutCurrentPeriodScheduleForAttendanceParams) ([]ListClassesWithoutCurrentPeriodScheduleForAttendanceRow, error) {
 	rows, err := q.db.Query(ctx, listClassesWithoutCurrentPeriodScheduleForAttendance,
@@ -546,6 +548,7 @@ func (q *Queries) ListClassesWithoutCurrentPeriodScheduleForAttendance(ctx conte
 		arg.AcademicYearID,
 		arg.DayOfWeek,
 		arg.StartsAt,
+		arg.OnDate,
 	)
 	if err != nil {
 		return nil, err
@@ -589,6 +592,7 @@ join periods ep on ep.id = s.end_period_id
 left join attendance_sessions ats on ats.schedule_id = s.id and ats.date = $4
 left join users su on su.id = ats.substitute_user_id
 where s.tenant_id = $1 and s.academic_year_id = $2 and s.day_of_week = $3
+  and s.effective_range @> $4::date
   and sp.starts_at <= $5 and ep.ends_at >= $5
 order by c.name
 `
@@ -619,7 +623,8 @@ type ListCurrentPeriodScheduleCardsForAttendanceRow struct {
 
 // Every schedule occurrence whose period is currently running (start
 // period's starts_at through end period's ends_at straddle now_time, in
-// the tenant's own timezone), left-joined with today's attendance session
+// the tenant's own timezone) in the version in effect on the date,
+// left-joined with today's attendance session
 // if one has been opened -- the raw input to the monitor snapshot's
 // per-class submission cards. Also carries the governing period's own
 // name/times (the monitor's "current period" banner is this period,

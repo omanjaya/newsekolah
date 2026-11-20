@@ -74,13 +74,19 @@ select
      where u.tenant_id = $1 and u.deleted_at is null and up.kind = 'student')::int as students,
   (select count(*) from enrollments e where e.tenant_id = $1 and e.academic_year_id = $2::uuid and e.status = 'active')::int as enrollments,
   (select count(*) from teaching_assignments ta where ta.tenant_id = $1 and ta.academic_year_id = $2::uuid and ta.is_active)::int as teaching_assignments,
-  (select count(*) from schedules sc where sc.tenant_id = $1 and sc.academic_year_id = $2::uuid)::int as schedules,
+  -- Lessons still on the timetable: a timetable cleared from a date on
+  -- (migration 0147) leaves only ended versions behind. today is the
+  -- school's own date (clock.LocalDate in its time zone, simulation
+  -- included), not the database server's current_date.
+  (select count(*) from schedules sc where sc.tenant_id = $1 and sc.academic_year_id = $2::uuid
+     and (sc.effective_until is null or sc.effective_until >= $3::date))::int as schedules,
   (select count(*) from duty_assignments da where da.tenant_id = $1 and da.academic_year_id = $2::uuid and da.is_active)::int as duty_assignments
 `
 
 type SetupCountsParams struct {
 	TenantID uuid.UUID   `json:"tenant_id"`
 	YearID   pgtype.UUID `json:"year_id"`
+	Today    pgtype.Date `json:"today"`
 }
 
 type SetupCountsRow struct {
@@ -104,7 +110,7 @@ type SetupCountsRow struct {
 // master data exists. Every count is scoped to the active academic year
 // where the table has one.
 func (q *Queries) SetupCounts(ctx context.Context, arg SetupCountsParams) (SetupCountsRow, error) {
-	row := q.db.QueryRow(ctx, setupCounts, arg.TenantID, arg.YearID)
+	row := q.db.QueryRow(ctx, setupCounts, arg.TenantID, arg.YearID, arg.Today)
 	var i SetupCountsRow
 	err := row.Scan(
 		&i.AcademicYears,

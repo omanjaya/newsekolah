@@ -81,9 +81,20 @@ export function useJournalTodayData(): {
   // journal history; they have no lessons to catch up on, so skip the request
   // instead of turning its 403 into a "failed to load" alert.
   const canViewSchedules = useCan("view_schedules");
+  const today = todayInZone(me?.tenant.timezone);
+  // The last seven days span this week and the one before; the timetable
+  // is effective-dated, so both weeks are read and each date then keeps
+  // the lessons in effect on it.
   const schedules = useSchedulesQuery({
     academicYearId: year.id,
     teacherUserId: me?.id,
+    asOf: today,
+    enabled: canViewSchedules,
+  });
+  const previousWeek = useSchedulesQuery({
+    academicYearId: year.id,
+    teacherUserId: me?.id,
+    asOf: shiftDateISO(today, -7),
     enabled: canViewSchedules,
   });
   const schoolDays = useSchoolDaysQuery();
@@ -96,7 +107,6 @@ export function useJournalTodayData(): {
   const classMap = useLookup(classes.data?.data);
   const subjectMap = useLookup(subjects.data?.data);
 
-  const today = todayInZone(me?.tenant.timezone);
   const yesterday = shiftDateISO(today, -1);
 
   const activeWeekdays = useMemo(() => {
@@ -116,13 +126,15 @@ export function useJournalTodayData(): {
 
   const blocks = useMemo(
     () =>
-      (schedules.data?.data ?? []).map((block) => ({
+      [...(schedules.data?.data ?? []), ...(previousWeek.data?.data ?? [])].map((block) => ({
         scheduleId: block.schedule_ids[0] ?? block.class_id,
         classId: block.class_id,
         subjectId: block.subject_id,
         dayOfWeek: block.day_of_week,
+        effectiveFrom: block.effective_from,
+        effectiveUntil: block.effective_until,
       })),
-    [schedules.data],
+    [schedules.data, previousWeek.data],
   );
 
   const groups = useMemo(
@@ -131,11 +143,13 @@ export function useJournalTodayData(): {
   );
 
   return {
-    loading: schedules.isLoading || schoolDays.isLoading || journals.isLoading,
+    loading:
+      schedules.isLoading || previousWeek.isLoading || schoolDays.isLoading || journals.isLoading,
     isError:
       schedules.isError && !(schedules.error instanceof ApiError && schedules.error.status === 403),
     refetch: () => {
       void schedules.refetch();
+      void previousWeek.refetch();
     },
     today,
     yesterday,

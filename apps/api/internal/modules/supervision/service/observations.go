@@ -46,6 +46,9 @@ func (s *Service) ScheduleObservation(ctx context.Context, tenantID uuid.UUID, i
 		if err := scheduled.MatchesLessonDay(lesson.DayOfWeek); err != nil {
 			return err
 		}
+		if err := scheduled.MatchesLessonDates(lesson.EffectiveFrom, lesson.EffectiveUntil); err != nil {
+			return err
+		}
 		out, err = s.repo.CreateScheduledObservation(ctx, scheduled)
 		if err != nil {
 			return err

@@ -18,6 +18,11 @@ var (
 	// observed about it, and a status recorded ahead of time would flow
 	// into homeroom and the reports as real.
 	ErrSessionNotStarted = errors.New("the lesson has not started yet")
+	// ErrLessonNotOnDate refuses a session for a schedule version that is
+	// not on the timetable that date: the lesson was changed or removed
+	// from an earlier date on (or only starts later), so another version,
+	// or none, takes place then.
+	ErrLessonNotOnDate = errors.New("the lesson is not on the timetable on that date")
 	// ErrNotSchoolDay refuses a session on a date the academic calendar
 	// marks as a holiday, no-school day or semester break for its class.
 	ErrNotSchoolDay = errors.New("the session's date is not a school day for its class")

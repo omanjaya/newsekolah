@@ -63,7 +63,7 @@ func TestScheduleObservationRules(t *testing.T) {
 	period := insertID(`insert into periods (tenant_id,template_id,name,sequence,starts_at,ends_at)
 		values ($1,$2,'P1',1,'07:15','08:00')`, tenant, template)
 	lessonID := insertID(`insert into schedules (tenant_id,academic_year_id,class_id,subject_id,teacher_user_id,day_of_week,
-		start_period_id,end_period_id,start_seq,end_seq,source) values ($1,$2,$3,$4,$5,1,$6,$6,1,1,'admin')`,
+		start_period_id,end_period_id,start_seq,end_seq,source,effective_from) values ($1,$2,$3,$4,$5,1,$6,$6,1,1,'admin','2026-01-05')`,
 		tenant, year, class, subject, teacher, period)
 	schedules := stubScheduleReader{ref: service.ScheduleRef{ID: lessonID, TeacherUserID: teacher, DayOfWeek: 1}}
 	publisher := &recordingPublisher{}
@@ -77,6 +77,20 @@ func TestScheduleObservationRules(t *testing.T) {
 	// Friday 20 November 2026 is not a Monday.
 	_, err := schedule(time.Date(2026, 11, 20, 0, 0, 0, 0, time.UTC))
 	require.ErrorIs(t, err, domain.ErrLessonDayMismatch)
+
+	// A version of the lesson that ended on Monday 16 November is not on
+	// the timetable on Monday 23 November: the visit belongs to whichever
+	// version is in effect then.
+	ended := time.Date(2026, 11, 16, 0, 0, 0, 0, time.UTC)
+	endedReader := stubScheduleReader{ref: service.ScheduleRef{
+		ID: lessonID, TeacherUserID: teacher, DayOfWeek: 1,
+		EffectiveFrom: time.Date(2026, 1, 5, 0, 0, 0, 0, time.UTC), EffectiveUntil: &ended,
+	}}
+	endedSvc := service.New(pg.AppPool, repository.New(pg.AppPool), nil, endedReader, nil, nil, nil)
+	_, err = endedSvc.ScheduleObservation(ctx, tenant, service.ScheduleObservationInput{
+		CycleID: cycle, ScheduleID: lessonID, LessonDate: time.Date(2026, 11, 23, 0, 0, 0, 0, time.UTC), ObserverUserID: observer,
+	})
+	require.ErrorIs(t, err, domain.ErrLessonNotOnDate)
 
 	monday := time.Date(2026, 11, 23, 0, 0, 0, 0, time.UTC)
 	scheduled, err := schedule(monday)

@@ -262,22 +262,22 @@ func withLessons(pairs []StudentDayStatus, lessons lessonDays) []StudentDayStatu
 // loaded for many students and dates at once.
 type liveInputs struct {
 	classOf     map[uuid.UUID]uuid.UUID // student -> active class
-	scheduled   map[classWeekday]int
+	scheduled   map[classDate]int       // lessons in effect that date
 	submittedBy map[classDate]int
 	entries     map[studentDate][]string
 }
 
 func (s *Service) loadLiveInputs(ctx context.Context, tenantID, yearID uuid.UUID, classOf map[uuid.UUID]uuid.UUID, students []uuid.UUID, dates []time.Time) (liveInputs, error) {
 	in := liveInputs{classOf: classOf}
-	in.scheduled = map[classWeekday]int{}
+	in.scheduled = map[classDate]int{}
 	in.submittedBy = map[classDate]int{}
 	if classIDs := distinctClasses(in.classOf); len(classIDs) > 0 {
-		counts, err := s.schedules.CountSchedulesByClassDay(ctx, tenantID, yearID, classIDs)
+		counts, err := s.schedules.CountSchedulesByClassDates(ctx, tenantID, yearID, classIDs, dates)
 		if err != nil {
 			return in, err
 		}
 		for _, c := range counts {
-			in.scheduled[classWeekday{c.ClassID, c.DayOfWeek}] = int(c.Count)
+			in.scheduled[classDate{c.ClassID, dayKey(c.Date)}] = int(c.Count)
 		}
 		submitted, err := s.repo.CountSubmittedSessionsByClassesDates(ctx, tenantID, classIDs, dates)
 		if err != nil {
@@ -320,7 +320,7 @@ func (s *Service) applyLiveStatuses(
 		expected, submitted := 0, 0
 		if hasClass {
 			if lessons.has(p.StudentUserID, p.Date) {
-				expected = in.scheduled[classWeekday{classID, domain.IsoWeekday(p.Date)}]
+				expected = in.scheduled[classDate{classID, dayKey(p.Date)}]
 			}
 			submitted = in.submittedBy[classDate{classID, dayKey(p.Date)}]
 		}
@@ -328,11 +328,6 @@ func (s *Service) applyLiveStatuses(
 		resolved[key] = domain.ComputeDailyStatus(expected, submitted, in.entries[key], policy).StatusCode
 	}
 	return nil
-}
-
-type classWeekday struct {
-	class   uuid.UUID
-	weekday int16
 }
 
 type classDate struct {

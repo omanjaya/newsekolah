@@ -3,11 +3,13 @@ package service
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // SetupStepKey names one step of the onboarding checklist
@@ -58,7 +60,9 @@ type SetupCounts struct {
 
 // SetupReader is the repository slice the checklist needs.
 type SetupReader interface {
-	SetupCounts(ctx context.Context, tenantID uuid.UUID, yearID uuid.NullUUID) (SetupCounts, error)
+	// SetupCounts counts lessons still on the timetable on today (the
+	// school's own date).
+	SetupCounts(ctx context.Context, tenantID uuid.UUID, yearID uuid.NullUUID, today time.Time) (SetupCounts, error)
 	UpdateTenantProfile(ctx context.Context, tenantID uuid.UUID, name, educationLevel, timezone, locale string) error
 }
 
@@ -80,7 +84,8 @@ func (s *Service) Setup(ctx context.Context, tenantID uuid.UUID) (SetupChecklist
 			yearID = uuid.NullUUID{UUID: year.ID, Valid: true}
 			out.ActiveYearLabel = year.Label
 		}
-		counts, err := s.repo.SetupCounts(ctx, tenantID, yearID)
+		today := clock.LocalDate(clock.Now(ctx, s.clock()), clock.Location(tenant.Timezone))
+		counts, err := s.repo.SetupCounts(ctx, tenantID, yearID, today)
 		if err != nil {
 			return err
 		}

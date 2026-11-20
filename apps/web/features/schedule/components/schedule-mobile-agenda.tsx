@@ -9,16 +9,19 @@ import {
   SegmentedControl,
   cn,
 } from "@newsekolah/ui";
-import { AlertTriangle, Copy, Dot, Plus } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { AlertTriangle, CalendarClock, Copy, Dot, Plus } from "lucide-react";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { formatCalendarDate } from "../../../lib/format-calendar-date";
 import type { ScheduleBlock } from "../api";
 import { blockCrossesBreak } from "../break-warning";
 import { clockLabel } from "../clock-label";
 import { isNowWithinBlock } from "../current-period";
 import { periodSpanLabel } from "../period-span";
 import { SUBJECT_TONE_CLASSES, subjectTone } from "../subject-tone";
+import { useEffectiveCaption } from "../use-effective-caption";
+import { cellDate } from "../week";
 
 import { LessonSubstitutionAction } from "./lesson-substitution-action";
 import { lockableBlockActions } from "./lockable-block-actions";
@@ -40,9 +43,11 @@ interface Period {
  * or forces sideways scroll through the whole week -- so this shows one day
  * at a time: the whole week as one row of short day names (today marked),
  * then that day's lessons with their time leading, in their subject's
- * colour.
+ * colour. The week is the one the toolbar picked (`weekStart`), so the
+ * day's heading names its date and lists the lessons in effect on it.
  */
 export function ScheduleMobileAgenda({
+  weekStart,
   activeDays,
   lessonPeriods,
   blocks,
@@ -64,6 +69,8 @@ export function ScheduleMobileAgenda({
   t,
   tDays,
 }: {
+  /** The Monday of the week shown. */
+  weekStart: string;
   activeDays: readonly number[];
   lessonPeriods: Period[];
   /** Lesson blocks keyed by `${dayOfWeek}:${sequence}`, one entry per
@@ -82,7 +89,8 @@ export function ScheduleMobileAgenda({
   onEdit: (block: ScheduleBlock) => void;
   onDelete: (block: ScheduleBlock) => void;
   copied: ScheduleBlock | null;
-  /** Today's weekday (1-7), marked in the day row so a teacher finds it at once. */
+  /** Today's weekday (1-7) when the week shown is the current one (0
+   * otherwise), marked in the day row so a teacher finds it at once. */
   today: number;
   /** The period in session right now, highlighted when showing today. */
   currentSeq?: number;
@@ -91,6 +99,9 @@ export function ScheduleMobileAgenda({
 }): ReactElement {
   const tShort = useTranslations("app.common.weekdaysShort");
   const locale = useLocale();
+  const format = useFormatter();
+  const captionOf = useEffectiveCaption(weekStart);
+  const dayName = `${tDays(String(mobileDay))}, ${formatCalendarDate(format, cellDate(weekStart, mobileDay), { day: "numeric", month: "short" })}`;
   const periodBySeq = new Map(lessonPeriods.map((p) => [p.sequence, p]));
   const hasLessons = lessonPeriods.some((p) => blocks.has(`${mobileDay}:${p.sequence}`));
   const nowSeq = mobileDay === today ? currentSeq : undefined;
@@ -113,13 +124,7 @@ export function ScheduleMobileAgenda({
           icon: day === today ? <Dot className="-mx-1.5 text-accent" /> : undefined,
         }))}
       />
-      <SectionHeader
-        title={
-          mobileDay === today
-            ? `${tDays(String(mobileDay))} · ${t("today")}`
-            : tDays(String(mobileDay))
-        }
-      />
+      <SectionHeader title={mobileDay === today ? `${dayName} · ${t("today")}` : dayName} />
       {!canManage && !hasLessons ? (
         <EmptyState
           variant="compact"
@@ -190,6 +195,7 @@ export function ScheduleMobileAgenda({
             const spanLabel = periodSpanLabel(period, endPeriod);
             const isNow = isNowWithinBlock(block.start_seq, block.end_seq, nowSeq);
             const subject = subjectMap.get(block.subject_id)?.name ?? t("unknownSubject");
+            const caption = captionOf(block);
             return (
               <li
                 key={period.id}
@@ -232,6 +238,12 @@ export function ScheduleMobileAgenda({
                   <span className="text-body-sm opacity-90">
                     {detail} · {spanLabel}
                   </span>
+                  {caption && (
+                    <span className="flex items-center gap-1 text-caption opacity-90">
+                      <CalendarClock className="size-3 shrink-0" aria-hidden="true" />
+                      {caption}
+                    </span>
+                  )}
                   <div className="-ml-3 empty:hidden">
                     <LessonSubstitutionAction block={block} />
                   </div>

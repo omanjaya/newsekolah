@@ -118,11 +118,15 @@ teaching_assignments (id, tenant_id, academic_year_id, teacher_user_id, subject_
 ```sql
 schedules (id, tenant_id, academic_year_id, term_id null, class_id, subject_id, teacher_user_id, room_id null, day_of_week,
            start_period_id, end_period_id, source text check in ('admin','teacher','import'), notes, created_by, updated_by,
-           created_at, updated_at)
-   -- exclusion constraint anti bentrok memakai int4range atas sequence periode:
-   --   exclude using gist (class_id with =, day_of_week with =, period_range with &&) where (academic_year_id = ...)
-   --   exclude using gist (teacher_user_id with =, day_of_week with =, period_range with &&)
-   --   period_range int4range generated always as (int4range(start_seq, end_seq, '[]')) stored
+           effective_from date not null, effective_until date null, created_at, updated_at)
+   -- period_range int4range generated always as (int4range(start_seq, end_seq, '[]')) stored
+   -- effective_range daterange generated always as (daterange(effective_from, effective_until, '[]')) stored
+   -- check (effective_until is null or effective_until >= effective_from)
+   -- exclusion constraint anti bentrok, hanya antar versi yang tanggal berlakunya beririsan (migrasi 0147):
+   --   ex_schedules_class_slot   exclude using gist (academic_year_id with =, class_id with =, day_of_week with =,
+   --                                                 period_range with &&, effective_range with &&)
+   --   ex_schedules_teacher_slot exclude using gist (academic_year_id with =, teacher_user_id with =, day_of_week with =,
+   --                                                 period_range with &&, effective_range with &&)
 substitution_requests (id, tenant_id, academic_year_id, schedule_id, date, requester_user_id, substitute_user_id,
                        status text check in ('pending','accepted','rejected','cancelled'), requester_note, response_note, responded_at,
                        created_at, unique (schedule_id, date) where status in ('pending','accepted'))
@@ -130,6 +134,21 @@ class_journals (id, tenant_id, academic_year_id, teacher_user_id, written_by_use
                 activities, reflection, attendance_session_id null, created_at, updated_at,
                 unique (academic_year_id, teacher_user_id, class_id, subject_id, lesson_date))
 ```
+
+**Jadwal bertanggal berlaku (migrasi 0147).** Satu baris `schedules` adalah satu versi pelajaran mingguan: pelajaran itu ada di jadwal dari `effective_from` sampai `effective_until`, kedua batas inklusif, dan `effective_until` kosong berarti sampai akhir tahun ajaran. Versi berlaku pada tanggal `d` bila `effective_range @> d`; setiap pembacaan "pelajaran apa saja pada tanggal D" (daftar sesi guru, buka sesi, jumlah pelajaran yang diharapkan untuk status harian, kalender siswa, laporan harian, rekap analitik, monitor, izin keluar, supervisi, permintaan guru pengganti, grid jadwal per minggu) memakai saringan itu.
+
+- Kedua batas disimpan pada hari pelajarannya sendiri ("di-snap" oleh service): `effective_from` menjadi tanggal pertama pada atau setelah tanggal yang diminta dengan hari itu, `effective_until` tanggal terakhir pada atau sebelumnya. Dengan begitu dua versi pada hari yang sama hanya beririsan bila berbagi tanggal pelajaran sungguhan, sehingga pelajaran Kamis yang dihapus "mulai Senin 30 Nov" (berakhir Kamis 26 Nov) tidak bentrok dengan pelajaran baru "mulai Jumat 27 Nov" (mulai Kamis 3 Des).
+- Riwayat sebuah versi adalah sesi presensi yang sudah tercatat (`attendance_session_recorded()`, migrasi 0144), permintaan guru pengganti apa pun, atau kunjungan supervisi yang direncanakan untuk pelajaran itu (`supervision_scheduled_observations`, sudah diisi atau belum). Tanggal riwayat terakhir adalah tanggal terbaru di antara sesi tercatat, permintaan pengganti `pending`/`accepted`, dan `lesson_date` kunjungan supervisi (query `ListScheduleHistory`). Invarian: setiap sesi tercatat, setiap permintaan pengganti `pending`/`accepted`, dan setiap kunjungan supervisi berada di dalam rentang versinya. Kunjungan supervisi tidak punya foreign key ke `schedules`, jadi invarian itu dijaga service saja: versi dengan kunjungan tidak dikoreksi di tempat atau dihapus, dan perubahannya baru berlaku setelah tanggal kunjungan, sehingga kunjungan tetap menunjuk pelajaran yang berlaku pada tanggalnya.
+- Perubahan atau penghapusan blok yang punya riwayat berlaku mulai tanggal D ("Berlaku mulai"): versi lama diakhiri pada pelajaran terakhirnya sebelum D, dan untuk perubahan dibuat versi baru (id baru) mulai pelajaran pertama pada atau setelah D. D paling cepat yang terakhir dari tanggal berikut (`min_effective_from` pada `MutationPolicy`):
+  - hari ini di zona waktu sekolah, atau besok bila pelajaran versi itu hari ini sudah dimulai (`starts_at` jam pertamanya sudah lewat menurut `clock.Now`). Pelajaran yang sedang atau sudah berlangsung hari ini tetap milik versi yang mengajarkannya, walau presensinya belum diisi; aturan ini juga berlaku untuk perubahan bertanggal pada blok tanpa riwayat;
+  - sehari setelah tanggal riwayat terakhir;
+  - sehari setelah pelajaran pertama versi itu, sehingga versi yang punya riwayat selalu diakhiri dan tidak pernah dihapus (juga bila riwayatnya hanya permintaan pengganti yang dibatalkan, yang tidak mengikat tanggal). Versi tanpa riwayat yang belum pernah terjadi sebelum D dihapus.
+- Blok yang masih berlaku tetapi semua tanggal tersisanya sudah terikat riwayat terkunci dengan alasan `SCHEDULE_CHANGE_BEFORE_HISTORY` (`MutationPolicy.reason`); blok yang sudah berakhir terkunci dengan alasan `SCHEDULE_ENDED`.
+- Blok tanpa riwayat masih boleh dikoreksi di tempat tanpa tanggal: perubahan menggantikan versi itu di semua tanggal berlakunya, bukan seluruh tahun ajaran. Pindah hari hanya menyempitkan rentang (tanggal pertama hari baru pada atau setelah `effective_from`, tanggal terakhir pada atau sebelum `effective_until`), jadi versi tidak pernah merebut minggu sebelum ia mulai atau sesudah ia berakhir; hanya versi yang berlaku sejak awal tahun tetap berlaku sejak awal tahun pada hari barunya. Versi yang sudah berakhir sebelum hari ini tidak boleh dikoreksi di tempat atau dihapus tanpa tanggal (`SCHEDULE_ENDED`), dengan atau tanpa riwayat, karena ia hanya menggambarkan minggu yang sudah lewat. Pengosongan jadwal tahun ajaran tanpa tanggal ditolak bila ada versi yang punya riwayat atau sudah berakhir; dengan tanggal, versi yang sudah berakhir dibiarkan.
+- Pelajaran baru tanpa `effective_from` (guru yang mengisi jadwalnya sendiri, klien API, baris impor tanpa tanggal) mulai pada tanggal pertama harinya pada atau setelah hari ini di zona waktu sekolah, atau awal tahun ajaran bila itu lebih lambat; pelajaran yang hari ini sudah dimulai baru mulai minggu depan. Minggu yang sudah lewat tidak tiba-tiba mengharapkan pelajaran yang tidak pernah dicatat, dan pelajaran baru tidak bentrok dengan versi yang sudah diakhiri di slot yang sama. Pengelola jadwal (`manage_schedules`) tetap boleh mengirim `effective_from` sejak awal tahun untuk memasukkan jadwal minggu-minggu yang sudah berjalan. Awal tahun sebagai bawaan hanya dipakai pengisian awal migrasi dan ETL.
+- Daftar periksa onboarding menghitung pelajaran yang masih berlaku pada hari ini sekolah (`clock.LocalDate` di zona waktu sekolah, ikut simulasi), bukan `current_date` database.
+- Pemicu `trg_schedule_history_guard` (fungsi `protect_schedule_history`) kini juga menolak perubahan `effective_from`/`effective_until` yang mengeluarkan sesi tercatat atau permintaan pengganti aktif dari rentang (constraint `schedule_history_range`, SQLSTATE 23503) dan menghapus sesi placeholder di luar rentang baru. Pemicu `trg_attendance_sessions_schedule_in_effect` dan `trg_substitution_requests_schedule_in_effect` (fungsi `require_schedule_in_effect`, `FOR KEY SHARE`) menolak sesi atau permintaan pengganti yang tanggalnya di luar rentang versinya (constraint `schedule_in_effect`, SQLSTATE 23514). Keduanya cadangan integritas; keputusan tetap di service.
+- Pengisian awal: baris lama berlaku dari tanggal pertama tahun ajaran pada harinya (atau lebih awal bila riwayatnya lebih awal), tanpa akhir. Migrasi turun menghapus versi yang sudah diakhiri dan gagal bila salah satunya memegang riwayat.
 
 ## 6. Domain: presensi
 

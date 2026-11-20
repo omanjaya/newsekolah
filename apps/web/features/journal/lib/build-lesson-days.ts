@@ -5,13 +5,28 @@
  * needs to show up too, not only the ones that already have a journal.
  */
 
-/** One weekly timetable block: recurring every `dayOfWeek`, not tied to a date. */
+/**
+ * One weekly timetable block: recurring every `dayOfWeek` from
+ * `effectiveFrom` through `effectiveUntil` (both inclusive; absent means
+ * unbounded). The timetable is effective-dated, so a lesson changed from a
+ * date on is two blocks, each listed only on its own dates.
+ */
 export interface WeeklyLessonBlock {
   scheduleId: string;
   classId: string;
   subjectId: string;
   /** 1 (Monday) through 7 (Sunday), matching the API's day_of_week. */
   dayOfWeek: number;
+  effectiveFrom?: string;
+  effectiveUntil?: string;
+}
+
+/** Whether `block` is on the timetable on `date` ("YYYY-MM-DD"). */
+function activeOn(block: WeeklyLessonBlock, date: string): boolean {
+  return (
+    (block.effectiveFrom === undefined || date >= block.effectiveFrom) &&
+    (block.effectiveUntil === undefined || date <= block.effectiveUntil)
+  );
 }
 
 export interface LessonDayLesson {
@@ -47,9 +62,11 @@ export function isoWeekday(date: string): number {
 
 /**
  * Builds one group per school day in `[today - days + 1, today]` that
- * actually has a lesson, newest first. A day with no lesson at all (a
- * teacher's day off, or a weekend they do not teach) is left out entirely
- * rather than rendered as an empty row.
+ * actually has a lesson, newest first, each with the blocks in effect on
+ * that date. A day with no lesson at all (a teacher's day off, or a weekend
+ * they do not teach) is left out entirely rather than rendered as an empty
+ * row. The same block may be passed more than once (it was read for two
+ * weeks); it is listed once a day.
  */
 export function buildLessonDays(
   today: string,
@@ -59,7 +76,11 @@ export function buildLessonDays(
   filledKeys: ReadonlySet<string>,
 ): LessonDayGroup[] {
   const byWeekday = new Map<number, WeeklyLessonBlock[]>();
+  const seen = new Set<string>();
   for (const block of blocks) {
+    const key = `${block.scheduleId}|${String(block.dayOfWeek)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
     const list = byWeekday.get(block.dayOfWeek) ?? [];
     list.push(block);
     byWeekday.set(block.dayOfWeek, list);
@@ -70,7 +91,7 @@ export function buildLessonDays(
     const date = shiftDateISO(today, -offset);
     const weekday = isoWeekday(date);
     if (!activeWeekdays.has(weekday)) continue;
-    const dayBlocks = byWeekday.get(weekday) ?? [];
+    const dayBlocks = (byWeekday.get(weekday) ?? []).filter((block) => activeOn(block, date));
     if (dayBlocks.length === 0) continue;
     const lessons = dayBlocks.map((block) => ({
       scheduleId: block.scheduleId,

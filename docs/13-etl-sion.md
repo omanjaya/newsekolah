@@ -258,6 +258,15 @@ satu catatan pada `TableStat` tabel `teaching_assignments` di laporan,
 supaya operator bisa lihat persis revisi mana saja yang ikut dan urutan
 yang dipakai.
 
+Jadwal target kini bertanggal berlaku (migrasi 0147, lihat
+docs/06-database-schema.md bagian 5): setiap baris hasil union dibuat
+berlaku sepanjang tahun ajaran, dari tanggal pertama tahun itu pada
+harinya, tanpa akhir, dan pencarian slot yang sudah ada hanya melihat versi
+yang belum diakhiri (`effective_until is null`). Revisi `schedule_versions`
+SION kelak bisa dipetakan ke rentang `effective_from`/`effective_until`
+target, sehingga pelajaran sebelum revisi tidak ikut tertimpa; untuk
+sekarang ETL tetap memakai union di atas.
+
 **`journals` belum ikut union ini** -- `FetchJournals` masih menerima satu
 `schedule_version_id` (`pickPrimaryScheduleVersion`, replikasi persis aturan
 lama "utamakan `active`, lalu `effective_from` terbaru, lalu `id`

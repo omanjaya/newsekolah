@@ -100,14 +100,31 @@ describe("lockableBlockActions", () => {
     ]);
   });
 
-  it("disables both, saying why, on a lesson with attendance history", () => {
-    const items = lockableBlockActions({ ...lesson, has_history: true }, (key) => key, {
-      onEdit: vi.fn(),
-      onDelete: vi.fn(),
-    });
+  it("keeps both on a lesson with history: the change takes a date", () => {
+    const items = lockableBlockActions(
+      {
+        ...lesson,
+        has_history: true,
+        mutation_policy: { can_edit: true, can_delete: true, requires_effective_from: true },
+      },
+      (key) => key,
+      { onEdit: vi.fn(), onDelete: vi.fn() },
+    );
     expect(items.map((item) => [item.label, item.disabled])).toEqual([
-      ["editBlockLocked", true],
-      ["deleteBlockLocked", true],
+      ["editBlock", false],
+      ["deleteBlock", false],
+    ]);
+  });
+
+  it("disables both, saying why, on a lesson that has ended", () => {
+    const items = lockableBlockActions(
+      { ...lesson, has_history: true, mutation_policy: { can_edit: false, can_delete: false } },
+      (key) => key,
+      { onEdit: vi.fn(), onDelete: vi.fn() },
+    );
+    expect(items.map((item) => [item.label, item.disabled])).toEqual([
+      ["editBlock (blockEnded)", true],
+      ["deleteBlock (blockEnded)", true],
     ]);
   });
 });

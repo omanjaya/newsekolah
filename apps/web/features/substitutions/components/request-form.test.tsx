@@ -1,11 +1,15 @@
 import type * as UiModule from "@newsekolah/ui";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeAll, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 import type * as TenantDateModule from "../../../lib/tenant-date";
 
 const create = vi.hoisted(() => vi.fn());
+const schedules = vi.hoisted((): { filter: unknown; blocks: Record<string, unknown>[] } => ({
+  filter: undefined,
+  blocks: [],
+}));
 
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
@@ -48,13 +52,10 @@ vi.mock("../../reference/api", () => ({
     new Map((items ?? []).map((item) => [item.id, item])),
 }));
 vi.mock("../../schedule/api", () => ({
-  useSchedulesQuery: () => ({
-    data: {
-      data: [
-        { schedule_ids: ["s1"], class_id: "class-1", subject_id: "subject-1", day_of_week: 1 },
-      ],
-    },
-  }),
+  useSchedulesQuery: (filter: unknown) => {
+    schedules.filter = filter;
+    return { data: { data: schedules.blocks } };
+  },
 }));
 vi.mock("../api", () => ({
   useCreateSubstitutionMutation: () => ({ mutateAsync: create, isPending: false }),
@@ -84,6 +85,17 @@ beforeAll(() => {
   );
 });
 afterEach(cleanup);
+beforeEach(() => {
+  schedules.blocks = [
+    {
+      schedule_ids: ["s1"],
+      class_id: "class-1",
+      subject_id: "subject-1",
+      day_of_week: 1,
+      effective_from: "2026-07-13",
+    },
+  ];
+});
 
 it("marks the lesson, date and substitute as required up front", () => {
   render(<RequestForm onDone={vi.fn()} />);
@@ -132,4 +144,28 @@ it("offers only future dates on the lesson's weekday that are not holidays", asy
   expect(cell("2026-11-16")).toHaveAttribute("aria-disabled", "true");
   expect(cell("2026-11-24")).toHaveAttribute("aria-disabled", "true");
   expect(cell("2026-11-30")).toHaveAttribute("aria-disabled", "true");
+});
+
+it("offers the lessons of the week of the date picked, and only that version's dates", async () => {
+  // The Monday lesson in this version only starts on 30 November.
+  schedules.blocks = [
+    {
+      schedule_ids: ["s1"],
+      class_id: "class-1",
+      subject_id: "subject-1",
+      day_of_week: 1,
+      effective_from: "2026-11-30",
+      effective_until: "2026-12-07",
+    },
+  ];
+  const user = userEvent.setup();
+  render(<RequestForm onDone={vi.fn()} initialScheduleId="s1" initialDate="2026-12-07" />);
+
+  expect(schedules.filter).toMatchObject({ asOf: "2026-12-07" });
+  await user.click(screen.getByRole("combobox", { name: "date" }));
+  await screen.findByRole("grid");
+  const cell = (iso: string) => document.querySelector(`[role="gridcell"][data-date="${iso}"]`);
+  expect(cell("2026-12-07")).not.toHaveAttribute("aria-disabled");
+  // A Monday after the version ends cannot be picked.
+  expect(cell("2026-12-14")).toHaveAttribute("aria-disabled", "true");
 });

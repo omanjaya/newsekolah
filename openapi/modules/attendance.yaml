@@ -66,7 +66,9 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409":
-          description: The date is after today, so the lesson has not happened yet (ATTENDANCE_SESSION_NOT_STARTED)
+          description: >-
+            The date is after today, so the lesson has not happened yet (ATTENDANCE_SESSION_NOT_STARTED), or this
+            version of the lesson is not on the timetable on that date (ATTENDANCE_LESSON_NOT_ON_DATE)
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }

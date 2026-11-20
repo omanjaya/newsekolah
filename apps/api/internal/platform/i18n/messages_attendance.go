@@ -21,6 +21,10 @@ func init() {
 		Indonesian: "Pelajaran ini belum berlangsung, jadi presensinya belum bisa dicatat.",
 		English:    "This lesson has not started yet, so its attendance cannot be recorded.",
 	}
+	catalog["ATTENDANCE_LESSON_NOT_ON_DATE"] = map[string]string{
+		Indonesian: "Pelajaran ini tidak ada di jadwal pada tanggal tersebut, karena jadwalnya sudah diubah.",
+		English:    "This lesson is not on the timetable on that date, because the timetable has changed.",
+	}
 	catalog["ATTENDANCE_NOT_SCHOOL_DAY"] = map[string]string{
 		Indonesian: "Tanggal ini hari libur atau tidak ada KBM untuk kelas ini, jadi presensi tidak diisi.",
 		English:    "This date is a holiday or has no lessons for this class, so no attendance is recorded.",

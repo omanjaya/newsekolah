@@ -215,6 +215,8 @@ type Repository interface {
 	//
 	// -- cross-module read; replace with academic reader interface after merge --
 	ListClassesByGradeLevel(ctx context.Context, tenantID, academicYearID, gradeLevelID uuid.UUID) ([]ClassRef, error)
+	// ListCurrentPeriodScheduleCards lists the lessons running at nowLocal
+	// on date: the schedule versions in effect that date.
 	ListCurrentPeriodScheduleCards(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, date, nowLocal time.Time) ([]MonitorCardRow, error)
 	// GetCurrentBellPeriod resolves the bell-schedule period running at
 	// nowLocal (the weekday's period template), for the monitor's
@@ -224,8 +226,9 @@ type Repository interface {
 	GetCurrentBellPeriod(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, date, nowLocal time.Time) (MonitorPeriod, bool, error)
 	// ListClassesWithoutCurrentSchedule backs the monitor snapshot's
 	// "no schedule" cards: classes that exist but have nothing scheduled
-	// in the period straddling nowLocal.
-	ListClassesWithoutCurrentSchedule(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, nowLocal time.Time) ([]NoScheduleClassRow, error)
+	// in the period straddling nowLocal, among the schedule versions in
+	// effect on date.
+	ListClassesWithoutCurrentSchedule(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, date, nowLocal time.Time) ([]NoScheduleClassRow, error)
 	GetMonitorDisplayToken(ctx context.Context, tenantID uuid.UUID) (token string, configured bool, err error)
 	GetCorrectionDays(ctx context.Context, tenantID uuid.UUID) (days int, configured bool, err error)
 	// SetCorrectionDays stores attendance.correction_days (Settings).

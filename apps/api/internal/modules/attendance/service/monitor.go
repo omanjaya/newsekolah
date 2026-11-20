@@ -84,7 +84,7 @@ func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (M
 			}
 		}
 
-		noSchedule, err := s.repo.ListClassesWithoutCurrentSchedule(ctx, tenantID, yearID, dayOfWeek, now)
+		noSchedule, err := s.repo.ListClassesWithoutCurrentSchedule(ctx, tenantID, yearID, dayOfWeek, today, now)
 		if err != nil {
 			return err
 		}

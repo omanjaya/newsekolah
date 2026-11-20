@@ -239,7 +239,7 @@
     }
   },
   "errors": {
-    "SCHEDULE_HAS_HISTORY": "This schedule has attendance or substitution history. Schedule changes and deletion are blocked to preserve the records.",
+    "SCHEDULE_HAS_HISTORY": "This schedule has attendance, substitution or supervision history, so a change must take effect from a date. Lessons before that date keep the old schedule.",
     "SCHEDULE_CONFLICT_CLASS": "This period is already taken by that class for another subject. Pick a different period or class.",
     "SCHEDULE_CONFLICT_TEACHER": "This teacher is already teaching another class at the same period. Pick a different period or teacher.",
     "AUTH_INVALID_CREDENTIALS": "Incorrect username or password",
@@ -556,6 +556,12 @@
     "ATTENDANCE_NOT_SCHOOL_DAY": "This date is a holiday or has no lessons for this class, so no attendance is recorded.",
     "TEACHER_ALREADY_HOMEROOM": "This teacher is already homeroom teacher of another class this academic year. End that homeroom duty first.",
     "SUBSTITUTE_NOT_TEACHER": "The substitute must be an active teacher this academic year. Pick another teacher.",
-    "UPLOAD_STORAGE_UNREACHABLE": "The file could not be uploaded to storage. Try again; if it keeps failing, contact the school administrator."
+    "UPLOAD_STORAGE_UNREACHABLE": "The file could not be uploaded to storage. Try again; if it keeps failing, contact the school administrator.",
+    "SCHEDULE_CHANGE_BEFORE_HISTORY": "The effective date is too early: this schedule has history up to that date, its lesson today has already begun, or the date has passed. Pick a later date.",
+    "SCHEDULE_EFFECTIVE_FROM_INVALID": "The effective date must fall within this schedule's academic year.",
+    "SCHEDULE_ENDED": "This schedule is no longer in effect, so it can no longer be changed or removed.",
+    "SUBSTITUTION_LESSON_NOT_ON_DATE": "This lesson is not on the timetable on the selected date. Pick another date.",
+    "ATTENDANCE_LESSON_NOT_ON_DATE": "This lesson is not on the timetable on that date, because the timetable has changed.",
+    "SUPERVISION_LESSON_NOT_ON_DATE": "This lesson is not on the timetable on the chosen observation date."
   }
 }

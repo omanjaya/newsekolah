@@ -26,6 +26,7 @@ import { useCalendarEventsQuery } from "../../calendar/api";
 import { nonTeachingEventOn } from "../../calendar/lib/event-kinds";
 import { useClassesQuery, useLookup, useSubjectsQuery } from "../../reference/api";
 import { useSchedulesQuery } from "../../schedule/api";
+import { blockActiveOn } from "../../schedule/week";
 import { useCreateSubstitutionMutation, useEligibleSubstitutesQuery } from "../api";
 
 export function RequestForm({
@@ -44,17 +45,23 @@ export function RequestForm({
   const year = useActiveYear();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const schedules = useSchedulesQuery({ academicYearId: year.id, teacherUserId: me?.id });
+  const today = todayInZone(me?.tenant.timezone);
+  const [scheduleId, setScheduleId] = useState(initialScheduleId);
+  const [date, setDate] = useState(initialDate);
+  // The timetable is effective-dated: the lessons offered are the ones in
+  // effect in the week of the date picked (this week before one is).
+  const schedules = useSchedulesQuery({
+    academicYearId: year.id,
+    teacherUserId: me?.id,
+    asOf: date || today,
+  });
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
   const classMap = useLookup(classes.data?.data);
   const subjectMap = useLookup(subjects.data?.data);
   const create = useCreateSubstitutionMutation();
   const calendarEvents = useCalendarEventsQuery();
-  const today = todayInZone(me?.tenant.timezone);
 
-  const [scheduleId, setScheduleId] = useState(initialScheduleId);
-  const [date, setDate] = useState(initialDate);
   const [substituteId, setSubstituteId] = useState("");
   const [substituteLabel, setSubstituteLabel] = useState("");
   const [substituteSearch, setSubstituteSearch] = useState("");
@@ -79,13 +86,20 @@ export function RequestForm({
     [schedules.data, classMap, subjectMap, tDays],
   );
   // Only dates the server would accept can be picked: today or later, on
-  // the lesson's own weekday, and not a holiday for the lesson's class.
+  // the lesson's own weekday, while that version of the lesson is on the
+  // timetable, and not a holiday for the lesson's class.
   const block = schedules.data?.data.find((b) => b.schedule_ids[0] === scheduleId);
+  // A lesson the week now shown no longer has (it ended, or changed) is
+  // not left selected as though it were still there.
+  if (schedules.isSuccess && scheduleId && !block) {
+    setScheduleId("");
+  }
   const gradeLevelId = block ? classMap.get(block.class_id)?.grade_level_id : undefined;
   const events = calendarEvents.data?.data;
   const isDateDisabled = useCallback(
     (iso: string) =>
-      (block !== undefined && isoWeekdayOf(iso) !== block.day_of_week) ||
+      (block !== undefined &&
+        (isoWeekdayOf(iso) !== block.day_of_week || !blockActiveOn(block, iso))) ||
       nonTeachingEventOn(events ?? [], iso, gradeLevelId) !== undefined,
     [block, events, gradeLevelId],
   );

@@ -52,6 +52,7 @@ func seedSecondClass(t *testing.T, ctx context.Context, pool *pgxpool.Pool, w wo
 	schedule, err := q.CreateSchedule(ctx, db.CreateScheduleParams{
 		TenantID: w.tenantID, AcademicYearID: w.yearID, ClassID: class.ID, SubjectID: w.subjectID, TeacherUserID: w.otherTeacherID,
 		DayOfWeek: domain.IsoWeekday(w.today), StartPeriodID: w.periodID, EndPeriodID: w.periodID, StartSeq: 1, EndSeq: 1, Source: "admin",
+		EffectiveFrom: w.scheduleFrom,
 	})
 	require.NoError(t, err)
 

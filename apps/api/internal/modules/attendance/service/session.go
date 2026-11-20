@@ -68,12 +68,13 @@ func (s *Service) ListDay(ctx context.Context, tenantID, teacherUserID uuid.UUID
 			y, m, d := opts.Date.Date()
 			date = time.Date(y, m, d, 0, 0, 0, 0, loc)
 		}
-		dayOfWeek := domain.IsoWeekday(date)
 		// A lesson on a later day is listed, never opened: browsing next
 		// week must not write a session row (see listedSession).
 		future := domain.SessionNotStarted(date, now)
 
-		own, err := s.schedules.ListSchedulesForTeacherDay(ctx, tenantID, yearID, teacherUserID, dayOfWeek)
+		// The version of each lesson in effect that date: a timetable
+		// changed from a later date still lists the old lesson here.
+		own, err := s.schedules.ListSchedulesForTeacherOn(ctx, tenantID, yearID, teacherUserID, date)
 		if err != nil {
 			return err
 		}
@@ -312,6 +313,12 @@ func (s *Service) OpenSession(ctx context.Context, tenantID uuid.UUID, actor Act
 		schedule, err := s.schedules.GetSchedule(ctx, tenantID, scheduleID)
 		if err != nil {
 			return err
+		}
+		// A version only takes place on the dates it is in effect: after a
+		// change, the lesson that date is another version (the day list
+		// already offers that one). An earlier date stays correctable.
+		if !schedule.EffectiveOn(date) {
+			return domain.ErrLessonNotOnDate
 		}
 		if err := s.requireLessonDay(ctx, tenantID, schedule.AcademicYearID, schedule.ClassID, date); err != nil {
 			return err

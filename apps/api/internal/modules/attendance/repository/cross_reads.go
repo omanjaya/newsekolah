@@ -154,10 +154,11 @@ func (r *Repository) GetCurrentBellPeriod(ctx context.Context, tenantID, academi
 }
 
 // ListClassesWithoutCurrentSchedule backs the monitor snapshot's "no
-// schedule" cards.
-func (r *Repository) ListClassesWithoutCurrentSchedule(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, nowLocal time.Time) ([]service.NoScheduleClassRow, error) {
+// schedule" cards: date picks the schedule versions in effect.
+func (r *Repository) ListClassesWithoutCurrentSchedule(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, date, nowLocal time.Time) ([]service.NoScheduleClassRow, error) {
 	rows, err := r.queries(ctx).ListClassesWithoutCurrentPeriodScheduleForAttendance(ctx, db.ListClassesWithoutCurrentPeriodScheduleForAttendanceParams{
 		TenantID: tenantID, AcademicYearID: academicYearID, DayOfWeek: dayOfWeek, StartsAt: timeOfDay(nowLocal),
+		OnDate: pdatabase.Date(date),
 	})
 	if err != nil {
 		return nil, err

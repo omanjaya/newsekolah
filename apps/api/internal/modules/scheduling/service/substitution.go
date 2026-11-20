@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -78,6 +79,11 @@ func (s *Service) RequestSubstitution(
 		if sched.TeacherUserID != requesterUserID {
 			return domain.ErrTeacherEditForbidden
 		}
+		// The request stays with this version; it must be the one on the
+		// timetable that day (a later change made another version).
+		if !sched.EffectiveOn(date) {
+			return domain.ErrSubstitutionNotScheduled
+		}
 
 		if err := domain.ValidateNewSubstitution(requesterUserID, substituteUserID, sched.DayOfWeek, date, s.now(ctx)); err != nil {
 			return err
@@ -111,6 +117,9 @@ func (s *Service) RequestSubstitution(
 			TenantID: tenantID, AcademicYearID: sched.AcademicYearID, ScheduleID: scheduleID, Date: date,
 			RequesterUserID: requesterUserID, SubstituteUserID: substituteUserID, RequesterNote: note,
 		})
+		if errors.Is(mapConstraintError(err), domain.ErrScheduleEnded) {
+			return domain.ErrSubstitutionNotScheduled
+		}
 		return err
 	})
 	if err != nil {

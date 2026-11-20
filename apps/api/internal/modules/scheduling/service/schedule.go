@@ -3,8 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"sort"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -29,6 +27,15 @@ type Actor struct {
 // Source and TeacherUserID are only honoured for a CanManage actor -- a
 // teacher's own request always becomes source=teacher for themselves,
 // regardless of what they pass.
+//
+// EffectiveFrom is the date the lesson (on create) or the change (on
+// update) takes effect; only a CanManage actor may send it (a date before
+// today, back to the start of the year, is how a timetable is entered for
+// weeks already taught). Omitted on a create, the lesson starts on its
+// first date on or after the school's today (or the year's start, when
+// that is later), so weeks already past are never given a lesson nobody
+// recorded; omitted on an update, the block is corrected in place, which
+// is refused once it has history or has ended.
 type ScheduleInput struct {
 	AcademicYearID uuid.UUID
 	TermID         uuid.NullUUID
@@ -41,6 +48,7 @@ type ScheduleInput struct {
 	EndPeriodID    uuid.UUID
 	Source         domain.Source
 	Notes          string
+	EffectiveFrom  *time.Time
 }
 
 const settingTeacherEditDeadline = "schedule.teacher_edit_deadline"
@@ -51,11 +59,21 @@ const defaultTeacherEditDeadline = 24 * time.Hour
 
 func (s *Service) CreateSchedule(ctx context.Context, tenantID uuid.UUID, in ScheduleInput, actor Actor) (domain.Schedule, error) {
 	in = applyActor(in, actor)
+	if in.EffectiveFrom != nil && !actor.CanManage {
+		return domain.Schedule{}, domain.ErrEffectiveDateAdminOnly
+	}
 
 	var created domain.Schedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		candidate, err := s.resolveCandidate(ctx, tenantID, in)
 		if err != nil {
+			return err
+		}
+		year, err := s.academicYear(ctx, tenantID, in.AcademicYearID)
+		if err != nil {
+			return err
+		}
+		if candidate.EffectiveFrom, err = s.startDate(ctx, tenantID, year, candidate, in.EffectiveFrom); err != nil {
 			return err
 		}
 
@@ -78,51 +96,281 @@ func (s *Service) CreateSchedule(ctx context.Context, tenantID uuid.UUID, in Sch
 	return created, err
 }
 
-func (s *Service) UpdateSchedule(ctx context.Context, tenantID, id uuid.UUID, in ScheduleInput, actor Actor) (domain.Schedule, error) {
-	in = applyActor(in, actor)
+// startDate is a new version's first lesson date: from, snapped forward
+// onto the lesson's weekday. Without from it is the first lesson on or
+// after the school's today (never one that has already begun today) or
+// after the year's start when that is later: a lesson added mid-year is
+// not backdated over weeks already taught. A date outside the year, or a
+// first lesson that would fall after the year ends, is refused.
+func (s *Service) startDate(ctx context.Context, tenantID uuid.UUID, year AcademicYearRef, candidate domain.Schedule, from *time.Time) (time.Time, error) {
+	var snapped time.Time
+	if from != nil {
+		if err := requireInYear(year, *from); err != nil {
+			return time.Time{}, err
+		}
+		snapped = domain.OnOrAfter(*from, candidate.DayOfWeek)
+	} else {
+		today := s.today(ctx)
+		snapped = domain.OnOrAfter(domain.LaterDate(domain.CalendarDate(year.StartsOn), today), candidate.DayOfWeek)
+		if snapped.Equal(today) {
+			period, err := s.repo.GetPeriodRef(ctx, tenantID, candidate.StartPeriodID)
+			if err != nil {
+				return time.Time{}, domain.ErrPeriodNotFound
+			}
+			candidate.EffectiveFrom = snapped
+			if domain.LessonBegun(candidate, today, s.now(ctx), period.StartsAt) {
+				snapped = snapped.AddDate(0, 0, 7)
+			}
+		}
+	}
+	if !year.EndsOn.IsZero() && snapped.After(domain.CalendarDate(year.EndsOn)) {
+		return time.Time{}, domain.ErrEffectiveFromOutOfYear
+	}
+	return snapped, nil
+}
 
+// requireInYear refuses a change date outside the academic year.
+func requireInYear(year AcademicYearRef, d time.Time) error {
+	d = domain.CalendarDate(d)
+	if d.Before(domain.CalendarDate(year.StartsOn)) || (!year.EndsOn.IsZero() && d.After(domain.CalendarDate(year.EndsOn))) {
+		return domain.ErrEffectiveFromOutOfYear
+	}
+	return nil
+}
+
+// UpdateSchedule corrects or changes one schedule row; see
+// UpdateScheduleBlock.
+func (s *Service) UpdateSchedule(ctx context.Context, tenantID, id uuid.UUID, in ScheduleInput, actor Actor) (domain.Schedule, error) {
+	return s.UpdateScheduleBlock(ctx, tenantID, id, []uuid.UUID{id}, in, actor)
+}
+
+// DeleteSchedule removes one schedule row; see DeleteScheduleBlock.
+func (s *Service) DeleteSchedule(ctx context.Context, tenantID, id uuid.UUID, actor Actor) error {
+	return s.DeleteScheduleBlock(ctx, tenantID, id, []uuid.UUID{id}, nil, actor)
+}
+
+// UpdateScheduleBlock replaces a displayed contiguous block (ids, one or
+// more rows) with the single lesson in. Validation, the old rows and the
+// new one share a transaction, so a refusal leaves the block as it was.
+//
+// Without in.EffectiveFrom the block is corrected in place: its other rows
+// go and primary is rewritten, keeping primary's ID and dates. A block
+// with history refuses that (HistoryRequiresDateError names the earliest
+// date a dated change may use instead), as does one that has already
+// ended (ErrScheduleEnded): it only describes weeks that are over.
+//
+// With in.EffectiveFrom (D) the change takes effect from D: every row ends
+// on its last lesson before D (or goes, when it has none) and a new
+// version starts on the first lesson date on or after D; the returned
+// schedule is that new version. D may not lie before today or on or
+// before a date the block has history for (ChangeTooEarlyError). A change
+// that touches nothing about the lesson itself (its notes) is saved on the
+// row in place instead, whatever D says.
+func (s *Service) UpdateScheduleBlock(ctx context.Context, tenantID, primaryID uuid.UUID, ids []uuid.UUID, in ScheduleInput, actor Actor) (domain.Schedule, error) {
+	in = applyActor(in, actor)
+	if in.EffectiveFrom != nil && !actor.CanManage {
+		return domain.Schedule{}, domain.ErrEffectiveDateAdminOnly
+	}
 	var updated domain.Schedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		existing, err := s.repo.GetScheduleByID(ctx, tenantID, id)
-		if err != nil {
-			return domain.ErrScheduleNotFound
-		}
-		if !actor.CanManage && existing.TeacherUserID != actor.UserID {
-			return domain.ErrTeacherEditForbidden
-		}
-
-		candidate, err := s.resolveCandidate(ctx, tenantID, in)
+		primary, rows, err := s.lockScheduleBlock(ctx, tenantID, primaryID, ids)
 		if err != nil {
 			return err
 		}
-		candidate.ID = id
-		if existing.AcademicYearID != in.AcademicYearID {
+		if err := s.authorizeRows(ctx, tenantID, rows, actor); err != nil {
+			return err
+		}
+		if primary.AcademicYearID != in.AcademicYearID {
 			return domain.ErrInvalidScheduleBlock
 		}
-
-		if !actor.CanManage {
-			if err := s.enforceTeacherWindow(ctx, tenantID, existing, s.now(ctx)); err != nil {
-				return err
-			}
-			if err := s.enforceTeacherWindow(ctx, tenantID, candidate, s.now(ctx)); err != nil {
-				return err
-			}
-		}
-
-		if err := s.checkConflict(ctx, tenantID, candidate, id); err != nil {
+		history, err := s.loadHistory(ctx, tenantID, ids)
+		if err != nil {
 			return err
 		}
-
-		updated, err = s.repo.UpdateSchedule(ctx, candidate)
-		if err != nil {
-			return mapConstraintError(err)
+		if in.EffectiveFrom == nil {
+			if err := requireCurrent(rows, s.today(ctx)); err != nil {
+				return err
+			}
+			updated, err = s.correctInPlace(ctx, tenantID, primary, rows, in, actor, history)
+			return s.explainHistory(ctx, tenantID, err, history, rows, actor)
 		}
-		return nil
+		updated, err = s.changeFrom(ctx, tenantID, primary, rows, in, actor, history, *in.EffectiveFrom)
+		return err
 	})
 	return updated, err
 }
 
-// DeleteSchedule does not check IsYearArchived, unlike CreateSchedule and
+// correctInPlace rewrites primary as in and removes the block's other rows,
+// keeping primary's dates (moved onto the new weekday when that changes,
+// never beyond them). A block with history only takes a change that
+// leaves the lesson itself as it was (its notes): everything else would
+// rewrite what was recorded.
+func (s *Service) correctInPlace(
+	ctx context.Context, tenantID uuid.UUID, primary domain.Schedule, rows []domain.Schedule, in ScheduleInput, actor Actor,
+	history historyIndex,
+) (domain.Schedule, error) {
+	candidate, err := s.resolveCandidate(ctx, tenantID, in)
+	if err != nil {
+		return domain.Schedule{}, err
+	}
+	ids := make([]uuid.UUID, len(rows))
+	for i, row := range rows {
+		ids[i] = row.ID
+	}
+	if history.hasAny(ids) && (len(rows) != 1 || !sameLesson(primary, candidate)) {
+		return domain.Schedule{}, domain.ErrScheduleHasHistory
+	}
+	for _, row := range rows {
+		if row.ID == primary.ID {
+			continue
+		}
+		if err := s.repo.DeleteSchedule(ctx, tenantID, row.ID); err != nil {
+			return domain.Schedule{}, mapConstraintError(err)
+		}
+	}
+	candidate.ID = primary.ID
+	candidate.EffectiveFrom, candidate.EffectiveUntil = primary.EffectiveFrom, primary.EffectiveUntil
+	if candidate.DayOfWeek != primary.DayOfWeek {
+		year, err := s.academicYear(ctx, tenantID, primary.AcademicYearID)
+		if err != nil {
+			return domain.Schedule{}, err
+		}
+		var ok bool
+		candidate.EffectiveFrom, candidate.EffectiveUntil, ok = domain.ResnapForWeekday(
+			primary.EffectiveFrom, primary.EffectiveUntil, primary.DayOfWeek, candidate.DayOfWeek, year.StartsOn)
+		if !ok {
+			return domain.Schedule{}, domain.ErrScheduleEnded
+		}
+	}
+
+	if !actor.CanManage {
+		if err := s.enforceTeacherWindow(ctx, tenantID, candidate, s.now(ctx)); err != nil {
+			return domain.Schedule{}, err
+		}
+	}
+	if err := s.checkConflict(ctx, tenantID, candidate, primary.ID); err != nil {
+		return domain.Schedule{}, err
+	}
+	updated, err := s.repo.UpdateSchedule(ctx, candidate)
+	if err != nil {
+		return domain.Schedule{}, mapConstraintError(err)
+	}
+	return updated, nil
+}
+
+// changeFrom applies in to the block from date d onward: it ends the
+// block's rows before d and inserts the new version from d.
+func (s *Service) changeFrom(
+	ctx context.Context, tenantID uuid.UUID, primary domain.Schedule, rows []domain.Schedule, in ScheduleInput, actor Actor,
+	history historyIndex, d time.Time,
+) (domain.Schedule, error) {
+	year, err := s.academicYear(ctx, tenantID, primary.AcademicYearID)
+	if err != nil {
+		return domain.Schedule{}, err
+	}
+	if err := requireInYear(year, d); err != nil {
+		return domain.Schedule{}, err
+	}
+	candidate, err := s.resolveCandidate(ctx, tenantID, in)
+	if err != nil {
+		return domain.Schedule{}, err
+	}
+	if len(rows) == 1 && sameLesson(primary, candidate) {
+		// Only the notes or the source differ: nothing about when or what
+		// is taught moves, so the version keeps its dates and its id.
+		candidate.ID = primary.ID
+		candidate.EffectiveFrom, candidate.EffectiveUntil = primary.EffectiveFrom, primary.EffectiveUntil
+		updated, err := s.repo.UpdateSchedule(ctx, candidate)
+		if err != nil {
+			return domain.Schedule{}, mapConstraintError(err)
+		}
+		return updated, nil
+	}
+
+	if err := s.retireFrom(ctx, tenantID, rows, history, d, actor); err != nil {
+		return domain.Schedule{}, err
+	}
+
+	// The new version keeps the block's planned end, if it had one: a
+	// lesson already removed from a later date stays removed (on the new
+	// weekday, its last date on or before that end).
+	from, until, ok := domain.SnapRange(candidate.DayOfWeek, d, primary.EffectiveUntil)
+	if !ok {
+		return domain.Schedule{}, domain.ErrScheduleEnded
+	}
+	if from.After(domain.CalendarDate(year.EndsOn)) {
+		return domain.Schedule{}, domain.ErrEffectiveFromOutOfYear
+	}
+	candidate.EffectiveFrom, candidate.EffectiveUntil = from, until
+	candidate.CreatedBy = uuid.NullUUID{UUID: actor.UserID, Valid: actor.UserID != uuid.Nil}
+	candidate.UpdatedBy = candidate.CreatedBy
+
+	if err := s.checkConflict(ctx, tenantID, candidate, uuid.Nil); err != nil {
+		return domain.Schedule{}, err
+	}
+	created, err := s.repo.CreateSchedule(ctx, candidate)
+	if err != nil {
+		return domain.Schedule{}, mapConstraintError(err)
+	}
+	return created, nil
+}
+
+// retireFrom takes rows off the timetable from d on: each one ends on its
+// last lesson before d, or goes when it has none (domain.PlanChange). d
+// must not lie before the rows' earliest change date (changeDates), which
+// keeps every row with history from going. Rows are already locked.
+func (s *Service) retireFrom(ctx context.Context, tenantID uuid.UUID, rows []domain.Schedule, history historyIndex, d time.Time, actor Actor) error {
+	earliest, err := s.changeDates(ctx, tenantID).earliest(ctx, history, rows)
+	if err != nil {
+		return err
+	}
+	if domain.CalendarDate(d).Before(earliest) {
+		return &domain.ChangeTooEarlyError{Min: earliest}
+	}
+	updatedBy := uuid.NullUUID{UUID: actor.UserID, Valid: actor.UserID != uuid.Nil}
+	for _, row := range rows {
+		plan, err := domain.PlanChange(row, d)
+		if err != nil {
+			return err
+		}
+		switch plan.Kind {
+		case domain.ChangeRetire:
+			_, err = s.repo.RetireSchedule(ctx, tenantID, row.ID, plan.Until, updatedBy)
+		case domain.ChangeDrop:
+			err = s.repo.DeleteSchedule(ctx, tenantID, row.ID)
+		}
+		if err = mapConstraintError(err); errors.Is(err, domain.ErrScheduleHasHistory) {
+			// History the index did not hold (the database's foreign keys
+			// know of it): the row must keep its first lesson, so name the
+			// date that would.
+			return &domain.ChangeTooEarlyError{Min: domain.EarliestChange(earliest, row, &domain.History{})}
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// sameLesson reports whether candidate changes nothing the history guard
+// protects: same class, subject, teacher, room, term, weekday and periods.
+func sameLesson(existing, candidate domain.Schedule) bool {
+	return existing.TermID == candidate.TermID && existing.ClassID == candidate.ClassID &&
+		existing.SubjectID == candidate.SubjectID && existing.TeacherUserID == candidate.TeacherUserID &&
+		existing.RoomID == candidate.RoomID && existing.DayOfWeek == candidate.DayOfWeek &&
+		existing.StartPeriodID == candidate.StartPeriodID && existing.EndPeriodID == candidate.EndPeriodID &&
+		existing.StartSeq == candidate.StartSeq && existing.EndSeq == candidate.EndSeq
+}
+
+// DeleteScheduleBlock removes a displayed contiguous block. Without
+// effectiveFrom every row is deleted outright, which a row with history
+// refuses (HistoryRequiresDateError), as does a block that has already
+// ended (ErrScheduleEnded): deleting it would empty the past weeks it
+// covered. With effectiveFrom (manage_schedules only) the block leaves the
+// timetable from that date on: each row ends on its last lesson before the
+// date, or goes when it has none; rows with history are never deleted.
+//
+// Deletion does not check IsYearArchived, unlike CreateSchedule and
 // UpdateSchedule (both go through resolveCandidate, which does). This is
 // deliberate, not an oversight: an archived year's schedules are history
 // the tenant may still need to clean up (e.g. a bad bulk import caught
@@ -130,44 +378,127 @@ func (s *Service) UpdateSchedule(ctx context.Context, tenantID, id uuid.UUID, in
 // DeleteGradeLevel, ...) follow the same rule -- the archived-year guard
 // exists to stop new edits landing in a closed year, not to freeze
 // deletion of what is already there.
-func (s *Service) DeleteSchedule(ctx context.Context, tenantID, id uuid.UUID, actor Actor) error {
+func (s *Service) DeleteScheduleBlock(ctx context.Context, tenantID, primaryID uuid.UUID, ids []uuid.UUID, effectiveFrom *time.Time, actor Actor) error {
+	if effectiveFrom != nil && !actor.CanManage {
+		return domain.ErrEffectiveDateAdminOnly
+	}
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		existing, err := s.repo.GetScheduleByID(ctx, tenantID, id)
+		primary, rows, err := s.lockScheduleBlock(ctx, tenantID, primaryID, ids)
 		if err != nil {
-			return domain.ErrScheduleNotFound
+			return err
 		}
-		if !actor.CanManage {
-			if existing.TeacherUserID != actor.UserID {
-				return domain.ErrTeacherEditForbidden
-			}
-			if err := s.enforceTeacherWindow(ctx, tenantID, existing, s.now(ctx)); err != nil {
+		if err := s.authorizeRows(ctx, tenantID, rows, actor); err != nil {
+			return err
+		}
+		history, err := s.loadHistory(ctx, tenantID, ids)
+		if err != nil {
+			return err
+		}
+		if effectiveFrom == nil {
+			if err := requireCurrent(rows, s.today(ctx)); err != nil {
 				return err
 			}
+			if history.hasAny(ids) {
+				return s.explainHistory(ctx, tenantID, domain.ErrScheduleHasHistory, history, rows, actor)
+			}
+			for _, row := range rows {
+				if err := s.repo.DeleteSchedule(ctx, tenantID, row.ID); err != nil {
+					return s.explainHistory(ctx, tenantID, mapConstraintError(err), history, rows, actor)
+				}
+			}
+			return nil
 		}
-		return mapConstraintError(s.repo.DeleteSchedule(ctx, tenantID, id))
+		year, err := s.academicYear(ctx, tenantID, primary.AcademicYearID)
+		if err != nil {
+			return err
+		}
+		if err := requireInYear(year, *effectiveFrom); err != nil {
+			return err
+		}
+		return s.retireFrom(ctx, tenantID, rows, history, *effectiveFrom, actor)
 	})
 }
 
-// ClearAcademicYear deletes every schedule for one academic year (admin
-// bulk clear), typically before a bulk import. Like DeleteSchedule, it does
-// not check IsYearArchived -- see DeleteSchedule's comment for why deletion
-// is exempt from the archived-year guard that CreateSchedule and
-// UpdateSchedule enforce.
-func (s *Service) ClearAcademicYear(ctx context.Context, tenantID, academicYearID uuid.UUID) error {
+// ClearAcademicYear empties one academic year's timetable (admin bulk
+// clear), typically before a bulk import. Without effectiveFrom every row
+// is deleted, which a timetable with history or with a version that has
+// already ended refuses (it has past weeks to keep); with it the timetable
+// is cleared from that date on, every earlier week staying as it was (rows
+// that already ended before it are left alone). Like DeleteScheduleBlock,
+// it does not check IsYearArchived.
+func (s *Service) ClearAcademicYear(ctx context.Context, tenantID, academicYearID uuid.UUID, effectiveFrom *time.Time, actor Actor) error {
+	if effectiveFrom != nil && !actor.CanManage {
+		return domain.ErrEffectiveDateAdminOnly
+	}
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return mapConstraintError(s.repo.DeleteSchedulesByAcademicYear(ctx, tenantID, academicYearID))
+		rows, err := s.repo.ListSchedulesByAcademicYear(ctx, tenantID, academicYearID)
+		if err != nil {
+			return err
+		}
+		ids := make([]uuid.UUID, len(rows))
+		for i, row := range rows {
+			ids[i] = row.ID
+		}
+		history, err := s.loadHistory(ctx, tenantID, ids)
+		if err != nil {
+			return err
+		}
+		if effectiveFrom == nil {
+			// Only the rows still on the timetable bound a dated clear:
+			// one that already ended is left alone by it.
+			today := s.today(ctx)
+			current := make([]domain.Schedule, 0, len(rows))
+			for _, row := range rows {
+				if !row.EndedBefore(today) {
+					current = append(current, row)
+				}
+			}
+			if len(current) < len(rows) || history.hasAny(ids) {
+				return s.explainHistory(ctx, tenantID, domain.ErrScheduleHasHistory, history, current, actor)
+			}
+			err := mapConstraintError(s.repo.DeleteSchedulesByAcademicYear(ctx, tenantID, academicYearID))
+			return s.explainHistory(ctx, tenantID, err, history, current, actor)
+		}
+		year, err := s.academicYear(ctx, tenantID, academicYearID)
+		if err != nil {
+			return err
+		}
+		if err := requireInYear(year, *effectiveFrom); err != nil {
+			return err
+		}
+		active := make([]domain.Schedule, 0, len(rows))
+		for _, row := range rows {
+			if !row.EndedBefore(*effectiveFrom) {
+				active = append(active, row)
+			}
+		}
+		return s.retireFrom(ctx, tenantID, active, history, *effectiveFrom, actor)
 	})
 }
 
 // BulkImport creates every schedule in inputs inside one transaction,
 // stopping at the first conflict or validation error so a partially valid
-// spreadsheet never leaves half its rows applied.
+// spreadsheet never leaves half its rows applied. Each row starts on its
+// EffectiveFrom (snapped onto its weekday), or as CreateSchedule starts a
+// lesson without one: from the school's today, or the year's start when
+// that is later.
 func (s *Service) BulkImport(ctx context.Context, tenantID uuid.UUID, inputs []ScheduleInput) ([]domain.Schedule, error) {
 	var created []domain.Schedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		years := map[uuid.UUID]AcademicYearRef{}
 		for _, in := range inputs {
 			candidate, err := s.resolveCandidate(ctx, tenantID, in)
 			if err != nil {
+				return err
+			}
+			year, ok := years[in.AcademicYearID]
+			if !ok {
+				if year, err = s.academicYear(ctx, tenantID, in.AcademicYearID); err != nil {
+					return err
+				}
+				years[in.AcademicYearID] = year
+			}
+			if candidate.EffectiveFrom, err = s.startDate(ctx, tenantID, year, candidate, in.EffectiveFrom); err != nil {
 				return err
 			}
 			if err := s.checkConflict(ctx, tenantID, candidate, uuid.Nil); err != nil {
@@ -184,7 +515,7 @@ func (s *Service) BulkImport(ctx context.Context, tenantID uuid.UUID, inputs []S
 	return created, err
 }
 
-// GetSchedule returns one schedule.
+// GetSchedule returns one schedule version, whatever its dates.
 func (s *Service) GetSchedule(ctx context.Context, tenantID, id uuid.UUID) (domain.Schedule, error) {
 	var out domain.Schedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -198,139 +529,6 @@ func (s *Service) GetSchedule(ctx context.Context, tenantID, id uuid.UUID) (doma
 	return out, err
 }
 
-// ListByClass returns a class's schedules merged into contiguous blocks
-// for display, per docs/analysis/backend-inventory.md section 1.8. When
-// dayOfWeek is non-nil (the caller also sent day_of_week), the result is
-// narrowed to that one day before merging -- so a student's "today" view
-// (class_id + day_of_week together) sees only today's lessons instead of
-// the whole week's, which is what ListSchedules used to return before
-// class_id and day_of_week were made to combine.
-func (s *Service) ListByClass(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, dayOfWeek *int16) ([]domain.Block, error) {
-	var blocks []domain.Block
-	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		schedules, err := s.repo.ListSchedulesByClass(ctx, tenantID, academicYearID, classID)
-		if err != nil {
-			return err
-		}
-		blocks, err = s.markHistory(ctx, tenantID, domain.MergeContiguous(filterByDay(schedules, dayOfWeek)))
-		return err
-	})
-	return blocks, err
-}
-
-// ListByTeacher returns a teacher's own schedules merged into contiguous
-// blocks, narrowed to dayOfWeek when it is non-nil -- see ListByClass's
-// doc comment for why.
-func (s *Service) ListByTeacher(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID, dayOfWeek *int16) ([]domain.Block, error) {
-	var blocks []domain.Block
-	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		schedules, err := s.repo.ListSchedulesByTeacher(ctx, tenantID, academicYearID, teacherID)
-		if err != nil {
-			return err
-		}
-		blocks, err = s.markHistory(ctx, tenantID, domain.MergeContiguous(filterByDay(schedules, dayOfWeek)))
-		return err
-	})
-	return blocks, err
-}
-
-// filterByDay narrows schedules to dayOfWeek, when given; nil leaves the
-// list untouched. Filtering before domain.MergeContiguous (rather than
-// discarding whole blocks afterwards) keeps that function's own
-// same-day/contiguous grouping rules the only place blocks are built.
-func filterByDay(schedules []domain.Schedule, dayOfWeek *int16) []domain.Schedule {
-	if dayOfWeek == nil {
-		return schedules
-	}
-	out := make([]domain.Schedule, 0, len(schedules))
-	for _, sched := range schedules {
-		if sched.DayOfWeek == *dayOfWeek {
-			out = append(out, sched)
-		}
-	}
-	return out
-}
-
-// ListByDay returns one day's schedules across every class, merged into
-// contiguous blocks (the "per day" grid view).
-func (s *Service) ListByDay(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16) ([]domain.Block, error) {
-	var blocks []domain.Block
-	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		schedules, err := s.repo.ListSchedulesByDay(ctx, tenantID, academicYearID, dayOfWeek)
-		if err != nil {
-			return err
-		}
-		blocks, err = s.markHistory(ctx, tenantID, domain.MergeContiguous(schedules))
-		return err
-	})
-	return blocks, err
-}
-
-// markHistory sets HasHistory on every block holding a schedule with an
-// attendance session or substitution request, in one query for the grid.
-func (s *Service) markHistory(ctx context.Context, tenantID uuid.UUID, blocks []domain.Block) ([]domain.Block, error) {
-	var ids []uuid.UUID
-	for _, b := range blocks {
-		ids = append(ids, b.ScheduleIDs...)
-	}
-	withHistory, err := s.repo.ScheduleIDsWithHistory(ctx, tenantID, ids)
-	if err != nil {
-		return nil, err
-	}
-	frozen := make(map[uuid.UUID]bool, len(withHistory))
-	for _, id := range withHistory {
-		frozen[id] = true
-	}
-	for i := range blocks {
-		for _, id := range blocks[i].ScheduleIDs {
-			if frozen[id] {
-				blocks[i].HasHistory = true
-				break
-			}
-		}
-	}
-	return blocks, nil
-}
-
-// MutationPolicy tells a caller (for one schedule) whether they may edit
-// or delete it right now, so the transport layer can include it in list
-// responses without the client re-deriving the teacher-edit-deadline math
-// itself.
-type MutationPolicy struct {
-	CanEdit   bool
-	CanDelete bool
-	// HasHistory is true when the schedule has a recorded attendance
-	// session (submitted, or holding an entry or a journal) or a
-	// substitution request: the history guard then refuses every edit and
-	// delete, whoever asks, so the actions are not offered at all.
-	HasHistory bool
-	Reason     string
-}
-
-func (s *Service) MutationPolicyFor(ctx context.Context, tenantID uuid.UUID, sched domain.Schedule, actor Actor) MutationPolicy {
-	var withHistory []uuid.UUID
-	if err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
-		withHistory, err = s.repo.ScheduleIDsWithHistory(ctx, tenantID, []uuid.UUID{sched.ID})
-		return err
-	}); err != nil || len(withHistory) > 0 {
-		return MutationPolicy{HasHistory: err == nil, Reason: domain.ErrScheduleHasHistory.Error()}
-	}
-	if actor.CanManage {
-		return MutationPolicy{CanEdit: true, CanDelete: true}
-	}
-	if sched.TeacherUserID != actor.UserID {
-		return MutationPolicy{Reason: domain.ErrTeacherEditForbidden.Error()}
-	}
-	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return s.enforceTeacherWindow(ctx, tenantID, sched, s.now(ctx))
-	})
-	if err != nil {
-		return MutationPolicy{Reason: err.Error()}
-	}
-	return MutationPolicy{CanEdit: true, CanDelete: true}
-}
-
 func applyActor(in ScheduleInput, actor Actor) ScheduleInput {
 	if !actor.CanManage {
 		in.Source = domain.SourceTeacher
@@ -339,6 +537,24 @@ func applyActor(in ScheduleInput, actor Actor) ScheduleInput {
 		in.Source = domain.SourceAdmin
 	}
 	return in
+}
+
+// authorizeRows lets a teacher without manage_schedules touch only their
+// own rows, each inside the self-service edit window.
+func (s *Service) authorizeRows(ctx context.Context, tenantID uuid.UUID, rows []domain.Schedule, actor Actor) error {
+	if actor.CanManage {
+		return nil
+	}
+	now := s.now(ctx)
+	for _, row := range rows {
+		if row.TeacherUserID != actor.UserID {
+			return domain.ErrTeacherEditForbidden
+		}
+		if err := s.enforceTeacherWindow(ctx, tenantID, row, now); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // resolveCandidate validates in against academic reference data (periods,
@@ -514,28 +730,38 @@ func nextOccurrence(now time.Time, dayOfWeek int16, timeOfDay time.Time) time.Ti
 	return time.Date(y, m, d, timeOfDay.Hour(), timeOfDay.Minute(), timeOfDay.Second(), 0, now.Location())
 }
 
-// mapConstraintError translates a Postgres exclusion-constraint violation
-// (the schedules table's two GiST constraints -- see migration
-// 0030_schedules.up.sql) into the same domain errors the pre-check in
-// checkConflict would have returned, closing the race the domain-level
-// check alone cannot: two concurrent requests can both pass the
-// application-level check and only the database enforces the second one
-// atomically.
-const pgExclusionViolation = "23P01"
+// mapConstraintError translates the schedules table's database guards into
+// the domain errors the service's own checks return first: the exclusion
+// constraints ex_schedules_class_slot / ex_schedules_teacher_slot
+// (migration 0147) into the conflict errors checkConflict would have
+// raised, closing the race the domain-level check alone cannot (two
+// concurrent requests can both pass it and only the database enforces the
+// second one atomically), and the history guards of migrations 0107, 0144
+// and 0147 into the history errors.
+const (
+	pgExclusionViolation  = "23P01"
+	pgForeignKeyViolation = "23503"
+	pgCheckViolation      = "23514"
+)
 
 func mapConstraintError(err error) error {
 	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) && pgErr.Code == "23503" &&
-		(pgErr.ConstraintName == "attendance_sessions_schedule_id_fkey" ||
-			pgErr.ConstraintName == "substitution_requests_schedule_id_fkey" ||
-			pgErr.ConstraintName == "schedule_history_guard") {
-		return domain.ErrScheduleHasHistory
-	}
-	if errors.As(err, &pgErr) && pgErr.Code == pgExclusionViolation {
-		if strings.Contains(pgErr.ConstraintName, "teacher_user_id") {
+	if errors.As(err, &pgErr) {
+		switch {
+		case pgErr.Code == pgForeignKeyViolation &&
+			(pgErr.ConstraintName == "attendance_sessions_schedule_id_fkey" ||
+				pgErr.ConstraintName == "substitution_requests_schedule_id_fkey" ||
+				pgErr.ConstraintName == "schedule_history_guard"):
+			return domain.ErrScheduleHasHistory
+		case pgErr.Code == pgForeignKeyViolation && pgErr.ConstraintName == "schedule_history_range":
+			return domain.ErrScheduleChangeBeforeHistory
+		case pgErr.Code == pgCheckViolation && pgErr.ConstraintName == "schedule_in_effect":
+			return domain.ErrScheduleEnded
+		case pgErr.Code == pgExclusionViolation && pgErr.ConstraintName == "ex_schedules_teacher_slot":
 			return domain.ErrConflictTeacher
+		case pgErr.Code == pgExclusionViolation:
+			return domain.ErrConflictClass
 		}
-		return domain.ErrConflictClass
 	}
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.ErrScheduleNotFound
@@ -548,66 +774,9 @@ func (s *Service) now(ctx context.Context) time.Time {
 	return clock.Now(ctx, s.clock).In(tenant.LocationFromContext(ctx))
 }
 
-// UpdateScheduleBlock collapses a displayed contiguous block to one span while
-// retaining its primary ID. Validation, sibling removal and update share a transaction.
-func (s *Service) UpdateScheduleBlock(ctx context.Context, tenantID, id uuid.UUID, ids []uuid.UUID, in ScheduleInput, actor Actor) (domain.Schedule, error) {
-	var updated domain.Schedule
-	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		if err := s.lockScheduleBlock(ctx, tenantID, id, ids); err != nil {
-			return err
-		}
-		for _, sibling := range ids {
-			if sibling == id {
-				continue
-			}
-			if err := s.DeleteSchedule(ctx, tenantID, sibling, actor); err != nil {
-				return err
-			}
-		}
-		var err error
-		updated, err = s.UpdateSchedule(ctx, tenantID, id, in, actor)
-		return err
-	})
-	return updated, err
-}
-
-func (s *Service) DeleteScheduleBlock(ctx context.Context, tenantID, id uuid.UUID, ids []uuid.UUID, actor Actor) error {
-	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		if err := s.lockScheduleBlock(ctx, tenantID, id, ids); err != nil {
-			return err
-		}
-		for _, rowID := range ids {
-			if err := s.DeleteSchedule(ctx, tenantID, rowID, actor); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
-// Lock in stable order before changing anything. FOR UPDATE also serializes
-// concurrent attendance/substitution inserts that take a foreign-key row lock.
-func (s *Service) lockScheduleBlock(ctx context.Context, tenantID, primary uuid.UUID, ids []uuid.UUID) error {
-	if len(ids) == 0 || len(ids) > 100 {
-		return domain.ErrInvalidScheduleBlock
-	}
-	ordered := append([]uuid.UUID(nil), ids...)
-	sort.Slice(ordered, func(i, j int) bool { return ordered[i].String() < ordered[j].String() })
-	rows := make([]domain.Schedule, 0, len(ordered))
-	found := false
-	for i, id := range ordered {
-		if i > 0 && id == ordered[i-1] {
-			return domain.ErrInvalidScheduleBlock
-		}
-		found = found || id == primary
-		row, err := s.repo.GetScheduleByID(ctx, tenantID, id)
-		if err != nil {
-			return domain.ErrScheduleNotFound
-		}
-		rows = append(rows, row)
-	}
-	if !found || len(domain.MergeContiguous(rows)) != 1 {
-		return domain.ErrInvalidScheduleBlock
-	}
-	return nil
+// today is the school's calendar date (midnight UTC, the form a date
+// column stores) in the tenant's time zone, through the same clock as now,
+// so the time simulation moves it too.
+func (s *Service) today(ctx context.Context) time.Time {
+	return clock.LocalDate(clock.Now(ctx, s.clock), tenant.LocationFromContext(ctx))
 }

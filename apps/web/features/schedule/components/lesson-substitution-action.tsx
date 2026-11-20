@@ -11,7 +11,12 @@ import { RequestForm } from "../../substitutions/components/request-form";
 import type { ScheduleBlock } from "../api";
 import { nextLessonDate } from "../next-lesson-date";
 
-/** The same request form as the inbox, prefilled from the teacher's lesson. */
+/**
+ * The same request form as the inbox, prefilled from the teacher's lesson
+ * and its next date. The timetable is effective-dated: a lesson that starts
+ * later is prefilled with its first date, and one with no date left (it
+ * ends before its next weekday) offers nothing.
+ */
 export function LessonSubstitutionAction({
   block,
   compact = false,
@@ -24,6 +29,9 @@ export function LessonSubstitutionAction({
   const canRequest = useCan("manage_attendance");
   const [open, setOpen] = useState(false);
   if (!canRequest || me?.id !== block.teacher_user_id || !block.schedule_ids[0]) return null;
+  let initialDate = nextLessonDate(todayInZone(me.tenant.timezone), block.day_of_week);
+  if (initialDate < block.effective_from) initialDate = block.effective_from;
+  if (block.effective_until !== undefined && initialDate > block.effective_until) return null;
   return (
     <>
       {compact ? (
@@ -53,7 +61,7 @@ export function LessonSubstitutionAction({
           {open && (
             <RequestForm
               initialScheduleId={block.schedule_ids[0]}
-              initialDate={nextLessonDate(todayInZone(me.tenant.timezone), block.day_of_week)}
+              initialDate={initialDate}
               onDone={() => {
                 setOpen(false);
               }}
