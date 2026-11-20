@@ -146,3 +146,31 @@ func TestPreviewImportFlagsTakenCopyNumbers(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, result.CreatedCopies)
 }
+
+// In file order, a row without a No. Induk drew the next number from the
+// sequence, which a later row had typed; a typed number that collides is
+// final, so the whole file the preview passed rolled back.
+func TestCommitImportCreatesTypedNumbersBeforeDrawnOnes(t *testing.T) {
+	f := newImportFixture(t, "import-order-test")
+
+	result, err := f.svc.CommitImport(f.ctx, f.tenant, []map[string]any{
+		importRow(1, "Tanpa Nomor", nil),
+		importRow(2, "Nomor Diketik", map[string]any{"no_induk": "2026/00001"}),
+	}, nil)
+	require.NoError(t, err)
+	require.Equal(t, service.ImportCommitResult{CreatedTitles: 2, CreatedCopies: 2}, result)
+
+	numbers := map[string]string{}
+	rows, err := f.pg.AdminPool.Query(f.ctx, `select t.title, c.accession_number from library_copies c
+		join library_titles t on t.id = c.title_id where c.tenant_id = $1`, f.tenant)
+	require.NoError(t, err)
+	defer rows.Close()
+	for rows.Next() {
+		var title, accession string
+		require.NoError(t, rows.Scan(&title, &accession))
+		numbers[title] = accession
+	}
+	require.NoError(t, rows.Err())
+	require.Equal(t, "2026/00001", numbers["Nomor Diketik"])
+	require.NotEqual(t, "2026/00001", numbers["Tanpa Nomor"])
+}

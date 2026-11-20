@@ -295,12 +295,8 @@ func (s *Service) CommitImport(ctx context.Context, tenantID uuid.UUID, rawRows 
 		if err != nil {
 			return err
 		}
-		for _, raw := range rawRows {
-			row := domain.ImportRowFromRaw(raw, mapping)
-			copies, _, ok := domain.ValidateImportRow(row, refs.validation)
-			if !ok {
-				continue
-			}
+		for _, v := range importCommitOrder(rawRows, mapping, refs.validation) {
+			row, copies := v.row, v.copies
 			title, found, err := s.findDedupeTitle(ctx, tenantID, row.ISBN, row.Title, row.Author)
 			if err != nil {
 				return err
@@ -363,6 +359,39 @@ func (s *Service) CommitImport(ctx context.Context, tenantID uuid.UUID, rawRows 
 		return ImportCommitResult{}, err
 	}
 	return result, nil
+}
+
+// validImportRow is a row that passed validation, with the number of
+// copies it creates.
+type validImportRow struct {
+	row    domain.ImportRow
+	copies int
+}
+
+// importCommitOrder returns the valid rows in the order the commit creates
+// them: rows that type their own No. Induk or barcode first, then the rows
+// that draw theirs from the sequence, each group in file order. A typed
+// number that collides is final while a drawn one is retried with the next,
+// so in file order a drawn number could take the very number a later row
+// typed and roll back a file the preview passed; drawing last lets every
+// generated number step past the typed ones.
+func importCommitOrder(rawRows []map[string]any, mapping map[string]string, refs domain.ImportValidationRefs) []validImportRow {
+	typed := make([]validImportRow, 0, len(rawRows))
+	var drawn []validImportRow
+	for _, raw := range rawRows {
+		row := domain.ImportRowFromRaw(raw, mapping)
+		copies, _, ok := domain.ValidateImportRow(row, refs)
+		if !ok {
+			continue
+		}
+		v := validImportRow{row: row, copies: copies}
+		if copies == 1 && (strings.TrimSpace(row.AccessionNumber) != "" || strings.TrimSpace(row.Barcode) != "") {
+			typed = append(typed, v)
+		} else {
+			drawn = append(drawn, v)
+		}
+	}
+	return append(typed, drawn...)
 }
 
 func atoiOrZero(s string) int {
