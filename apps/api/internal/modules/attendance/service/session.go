@@ -173,11 +173,16 @@ func (s *Service) ListDay(ctx context.Context, tenantID, teacherUserID uuid.UUID
 			if err != nil {
 				return err
 			}
+			ownerEditableUntil, err := s.listedOwnerEditableUntil(ctx, tenantID, teacherUserID, opts.Viewer, session)
+			if err != nil {
+				return err
+			}
 
 			day.Sessions = append(day.Sessions, SessionSummary{
 				Session: session, IsSubstitute: occ.isSubstitute,
 				RosterCount: len(students), EnteredCount: countEnrolledEntries(entries, students),
 				HandedOverTo: handedOverTo, StartsAt: startsAt, EditableUntil: editableUntil,
+				OwnerEditableUntil: ownerEditableUntil,
 			})
 		}
 		return nil
@@ -199,6 +204,19 @@ func (s *Service) listedEditableUntil(ctx context.Context, tenantID uuid.UUID, v
 	}
 	_, until := viewerSaveMode(window)
 	return until, nil
+}
+
+// listedOwnerEditableUntil is the last instant the teacher whose day is
+// listed may save a session, for a viewer reading someone else's day: a
+// manager monitoring that day sees the teacher's own fill state (still
+// to fill, saved, locked), not the viewer's lock. Nil when the viewer
+// reads their own day (EditableUntil already is the owner's deadline),
+// for a lesson with no session yet, or when that teacher may not save it.
+func (s *Service) listedOwnerEditableUntil(ctx context.Context, tenantID, teacherUserID uuid.UUID, viewer *Actor, session domain.Session) (*time.Time, error) {
+	if viewer == nil || viewer.UserID == teacherUserID {
+		return nil, nil
+	}
+	return s.listedEditableUntil(ctx, tenantID, &Actor{UserID: teacherUserID}, session)
 }
 
 // listedSession is the session a list row stands for. A lesson today or

@@ -15,9 +15,11 @@ export interface FillStatusInput {
   today: string;
   handedOver?: boolean;
   /**
-   * The last instant the viewer may save the session (the list's
-   * editable_until, the same deadline the editor enforces). Absent on a
-   * lesson that has a session means the viewer may not save it at all.
+   * The last instant the session may still be saved by whoever's fill
+   * state the list shows: the viewer's own editable_until (the same
+   * deadline the editor enforces), or owner_editable_until on another
+   * teacher's day. Absent on a lesson that has a session means that
+   * person may not save it at all.
    */
   editableUntil?: string;
   /** The business clock's current instant. */

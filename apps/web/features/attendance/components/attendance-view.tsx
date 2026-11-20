@@ -238,7 +238,10 @@ export function DaySessions(): ReactElement {
       date: session.date || date,
       today,
       handedOver: Boolean(session.handed_over_to_user_id),
-      editableUntil: session.editable_until,
+      // On another teacher's day the badge follows that teacher's own
+      // deadline: a manager without correction rights may not save the
+      // session, yet the teacher can still fill it.
+      editableUntil: viewingOther ? session.owner_editable_until : session.editable_until,
       now: instant,
     });
     return {

@@ -35,6 +35,7 @@ func TestListedSessionsCarryTheViewersSaveDeadline(t *testing.T) {
 		require.Len(t, sessions, 1, date.Format(time.DateOnly))
 		require.NotNil(t, sessions[0].EditableUntil, date.Format(time.DateOnly))
 		require.True(t, deadline(date).Equal(*sessions[0].EditableUntil), "%s: %s", date.Format(time.DateOnly), sessions[0].EditableUntil)
+		require.Nil(t, sessions[0].OwnerEditableUntil, "the owner's own day carries no separate owner deadline")
 
 		detail, err := svc.GetSessionDetail(ctx, w.tenantID, owner, sessions[0].Session.ID)
 		require.NoError(t, err)
@@ -48,6 +49,10 @@ func TestListedSessionsCarryTheViewersSaveDeadline(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, sessions, 1)
 	require.Nil(t, sessions[0].EditableUntil)
+	// It still carries the owner's deadline, so the monitoring view shows
+	// the teacher's own fill state instead of the manager's lock.
+	require.NotNil(t, sessions[0].OwnerEditableUntil)
+	require.True(t, deadline(w.today).Equal(*sessions[0].OwnerEditableUntil))
 
 	// A global corrector gets the correction deadline.
 	corrector := service.Actor{UserID: w.otherTeacherID, CanManage: true, IsGlobalCorrector: true}

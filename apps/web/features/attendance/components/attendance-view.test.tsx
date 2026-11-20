@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import type * as ReferenceApiModule from "../../reference/api";
 import type * as AttendanceApiModule from "../api";
@@ -61,8 +62,18 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
 
-const teacherOptionsQuery = vi.fn((_yearId: string, _search: string, enabled: boolean) =>
-  enabled ? { data: { data: [] }, isLoading: false } : { data: undefined, isLoading: false },
+interface TeacherOptionsResult {
+  data?: { data: { id: string; name: string }[] };
+  isLoading: boolean;
+}
+
+function noTeacherOptions(enabled: boolean): TeacherOptionsResult {
+  return enabled ? { data: { data: [] }, isLoading: false } : { data: undefined, isLoading: false };
+}
+
+const teacherOptionsQuery = vi.fn(
+  (_yearId: string, _search: string, enabled: boolean): TeacherOptionsResult =>
+    noTeacherOptions(enabled),
 );
 
 vi.mock("../../schedule/api", () => ({
@@ -110,6 +121,13 @@ vi.mock("../api", async () => {
       variables: undefined,
     }),
   };
+});
+
+beforeAll(() => {
+  // Radix Select reads pointer-capture and scroll APIs jsdom does not implement.
+  Element.prototype.hasPointerCapture = () => false;
+  Element.prototype.releasePointerCapture = () => undefined;
+  Element.prototype.scrollIntoView = () => undefined;
 });
 
 function session(overrides: Partial<SessionSummary> & { schedule_id: string }): SessionSummary {
@@ -302,6 +320,48 @@ describe("DaySessions", () => {
       'daySummary:{"total":3,"saved":2,"pending":0}',
     );
     expect(screen.getByTestId("attendance-day-summary")).toHaveTextContent('dayMissed:{"count":1}');
+  });
+
+  it("badges another teacher's day by that teacher's deadline, not the viewer's lock (R1)", async () => {
+    // A manager without correction rights may not save another teacher's
+    // session (no editable_until), but that teacher still fills it today.
+    const user = userEvent.setup();
+    mePermissions.push("manage_schedules");
+    teacherOptionsQuery.mockImplementation(() => ({
+      data: {
+        data: [
+          { id: "me-1", name: "Saya" },
+          { id: "teacher-2", name: "Bu Ani" },
+        ],
+      },
+      isLoading: false,
+    }));
+    todaySessions = [
+      session({
+        schedule_id: "theirs",
+        teacher_user_id: "teacher-2",
+        editable_until: undefined,
+        owner_editable_until: "2099-12-31T23:59:59Z",
+      }),
+    ];
+    try {
+      render(<DaySessions />);
+      await user.click(screen.getByRole("combobox", { name: "teacherLabel" }));
+      await user.click(screen.getByRole("option", { name: "Bu Ani" }));
+
+      // Still to fill: the running lesson keeps its fill action.
+      const hero = screen.getByTestId("attendance-session-hero");
+      expect(hero).toHaveTextContent("fillAttendance");
+      expect(hero).not.toHaveTextContent("statusMissed");
+      const summary = screen.getByTestId("attendance-day-summary");
+      expect(summary).toHaveTextContent('daySummary:{"total":1,"saved":0,"pending":1}');
+      expect(summary).not.toHaveTextContent("dayMissed");
+    } finally {
+      mePermissions.pop();
+      teacherOptionsQuery.mockImplementation((_yearId, _search, enabled) =>
+        noTeacherOptions(enabled),
+      );
+    }
   });
 
   it("names the holiday instead of listing lessons on a holiday", () => {

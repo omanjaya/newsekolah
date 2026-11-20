@@ -21069,6 +21069,13 @@ components:
             editable_until (normal mode for its own teacher or accepted substitute, correction for anyone else). After
             it the session is locked for the viewer. Absent for a lesson on a later day with no session yet, or when the
             viewer may not save it at all.
+        owner_editable_until:
+          type: string
+          format: date-time
+          description: The last instant the teacher whose day is listed may save this session, sent only when the viewer reads
+            another teacher's day (teacher_user_id), so a monitoring view shows that teacher's fill state instead of the
+            viewer's own lock. Absent on the viewer's own day, for a lesson with no session yet, or when that teacher
+            may not save it.
     AttendanceSettings:
       type: object
       required:

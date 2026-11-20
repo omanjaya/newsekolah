@@ -9137,6 +9137,11 @@ export interface components {
              * @description The last instant the viewer may save this session, the same deadline the session detail gives in editable_until (normal mode for its own teacher or accepted substitute, correction for anyone else). After it the session is locked for the viewer. Absent for a lesson on a later day with no session yet, or when the viewer may not save it at all.
              */
             editable_until?: string;
+            /**
+             * Format: date-time
+             * @description The last instant the teacher whose day is listed may save this session, sent only when the viewer reads another teacher's day (teacher_user_id), so a monitoring view shows that teacher's fill state instead of the viewer's own lock. Absent on the viewer's own day, for a lesson with no session yet, or when that teacher may not save it.
+             */
+            owner_editable_until?: string;
         };
         AttendanceSettings: {
             /** @description How many days after a session's date its own teacher, its class's homeroom teacher and a global corrector may still change it, until 23.59 school time on the last day. 7 when the school has not set it. */
