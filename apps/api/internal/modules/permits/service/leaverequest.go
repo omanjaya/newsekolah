@@ -431,8 +431,7 @@ func (s *Service) IssueLeaveLetter(ctx context.Context, tenantID, instanceID, is
 			return err
 		}
 		if s.sync != nil {
-			from := lr.StartsOn
-			to := lr.EndsOn.Add(24*time.Hour - time.Second)
+			from, to := localDayRange(lr.StartsOn, lr.EndsOn, s.tenantLocation(ctx, tenantID))
 			if err := s.sync.ForceStatus(ctx, tenantID, inst.SubjectUserID, from, to, attendanceStatusFor(lr.Category), "leave letter "+number); err != nil {
 				return fmt.Errorf("sync attendance: %w", err)
 			}

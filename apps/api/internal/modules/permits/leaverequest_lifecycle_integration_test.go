@@ -230,8 +230,17 @@ func TestLeaveRequestLifecycleCompletesAndUnblocksNextRequest(t *testing.T) {
 	call := sync.calls[0]
 	require.Equal(t, w.studentID, call.studentUserID)
 	require.Equal(t, "S", call.statusCode, "category sick must map to forced status S")
-	require.WithinDuration(t, starts, call.from, time.Second)
-	require.WithinDuration(t, ends.Add(24*time.Hour-time.Second), call.to, time.Second)
+	// The window is the leave's calendar days in the tenant's own timezone
+	// (Asia/Jakarta), not the DATE columns read as UTC instants: those
+	// would end at 06:59 local on the day after the leave and force that
+	// morning's first lessons too.
+	jakarta, err := time.LoadLocation("Asia/Jakarta")
+	require.NoError(t, err)
+	sy, sm, sd := starts.Date()
+	ey, em, ed := ends.Date()
+	require.True(t, time.Date(sy, sm, sd, 0, 0, 0, 0, jakarta).Equal(call.from), "from = %s", call.from)
+	require.True(t, time.Date(ey, em, ed, 23, 59, 59, 0, jakarta).Equal(call.to), "to = %s", call.to)
+	require.True(t, call.to.Before(time.Date(ey, em, ed+1, 7, 0, 0, 0, jakarta)), "the next morning's first lesson must be outside the window")
 
 	// Re-fetch from storage to confirm the persisted row (not just the
 	// in-memory return value) reflects the same state.
