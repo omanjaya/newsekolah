@@ -87,6 +87,7 @@
   "scan.success_stage": "Stage approved",
   "scan.success_gate": "Student cleared to leave",
   "scan.unknown": "QR not recognised",
+  "scan.no_permit_awaiting_desk": "You have no exit permit waiting for the duty teacher's approval. Request an exit permit first, then scan this code again.",
   "scan.pick_action": "What is this code for?",
   "scan.action_entry": "Classroom entry",
   "scan.action_late": "Late arrival",

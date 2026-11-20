@@ -22,6 +22,7 @@ import {
   type LibraryScanParams,
 } from "@/features/scan/library-scan";
 import { t } from "@/i18n/t";
+import { permitAwaitingDeskApproval } from "@/lib/permits/exit-permit";
 
 type Pending = { token: string; kind?: string; instanceId?: string } | null;
 
@@ -74,8 +75,21 @@ export default function ScanRoute(): React.JSX.Element {
           break;
         case "approve":
         case "approve_stage": {
-          const id = instanceId ?? activePermit?.id;
-          if (id && id === activePermit?.id) {
+          // A decoded payload names an empty instance as "", not undefined.
+          const named = instanceId === "" ? undefined : instanceId;
+          const id = named ?? activePermit?.id;
+          if (kind === "approve_stage" && !named) {
+            // The duty desk's QR ("sion:approve_stage::<token>") names no
+            // permit: it approves the student's own exit permit waiting on
+            // the desk, never a late arrival.
+            const { data: mine } = await permits.refetch();
+            const waiting = permitAwaitingDeskApproval(mine?.data ?? []);
+            if (!waiting) {
+              showToast(t("scan.no_permit_awaiting_desk"), "error");
+              return;
+            }
+            await stage.mutateAsync({ id: waiting.id, token });
+          } else if (id && id === activePermit?.id) {
             await stage.mutateAsync({ id, token });
           } else if (activeLate) {
             await lateStage.mutateAsync({ id: activeLate.id, token });

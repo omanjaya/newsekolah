@@ -25,7 +25,8 @@
   "failures": {
     "expired": "The code has expired or was already used. Ask for a new QR code.",
     "libraryVisitExpired": "This library QR code was already used or has expired. Scan the new code on the library screen.",
-    "lateArrivalBusy": "Your late arrival is already being processed and is not waiting for a scan."
+    "lateArrivalBusy": "Your late arrival is already being processed and is not waiting for a scan.",
+    "noPermitAwaitingDesk": "You have no exit permit waiting for the duty teacher's approval. Request an exit permit first, then scan this code again."
   },
   "unknown": {
     "empty": "The code is empty.",

@@ -87,6 +87,7 @@
   "scan.success_stage": "Tahap disetujui",
   "scan.success_gate": "Siswa diizinkan keluar",
   "scan.unknown": "QR tidak dikenali",
+  "scan.no_permit_awaiting_desk": "Anda tidak punya izin keluar yang menunggu persetujuan guru piket. Ajukan izin keluar dulu, lalu pindai kode ini lagi.",
   "scan.pick_action": "Kode ini untuk apa?",
   "scan.action_entry": "Masuk kelas",
   "scan.action_late": "Terlambat",

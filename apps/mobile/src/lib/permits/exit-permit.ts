@@ -65,6 +65,26 @@ export function ownExitRefusalKey(
   }
 }
 
+/**
+ * The student's own exit permit the duty desk's approval QR would approve
+ * (as apps/web/features/permits/lib/desk-approval.ts): that QR names no
+ * permit, and the API accepts it only for an in-progress exit permit whose
+ * current stage is a QR scan any teacher may approve.
+ */
+export function permitAwaitingDeskApproval<
+  T extends {
+    status: string;
+    current_stage?: { approver_rule: string; verification: string };
+  },
+>(permits: readonly T[]): T | undefined {
+  return permits.find(
+    (p) =>
+      p.status === "in_progress" &&
+      p.current_stage?.verification === "qr_scan" &&
+      p.current_stage.approver_rule === "any_teacher",
+  );
+}
+
 export interface ExitReturnFields {
   exited_at?: string;
   return_required: boolean;

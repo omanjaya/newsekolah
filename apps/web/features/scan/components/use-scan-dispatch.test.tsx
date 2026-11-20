@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   exitStage: vi.fn(),
   lateStage: vi.fn(),
   refetchLate: vi.fn(),
+  refetchMine: vi.fn(),
   libraryVisit: vi.fn(),
 }));
 
@@ -27,6 +28,7 @@ vi.mock("../../permits/api", async (importOriginal) => {
   return {
     ...actual,
     useCurrentLateArrivalQuery: () => ({ refetch: mocks.refetchLate }),
+    useMyExitPermitsQuery: () => ({ refetch: mocks.refetchMine }),
     useOpenLateArrivalMutation: () => ({ mutateAsync: vi.fn() }),
     useScanClassroomEntryMutation: () => ({ mutateAsync: vi.fn() }),
     useScanExitPermitStageMutation: () => ({ mutateAsync: mocks.exitStage }),
@@ -80,6 +82,57 @@ describe("useScanDispatch approver QR", () => {
     await result.current("sion:approve_stage:exit-9:tok");
 
     expect(mocks.exitStage).toHaveBeenCalledWith({ id: "exit-9", token: "tok" });
+  });
+});
+
+// The duty desk's "Izin keluar" QR names no permit ("sion:approve_stage::<token>"):
+// the student's scan supplies their own, as the exit permit screen's dialog does.
+describe("useScanDispatch duty desk approval QR", () => {
+  const picket = {
+    key: "picket",
+    label: "Guru piket",
+    approver_rule: "any_teacher",
+    verification: "qr_scan",
+  };
+  const counselor = { ...picket, key: "bk", label: "Guru BK", approver_rule: "duty:counselor" };
+
+  beforeEach(() => {
+    mocks.exitStage.mockReset();
+    mocks.lateStage.mockReset();
+    mocks.refetchLate.mockReset();
+    mocks.refetchMine.mockReset();
+  });
+
+  it("approves the student's own exit permit waiting on the desk", async () => {
+    mocks.refetchMine.mockResolvedValue({
+      data: {
+        data: [
+          { id: "exit-old", status: "completed", current_stage: picket },
+          { id: "exit-7", status: "in_progress", current_stage: picket },
+        ],
+      },
+    });
+    mocks.exitStage.mockResolvedValue({ student_name: "Siswa Contoh" });
+    const { result } = renderHook(() => useScanDispatch());
+
+    const outcome = await result.current("sion:approve_stage::desk-tok");
+
+    expect(mocks.refetchMine).toHaveBeenCalledWith({ throwOnError: true });
+    expect(mocks.exitStage).toHaveBeenCalledWith({ id: "exit-7", token: "desk-tok" });
+    expect(mocks.lateStage).not.toHaveBeenCalled();
+    expect(outcome).toMatchObject({ ok: true, message: "results.exit_stage" });
+  });
+
+  it("says so, without a request, when no own permit waits on the desk", async () => {
+    mocks.refetchMine.mockResolvedValue({
+      data: { data: [{ id: "exit-7", status: "in_progress", current_stage: counselor }] },
+    });
+    const { result } = renderHook(() => useScanDispatch());
+
+    const outcome = await result.current("sion:approve_stage::desk-tok");
+
+    expect(mocks.exitStage).not.toHaveBeenCalled();
+    expect(outcome).toMatchObject({ ok: false, message: "failures.noPermitAwaitingDesk" });
   });
 });
 

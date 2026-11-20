@@ -62,6 +62,20 @@ describe("resolveScanRoute", () => {
       action: "unknown",
       reason: "missing_instance",
     });
+    // The approver panel's QR always names its permit.
+    expect(resolveScanRoute("sion:approve::tok")).toEqual({
+      action: "unknown",
+      reason: "missing_instance",
+    });
+  });
+
+  // The duty desk's approval QR names no permit: the scan supplies the
+  // student's own (useScanDispatch), as the exit permit screen's dialog does.
+  it("takes the duty desk's approval QR without an instance id", () => {
+    expect(resolveScanRoute("sion:approve_stage::tok")).toEqual({
+      action: "approve_stage",
+      token: "tok",
+    });
   });
 });
 
