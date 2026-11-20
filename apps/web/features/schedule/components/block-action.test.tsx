@@ -28,6 +28,8 @@ describe("BlockAction", () => {
     expect(await screen.findByRole("tooltip")).toHaveTextContent(
       "Ubah jadwal: terkunci, jadwal ini sudah punya riwayat presensi",
     );
+    // A screen reader already says the name; the description is the reason.
+    expect(button).toHaveAccessibleDescription("terkunci, jadwal ini sudah punya riwayat presensi");
     await user.click(button);
     expect(onClick).not.toHaveBeenCalled();
   });

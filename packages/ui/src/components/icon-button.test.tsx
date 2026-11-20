@@ -137,7 +137,7 @@ describe("IconButton", () => {
       <IconButton
         icon={<svg />}
         aria-label="Ubah jadwal"
-        disabledReason="Terkunci: sudah ada riwayat presensi"
+        disabledReason="terkunci, sudah ada riwayat presensi"
         onClick={onClick}
       />,
     );
@@ -151,10 +151,12 @@ describe("IconButton", () => {
     expect(button).toHaveClass("aria-disabled:pointer-events-auto", "cursor-not-allowed");
 
     await user.hover(button);
+    // The tooltip names the button before the reason; the description is
+    // the reason alone, since the name is already read out.
     expect(await screen.findByRole("tooltip")).toHaveTextContent(
-      "Terkunci: sudah ada riwayat presensi",
+      "Ubah jadwal: terkunci, sudah ada riwayat presensi",
     );
-    expect(button).toHaveAccessibleDescription("Terkunci: sudah ada riwayat presensi");
+    expect(button).toHaveAccessibleDescription("terkunci, sudah ada riwayat presensi");
 
     await user.click(button);
     button.focus();

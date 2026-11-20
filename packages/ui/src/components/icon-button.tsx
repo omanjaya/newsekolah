@@ -74,9 +74,11 @@ export interface IconButtonProps
   /**
    * Makes the button unavailable for a reason worth telling: it stays
    * focusable and hoverable (aria-disabled, not disabled) but ignores
-   * clicks, and the reason is its tooltip -- on mouse hover as well as on
-   * keyboard focus -- and its accessible description. A plain `disabled`
-   * button takes no pointer events, so a mouse user would never see why.
+   * clicks. The tooltip -- on mouse hover as well as on keyboard focus --
+   * reads "<tooltip>: <reason>", so a sighted reader still sees what the
+   * button is, and the reason alone is its accessible description, so a
+   * screen reader does not say the name twice. A plain `disabled` button
+   * takes no pointer events, so a mouse user would never see why.
    */
   disabledReason?: string;
   /** Renders onto the single child element (a `Link`) instead of a `<button>`. */
@@ -210,6 +212,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     );
   }
 
+  const tooltipText = typeof tooltip === "string" ? tooltip : (title ?? label);
+
   // The tree keeps this shape while the button turns disabled or busy and
   // back (the tooltip is held shut instead), so React keeps the same DOM
   // node and a keyboard user's focus stays where it was.
@@ -218,7 +222,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       <Tooltip open={tooltipState.open} onOpenChange={tooltipState.onOpenChange}>
         <TooltipTrigger asChild>{button}</TooltipTrigger>
         <TooltipContent side={tooltipSide}>
-          {explained ? disabledReason : typeof tooltip === "string" ? tooltip : (title ?? label)}
+          {explained ? `${tooltipText}: ${disabledReason}` : tooltipText}
         </TooltipContent>
       </Tooltip>
       {reason}
