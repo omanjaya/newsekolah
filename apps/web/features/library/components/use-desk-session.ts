@@ -56,6 +56,8 @@ const MEMBER_MISS_KEY = {
  * modes is a running receipt of calls already made, not a queue of calls
  * still to make. Neither needs a member card first: the barcode alone
  * names the loan, so a book handed back on its own is returned at once.
+ * A member card scanned there anyway still selects the member (the
+ * server finds no loan for it, see `recordRefusal`).
  */
 export function useDeskSession() {
   const t = useTranslations("app.library.desk");
@@ -166,6 +168,82 @@ export function useDeskSession() {
     [findCopy, titleName, feedback, t],
   );
 
+  /** The book's title for a scanned barcode, or the barcode itself when it names no copy. */
+  const titleForBarcode = useCallback(
+    async (code: string): Promise<string> => {
+      try {
+        const copy = await findCopy.mutateAsync(code);
+        return await titleName.mutateAsync(copy.title_id);
+      } catch {
+        return code;
+      }
+    },
+    [findCopy, titleName],
+  );
+
+  /**
+   * A return or renewal the server refused. Two cases are not a failed
+   * book and add no row:
+   * - a member card scanned where a book was expected (the server finds
+   *   no loan for it): it selects that member, as a card scanned first
+   *   always did, or says it is a card when that member is already served;
+   * - a copy this session already returned or renewed, scanned again (a
+   *   scanner double read, a second scan by hand): the saved result stays
+   *   on the list and the receipt, which are the member's proof, and the
+   *   rescan is reported on its own.
+   * Anything else is a failed row named by the book's title.
+   */
+  const recordRefusal = useCallback(
+    async (forMode: "return" | "renew", code: string, error: unknown) => {
+      const errorCode = error instanceof ApiError ? error.code : "UNKNOWN";
+      const message = apiErrorMessage(errorCode);
+
+      if (errorCode === "LIBRARY_LOAN_NOT_FOUND") {
+        const match = await findMember.mutateAsync(code).catch(() => null);
+        if (match?.status === "found") {
+          const found = match.member;
+          if (found.user_id === member?.userId) {
+            feedback.playError();
+            setScanError(t("member.cardNotBook", { code }));
+            return;
+          }
+          feedback.playSuccess();
+          selectMember({
+            userId: found.user_id,
+            name: found.user_name,
+            memberNo: found.member_no,
+            nis: found.nis,
+            username: found.username,
+          });
+          return;
+        }
+      }
+
+      feedback.playError();
+      const known = basket[forMode].find((item) => item.barcode === code);
+      if (known?.state === "done") {
+        setScanError(
+          forMode === "return"
+            ? t("basket.alreadyReturned", { title: known.title })
+            : t("basket.alreadyRenewed", { title: known.title, reason: message }),
+        );
+        return;
+      }
+      const title =
+        known && known.title !== known.barcode ? known.title : await titleForBarcode(code);
+      setBasket((prev) => ({
+        ...prev,
+        [forMode]: recordBasketResult(prev[forMode], {
+          barcode: code,
+          title,
+          state: "failed",
+          detail: message,
+        }),
+      }));
+    },
+    [apiErrorMessage, findMember, member, feedback, t, selectMember, basket, titleForBarcode],
+  );
+
   const addReturnScan = useCallback(
     async (code: string) => {
       try {
@@ -200,21 +278,10 @@ export function useDeskSession() {
           }),
         }));
       } catch (error) {
-        feedback.playError();
-        const message =
-          error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN");
-        setBasket((prev) => ({
-          ...prev,
-          return: recordBasketResult(prev.return, {
-            barcode: code,
-            title: code,
-            state: "failed",
-            detail: message,
-          }),
-        }));
+        await recordRefusal("return", code, error);
       }
     },
-    [returnByBarcode, titleName, feedback, apiErrorMessage, t, locale],
+    [returnByBarcode, titleName, feedback, recordRefusal, t, locale],
   );
 
   const addRenewScan = useCallback(
@@ -234,21 +301,10 @@ export function useDeskSession() {
           }),
         }));
       } catch (error) {
-        feedback.playError();
-        const message =
-          error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN");
-        setBasket((prev) => ({
-          ...prev,
-          renew: recordBasketResult(prev.renew, {
-            barcode: code,
-            title: code,
-            state: "failed",
-            detail: message,
-          }),
-        }));
+        await recordRefusal("renew", code, error);
       }
     },
-    [renewByBarcode, titleName, feedback, apiErrorMessage, t, locale],
+    [renewByBarcode, titleName, feedback, recordRefusal, t, locale],
   );
 
   const handleScan = useCallback(

@@ -198,6 +198,178 @@ describe("useDeskSession", () => {
     expect(result.current.basket.renew[0]?.detail).toContain("basket.renewedUntil");
   });
 
+  // A scanner double read after a return got 404 and the refusal replaced
+  // "Dikembalikan tepat waktu" on the list and on the receipt.
+  it("keeps a saved return when the same book is scanned again", async () => {
+    returnByBarcode
+      .mockResolvedValueOnce({
+        title_id: "t1",
+        member_user_id: "u1",
+        due_on: "2026-11-20",
+        returned_at: "2026-11-20T08:00:00Z",
+        fine_amount: 0,
+        late_days: 0,
+      })
+      .mockRejectedValueOnce(
+        new ApiError({ status: 404, code: "LIBRARY_LOAN_NOT_FOUND", message: "not found" }),
+      );
+    findMember.mockResolvedValue({ status: "copy" });
+    const { result } = renderHook(() => useDeskSession());
+    act(() => {
+      result.current.setMode("return");
+    });
+
+    scan(result, "2026/00031");
+    await waitFor(() => {
+      expect(result.current.basket.return[0]?.state).toBe("done");
+    });
+    scan(result, "2026/00031");
+    await waitFor(() => {
+      expect(result.current.scanError).toContain("basket.alreadyReturned");
+    });
+
+    expect(result.current.scanError).toContain('"title":"Title t1"');
+    expect(result.current.basket.return).toHaveLength(1);
+    expect(result.current.basket.return[0]).toMatchObject({
+      title: "Title t1",
+      state: "done",
+      detail: "basket.returnedOnTime",
+    });
+  });
+
+  it("keeps a saved renewal when a rescan hits the renewal limit", async () => {
+    renewByBarcode
+      .mockResolvedValueOnce({ title_id: "t1", due_on: "2027-01-20", member_user_id: "u1" })
+      .mockRejectedValueOnce(
+        new ApiError({ status: 409, code: "LIBRARY_RENEWAL_LIMIT_REACHED", message: "limit" }),
+      );
+    const { result } = renderHook(() => useDeskSession());
+    act(() => {
+      result.current.setMode("renew");
+    });
+
+    scan(result, "2026/00030");
+    await waitFor(() => {
+      expect(result.current.basket.renew[0]?.state).toBe("done");
+    });
+    scan(result, "2026/00030");
+    await waitFor(() => {
+      expect(result.current.scanError).toContain("basket.alreadyRenewed");
+    });
+
+    expect(result.current.scanError).toContain("error:LIBRARY_RENEWAL_LIMIT_REACHED");
+    expect(result.current.basket.renew).toHaveLength(1);
+    expect(result.current.basket.renew[0]?.detail).toContain("basket.renewedUntil");
+  });
+
+  // Failed rows used to be headed by the barcode, not the book.
+  it("names a refused book by its title on a first scan", async () => {
+    renewByBarcode.mockRejectedValue(
+      new ApiError({ status: 409, code: "LIBRARY_RENEWAL_BLOCKED_OVERDUE", message: "late" }),
+    );
+    findCopy.mockResolvedValue({ barcode: "2026/00028", title_id: "t9" });
+    const { result } = renderHook(() => useDeskSession());
+    act(() => {
+      result.current.setMode("renew");
+    });
+
+    scan(result, "2026/00028");
+    await waitFor(() => {
+      expect(result.current.basket.renew).toHaveLength(1);
+    });
+    expect(result.current.basket.renew[0]).toMatchObject({
+      barcode: "2026/00028",
+      title: "Title t9",
+      state: "failed",
+      detail: "error:LIBRARY_RENEWAL_BLOCKED_OVERDUE",
+    });
+    // Not a "loan not found": no member-card lookup.
+    expect(findMember).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the barcode for a code that names no copy and no member", async () => {
+    returnByBarcode.mockRejectedValue(
+      new ApiError({ status: 404, code: "LIBRARY_LOAN_NOT_FOUND", message: "not found" }),
+    );
+    findMember.mockResolvedValue({ status: "none" });
+    findCopy.mockRejectedValue(new ApiError({ status: 404, code: "NOT_FOUND", message: "nf" }));
+    const { result } = renderHook(() => useDeskSession());
+    act(() => {
+      result.current.setMode("return");
+    });
+
+    scan(result, "XYZ");
+    await waitFor(() => {
+      expect(result.current.basket.return).toHaveLength(1);
+    });
+    expect(result.current.basket.return[0]).toMatchObject({
+      title: "XYZ",
+      state: "failed",
+      detail: "error:LIBRARY_LOAN_NOT_FOUND",
+    });
+  });
+
+  // A card scanned first in Kembalikan or Perpanjang was sent to the
+  // barcode endpoints and reported as "Peminjaman tidak ditemukan".
+  describe("a member card scanned in Kembalikan or Perpanjang", () => {
+    const card = {
+      status: "found",
+      member: {
+        user_id: "u7",
+        user_name: "Siswa Contoh",
+        member_no: "SEED-SISWA-01",
+        nis: "2026001",
+        username: "siswa",
+      },
+    };
+    const notFound = new ApiError({
+      status: 404,
+      code: "LIBRARY_LOAN_NOT_FOUND",
+      message: "not found",
+    });
+
+    it.each(["return", "renew"] as const)("selects the member in %s mode", async (mode) => {
+      returnByBarcode.mockRejectedValue(notFound);
+      renewByBarcode.mockRejectedValue(notFound);
+      findMember.mockResolvedValue(card);
+      const { result } = renderHook(() => useDeskSession());
+      act(() => {
+        result.current.setMode(mode);
+      });
+
+      scan(result, "SEED-SISWA-01");
+      await waitFor(() => {
+        expect(result.current.member?.userId).toBe("u7");
+      });
+
+      expect(findMember).toHaveBeenCalledWith("SEED-SISWA-01");
+      expect(result.current.basket[mode]).toHaveLength(0);
+      expect(result.current.scanError).toBe("");
+    });
+
+    it.each(["return", "renew"] as const)(
+      "says it is a card when that member is already served (%s)",
+      async (mode) => {
+        returnByBarcode.mockRejectedValue(notFound);
+        renewByBarcode.mockRejectedValue(notFound);
+        findMember.mockResolvedValue(card);
+        const { result } = renderHook(() => useDeskSession());
+        act(() => {
+          result.current.selectMember({ userId: "u7", name: "Siswa Contoh" });
+          result.current.setMode(mode);
+        });
+
+        scan(result, "SEED-SISWA-01");
+        await waitFor(() => {
+          expect(result.current.scanError).toContain("member.cardNotBook");
+        });
+
+        expect(result.current.basket[mode]).toHaveLength(0);
+        expect(result.current.member?.userId).toBe("u7");
+      },
+    );
+  });
+
   it("renews a book scanned with no member selected", async () => {
     renewByBarcode.mockResolvedValue({ title_id: "t1", due_on: "2026-12-01" });
     const { result } = renderHook(() => useDeskSession());

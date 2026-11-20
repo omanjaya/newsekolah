@@ -50,19 +50,36 @@ export function addBasketItem(items: DeskBasketItem[], item: DeskBasketItem): De
 
 /**
  * Records a result the server has already saved (a return or a renewal,
- * which act on each scan at once). Unlike `addBasketItem` the newest
- * result always wins: a copy scanned again replaces its old row and moves
- * to the front, so the row and the result banner (the first row) never
- * keep a stale "refused" after a renewal that went through. A saved
- * result is never dropped for space either; a full receipt lets go of its
- * oldest row instead.
+ * which act on each scan at once). Unlike `addBasketItem` a newer result
+ * replaces the copy's old row and moves to the front, so the row and the
+ * result banner (the first row) never keep a stale "refused" after a
+ * renewal that went through, and a second renewal shows its new due date.
+ *
+ * A refusal never replaces a saved result, though: a book returned or
+ * renewed and then scanned again (a scanner double read) is refused by
+ * the server, and that refusal must not wipe the return or renewal from
+ * the list and the receipt, the member's proof. A refusal that carries
+ * no title of its own (its title is the bare barcode) keeps the one an
+ * earlier row already showed, and the borrower stays known.
+ *
+ * A saved result is never dropped for space either; a full receipt lets
+ * go of its oldest row instead.
  */
 export function recordBasketResult(
   items: DeskBasketItem[],
   item: DeskBasketItem,
 ): DeskBasketItem[] {
-  const others = items.filter((existing) => existing.barcode !== item.barcode);
-  return [item, ...others].slice(0, MAX_BASKET_SIZE);
+  const existing = items.find((candidate) => candidate.barcode === item.barcode);
+  if (existing?.state === "done" && item.state === "failed") return items;
+  const merged: DeskBasketItem = existing
+    ? {
+        ...item,
+        title: item.title === item.barcode ? existing.title : item.title,
+        memberUserId: item.memberUserId ?? existing.memberUserId,
+      }
+    : item;
+  const others = items.filter((candidate) => candidate.barcode !== item.barcode);
+  return [merged, ...others].slice(0, MAX_BASKET_SIZE);
 }
 
 /** Removes the most recently scanned item still pending -- "undo last scan". A confirmed result is never undone this way. */

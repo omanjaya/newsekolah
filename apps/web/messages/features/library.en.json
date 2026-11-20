@@ -248,7 +248,8 @@
       "quota": "{count} of {max} loans used",
       "copyNotCard": "\"{code}\" is a book barcode. Scan a member card first to lend.",
       "lookupFailed": "Member lookup failed, try again",
-      "sanctions": "Member fines and sanctions"
+      "sanctions": "Member fines and sanctions",
+      "cardNotBook": "\"{code}\" is a member card. Scan the book's barcode to return or renew it."
     },
     "modes": {
       "borrow": "Borrow",
@@ -285,6 +286,8 @@
       "returnedLate": "{days, plural, one {# working day late} other {# working days late}}",
       "returnedLateFine": "{days, plural, one {# working day late} other {# working days late}}, fine {amount}",
       "renewedUntil": "Renewed until {date}",
+      "alreadyReturned": "{title} was already returned in this session.",
+      "alreadyRenewed": "{title} was already renewed in this session. {reason}.",
       "heading": {
         "borrow": "Books to lend",
         "return": "Returned this session",

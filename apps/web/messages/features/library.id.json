@@ -248,7 +248,8 @@
       "quota": "{count} dari {max} batas pinjaman terpakai",
       "copyNotCard": "\"{code}\" adalah barcode buku. Pindai kartu anggota dulu untuk meminjamkan.",
       "lookupFailed": "Pencarian anggota gagal, coba lagi",
-      "sanctions": "Denda dan sanksi anggota"
+      "sanctions": "Denda dan sanksi anggota",
+      "cardNotBook": "\"{code}\" adalah kartu anggota. Pindai barcode buku untuk mengembalikan atau memperpanjangnya."
     },
     "modes": {
       "borrow": "Pinjam",
@@ -285,6 +286,8 @@
       "returnedLate": "Terlambat {days} hari kerja",
       "returnedLateFine": "Terlambat {days} hari kerja, denda {amount}",
       "renewedUntil": "Diperpanjang sampai {date}",
+      "alreadyReturned": "{title} sudah dikembalikan pada sesi ini.",
+      "alreadyRenewed": "{title} sudah diperpanjang pada sesi ini. {reason}.",
       "heading": {
         "borrow": "Daftar pinjam",
         "return": "Dikembalikan pada sesi ini",

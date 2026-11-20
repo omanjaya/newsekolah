@@ -79,6 +79,37 @@ describe("recordBasketResult", () => {
     expect(second[0]?.detail).toBe("until 4 Jan");
   });
 
+  // A book returned and then scanned again (a scanner double read) is
+  // refused as "loan not found"; that refusal used to replace the return
+  // on the list and the printed receipt, the member's proof.
+  it("never lets a refusal replace a saved return or renewal of the same copy", () => {
+    const saved = recordBasketResult(
+      [],
+      item("A", { state: "done", detail: "Dikembalikan tepat waktu", memberUserId: "u1" }),
+    );
+    const result = recordBasketResult(
+      saved,
+      item("A", { title: "A", state: "failed", detail: "Peminjaman tidak ditemukan" }),
+    );
+    expect(result).toBe(saved);
+    expect(result[0]).toMatchObject({
+      title: "Title A",
+      state: "done",
+      detail: "Dikembalikan tepat waktu",
+      memberUserId: "u1",
+    });
+  });
+
+  it("keeps the title an earlier row showed when a refusal only knows the barcode", () => {
+    const first = recordBasketResult([], item("A", { state: "failed", detail: "late" }));
+    const second = recordBasketResult(
+      first,
+      item("A", { title: "A", state: "failed", detail: "limit" }),
+    );
+    expect(second).toHaveLength(1);
+    expect(second[0]).toMatchObject({ title: "Title A", detail: "limit" });
+  });
+
   it("never drops a saved result on a full receipt, letting go of the oldest row", () => {
     const full = Array.from({ length: 50 }, (_, i) => item(`B${i}`, { state: "done" }));
     const result = recordBasketResult(full, item("new", { state: "done" }));
