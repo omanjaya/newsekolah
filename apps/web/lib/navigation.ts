@@ -213,6 +213,7 @@ export const navigation: NavItem[] = [
       "view_discipline",
       "manage_counseling",
       "manage_library_members",
+      "view_activities",
       "view_users",
     ],
     excludeProfileKinds: ["student"],

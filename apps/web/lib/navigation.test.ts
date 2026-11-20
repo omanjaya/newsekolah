@@ -261,6 +261,14 @@ describe("navigation registry: per-role audiences", () => {
     expect(canOpenPathFixture("/activities/events", can, "teacher")).toBe(false);
   });
 
+  it("opens a student's profile for a role holding only view_activities", () => {
+    // The profile's activities tab is gated on view_activities, so that
+    // permission alone must open the page the tab lives on.
+    const can = has("view_activities");
+    expect(canOpenPathFixture("/students/x", can, "staff")).toBe(true);
+    expect(canOpenPathFixture("/students/x", has("view_dashboard"), "staff")).toBe(false);
+  });
+
   it("gives a homeroom-duty teacher (wali kelas) the leave review queue", () => {
     // Base teacher role plus authz.DutyTypeDefaults()'s "homeroom" duty.
     const can = has("view_academic_data", "view_attendance", "review_leave_requests");
