@@ -1,10 +1,10 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, TextLink, useToast } from "@newsekolah/ui";
+import { Button, CardFooter, TextLink, useToast } from "@newsekolah/ui";
 import { BookmarkPlus } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { ReactElement, ReactNode } from "react";
+import type { ReactElement } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
@@ -12,11 +12,6 @@ import { signInPath } from "../../../lib/session/sign-in-path";
 import { useMyLibraryProfileQuery, useReserveMyLibraryTitleMutation } from "../me-api";
 
 const OPEN_RESERVATION = new Set(["waiting", "ready"]);
-
-/** The copies card's footer the action sits in. */
-function Footer({ children }: { children: ReactNode }): ReactElement {
-  return <div className="flex flex-col items-start gap-2 border-t border-line p-5">{children}</div>;
-}
 
 /**
  * What a reader can do about a title with no copy on the shelf: a signed-in
@@ -38,11 +33,11 @@ export function OpacReserveAction({ titleId }: { titleId: string }): ReactElemen
   if (!isReady) return null;
   if (!signedIn) {
     return (
-      <Footer>
+      <CardFooter className="flex-col items-start">
         <p className="text-body-sm text-fg-muted">
           <TextLink href={signInPath(`/opac/${titleId}`)}>{t("signIn")}</TextLink>
         </p>
-      </Footer>
+      </CardFooter>
     );
   }
 
@@ -50,9 +45,9 @@ export function OpacReserveAction({ titleId }: { titleId: string }): ReactElemen
   const data = profile.data;
   if (!canReserve || profile.isError || (data && (!data.member || !data.booking_enabled))) {
     return (
-      <Footer>
+      <CardFooter className="flex-col items-start">
         <p className="text-body-sm text-fg-muted">{myLibraryLink}</p>
-      </Footer>
+      </CardFooter>
     );
   }
   if (!data) return null;
@@ -62,7 +57,7 @@ export function OpacReserveAction({ titleId }: { titleId: string }): ReactElemen
   );
   if (existing) {
     return (
-      <Footer>
+      <CardFooter className="flex-col items-start">
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-fg">
           <span>
             {existing.status === "ready"
@@ -73,12 +68,12 @@ export function OpacReserveAction({ titleId }: { titleId: string }): ReactElemen
           </span>
           {myLibraryLink}
         </p>
-      </Footer>
+      </CardFooter>
     );
   }
 
   return (
-    <Footer>
+    <CardFooter className="flex-col items-start">
       <p className="text-body-sm text-fg-muted">{t("hint")}</p>
       <Button
         icon={<BookmarkPlus />}
@@ -100,6 +95,6 @@ export function OpacReserveAction({ titleId }: { titleId: string }): ReactElemen
       >
         {t("action")}
       </Button>
-    </Footer>
+    </CardFooter>
   );
 }
