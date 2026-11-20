@@ -35,12 +35,30 @@ order by da.created_at desc;
 -- name: GetDutyAssignmentByID :one
 select * from duty_assignments where tenant_id = $1 and id = $2;
 
--- name: FindActiveHomeroomAssignmentForClass :one
--- The identity-side mirror of academic's AcademicFindActiveHomeroomAssignment:
--- lets CreateDutyAssignment end the class's previous active homeroom duty
--- before creating a new one, so at most one stays active at a time.
-select id from duty_assignments
+-- name: EndActiveAssignmentsForClass :exec
+-- Ends every active assignment of one class-scoped duty for the class
+-- (except keep_id, the row being created or reactivated), so a class never
+-- keeps two homeroom holders: not limited to one row, so duplicates left
+-- by older code heal on the next change.
+update duty_assignments set is_active = false, ends_on = coalesce(ends_on, sqlc.arg(ends_on)::date)
 where tenant_id = $1 and academic_year_id = $2 and duty_type_id = $3 and scope_class_id = $4 and is_active
+  and (sqlc.narg(keep_id)::uuid is null or id <> sqlc.narg(keep_id)::uuid);
+
+-- name: FindActiveHolderForClass :one
+-- The class's current holder of one class-scoped duty, newest first, so
+-- classes.homeroom_teacher_id can be re-derived after a holder is ended.
+select user_id from duty_assignments
+where tenant_id = $1 and academic_year_id = $2 and duty_type_id = $3 and scope_class_id = $4 and is_active
+order by starts_on desc, created_at desc
+limit 1;
+
+-- name: FindOtherActiveClassForHolder :one
+-- Another class the user already holds this class-scoped duty for in the
+-- year: a teacher is homeroom of one class at a time.
+select scope_class_id from duty_assignments
+where tenant_id = $1 and academic_year_id = $2 and duty_type_id = $3 and user_id = $4 and is_active
+  and scope_class_id is not null and scope_class_id <> sqlc.arg(class_id)::uuid
+order by starts_on desc, created_at desc
 limit 1;
 
 -- name: UpdateDutyAssignment :exec

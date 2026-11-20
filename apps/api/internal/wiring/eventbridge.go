@@ -28,16 +28,14 @@ type DutyLookup interface {
 func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog.Logger) {
 	b := &bridge{bus: bus, duties: duties, logger: logger}
 
-	bus.Subscribe(permitsservice.LeaveRequestSubmitted{}.EventName(), b.handle(func(ctx context.Context, evt events.Event) ([]events.Envelope, error) {
-		e := evt.(permitsservice.LeaveRequestSubmitted)
+	subscribe(b, func(ctx context.Context, e permitsservice.LeaveRequestSubmitted) ([]events.Envelope, error) {
 		recipients, err := b.holders(ctx, e.TenantID, "homeroom", e.ClassID)
 		return one(events.Envelope{
 			Name: events.LeaveRequestSubmitted, Tenant: e.TenantID, Actor: e.StudentUserID, Subject: recipients,
 			Payload: map[string]any{"instance_id": e.InstanceID.String(), "href": "/leave-requests/" + e.InstanceID.String()},
 		}, err)
-	}))
-	bus.Subscribe(permitsservice.LeaveRequestReviewed{}.EventName(), b.handle(func(ctx context.Context, evt events.Event) ([]events.Envelope, error) {
-		e := evt.(permitsservice.LeaveRequestReviewed)
+	})
+	subscribe(b, func(ctx context.Context, e permitsservice.LeaveRequestReviewed) ([]events.Envelope, error) {
 		href := "/leave-requests/" + e.InstanceID.String()
 		summary := "Pengajuan izin Anda disetujui wali kelas dan diteruskan ke guru BK."
 		if !e.Approved {
@@ -56,72 +54,63 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 			Payload: map[string]any{"instance_id": e.InstanceID.String(), "summary": "Pengajuan izin telah disetujui wali kelas dan menunggu penerbitan surat.", "href": href},
 		})
 		return out, err
-	}))
-	bus.Subscribe(permitsservice.LeaveRequestIssued{}.EventName(), b.handle(func(_ context.Context, evt events.Event) ([]events.Envelope, error) {
-		e := evt.(permitsservice.LeaveRequestIssued)
+	})
+	subscribe(b, func(_ context.Context, e permitsservice.LeaveRequestIssued) ([]events.Envelope, error) {
 		return one(events.Envelope{
 			Name: events.LeaveRequestIssued, Tenant: e.TenantID, Subject: []uuid.UUID{e.StudentUserID},
 			Payload: map[string]any{"instance_id": e.InstanceID.String(), "letter_number": e.LetterNumber,
 				"summary": fmt.Sprintf("Surat izin nomor %s telah diterbitkan.", e.LetterNumber), "href": "/leave-requests/" + e.InstanceID.String()},
 		}, nil)
-	}))
-	bus.Subscribe(permitsservice.ExitPermitStageChanged{}.EventName(), b.handle(func(_ context.Context, evt events.Event) ([]events.Envelope, error) {
-		e := evt.(permitsservice.ExitPermitStageChanged)
+	})
+	subscribe(b, func(_ context.Context, e permitsservice.ExitPermitStageChanged) ([]events.Envelope, error) {
 		return one(events.Envelope{
 			Name: events.ExitPermitStageChanged, Tenant: e.TenantID, Subject: []uuid.UUID{e.StudentUserID},
 			Payload: map[string]any{"instance_id": e.InstanceID.String(), "stage": e.StageKey, "href": "/exit-permits/" + e.InstanceID.String()},
 		}, nil)
-	}))
-	bus.Subscribe(permitsservice.ExitPermitIssued{}.EventName(), b.handle(func(ctx context.Context, evt events.Event) ([]events.Envelope, error) {
-		e := evt.(permitsservice.ExitPermitIssued)
+	})
+	subscribe(b, func(ctx context.Context, e permitsservice.ExitPermitIssued) ([]events.Envelope, error) {
 		security, err := b.holders(ctx, e.TenantID, "security", uuid.NullUUID{})
 		return one(events.Envelope{
 			Name: events.ExitPermitIssued, Tenant: e.TenantID, Subject: append([]uuid.UUID{e.StudentUserID}, security...),
 			Payload: map[string]any{"instance_id": e.InstanceID.String(), "summary": "Izin keluar telah disetujui. Tunjukkan QR di gerbang.", "href": "/exit-permits/" + e.InstanceID.String()},
 		}, err)
-	}))
-	bus.Subscribe(permitsservice.ExitPermitExited{}.EventName(), b.handle(func(_ context.Context, evt events.Event) ([]events.Envelope, error) {
-		e := evt.(permitsservice.ExitPermitExited)
+	})
+	subscribe(b, func(_ context.Context, e permitsservice.ExitPermitExited) ([]events.Envelope, error) {
 		return one(events.Envelope{
 			Name: events.ExitPermitExited, Tenant: e.TenantID, Actor: e.SecurityUserID, Subject: []uuid.UUID{e.StudentUserID},
 			Payload: map[string]any{"instance_id": e.InstanceID.String(), "href": "/exit-permits/" + e.InstanceID.String()},
 		}, nil)
-	}))
-	bus.Subscribe(permitsservice.LateArrivalOpened{}.EventName(), b.handle(func(ctx context.Context, evt events.Event) ([]events.Envelope, error) {
-		e := evt.(permitsservice.LateArrivalOpened)
+	})
+	subscribe(b, func(ctx context.Context, e permitsservice.LateArrivalOpened) ([]events.Envelope, error) {
 		recipients, err := b.holders(ctx, e.TenantID, "homeroom", e.ClassID)
 		return one(events.Envelope{
 			Name: events.LateArrivalOpened, Tenant: e.TenantID, Actor: e.StudentUserID, Subject: recipients,
 			Payload: map[string]any{"instance_id": e.InstanceID.String(), "summary": "Siswa di kelas Anda tercatat terlambat hari ini.", "href": "/late-arrivals/" + e.InstanceID.String()},
 		}, err)
-	}))
-	bus.Subscribe(permitsservice.LateArrivalUpdated{}.EventName(), b.handle(func(_ context.Context, evt events.Event) ([]events.Envelope, error) {
-		e := evt.(permitsservice.LateArrivalUpdated)
+	})
+	subscribe(b, func(_ context.Context, e permitsservice.LateArrivalUpdated) ([]events.Envelope, error) {
 		return one(events.Envelope{
 			Name: events.LateArrivalUpdated, Tenant: e.TenantID, Subject: []uuid.UUID{e.StudentUserID},
 			Payload: map[string]any{"instance_id": e.InstanceID.String(), "status": e.Status, "href": "/late-arrivals/" + e.InstanceID.String()},
 		}, nil)
-	}))
-	bus.Subscribe(schedulingservice.SubstitutionRequested{}.EventName(), b.handle(func(_ context.Context, evt events.Event) ([]events.Envelope, error) {
-		e := evt.(schedulingservice.SubstitutionRequested)
+	})
+	subscribe(b, func(_ context.Context, e schedulingservice.SubstitutionRequested) ([]events.Envelope, error) {
 		return one(events.Envelope{
 			Name: events.SubstitutionRequested, Tenant: e.TenantID, Actor: e.RequesterUserID, Subject: []uuid.UUID{e.SubstituteUserID},
-			Payload: map[string]any{"substitution_id": e.SubstitutionID.String(), "date": e.Date.Format("2006-01-02"), "href": "/substitutions"},
+			Payload: map[string]any{"substitution_id": e.SubstitutionID.String(), "schedule_id": e.ScheduleID.String(), "date": e.Date.Format("2006-01-02"), "href": "/substitutions"},
 		}, nil)
-	}))
-	bus.Subscribe(schedulingservice.SubstitutionResponded{}.EventName(), b.handle(func(_ context.Context, evt events.Event) ([]events.Envelope, error) {
-		e := evt.(schedulingservice.SubstitutionResponded)
+	})
+	subscribe(b, func(_ context.Context, e schedulingservice.SubstitutionResponded) ([]events.Envelope, error) {
 		summary := "Permintaan pengganti mengajar Anda diterima."
 		if !e.Accepted {
 			summary = "Permintaan pengganti mengajar Anda ditolak."
 		}
 		return one(events.Envelope{
 			Name: events.SubstitutionResponded, Tenant: e.TenantID, Actor: e.SubstituteUserID, Subject: []uuid.UUID{e.RequesterUserID},
-			Payload: map[string]any{"substitution_id": e.SubstitutionID.String(), "accepted": e.Accepted, "summary": summary, "href": "/substitutions"},
+			Payload: map[string]any{"substitution_id": e.SubstitutionID.String(), "schedule_id": e.ScheduleID.String(), "accepted": e.Accepted, "summary": summary, "href": "/substitutions"},
 		}, nil)
-	}))
-	bus.Subscribe(disciplineservice.WarningLetterIssued{}.EventName(), b.handle(func(ctx context.Context, evt events.Event) ([]events.Envelope, error) {
-		e := evt.(disciplineservice.WarningLetterIssued)
+	})
+	subscribe(b, func(ctx context.Context, e disciplineservice.WarningLetterIssued) ([]events.Envelope, error) {
 		homeroom, err := b.holders(ctx, e.TenantID, "homeroom", e.ClassID)
 		summary := fmt.Sprintf("%s nomor %s telah diterbitkan.", e.LevelLabel, e.LetterNumber)
 		recipients := append([]uuid.UUID{e.StudentUserID}, without(homeroom, e.IssuedBy)...)
@@ -129,36 +118,32 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 			Name: events.WarningLetterIssued, Tenant: e.TenantID, Actor: e.IssuedBy, Subject: recipients,
 			Payload: map[string]any{"letter_id": e.LetterID.String(), "level": e.Level, "summary": summary, "href": "/discipline/letters/" + e.LetterID.String()},
 		}}, err
-	}))
-	bus.Subscribe(disciplineservice.ThresholdReached{}.EventName(), b.handle(func(ctx context.Context, evt events.Event) ([]events.Envelope, error) {
-		e := evt.(disciplineservice.ThresholdReached)
+	})
+	subscribe(b, func(ctx context.Context, e disciplineservice.ThresholdReached) ([]events.Envelope, error) {
 		counselors, err := b.holders(ctx, e.TenantID, "counselor", uuid.NullUUID{})
 		summary := fmt.Sprintf("Seorang siswa mencapai %s (%d poin).", e.LevelLabel, e.TotalPoints)
 		return one(events.Envelope{
 			Name: events.DisciplineThresholdReached, Tenant: e.TenantID, Subject: counselors,
 			Payload: map[string]any{"student_user_id": e.StudentUserID.String(), "level": e.Level, "summary": summary, "href": "/discipline/students/" + e.StudentUserID.String()},
 		}, err)
-	}))
-	bus.Subscribe(attendanceservice.Submitted{}.EventName(), b.handle(func(ctx context.Context, evt events.Event) ([]events.Envelope, error) {
-		e := evt.(attendanceservice.Submitted)
+	})
+	subscribe(b, func(ctx context.Context, e attendanceservice.Submitted) ([]events.Envelope, error) {
 		recipients, err := b.holders(ctx, e.TenantID, "homeroom", uuid.NullUUID{UUID: e.ClassID, Valid: true})
 		return one(events.Envelope{
 			Name: events.AttendanceSubmitted, Tenant: e.TenantID, Actor: e.SubmittedBy, Subject: without(recipients, e.SubmittedBy),
 			Payload: map[string]any{"session_id": e.SessionID.String(), "class_id": e.ClassID.String(),
 				"summary": fmt.Sprintf("Presensi %d siswa tercatat untuk kelas Anda.", e.StudentCount), "href": "/attendance"},
 		}, err)
-	}))
+	})
 
-	bus.Subscribe(libraryservice.ReservationReadyEvent{}.EventName(), b.handle(func(_ context.Context, evt events.Event) ([]events.Envelope, error) {
-		e := evt.(libraryservice.ReservationReadyEvent)
+	subscribe(b, func(_ context.Context, e libraryservice.ReservationReadyEvent) ([]events.Envelope, error) {
 		return one(events.Envelope{
 			Name: events.LibraryReservationReady, Tenant: e.TenantID, Subject: []uuid.UUID{e.MemberUserID},
 			Payload: map[string]any{"reservation_id": e.ReservationID.String(), "title_id": e.TitleID.String(),
 				"summary": "Judul yang Anda pesan sudah siap diambil di perpustakaan.", "href": "/library/me"},
 		}, nil)
-	}))
-	bus.Subscribe(libraryservice.LoanDueReminderEvent{}.EventName(), b.handle(func(_ context.Context, evt events.Event) ([]events.Envelope, error) {
-		e := evt.(libraryservice.LoanDueReminderEvent)
+	})
+	subscribe(b, func(_ context.Context, e libraryservice.LoanDueReminderEvent) ([]events.Envelope, error) {
 		summary := "Ada buku yang harus segera dikembalikan."
 		if e.LoanCount > 1 {
 			summary = fmt.Sprintf("Ada %d buku yang harus segera dikembalikan.", e.LoanCount)
@@ -167,7 +152,7 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 			Name: events.LibraryLoanDueReminder, Tenant: e.TenantID, Subject: []uuid.UUID{e.MemberUserID},
 			Payload: map[string]any{"loan_count": e.LoanCount, "summary": summary, "href": "/library/me"},
 		}, nil)
-	}))
+	})
 }
 
 type bridge struct {
@@ -176,13 +161,41 @@ type bridge struct {
 	logger *slog.Logger
 }
 
+// subscribe registers translate for module event type T under T's own
+// event name. Each module names its typed events in its own namespace
+// (e.g. "scheduling.substitution.requested"), distinct from the
+// events.Envelope names the notifications module consumes
+// ("substitution.requested"); a shared name would deliver this bridge's
+// own Envelope output back to it. The checked type assertion below keeps
+// a future collision a logged no-op instead of a panic that turns an
+// already committed request into a 500.
+func subscribe[T events.Event](b *bridge, translate func(ctx context.Context, e T) ([]events.Envelope, error)) {
+	var zero T
+	b.bus.Subscribe(zero.EventName(), b.handle(func(ctx context.Context, evt events.Event) ([]events.Envelope, error) {
+		e, ok := evt.(T)
+		if !ok {
+			if _, isEnvelope := evt.(events.Envelope); !isEnvelope {
+				b.logger.Warn("notification bridge: unexpected event type", "event", evt.EventName(), "type", fmt.Sprintf("%T", evt))
+			}
+			return nil, nil
+		}
+		return translate(ctx, e)
+	}))
+}
+
 type translator func(ctx context.Context, evt events.Event) ([]events.Envelope, error)
 
 // handle wraps a translator so a notification failure is logged, never
-// returned: the originating transaction must not roll back because an
-// inbox row could not be written.
+// returned or raised: the originating write has usually committed already
+// (or must not roll back) because an inbox row could not be written.
 func (b *bridge) handle(translate translator) events.Handler {
-	return func(ctx context.Context, evt events.Event) error {
+	return func(ctx context.Context, evt events.Event) (err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				b.logger.Error("notification bridge: handler panicked", "event", evt.EventName(), "panic", r)
+				err = nil
+			}
+		}()
 		envelopes, err := translate(ctx, evt)
 		if err != nil {
 			b.logger.Warn("notification bridge: resolve recipients failed", "event", evt.EventName(), "error", err)

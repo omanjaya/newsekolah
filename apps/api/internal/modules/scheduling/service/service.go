@@ -74,6 +74,9 @@ type Repository interface {
 	ListSchedulesByTeacher(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID) ([]domain.Schedule, error)
 	ListSchedulesByDay(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16) ([]domain.Schedule, error)
 	CountSchedulesForClassDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, dayOfWeek int16) (int64, error)
+	// ScheduleIDsWithHistory returns which of ids have an attendance session
+	// or a substitution request.
+	ScheduleIDsWithHistory(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]uuid.UUID, error)
 	CountSchedulesByClassDay(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID) ([]ClassDayCount, error)
 
 	CreateSubstitution(ctx context.Context, s domain.Substitution) (domain.Substitution, error)
@@ -90,9 +93,10 @@ type Repository interface {
 	ListSubstitutionsIncomingWithSchedule(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.SubstitutionWithSchedule, error)
 	ListSubstitutionsOutgoingWithSchedule(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.SubstitutionWithSchedule, error)
 	ListAcceptedSubstitutionsForSubstituteDate(ctx context.Context, tenantID, substituteUserID uuid.UUID, date time.Time) ([]domain.Substitution, error)
+	ListAcceptedSubstitutionsForRequesterDate(ctx context.Context, tenantID, requesterUserID uuid.UUID, date time.Time) ([]domain.Substitution, error)
 	// ListSubstitutionsAll is the manage_schedules-only "all" list scope;
 	// status filters to one status when non-nil.
-	ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.Substitution, error)
+	ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.SubstitutionWithSchedule, error)
 	// ListEligibleSubstituteTeachers backs the substitute picker: active
 	// teachers this academic year, excluding excludeUserID, with an
 	// optional name search.
@@ -139,6 +143,24 @@ type Service struct {
 	// tenant letterhead, same as before reportdoc.LetterheadSource
 	// existed.
 	letterheads reportdoc.LetterheadSource
+	// calendar is optional (set via SetCalendar): nil skips the holiday
+	// check on substitution requests, leaving only the weekly pattern.
+	calendar ClassCalendar
+}
+
+// ClassCalendar answers whether a dated lesson of one class actually takes
+// place: the weekly pattern plus the academic calendar's holidays,
+// no-school days and semester breaks scoped to the class's grade level.
+// eventName names the non-teaching event when there is one. Implemented in
+// internal/wiring over the academic module, per
+// docs/03-layered-architecture.md section 1.
+type ClassCalendar interface {
+	IsTeachingDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) (teaching bool, eventName string, err error)
+}
+
+// SetCalendar wires the academic calendar in after construction.
+func (s *Service) SetCalendar(c ClassCalendar) {
+	s.calendar = c
 }
 
 func New(pool *pgxpool.Pool, repo Repository) *Service {

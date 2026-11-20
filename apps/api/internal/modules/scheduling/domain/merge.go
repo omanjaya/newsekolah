@@ -22,6 +22,10 @@ type Block struct {
 	StartSeq      int16
 	EndSeq        int16
 	Source        Source
+	// HasHistory is true when any schedule in the block has an attendance
+	// session or a substitution request, which freezes it (migration
+	// 0107's history guard): it can no longer be edited or deleted.
+	HasHistory bool
 }
 
 // MergeContiguous groups schedules (already scoped to one class or one

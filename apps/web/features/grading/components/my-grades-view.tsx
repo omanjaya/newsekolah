@@ -150,7 +150,7 @@ export function MyGradesView(): ReactElement {
           </StatGrid>
 
           <div
-            className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3"
+            className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-3"
             data-testid="my-grades-subject-cards"
           >
             {data.subjects.map((subject) => (

@@ -37,6 +37,9 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 		if err != nil {
 			return err
 		}
+		if err := s.requireLessonDay(ctx, tenantID, session.AcademicYearID, session.ClassID, session.Date); err != nil {
+			return err
+		}
 
 		accessOK, err := s.access.HasAccess(ctx, tenantID, session.ScheduleID, actor.UserID, session.Date)
 		if err != nil {
@@ -257,15 +260,14 @@ type attendanceSubmittedRolePayload struct {
 func (s *Service) recomputeDailySummaryForClassDate(
 	ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time, studentIDs []uuid.UUID, policy domain.StatusPolicy,
 ) error {
-	dayOfWeek := domain.IsoWeekday(date)
-	isSchoolDay, err := s.repo.IsSchoolDay(ctx, tenantID, academicYearID, dayOfWeek)
+	isSchoolDay, _, err := s.teachingDay(ctx, tenantID, academicYearID, classID, date)
 	if err != nil {
 		return err
 	}
 
 	expected := 0
 	if isSchoolDay {
-		count, err := s.schedules.CountSchedulesForClassDay(ctx, tenantID, academicYearID, classID, dayOfWeek)
+		count, err := s.schedules.CountSchedulesForClassDay(ctx, tenantID, academicYearID, classID, domain.IsoWeekday(date))
 		if err != nil {
 			return err
 		}

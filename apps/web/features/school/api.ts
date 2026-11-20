@@ -28,10 +28,10 @@ export type UserImportRowAction = components["schemas"]["UserImportRowAction"];
 export type UserImportResult = components["schemas"]["UserImportResult"];
 
 /** Shared with duties-api.ts, which lives in its own file to keep this one under the line limit. */
-export function useInvalidate(prefix: readonly unknown[]) {
+export function useInvalidate(...prefixes: (readonly unknown[])[]) {
   const queryClient = useQueryClient();
   return () => {
-    void queryClient.invalidateQueries({ queryKey: prefix });
+    for (const queryKey of prefixes) void queryClient.invalidateQueries({ queryKey });
   };
 }
 
@@ -177,7 +177,8 @@ export function useGradeLevelsQuery() {
 
 export function useCreateClassMutation() {
   const client = useApiClient();
-  const invalidate = useInvalidate(["academic", "classes"]);
+  // Saving a class can change its homeroom duty, so the duty list refreshes too.
+  const invalidate = useInvalidate(["academic", "classes"], ["duties"]);
   return useMutation({
     mutationFn: (body: components["schemas"]["ClassInput"]) =>
       client.POST("/v1/academic/classes", { body }),
@@ -187,7 +188,8 @@ export function useCreateClassMutation() {
 
 export function useUpdateClassMutation() {
   const client = useApiClient();
-  const invalidate = useInvalidate(["academic", "classes"]);
+  // Saving a class can change its homeroom duty, so the duty list refreshes too.
+  const invalidate = useInvalidate(["academic", "classes"], ["duties"]);
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: components["schemas"]["ClassInput"] }) =>
       client.PUT("/v1/academic/classes/{classId}", { params: { path: { classId: id } }, body }),

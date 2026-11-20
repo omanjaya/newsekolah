@@ -297,7 +297,7 @@ export function KioskView(): ReactElement {
             title={t("idle.title")}
             meta={t("idle.instructions")}
           >
-            <ol className="mt-3 grid gap-3 sm:grid-cols-3">
+            <ol className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {(
                 [
                   ["card", IdCard],

@@ -153,4 +153,28 @@ describe("LessonCell", () => {
     expect(screen.getByRole("button", { name: "editBlock" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "deleteBlock" })).toBeInTheDocument();
   });
+
+  it("locks edit and delete on a block with attendance history and says why", () => {
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
+    renderCell({
+      block: block({ has_history: true }),
+      span: 1,
+      subject: "Matematika",
+      detail: "Budi",
+      canManage: true,
+      onEdit,
+      onDelete,
+    });
+    const edit = screen.getByRole("button", { name: "editBlock: blockLocked" });
+    const remove = screen.getByRole("button", { name: "deleteBlock: blockLocked" });
+    expect(edit).toHaveAttribute("aria-disabled", "true");
+    expect(remove).toHaveAttribute("aria-disabled", "true");
+    edit.click();
+    remove.click();
+    expect(onEdit).not.toHaveBeenCalled();
+    expect(onDelete).not.toHaveBeenCalled();
+    // Copying a frozen lesson to another slot is still allowed.
+    expect(screen.getByRole("button", { name: "copyBlock" })).not.toHaveAttribute("aria-disabled");
+  });
 });

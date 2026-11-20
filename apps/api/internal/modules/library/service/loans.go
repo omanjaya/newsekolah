@@ -405,7 +405,10 @@ type ReservationReadyEvent struct {
 	MemberUserID  uuid.UUID
 }
 
-func (ReservationReadyEvent) EventName() string { return "library.reservation_ready" }
+// EventName is distinct from platform/events.LibraryReservationReady so the
+// notification bridge's Envelope republish never reaches its own typed
+// subscriber (see scheduling's SubstitutionRequested.EventName).
+func (ReservationReadyEvent) EventName() string { return "library.loans.reservation_ready" }
 
 // RenewInput is a renewal by loan ID (desk overdue table, member history) or
 // by barcode (desk continuous scan flow) -- exactly one must be set, mirroring ReturnInput.

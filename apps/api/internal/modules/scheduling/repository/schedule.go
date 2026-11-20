@@ -98,6 +98,13 @@ func (r *Repository) ListSchedulesByDay(ctx context.Context, tenantID, academicY
 	return toSchedules(rows), nil
 }
 
+func (r *Repository) ScheduleIDsWithHistory(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]uuid.UUID, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	return r.queries(ctx).ListScheduleIDsWithHistory(ctx, db.ListScheduleIDsWithHistoryParams{TenantID: tenantID, Ids: ids})
+}
+
 func (r *Repository) CountSchedulesForClassDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, dayOfWeek int16) (int64, error) {
 	return r.queries(ctx).CountSchedulesForClassDay(ctx, db.CountSchedulesForClassDayParams{
 		TenantID: tenantID, AcademicYearID: academicYearID, ClassID: classID, DayOfWeek: dayOfWeek,

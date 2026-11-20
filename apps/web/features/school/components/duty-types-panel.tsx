@@ -107,7 +107,7 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
   return (
     // md:h-full: fills the tab panel's height; the type list and the
     // detail panel each scroll internally instead of the whole page.
-    <div className="grid gap-4 md:h-full md:min-h-0 md:grid-cols-[240px_1fr]">
+    <div className="grid grid-cols-1 gap-4 md:h-full md:min-h-0 md:grid-cols-[240px_1fr]">
       <div className="flex min-h-0 min-w-0 flex-col gap-2">
         {canManage && (
           <Button
@@ -285,7 +285,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label={t("types.name")}>
           <Input
             value={name}

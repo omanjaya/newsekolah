@@ -81,6 +81,18 @@ type SessionSummary struct {
 	// roster from a fully recorded one without opening it.
 	RosterCount  int
 	EnteredCount int
+	// HandedOverTo is set on one of the teacher's own lessons that an
+	// accepted substitution hands to another teacher: that teacher fills
+	// it, so the list shows it as handed over rather than unfilled.
+	HandedOverTo uuid.NullUUID
+}
+
+// DaySessions is one teacher's sessions for a date. HolidayName names the
+// calendar event (holiday, no-school day, semester break) that cancelled
+// the day's lessons, when one did.
+type DaySessions struct {
+	Sessions    []SessionSummary
+	HolidayName string
 }
 
 // CalendarDaySession is one schedule's contribution to a calendar day: the

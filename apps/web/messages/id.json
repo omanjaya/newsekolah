@@ -1041,7 +1041,7 @@
       "deleteBlock": "Hapus",
       "deleted": "Jadwal dihapus",
       "deleteConfirmTitle": "Hapus jadwal",
-      "deleteConfirmBody": "Blok jadwal ini akan dihapus. Sesi presensi yang sudah tercatat tetap tersimpan.",
+      "deleteConfirmBody": "Blok jadwal ini akan dihapus dari jadwal mingguan. Jadwal yang sudah punya riwayat presensi atau guru pengganti tidak bisa dihapus.",
       "noPeriodsTitle": "Jam pelajaran belum diatur",
       "noPeriodsBody": "Atur templat jam pelajaran di Data sekolah sebelum menyusun jadwal.",
       "unknownTeacher": "Guru tidak dikenal",
@@ -1102,6 +1102,9 @@
       },
       "copyBlock": "Salin",
       "editBlock": "Ubah jadwal",
+      "blockLocked": "terkunci, jadwal ini sudah punya riwayat presensi atau guru pengganti",
+      "editBlockLocked": "Ubah jadwal (terkunci: sudah ada riwayat presensi atau guru pengganti)",
+      "deleteBlockLocked": "Hapus (terkunci: sudah ada riwayat presensi atau guru pengganti)",
       "pasteHere": "Tempel",
       "cancelCopy": "Batal salin",
       "pasted": "Jadwal ditempel.",
@@ -1131,6 +1134,8 @@
       "title": "Presensi",
       "substituteBadge": "Pengganti",
       "statusPending": "Belum diisi",
+      "statusHandedOver": "Digantikan",
+      "statusUpcoming": "Belum bisa diisi",
       "statusSavedAt": "Tersimpan pukul {time}",
       "statusLocked": "Terkunci",
       "ongoingBadge": "Sedang berlangsung",
@@ -1159,6 +1164,8 @@
       "staffHubBody": "Presensi kelas diisi oleh guru pengajar; dari sini Anda memantau hasilnya.",
       "notSchoolDayTitle": "Bukan hari sekolah",
       "notSchoolDayBody": "Tanggal ini bukan hari sekolah menurut kalender akademik.",
+      "holidayTitle": "Libur: {name}",
+      "holidayBody": "Tidak ada pelajaran pada tanggal ini menurut kalender akademik, jadi tidak ada presensi yang perlu diisi.",
       "noScheduleTitle": "Tidak ada jadwal mengajar",
       "noScheduleSelfBody": "Anda tidak memiliki jadwal mengajar pada tanggal ini.",
       "noScheduleOtherBody": "{name} tidak memiliki jadwal mengajar pada tanggal ini.",
@@ -1267,6 +1274,7 @@
         "recapAllClear": "Tahun ini: tidak ada catatan."
       },
       "daySummary": "{total, plural, other {# sesi}} · {saved} tersimpan · {pending} belum diisi",
+      "dayHandedOver": "{count} digantikan guru pengganti",
       "otherSessions": "Sesi lainnya",
       "daySessions": "Sesi mengajar",
       "heroOngoing": "Pelajaran sekarang",
@@ -1386,9 +1394,11 @@
       "todayBadge": "Hari ini",
       "incoming": "Untuk saya",
       "outgoing": "Dari saya",
+      "all": "Semua",
       "emptyTitle": "Belum ada permintaan",
       "emptyIncomingBody": "Permintaan rekan guru agar Anda menggantikan jadwal mereka tampil di sini.",
       "emptyOutgoingBody": "Permintaan yang Anda kirim ke rekan guru tampil di sini.",
+      "emptyAllBody": "Semua permintaan guru pengganti di sekolah, siapa menggantikan siapa, tampil di sini.",
       "fromTeacher": "Dari",
       "toTeacher": "Kepada",
       "responseNote": "Catatan",
@@ -1415,7 +1425,9 @@
         "pick": "Pilih",
         "sent": "Permintaan terkirim",
         "cancel": "Batal",
-        "send": "Kirim permintaan"
+        "send": "Kirim permintaan",
+        "dateHint": "Pilih hari {day} mulai hari ini. Hari libur tidak bisa dipilih.",
+        "dateHintNoLesson": "Pilih jadwal dulu; hanya tanggal pada hari jadwal itu yang bisa dipilih."
       },
       "directionLabel": "Arah permintaan",
       "rejectConfirm": {
@@ -2311,7 +2323,11 @@
         },
         "manage_academic_years": {
           "label": "Kelola tahun ajaran",
-          "description": "Atur tahun ajaran, semester, dan kalender sekolah"
+          "description": "Atur tahun ajaran dan semester"
+        },
+        "manage_calendar": {
+          "label": "Kelola kalender sekolah",
+          "description": "Tambah, ubah, dan hapus acara kalender seperti libur dan ujian"
         },
         "manage_achievements": {
           "label": "Kelola prestasi",

@@ -92,32 +92,94 @@ func (q *Queries) DeleteDutyPermissions(ctx context.Context, arg DeleteDutyPermi
 	return err
 }
 
-const findActiveHomeroomAssignmentForClass = `-- name: FindActiveHomeroomAssignmentForClass :one
-select id from duty_assignments
+const endActiveAssignmentsForClass = `-- name: EndActiveAssignmentsForClass :exec
+update duty_assignments set is_active = false, ends_on = coalesce(ends_on, $5::date)
 where tenant_id = $1 and academic_year_id = $2 and duty_type_id = $3 and scope_class_id = $4 and is_active
+  and ($6::uuid is null or id <> $6::uuid)
+`
+
+type EndActiveAssignmentsForClassParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	DutyTypeID     uuid.UUID   `json:"duty_type_id"`
+	ScopeClassID   pgtype.UUID `json:"scope_class_id"`
+	EndsOn         pgtype.Date `json:"ends_on"`
+	KeepID         pgtype.UUID `json:"keep_id"`
+}
+
+// Ends every active assignment of one class-scoped duty for the class
+// (except keep_id, the row being created or reactivated), so a class never
+// keeps two homeroom holders: not limited to one row, so duplicates left
+// by older code heal on the next change.
+func (q *Queries) EndActiveAssignmentsForClass(ctx context.Context, arg EndActiveAssignmentsForClassParams) error {
+	_, err := q.db.Exec(ctx, endActiveAssignmentsForClass,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.DutyTypeID,
+		arg.ScopeClassID,
+		arg.EndsOn,
+		arg.KeepID,
+	)
+	return err
+}
+
+const findActiveHolderForClass = `-- name: FindActiveHolderForClass :one
+select user_id from duty_assignments
+where tenant_id = $1 and academic_year_id = $2 and duty_type_id = $3 and scope_class_id = $4 and is_active
+order by starts_on desc, created_at desc
 limit 1
 `
 
-type FindActiveHomeroomAssignmentForClassParams struct {
+type FindActiveHolderForClassParams struct {
 	TenantID       uuid.UUID   `json:"tenant_id"`
 	AcademicYearID uuid.UUID   `json:"academic_year_id"`
 	DutyTypeID     uuid.UUID   `json:"duty_type_id"`
 	ScopeClassID   pgtype.UUID `json:"scope_class_id"`
 }
 
-// The identity-side mirror of academic's AcademicFindActiveHomeroomAssignment:
-// lets CreateDutyAssignment end the class's previous active homeroom duty
-// before creating a new one, so at most one stays active at a time.
-func (q *Queries) FindActiveHomeroomAssignmentForClass(ctx context.Context, arg FindActiveHomeroomAssignmentForClassParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, findActiveHomeroomAssignmentForClass,
+// The class's current holder of one class-scoped duty, newest first, so
+// classes.homeroom_teacher_id can be re-derived after a holder is ended.
+func (q *Queries) FindActiveHolderForClass(ctx context.Context, arg FindActiveHolderForClassParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, findActiveHolderForClass,
 		arg.TenantID,
 		arg.AcademicYearID,
 		arg.DutyTypeID,
 		arg.ScopeClassID,
 	)
-	var id uuid.UUID
-	err := row.Scan(&id)
-	return id, err
+	var user_id uuid.UUID
+	err := row.Scan(&user_id)
+	return user_id, err
+}
+
+const findOtherActiveClassForHolder = `-- name: FindOtherActiveClassForHolder :one
+select scope_class_id from duty_assignments
+where tenant_id = $1 and academic_year_id = $2 and duty_type_id = $3 and user_id = $4 and is_active
+  and scope_class_id is not null and scope_class_id <> $5::uuid
+order by starts_on desc, created_at desc
+limit 1
+`
+
+type FindOtherActiveClassForHolderParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	DutyTypeID     uuid.UUID `json:"duty_type_id"`
+	UserID         uuid.UUID `json:"user_id"`
+	ClassID        uuid.UUID `json:"class_id"`
+}
+
+// Another class the user already holds this class-scoped duty for in the
+// year: a teacher is homeroom of one class at a time.
+func (q *Queries) FindOtherActiveClassForHolder(ctx context.Context, arg FindOtherActiveClassForHolderParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, findOtherActiveClassForHolder,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.DutyTypeID,
+		arg.UserID,
+		arg.ClassID,
+	)
+	var scope_class_id pgtype.UUID
+	err := row.Scan(&scope_class_id)
+	return scope_class_id, err
 }
 
 const getDutyAssignmentByID = `-- name: GetDutyAssignmentByID :one

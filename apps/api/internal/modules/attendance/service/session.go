@@ -34,14 +34,21 @@ type ListSessionsOptions struct {
 // have to open sessions for a normal school day. ScheduleReader does not
 // expose period start times for a time-ordered merge, so this is a
 // de-duplicating concatenation of the two sources (own schedules first).
-// business-rule guard clauses gate one write or one aggregated read;
-// the branches are sequential guards, not nested decision logic, and
-// the module's existing test suite already covers them. Left as-is
-// here to avoid behaviour risk in a lint-only change.
-//
-//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) ListSessions(ctx context.Context, tenantID, teacherUserID uuid.UUID, opts ListSessionsOptions) ([]SessionSummary, error) {
-	var out []SessionSummary
+	day, err := s.ListDay(ctx, tenantID, teacherUserID, opts)
+	return day.Sessions, err
+}
+
+// ListDay is ListSessions plus the name of the calendar event that
+// cancelled the day's lessons, if any. A lesson whose class has no school
+// that date (a holiday, no-school day or semester break for its grade
+// level) is left out instead of being opened; one of the teacher's own
+// lessons that an accepted substitution hands to someone else is kept but
+// marked HandedOverTo, and its session records that substitute.
+//
+//nolint:gocyclo // sequential guard clauses and a merge of three sources, not nested decision logic.
+func (s *Service) ListDay(ctx context.Context, tenantID, teacherUserID uuid.UUID, opts ListSessionsOptions) (DaySessions, error) {
+	day := DaySessions{Sessions: []SessionSummary{}}
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeAcademicYear(ctx, tenantID)
 		if err != nil {
@@ -57,15 +64,6 @@ func (s *Service) ListSessions(ctx context.Context, tenantID, teacherUserID uuid
 		}
 		dayOfWeek := domain.IsoWeekday(date)
 
-		isSchoolDay, err := s.repo.IsSchoolDay(ctx, tenantID, yearID, dayOfWeek)
-		if err != nil {
-			return err
-		}
-		if !isSchoolDay {
-			out = []SessionSummary{}
-			return nil
-		}
-
 		own, err := s.schedules.ListSchedulesForTeacherDay(ctx, tenantID, yearID, teacherUserID, dayOfWeek)
 		if err != nil {
 			return err
@@ -73,6 +71,14 @@ func (s *Service) ListSessions(ctx context.Context, tenantID, teacherUserID uuid
 		subs, err := s.schedules.ListAcceptedSubstitutionsForSubstituteDate(ctx, tenantID, teacherUserID, date)
 		if err != nil {
 			return err
+		}
+		handOvers, err := s.schedules.ListHandOversForTeacherDate(ctx, tenantID, teacherUserID, date)
+		if err != nil {
+			return err
+		}
+		handedTo := make(map[uuid.UUID]uuid.UUID, len(handOvers))
+		for _, h := range handOvers {
+			handedTo[h.ScheduleID] = h.SubstituteUserID
 		}
 
 		type occurrence struct {
@@ -96,8 +102,17 @@ func (s *Service) ListSessions(ctx context.Context, tenantID, teacherUserID uuid
 			occurrences = append(occurrences, occurrence{schedule: sched, isSubstitute: true})
 		}
 
-		out = make([]SessionSummary, 0, len(occurrences))
 		for _, occ := range occurrences {
+			teaching, eventName, err := s.teachingDay(ctx, tenantID, yearID, occ.schedule.ClassID, date)
+			if err != nil {
+				return err
+			}
+			if !teaching {
+				if day.HolidayName == "" {
+					day.HolidayName = eventName
+				}
+				continue
+			}
 			if opts.CurrentOnly {
 				current, err := s.periodIsRunning(ctx, tenantID, occ.schedule.StartPeriodID, occ.schedule.EndPeriodID, now)
 				if err != nil {
@@ -109,8 +124,15 @@ func (s *Service) ListSessions(ctx context.Context, tenantID, teacherUserID uuid
 			}
 
 			substituteUserID := uuid.NullUUID{}
-			if occ.isSubstitute {
+			handedOverTo := uuid.NullUUID{}
+			switch {
+			case occ.isSubstitute:
 				substituteUserID = uuid.NullUUID{UUID: teacherUserID, Valid: true}
+			default:
+				if to, ok := handedTo[occ.schedule.ID]; ok {
+					handedOverTo = uuid.NullUUID{UUID: to, Valid: true}
+					substituteUserID = handedOverTo
+				}
 			}
 
 			session, _, err := s.repo.OpenSession(ctx, domain.Session{
@@ -131,14 +153,32 @@ func (s *Service) ListSessions(ctx context.Context, tenantID, teacherUserID uuid
 				return err
 			}
 
-			out = append(out, SessionSummary{
+			day.Sessions = append(day.Sessions, SessionSummary{
 				Session: session, IsSubstitute: occ.isSubstitute,
-				RosterCount: len(students), EnteredCount: len(entries),
+				RosterCount: len(students), EnteredCount: len(entries), HandedOverTo: handedOverTo,
 			})
 		}
 		return nil
 	})
-	return out, err
+	return day, err
+}
+
+// requireLessonDay refuses a session dated after the school's today
+// (attendance is recorded on the day, not ahead of it) or on a date the
+// academic calendar cancels lessons for classID.
+func (s *Service) requireLessonDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) error {
+	now := clock.Now(ctx, s.clock).In(s.tenantLocation(ctx, tenantID))
+	if domain.SessionNotStarted(date, now) {
+		return domain.ErrSessionNotStarted
+	}
+	teaching, _, err := s.teachingDay(ctx, tenantID, academicYearID, classID, date)
+	if err != nil {
+		return err
+	}
+	if !teaching {
+		return domain.ErrNotSchoolDay
+	}
+	return nil
 }
 
 // canCorrectClass reports whether actor may open a session for classID
@@ -189,6 +229,9 @@ func (s *Service) OpenSession(ctx context.Context, tenantID uuid.UUID, actor Act
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		schedule, err := s.schedules.GetSchedule(ctx, tenantID, scheduleID)
 		if err != nil {
+			return err
+		}
+		if err := s.requireLessonDay(ctx, tenantID, schedule.AcademicYearID, schedule.ClassID, date); err != nil {
 			return err
 		}
 

@@ -309,6 +309,7 @@ export function LessonCell({
             <BlockAction
               label={t("editBlock")}
               icon={<Pencil className="size-3.5" aria-hidden="true" />}
+              lockedReason={block.has_history ? t("blockLocked") : undefined}
               onClick={() => {
                 onEdit(block);
               }}
@@ -317,6 +318,7 @@ export function LessonCell({
               label={t("deleteBlock")}
               danger
               icon={<Trash2 className="size-3.5" aria-hidden="true" />}
+              lockedReason={block.has_history ? t("blockLocked") : undefined}
               onClick={() => {
                 onDelete(block);
               }}

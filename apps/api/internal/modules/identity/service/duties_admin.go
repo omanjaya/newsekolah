@@ -60,7 +60,9 @@ type DutiesRepository interface {
 
 	ListDutyAssignments(ctx context.Context, tenantID, academicYearID uuid.UUID, dutyTypeID, userID uuid.NullUUID) ([]DutyAssignmentRecord, error)
 	GetDutyAssignmentByID(ctx context.Context, tenantID, id uuid.UUID) (DutyAssignmentRecord, error)
-	FindActiveAssignmentForClass(ctx context.Context, tenantID, academicYearID, dutyTypeID, classID uuid.UUID) (id uuid.UUID, found bool, err error)
+	EndActiveAssignmentsForClass(ctx context.Context, tenantID, academicYearID, dutyTypeID, classID uuid.UUID, keepID uuid.NullUUID, endsOn time.Time) error
+	FindActiveHolderForClass(ctx context.Context, tenantID, academicYearID, dutyTypeID, classID uuid.UUID) (userID uuid.UUID, found bool, err error)
+	HoldsDutyForOtherClass(ctx context.Context, tenantID, academicYearID, dutyTypeID, userID, classID uuid.UUID) (bool, error)
 	CreateDutyAssignmentRecord(ctx context.Context, tenantID uuid.UUID, in DutyAssignmentRecord) (DutyAssignmentRecord, error)
 	UpdateDutyAssignmentRecord(ctx context.Context, tenantID, id uuid.UUID, isActive bool, endsOn *time.Time) error
 	DeleteDutyAssignmentRecord(ctx context.Context, tenantID, id uuid.UUID) error

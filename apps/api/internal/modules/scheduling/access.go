@@ -33,6 +33,9 @@ type AccessChecker interface {
 // cycle back through module.go, which must import service to wire it.
 type ScheduleRef = service.ScheduleRef
 
+// HandOver is a type alias for the same reason ScheduleRef is.
+type HandOver = service.HandOver
+
 // ClassDayCount is a type alias for the same reason ScheduleRef is.
 type ClassDayCount = service.ClassDayCount
 
@@ -48,6 +51,10 @@ type ScheduleReader interface {
 	// attendance's "today's sessions" list can merge in a teacher's
 	// accepted substitutions alongside their own schedules.
 	ListAcceptedSubstitutionsForSubstituteDate(ctx context.Context, tenantID, substituteUserID uuid.UUID, date time.Time) ([]ScheduleRef, error)
+	// ListHandOversForTeacherDate is the requester's side: the teacher's
+	// own lessons on date that an accepted substitution hands to someone
+	// else, so the list marks them handed over instead of unfilled.
+	ListHandOversForTeacherDate(ctx context.Context, tenantID, teacherUserID uuid.UUID, date time.Time) ([]HandOver, error)
 	CountSchedulesForClassDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, dayOfWeek int16) (int64, error)
 	// CountSchedulesByClassDay is CountSchedulesForClassDay for many
 	// classes and every weekday in one query, for tenant-level batch jobs.

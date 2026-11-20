@@ -59,7 +59,7 @@ export function CalendarView(): ReactElement {
   const format = useFormatter();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const canManage = useCan("manage_academic_years");
+  const canManage = useCan("manage_calendar");
   const { me } = useSession();
   const today = todayInZone(me?.tenant.timezone);
 
@@ -172,7 +172,7 @@ export function CalendarView(): ReactElement {
       {query.isError && !query.data ? (
         <QueryError retry={() => void query.refetch()} error={query.error} />
       ) : (
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <Card padding="md" className="gap-4">
             {query.isLoading ? (
               <Skeleton className="h-96 w-full" aria-busy="true" />

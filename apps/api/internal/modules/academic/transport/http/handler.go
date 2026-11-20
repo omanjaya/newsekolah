@@ -118,6 +118,7 @@ var conflictErrs = []struct {
 	{domain.ErrPeriodSequenceTaken, "ACADEMIC_PERIOD_SEQUENCE_TAKEN"},
 	{domain.ErrTeachingAssignmentExists, "ACADEMIC_TEACHING_ASSIGNMENT_EXISTS"},
 	{domain.ErrTeacherNotAssigned, "ACADEMIC_TEACHER_NOT_ASSIGNED"},
+	{domain.ErrTeacherAlreadyHomeroom, "TEACHER_ALREADY_HOMEROOM"},
 }
 
 // validationErrs maps to a plain 400: the request shape was fine but a

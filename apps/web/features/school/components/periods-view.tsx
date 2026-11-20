@@ -117,7 +117,7 @@ export function PeriodsView(): ReactElement {
       {templates.isLoading ? (
         <SkeletonList rows={6} framed />
       ) : selected ? (
-        <div className="grid gap-6 md:min-h-0 md:flex-1 md:overflow-y-auto xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid grid-cols-1 gap-6 md:min-h-0 md:flex-1 md:overflow-y-auto xl:grid-cols-[minmax(0,1fr)_360px]">
           <PeriodTable templateId={selected.id} />
           <WeekPanel templateId={selected.id} />
         </div>

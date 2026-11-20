@@ -134,21 +134,48 @@ func (r *Repository) ListDutyAssignments(ctx context.Context, tenantID, academic
 	return out, nil
 }
 
-// FindActiveAssignmentForClass returns the id of the class's currently
-// active assignment for dutyTypeID in this academic year, if any --
-// CreateDutyAssignment uses it to end a class's previous active homeroom
-// duty before creating a new one.
-func (r *Repository) FindActiveAssignmentForClass(ctx context.Context, tenantID, academicYearID, dutyTypeID, classID uuid.UUID) (uuid.UUID, bool, error) {
-	id, err := r.queries(ctx).FindActiveHomeroomAssignmentForClass(ctx, db.FindActiveHomeroomAssignmentForClassParams{
-		TenantID: tenantID, AcademicYearID: academicYearID, DutyTypeID: dutyTypeID, ScopeClassID: pdatabase.NullUUID(uuid.NullUUID{UUID: classID, Valid: true}),
+// EndActiveAssignmentsForClass ends every active assignment of dutyTypeID
+// for classID in this academic year except keepID, as of endsOn.
+func (r *Repository) EndActiveAssignmentsForClass(ctx context.Context, tenantID, academicYearID, dutyTypeID, classID uuid.UUID, keepID uuid.NullUUID, endsOn time.Time) error {
+	if err := r.queries(ctx).EndActiveAssignmentsForClass(ctx, db.EndActiveAssignmentsForClassParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, DutyTypeID: dutyTypeID,
+		ScopeClassID: pdatabase.NullUUID(uuid.NullUUID{UUID: classID, Valid: true}),
+		EndsOn:       pdatabase.Date(endsOn), KeepID: pdatabase.NullUUID(keepID),
+	}); err != nil {
+		return fmt.Errorf("end active assignments for class: %w", err)
+	}
+	return nil
+}
+
+// FindActiveHolderForClass returns the user currently holding dutyTypeID
+// for classID in this academic year, if anyone does.
+func (r *Repository) FindActiveHolderForClass(ctx context.Context, tenantID, academicYearID, dutyTypeID, classID uuid.UUID) (uuid.UUID, bool, error) {
+	userID, err := r.queries(ctx).FindActiveHolderForClass(ctx, db.FindActiveHolderForClassParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, DutyTypeID: dutyTypeID,
+		ScopeClassID: pdatabase.NullUUID(uuid.NullUUID{UUID: classID, Valid: true}),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return uuid.UUID{}, false, nil
 		}
-		return uuid.UUID{}, false, fmt.Errorf("find active assignment for class: %w", err)
+		return uuid.UUID{}, false, fmt.Errorf("find active holder for class: %w", err)
 	}
-	return id, true, nil
+	return userID, true, nil
+}
+
+// HoldsDutyForOtherClass reports whether userID already holds dutyTypeID
+// for a class other than classID in this academic year.
+func (r *Repository) HoldsDutyForOtherClass(ctx context.Context, tenantID, academicYearID, dutyTypeID, userID, classID uuid.UUID) (bool, error) {
+	_, err := r.queries(ctx).FindOtherActiveClassForHolder(ctx, db.FindOtherActiveClassForHolderParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, DutyTypeID: dutyTypeID, UserID: userID, ClassID: classID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil
+		}
+		return false, fmt.Errorf("find other class for holder: %w", err)
+	}
+	return true, nil
 }
 
 func (r *Repository) GetDutyAssignmentByID(ctx context.Context, tenantID, id uuid.UUID) (service.DutyAssignmentRecord, error) {

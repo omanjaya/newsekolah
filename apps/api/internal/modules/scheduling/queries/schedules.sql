@@ -42,6 +42,16 @@ select * from schedules
 where tenant_id = $1 and academic_year_id = $2 and day_of_week = $3
 order by start_seq;
 
+-- name: ListScheduleIDsWithHistory :many
+-- Which of the given schedules already have an attendance session or a
+-- substitution request: the history guard (migration 0107) refuses to
+-- change or delete those, so the grid and the single-schedule policy say
+-- so before the admin fills a form.
+select s.id from schedules s
+where s.tenant_id = $1 and s.id = any(sqlc.arg(ids)::uuid[])
+  and (exists (select 1 from attendance_sessions a where a.schedule_id = s.id)
+       or exists (select 1 from substitution_requests r where r.schedule_id = s.id));
+
 -- name: CountSchedulesForClassDay :one
 -- Read by the attendance module to compute a day's expected session count
 -- for a class (attendance/domain.ComputeDailyStatus's Expected input).

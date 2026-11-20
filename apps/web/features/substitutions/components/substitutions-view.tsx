@@ -27,7 +27,7 @@ import { useState } from "react";
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useSession } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
 import {
   useAllPeriodsQuery,
@@ -66,7 +66,10 @@ interface PendingAction {
  * Substitution requests: the ones asking this teacher to stand in ("Untuk
  * saya", with how many still wait on an answer) and the ones they sent
  * ("Dari saya"), as one list of cards. Each card names the lesson, the day
- * and the other teacher, and carries its own answer or cancel action.
+ * and the other teacher, and carries its own answer or cancel action. A
+ * schedule manager also gets "Semua": every request in the school, each
+ * naming both teachers, to coordinate cover; it opens there when they do
+ * not teach themselves.
  */
 export function SubstitutionsView(): ReactElement {
   const t = useTranslations("app.substitutions");
@@ -75,7 +78,11 @@ export function SubstitutionsView(): ReactElement {
   const { me } = useSession();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const [direction, setDirection] = useState<Direction>("incoming");
+  const canSeeAll = useCan("manage_schedules");
+  const isTeacher = me?.roles.some((role) => role.slug === "teacher") ?? false;
+  const [direction, setDirection] = useState<Direction>(() =>
+    canSeeAll && !isTeacher ? "all" : "incoming",
+  );
   const [creating, setCreating] = useState(false);
   // Refusing or withdrawing a request cannot be undone, so each asks first.
   const [rejecting, setRejecting] = useState<PendingAction | null>(null);
@@ -83,7 +90,8 @@ export function SubstitutionsView(): ReactElement {
   const [cancelling, setCancelling] = useState<PendingAction | null>(null);
   const incoming = useSubstitutionsQuery("incoming");
   const outgoing = useSubstitutionsQuery("outgoing");
-  const list = direction === "incoming" ? incoming : outgoing;
+  const all = useSubstitutionsQuery("all", canSeeAll);
+  const list = direction === "incoming" ? incoming : direction === "outgoing" ? outgoing : all;
   const respond = useRespondSubstitutionMutation();
   const cancel = useCancelSubstitutionMutation();
   const classes = useClassesQuery();
@@ -104,10 +112,9 @@ export function SubstitutionsView(): ReactElement {
   const items = list.data?.data ?? [];
   const pendingIncoming = (incoming.data?.data ?? []).filter((r) => r.status === "pending").length;
   const teacherMap = useDirectoryNames(
-    items.map((item) =>
-      direction === "incoming" ? item.requester_user_id : item.substitute_user_id,
-    ),
+    items.flatMap((item) => [item.requester_user_id, item.substitute_user_id]),
   );
+  const nameOf = (id: string) => teacherMap.get(id)?.name ?? t("unknownTeacher");
 
   function openRequest() {
     setCreating(true);
@@ -133,6 +140,7 @@ export function SubstitutionsView(): ReactElement {
               count: pendingIncoming > 0 ? pendingIncoming : undefined,
             },
             { value: "outgoing", label: t("outgoing") },
+            ...(canSeeAll ? [{ value: "all" as const, label: t("all") }] : []),
           ]}
         />
       }
@@ -145,7 +153,13 @@ export function SubstitutionsView(): ReactElement {
         <EmptyState
           icon={<Repeat aria-hidden="true" />}
           title={t("emptyTitle")}
-          description={direction === "incoming" ? t("emptyIncomingBody") : t("emptyOutgoingBody")}
+          description={
+            direction === "incoming"
+              ? t("emptyIncomingBody")
+              : direction === "outgoing"
+                ? t("emptyOutgoingBody")
+                : t("emptyAllBody")
+          }
           // The header carries the primary request. The empty list of one's
           // own requests repeats it quietly; the list of requests to this
           // teacher has nothing to start.
@@ -160,8 +174,10 @@ export function SubstitutionsView(): ReactElement {
       ) : (
         <div className="flex flex-col gap-3">
           {items.map((item) => {
-            const other =
-              direction === "incoming" ? item.requester_user_id : item.substitute_user_id;
+            // Only the invited substitute answers and only the requester
+            // withdraws; the school-wide list shows the rest read-only.
+            const canAnswer = item.substitute_user_id === me?.id;
+            const canWithdraw = item.requester_user_id === me?.id;
             const lesson = [
               item.subject_id ? subjectMap.get(item.subject_id)?.name : undefined,
               item.class_id ? classMap.get(item.class_id)?.name : undefined,
@@ -183,7 +199,7 @@ export function SubstitutionsView(): ReactElement {
             ]
               .filter(Boolean)
               .join(" · ");
-            const teacher = teacherMap.get(other)?.name ?? t("unknownTeacher");
+            const teacher = nameOf(canAnswer ? item.requester_user_id : item.substitute_user_id);
             const action: PendingAction = { item, teacher, lesson: lesson || when };
             return (
               <Card
@@ -211,10 +227,20 @@ export function SubstitutionsView(): ReactElement {
                     </span>
                   </div>
                   {lesson && <p className="text-body-sm text-fg-muted">{when}</p>}
-                  <p className="text-body-sm text-fg-muted">
-                    {direction === "incoming" ? t("fromTeacher") : t("toTeacher")}:{" "}
-                    <span className="text-fg">{teacher}</span>
-                  </p>
+                  {direction === "all" ? (
+                    <p className="text-body-sm text-fg-muted">
+                      {t("fromTeacher")}:{" "}
+                      <span className="text-fg">{nameOf(item.requester_user_id)}</span>
+                      {" · "}
+                      {t("toTeacher")}:{" "}
+                      <span className="text-fg">{nameOf(item.substitute_user_id)}</span>
+                    </p>
+                  ) : (
+                    <p className="text-body-sm text-fg-muted">
+                      {direction === "incoming" ? t("fromTeacher") : t("toTeacher")}:{" "}
+                      <span className="text-fg">{teacher}</span>
+                    </p>
+                  )}
                   {item.requester_note && (
                     <p className="text-body-sm text-fg">{item.requester_note}</p>
                   )}
@@ -224,9 +250,9 @@ export function SubstitutionsView(): ReactElement {
                     </p>
                   )}
                 </div>
-                {item.status === "pending" && (
+                {item.status === "pending" && (canAnswer || canWithdraw) && (
                   <CardFooter className="justify-end">
-                    {direction === "incoming" ? (
+                    {canAnswer ? (
                       <>
                         <Button
                           variant="secondary"

@@ -40,7 +40,7 @@ export function DutyPermissionGroups({
 
   if (canManage) {
     return (
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {groups.map((group) => (
           <div key={group.name} role="group" aria-labelledby={titleId(group.name)} className={BOX}>
             <SectionHeader
@@ -78,7 +78,7 @@ export function DutyPermissionGroups({
       {grantedGroups.length === 0 ? (
         <p className="text-body-sm text-fg">{t("noPermissions")}</p>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {grantedGroups.map((group) => (
             <section key={group.name} aria-labelledby={titleId(group.name)} className={BOX}>
               <SectionHeader

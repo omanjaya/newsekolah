@@ -362,7 +362,7 @@ paths:
       tags:
         - academic
       operationId: createCalendarEvent
-      x-permission: manage_academic_years
+      x-permission: manage_calendar
       summary: Add a calendar event (holiday, exam, event, no_school, semester_break)
       requestBody:
         required: true
@@ -393,7 +393,7 @@ paths:
       tags:
         - academic
       operationId: updateCalendarEvent
-      x-permission: manage_academic_years
+      x-permission: manage_calendar
       summary: Update a calendar event
       requestBody:
         required: true
@@ -418,7 +418,7 @@ paths:
       tags:
         - academic
       operationId: deleteCalendarEvent
-      x-permission: manage_academic_years
+      x-permission: manage_calendar
       summary: Delete a calendar event
       responses:
         "204":
@@ -3151,6 +3151,10 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/AttendanceSessionSummary"
+                  holiday_name:
+                    type: string
+                    description: Name of the academic calendar event (holiday, no-school day, semester break) that cancelled lessons on this
+                      date, when one did. Its lessons are left out of data.
         "401":
           $ref: "#/components/responses/Unauthorized"
   /v1/attendance/sessions:
@@ -20389,6 +20393,11 @@ components:
           format: uuid
         is_substitute:
           type: boolean
+        handed_over_to_user_id:
+          type: string
+          format: uuid
+          description: Set on one of the teacher's own lessons that an accepted substitution hands to this teacher; the substitute
+            fills it.
         submitted_at:
           type: string
           format: date-time
@@ -27084,6 +27093,10 @@ components:
           type: boolean
         can_delete:
           type: boolean
+        has_history:
+          type: boolean
+          description: The schedule has an attendance session or a substitution request, so it can no longer be edited or deleted
+            (the history is kept).
         reason:
           type: string
     Schedule:
@@ -27181,6 +27194,10 @@ components:
           type: integer
         source:
           $ref: "#/components/schemas/ScheduleSource"
+        has_history:
+          type: boolean
+          description: Some schedule in the block has an attendance session or a substitution request, so the block can no longer
+            be edited or deleted.
     ScheduleWriteRequest:
       type: object
       required:

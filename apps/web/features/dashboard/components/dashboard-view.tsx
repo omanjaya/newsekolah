@@ -321,7 +321,7 @@ export function DashboardView(): ReactElement {
           while a slow read holds the hero as a skeleton, a card that already
           failed would otherwise have no retry anywhere. */}
       <SharedRetry active={retryAt !== null && !topPending}>
-        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem] xl:gap-6">
+        <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem] xl:gap-6">
           <div className="flex min-w-0 flex-col gap-4" data-testid="dashboard-main">
             {topPending ? (
               <HomeSkeleton tiles={Math.max(tiles.length, 2)} strip={!isDesktop} />

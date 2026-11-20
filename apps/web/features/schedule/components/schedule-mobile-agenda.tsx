@@ -9,7 +9,7 @@ import {
   SegmentedControl,
   cn,
 } from "@newsekolah/ui";
-import { AlertTriangle, Copy, Dot, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Copy, Dot, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -21,6 +21,7 @@ import { periodSpanLabel } from "../period-span";
 import { SUBJECT_TONE_CLASSES, subjectTone } from "../subject-tone";
 
 import { LessonSubstitutionAction } from "./lesson-substitution-action";
+import { lockableBlockActions } from "./lockable-block-actions";
 
 type NamedLookup = Map<string, { name: string }>;
 
@@ -248,21 +249,7 @@ export function ScheduleMobileAgenda({
                           onCopy(block);
                         },
                       },
-                      {
-                        label: t("editBlock"),
-                        icon: <Pencil />,
-                        onClick: () => {
-                          onEdit(block);
-                        },
-                      },
-                      {
-                        label: t("deleteBlock"),
-                        icon: <Trash2 />,
-                        tone: "danger",
-                        onClick: () => {
-                          onDelete(block);
-                        },
-                      },
+                      ...lockableBlockActions(block, t, { onEdit, onDelete }),
                     ]}
                   />
                 )}

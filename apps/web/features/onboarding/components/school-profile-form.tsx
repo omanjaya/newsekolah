@@ -112,7 +112,7 @@ function SchoolProfileForm({ initial }: { initial: TenantBranding }): ReactEleme
     >
       {error && <Alert tone="danger" title={error} />}
       {saved && !error && <Alert tone="success" title={t("saved")} />}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Field label={t("name")} required>
           <Input
             value={name}

@@ -511,6 +511,42 @@ func (q *Queries) ListReportSchedules(ctx context.Context, tenantID uuid.UUID) (
 	return items, nil
 }
 
+const listScheduleIDsWithHistory = `-- name: ListScheduleIDsWithHistory :many
+select s.id from schedules s
+where s.tenant_id = $1 and s.id = any($2::uuid[])
+  and (exists (select 1 from attendance_sessions a where a.schedule_id = s.id)
+       or exists (select 1 from substitution_requests r where r.schedule_id = s.id))
+`
+
+type ListScheduleIDsWithHistoryParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	Ids      []uuid.UUID `json:"ids"`
+}
+
+// Which of the given schedules already have an attendance session or a
+// substitution request: the history guard (migration 0107) refuses to
+// change or delete those, so the grid and the single-schedule policy say
+// so before the admin fills a form.
+func (q *Queries) ListScheduleIDsWithHistory(ctx context.Context, arg ListScheduleIDsWithHistoryParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, listScheduleIDsWithHistory, arg.TenantID, arg.Ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSchedulesByAcademicYear = `-- name: ListSchedulesByAcademicYear :many
 select id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at from schedules where tenant_id = $1 and academic_year_id = $2 order by day_of_week, start_seq
 `

@@ -114,9 +114,18 @@ export function useDutyAssignmentsQuery() {
   });
 }
 
+/**
+ * A homeroom duty change also changes the class's homeroom teacher (the
+ * API keeps the two in step), so the class list refreshes with the duty
+ * list instead of showing the old name until a reload.
+ */
+function useInvalidateAssignments() {
+  return useInvalidate(["duties"], ["academic", "classes"]);
+}
+
 export function useCreateDutyAssignmentMutation() {
   const client = useApiClient();
-  const invalidate = useInvalidate(["duties"]);
+  const invalidate = useInvalidateAssignments();
   return useMutation({
     mutationFn: (body: components["schemas"]["DutyAssignmentWrite"]) =>
       client.POST("/v1/duty-assignments", { body }),
@@ -129,7 +138,7 @@ export function useCreateDutyAssignmentMutation() {
 /** Activates, deactivates (with an optional end date), or ends a duty assignment without deleting its row. */
 export function useUpdateDutyAssignmentMutation() {
   const client = useApiClient();
-  const invalidate = useInvalidate(["duties"]);
+  const invalidate = useInvalidateAssignments();
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: { is_active: boolean; ends_on?: string } }) =>
       client.PUT("/v1/duty-assignments/{assignmentId}", {
@@ -144,7 +153,7 @@ export function useUpdateDutyAssignmentMutation() {
 
 export function useEndDutyAssignmentMutation() {
   const client = useApiClient();
-  const invalidate = useInvalidate(["duties"]);
+  const invalidate = useInvalidateAssignments();
   return useMutation({
     mutationFn: (id: string) =>
       client.DELETE("/v1/duty-assignments/{assignmentId}", {

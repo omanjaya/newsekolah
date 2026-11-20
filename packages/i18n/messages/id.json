@@ -516,6 +516,16 @@
     "EVIDENCE_REQUIRED": "Lampirkan bukti sebelum mengirim.",
     "EVIDENCE_TOO_LARGE": "Berkas bukti lebih dari 6 MB. Pilih berkas yang lebih kecil.",
     "EVIDENCE_INVALID_TYPE": "Berkas bukti harus gambar JPEG atau PNG. Pilih berkas lain.",
-    "VIOLATION_INVALID": "Jenis pelanggaran tidak valid. Pilih jenis lain."
+    "VIOLATION_INVALID": "Jenis pelanggaran tidak valid. Pilih jenis lain.",
+    "SCHEDULE_DAY_NOT_SCHOOL_DAY": "Hari yang dipilih bukan hari sekolah aktif. Pilih hari lain atau aktifkan harinya di pengaturan hari sekolah.",
+    "SCHEDULE_PERIOD_INVALID": "Jam pelajaran yang dipilih tidak berlaku untuk hari tersebut atau merupakan jam istirahat. Pilih jam lain.",
+    "SUBSTITUTION_WEEKDAY_MISMATCH": "Tanggal yang dipilih tidak jatuh pada hari jadwal pelajaran ini. Pilih tanggal pada hari yang sama dengan jadwalnya.",
+    "SUBSTITUTION_DATE_IN_PAST": "Tanggal yang dipilih sudah lewat. Pilih tanggal hari ini atau yang akan datang.",
+    "SUBSTITUTION_NOT_SCHOOL_DAY": "Tanggal yang dipilih adalah hari libur atau tidak ada KBM. Pilih tanggal lain.",
+    "SUBSTITUTE_IS_REQUESTER": "Guru pengganti tidak boleh Anda sendiri. Pilih guru lain.",
+    "ATTENDANCE_SESSION_NOT_STARTED": "Presensi untuk tanggal ini belum bisa diisi. Isi pada hari pelajarannya.",
+    "ATTENDANCE_NOT_SCHOOL_DAY": "Tanggal ini hari libur atau tidak ada KBM untuk kelas ini, jadi presensi tidak diisi.",
+    "TEACHER_ALREADY_HOMEROOM": "Guru ini sudah menjadi wali kelas lain pada tahun ajaran ini. Akhiri tugas wali kelas itu dulu.",
+    "SUBSTITUTE_NOT_TEACHER": "Guru pengganti harus guru aktif pada tahun ajaran ini. Pilih guru lain."
   }
 }

@@ -8,7 +8,7 @@ import { useApiClient } from "../../lib/api/client";
 export type Substitution = components["schemas"]["Substitution"];
 export type SubstitutionCreate = components["schemas"]["SubstitutionCreateRequest"];
 export type SubstituteCandidate = components["schemas"]["SubstituteCandidate"];
-export type Direction = "incoming" | "outgoing";
+export type Direction = "incoming" | "outgoing" | "all";
 
 export function useSubstitutionsQuery(direction: Direction, enabled = true) {
   const client = useApiClient();

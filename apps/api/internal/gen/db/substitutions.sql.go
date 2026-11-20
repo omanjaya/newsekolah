@@ -190,6 +190,54 @@ func (q *Queries) GetSubstitutionByID(ctx context.Context, arg GetSubstitutionBy
 	return i, err
 }
 
+const listAcceptedSubstitutionsForRequesterDate = `-- name: ListAcceptedSubstitutionsForRequesterDate :many
+select id, tenant_id, academic_year_id, schedule_id, date, requester_user_id, substitute_user_id, status, requester_note, response_note, responded_at, created_at from substitution_requests
+where tenant_id = $1 and requester_user_id = $2 and date = $3 and status = 'accepted'
+`
+
+type ListAcceptedSubstitutionsForRequesterDateParams struct {
+	TenantID        uuid.UUID   `json:"tenant_id"`
+	RequesterUserID uuid.UUID   `json:"requester_user_id"`
+	Date            pgtype.Date `json:"date"`
+}
+
+// The other side of ListAcceptedSubstitutionsForSubstituteDate: every
+// lesson a teacher handed over to a substitute on one date (the requester
+// is always the schedule's own teacher), so the attendance list can mark
+// it handed over instead of asking that teacher to fill it.
+func (q *Queries) ListAcceptedSubstitutionsForRequesterDate(ctx context.Context, arg ListAcceptedSubstitutionsForRequesterDateParams) ([]SubstitutionRequest, error) {
+	rows, err := q.db.Query(ctx, listAcceptedSubstitutionsForRequesterDate, arg.TenantID, arg.RequesterUserID, arg.Date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SubstitutionRequest{}
+	for rows.Next() {
+		var i SubstitutionRequest
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.AcademicYearID,
+			&i.ScheduleID,
+			&i.Date,
+			&i.RequesterUserID,
+			&i.SubstituteUserID,
+			&i.Status,
+			&i.RequesterNote,
+			&i.ResponseNote,
+			&i.RespondedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAcceptedSubstitutionsForSubstituteDate = `-- name: ListAcceptedSubstitutionsForSubstituteDate :many
 select id, tenant_id, academic_year_id, schedule_id, date, requester_user_id, substitute_user_id, status, requester_note, response_note, responded_at, created_at from substitution_requests
 where tenant_id = $1 and substitute_user_id = $2 and date = $3 and status = 'accepted'
@@ -292,9 +340,11 @@ func (q *Queries) ListEligibleSubstituteTeachers(ctx context.Context, arg ListEl
 }
 
 const listSubstitutionsAll = `-- name: ListSubstitutionsAll :many
-select id, tenant_id, academic_year_id, schedule_id, date, requester_user_id, substitute_user_id, status, requester_note, response_note, responded_at, created_at from substitution_requests
-where tenant_id = $1 and ($2::text is null or status = $2::text)
-order by date desc, created_at desc
+select sr.id, sr.tenant_id, sr.academic_year_id, sr.schedule_id, sr.date, sr.requester_user_id, sr.substitute_user_id, sr.status, sr.requester_note, sr.response_note, sr.responded_at, sr.created_at, s.class_id, s.subject_id, s.start_period_id, s.end_period_id
+from substitution_requests sr
+join schedules s on s.id = sr.schedule_id
+where sr.tenant_id = $1 and ($2::text is null or sr.status = $2::text)
+order by sr.date desc, sr.created_at desc
 `
 
 type ListSubstitutionsAllParams struct {
@@ -302,31 +352,44 @@ type ListSubstitutionsAllParams struct {
 	Status   pgtype.Text `json:"status"`
 }
 
+type ListSubstitutionsAllRow struct {
+	SubstitutionRequest SubstitutionRequest `json:"substitution_request"`
+	ClassID             uuid.UUID           `json:"class_id"`
+	SubjectID           uuid.UUID           `json:"subject_id"`
+	StartPeriodID       uuid.UUID           `json:"start_period_id"`
+	EndPeriodID         uuid.UUID           `json:"end_period_id"`
+}
+
 // The manage_schedules-only "all" scope (docs/analysis/backend-inventory.md
 // section 1.13): every substitution request tenant-wide, optionally
-// narrowed to one status.
-func (q *Queries) ListSubstitutionsAll(ctx context.Context, arg ListSubstitutionsAllParams) ([]SubstitutionRequest, error) {
+// narrowed to one status, joined with the covered lesson like the two
+// self scopes so the admin's school-wide list can name it.
+func (q *Queries) ListSubstitutionsAll(ctx context.Context, arg ListSubstitutionsAllParams) ([]ListSubstitutionsAllRow, error) {
 	rows, err := q.db.Query(ctx, listSubstitutionsAll, arg.TenantID, arg.Status)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []SubstitutionRequest{}
+	items := []ListSubstitutionsAllRow{}
 	for rows.Next() {
-		var i SubstitutionRequest
+		var i ListSubstitutionsAllRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.TenantID,
-			&i.AcademicYearID,
-			&i.ScheduleID,
-			&i.Date,
-			&i.RequesterUserID,
-			&i.SubstituteUserID,
-			&i.Status,
-			&i.RequesterNote,
-			&i.ResponseNote,
-			&i.RespondedAt,
-			&i.CreatedAt,
+			&i.SubstitutionRequest.ID,
+			&i.SubstitutionRequest.TenantID,
+			&i.SubstitutionRequest.AcademicYearID,
+			&i.SubstitutionRequest.ScheduleID,
+			&i.SubstitutionRequest.Date,
+			&i.SubstitutionRequest.RequesterUserID,
+			&i.SubstitutionRequest.SubstituteUserID,
+			&i.SubstitutionRequest.Status,
+			&i.SubstitutionRequest.RequesterNote,
+			&i.SubstitutionRequest.ResponseNote,
+			&i.SubstitutionRequest.RespondedAt,
+			&i.SubstitutionRequest.CreatedAt,
+			&i.ClassID,
+			&i.SubjectID,
+			&i.StartPeriodID,
+			&i.EndPeriodID,
 		); err != nil {
 			return nil, err
 		}

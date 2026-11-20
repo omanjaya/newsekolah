@@ -231,11 +231,11 @@ type Repository interface {
 
 	// IsSchoolDay and GetPeriodEndTime read two more academic-module tables
 	// attendance needs but ScheduleReader does not expose: whether a
-	// weekday is one the tenant actually holds school on (school_days is a
-	// weekly pattern, not a full holiday calendar, so "expected sessions"
-	// below is scoped to that pattern rather than a true holiday-aware
-	// count), and a period's end-of-day wall-clock time (for the save
-	// window).
+	// weekday is one the tenant actually holds school on (school_days, the
+	// weekly pattern only -- the fallback teachingDay uses when no
+	// ClassCalendar is wired; the calendar itself also accounts for
+	// holidays, no-school days and semester breaks), and a period's
+	// end-of-day wall-clock time (for the save window).
 	//
 	// -- cross-module read; replace with academic reader interface after merge --
 	IsSchoolDay(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16) (bool, error)
@@ -366,6 +366,41 @@ type Service struct {
 	// yet available to this module, so every report export renders
 	// without one, same as before reportdoc.LetterheadSource existed.
 	letterheads reportdoc.LetterheadSource
+	// calendar is optional (set via SetCalendar): nil leaves only the
+	// weekly school-day pattern (see teachingDay), as before the academic
+	// calendar was wired in.
+	calendar ClassCalendar
+}
+
+// ClassCalendar answers whether one class has lessons on a date: the
+// weekly pattern plus the academic calendar's holidays, no-school days and
+// semester breaks scoped to the class's grade level, naming the event
+// when there is one. Implemented in internal/wiring over the academic
+// module (wiring.ClassCalendar).
+type ClassCalendar interface {
+	IsTeachingDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) (teaching bool, eventName string, err error)
+}
+
+// SetCalendar wires the academic calendar in after construction, so a
+// holiday stops sessions from being listed, opened or saved, and is not
+// counted as a day with expected lessons in the daily status.
+func (s *Service) SetCalendar(c ClassCalendar) {
+	s.calendar = c
+}
+
+// teachingDay is the single "does this class have lessons on date" check
+// behind every attendance path: listing, opening and saving sessions, and
+// the expected-session count of the daily status (calendar, homeroom
+// roster, daily summaries). A holiday, no-school day or semester break
+// therefore gives no expected lessons (StatusNone) instead of an
+// incomplete day nobody can fill. With no calendar wired it falls back to
+// the weekly school-day pattern.
+func (s *Service) teachingDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) (bool, string, error) {
+	if s.calendar == nil {
+		weekly, err := s.repo.IsSchoolDay(ctx, tenantID, academicYearID, domain.IsoWeekday(date))
+		return weekly, "", err
+	}
+	return s.calendar.IsTeachingDay(ctx, tenantID, academicYearID, classID, date)
 }
 
 func New(

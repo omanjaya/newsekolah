@@ -17,9 +17,15 @@ func TestValidateNewSubstitution(t *testing.T) {
 	monday := time.Date(2026, 3, 2, 0, 0, 0, 0, time.UTC)
 	tuesday := monday.AddDate(0, 0, 1)
 
-	require.NoError(t, domain.ValidateNewSubstitution(requester, substitute, 1, monday))
-	require.ErrorIs(t, domain.ValidateNewSubstitution(requester, requester, 1, monday), domain.ErrSubstituteIsRequester)
-	require.ErrorIs(t, domain.ValidateNewSubstitution(requester, substitute, 1, tuesday), domain.ErrSubstitutionWeekdayMismatch)
+	// "today" is the tenant's wall clock; a late-evening instant in a zone
+	// ahead of UTC must still count as that zone's calendar date.
+	today := time.Date(2026, 3, 2, 21, 0, 0, 0, time.FixedZone("WITA", 8*3600))
+
+	require.NoError(t, domain.ValidateNewSubstitution(requester, substitute, 1, monday, today))
+	require.ErrorIs(t, domain.ValidateNewSubstitution(requester, requester, 1, monday, today), domain.ErrSubstituteIsRequester)
+	require.ErrorIs(t, domain.ValidateNewSubstitution(requester, substitute, 1, tuesday, today), domain.ErrSubstitutionWeekdayMismatch)
+	require.ErrorIs(t, domain.ValidateNewSubstitution(requester, substitute, 1, monday, today.AddDate(0, 0, 1)), domain.ErrSubstitutionDateInPast)
+	require.NoError(t, domain.ValidateNewSubstitution(requester, substitute, 1, monday.AddDate(0, 0, 7), today))
 }
 
 func TestSubstitutionCanRespond(t *testing.T) {

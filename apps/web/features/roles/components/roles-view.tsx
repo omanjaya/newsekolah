@@ -188,7 +188,7 @@ export function RolesView(): ReactElement {
       ) : roles.isError && !roles.data ? (
         <QueryError retry={() => roles.refetch()} error={roles.error} />
       ) : (
-        <div className="grid items-start gap-6 md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)]">
           <Card className="hidden md:sticky md:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)] md:block">
             <CardHeader>
               <CardTitle as="h2">{t("rolesTitle")}</CardTitle>

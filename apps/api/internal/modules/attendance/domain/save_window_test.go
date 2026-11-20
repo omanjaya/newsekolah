@@ -102,6 +102,24 @@ func TestResolveSaveWindow(t *testing.T) {
 			mode:    domain.SaveModeNormal,
 			wantErr: domain.ErrSaveWindowClosed,
 		},
+		{
+			name: "a session dated after today cannot be saved ahead of the day",
+			in: domain.SaveWindowInput{
+				Now: sessionDate.AddDate(0, 0, -1).Add(10 * time.Hour), SessionDate: sessionDate, PeriodEndAt: periodEnd,
+				CorrectionDays: 7, IsScheduleOwner: true,
+			},
+			mode:    domain.SaveModeNormal,
+			wantErr: domain.ErrSessionNotStarted,
+		},
+		{
+			name: "nor corrected ahead of the day",
+			in: domain.SaveWindowInput{
+				Now: sessionDate.AddDate(0, 0, -5), SessionDate: sessionDate, PeriodEndAt: periodEnd,
+				CorrectionDays: 7, IsGlobalCorrector: true,
+			},
+			mode:    domain.SaveModeCorrection,
+			wantErr: domain.ErrSessionNotStarted,
+		},
 	}
 
 	for _, tc := range tests {

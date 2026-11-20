@@ -12,7 +12,7 @@ import (
 
 // StaffAttendanceCalendar exposes the academic module's calendar to staff
 // attendance's lateness algorithm, the same adapter shape as
-// AttendanceCalendar in calendar.go above but with no grade-level
+// ClassCalendar in calendar.go but with no grade-level
 // targeting: a staff member's working day is never scoped to one grade.
 type StaffAttendanceCalendar struct{ Academic academic.CalendarReader }
 

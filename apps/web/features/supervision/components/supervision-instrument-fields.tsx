@@ -100,7 +100,7 @@ export function SupervisionInstrumentFields({
                 >
                   {index + 1}
                 </span>
-                <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-[minmax(0,1fr)_9rem]">
+                <div className="grid grid-cols-1 min-w-0 flex-1 gap-2 sm:grid-cols-[minmax(0,1fr)_9rem]">
                   <Input
                     value={criterion.name}
                     onChange={(e) => {

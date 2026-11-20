@@ -26,9 +26,9 @@ type Event interface {
 	EventName() string
 }
 
-// SubstitutionRequested and SubstitutionResponded are published for the
-// notifications module to consume once it is merged in; today they only
-// reach whatever handlers module.go subscribes (none, yet).
+// SubstitutionRequested and SubstitutionResponded are published on the
+// platform bus, where wiring/eventbridge.go translates them into the
+// notification-facing events.Envelope.
 type SubstitutionRequested struct {
 	TenantID         uuid.UUID
 	SubstitutionID   uuid.UUID
@@ -38,10 +38,13 @@ type SubstitutionRequested struct {
 	SubstituteUserID uuid.UUID
 }
 
-// EventName matches platform/events.SubstitutionRequested: notifications
-// subscribes by this exact string (see module.go's busPublisher, which also
-// wraps this struct into an events.Envelope before publishing).
-func (SubstitutionRequested) EventName() string { return "substitution.requested" }
+// EventName is this module's own routing key and deliberately differs from
+// platform/events.SubstitutionRequested ("substitution.requested"), the
+// Envelope name notifications consumes: sharing one name delivered the
+// bridge's Envelope back to the bridge's typed subscriber, which panicked
+// after the request had committed (attendance/service/events.go's
+// Submitted.EventName follows the same rule).
+func (SubstitutionRequested) EventName() string { return "scheduling.substitution.requested" }
 
 type SubstitutionResponded struct {
 	TenantID         uuid.UUID
@@ -55,7 +58,7 @@ type SubstitutionResponded struct {
 
 // EventName matches platform/events.SubstitutionResponded; see
 // SubstitutionRequested.EventName's comment.
-func (SubstitutionResponded) EventName() string { return "substitution.responded" }
+func (SubstitutionResponded) EventName() string { return "scheduling.substitution.responded" }
 
 // RequestSubstitution validates and creates a substitution request. Only
 // the schedule's own teacher (or an admin acting for them) may request one;
@@ -75,8 +78,17 @@ func (s *Service) RequestSubstitution(
 			return domain.ErrTeacherEditForbidden
 		}
 
-		if err := domain.ValidateNewSubstitution(requesterUserID, substituteUserID, sched.DayOfWeek, date); err != nil {
+		if err := domain.ValidateNewSubstitution(requesterUserID, substituteUserID, sched.DayOfWeek, date, s.now(ctx)); err != nil {
 			return err
+		}
+		if s.calendar != nil {
+			teaching, _, err := s.calendar.IsTeachingDay(ctx, tenantID, sched.AcademicYearID, sched.ClassID, date)
+			if err != nil {
+				return err
+			}
+			if !teaching {
+				return domain.ErrSubstitutionNotSchoolDay
+			}
 		}
 
 		if _, ok, err := s.repo.GetActiveSubstitutionForScheduleDate(ctx, tenantID, scheduleID, date); err != nil {
@@ -203,8 +215,8 @@ func (s *Service) ListSubstitutionsOutgoingWithSchedule(ctx context.Context, ten
 
 // ListSubstitutionsAll is the manage_schedules-only "all" list scope; the
 // transport layer is responsible for the permission check.
-func (s *Service) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.Substitution, error) {
-	var out []domain.Substitution
+func (s *Service) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.SubstitutionWithSchedule, error) {
+	var out []domain.SubstitutionWithSchedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		out, err = s.repo.ListSubstitutionsAll(ctx, tenantID, status)

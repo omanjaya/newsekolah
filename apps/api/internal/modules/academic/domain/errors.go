@@ -46,10 +46,13 @@ var (
 	ErrTeachingAssignmentNotFound = errors.New("teaching assignment not found")
 	ErrTeachingAssignmentExists   = errors.New("teacher already assigned to this subject and class")
 	ErrTeacherNotAssigned         = errors.New("teacher has no teaching assignment for this subject and class")
-	ErrTeacherNotActive           = errors.New("user is not an active teacher")
-	ErrSubjectNotOfferedInYear    = errors.New("subject has no offering in this academic year")
-	ErrClassYearMismatch          = errors.New("class does not belong to this academic year")
-	ErrTooManyClasses             = errors.New("at most 100 classes are allowed in one teaching assignment sync")
+	// ErrTeacherAlreadyHomeroom refuses naming a teacher homeroom teacher of
+	// a second class in the same academic year.
+	ErrTeacherAlreadyHomeroom  = errors.New("teacher is already homeroom teacher of another class this academic year")
+	ErrTeacherNotActive        = errors.New("user is not an active teacher")
+	ErrSubjectNotOfferedInYear = errors.New("subject has no offering in this academic year")
+	ErrClassYearMismatch       = errors.New("class does not belong to this academic year")
+	ErrTooManyClasses          = errors.New("at most 100 classes are allowed in one teaching assignment sync")
 
 	ErrImportRowInvalid    = errors.New("import row could not be matched to a student")
 	ErrImportHasInvalidRow = errors.New("the file has at least one invalid row; commit with partial=true to apply the valid rows and skip the rest")

@@ -84,7 +84,7 @@ export function ClassesView(): ReactElement {
       {classes.isLoading ? (
         <div
           aria-busy="true"
-          className="grid min-w-0 gap-4 md:min-h-0 md:flex-1 md:grid-cols-[minmax(0,248px)_minmax(0,1fr)]"
+          className="grid grid-cols-1 min-w-0 gap-4 md:min-h-0 md:flex-1 md:grid-cols-[minmax(0,248px)_minmax(0,1fr)]"
         >
           <SkeletonList rows={6} framed className="max-md:hidden" />
           <SkeletonList rows={8} leading framed />
@@ -99,7 +99,7 @@ export function ClassesView(): ReactElement {
           action={canManage ? addButton : undefined}
         />
       ) : (
-        <div className="grid min-w-0 gap-4 md:min-h-0 md:flex-1 md:grid-cols-[minmax(0,248px)_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 min-w-0 gap-4 md:min-h-0 md:flex-1 md:grid-cols-[minmax(0,248px)_minmax(0,1fr)]">
           <ClassNavigation items={items} selectedId={selected?.id} onSelect={setSelectedId} />
           {selected && (
             <ClassDetail

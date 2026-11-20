@@ -516,6 +516,16 @@
     "EVIDENCE_REQUIRED": "Attach evidence before submitting.",
     "EVIDENCE_TOO_LARGE": "The evidence file is larger than 6 MB. Pick a smaller file.",
     "EVIDENCE_INVALID_TYPE": "The evidence must be a JPEG or PNG image. Pick another file.",
-    "VIOLATION_INVALID": "The violation type is not valid. Pick another type."
+    "VIOLATION_INVALID": "The violation type is not valid. Pick another type.",
+    "SCHEDULE_DAY_NOT_SCHOOL_DAY": "The selected day is not an active school day. Pick another day or enable it in the school-day settings.",
+    "SCHEDULE_PERIOD_INVALID": "The selected period does not apply to that day or is a break. Pick another period.",
+    "SUBSTITUTION_WEEKDAY_MISMATCH": "The selected date does not fall on this lesson's weekday. Pick a date on the same weekday as the lesson.",
+    "SUBSTITUTION_DATE_IN_PAST": "The selected date has passed. Pick today or a later date.",
+    "SUBSTITUTION_NOT_SCHOOL_DAY": "The selected date is a holiday or has no lessons. Pick another date.",
+    "SUBSTITUTE_IS_REQUESTER": "You cannot be your own substitute. Pick another teacher.",
+    "ATTENDANCE_SESSION_NOT_STARTED": "Attendance for this date cannot be recorded yet. Record it on the day of the lesson.",
+    "ATTENDANCE_NOT_SCHOOL_DAY": "This date is a holiday or has no lessons for this class, so no attendance is recorded.",
+    "TEACHER_ALREADY_HOMEROOM": "This teacher is already homeroom teacher of another class this academic year. End that homeroom duty first.",
+    "SUBSTITUTE_NOT_TEACHER": "The substitute must be an active teacher this academic year. Pick another teacher."
   }
 }

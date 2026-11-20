@@ -8790,6 +8790,11 @@ export interface components {
             /** Format: uuid */
             end_period_id: string;
             is_substitute: boolean;
+            /**
+             * Format: uuid
+             * @description Set on one of the teacher's own lessons that an accepted substitution hands to this teacher; the substitute fills it.
+             */
+            handed_over_to_user_id?: string;
             /** Format: date-time */
             submitted_at?: string;
             /** @description Active enrollment count for the session's class. */
@@ -11587,6 +11592,8 @@ export interface components {
         MutationPolicy: {
             can_edit: boolean;
             can_delete: boolean;
+            /** @description The schedule has an attendance session or a substitution request, so it can no longer be edited or deleted (the history is kept). */
+            has_history?: boolean;
             reason?: string;
         };
         Schedule: {
@@ -11631,6 +11638,8 @@ export interface components {
             start_seq: number;
             end_seq: number;
             source: components["schemas"]["ScheduleSource"];
+            /** @description Some schedule in the block has an attendance session or a substitution request, so the block can no longer be edited or deleted. */
+            has_history?: boolean;
         };
         ScheduleWriteRequest: {
             /** Format: uuid */
@@ -15390,6 +15399,8 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["AttendanceSessionSummary"][];
+                        /** @description Name of the academic calendar event (holiday, no-school day, semester break) that cancelled lessons on this date, when one did. Its lessons are left out of data. */
+                        holiday_name?: string;
                     };
                 };
             };

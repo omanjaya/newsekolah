@@ -133,7 +133,7 @@ export function StageRow({
           {editable && <RowActionsMenu ariaLabel={t("actions", { name })} items={menu} />}
         </div>
 
-        <DisclosureContent className="grid gap-x-4 gap-y-5 px-4 pb-5 sm:grid-cols-2 md:px-5 md:pl-15">
+        <DisclosureContent className="grid grid-cols-1 gap-x-4 gap-y-5 px-4 pb-5 sm:grid-cols-2 md:px-5 md:pl-15">
           <Field label={t("labelField")} className="sm:col-span-2" disabled={!editable}>
             <Input
               value={stage.label}

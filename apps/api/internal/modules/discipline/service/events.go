@@ -17,4 +17,7 @@ type ThresholdReached struct {
 	TotalPoints     int
 }
 
-func (ThresholdReached) EventName() string { return "discipline.threshold_reached" }
+// EventName is distinct from platform/events.DisciplineThresholdReached so
+// the notification bridge's Envelope republish never reaches its own typed
+// subscriber (see scheduling's SubstitutionRequested.EventName).
+func (ThresholdReached) EventName() string { return "discipline.student_threshold_reached" }

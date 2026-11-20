@@ -150,6 +150,46 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 	return i, err
 }
 
+const fillAttendanceSessionSubstitute = `-- name: FillAttendanceSessionSubstitute :one
+update attendance_sessions set substitute_user_id = $3
+where tenant_id = $1 and id = $2 and substitute_user_id is null
+returning id, tenant_id, academic_year_id, schedule_id, date, class_id, subject_id, teacher_user_id, substitute_user_id, start_period_id, end_period_id, notes, submitted_at, submitted_by, created_at, updated_at
+`
+
+type FillAttendanceSessionSubstituteParams struct {
+	TenantID         uuid.UUID   `json:"tenant_id"`
+	ID               uuid.UUID   `json:"id"`
+	SubstituteUserID pgtype.UUID `json:"substitute_user_id"`
+}
+
+// Records the accepted substitute on a session first opened without one
+// (the original teacher's list opened it before the substitute's did), so
+// the row names who teaches it whoever opens it first. Never overwrites a
+// substitute already recorded.
+func (q *Queries) FillAttendanceSessionSubstitute(ctx context.Context, arg FillAttendanceSessionSubstituteParams) (AttendanceSession, error) {
+	row := q.db.QueryRow(ctx, fillAttendanceSessionSubstitute, arg.TenantID, arg.ID, arg.SubstituteUserID)
+	var i AttendanceSession
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AcademicYearID,
+		&i.ScheduleID,
+		&i.Date,
+		&i.ClassID,
+		&i.SubjectID,
+		&i.TeacherUserID,
+		&i.SubstituteUserID,
+		&i.StartPeriodID,
+		&i.EndPeriodID,
+		&i.Notes,
+		&i.SubmittedAt,
+		&i.SubmittedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getAttendanceSessionByID = `-- name: GetAttendanceSessionByID :one
 select id, tenant_id, academic_year_id, schedule_id, date, class_id, subject_id, teacher_user_id, substitute_user_id, start_period_id, end_period_id, notes, submitted_at, submitted_by, created_at, updated_at from attendance_sessions where tenant_id = $1 and id = $2
 `

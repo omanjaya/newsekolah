@@ -124,7 +124,7 @@ func (r *Repository) ListSubstitutionsOutgoingWithSchedule(ctx context.Context, 
 	return out, nil
 }
 
-func (r *Repository) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.Substitution, error) {
+func (r *Repository) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.SubstitutionWithSchedule, error) {
 	var statusFilter pgtype.Text
 	if status != nil {
 		statusFilter = pdatabase.Text(string(*status))
@@ -133,7 +133,15 @@ func (r *Repository) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUI
 	if err != nil {
 		return nil, err
 	}
-	return toSubstitutions(rows), nil
+	out := make([]domain.SubstitutionWithSchedule, len(rows))
+	for i, row := range rows {
+		out[i] = domain.SubstitutionWithSchedule{
+			Substitution: toSubstitution(row.SubstitutionRequest),
+			ClassID:      row.ClassID, SubjectID: row.SubjectID,
+			StartPeriodID: row.StartPeriodID, EndPeriodID: row.EndPeriodID,
+		}
+	}
+	return out, nil
 }
 
 func (r *Repository) ListEligibleSubstituteTeachers(ctx context.Context, tenantID, academicYearID, excludeUserID uuid.UUID, search string, limit, offset int) ([]service.SubstituteCandidate, error) {
@@ -154,6 +162,16 @@ func (r *Repository) ListEligibleSubstituteTeachers(ctx context.Context, tenantI
 func (r *Repository) ListAcceptedSubstitutionsForSubstituteDate(ctx context.Context, tenantID, substituteUserID uuid.UUID, date time.Time) ([]domain.Substitution, error) {
 	rows, err := r.queries(ctx).ListAcceptedSubstitutionsForSubstituteDate(ctx, db.ListAcceptedSubstitutionsForSubstituteDateParams{
 		TenantID: tenantID, SubstituteUserID: substituteUserID, Date: pdatabase.Date(date),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return toSubstitutions(rows), nil
+}
+
+func (r *Repository) ListAcceptedSubstitutionsForRequesterDate(ctx context.Context, tenantID, requesterUserID uuid.UUID, date time.Time) ([]domain.Substitution, error) {
+	rows, err := r.queries(ctx).ListAcceptedSubstitutionsForRequesterDate(ctx, db.ListAcceptedSubstitutionsForRequesterDateParams{
+		TenantID: tenantID, RequesterUserID: requesterUserID, Date: pdatabase.Date(date),
 	})
 	if err != nil {
 		return nil, err

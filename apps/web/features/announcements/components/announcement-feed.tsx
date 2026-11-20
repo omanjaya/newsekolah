@@ -147,7 +147,7 @@ export function AnnouncementFeed({
   );
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2" data-testid="announcement-feed-cards">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2" data-testid="announcement-feed-cards">
       {cells.map((cell) => (
         <div
           key={cell.key}

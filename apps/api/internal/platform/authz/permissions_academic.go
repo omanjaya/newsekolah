@@ -7,6 +7,7 @@ package authz
 const (
 	PermViewAcademicData          = "view_academic_data"
 	PermManageAcademicYears       = "manage_academic_years"
+	PermManageCalendar            = "manage_calendar"
 	PermManageEnrollments         = "manage_enrollments"
 	PermManageTeachingAssignments = "manage_teaching_assignments"
 )
@@ -14,7 +15,8 @@ const (
 func init() {
 	Catalog = append(Catalog,
 		Permission{PermViewAcademicData, "academic", "View academic years, classes, subjects, periods, and related structure"},
-		Permission{PermManageAcademicYears, "academic", "Create, update, activate, and archive academic years, terms, and the school calendar"},
+		Permission{PermManageAcademicYears, "academic", "Create, update, activate, and archive academic years and terms"},
+		Permission{PermManageCalendar, "academic", "Create, update, and delete school calendar events"},
 		Permission{PermManageEnrollments, "academic", "Assign, move, bulk-import, and promote student enrollments"},
 		Permission{PermManageTeachingAssignments, "academic", "Assign teachers to teach a subject in a class"},
 	)

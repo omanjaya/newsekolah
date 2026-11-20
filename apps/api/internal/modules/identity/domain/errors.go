@@ -47,6 +47,10 @@ var (
 	ErrInvalidScopeKind       = errors.New("invalid scope kind")
 	ErrScopeTargetNotFound    = errors.New("scope target (class or student) not found")
 	ErrAssigneeNotEligible    = errors.New("assignee must be an active user with a teacher or staff profile")
+	// ErrTeacherAlreadyHomeroom refuses making someone homeroom teacher of
+	// a second class in the same academic year: attendance, permits and
+	// the homeroom pages resolve a teacher to exactly one class.
+	ErrTeacherAlreadyHomeroom = errors.New("the teacher is already homeroom teacher of another class this academic year")
 
 	// Impersonation
 	ErrCannotImpersonateSelf       = errors.New("cannot impersonate own account")

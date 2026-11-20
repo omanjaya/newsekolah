@@ -115,7 +115,7 @@ export function TemplateEditorView({ templateId }: { templateId?: string }): Rea
   if (templateId && query.isLoading) {
     return (
       <EditorPage title={<Skeleton className="h-8 w-56" />}>
-        <div aria-busy="true" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+        <div aria-busy="true" className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
           <SkeletonForm fields={4} actions={false} />
           <SkeletonForm fields={2} actions={false} className="hidden lg:flex" />
         </div>
@@ -320,7 +320,10 @@ function TemplateEditorForm({ template }: { template?: DocumentTemplate }): Reac
         />
       }
     >
-      <div ref={fieldsRef} className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
+      <div
+        ref={fieldsRef}
+        className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]"
+      >
         <div className="flex min-w-0 flex-col gap-6">
           {error && <FormError>{error}</FormError>}
           <FormSection variant="card" title={t("detailsTitle")}>
