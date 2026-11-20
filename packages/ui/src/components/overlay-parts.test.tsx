@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Dialog, DialogContent, DialogNotice } from "./dialog.js";
 import { Sheet, SheetContent, SheetNotice } from "./sheet.js";
@@ -54,5 +54,50 @@ describe("DialogNotice", () => {
       </Dialog>,
     );
     expect(screen.getByTestId("notice")).toHaveClass("empty:hidden");
+  });
+
+  describe("reserving its height as top scroll padding", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    // Browsers ignore sticky elements when they scroll a focused control
+    // into view, so tabbing back up could leave a row action under it.
+    it("publishes its height to the body, whose rule styles.css keys on a non-empty notice", () => {
+      vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (
+        this: HTMLElement,
+      ) {
+        return this.hasAttribute("data-dialog-notice") ? 72 : 0;
+      });
+      const { unmount } = render(
+        <Sheet open>
+          <SheetContent title="Katalog">
+            <SheetNotice>
+              <p>Dinonaktifkan</p>
+            </SheetNotice>
+            <p>Baris</p>
+          </SheetContent>
+        </Sheet>,
+      );
+      const body = screen.getByText("Baris").parentElement;
+      expect(body?.style.getPropertyValue("--dialog-notice-h")).toBe("72px");
+      // The selector of the `dialog-body` rule that sets scroll-padding-top.
+      expect(body?.matches(":has(> [data-dialog-notice]:not(:empty))")).toBe(true);
+      unmount();
+      expect(body?.style.getPropertyValue("--dialog-notice-h")).toBe("");
+    });
+
+    it("leaves the body's top scroll padding alone while empty", () => {
+      render(
+        <Dialog open>
+          <DialogContent title="Katalog">
+            <DialogNotice />
+            <p>Baris</p>
+          </DialogContent>
+        </Dialog>,
+      );
+      const body = screen.getByText("Baris").parentElement;
+      expect(body?.matches(":has(> [data-dialog-notice]:not(:empty))")).toBe(false);
+    });
   });
 });

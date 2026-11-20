@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useRef,
   type ComponentPropsWithoutRef,
   type ForwardedRef,
@@ -250,12 +251,42 @@ export const DialogFooter = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<
  * Place it as a direct child of the body (a fragment's first element):
  * sticky positioning holds only within its parent, so a wrapper would let
  * it scroll away with the wrapper. Empty, it takes no space.
+ *
+ * It publishes its height to the body as `--dialog-notice-h`, which
+ * `dialog-body` (styles.css) reserves as top scroll padding while the
+ * notice has content: browsers ignore sticky elements when they scroll a
+ * focused control into view, so tabbing back up the rows could otherwise
+ * leave the focused one under the opaque notice (WCAG 2.4.11).
  */
 export const DialogNotice = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<"div">>(
   function DialogNotice({ className, ...props }, ref) {
+    const local = useRef<HTMLDivElement | null>(null);
+    const setRef = useCallback(
+      (node: HTMLDivElement | null) => {
+        local.current = node;
+        assignRef(ref, node);
+      },
+      [ref],
+    );
+    useEffect(() => {
+      const node = local.current;
+      const scroller = node?.parentElement;
+      if (!node || !scroller) return;
+      const publish = () => {
+        scroller.style.setProperty("--dialog-notice-h", `${node.offsetHeight}px`);
+      };
+      publish();
+      // Also fires when the notice goes from empty (not rendered) to shown.
+      const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(publish);
+      observer?.observe(node);
+      return () => {
+        observer?.disconnect();
+        scroller.style.removeProperty("--dialog-notice-h");
+      };
+    }, []);
     return (
       <div
-        ref={ref}
+        ref={setRef}
         aria-live="polite"
         data-dialog-notice=""
         className={cn(
