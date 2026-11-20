@@ -6,10 +6,10 @@
   },
   "dueBadge": {
     "dueOn": "Due {date}",
-    "overdue": "{days} calendar days overdue (due {date})",
-    "overdueShort": "{days} calendar days overdue",
-    "overdueWorking": "{days} working days overdue (due {date})",
-    "overdueWorkingShort": "{days} working days overdue",
+    "overdue": "{days, plural, one {# calendar day overdue} other {# calendar days overdue}} (due {date})",
+    "overdueShort": "{days, plural, one {# calendar day overdue} other {# calendar days overdue}}",
+    "overdueWorking": "{days, plural, one {# working day overdue} other {# working days overdue}} (due {date})",
+    "overdueWorkingShort": "{days, plural, one {# working day overdue} other {# working days overdue}}",
     "pastDue": "Past due"
   },
   "dashboard": {
