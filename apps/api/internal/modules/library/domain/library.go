@@ -306,8 +306,11 @@ type Loan struct {
 	TitleAuthor string
 }
 
-func (l Loan) IsOverdue(asOf time.Time) bool {
-	return l.Status == LoanActive && asOf.After(l.DueOn)
+// IsOverdue reports whether an active loan is past its due date on today,
+// the school's calendar day (SchoolDay). Comparing an instant instead made
+// a loan in a UTC+8 school overdue from 08:00 on its own due date.
+func (l Loan) IsOverdue(today time.Time) bool {
+	return l.Status == LoanActive && today.After(l.DueOn)
 }
 
 // ReservationStatus is the state of one queued hold on a title.

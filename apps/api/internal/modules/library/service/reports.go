@@ -92,34 +92,45 @@ type OverdueMemberSummary struct {
 }
 
 // OverdueMembers is the overdue-members report: every member with at least
-// one active loan past its due date, with the fine each loan would carry
-// if returned today.
+// one active loan past its due date, with the fine those loans would be
+// charged if returned today. The fine is projected with the very rule a
+// return applies (Service.lateOutcome): working days late, priced by the
+// member's type, and zero while the policy keeps currency fines off (a
+// late return then suspends or warns instead).
 func (s *Service) OverdueMembers(ctx context.Context, tenantID uuid.UUID) ([]OverdueMemberSummary, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	now := clock.Now(ctx, s.clock)
 	var out []OverdueMemberSummary
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		today := s.schoolToday(ctx, tenantID, clock.Now(ctx, s.clock))
 		policy, err := s.loadPolicy(ctx, tenantID)
 		if err != nil {
 			return err
 		}
-		overdue, err := s.repo.ListOverdueLoans(ctx, tenantID, now)
+		overdue, err := s.repo.ListOverdueLoans(ctx, tenantID, today)
 		if err != nil {
 			return err
 		}
 		byMember := make(map[uuid.UUID]*OverdueMemberSummary)
+		rules := make(map[uuid.UUID]domain.MemberType)
 		order := make([]uuid.UUID, 0)
 		for _, loan := range overdue {
 			summary, ok := byMember[loan.MemberUserID]
 			if !ok {
 				summary = &OverdueMemberSummary{MemberUserID: loan.MemberUserID}
 				byMember[loan.MemberUserID] = summary
+				rules[loan.MemberUserID] = s.memberLateRule(ctx, tenantID, loan.MemberUserID, policy)
 				order = append(order, loan.MemberUserID)
 			}
 			summary.LoanCount++
-			summary.TotalFine += domain.CalculateFine(policy, loan.DueOn, now)
+			_, outcome, err := s.lateOutcome(ctx, tenantID, loan, policy, today, rules[loan.MemberUserID])
+			if err != nil {
+				return err
+			}
+			if outcome.Penalty == domain.PenaltyFine {
+				summary.TotalFine += outcome.FineAmount
+			}
 		}
 		out = make([]OverdueMemberSummary, len(order))
 		for i, id := range order {
@@ -392,7 +403,7 @@ func (s *Service) CatalogueSummary(ctx context.Context, tenantID uuid.UUID, from
 		if err != nil {
 			return err
 		}
-		overdue, err := s.repo.CountOverdueNow(ctx, tenantID, clock.Now(ctx, s.clock))
+		overdue, err := s.repo.CountOverdueNow(ctx, tenantID, s.schoolToday(ctx, tenantID, clock.Now(ctx, s.clock)))
 		if err != nil {
 			return err
 		}

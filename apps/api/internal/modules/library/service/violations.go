@@ -49,7 +49,8 @@ func (s *Service) CreateViolation(ctx context.Context, tenantID uuid.UUID, in Cr
 			}
 		}
 		if in.Penalty == domain.PenaltySuspend && in.SuspendDays > 0 {
-			suspendedUntil := nullableDatePtr(clock.Now(ctx, s.clock).AddDate(0, 0, in.SuspendDays))
+			today := s.schoolToday(ctx, tenantID, clock.Now(ctx, s.clock))
+			suspendedUntil := nullableDatePtr(today.AddDate(0, 0, in.SuspendDays))
 			_, _, err = s.repo.UpdateMemberStatus(ctx, tenantID, in.MemberUserID, domain.MemberSuspended, suspendedUntil)
 		}
 		return err
@@ -112,7 +113,10 @@ func (s *Service) SettleViolation(ctx context.Context, tenantID, id uuid.UUID, s
 		if err != nil || !memberFound || member.Status != domain.MemberSuspended {
 			return err
 		}
-		if member.SuspendedUntil != nil && now.Before(*member.SuspendedUntil) {
+		// A suspension runs through its last day (EligibleToBorrow), so it
+		// is still running while that day has not passed on the school's
+		// calendar.
+		if member.SuspendedUntil != nil && !s.schoolToday(ctx, tenantID, now).After(*member.SuspendedUntil) {
 			return nil
 		}
 		remaining, err := s.repo.CountUnpaidViolations(ctx, tenantID, member.UserID)
