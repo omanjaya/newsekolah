@@ -96,6 +96,7 @@ function permit(
     subject_user_id: "student-1",
     opened_at: "2026-11-18T02:00:00Z",
     destination: "Puskesmas",
+    end_period_id: "period-6",
     return_required: true,
     ...extra,
   };

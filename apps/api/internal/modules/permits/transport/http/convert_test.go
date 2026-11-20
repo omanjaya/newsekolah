@@ -7,9 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
 
@@ -64,4 +66,20 @@ func TestToAPITokenCountsDownTheBusinessClockTimeLeft(t *testing.T) {
 	})
 	require.Equal(t, 5400, out.ExpiresInSeconds)
 	require.True(t, out.ExpiresAt.Equal(periodEnd))
+}
+
+// The student's own permit list carries the permit's last lesson, so the
+// scan screen can tell a permit whose lessons are over (every stage scan
+// and the gate QR then refused) from one still waiting on a stage or the
+// gate, without reading each permit's detail.
+func TestToAPIMyExitPermitCarriesEndPeriod(t *testing.T) {
+	endPeriod := uuid.New()
+	out := toAPIMyExitPermit(service.MyExitPermit{
+		InstanceWithDefinition: service.InstanceWithDefinition{
+			Instance: domain.Instance{ID: uuid.New(), Kind: domain.KindExitPermit, Status: domain.StatusApproved},
+		},
+		Permit: domain.ExitPermit{Destination: "Apotek", EndPeriodID: endPeriod},
+	})
+	require.Equal(t, endPeriod, out.EndPeriodId)
+	require.Equal(t, "Apotek", out.Destination)
 }

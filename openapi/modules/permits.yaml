@@ -1179,14 +1179,17 @@ components:
     MyExitPermit:
       description: >-
         One of the student's own exit permits in their history: the workflow
-        instance plus where they went and when they passed the gate, so a
-        row can say so without opening the permit.
+        instance plus where they went, its last lesson and when they passed
+        the gate, so a row can say so without opening the permit.
       allOf:
         - $ref: "#/components/schemas/WorkflowInstance"
         - type: object
-          required: [destination, return_required]
+          required: [destination, end_period_id, return_required]
           properties:
             destination: { type: string }
+            # The permit's last lesson: once it ends the API refuses the
+            # permit's stage scans and gate QR (EXIT_PERMIT_WINDOW_CLOSED).
+            end_period_id: { type: string, format: uuid }
             exited_at: { type: string, format: date-time }
             return_required: { type: boolean }
             expected_return_at: { type: string, format: date-time }
