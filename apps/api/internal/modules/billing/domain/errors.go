@@ -12,6 +12,7 @@ var (
 	ErrBillAlreadyPaid           = errors.New("bill is already fully paid")
 	ErrPaymentNotFound           = errors.New("payment not found")
 	ErrPaymentAlreadyVoided      = errors.New("payment already voided")
+	ErrReceiptRevoked            = errors.New("receipt revoked: its payment was voided")
 	ErrPaymentExceedsOutstanding = errors.New("payment exceeds the bill's outstanding balance")
 	ErrModuleDisabled            = errors.New("billing module is disabled for this tenant")
 )

@@ -68,6 +68,9 @@ func TestVoidedPaymentReceiptVerifiesAsRevoked(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, doc.RevokedAt.Valid, "voiding the payment revokes its receipt")
+
+	_, err = billingModule.Service.ReceiptURL(ctx, fx.tenantID, payment.ID)
+	require.ErrorIs(t, err, billingdomain.ErrReceiptRevoked, "a voided payment's receipt link is refused")
 }
 
 // TestVerifyDocumentRevokedAndCaseInsensitive covers the public verify

@@ -322,6 +322,7 @@
     "BILL_ALREADY_PAID": "Tagihan ini sudah lunas",
     "PAYMENT_NOT_FOUND": "Pembayaran tidak ditemukan",
     "PAYMENT_ALREADY_VOIDED": "Pembayaran ini sudah dibatalkan",
+    "RECEIPT_REVOKED": "Kuitansi ini tidak berlaku lagi karena pembayarannya sudah dibatalkan",
     "PAYMENT_EXCEEDS_OUTSTANDING": "Jumlah pembayaran melebihi sisa tagihan",
     "MENTOR_GROUP_NOT_FOUND": "Kelompok mentoring tidak ditemukan",
     "MENTOR_GROUP_FULL": "Kelompok ini sudah mencapai batas jumlah anggota",

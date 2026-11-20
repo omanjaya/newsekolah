@@ -202,7 +202,10 @@ func (s *Service) VoidPayment(ctx context.Context, tenantID, paymentID, actorUse
 	return out, err
 }
 
-// ReceiptURL presigns the stored receipt PDF for a payment.
+// ReceiptURL presigns the stored receipt PDF for a payment. A voided
+// payment's receipt is refused with ErrReceiptRevoked: the stored PDF
+// carries no cancellation mark, so handing it out again would pass it
+// off as valid to anyone who does not scan its verification code.
 func (s *Service) ReceiptURL(ctx context.Context, tenantID, paymentID uuid.UUID) (string, error) {
 	if err := s.guard(ctx, tenantID); err != nil {
 		return "", err
@@ -221,6 +224,9 @@ func (s *Service) ReceiptURL(ctx context.Context, tenantID, paymentID uuid.UUID)
 	})
 	if err != nil {
 		return "", err
+	}
+	if payment.IsVoided() {
+		return "", domain.ErrReceiptRevoked
 	}
 	if !payment.ReceiptAssetID.Valid || s.docs == nil {
 		return "", domain.ErrPaymentNotFound
