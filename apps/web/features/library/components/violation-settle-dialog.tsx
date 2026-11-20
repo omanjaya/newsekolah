@@ -23,12 +23,19 @@ export function ViolationSettleDialog({
   memberName,
   onOpenChange,
   onSettled,
+  onAlreadySettled,
 }: {
   violation: LibraryViolation | null;
   status: "paid" | "waived" | null;
   memberName: string;
   onOpenChange: (open: boolean) => void;
   onSettled: (status: "paid" | "waived") => void;
+  /**
+   * The server says the violation was settled already: a second click of
+   * a double click, or another librarian. Nothing is left to do here, so
+   * the dialog closes rather than reporting a failure.
+   */
+  onAlreadySettled: () => void;
 }): ReactElement {
   const t = useTranslations("app.library.violations.settle");
   const tKinds = useTranslations("app.library.violations.kinds");
@@ -77,6 +84,10 @@ export function ViolationSettleDialog({
               onSettled(status);
             },
             onError: (err) => {
+              if (err instanceof ApiError && err.code === "LIBRARY_VIOLATION_ALREADY_SETTLED") {
+                onAlreadySettled();
+                return;
+              }
               setError(
                 err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"),
               );

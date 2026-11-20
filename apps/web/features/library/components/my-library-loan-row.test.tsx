@@ -98,4 +98,30 @@ describe("MyLibraryLoanRow", () => {
 
     expect(screen.getByText("renewBlockedOverdue")).toBeInTheDocument();
   });
+
+  // A teacher's type allows 2 renewals; the button follows that, not the
+  // school-wide 1, and turns off with a reason once both are used.
+  it("offers renewing until the member type's limit, then says why it cannot", () => {
+    const { rerender } = render(
+      <MyLibraryLoanRow
+        loan={loan({ renewal_count: 1 })}
+        today="2026-09-15"
+        locale="id"
+        maxRenewals={2}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "renewAction" })).toBeEnabled();
+    expect(screen.queryByText("renewBlockedLimit")).not.toBeInTheDocument();
+
+    rerender(
+      <MyLibraryLoanRow
+        loan={loan({ renewal_count: 2 })}
+        today="2026-09-15"
+        locale="id"
+        maxRenewals={2}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "renewAction" })).toBeDisabled();
+    expect(screen.getByText("renewBlockedLimit")).toBeInTheDocument();
+  });
 });

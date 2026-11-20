@@ -304,10 +304,17 @@ type Loan struct {
 	// them zero-valued.
 	TitleName   string
 	TitleAuthor string
+	// LateDays is the working days late Service.Return charged the return
+	// for (weekends the library closes and holidays not counted). Only the
+	// loan Return hands back carries it; every other read leaves it zero.
+	LateDays int
 }
 
-func (l Loan) IsOverdue(asOf time.Time) bool {
-	return l.Status == LoanActive && asOf.After(l.DueOn)
+// IsOverdue reports whether an active loan is past its due date on today,
+// the school's calendar day (SchoolDay). Comparing an instant instead made
+// a loan in a UTC+8 school overdue from 08:00 on its own due date.
+func (l Loan) IsOverdue(today time.Time) bool {
+	return l.Status == LoanActive && today.After(l.DueOn)
 }
 
 // ReservationStatus is the state of one queued hold on a title.

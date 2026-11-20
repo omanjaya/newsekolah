@@ -61,7 +61,7 @@ func (h *LibraryHandler) ReturnLibraryLoan(ctx context.Context, request api.Retu
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return api.ReturnLibraryLoan200JSONResponse(toAPILoan(loan)), nil
+	return api.ReturnLibraryLoan200JSONResponse(toAPIReturnedLoan(loan)), nil
 }
 
 func (h *LibraryHandler) ReturnLibraryLoanByBarcode(ctx context.Context, request api.ReturnLibraryLoanByBarcodeRequestObject) (api.ReturnLibraryLoanByBarcodeResponseObject, error) {
@@ -75,7 +75,7 @@ func (h *LibraryHandler) ReturnLibraryLoanByBarcode(ctx context.Context, request
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return api.ReturnLibraryLoanByBarcode200JSONResponse(toAPILoan(loan)), nil
+	return api.ReturnLibraryLoanByBarcode200JSONResponse(toAPIReturnedLoan(loan)), nil
 }
 
 func (h *LibraryHandler) RenewLibraryLoan(ctx context.Context, request api.RenewLibraryLoanRequestObject) (api.RenewLibraryLoanResponseObject, error) {

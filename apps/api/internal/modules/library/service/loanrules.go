@@ -38,7 +38,7 @@ func (s *Service) ListActiveLoanRules(ctx context.Context, tenantID uuid.UUID) (
 	var rules []domain.LoanRule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		rules, err = s.repo.ListLoanRulesActive(ctx, tenantID, clock.Now(ctx, s.clock))
+		rules, err = s.repo.ListLoanRulesActive(ctx, tenantID, s.schoolToday(ctx, tenantID, clock.Now(ctx, s.clock)))
 		return err
 	})
 	return rules, err

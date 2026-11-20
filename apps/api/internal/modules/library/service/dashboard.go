@@ -192,6 +192,13 @@ func (s *Service) tenantLocation(ctx context.Context, tenantID uuid.UUID) *time.
 	return loc
 }
 
+// schoolToday is the school's calendar day at instant now (in practice
+// clock.Now, so a simulated time applies), as domain.SchoolDay builds it:
+// the day every circulation date rule is decided on.
+func (s *Service) schoolToday(ctx context.Context, tenantID uuid.UUID, now time.Time) time.Time {
+	return domain.SchoolDay(now, s.tenantLocation(ctx, tenantID))
+}
+
 // mergeSeries combines the loans and returns series into one point per
 // calendar day from first to last inclusive. A day with no loans or
 // returns is absent from the query results and comes out as zero, so the

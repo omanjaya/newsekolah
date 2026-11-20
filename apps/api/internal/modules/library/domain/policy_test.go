@@ -18,33 +18,44 @@ func day(s string) time.Time {
 	return t
 }
 
-func TestCalculateFine(t *testing.T) {
+func TestSchoolDayReadsTheInstantInTheSchoolZone(t *testing.T) {
+	wita, err := time.LoadLocation("Asia/Makassar")
+	require.NoError(t, err)
+
+	// 07:30 WITA on Monday 14 Dec is still Sunday 13 Dec in UTC.
+	require.Equal(t, day("2026-12-14"), domain.SchoolDay(time.Date(2026, 12, 13, 23, 30, 0, 0, time.UTC), wita))
+	require.Equal(t, day("2026-12-14"), domain.SchoolDay(time.Date(2026, 12, 14, 1, 0, 0, 0, time.UTC), wita))
+	require.Equal(t, day("2026-12-13"), domain.SchoolDay(time.Date(2026, 12, 13, 23, 30, 0, 0, time.UTC), time.UTC))
+	require.Equal(t, day("2026-12-13"), domain.SchoolDay(time.Date(2026, 12, 13, 23, 30, 0, 0, time.UTC), nil))
+}
+
+func TestRenewalLimitsFollowTheMemberType(t *testing.T) {
+	policy := domain.DefaultPolicy()
+	policy.MaxRenewals = 1
+	policy.RenewalDays = 7
+
+	teachers := domain.MemberType{MaxRenewals: 2, RenewalDays: 14}
+	maxRenewals, renewalDays := domain.RenewalLimits(teachers, true, policy)
+	require.Equal(t, 2, maxRenewals, "the type's own limit wins over the tenant policy")
+	require.Equal(t, 14, renewalDays)
+
+	never := domain.MemberType{MaxRenewals: 0, RenewalDays: 7}
+	maxRenewals, _ = domain.RenewalLimits(never, true, policy)
+	require.Zero(t, maxRenewals, "0 renewals on a type means none, not unset")
+
+	maxRenewals, renewalDays = domain.RenewalLimits(domain.MemberType{}, false, policy)
+	require.Equal(t, 1, maxRenewals, "a member with no type falls back to the policy")
+	require.Equal(t, 7, renewalDays)
+}
+
+func TestPolicyLateRuleChargesThePolicyFinePerDay(t *testing.T) {
 	policy := domain.DefaultPolicy()
 	policy.FinePerDay = 1000
 
-	tests := []struct {
-		name       string
-		dueOn      time.Time
-		returnedOn time.Time
-		want       int
-	}{
-		{"returned on the due date", day("2026-09-10"), day("2026-09-10"), 0},
-		{"returned early", day("2026-09-10"), day("2026-09-08"), 0},
-		{"one day late", day("2026-09-10"), day("2026-09-11"), 1000},
-		{"five days late", day("2026-09-10"), day("2026-09-15"), 5000},
-		{"time of day is ignored, only the calendar day counts", day("2026-09-10").Add(20 * time.Hour), day("2026-09-11").Add(1 * time.Hour), 1000},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, domain.CalculateFine(policy, tt.dueOn, tt.returnedOn))
-		})
-	}
-}
+	outcome := domain.ComputeLateOutcome(3, true, domain.PolicyLateRule(policy))
 
-func TestCalculateFineZeroWhenNoRate(t *testing.T) {
-	policy := domain.DefaultPolicy()
-	policy.FinePerDay = 0
-	require.Equal(t, 0, domain.CalculateFine(policy, day("2026-09-10"), day("2026-09-20")))
+	require.Equal(t, domain.PenaltyFine, outcome.Penalty)
+	require.Equal(t, 3000, outcome.FineAmount)
 }
 
 func TestCanBorrowRejectsCopyAlreadyOnLoan(t *testing.T) {
@@ -75,33 +86,49 @@ func TestCanBorrowRejectsAtLoanLimit(t *testing.T) {
 }
 
 func TestCanRenewRules(t *testing.T) {
-	policy := domain.DefaultPolicy()
-	policy.MaxRenewals = 1
+	maxRenewals := 1
 	now := day("2026-09-10")
 
 	t.Run("ok within limits", func(t *testing.T) {
 		loan := domain.Loan{Status: domain.LoanActive, DueOn: day("2026-09-12"), RenewalCount: 0}
-		require.NoError(t, domain.CanRenew(loan, policy, now, false))
+		require.NoError(t, domain.CanRenew(loan, maxRenewals, now, false))
 	})
 
 	t.Run("rejects at renewal limit", func(t *testing.T) {
 		loan := domain.Loan{Status: domain.LoanActive, DueOn: day("2026-09-12"), RenewalCount: 1}
-		require.ErrorIs(t, domain.CanRenew(loan, policy, now, false), domain.ErrRenewalLimitReached)
+		require.ErrorIs(t, domain.CanRenew(loan, maxRenewals, now, false), domain.ErrRenewalLimitReached)
 	})
 
 	t.Run("rejects an overdue loan", func(t *testing.T) {
 		loan := domain.Loan{Status: domain.LoanActive, DueOn: day("2026-09-05"), RenewalCount: 0}
-		require.ErrorIs(t, domain.CanRenew(loan, policy, now, false), domain.ErrRenewalBlockedOverdue)
+		require.ErrorIs(t, domain.CanRenew(loan, maxRenewals, now, false), domain.ErrRenewalBlockedOverdue)
 	})
 
 	t.Run("rejects when a reservation is waiting", func(t *testing.T) {
 		loan := domain.Loan{Status: domain.LoanActive, DueOn: day("2026-09-12"), RenewalCount: 0}
-		require.ErrorIs(t, domain.CanRenew(loan, policy, now, true), domain.ErrRenewalBlockedReserved)
+		require.ErrorIs(t, domain.CanRenew(loan, maxRenewals, now, true), domain.ErrRenewalBlockedReserved)
+	})
+
+	t.Run("renews on the due date itself, and refuses the day after", func(t *testing.T) {
+		loan := domain.Loan{Status: domain.LoanActive, DueOn: day("2026-12-15"), RenewalCount: 0}
+		wita, err := time.LoadLocation("Asia/Makassar")
+		require.NoError(t, err)
+		// 09:00 WITA on the due date is 01:00Z: an instant past the due
+		// date's midnight UTC, but still the due date at school.
+		today := domain.SchoolDay(time.Date(2026, 12, 15, 1, 0, 0, 0, time.UTC), wita)
+		require.NoError(t, domain.CanRenew(loan, maxRenewals, today, false))
+		require.ErrorIs(t, domain.CanRenew(loan, maxRenewals, day("2026-12-16"), false), domain.ErrRenewalBlockedOverdue)
+	})
+
+	t.Run("allows a second renewal when the limit is 2", func(t *testing.T) {
+		loan := domain.Loan{Status: domain.LoanActive, DueOn: day("2026-09-12"), RenewalCount: 1}
+		require.NoError(t, domain.CanRenew(loan, 2, now, false))
+		require.ErrorIs(t, domain.CanRenew(loan, 0, now, false), domain.ErrRenewalLimitReached)
 	})
 
 	t.Run("rejects an already returned loan", func(t *testing.T) {
 		loan := domain.Loan{Status: domain.LoanReturned, DueOn: day("2026-09-12")}
-		require.ErrorIs(t, domain.CanRenew(loan, policy, now, false), domain.ErrLoanAlreadyReturned)
+		require.ErrorIs(t, domain.CanRenew(loan, maxRenewals, now, false), domain.ErrLoanAlreadyReturned)
 	})
 }
 

@@ -48,6 +48,23 @@ export function addBasketItem(items: DeskBasketItem[], item: DeskBasketItem): De
   return [item, ...items];
 }
 
+/**
+ * Records a result the server has already saved (a return or a renewal,
+ * which act on each scan at once). Unlike `addBasketItem` the newest
+ * result always wins: a copy scanned again replaces its old row and moves
+ * to the front, so the row and the result banner (the first row) never
+ * keep a stale "refused" after a renewal that went through. A saved
+ * result is never dropped for space either; a full receipt lets go of its
+ * oldest row instead.
+ */
+export function recordBasketResult(
+  items: DeskBasketItem[],
+  item: DeskBasketItem,
+): DeskBasketItem[] {
+  const others = items.filter((existing) => existing.barcode !== item.barcode);
+  return [item, ...others].slice(0, MAX_BASKET_SIZE);
+}
+
 /** Removes the most recently scanned item still pending -- "undo last scan". A confirmed result is never undone this way. */
 export function undoLastBasketItem(items: DeskBasketItem[]): DeskBasketItem[] {
   const index = items.findIndex((item) => item.state === "pending" || item.state === "blocked");

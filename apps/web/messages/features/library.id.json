@@ -279,7 +279,8 @@
       },
       "borrowedDue": "Dipinjam, jatuh tempo {date}",
       "returnedOnTime": "Dikembalikan tepat waktu",
-      "returnedLate": "Terlambat {days} hari, denda Rp{amount}",
+      "returnedLate": "Terlambat {days} hari kerja",
+      "returnedLateFine": "Terlambat {days} hari kerja, denda {amount}",
       "renewedUntil": "Diperpanjang sampai {date}",
       "heading": {
         "borrow": "Daftar pinjam",
@@ -551,8 +552,8 @@
     "renewalValue": "{count}x, tambah {days} hari",
     "fineNone": "Tanpa denda",
     "fineValue": {
-      "constant": "{amount} per hari",
-      "per_tenor": "{amount} per {tenor} hari"
+      "constant": "{amount} sekali per keterlambatan",
+      "per_tenor": "{tenor, plural, =1 {{amount} per hari kerja} other {{amount} per # hari kerja}}"
     },
     "form": {
       "name": "Nama jenis anggota",
@@ -562,8 +563,12 @@
       "maxRenewals": "Batas perpanjangan",
       "fineType": "Tipe denda",
       "fineTypeOptions": {
-        "constant": "Tetap per hari",
-        "per_tenor": "Per periode"
+        "constant": "Tetap, sekali per keterlambatan",
+        "per_tenor": "Per periode keterlambatan"
+      },
+      "fineTypeHint": {
+        "constant": "Nominal denda dikenakan sekali untuk setiap pengembalian terlambat, berapa pun lamanya.",
+        "per_tenor": "Nominal denda dikenakan untuk setiap periode keterlambatan, dihitung dalam hari kerja. Isi panjang periode 1 hari untuk denda per hari."
       },
       "finePerTenor": "Nominal denda (Rp)",
       "tenorDays": "Panjang periode denda (hari)",
@@ -640,7 +645,8 @@
       "confirmWaivedBodyAmount": "Denda {amount} untuk pelanggaran {kind} milik {member} akan dibebaskan dan tidak bisa ditagih lagi. Anggota yang sedang ditangguhkan akan aktif kembali begitu semua pelanggarannya selesai.",
       "confirmWaivedBody": "Pelanggaran {kind} milik {member} akan dibebaskan. Anggota yang sedang ditangguhkan akan aktif kembali begitu semua pelanggarannya selesai.",
       "settledPaid": "Pelanggaran ditandai lunas",
-      "settledWaived": "Pelanggaran dibebaskan"
+      "settledWaived": "Pelanggaran dibebaskan",
+      "alreadySettled": "Pelanggaran ini sudah diselesaikan. Statusnya kini tampil di daftar."
     },
     "unknownMember": "Anggota tidak dikenali",
     "noMatchTitle": "Tidak ada pelanggaran yang cocok",
@@ -1275,10 +1281,11 @@
       "title": "Anggota terlambat",
       "unknownMember": "Anggota tidak dikenali",
       "emptyTitle": "Tidak ada anggota terlambat",
+      "noFine": "Tanpa denda",
       "columns": {
         "member": "Anggota",
         "loanCount": "Jumlah pinjaman",
-        "fine": "Denda"
+        "fine": "Perkiraan denda"
       }
     },
     "mostBorrowed": {
@@ -1630,6 +1637,7 @@
     "renewAction": "Perpanjang",
     "renewed": "Diperpanjang sampai {date}",
     "renewBlockedOverdue": "Tidak bisa diperpanjang karena sudah lewat jatuh tempo. Kembalikan bukunya ke perpustakaan.",
+    "renewBlockedLimit": "Sudah diperpanjang sebanyak batas yang diizinkan. Kembalikan bukunya sebelum jatuh tempo.",
     "titleUnavailable": "Judul tidak tersedia",
     "browseCatalogue": "Jelajahi katalog",
     "unpaidFinesTotal": "Denda belum dibayar: {amount}",

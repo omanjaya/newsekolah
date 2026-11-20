@@ -145,7 +145,13 @@ export function MyLibraryView(): ReactElement {
           <SectionHeader title={t("activeLoans")} count={activeLoans.length} />
           <ul className="flex flex-col gap-3" data-testid="my-library-loan-cards">
             {activeLoans.map((loan) => (
-              <MyLibraryLoanRow key={loan.id} loan={loan} today={today} locale={locale} />
+              <MyLibraryLoanRow
+                key={loan.id}
+                loan={loan}
+                today={today}
+                locale={locale}
+                maxRenewals={data.max_renewals}
+              />
             ))}
           </ul>
         </section>

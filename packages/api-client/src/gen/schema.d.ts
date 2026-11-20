@@ -10752,6 +10752,8 @@ export interface components {
             reservations: components["schemas"]["LibraryReservation"][];
             violations: components["schemas"]["LibraryViolation"][];
             booking_enabled?: boolean;
+            /** @description How many times one of the member's loans may be renewed: their member type's limit, or the tenant policy's for a member with no type. A loan whose renewal_count has reached it cannot be renewed again. */
+            max_renewals?: number;
         };
         LibraryOpacCopy: {
             barcode: string;
@@ -11050,6 +11052,8 @@ export interface components {
             /** @description The title's name, present only on GET /v1/library/me (active_loans, history): a member holding only view_own_library_loans cannot call GET /v1/library/titles/{titleId} (view_library) themselves. */
             title_name?: string;
             title_author?: string;
+            /** @description The working days late the return was charged for (closed weekend days and holidays not counted), present only on the responses of POST /v1/library/loans/{loanId}/return and /v1/library/loans/return-by-barcode; 0 is an on-time return. */
+            late_days?: number;
         };
         /** @enum {string} */
         LibraryReservationStatus: "waiting" | "ready" | "fulfilled" | "cancelled" | "expired";

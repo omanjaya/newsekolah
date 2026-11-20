@@ -121,7 +121,10 @@ func (s *Service) borrowOneWithQuota(ctx context.Context, tenantID uuid.UUID, in
 		return domain.Loan{}, domain.ErrCopyNotFound
 	}
 
-	member, err := s.resolveOrRegisterMember(ctx, tenantID, in.MemberUserID, policy, now)
+	// Every date rule below (loan rules, validity, the due date) is decided
+	// on the school's calendar day; now itself is only the loan's instant.
+	today := s.schoolToday(ctx, tenantID, now)
+	member, err := s.resolveOrRegisterMember(ctx, tenantID, in.MemberUserID, policy, today)
 	if err != nil {
 		return domain.Loan{}, err
 	}
@@ -140,7 +143,7 @@ func (s *Service) borrowOneWithQuota(ctx context.Context, tenantID uuid.UUID, in
 		return domain.Loan{}, err
 	}
 
-	limits, err := s.effectiveLimits(ctx, tenantID, member, policy, now)
+	limits, err := s.effectiveLimits(ctx, tenantID, member, policy, today)
 	if err != nil {
 		return domain.Loan{}, err
 	}
@@ -148,7 +151,7 @@ func (s *Service) borrowOneWithQuota(ctx context.Context, tenantID uuid.UUID, in
 		return domain.Loan{}, domain.ErrLoansClosed
 	}
 
-	if err := member.EligibleToBorrow(now); err != nil {
+	if err := member.EligibleToBorrow(today); err != nil {
 		return domain.Loan{}, err
 	}
 
@@ -172,11 +175,11 @@ func (s *Service) borrowOneWithQuota(ctx context.Context, tenantID uuid.UUID, in
 		}
 	}
 
-	wdr, err := s.workingDayRule(ctx, tenantID, policy, now, limits.MaxLoanDays+14)
+	wdr, err := s.workingDayRule(ctx, tenantID, policy, today, limits.MaxLoanDays+14)
 	if err != nil {
 		return domain.Loan{}, err
 	}
-	dueOn := wdr.AddWorkingDays(now, limits.MaxLoanDays)
+	dueOn := wdr.AddWorkingDays(today, limits.MaxLoanDays)
 
 	channel := in.Channel
 	if channel == "" {
@@ -207,12 +210,12 @@ func (s *Service) borrowOneWithQuota(ctx context.Context, tenantID uuid.UUID, in
 	return loan, nil
 }
 
-// effectiveLimits resolves the limits a borrow by member enforces on now:
-// a dated loan rule for the member's type, then one for every type, then
-// the member type's own limit, then the tenant policy. Borrowing and the
-// circulation screens' quota display both read it, so the counter a
-// reader sees is the one the server applies.
-func (s *Service) effectiveLimits(ctx context.Context, tenantID uuid.UUID, member domain.Member, policy domain.Policy, now time.Time) (domain.EffectiveLimits, error) {
+// effectiveLimits resolves the limits a borrow by member enforces on
+// today (the school's calendar day): a dated loan rule for the member's
+// type, then one for every type, then the member type's own limit, then
+// the tenant policy. Borrowing and the circulation screens' quota display
+// both read it, so the counter a reader sees is the one the server applies.
+func (s *Service) effectiveLimits(ctx context.Context, tenantID uuid.UUID, member domain.Member, policy domain.Policy, today time.Time) (domain.EffectiveLimits, error) {
 	memberType, foundType, err := s.repo.GetMemberType(ctx, tenantID, member.MemberTypeID)
 	if err != nil {
 		return domain.EffectiveLimits{}, err
@@ -220,11 +223,11 @@ func (s *Service) effectiveLimits(ctx context.Context, tenantID uuid.UUID, membe
 	if !foundType {
 		return domain.EffectiveLimits{}, domain.ErrMemberTypeNotFound
 	}
-	rules, err := s.repo.ListLoanRulesActive(ctx, tenantID, now)
+	rules, err := s.repo.ListLoanRulesActive(ctx, tenantID, today)
 	if err != nil {
 		return domain.EffectiveLimits{}, err
 	}
-	return domain.ResolveEffectiveLimits(rules, memberType, policy, now), nil
+	return domain.ResolveEffectiveLimits(rules, memberType, policy, today), nil
 }
 
 // MemberBorrowingStatus is what a circulation screen shows about a member
@@ -258,7 +261,8 @@ func (s *Service) GetMemberBorrowingStatus(ctx context.Context, tenantID, userID
 		if err != nil {
 			return err
 		}
-		if out.Limits, err = s.effectiveLimits(ctx, tenantID, member, policy, clock.Now(ctx, s.clock)); err != nil {
+		today := s.schoolToday(ctx, tenantID, clock.Now(ctx, s.clock))
+		if out.Limits, err = s.effectiveLimits(ctx, tenantID, member, policy, today); err != nil {
 			return err
 		}
 		if out.ActiveLoanCount, err = s.repo.CountActiveLoansForMember(ctx, tenantID, userID); err != nil {
@@ -332,16 +336,19 @@ func (s *Service) Return(ctx context.Context, tenantID uuid.UUID, in ReturnInput
 			return err
 		}
 		now := clock.Now(ctx, s.clock)
+		today := s.schoolToday(ctx, tenantID, now)
 
-		wdr, err := s.workingDayRule(ctx, tenantID, policy, existing.DueOn, 60)
+		lateDays, outcome, err := s.lateOutcome(ctx, tenantID, existing, policy, today, s.memberLateRule(ctx, tenantID, existing.MemberUserID, policy, nil))
 		if err != nil {
 			return err
 		}
-		lateDays := wdr.WorkingDaysLate(existing.DueOn, now)
 
+		// The fine charged is kept on the loan as well as on its violation
+		// (as MarkLost does), so the return result, the member's loan list
+		// and the monthly "fines recorded" figure all carry the real amount.
 		fine := 0
 		if lateDays > 0 {
-			if err := s.recordLateOutcome(ctx, tenantID, existing, lateDays, policy, now); err != nil {
+			if fine, err = s.recordLateOutcome(ctx, tenantID, existing, outcome, today); err != nil {
 				return err
 			}
 			if _, memberFound, findErr := s.repo.GetMember(ctx, tenantID, existing.MemberUserID); findErr == nil && memberFound {
@@ -354,6 +361,7 @@ func (s *Service) Return(ctx context.Context, tenantID uuid.UUID, in ReturnInput
 		if err != nil {
 			return err
 		}
+		loan.LateDays = lateDays
 		if _, err := s.repo.CreateCirculationEvent(ctx, domain.ItemEventRecord{
 			TenantID: tenantID, CopyID: existing.CopyID, LoanID: uuid.NullUUID{UUID: existing.ID, Valid: true},
 			MemberUserID: uuid.NullUUID{UUID: existing.MemberUserID, Valid: true}, EventType: domain.EventReturned,
@@ -374,19 +382,71 @@ func (s *Service) Return(ctx context.Context, tenantID uuid.UUID, in ReturnInput
 	return loan, nil
 }
 
-// recordLateOutcome applies the old app's late-return decision
-// (library_common.go:284-296): a currency fine (recorded on the loan
-// itself, unchanged from before) when the tenant enables it, otherwise a
-// violation that either suspends the member or is a bare warning.
-func (s *Service) recordLateOutcome(ctx context.Context, tenantID uuid.UUID, loan domain.Loan, lateDays int, policy domain.Policy, now time.Time) error {
-	memberType := domain.MemberType{FineType: domain.FineConstant, FinePerTenor: policy.FinePerDay, TenorDays: 1}
-	if member, found, err := s.repo.GetMember(ctx, tenantID, loan.MemberUserID); err == nil && found {
-		if mt, foundType, err := s.repo.GetMemberType(ctx, tenantID, member.MemberTypeID); err == nil && foundType {
-			memberType = mt
-		}
+// memberLateRule is the late-return rule for a member: their member type's
+// fine and suspension settings, or the policy's per-day fine
+// (domain.PolicyLateRule) for a member with no type. types, when not nil,
+// caches member types by ID so a report over many members looks each type
+// up once.
+func (s *Service) memberLateRule(ctx context.Context, tenantID, memberUserID uuid.UUID, policy domain.Policy, types map[uuid.UUID]domain.MemberType) domain.MemberType {
+	member, found, err := s.repo.GetMember(ctx, tenantID, memberUserID)
+	if err != nil || !found {
+		return domain.PolicyLateRule(policy)
 	}
-	outcome := domain.ComputeLateOutcome(lateDays, policy.FineCurrencyEnabled, memberType)
+	if mt, cached := types[member.MemberTypeID]; cached {
+		return mt
+	}
+	mt, foundType, err := s.repo.GetMemberType(ctx, tenantID, member.MemberTypeID)
+	if err != nil || !foundType {
+		return domain.PolicyLateRule(policy)
+	}
+	if types != nil {
+		types[member.MemberTypeID] = mt
+	}
+	return mt
+}
 
+// lateOutcome is what returning loan on today (the school's calendar day)
+// resolves to: the working days late under the tenant's weekend and
+// holiday calendar, and the fine, suspension or warning the member's rule
+// gives for them (lateOutcomeWith). It loads the holiday calendar for this
+// one loan; the overdue report builds one calendar for all its loans and
+// calls lateOutcomeWith directly, so both price a late return the same way.
+func (s *Service) lateOutcome(ctx context.Context, tenantID uuid.UUID, loan domain.Loan, policy domain.Policy, today time.Time, rule domain.MemberType) (int, domain.LateOutcome, error) {
+	if !today.After(loan.DueOn) {
+		return 0, domain.LateOutcome{}, nil
+	}
+	wdr, err := s.workingDayRule(ctx, tenantID, policy, loan.DueOn, daysUntil(loan.DueOn, today)+1)
+	if err != nil {
+		return 0, domain.LateOutcome{}, err
+	}
+	lateDays, outcome := lateOutcomeWith(wdr, loan, policy, today, rule)
+	return lateDays, outcome, nil
+}
+
+// lateOutcomeWith prices returning loan on today under an already loaded
+// working-day calendar wdr, which must cover loan.DueOn through today:
+// the working days late, and the outcome domain.ComputeLateOutcome gives
+// the member's rule for them (zero outcome when not late).
+func lateOutcomeWith(wdr domain.WorkingDayRule, loan domain.Loan, policy domain.Policy, today time.Time, rule domain.MemberType) (int, domain.LateOutcome) {
+	lateDays := wdr.WorkingDaysLate(loan.DueOn, today)
+	if lateDays == 0 {
+		return 0, domain.LateOutcome{}
+	}
+	return lateDays, domain.ComputeLateOutcome(lateDays, policy.FineCurrencyEnabled, rule)
+}
+
+// daysUntil is the whole calendar days from from to to (negative when to
+// is earlier), for sizing a holiday-calendar window.
+func daysUntil(from, to time.Time) int {
+	return int(to.Sub(from).Hours() / 24)
+}
+
+// recordLateOutcome applies the old app's late-return decision
+// (library_common.go:284-296) as a violation: a currency fine when the
+// tenant enables it, otherwise a suspension of the member from today (the
+// school's calendar day), otherwise a bare warning. It returns the fine
+// charged, zero for a suspension or a warning.
+func (s *Service) recordLateOutcome(ctx context.Context, tenantID uuid.UUID, loan domain.Loan, outcome domain.LateOutcome, today time.Time) (int, error) {
 	switch outcome.Penalty {
 	case domain.PenaltyFine:
 		_, err := s.repo.CreateViolation(ctx, domain.Violation{
@@ -394,26 +454,29 @@ func (s *Service) recordLateOutcome(ctx context.Context, tenantID uuid.UUID, loa
 			Kind: domain.ViolationLate, Penalty: domain.PenaltyFine, Amount: outcome.FineAmount, Status: domain.ViolationUnpaid,
 			CreatedBy: loan.CheckedOutBy,
 		})
-		return err
+		if err != nil {
+			return 0, err
+		}
+		return outcome.FineAmount, nil
 	case domain.PenaltySuspend:
-		suspendedUntil := now.AddDate(0, 0, outcome.SuspendDays)
+		suspendedUntil := today.AddDate(0, 0, outcome.SuspendDays)
 		if _, err := s.repo.CreateViolation(ctx, domain.Violation{
 			TenantID: tenantID, LoanID: uuid.NullUUID{UUID: loan.ID, Valid: true}, MemberUserID: loan.MemberUserID,
 			Kind: domain.ViolationLate, Penalty: domain.PenaltySuspend, SuspendDays: outcome.SuspendDays, Status: domain.ViolationUnpaid,
 			CreatedBy: loan.CheckedOutBy,
 		}); err != nil {
-			return err
+			return 0, err
 		}
 		nullableDate := nullableDatePtr(suspendedUntil)
 		_, _, err := s.repo.UpdateMemberStatus(ctx, tenantID, loan.MemberUserID, domain.MemberSuspended, nullableDate)
-		return err
+		return 0, err
 	default: // warning: recorded for the history, no fine and no suspension
 		_, err := s.repo.CreateViolation(ctx, domain.Violation{
 			TenantID: tenantID, LoanID: uuid.NullUUID{UUID: loan.ID, Valid: true}, MemberUserID: loan.MemberUserID,
 			Kind: domain.ViolationLate, Penalty: domain.PenaltyWarning, Status: domain.ViolationWaived,
 			CreatedBy: loan.CheckedOutBy,
 		})
-		return err
+		return 0, err
 	}
 }
 
@@ -526,26 +589,36 @@ func (s *Service) Renew(ctx context.Context, tenantID uuid.UUID, in RenewInput, 
 		}
 		_, hasWaiting := domain.NextWaiting(waiting)
 		now := clock.Now(ctx, s.clock)
-		if err := domain.CanRenew(existing, policy, now, hasWaiting); err != nil {
+		today := s.schoolToday(ctx, tenantID, now)
+
+		// The member's type sets both how often and by how much a loan is
+		// renewed (the settings screen edits them per type); the policy
+		// only speaks for a member with no type.
+		member, memberFound, err := s.repo.GetMember(ctx, tenantID, existing.MemberUserID)
+		if err != nil {
 			return err
 		}
-		if member, found, err := s.repo.GetMember(ctx, tenantID, existing.MemberUserID); err != nil {
+		var memberType domain.MemberType
+		hasType := false
+		if memberFound {
+			if memberType, hasType, err = s.repo.GetMemberType(ctx, tenantID, member.MemberTypeID); err != nil {
+				return err
+			}
+		}
+		maxRenewals, renewalDays := domain.RenewalLimits(memberType, hasType, policy)
+
+		if err := domain.CanRenew(existing, maxRenewals, today, hasWaiting); err != nil {
 			return err
-		} else if found {
-			if err := member.EligibleToBorrow(now); err != nil {
+		}
+		if memberFound {
+			if err := member.EligibleToBorrow(today); err != nil {
 				return err
 			}
 		}
 
-		renewalDays := policy.RenewalDays
-		if member, found, err := s.repo.GetMember(ctx, tenantID, existing.MemberUserID); err == nil && found {
-			if mt, foundType, err := s.repo.GetMemberType(ctx, tenantID, member.MemberTypeID); err == nil && foundType && mt.RenewalDays > 0 {
-				renewalDays = mt.RenewalDays
-			}
-		}
 		base := existing.DueOn
-		if now.After(base) {
-			base = now
+		if today.After(base) {
+			base = today
 		}
 		wdr, err := s.workingDayRule(ctx, tenantID, policy, base, renewalDays+14)
 		if err != nil {
@@ -650,7 +723,7 @@ func (s *Service) OverdueLoans(ctx context.Context, tenantID uuid.UUID) ([]domai
 	var out []domain.Loan
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = s.repo.ListOverdueLoans(ctx, tenantID, clock.Now(ctx, s.clock))
+		out, err = s.repo.ListOverdueLoans(ctx, tenantID, s.schoolToday(ctx, tenantID, clock.Now(ctx, s.clock)))
 		return err
 	})
 	return out, err
@@ -662,7 +735,7 @@ func (s *Service) OverdueLoansDetailed(ctx context.Context, tenantID uuid.UUID) 
 	var out []OverdueLoanDetail
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = s.repo.ListOverdueLoansDetailed(ctx, tenantID, clock.Now(ctx, s.clock))
+		out, err = s.repo.ListOverdueLoansDetailed(ctx, tenantID, s.schoolToday(ctx, tenantID, clock.Now(ctx, s.clock)))
 		return err
 	})
 	return out, err

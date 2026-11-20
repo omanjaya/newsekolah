@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { formatDate } from "@newsekolah/i18n";
+import { formatCurrency, formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import type { BarcodeScanEvent } from "@newsekolah/ui";
 import { useScanFeedback } from "@newsekolah/ui";
@@ -24,11 +24,11 @@ import {
   classifyBorrowCopy,
   confirmableItemsInScanOrder,
   matchDeskShortcut,
+  recordBasketResult,
   removeBasketItem,
   undoLastBasketItem,
   updateBasketItem,
 } from "../lib/desk-basket";
-import { daysBetween } from "../lib/due-date";
 import { useLibraryMemberBorrowingStatusQuery, useLibraryMemberQuery } from "../members-api";
 
 import type { DeskSelectedMember } from "./desk-member-panel";
@@ -171,17 +171,27 @@ export function useDeskSession() {
       try {
         const loan = await returnByBarcode.mutateAsync({ barcode: code });
         const title = await titleName.mutateAsync(loan.title_id).catch(() => code);
-        const lateDays = loan.returned_at
-          ? daysBetween(loan.due_on, loan.returned_at.slice(0, 10))
-          : 0;
+        // The working days late the server charged for (late_days): closed
+        // weekend days and holidays do not count, so recounting calendar
+        // days here would disagree with the fine and the per-working-day
+        // rate the settings show.
+        const lateDays = loan.late_days ?? 0;
+        // The fine is the one the server charged (fine_amount); with
+        // currency fines off a late return suspends or warns instead, and
+        // claims no "Rp0" fine.
         const detail =
-          lateDays > 0
-            ? t("basket.returnedLate", { days: lateDays, amount: loan.fine_amount })
-            : t("basket.returnedOnTime");
+          lateDays <= 0
+            ? t("basket.returnedOnTime")
+            : loan.fine_amount > 0
+              ? t("basket.returnedLateFine", {
+                  days: lateDays,
+                  amount: formatCurrency(loan.fine_amount, "IDR", { locale }),
+                })
+              : t("basket.returnedLate", { days: lateDays });
         feedback.playSuccess();
         setBasket((prev) => ({
           ...prev,
-          return: addBasketItem(prev.return, {
+          return: recordBasketResult(prev.return, {
             barcode: code,
             title,
             state: "done",
@@ -195,7 +205,7 @@ export function useDeskSession() {
           error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN");
         setBasket((prev) => ({
           ...prev,
-          return: addBasketItem(prev.return, {
+          return: recordBasketResult(prev.return, {
             barcode: code,
             title: code,
             state: "failed",
@@ -204,7 +214,7 @@ export function useDeskSession() {
         }));
       }
     },
-    [returnByBarcode, titleName, feedback, apiErrorMessage, t],
+    [returnByBarcode, titleName, feedback, apiErrorMessage, t, locale],
   );
 
   const addRenewScan = useCallback(
@@ -215,7 +225,7 @@ export function useDeskSession() {
         feedback.playSuccess();
         setBasket((prev) => ({
           ...prev,
-          renew: addBasketItem(prev.renew, {
+          renew: recordBasketResult(prev.renew, {
             barcode: code,
             title,
             state: "done",
@@ -229,7 +239,7 @@ export function useDeskSession() {
           error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN");
         setBasket((prev) => ({
           ...prev,
-          renew: addBasketItem(prev.renew, {
+          renew: recordBasketResult(prev.renew, {
             barcode: code,
             title: code,
             state: "failed",

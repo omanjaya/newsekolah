@@ -32,14 +32,17 @@ func (s *Service) SendDueReminders(ctx context.Context, tenantID uuid.UUID) (int
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return 0, err
 	}
-	now := s.clock.Now()
 	var due []domain.Loan
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		policy, err := s.loadPolicy(ctx, tenantID)
 		if err != nil {
 			return err
 		}
-		due, err = s.repo.ListLoansDueForReminder(ctx, tenantID, now, now.AddDate(0, 0, policy.DueReminderDays))
+		// The job runs at 07:00 school time, when the UTC date of a UTC+7
+		// or later school is still yesterday: the window starts on the
+		// school's own today.
+		today := s.schoolToday(ctx, tenantID, s.clock.Now())
+		due, err = s.repo.ListLoansDueForReminder(ctx, tenantID, today, today.AddDate(0, 0, policy.DueReminderDays))
 		return err
 	})
 	if err != nil {

@@ -347,6 +347,16 @@ func toAPILoan(l domain.Loan) api.LibraryLoan {
 	return out
 }
 
+// toAPIReturnedLoan is a return's response: the loan plus the working days
+// late the return was charged for, present even when zero so a client can
+// tell an on-time return from a late one without recounting the calendar.
+func toAPIReturnedLoan(l domain.Loan) api.LibraryLoan {
+	out := toAPILoan(l)
+	lateDays := l.LateDays
+	out.LateDays = &lateDays
+	return out
+}
+
 func toAPIReservation(r domain.Reservation) api.LibraryReservation {
 	out := api.LibraryReservation{
 		Id: r.ID, TitleId: r.TitleID, MemberUserId: r.MemberUserID, Status: api.LibraryReservationStatus(r.Status),

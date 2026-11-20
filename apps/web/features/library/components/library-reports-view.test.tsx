@@ -63,6 +63,17 @@ describe("LibraryReportsView overdue members tab", () => {
     expect(screen.getAllByText(/Rp/).length).toBeGreaterThan(0);
   });
 
+  it("says a member owes no fine instead of Rp 0 when none would be charged", () => {
+    mocks.overdue.mockReturnValue({
+      data: { data: [{ member_user_id: "user-1", loan_count: 1, total_fine: 0 }] },
+      isLoading: false,
+    });
+    render(<LibraryReportsView />);
+
+    expect(screen.getAllByText("noFine").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Rp/)).not.toBeInTheDocument();
+  });
+
   it("shows an empty state when nobody is overdue", () => {
     mocks.overdue.mockReturnValue({ data: { data: [] }, isLoading: false });
     render(<LibraryReportsView />);

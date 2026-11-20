@@ -105,19 +105,6 @@ func (p Policy) RenewedDueDate(asOf time.Time) time.Time {
 	return asOf.AddDate(0, 0, p.RenewalDays)
 }
 
-// CalculateFine is a pure function of the policy and the two dates: zero
-// when the copy came back on or before its due date, otherwise the whole
-// number of calendar days late times the per-day rate.
-func CalculateFine(p Policy, dueOn, returnedOn time.Time) int {
-	dueDay := truncateToDay(dueOn)
-	returnedDay := truncateToDay(returnedOn)
-	if !returnedDay.After(dueDay) {
-		return 0
-	}
-	lateDays := int(returnedDay.Sub(dueDay).Hours() / 24)
-	return lateDays * p.FinePerDay
-}
-
 func truncateToDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 }
@@ -136,17 +123,43 @@ func CanBorrow(item Copy, activeLoanCount int, p Policy) error {
 	return nil
 }
 
+// RenewalLimits is how many times a loan may be renewed and by how many
+// working days each renewal extends it, for a member of type t: the member
+// type's own figures, which the settings screen edits per type, and the
+// tenant policy's only for a member with no type. A type's max_renewals of
+// 0 means "never renewed" and is kept as it is, never read as unset.
+func RenewalLimits(t MemberType, hasType bool, p Policy) (maxRenewals, renewalDays int) {
+	if !hasType {
+		return p.MaxRenewals, p.RenewalDays
+	}
+	renewalDays = p.RenewalDays
+	if t.RenewalDays > 0 {
+		renewalDays = t.RenewalDays
+	}
+	return t.MaxRenewals, renewalDays
+}
+
+// PolicyLateRule is the late-return rule for a member with no member type:
+// the policy's "fine per day" charged for every working day late. It is a
+// one-day period fine, not a constant one, so the per-day figure the
+// settings screen names really is charged per day.
+func PolicyLateRule(p Policy) MemberType {
+	return MemberType{FineType: FinePerTenor, FinePerTenor: p.FinePerDay, TenorDays: 1}
+}
+
 // CanRenew checks the three rules the old system enforced: the loan must
-// not already be at its renewal limit, must not currently be overdue, and
-// the title must have no member waiting in the reservation queue.
-func CanRenew(loan Loan, p Policy, asOf time.Time, hasWaitingReservation bool) error {
+// not already be at its renewal limit (maxRenewals, from RenewalLimits),
+// must not currently be overdue, and the title must have no member waiting
+// in the reservation queue. today is the school's calendar day
+// (SchoolDay), so a loan stays renewable all through its due date.
+func CanRenew(loan Loan, maxRenewals int, today time.Time, hasWaitingReservation bool) error {
 	if loan.Status != LoanActive {
 		return ErrLoanAlreadyReturned
 	}
-	if loan.RenewalCount >= p.MaxRenewals {
+	if loan.RenewalCount >= maxRenewals {
 		return ErrRenewalLimitReached
 	}
-	if loan.IsOverdue(asOf) {
+	if loan.IsOverdue(today) {
 		return ErrRenewalBlockedOverdue
 	}
 	if hasWaitingReservation {

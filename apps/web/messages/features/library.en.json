@@ -279,7 +279,8 @@
       },
       "borrowedDue": "Borrowed, due {date}",
       "returnedOnTime": "Returned on time",
-      "returnedLate": "{days} days late, fine Rp{amount}",
+      "returnedLate": "{days, plural, one {# working day late} other {# working days late}}",
+      "returnedLateFine": "{days, plural, one {# working day late} other {# working days late}}, fine {amount}",
       "renewedUntil": "Renewed until {date}",
       "heading": {
         "borrow": "Books to lend",
@@ -551,8 +552,8 @@
     "renewalValue": "{count}x, +{days} days",
     "fineNone": "No fine",
     "fineValue": {
-      "constant": "{amount} per day",
-      "per_tenor": "{amount} per {tenor} days"
+      "constant": "{amount} once per late return",
+      "per_tenor": "{tenor, plural, =1 {{amount} per working day} other {{amount} per # working days}}"
     },
     "form": {
       "name": "Member type name",
@@ -562,8 +563,12 @@
       "maxRenewals": "Renewal limit",
       "fineType": "Fine type",
       "fineTypeOptions": {
-        "constant": "Fixed per day",
-        "per_tenor": "Per period"
+        "constant": "Flat, once per late return",
+        "per_tenor": "Per late period"
+      },
+      "fineTypeHint": {
+        "constant": "The fine amount is charged once for each late return, however late it is.",
+        "per_tenor": "The fine amount is charged for every period a return is late, counted in working days. Set the period to 1 day for a fine per day."
       },
       "finePerTenor": "Fine amount (Rp)",
       "tenorDays": "Fine period length (days)",
@@ -640,7 +645,8 @@
       "confirmWaivedBodyAmount": "The {amount} fine for {member}'s {kind} violation will be waived and can no longer be collected. A suspended member reactivates once every violation is clear.",
       "confirmWaivedBody": "The {kind} violation for {member} will be waived. A suspended member reactivates once every violation is clear.",
       "settledPaid": "Violation marked paid",
-      "settledWaived": "Violation waived"
+      "settledWaived": "Violation waived",
+      "alreadySettled": "This violation was already settled. The list now shows its status."
     },
     "unknownMember": "Unknown member",
     "noMatchTitle": "No matching violations",
@@ -1275,10 +1281,11 @@
       "title": "Overdue members",
       "unknownMember": "Unknown member",
       "emptyTitle": "No overdue members",
+      "noFine": "No fine",
       "columns": {
         "member": "Member",
         "loanCount": "Loan count",
-        "fine": "Fine"
+        "fine": "Estimated fine"
       }
     },
     "mostBorrowed": {
@@ -1630,6 +1637,7 @@
     "renewAction": "Renew",
     "renewed": "Renewed until {date}",
     "renewBlockedOverdue": "This loan is past due and cannot be renewed. Bring the book back to the library.",
+    "renewBlockedLimit": "Already renewed as many times as allowed. Bring the book back by its due date.",
     "titleUnavailable": "Title unavailable",
     "browseCatalogue": "Browse the catalogue",
     "unpaidFinesTotal": "Unpaid fines: {amount}",

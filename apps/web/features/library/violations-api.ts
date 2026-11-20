@@ -78,5 +78,10 @@ export function useSettleLibraryViolationMutation() {
         body: { status },
       }),
     onSuccess: invalidate,
+    // A violation another click (or another librarian) already settled
+    // still changed on the server, so the list must refresh either way.
+    onError: invalidate,
+    // The settle dialog shows its own inline error.
+    meta: { errorToast: false },
   });
 }

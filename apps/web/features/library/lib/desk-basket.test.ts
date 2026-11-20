@@ -9,10 +9,12 @@ import {
   hasUndoableItem,
   isBasketSettled,
   matchDeskShortcut,
+  recordBasketResult,
   removeBasketItem,
   undoLastBasketItem,
   updateBasketItem,
 } from "./desk-basket";
+import { deskLastResult } from "./desk-last-result";
 
 function item(barcode: string, overrides: Partial<DeskBasketItem> = {}): DeskBasketItem {
   return { barcode, title: `Title ${barcode}`, state: "pending", ...overrides };
@@ -35,6 +37,54 @@ describe("addBasketItem", () => {
     const result = addBasketItem(full, item("new"));
     expect(result).toHaveLength(50);
     expect(result.some((i) => i.barcode === "new")).toBe(false);
+  });
+});
+
+// A renewal refused at 09:00 and saved on a re-scan at 07:45 used to keep
+// showing the refusal: the saved result was dropped as a duplicate.
+describe("recordBasketResult", () => {
+  it("replaces a failed row with the saved result and moves it to the front", () => {
+    const before = [
+      item("B", { state: "done" }),
+      item("A", {
+        state: "failed",
+        detail: "Peminjaman yang sudah terlambat tidak bisa diperpanjang",
+      }),
+    ];
+    const result = recordBasketResult(
+      before,
+      item("A", { state: "done", detail: "Diperpanjang sampai 1 Januari 2027" }),
+    );
+    expect(result.map((i) => [i.barcode, i.state, i.detail])).toEqual([
+      ["A", "done", "Diperpanjang sampai 1 Januari 2027"],
+      ["B", "done", undefined],
+    ]);
+    expect(
+      deskLastResult({
+        scanError: "",
+        memberName: null,
+        memberNeedsAttention: false,
+        items: result,
+      }),
+    ).toEqual({
+      kind: "item",
+      item: result[0],
+    });
+  });
+
+  it("keeps the newest detail when a copy is renewed twice", () => {
+    const first = recordBasketResult([], item("A", { state: "done", detail: "until 24 Dec" }));
+    const second = recordBasketResult(first, item("A", { state: "done", detail: "until 4 Jan" }));
+    expect(second).toHaveLength(1);
+    expect(second[0]?.detail).toBe("until 4 Jan");
+  });
+
+  it("never drops a saved result on a full receipt, letting go of the oldest row", () => {
+    const full = Array.from({ length: 50 }, (_, i) => item(`B${i}`, { state: "done" }));
+    const result = recordBasketResult(full, item("new", { state: "done" }));
+    expect(result).toHaveLength(50);
+    expect(result[0]?.barcode).toBe("new");
+    expect(result.some((i) => i.barcode === "B49")).toBe(false);
   });
 });
 

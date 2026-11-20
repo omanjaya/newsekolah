@@ -24,7 +24,7 @@ func (s *Service) StartStocktake(ctx context.Context, tenantID uuid.UUID, name s
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		created, err = s.repo.CreateStocktake(ctx, domain.Stocktake{
-			TenantID: tenantID, Name: name, StartedOn: clock.Now(ctx, s.clock), CoordinatorUserID: coordinatorUserID, Notes: notes,
+			TenantID: tenantID, Name: name, StartedOn: s.schoolToday(ctx, tenantID, clock.Now(ctx, s.clock)), CoordinatorUserID: coordinatorUserID, Notes: notes,
 		})
 		return err
 	})
@@ -259,7 +259,7 @@ func (s *Service) Close(ctx context.Context, tenantID, stocktakeID uuid.UUID, no
 				}
 			}
 		}
-		_, _, err = s.repo.CloseStocktake(ctx, tenantID, stocktakeID, clock.Now(ctx, s.clock), notes, result, markMissingAs)
+		_, _, err = s.repo.CloseStocktake(ctx, tenantID, stocktakeID, s.schoolToday(ctx, tenantID, clock.Now(ctx, s.clock)), notes, result, markMissingAs)
 		return err
 	})
 	return result, err

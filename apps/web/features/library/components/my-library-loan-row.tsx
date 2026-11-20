@@ -18,19 +18,23 @@ import { DueBadge } from "./due-badge";
 /**
  * One of the reader's own books out, as a card row: title, author, the
  * due-date badge and a Perpanjang button, the one action this row needs.
- * When renewing is refused (the loan is already late) the button stays
- * disabled and the reason is written under it, where a touch screen
- * shows it, not in a tooltip.
+ * When renewing is refused (the loan is already late, or already renewed
+ * as often as the member's type allows) the button stays disabled and the
+ * reason is written under it, where a touch screen shows it, not in a
+ * tooltip.
  */
 export function MyLibraryLoanRow({
   loan,
   today,
   locale,
+  maxRenewals,
   className,
 }: {
   loan: LibraryLoan;
   today: string;
   locale: Locale;
+  /** The member's renewal limit from GET /v1/library/me; unknown means the server decides. */
+  maxRenewals?: number;
   className?: string;
 }): ReactElement {
   const t = useTranslations("app.library.me");
@@ -39,6 +43,7 @@ export function MyLibraryLoanRow({
   const renew = useRenewMyLoanMutation();
 
   const overdue = classifyDueDate(loan.due_on, today) === "overdue";
+  const atRenewalLimit = maxRenewals !== undefined && loan.renewal_count >= maxRenewals;
 
   return (
     <Card asChild padding="sm">
@@ -60,7 +65,7 @@ export function MyLibraryLoanRow({
               variant="secondary"
               icon={<RotateCw />}
               loading={renew.isPending}
-              disabled={overdue}
+              disabled={overdue || atRenewalLimit}
               onClick={() => {
                 renew.mutate(loan.id, {
                   onSuccess: (result) => {
@@ -81,7 +86,11 @@ export function MyLibraryLoanRow({
               {t("renewAction")}
             </Button>
           </div>
-          {overdue && <p className="text-caption text-fg-muted">{t("renewBlockedOverdue")}</p>}
+          {overdue ? (
+            <p className="text-caption text-fg-muted">{t("renewBlockedOverdue")}</p>
+          ) : (
+            atRenewalLimit && <p className="text-caption text-fg-muted">{t("renewBlockedLimit")}</p>
+          )}
         </div>
       </li>
     </Card>
