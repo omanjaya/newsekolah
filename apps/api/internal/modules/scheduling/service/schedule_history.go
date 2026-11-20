@@ -81,33 +81,97 @@ func (h historyIndex) hasAny(ids []uuid.UUID) bool {
 	return false
 }
 
-// earliestChange is the first date a change to all of ids may take effect
-// from: today, or the day after the latest date any of them has history
-// for.
-func (h historyIndex) earliestChange(today time.Time, ids []uuid.UUID) time.Time {
-	earliest := domain.CalendarDate(today)
-	for _, id := range ids {
-		if entry, ok := h[id]; ok {
-			earliest = domain.LaterDate(earliest, domain.EarliestChange(today, entry.Until))
-		}
+// of is id's history, nil when it has none.
+func (h historyIndex) of(id uuid.UUID) *domain.History {
+	if entry, ok := h[id]; ok {
+		return &entry
 	}
-	return earliest
+	return nil
 }
 
-// explain turns ErrScheduleHasHistory from an undated change of rows into
-// what a caller who may date a change (manage_schedules) can act on:
-// ErrScheduleEnded when a row's last date has passed (no date helps), or
-// HistoryRequiresDateError naming the earliest date a dated change may use.
-func (h historyIndex) explain(err error, today time.Time, rows []domain.Schedule, actor Actor) error {
-	if err == nil || !actor.CanManage || !errors.Is(err, domain.ErrScheduleHasHistory) {
-		return err
+// changeDates works out when changes may take effect against one "now"
+// (the school's date and wall clock, through the service clock so the time
+// simulation moves it), looking each first period's start time up once.
+type changeDates struct {
+	svc      *Service
+	tenantID uuid.UUID
+	today    time.Time
+	now      time.Time
+	starts   map[uuid.UUID]time.Time
+}
+
+func (s *Service) changeDates(ctx context.Context, tenantID uuid.UUID) *changeDates {
+	return &changeDates{svc: s, tenantID: tenantID, today: s.today(ctx), now: s.now(ctx), starts: map[uuid.UUID]time.Time{}}
+}
+
+// earliest is the first date a change to every one of rows may take
+// effect from: domain.EarliestChange of each row, the latest of them.
+func (c *changeDates) earliest(ctx context.Context, history historyIndex, rows []domain.Schedule) (time.Time, error) {
+	earliest := c.today
+	for _, row := range rows {
+		begun, err := c.begun(ctx, row)
+		if err != nil {
+			return time.Time{}, err
+		}
+		floor := domain.ChangeFloor(c.today, begun)
+		earliest = domain.LaterDate(earliest, domain.EarliestChange(floor, row, history.of(row.ID)))
 	}
-	ids := make([]uuid.UUID, len(rows))
-	for i, row := range rows {
+	return earliest, nil
+}
+
+// begun reports whether row's lesson today has already begun
+// (domain.LessonBegun); only a row on today's weekday needs its period.
+func (c *changeDates) begun(ctx context.Context, row domain.Schedule) (bool, error) {
+	if domain.IsoWeekday(c.today) != row.DayOfWeek || !row.EffectiveOn(c.today) {
+		return false, nil
+	}
+	startsAt, ok := c.starts[row.StartPeriodID]
+	if !ok {
+		period, err := c.svc.repo.GetPeriodRef(ctx, c.tenantID, row.StartPeriodID)
+		if err != nil {
+			return false, err
+		}
+		startsAt = period.StartsAt
+		c.starts[row.StartPeriodID] = startsAt
+	}
+	return domain.LessonBegun(row, c.today, c.now, startsAt), nil
+}
+
+// requireCurrent refuses an undated change or removal of a block any of
+// whose rows has already ended: those rows describe past weeks only, and
+// rewriting or deleting them would change what those weeks held (their
+// lessons and every expected-lesson count) whether or not anything was
+// recorded.
+func requireCurrent(rows []domain.Schedule, today time.Time) error {
+	for _, row := range rows {
 		if row.EndedBefore(today) {
 			return domain.ErrScheduleEnded
 		}
-		ids[i] = row.ID
 	}
-	return &domain.HistoryRequiresDateError{Min: h.earliestChange(today, ids)}
+	return nil
+}
+
+// explainHistory turns ErrScheduleHasHistory from an undated change of
+// rows into what a caller who may date a change (manage_schedules) can act
+// on: ErrScheduleEnded when a row's last date has passed (no date helps),
+// ErrScheduleChangeBeforeHistory when every date a row has left is bound
+// by its history, or HistoryRequiresDateError naming the earliest date a
+// dated change may use.
+func (s *Service) explainHistory(ctx context.Context, tenantID uuid.UUID, err error, history historyIndex, rows []domain.Schedule, actor Actor) error {
+	if err == nil || !actor.CanManage || !errors.Is(err, domain.ErrScheduleHasHistory) {
+		return err
+	}
+	if ended := requireCurrent(rows, s.today(ctx)); ended != nil {
+		return ended
+	}
+	earliest, dateErr := s.changeDates(ctx, tenantID).earliest(ctx, history, rows)
+	if dateErr != nil {
+		return dateErr
+	}
+	for _, row := range rows {
+		if row.EffectiveUntil != nil && earliest.After(domain.CalendarDate(*row.EffectiveUntil)) {
+			return domain.ErrScheduleChangeBeforeHistory
+		}
+	}
+	return &domain.HistoryRequiresDateError{Min: earliest}
 }

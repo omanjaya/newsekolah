@@ -219,18 +219,62 @@ func TestEffectiveDatesStayInsideTheYear(t *testing.T) {
 	require.ErrorIs(t, requireInYear(year, date("2027-07-01")), domain.ErrEffectiveFromOutOfYear)
 	require.NoError(t, requireInYear(year, date("2027-06-30")))
 
-	// Default: the year's first date on the lesson's weekday.
-	start, err := startDate(year, 1, nil)
+	// Before the year starts, a lesson without a date starts with it: the
+	// year's first date on the lesson's weekday.
+	period := PeriodRef{StartsAt: time.Date(0, 1, 1, 7, 0, 0, 0, time.UTC)}
+	svc := &Service{repo: fakeScheduleRepo{period: period}, clock: clock.Frozen{At: time.Date(2026, 7, 1, 3, 0, 0, 0, time.UTC)}}
+	ctx := context.Background()
+	monday := domain.Schedule{DayOfWeek: 1}
+	start, err := svc.startDate(ctx, uuid.New(), year, monday, nil)
 	require.NoError(t, err)
 	require.Equal(t, date("2026-07-20"), start, "the year starts on a Wednesday; its first Monday is the 20th")
-	start, err = startDate(year, 3, nil)
+	start, err = svc.startDate(ctx, uuid.New(), year, domain.Schedule{DayOfWeek: 3}, nil)
 	require.NoError(t, err)
 	require.Equal(t, date("2026-07-15"), start)
 
 	// A Thursday lesson from Wednesday 30 June 2027 would start after the
 	// year ends.
 	last := date("2027-06-30")
-	_, err = startDate(year, 4, &last)
+	_, err = svc.startDate(ctx, uuid.New(), year, domain.Schedule{DayOfWeek: 4}, &last)
+	require.ErrorIs(t, err, domain.ErrEffectiveFromOutOfYear)
+	// An explicit date before today is how a manager enters weeks already
+	// taught.
+	early := date("2026-07-15")
+	svc.clock = clock.Frozen{At: time.Date(2026, 11, 20, 3, 0, 0, 0, time.UTC)}
+	start, err = svc.startDate(ctx, uuid.New(), year, monday, &early)
+	require.NoError(t, err)
+	require.Equal(t, date("2026-07-20"), start)
+}
+
+// Mid-year, a lesson added without a date starts on its first date from
+// the school's today on, never over weeks already taught; one whose
+// lesson today has already begun starts the next week.
+func TestStartDateDefaultsToToday(t *testing.T) {
+	year := AcademicYearRef{StartsOn: date("2026-07-13"), EndsOn: date("2027-06-30")}
+	period := PeriodRef{StartsAt: time.Date(0, 1, 1, 7, 0, 0, 0, time.UTC)}
+	// 23:30 UTC on Wednesday 25 November is 07:30 on Thursday 26 November
+	// in Asia/Makassar.
+	svc := &Service{repo: fakeScheduleRepo{period: period}, clock: clock.Frozen{At: time.Date(2026, 11, 25, 23, 30, 0, 0, time.UTC)}}
+	ctx := tenant.WithTenant(context.Background(), tenant.Tenant{Timezone: "Asia/Makassar"})
+
+	start, err := svc.startDate(ctx, uuid.New(), year, domain.Schedule{DayOfWeek: 1}, nil)
+	require.NoError(t, err)
+	require.Equal(t, date("2026-11-30"), start, "the next Monday, not the year's first")
+	start, err = svc.startDate(ctx, uuid.New(), year, domain.Schedule{DayOfWeek: 5}, nil)
+	require.NoError(t, err)
+	require.Equal(t, date("2026-11-27"), start)
+	start, err = svc.startDate(ctx, uuid.New(), year, domain.Schedule{DayOfWeek: 4}, nil)
+	require.NoError(t, err)
+	require.Equal(t, date("2026-12-03"), start, "today's 07:00 lesson is already under way")
+
+	svc.clock = clock.Frozen{At: time.Date(2026, 11, 25, 22, 30, 0, 0, time.UTC)} // 06:30 WITA
+	start, err = svc.startDate(ctx, uuid.New(), year, domain.Schedule{DayOfWeek: 4}, nil)
+	require.NoError(t, err)
+	require.Equal(t, date("2026-11-26"), start, "today's lesson has not begun yet")
+
+	// After the year has ended there is no date left to start on.
+	svc.clock = clock.Frozen{At: time.Date(2027, 7, 5, 3, 0, 0, 0, time.UTC)}
+	_, err = svc.startDate(ctx, uuid.New(), year, domain.Schedule{DayOfWeek: 1}, nil)
 	require.ErrorIs(t, err, domain.ErrEffectiveFromOutOfYear)
 }
 
@@ -270,9 +314,13 @@ func TestManagerPolicy(t *testing.T) {
 	ended := date("2026-11-19")
 	policy = managerPolicy(&ended, true, today, today)
 	require.False(t, policy.CanEdit)
-	require.Equal(t, domain.ErrScheduleEnded.Error(), policy.Reason)
+	require.ErrorIs(t, policy.Reason, domain.ErrScheduleEnded)
+	policy = managerPolicy(&ended, false, today, today)
+	require.False(t, policy.CanEdit, "an ended version is locked with or without history")
+	require.ErrorIs(t, policy.Reason, domain.ErrScheduleEnded)
 
 	bound := date("2026-11-26")
 	policy = managerPolicy(&bound, true, earliest, today)
 	require.False(t, policy.CanDelete, "every remaining date is bound by history")
+	require.ErrorIs(t, policy.Reason, domain.ErrScheduleChangeBeforeHistory, "still on the timetable, so not ended")
 }

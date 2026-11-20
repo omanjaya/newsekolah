@@ -1466,12 +1466,14 @@ type Querier interface {
 	// from the policy, since only Go holds the level ladder.
 	ListSPCandidates(ctx context.Context, arg ListSPCandidatesParams) ([]ListSPCandidatesRow, error)
 	// Which of the given schedules have history -- a recorded attendance
-	// session (submitted, or holding an entry or a journal) or any
-	// substitution request -- and the last date it binds: the latest recorded
-	// session or pending/accepted substitution. A change on such a version
-	// must take effect after that date (migration 0147's history guard); a
-	// session only opened, with nothing recorded, is a placeholder and binds
-	// nothing.
+	// session (submitted, or holding an entry or a journal), any substitution
+	// request, or a supervision visit planned for it (done or not) -- and the
+	// last date it binds: the latest recorded session, pending/accepted
+	// substitution or visit. A change on such a version must take effect after
+	// that date (migration 0147's history guard for sessions and
+	// substitutions; the service alone for visits, whose schedule_id has no
+	// foreign key), and it is never rewritten in place or deleted; a session
+	// only opened, with nothing recorded, is a placeholder and binds nothing.
 	ListScheduleHistory(ctx context.Context, arg ListScheduleHistoryParams) ([]ListScheduleHistoryRow, error)
 	// Every version of the year, locked for an effective-dated clear.
 	ListSchedulesByAcademicYear(ctx context.Context, arg ListSchedulesByAcademicYearParams) ([]Schedule, error)

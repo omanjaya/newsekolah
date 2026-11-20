@@ -67,10 +67,14 @@ func TestScheduleBlockMutationsPreserveHistory(t *testing.T) {
 	svc := service.New(pg.AppPool, repository.New(pg.AppPool))
 	actor := service.Actor{CanManage: true, UserID: teacher}
 	input := service.ScheduleInput{AcademicYearID: year, ClassID: class, SubjectID: subject, TeacherUserID: teacher, DayOfWeek: 1, StartPeriodID: p1, EndPeriodID: p1, Source: domain.SourceAdmin}
+	// Lessons are entered from the year's start, so the weeks the test
+	// records history in are on the timetable.
+	yearStart := mustParseDate(t, "2026-01-01")
 	createPair := func(day int16) (domain.Schedule, domain.Schedule) {
 		t.Helper()
 		in := input
 		in.DayOfWeek = day
+		in.EffectiveFrom = &yearStart
 		a, err := svc.CreateSchedule(ctx, tenant, in, actor)
 		require.NoError(t, err)
 		in.StartPeriodID = p2
@@ -384,11 +388,13 @@ func TestPlaceholderSessionsDoNotFreezeTheSchedule(t *testing.T) {
 	}
 	svc := service.New(pg.AppPool, repository.New(pg.AppPool))
 	actor := service.Actor{CanManage: true, UserID: teacher}
+	yearStart := mustParseDate(t, "2026-01-01")
 	create := func(day int16) domain.Schedule {
 		t.Helper()
 		sched, err := svc.CreateSchedule(ctx, tenant, service.ScheduleInput{
 			AcademicYearID: year, ClassID: class, SubjectID: subject, TeacherUserID: teacher,
 			DayOfWeek: day, StartPeriodID: p1, EndPeriodID: p1, Source: domain.SourceAdmin,
+			EffectiveFrom: &yearStart,
 		}, actor)
 		require.NoError(t, err)
 		return sched
@@ -481,9 +487,11 @@ func TestListSubstitutionsWithSchedule(t *testing.T) {
 	// does not depend on when the suite runs.
 	svc := service.New(pg.AppPool, repository.New(pg.AppPool)).WithClock(clock.Frozen{At: time.Date(2026, 9, 1, 3, 0, 0, 0, time.UTC)})
 	actor := service.Actor{CanManage: true, UserID: teacher}
+	yearStart := mustParseDate(t, "2026-01-01")
 	sched, err := svc.CreateSchedule(ctx, tenant, service.ScheduleInput{
 		AcademicYearID: year, ClassID: class, SubjectID: subject, TeacherUserID: teacher,
 		DayOfWeek: 1, StartPeriodID: p1, EndPeriodID: p1, Source: domain.SourceAdmin,
+		EffectiveFrom: &yearStart,
 	}, actor)
 	require.NoError(t, err)
 
@@ -591,10 +599,12 @@ func TestListSchedulesCombinesClassAndDayFilters(t *testing.T) {
 
 	svc := service.New(pg.AppPool, repository.New(pg.AppPool))
 	actor := service.Actor{CanManage: true, UserID: teacher}
+	yearStart := mustParseDate(t, "2026-01-01")
 	for day := int16(1); day <= 3; day++ {
 		in := service.ScheduleInput{
 			AcademicYearID: year, ClassID: class, SubjectID: subject, TeacherUserID: teacher,
 			DayOfWeek: day, StartPeriodID: p1, EndPeriodID: p1, Source: domain.SourceAdmin,
+			EffectiveFrom: &yearStart,
 		}
 		_, err := svc.CreateSchedule(ctx, tenant, in, actor)
 		require.NoError(t, err)
@@ -697,15 +707,18 @@ func TestListSchedulesStudentScopeCombinesClassAndDay(t *testing.T) {
 	// The same teacher cannot teach two classes in the same period, so
 	// otherClass's lessons sit in the next period -- the point of this
 	// fixture is two classes sharing a day, not a scheduling conflict.
+	yearStart := mustParseDate(t, "2026-01-01")
 	for day := int16(1); day <= 2; day++ {
 		_, err := svc.CreateSchedule(ctx, tenant, service.ScheduleInput{
 			AcademicYearID: year, ClassID: ownClass, SubjectID: subject, TeacherUserID: teacher,
 			DayOfWeek: day, StartPeriodID: p1, EndPeriodID: p1, Source: domain.SourceAdmin,
+			EffectiveFrom: &yearStart,
 		}, actor)
 		require.NoError(t, err)
 		_, err = svc.CreateSchedule(ctx, tenant, service.ScheduleInput{
 			AcademicYearID: year, ClassID: otherClass, SubjectID: subject, TeacherUserID: teacher,
 			DayOfWeek: day, StartPeriodID: p2, EndPeriodID: p2, Source: domain.SourceAdmin,
+			EffectiveFrom: &yearStart,
 		}, actor)
 		require.NoError(t, err)
 	}

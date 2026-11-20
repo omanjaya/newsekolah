@@ -14,7 +14,8 @@ import (
 // starts on 3 December never clash, whatever dates the admin typed.
 //
 // A change to a lesson that already has history (a recorded attendance
-// session or a substitution request) takes effect from a change date D: the
+// session, a substitution request or a supervision visit) takes effect
+// from a change date D: the
 // old version ends on its last lesson before D and, for an edit, a new
 // version starts on its first lesson on or after D. Nothing dated before D
 // moves.
@@ -87,19 +88,24 @@ func SnapRange(dayOfWeek int16, from time.Time, until *time.Time) (start time.Ti
 }
 
 // ResnapForWeekday moves a version's range onto newDay when a correction
-// in place changes its weekday: each bound keeps its ISO week. A version
-// that started with its year (on or before oldDay's first date of the
-// year) starts with it on the new weekday too, so a whole-year lesson stays
-// a whole-year lesson. ok is false when no lesson date is left.
+// in place changes its weekday. The range only ever shrinks: the new start
+// is the first newDay on or after the old start, and the new end the last
+// newDay on or before the old end, so the corrected version never takes
+// over a date before it started (a week an earlier version still covers,
+// or one already past) nor after it ended (a week a later version covers).
+// The one exception is a version that started with its year (on or before
+// oldDay's first date of the year): it starts with the year on the new
+// weekday too, so a whole-year lesson stays a whole-year lesson. ok is
+// false when no lesson date is left.
 func ResnapForWeekday(from time.Time, until *time.Time, oldDay, newDay int16, yearStart time.Time) (start time.Time, end *time.Time, ok bool) {
-	start = DateInWeek(WeekStart(from), newDay)
+	start = OnOrAfter(from, newDay)
 	if !CalendarDate(from).After(OnOrAfter(yearStart, oldDay)) {
 		start = OnOrAfter(yearStart, newDay)
 	}
 	if until == nil {
 		return start, nil, true
 	}
-	last := DateInWeek(WeekStart(*until), newDay)
+	last := OnOrBefore(*until, newDay)
 	if last.Before(start) {
 		return time.Time{}, nil, false
 	}
@@ -107,24 +113,59 @@ func ResnapForWeekday(from time.Time, until *time.Time, oldDay, newDay int16, ye
 }
 
 // History is what binds a schedule version: Until is the latest date of a
-// recorded attendance session or a pending/accepted substitution request,
-// nil when its history is only rejected or cancelled requests (which still
-// make it history, and so keep it from being rewritten in place, but bind
-// no date).
+// recorded attendance session, a pending/accepted substitution request or
+// a supervision visit, nil when its history is only rejected or cancelled
+// requests (which still make it history, and so keep it from being
+// rewritten in place or deleted, but bind no date).
 type History struct {
 	ScheduleID uuid.UUID
 	Until      *time.Time
 }
 
-// EarliestChange is the first date a change to a version with this history
-// may take effect: never in the past, and never on or before a date
-// something was recorded or arranged for.
-func EarliestChange(today time.Time, historyUntil *time.Time) time.Time {
-	earliest := CalendarDate(today)
-	if historyUntil != nil {
-		if next := CalendarDate(*historyUntil).AddDate(0, 0, 1); next.After(earliest) {
-			return next
-		}
+// LessonBegun reports whether s's lesson today has already begun at now
+// (the school's wall clock): s is in effect today, today falls on its
+// weekday, and startsAt (the time of day its first period starts; the date
+// part is ignored) is at or before now's time of day. A lesson under way
+// or already taught belongs to the version it was taught as, whether or
+// not anyone recorded it yet.
+func LessonBegun(s Schedule, today, now, startsAt time.Time) bool {
+	if IsoWeekday(today) != s.DayOfWeek || !s.EffectiveOn(today) {
+		return false
+	}
+	return clockOf(startsAt) <= clockOf(now)
+}
+
+// clockOf is t's time of day as a duration since midnight.
+func clockOf(t time.Time) time.Duration {
+	h, m, sec := t.Clock()
+	return time.Duration(h)*time.Hour + time.Duration(m)*time.Minute + time.Duration(sec)*time.Second
+}
+
+// ChangeFloor is the first date any change to a version may take effect
+// from: today, or tomorrow once today's lesson of the version has begun
+// (LessonBegun), so a change never moves a lesson already taught today.
+func ChangeFloor(today time.Time, begunToday bool) time.Time {
+	floor := CalendarDate(today)
+	if begunToday {
+		return floor.AddDate(0, 0, 1)
+	}
+	return floor
+}
+
+// EarliestChange is the first date a change to version s may take effect
+// from: never before floor (ChangeFloor). A version with history h is in
+// addition never changed on or before a date h binds, nor before its own
+// first lesson has passed: it then always keeps a lesson date and is ended
+// (ChangeRetire), never removed, so every record pointing at it keeps its
+// row (a cancelled substitution request, too, which binds no date).
+func EarliestChange(floor time.Time, s Schedule, h *History) time.Time {
+	earliest := CalendarDate(floor)
+	if h == nil {
+		return earliest
+	}
+	earliest = LaterDate(earliest, OnOrAfter(s.EffectiveFrom, s.DayOfWeek).AddDate(0, 0, 1))
+	if h.Until != nil {
+		earliest = LaterDate(earliest, CalendarDate(*h.Until).AddDate(0, 0, 1))
 	}
 	return earliest
 }
@@ -143,8 +184,9 @@ type ChangeKind int
 const (
 	// ChangeRetire ends the version on its last lesson before D.
 	ChangeRetire ChangeKind = iota + 1
-	// ChangeDrop removes the version outright: it has no lesson before D,
-	// so nothing can have been recorded against it.
+	// ChangeDrop removes the version outright: it has no lesson before D.
+	// A version with history never gets here (EarliestChange keeps D after
+	// its first lesson), so nothing points at a dropped version.
 	ChangeDrop
 )
 

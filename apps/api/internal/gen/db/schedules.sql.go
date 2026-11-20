@@ -634,13 +634,16 @@ select s.id,
     (select max(a.date) from attendance_sessions a
      where a.schedule_id = s.id and attendance_session_recorded(a.id)),
     (select max(r.date) from substitution_requests r
-     where r.schedule_id = s.id and r.status in ('pending', 'accepted'))
+     where r.schedule_id = s.id and r.status in ('pending', 'accepted')),
+    (select max(v.lesson_date) from supervision_scheduled_observations v
+     where v.schedule_id = s.id)
   )::date as history_until
 from schedules s
 where s.tenant_id = $1 and s.id = any($2::uuid[])
   and (exists (select 1 from attendance_sessions a
                where a.schedule_id = s.id and attendance_session_recorded(a.id))
-       or exists (select 1 from substitution_requests r where r.schedule_id = s.id))
+       or exists (select 1 from substitution_requests r where r.schedule_id = s.id)
+       or exists (select 1 from supervision_scheduled_observations v where v.schedule_id = s.id))
 `
 
 type ListScheduleHistoryParams struct {
@@ -654,12 +657,14 @@ type ListScheduleHistoryRow struct {
 }
 
 // Which of the given schedules have history -- a recorded attendance
-// session (submitted, or holding an entry or a journal) or any
-// substitution request -- and the last date it binds: the latest recorded
-// session or pending/accepted substitution. A change on such a version
-// must take effect after that date (migration 0147's history guard); a
-// session only opened, with nothing recorded, is a placeholder and binds
-// nothing.
+// session (submitted, or holding an entry or a journal), any substitution
+// request, or a supervision visit planned for it (done or not) -- and the
+// last date it binds: the latest recorded session, pending/accepted
+// substitution or visit. A change on such a version must take effect after
+// that date (migration 0147's history guard for sessions and
+// substitutions; the service alone for visits, whose schedule_id has no
+// foreign key), and it is never rewritten in place or deleted; a session
+// only opened, with nothing recorded, is a placeholder and binds nothing.
 func (q *Queries) ListScheduleHistory(ctx context.Context, arg ListScheduleHistoryParams) ([]ListScheduleHistoryRow, error) {
 	rows, err := q.db.Query(ctx, listScheduleHistory, arg.TenantID, arg.Ids)
 	if err != nil {

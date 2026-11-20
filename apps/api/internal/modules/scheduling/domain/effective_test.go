@@ -70,18 +70,63 @@ func TestResnapForWeekday(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, day("2026-07-16"), from)
 	require.Nil(t, until)
-	// A later version keeps the ISO weeks of both bounds.
+	// So does a whole-year Thursday lesson moved to Monday, although its
+	// first Monday comes before its first Thursday.
+	from, _, ok = domain.ResnapForWeekday(day("2026-07-16"), nil, 4, 1, yearStart)
+	require.True(t, ok)
+	require.Equal(t, day("2026-07-13"), from)
+	// A later version only ever shrinks: it never starts before it did nor
+	// ends after it did, so it cannot take over a week an earlier or later
+	// version covers.
 	from, until, ok = domain.ResnapForWeekday(day("2026-11-26"), dayPtr("2026-12-10"), 4, 1, yearStart)
 	require.True(t, ok)
-	require.Equal(t, day("2026-11-23"), from)
+	require.Equal(t, day("2026-11-30"), from, "not Monday 23 November, before the version started")
 	require.Equal(t, day("2026-12-07"), *until)
+	from, until, ok = domain.ResnapForWeekday(day("2026-11-23"), dayPtr("2026-12-07"), 1, 4, yearStart)
+	require.True(t, ok)
+	require.Equal(t, day("2026-11-26"), from)
+	require.Equal(t, day("2026-12-03"), *until, "not Thursday 10 December, after the version ended")
+	// One Thursday has no Monday inside it.
+	_, _, ok = domain.ResnapForWeekday(day("2026-11-26"), dayPtr("2026-11-26"), 4, 1, yearStart)
+	require.False(t, ok)
+}
+
+func TestLessonBegun(t *testing.T) {
+	thursday := domain.Schedule{DayOfWeek: 4, EffectiveFrom: day("2026-07-16")}
+	today := day("2026-11-26") // a Thursday
+	startsAt := time.Date(0, 1, 1, 7, 0, 0, 0, time.UTC)
+	wita := time.FixedZone("WITA", 8*3600)
+	require.False(t, domain.LessonBegun(thursday, today, time.Date(2026, 11, 26, 6, 59, 0, 0, wita), startsAt))
+	require.True(t, domain.LessonBegun(thursday, today, time.Date(2026, 11, 26, 7, 0, 0, 0, wita), startsAt), "under way at its first minute")
+	require.True(t, domain.LessonBegun(thursday, today, time.Date(2026, 11, 26, 10, 0, 0, 0, wita), startsAt), "taught earlier today")
+	require.False(t, domain.LessonBegun(thursday, day("2026-11-25"), time.Date(2026, 11, 25, 10, 0, 0, 0, wita), startsAt), "not its weekday")
+	later := domain.Schedule{DayOfWeek: 4, EffectiveFrom: day("2026-12-03")}
+	require.False(t, domain.LessonBegun(later, today, time.Date(2026, 11, 26, 10, 0, 0, 0, wita), startsAt), "not in effect today")
 }
 
 func TestEarliestChange(t *testing.T) {
 	today := day("2026-11-20")
-	require.Equal(t, today, domain.EarliestChange(today, nil))
-	require.Equal(t, today, domain.EarliestChange(today, dayPtr("2026-11-16")))
-	require.Equal(t, day("2026-11-27"), domain.EarliestChange(today, dayPtr("2026-11-26")), "a pending substitution next Thursday")
+	require.Equal(t, today, domain.ChangeFloor(today, false))
+	require.Equal(t, day("2026-11-21"), domain.ChangeFloor(today, true), "today's lesson has begun")
+
+	monday := domain.Schedule{DayOfWeek: 1, EffectiveFrom: day("2026-07-13")}
+	require.Equal(t, today, domain.EarliestChange(today, monday, nil), "no history: from the floor")
+	require.Equal(t, today, domain.EarliestChange(today, monday, &domain.History{Until: dayPtr("2026-11-16")}))
+	require.Equal(t, day("2026-11-27"), domain.EarliestChange(today, monday, &domain.History{Until: dayPtr("2026-11-26")}), "a pending substitution next Thursday")
+
+	// A version that has not started yet, with only a cancelled request:
+	// it keeps its first lesson, so it is ended rather than removed.
+	future := domain.Schedule{DayOfWeek: 4, EffectiveFrom: day("2026-11-26")}
+	earliest := domain.EarliestChange(today, future, &domain.History{})
+	require.Equal(t, day("2026-11-27"), earliest)
+	plan, err := domain.PlanChange(future, earliest)
+	require.NoError(t, err)
+	require.Equal(t, domain.ChangeRetire, plan.Kind)
+	require.Equal(t, day("2026-11-26"), plan.Until)
+	// A legacy start off its weekday (a Wednesday for a Thursday lesson)
+	// still keeps a Thursday.
+	legacy := domain.Schedule{DayOfWeek: 4, EffectiveFrom: day("2026-11-25")}
+	require.Equal(t, day("2026-11-27"), domain.EarliestChange(today, legacy, &domain.History{Until: dayPtr("2026-11-25")}))
 }
 
 func TestPlanChange(t *testing.T) {

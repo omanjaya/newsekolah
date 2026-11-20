@@ -59,9 +59,11 @@ func TestAcceptedSubstitutionsAreScopedToTheirOwnDate(t *testing.T) {
 
 	svc := service.New(pg.AppPool, repository.New(pg.AppPool))
 	actor := service.Actor{CanManage: true, UserID: teacher}
+	yearStart := mustParseDate(t, "2026-01-01")
 	schedule, err := svc.CreateSchedule(ctx, tenantID, service.ScheduleInput{
 		AcademicYearID: year, ClassID: class, SubjectID: subject, TeacherUserID: teacher,
 		DayOfWeek: 1, StartPeriodID: period, EndPeriodID: period, Source: domain.SourceAdmin,
+		EffectiveFrom: &yearStart,
 	}, actor)
 	require.NoError(t, err)
 

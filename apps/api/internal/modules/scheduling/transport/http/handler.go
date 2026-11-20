@@ -300,11 +300,23 @@ func toAPIMutationPolicy(p service.MutationPolicy) *api.MutationPolicy {
 		out.RequiresEffectiveFrom = &requires
 	}
 	out.MinEffectiveFrom = apiDatePtr(p.MinEffectiveFrom)
-	if p.Reason != "" {
-		reason := p.Reason
+	if p.Reason != nil {
+		reason := policyReasonCode(p.Reason)
 		out.Reason = &reason
 	}
 	return out
+}
+
+// policyReasonCode is the error code the refused change would answer with
+// (SCHEDULE_ENDED, SCHEDULE_CHANGE_BEFORE_HISTORY, SCHEDULE_HAS_HISTORY,
+// FORBIDDEN, ...), so a client can say why a block is locked without
+// re-deriving the rules.
+func policyReasonCode(reason error) string {
+	var appErr *httpx.Error
+	if errors.As(mapScheduleError(reason), &appErr) {
+		return appErr.Code
+	}
+	return "INTERNAL_ERROR"
 }
 
 func toAPISchedule(s domain.Schedule, policy *service.MutationPolicy) api.Schedule {

@@ -68,7 +68,7 @@ func (s *Service) ListBlocks(ctx context.Context, tenantID uuid.UUID, q BlockQue
 		if err != nil {
 			return err
 		}
-		out.Blocks, err = s.applyPolicies(ctx, tenantID, domain.MergeContiguous(schedules), actor)
+		out.Blocks, err = s.applyPolicies(ctx, tenantID, schedules, actor)
 		return err
 	})
 	return out, err
@@ -123,28 +123,41 @@ func filterByDay(schedules []domain.Schedule, dayOfWeek *int16) []domain.Schedul
 	return out
 }
 
-// applyPolicies marks every block holding a schedule with history, in one
-// query for the grid, and gives a manage_schedules caller each block's
-// mutation policy (what the editor offers and whether a change needs a
-// date). Other callers get no policy: they only read the grid.
-func (s *Service) applyPolicies(ctx context.Context, tenantID uuid.UUID, blocks []domain.Block, actor Actor) ([]ListedBlock, error) {
-	var ids []uuid.UUID
-	for _, b := range blocks {
-		ids = append(ids, b.ScheduleIDs...)
+// applyPolicies merges schedules into blocks, marks every block holding a
+// schedule with history (in one query for the grid), and gives a
+// manage_schedules caller each block's mutation policy (what the editor
+// offers and whether a change needs a date). Other callers get no policy:
+// they only read the grid.
+func (s *Service) applyPolicies(ctx context.Context, tenantID uuid.UUID, schedules []domain.Schedule, actor Actor) ([]ListedBlock, error) {
+	byID := make(map[uuid.UUID]domain.Schedule, len(schedules))
+	ids := make([]uuid.UUID, len(schedules))
+	for i, sched := range schedules {
+		byID[sched.ID] = sched
+		ids[i] = sched.ID
 	}
 	history, err := s.loadHistory(ctx, tenantID, ids)
 	if err != nil {
 		return nil, err
 	}
-	today := s.today(ctx)
+	blocks := domain.MergeContiguous(schedules)
+	dates := s.changeDates(ctx, tenantID)
 	out := make([]ListedBlock, len(blocks))
 	for i, b := range blocks {
 		b.HasHistory = history.hasAny(b.ScheduleIDs)
 		out[i] = ListedBlock{Block: b}
-		if actor.CanManage {
-			policy := managerPolicy(b.EffectiveUntil, b.HasHistory, history.earliestChange(today, b.ScheduleIDs), today)
-			out[i].Policy = &policy
+		if !actor.CanManage {
+			continue
 		}
+		rows := make([]domain.Schedule, len(b.ScheduleIDs))
+		for j, id := range b.ScheduleIDs {
+			rows[j] = byID[id]
+		}
+		earliest, err := dates.earliest(ctx, history, rows)
+		if err != nil {
+			return nil, err
+		}
+		policy := managerPolicy(b.EffectiveUntil, b.HasHistory, earliest, dates.today)
+		out[i].Policy = &policy
 	}
 	return out, nil
 }
@@ -157,31 +170,37 @@ type MutationPolicy struct {
 	CanEdit   bool
 	CanDelete bool
 	// HasHistory is true when the schedule has a recorded attendance
-	// session (submitted, or holding an entry or a journal) or a
-	// substitution request: it can no longer be corrected in place.
+	// session (submitted, or holding an entry or a journal), a
+	// substitution request or a supervision visit: it can no longer be
+	// corrected in place.
 	HasHistory bool
 	// RequiresEffectiveFrom is true when an edit or delete must say from
 	// which date it takes effect (a manage_schedules caller on a schedule
 	// with history); MinEffectiveFrom is the earliest such date.
 	RequiresEffectiveFrom bool
 	MinEffectiveFrom      *time.Time
-	Reason                string
+	// Reason is why the caller may not edit or delete it, as the error the
+	// attempt would meet: domain.ErrScheduleEnded (its last date has
+	// passed), domain.ErrScheduleChangeBeforeHistory (it is still on the
+	// timetable but every date it has left is bound by its history),
+	// domain.ErrScheduleHasHistory (a teacher on a lesson with history),
+	// or a teacher-edit refusal.
+	Reason error
 }
 
 // managerPolicy is what a manage_schedules caller may do with a version (or
-// block) ending on until: nothing once it has ended (or every date it has
-// left is bound by history), a dated change from earliest on when it has
-// history, anything otherwise.
+// block) ending on until: nothing once it has ended, nor while every date
+// it has left is bound by history, a dated change from earliest on when it
+// has history, anything otherwise.
 func managerPolicy(until *time.Time, hasHistory bool, earliest, today time.Time) MutationPolicy {
-	ended := MutationPolicy{HasHistory: hasHistory, Reason: domain.ErrScheduleEnded.Error()}
 	if until != nil && domain.CalendarDate(*until).Before(domain.CalendarDate(today)) {
-		return ended
+		return MutationPolicy{HasHistory: hasHistory, Reason: domain.ErrScheduleEnded}
 	}
 	if !hasHistory {
 		return MutationPolicy{CanEdit: true, CanDelete: true}
 	}
 	if until != nil && earliest.After(domain.CalendarDate(*until)) {
-		return ended
+		return MutationPolicy{HasHistory: true, Reason: domain.ErrScheduleChangeBeforeHistory}
 	}
 	return MutationPolicy{
 		CanEdit: true, CanDelete: true, HasHistory: true,
@@ -193,32 +212,44 @@ func managerPolicy(until *time.Time, hasHistory bool, earliest, today time.Time)
 // teacher acting on their own lesson (no manage_schedules) cannot date a
 // change, so history still locks it for them.
 func (s *Service) MutationPolicyFor(ctx context.Context, tenantID uuid.UUID, sched domain.Schedule, actor Actor) MutationPolicy {
-	var history historyIndex
-	if err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
-		history, err = s.loadHistory(ctx, tenantID, []uuid.UUID{sched.ID})
-		return err
-	}); err != nil {
-		return MutationPolicy{Reason: err.Error()}
-	}
-	today := s.today(ctx)
-	hasHistory := history.hasAny([]uuid.UUID{sched.ID})
-	if actor.CanManage {
-		return managerPolicy(sched.EffectiveUntil, hasHistory, history.earliestChange(today, []uuid.UUID{sched.ID}), today)
-	}
-	switch {
-	case sched.EndedBefore(today):
-		return MutationPolicy{HasHistory: hasHistory, Reason: domain.ErrScheduleEnded.Error()}
-	case hasHistory:
-		return MutationPolicy{HasHistory: true, Reason: domain.ErrScheduleHasHistory.Error()}
-	case sched.TeacherUserID != actor.UserID:
-		return MutationPolicy{Reason: domain.ErrTeacherEditForbidden.Error()}
-	}
+	var policy MutationPolicy
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return s.enforceTeacherWindow(ctx, tenantID, sched, s.now(ctx))
+		history, err := s.loadHistory(ctx, tenantID, []uuid.UUID{sched.ID})
+		if err != nil {
+			return err
+		}
+		if actor.CanManage {
+			dates := s.changeDates(ctx, tenantID)
+			earliest, err := dates.earliest(ctx, history, []domain.Schedule{sched})
+			if err != nil {
+				return err
+			}
+			policy = managerPolicy(sched.EffectiveUntil, history.hasAny([]uuid.UUID{sched.ID}), earliest, dates.today)
+			return nil
+		}
+		policy = s.teacherPolicy(ctx, tenantID, sched, history.hasAny([]uuid.UUID{sched.ID}), actor)
+		return nil
 	})
 	if err != nil {
-		return MutationPolicy{Reason: err.Error()}
+		return MutationPolicy{Reason: err}
+	}
+	return policy
+}
+
+// teacherPolicy is what a teacher without manage_schedules may do with
+// their own lesson: correct it in place while it is current, has no
+// history and is outside the self-service deadline.
+func (s *Service) teacherPolicy(ctx context.Context, tenantID uuid.UUID, sched domain.Schedule, hasHistory bool, actor Actor) MutationPolicy {
+	switch {
+	case sched.EndedBefore(s.today(ctx)):
+		return MutationPolicy{HasHistory: hasHistory, Reason: domain.ErrScheduleEnded}
+	case hasHistory:
+		return MutationPolicy{HasHistory: true, Reason: domain.ErrScheduleHasHistory}
+	case sched.TeacherUserID != actor.UserID:
+		return MutationPolicy{Reason: domain.ErrTeacherEditForbidden}
+	}
+	if err := s.enforceTeacherWindow(ctx, tenantID, sched, s.now(ctx)); err != nil {
+		return MutationPolicy{Reason: err}
 	}
 	return MutationPolicy{CanEdit: true, CanDelete: true}
 }

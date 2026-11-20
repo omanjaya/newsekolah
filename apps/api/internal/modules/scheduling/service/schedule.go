@@ -29,10 +29,13 @@ type Actor struct {
 // regardless of what they pass.
 //
 // EffectiveFrom is the date the lesson (on create) or the change (on
-// update) takes effect; only a CanManage actor may send it. Omitted on a
-// create, the lesson runs from the start of its academic year; omitted on
-// an update, the block is corrected in place, which its history guard
-// refuses once it has history.
+// update) takes effect; only a CanManage actor may send it (a date before
+// today, back to the start of the year, is how a timetable is entered for
+// weeks already taught). Omitted on a create, the lesson starts on its
+// first date on or after the school's today (or the year's start, when
+// that is later), so weeks already past are never given a lesson nobody
+// recorded; omitted on an update, the block is corrected in place, which
+// is refused once it has history or has ended.
 type ScheduleInput struct {
 	AcademicYearID uuid.UUID
 	TermID         uuid.NullUUID
@@ -70,7 +73,7 @@ func (s *Service) CreateSchedule(ctx context.Context, tenantID uuid.UUID, in Sch
 		if err != nil {
 			return err
 		}
-		if candidate.EffectiveFrom, err = startDate(year, candidate.DayOfWeek, in.EffectiveFrom); err != nil {
+		if candidate.EffectiveFrom, err = s.startDate(ctx, tenantID, year, candidate, in.EffectiveFrom); err != nil {
 			return err
 		}
 
@@ -93,19 +96,33 @@ func (s *Service) CreateSchedule(ctx context.Context, tenantID uuid.UUID, in Sch
 	return created, err
 }
 
-// startDate is a new version's first lesson date: from (the start of the
-// academic year when nil) snapped forward onto dayOfWeek. A date outside
-// the year, or one whose first lesson would fall after the year ends, is
-// refused.
-func startDate(year AcademicYearRef, dayOfWeek int16, from *time.Time) (time.Time, error) {
-	start := year.StartsOn
+// startDate is a new version's first lesson date: from, snapped forward
+// onto the lesson's weekday. Without from it is the first lesson on or
+// after the school's today (never one that has already begun today) or
+// after the year's start when that is later: a lesson added mid-year is
+// not backdated over weeks already taught. A date outside the year, or a
+// first lesson that would fall after the year ends, is refused.
+func (s *Service) startDate(ctx context.Context, tenantID uuid.UUID, year AcademicYearRef, candidate domain.Schedule, from *time.Time) (time.Time, error) {
+	var snapped time.Time
 	if from != nil {
 		if err := requireInYear(year, *from); err != nil {
 			return time.Time{}, err
 		}
-		start = *from
+		snapped = domain.OnOrAfter(*from, candidate.DayOfWeek)
+	} else {
+		today := s.today(ctx)
+		snapped = domain.OnOrAfter(domain.LaterDate(domain.CalendarDate(year.StartsOn), today), candidate.DayOfWeek)
+		if snapped.Equal(today) {
+			period, err := s.repo.GetPeriodRef(ctx, tenantID, candidate.StartPeriodID)
+			if err != nil {
+				return time.Time{}, domain.ErrPeriodNotFound
+			}
+			candidate.EffectiveFrom = snapped
+			if domain.LessonBegun(candidate, today, s.now(ctx), period.StartsAt) {
+				snapped = snapped.AddDate(0, 0, 7)
+			}
+		}
 	}
-	snapped := domain.OnOrAfter(start, dayOfWeek)
 	if !year.EndsOn.IsZero() && snapped.After(domain.CalendarDate(year.EndsOn)) {
 		return time.Time{}, domain.ErrEffectiveFromOutOfYear
 	}
@@ -139,7 +156,8 @@ func (s *Service) DeleteSchedule(ctx context.Context, tenantID, id uuid.UUID, ac
 // Without in.EffectiveFrom the block is corrected in place: its other rows
 // go and primary is rewritten, keeping primary's ID and dates. A block
 // with history refuses that (HistoryRequiresDateError names the earliest
-// date a dated change may use instead).
+// date a dated change may use instead), as does one that has already
+// ended (ErrScheduleEnded): it only describes weeks that are over.
 //
 // With in.EffectiveFrom (D) the change takes effect from D: every row ends
 // on its last lesson before D (or goes, when it has none) and a new
@@ -170,8 +188,11 @@ func (s *Service) UpdateScheduleBlock(ctx context.Context, tenantID, primaryID u
 			return err
 		}
 		if in.EffectiveFrom == nil {
-			updated, err = s.correctInPlace(ctx, tenantID, primary, rows, in, actor)
-			return history.explain(err, s.today(ctx), rows, actor)
+			if err := requireCurrent(rows, s.today(ctx)); err != nil {
+				return err
+			}
+			updated, err = s.correctInPlace(ctx, tenantID, primary, rows, in, actor, history)
+			return s.explainHistory(ctx, tenantID, err, history, rows, actor)
 		}
 		updated, err = s.changeFrom(ctx, tenantID, primary, rows, in, actor, history, *in.EffectiveFrom)
 		return err
@@ -180,8 +201,25 @@ func (s *Service) UpdateScheduleBlock(ctx context.Context, tenantID, primaryID u
 }
 
 // correctInPlace rewrites primary as in and removes the block's other rows,
-// keeping primary's dates (moved onto the new weekday when that changes).
-func (s *Service) correctInPlace(ctx context.Context, tenantID uuid.UUID, primary domain.Schedule, rows []domain.Schedule, in ScheduleInput, actor Actor) (domain.Schedule, error) {
+// keeping primary's dates (moved onto the new weekday when that changes,
+// never beyond them). A block with history only takes a change that
+// leaves the lesson itself as it was (its notes): everything else would
+// rewrite what was recorded.
+func (s *Service) correctInPlace(
+	ctx context.Context, tenantID uuid.UUID, primary domain.Schedule, rows []domain.Schedule, in ScheduleInput, actor Actor,
+	history historyIndex,
+) (domain.Schedule, error) {
+	candidate, err := s.resolveCandidate(ctx, tenantID, in)
+	if err != nil {
+		return domain.Schedule{}, err
+	}
+	ids := make([]uuid.UUID, len(rows))
+	for i, row := range rows {
+		ids[i] = row.ID
+	}
+	if history.hasAny(ids) && (len(rows) != 1 || !sameLesson(primary, candidate)) {
+		return domain.Schedule{}, domain.ErrScheduleHasHistory
+	}
 	for _, row := range rows {
 		if row.ID == primary.ID {
 			continue
@@ -189,10 +227,6 @@ func (s *Service) correctInPlace(ctx context.Context, tenantID uuid.UUID, primar
 		if err := s.repo.DeleteSchedule(ctx, tenantID, row.ID); err != nil {
 			return domain.Schedule{}, mapConstraintError(err)
 		}
-	}
-	candidate, err := s.resolveCandidate(ctx, tenantID, in)
-	if err != nil {
-		return domain.Schedule{}, err
 	}
 	candidate.ID = primary.ID
 	candidate.EffectiveFrom, candidate.EffectiveUntil = primary.EffectiveFrom, primary.EffectiveUntil
@@ -283,13 +317,14 @@ func (s *Service) changeFrom(
 
 // retireFrom takes rows off the timetable from d on: each one ends on its
 // last lesson before d, or goes when it has none (domain.PlanChange). d
-// must not lie before history.earliestChange. Rows are already locked.
+// must not lie before the rows' earliest change date (changeDates), which
+// keeps every row with history from going. Rows are already locked.
 func (s *Service) retireFrom(ctx context.Context, tenantID uuid.UUID, rows []domain.Schedule, history historyIndex, d time.Time, actor Actor) error {
-	ids := make([]uuid.UUID, len(rows))
-	for i, row := range rows {
-		ids[i] = row.ID
+	earliest, err := s.changeDates(ctx, tenantID).earliest(ctx, history, rows)
+	if err != nil {
+		return err
 	}
-	if earliest := history.earliestChange(s.today(ctx), ids); domain.CalendarDate(d).Before(earliest) {
+	if domain.CalendarDate(d).Before(earliest) {
 		return &domain.ChangeTooEarlyError{Min: earliest}
 	}
 	updatedBy := uuid.NullUUID{UUID: actor.UserID, Valid: actor.UserID != uuid.Nil}
@@ -304,8 +339,14 @@ func (s *Service) retireFrom(ctx context.Context, tenantID uuid.UUID, rows []dom
 		case domain.ChangeDrop:
 			err = s.repo.DeleteSchedule(ctx, tenantID, row.ID)
 		}
+		if err = mapConstraintError(err); errors.Is(err, domain.ErrScheduleHasHistory) {
+			// History the index did not hold (the database's foreign keys
+			// know of it): the row must keep its first lesson, so name the
+			// date that would.
+			return &domain.ChangeTooEarlyError{Min: domain.EarliestChange(earliest, row, &domain.History{})}
+		}
 		if err != nil {
-			return mapConstraintError(err)
+			return err
 		}
 	}
 	return nil
@@ -323,10 +364,11 @@ func sameLesson(existing, candidate domain.Schedule) bool {
 
 // DeleteScheduleBlock removes a displayed contiguous block. Without
 // effectiveFrom every row is deleted outright, which a row with history
-// refuses (HistoryRequiresDateError). With it (manage_schedules only) the
-// block leaves the timetable from that date on: each row ends on its last
-// lesson before the date, or goes when it has none; rows with history are
-// never deleted.
+// refuses (HistoryRequiresDateError), as does a block that has already
+// ended (ErrScheduleEnded): deleting it would empty the past weeks it
+// covered. With effectiveFrom (manage_schedules only) the block leaves the
+// timetable from that date on: each row ends on its last lesson before the
+// date, or goes when it has none; rows with history are never deleted.
 //
 // Deletion does not check IsYearArchived, unlike CreateSchedule and
 // UpdateSchedule (both go through resolveCandidate, which does). This is
@@ -353,9 +395,15 @@ func (s *Service) DeleteScheduleBlock(ctx context.Context, tenantID, primaryID u
 			return err
 		}
 		if effectiveFrom == nil {
+			if err := requireCurrent(rows, s.today(ctx)); err != nil {
+				return err
+			}
+			if history.hasAny(ids) {
+				return s.explainHistory(ctx, tenantID, domain.ErrScheduleHasHistory, history, rows, actor)
+			}
 			for _, row := range rows {
 				if err := s.repo.DeleteSchedule(ctx, tenantID, row.ID); err != nil {
-					return history.explain(mapConstraintError(err), s.today(ctx), rows, actor)
+					return s.explainHistory(ctx, tenantID, mapConstraintError(err), history, rows, actor)
 				}
 			}
 			return nil
@@ -373,8 +421,9 @@ func (s *Service) DeleteScheduleBlock(ctx context.Context, tenantID, primaryID u
 
 // ClearAcademicYear empties one academic year's timetable (admin bulk
 // clear), typically before a bulk import. Without effectiveFrom every row
-// is deleted, which any row with history refuses; with it the timetable is
-// cleared from that date on, every earlier week staying as it was (rows
+// is deleted, which a timetable with history or with a version that has
+// already ended refuses (it has past weeks to keep); with it the timetable
+// is cleared from that date on, every earlier week staying as it was (rows
 // that already ended before it are left alone). Like DeleteScheduleBlock,
 // it does not check IsYearArchived.
 func (s *Service) ClearAcademicYear(ctx context.Context, tenantID, academicYearID uuid.UUID, effectiveFrom *time.Time, actor Actor) error {
@@ -404,8 +453,11 @@ func (s *Service) ClearAcademicYear(ctx context.Context, tenantID, academicYearI
 					current = append(current, row)
 				}
 			}
+			if len(current) < len(rows) || history.hasAny(ids) {
+				return s.explainHistory(ctx, tenantID, domain.ErrScheduleHasHistory, history, current, actor)
+			}
 			err := mapConstraintError(s.repo.DeleteSchedulesByAcademicYear(ctx, tenantID, academicYearID))
-			return history.explain(err, today, current, actor)
+			return s.explainHistory(ctx, tenantID, err, history, current, actor)
 		}
 		year, err := s.academicYear(ctx, tenantID, academicYearID)
 		if err != nil {
@@ -427,7 +479,9 @@ func (s *Service) ClearAcademicYear(ctx context.Context, tenantID, academicYearI
 // BulkImport creates every schedule in inputs inside one transaction,
 // stopping at the first conflict or validation error so a partially valid
 // spreadsheet never leaves half its rows applied. Each row starts on its
-// EffectiveFrom (snapped onto its weekday), or with its academic year.
+// EffectiveFrom (snapped onto its weekday), or as CreateSchedule starts a
+// lesson without one: from the school's today, or the year's start when
+// that is later.
 func (s *Service) BulkImport(ctx context.Context, tenantID uuid.UUID, inputs []ScheduleInput) ([]domain.Schedule, error) {
 	var created []domain.Schedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -444,7 +498,7 @@ func (s *Service) BulkImport(ctx context.Context, tenantID uuid.UUID, inputs []S
 				}
 				years[in.AcademicYearID] = year
 			}
-			if candidate.EffectiveFrom, err = startDate(year, candidate.DayOfWeek, in.EffectiveFrom); err != nil {
+			if candidate.EffectiveFrom, err = s.startDate(ctx, tenantID, year, candidate, in.EffectiveFrom); err != nil {
 				return err
 			}
 			if err := s.checkConflict(ctx, tenantID, candidate, uuid.Nil); err != nil {

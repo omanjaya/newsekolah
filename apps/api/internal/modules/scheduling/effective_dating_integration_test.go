@@ -100,8 +100,15 @@ func (w *effectiveWorld) lesson(class, teacher uuid.UUID, day int16, period uuid
 	}
 }
 
+// create adds a lesson. One without a date is entered from the year's
+// start, the way a manager enters a timetable for weeks already taught,
+// so the test can record history in them.
 func (w *effectiveWorld) create(in service.ScheduleInput) domain.Schedule {
 	w.t.Helper()
+	if in.EffectiveFrom == nil {
+		start := w.yearStart
+		in.EffectiveFrom = &start
+	}
 	sched, err := w.svc.CreateSchedule(w.ctx, w.tenant, in, w.actor)
 	require.NoError(w.t, err)
 	return sched
@@ -172,7 +179,7 @@ func pgConstraint(err error) string {
 func TestEffectiveDatedChangeRetiresAndInserts(t *testing.T) {
 	w := newEffectiveWorld(t, "effective-change")
 	monday := w.create(w.lesson(w.classA, w.t1, 1, w.p1))
-	require.Equal(t, w.yearStart, monday.EffectiveFrom, "a new lesson runs from the year's first Monday")
+	require.Equal(t, w.yearStart, monday.EffectiveFrom, "entered from the year's first Monday")
 	require.Nil(t, monday.EffectiveUntil)
 	session := w.recordSession(monday, "2026-09-14")
 
@@ -236,7 +243,7 @@ func TestEffectiveDatedChangeRetiresAndInserts(t *testing.T) {
 	policy := w.svc.MutationPolicyFor(w.ctx, w.tenant, w.get(monday.ID), w.actor)
 	require.False(t, policy.CanEdit)
 	require.False(t, policy.CanDelete)
-	require.Equal(t, domain.ErrScheduleEnded.Error(), policy.Reason)
+	require.ErrorIs(t, policy.Reason, domain.ErrScheduleEnded)
 }
 
 // Pending and accepted substitutions bind their date too: a change must
