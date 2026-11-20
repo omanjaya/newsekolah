@@ -78,6 +78,10 @@ type Signals struct {
 	DisciplinePoints     int
 	WarningLetterCount   int
 
+	// HasGradeTrend is set when the term before the active one has
+	// published report scores to compare with; PreviousAverage is read only
+	// then. CurrentAverage is the active term's own average, set whenever
+	// ScoredSubjects is above 0, but the scorer reads it only with a trend.
 	HasGradeTrend   bool
 	PreviousAverage float64
 	CurrentAverage  float64

@@ -68,6 +68,7 @@
       "disciplineUnit": "poin aktif",
       "warningLettersUnit": "surat",
       "gradeTrendUnit": "rata-rata rapor, sebelumnya {previous}",
+      "gradeTrendNoPrevious": "rata-rata rapor, belum ada semester lalu untuk dibandingkan",
       "belowKktp": "Mapel di bawah KKTP",
       "belowKktpUnit": "dari {scored} mapel bernilai rapor"
     },

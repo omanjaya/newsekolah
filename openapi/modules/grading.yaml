@@ -663,7 +663,12 @@ components:
           additionalProperties: { type: number }
         average: { type: number }
         final_kktp: { type: number }
-        report_score: { type: number }
+        report_score:
+          type: number
+          description: The score on the report card, the teacher's manual score when set, else the automatic one.
+        manual_score:
+          type: number
+          description: The teacher's manual report score alone; absent while the report score is automatic.
     Gradebook:
       type: object
       required:

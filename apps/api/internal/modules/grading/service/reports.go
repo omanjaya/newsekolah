@@ -46,7 +46,8 @@ func (s *Service) PreviousTerm(ctx context.Context, tenantID, currentTermID uuid
 // term and in the term before it. Available is false unless both terms
 // have at least one published report score to average.
 //
-// ScoredSubjects and SubjectsBelowKKTP describe the active term on its own,
+// CurrentAverage, ScoredSubjects and SubjectsBelowKKTP describe the active
+// term on its own (CurrentAverage is 0 while ScoredSubjects is 0),
 // so they are set even without a previous term to compare with (a first
 // semester): how many subjects have a published report score, and how many
 // of those are below the subject's KKTP, the same "not tuntas" a student
@@ -65,7 +66,8 @@ type ReportTrend struct {
 // it: the mean of the report scores of the subjects they have grades in and
 // whose grades are published to their class. A student with nothing to
 // average in the active term, with no previous term, or with nothing to
-// average in it gets Available false. The result has an entry for every
+// average in it gets Available false; the active term's own average is set
+// whenever it has something to average. The result has an entry for every
 // given student.
 func (s *Service) ReportTrendsForStudents(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID) (map[uuid.UUID]ReportTrend, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
@@ -101,6 +103,14 @@ func (s *Service) ReportTrendsForStudents(ctx context.Context, tenantID uuid.UUI
 		if len(currentAvg) == 0 {
 			return nil
 		}
+		// The active term's average stands on its own, like its subject
+		// counts: a first term (or one after a term with nothing published)
+		// still has published grades to show, only no trend.
+		for id, cur := range currentAvg {
+			trend := out[id]
+			trend.CurrentAverage = cur
+			out[id] = trend
+		}
 		previousTerm, found, err := s.PreviousTerm(ctx, tenantID, current.ID)
 		if err != nil || !found {
 			return err
@@ -109,10 +119,10 @@ func (s *Service) ReportTrendsForStudents(ctx context.Context, tenantID uuid.UUI
 		if err != nil {
 			return err
 		}
-		for id, cur := range currentAvg {
+		for id := range currentAvg {
 			if prev, ok := previousAvg[id]; ok {
 				trend := out[id]
-				trend.Available, trend.PreviousAverage, trend.CurrentAverage = true, prev, cur
+				trend.Available, trend.PreviousAverage = true, prev
 				out[id] = trend
 			}
 		}

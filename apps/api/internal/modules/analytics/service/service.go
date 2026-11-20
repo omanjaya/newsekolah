@@ -106,9 +106,10 @@ type GradingReader interface {
 // (e.g. the student's first term at the school): the caller must not
 // invent a trend in that case.
 //
-// ScoredSubjects and SubjectsBelowKKTP describe the active term alone and
-// are filled whether or not a trend is Available: how many subjects have a
-// published report score, and how many of those are below their KKTP.
+// CurrentAverage, ScoredSubjects and SubjectsBelowKKTP describe the active
+// term alone and are filled whether or not a trend is Available: its
+// average report score, how many subjects have a published report score,
+// and how many of those are below their KKTP.
 type GradeTrend struct {
 	Available       bool
 	PreviousAverage float64

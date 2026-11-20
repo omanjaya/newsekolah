@@ -136,12 +136,18 @@ func TestReportTrendsCountSubjectsBelowKKTPInAFirstTerm(t *testing.T) {
 	require.False(t, got.Available, "a first term has no trend")
 	require.Equal(t, 1, got.ScoredSubjects)
 	require.Equal(t, 1, got.SubjectsBelowKKTP, "70 is below the subject's own KKTP of 75")
+	// grades-discipline-R3: the active term's average is there without a
+	// trend; the student profile showed "no published grades" beside the
+	// below-KKTP count of those same grades.
+	require.InDelta(t, 70, got.CurrentAverage, 0.001)
+	require.Zero(t, got.PreviousAverage)
 
 	save(80)
 	trends, err = gradingModule.Service.ReportTrendsForStudents(ctx, fx.tenantID, []uuid.UUID{fx.studentID})
 	require.NoError(t, err)
 	require.Equal(t, 1, trends[fx.studentID].ScoredSubjects)
 	require.Zero(t, trends[fx.studentID].SubjectsBelowKKTP)
+	require.InDelta(t, 80, trends[fx.studentID].CurrentAverage, 0.001)
 }
 
 func ptr[T any](v T) *T { return &v }

@@ -68,6 +68,7 @@
       "disciplineUnit": "active points",
       "warningLettersUnit": "{count, plural, one {letter} other {letters}}",
       "gradeTrendUnit": "report average, previously {previous}",
+      "gradeTrendNoPrevious": "report average, no previous term to compare",
       "belowKktp": "Subjects below KKTP",
       "belowKktpUnit": "of {scored} subjects with a report score"
     },

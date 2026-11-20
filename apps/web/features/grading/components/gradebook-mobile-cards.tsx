@@ -153,15 +153,26 @@ export function GradebookMobileCards({
                   onClick={() => {
                     onManualOverride(student);
                   }}
+                  // The visible "Nilai rapor 75,5" (or "-") first, so a voice
+                  // command that says what it sees still matches (WCAG 2.5.3),
+                  // then the student; the pending dot becomes its description.
+                  aria-label={t("reportScoreOfCard", { name: student.name, score: reportScore })}
+                  aria-describedby={
+                    pending ? `report-score-pending-${student.student_user_id}` : undefined
+                  }
                   className="text-fg underline decoration-dotted underline-offset-2"
                 >
                   {t("reportScoreColumn")} {reportScore}
                   {pending && (
-                    <span
-                      role="img"
-                      className="ml-1 inline-block size-1.5 rounded-full bg-accent"
-                      aria-label={t("reportScorePending")}
-                    />
+                    <>
+                      <span
+                        aria-hidden="true"
+                        className="ml-1 inline-block size-1.5 rounded-full bg-accent"
+                      />
+                      <span id={`report-score-pending-${student.student_user_id}`} hidden>
+                        {t("reportScorePending")}
+                      </span>
+                    </>
                   )}
                 </Button>
               ) : (

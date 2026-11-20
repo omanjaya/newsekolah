@@ -1,5 +1,5 @@
 import { ApiError } from "@newsekolah/api-client";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const disabled = vi.hoisted(() => new Set<string>());
@@ -135,6 +135,26 @@ describe("StudentRiskPanel figures", () => {
     expect(screen.getByText("signals.belowKktp")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByText('signals.belowKktpUnit {"scored":8}')).toBeInTheDocument();
+    risk.scored_subjects = 0;
+    risk.subjects_below_kktp = 0;
+  });
+
+  // grades-discipline-R3: a first term's average read "Belum ada data"
+  // beside the count of those same published grades.
+  it("shows a first term's average under the grade trend, with nothing to compare", () => {
+    risk.has_grade_trend = false;
+    risk.previous_average = 0;
+    risk.current_average = 55.08;
+    risk.scored_subjects = 1;
+    risk.subjects_below_kktp = 1;
+    render(<StudentRiskPanel studentId="s-1" />);
+
+    const row = screen.getByText("signals.gradeTrend").parentElement;
+    if (!row) throw new Error("grade trend row not found");
+    expect(within(row).getByText("55,1")).toBeInTheDocument();
+    expect(within(row).getByText("signals.gradeTrendNoPrevious")).toBeInTheDocument();
+    expect(within(row).queryByText("signals.noData")).not.toBeInTheDocument();
+    risk.current_average = 0;
     risk.scored_subjects = 0;
     risk.subjects_below_kktp = 0;
   });

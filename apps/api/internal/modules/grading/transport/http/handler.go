@@ -588,7 +588,7 @@ func toAPIGradebook(b service.Gradebook) api.Gradebook {
 		}
 		students[i] = api.GradebookStudent{
 			StudentUserId: s.StudentUserID, Name: s.Name, Scores: scores, Average: f32Ptr(s.Average),
-			FinalKktp: f32Ptr(s.FinalKKTP), ReportScore: f32Ptr(s.ReportScore),
+			FinalKktp: f32Ptr(s.FinalKKTP), ReportScore: f32Ptr(s.ReportScore), ManualScore: f32Ptr(s.ManualScore),
 		}
 	}
 	return api.Gradebook{

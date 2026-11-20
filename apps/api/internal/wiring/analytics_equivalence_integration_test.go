@@ -199,6 +199,8 @@ func (l *legacySignals) reportTrend(ctx context.Context, tenantID, studentID uui
 	if !ok {
 		return standing, nil
 	}
+	// The active term's average stands without a trend (grades-discipline-R3).
+	standing.CurrentAverage = currentAvg
 	previousTerm, found, err := g.PreviousTerm(ctx, tenantID, current.Term.ID)
 	if err != nil || !found {
 		return standing, err
@@ -211,7 +213,7 @@ func (l *legacySignals) reportTrend(ctx context.Context, tenantID, studentID uui
 	if !ok {
 		return standing, nil
 	}
-	standing.Available, standing.PreviousAverage, standing.CurrentAverage = true, previousAvg, currentAvg
+	standing.Available, standing.PreviousAverage = true, previousAvg
 	return standing, nil
 }
 
@@ -253,10 +255,12 @@ func (l *legacySignals) build(ctx context.Context, tenantID, studentID uuid.UUID
 	}
 	if trend, err := l.reportTrend(ctx, tenantID, studentID); err == nil {
 		signals.ScoredSubjects, signals.SubjectsBelowKKTP = trend.ScoredSubjects, trend.SubjectsBelowKKTP
+		if trend.ScoredSubjects > 0 || trend.Available {
+			signals.CurrentAverage = trend.CurrentAverage
+		}
 		if trend.Available {
 			signals.HasGradeTrend = true
 			signals.PreviousAverage = trend.PreviousAverage
-			signals.CurrentAverage = trend.CurrentAverage
 		}
 	}
 	return signals

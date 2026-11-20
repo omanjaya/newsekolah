@@ -222,10 +222,32 @@ func TestClearingAnOverrideRestoresTheAutomaticScore(t *testing.T) {
 	require.NotNil(t, result)
 	require.InDelta(t, 70, result.FinalScore, 0.001)
 
+	// grades-discipline-R2: the gradebook names the override apart from the
+	// report score, so the edit form opens on it instead of an empty field
+	// (whose plain Save removed the override).
+	book, err := svc.Gradebook(ctx, fx.tenantID, fx.teacherID, true, service.GradebookQuery{
+		ClassID: fx.classID, SubjectID: fx.subjectID, TermID: term,
+	})
+	require.NoError(t, err)
+	student := gradebookStudent(t, book, fx.studentID)
+	require.NotNil(t, student.ReportScore)
+	require.InDelta(t, 70, *student.ReportScore, 0.001)
+	require.NotNil(t, student.ManualScore, "the override is listed on its own")
+	require.InDelta(t, 70, *student.ManualScore, 0.001)
+
 	result, err = svc.SetManualScore(ctx, fx.tenantID, fx.teacherID, true, fx.classID, fx.subjectID, fx.studentID, term, nil)
 	require.NoError(t, err)
 	require.NotNil(t, result, "a student with grades keeps a report score")
 	require.Nil(t, result.ManualScore)
 	require.InDelta(t, 82, result.FinalScore, 0.001)
 	require.InDelta(t, 82, reportScoreRows(t, pg.AdminPool, fx)[fx.studentID], 0.001)
+
+	book, err = svc.Gradebook(ctx, fx.tenantID, fx.teacherID, true, service.GradebookQuery{
+		ClassID: fx.classID, SubjectID: fx.subjectID, TermID: term,
+	})
+	require.NoError(t, err)
+	student = gradebookStudent(t, book, fx.studentID)
+	require.NotNil(t, student.ReportScore)
+	require.InDelta(t, 82, *student.ReportScore, 0.001)
+	require.Nil(t, student.ManualScore, "an automatic report score has no override")
 }

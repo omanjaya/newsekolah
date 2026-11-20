@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next-intl", () => ({
@@ -45,10 +45,35 @@ vi.mock("./component-dialog", () => ({ ComponentDialog: () => null }));
 vi.mock("./gradebook-export-scope-picker", () => ({
   GradebookExportScopePicker: () => null,
 }));
+const overridden = {
+  student_user_id: "s1",
+  name: "Siswa Dua Contoh",
+  scores: {},
+  average: 86.14,
+  report_score: 75.5,
+  manual_score: 75.5,
+};
 vi.mock("./gradebook-table", () => ({
-  GradebookTable: () => <div data-testid="gradebook-table" />,
+  GradebookTable: ({ onManualOverride }: { onManualOverride: (s: typeof overridden) => void }) => (
+    <div data-testid="gradebook-table">
+      <button
+        type="button"
+        onClick={() => {
+          onManualOverride(overridden);
+        }}
+      >
+        edit-report-score
+      </button>
+    </div>
+  ),
 }));
-vi.mock("./manual-score-dialog", () => ({ ManualScoreDialog: () => null }));
+vi.mock("./manual-score-dialog", () => ({
+  ManualScoreDialog: (props: { currentManualScore?: number; computedAverage?: number }) => (
+    <div data-testid="manual-score-dialog">
+      {JSON.stringify({ current: props.currentManualScore, average: props.computedAverage })}
+    </div>
+  ),
+}));
 vi.mock("./star-dialog", () => ({ StarDialog: () => null }));
 
 import { GradebookSheet } from "./gradebook-sheet";
@@ -82,5 +107,33 @@ describe("GradebookSheet publish controls", () => {
     expect(screen.getByText("publishToggleLabel")).toBeInTheDocument();
     // The Field's label names the switch; there is no native label of its own.
     expect(screen.getByRole("switch", { name: "publishToggleLabel" })).toBeInTheDocument();
+  });
+});
+
+describe("GradebookSheet manual report score", () => {
+  // grades-discipline-R2: the dialog opened empty on a student with an
+  // override, so a plain Simpan removed it.
+  afterEach(() => {
+    gradebookQueryMock.mockReset();
+  });
+
+  it("opens the override dialog on the student's current manual score", () => {
+    gradebookQueryMock.mockReturnValue({
+      data: {
+        ...sheetFixture,
+        components: [{ id: "c1", code: "TG1", kind: "formative", weight: 1 }],
+        students: [overridden],
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+      isRefetching: false,
+    } as never);
+    render(<GradebookSheet classId="class-1" subjectId="subject-1" canManage={true} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "edit-report-score" }));
+    expect(screen.getByTestId("manual-score-dialog")).toHaveTextContent(
+      JSON.stringify({ current: 75.5, average: 86.14 }),
+    );
   });
 });

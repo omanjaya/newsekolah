@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useRef,
   type ComponentPropsWithoutRef,
   type ForwardedRef,
@@ -233,6 +234,65 @@ export const DialogFooter = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<
           "sticky bottom-0 z-[1] -mx-(--dialog-px) bg-surface-overlay",
           "pt-4 pb-[calc(var(--dialog-footer-pb)+var(--dialog-safe-bottom))]",
           "[[data-overflow-end]>.dialog-body_&]:border-line",
+          className,
+        )}
+        {...props}
+      />
+    );
+  },
+);
+
+/**
+ * A live region at the top of a dialog's or sheet's scrolling body for the
+ * outcome of an action taken further down (a status change with its undo).
+ * It sticks under the header while the body scrolls, so the message and its
+ * buttons are in view wherever the reader was when they acted; a notice in
+ * the normal flow would be scrolled out of sight, above the row they used.
+ * Place it as a direct child of the body (a fragment's first element):
+ * sticky positioning holds only within its parent, so a wrapper would let
+ * it scroll away with the wrapper. Empty, it takes no space.
+ *
+ * It publishes its height to the body as `--dialog-notice-h`, which
+ * `dialog-body` (styles.css) reserves as top scroll padding while the
+ * notice has content: browsers ignore sticky elements when they scroll a
+ * focused control into view, so tabbing back up the rows could otherwise
+ * leave the focused one under the opaque notice (WCAG 2.4.11).
+ */
+export const DialogNotice = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<"div">>(
+  function DialogNotice({ className, ...props }, ref) {
+    const local = useRef<HTMLDivElement | null>(null);
+    const setRef = useCallback(
+      (node: HTMLDivElement | null) => {
+        local.current = node;
+        assignRef(ref, node);
+      },
+      [ref],
+    );
+    useEffect(() => {
+      const node = local.current;
+      const scroller = node?.parentElement;
+      if (!node || !scroller) return;
+      const publish = () => {
+        scroller.style.setProperty("--dialog-notice-h", `${node.offsetHeight}px`);
+      };
+      publish();
+      // Also fires when the notice goes from empty (not rendered) to shown.
+      const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(publish);
+      observer?.observe(node);
+      return () => {
+        observer?.disconnect();
+        scroller.style.removeProperty("--dialog-notice-h");
+      };
+    }, []);
+    return (
+      <div
+        ref={setRef}
+        aria-live="polite"
+        data-dialog-notice=""
+        className={cn(
+          // Bleeds over the body's side padding and its 4px top inset, so
+          // rows scrolling under it never show at its edges or above it.
+          "sticky top-0 z-sticky -mx-(--dialog-px) -mt-1 bg-surface-overlay px-(--dialog-px) pt-1 pb-3 empty:hidden",
           className,
         )}
         {...props}

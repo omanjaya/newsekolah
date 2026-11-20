@@ -512,6 +512,14 @@
  * form could leave the focused field under the opaque footer (WCAG 2.4.11).
  */
 @utility dialog-body {
+  /*
+   * The same for a DialogNotice pinned to the top while it has content: its
+   * measured height (overlay-parts.tsx) plus 8px for the focus ring, so a
+   * control focused while tabbing back up is not left under it.
+   */
+  &:has(> [data-dialog-notice]:not(:empty)) {
+    scroll-padding-top: calc(var(--dialog-notice-h, 0px) + var(--space-2));
+  }
   &:has(> :is(form, div) > .border-t.justify-end:last-child, [data-dialog-footer]) {
     padding-bottom: 0;
     scroll-padding-bottom: calc(

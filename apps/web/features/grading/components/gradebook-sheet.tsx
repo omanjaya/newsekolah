@@ -359,6 +359,7 @@ export function GradebookSheet({
           studentId={manualTarget.student_user_id}
           studentName={manualTarget.name}
           computedAverage={manualTarget.average}
+          currentManualScore={manualTarget.manual_score}
           decimals={sheet.scale.round_decimal}
         />
       )}

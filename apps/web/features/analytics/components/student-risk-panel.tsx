@@ -151,6 +151,16 @@ export function StudentRiskPanel({ studentId }: { studentId: string }): ReactEle
                     current={data.signals.current_average}
                   />
                 </div>
+              ) : data.signals.scored_subjects > 0 ? (
+                // A first term: its average is known, with nothing to
+                // compare it with yet.
+                <SignalFigure
+                  value={formatNumber(data.signals.current_average, {
+                    locale,
+                    fractionDigits: 1,
+                  })}
+                  unit={t("signals.gradeTrendNoPrevious")}
+                />
               ) : (
                 <p className="text-body-sm text-fg-muted">{t("signals.noData")}</p>
               )}
