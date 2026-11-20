@@ -265,7 +265,12 @@ type Querier interface {
 	// The input to "meeting_number" in the session payload: how many prior
 	// meetings this schedule has already had, so meeting_number = count + 1.
 	CountAttendanceSessionsForScheduleBeforeDate(ctx context.Context, arg CountAttendanceSessionsForScheduleBeforeDateParams) (int64, error)
-	CountAvailableCopies(ctx context.Context, arg CountAvailableCopiesParams) (int32, error)
+	// available is every copy on the shelf, read-only ones included (what a
+	// reader can pick up in the library); loanable_available leaves out the
+	// reference and read-in-place copies no borrow path will lend
+	// (domain.Copy.Loanable), so it alone decides whether a title can be
+	// borrowed now or must be reserved.
+	CountAvailableCopies(ctx context.Context, arg CountAvailableCopiesParams) (CountAvailableCopiesRow, error)
 	CountCollectionCategoryUsage(ctx context.Context, arg CountCollectionCategoryUsageParams) (int32, error)
 	CountCopiesAddedInPeriod(ctx context.Context, arg CountCopiesAddedInPeriodParams) (int32, error)
 	CountCopiesByStatus(ctx context.Context, arg CountCopiesByStatusParams) (int32, error)

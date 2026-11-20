@@ -426,7 +426,20 @@ func (s *Service) recordLateOutcome(ctx context.Context, tenantID uuid.UUID, loa
 // their own outer transaction commits (docs/analysis/
 // realtime-plan-2026-09-25.md: "Publish AFTER the transaction commits"),
 // instead of this shared helper doing it mid-transaction.
+//
+// A copy no one may borrow (reference or read-in-place, e.g. one whose
+// access was changed while it was out) is never held: the member could not
+// take it home, so it goes back on the shelf and the queue keeps waiting
+// for a loanable copy.
 func (s *Service) releaseCopyAfterReturn(ctx context.Context, tenantID, copyID, titleID uuid.UUID, condition *domain.CopyCondition) (domain.Reservation, bool, error) {
+	copyRow, found, err := s.repo.GetCopy(ctx, tenantID, copyID)
+	if err != nil {
+		return domain.Reservation{}, false, err
+	}
+	if found && !copyRow.Loanable() {
+		_, err := s.repo.UpdateCopyStatus(ctx, tenantID, copyID, domain.CopyAvailable, condition)
+		return domain.Reservation{}, false, err
+	}
 	waiting, err := s.repo.ListReservationsForTitle(ctx, tenantID, titleID)
 	if err != nil {
 		return domain.Reservation{}, false, err

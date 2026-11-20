@@ -183,6 +183,7 @@ func toAPITitle(t service.TitleWithAvailability) api.LibraryTitle {
 	out := toAPITitleBase(t.Title)
 	out.TotalCopies = t.TotalCopies
 	out.AvailableCopies = t.AvailableCopies
+	out.LoanableAvailableCopies = t.LoanableAvailableCopies
 	return out
 }
 

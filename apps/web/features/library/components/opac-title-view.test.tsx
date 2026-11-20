@@ -20,7 +20,10 @@ vi.mock("next-intl", () => ({
   useLocale: () => "id",
 }));
 
-function detail(title: Record<string, unknown>, copies: { status: string }[] = []) {
+function detail(
+  title: Record<string, unknown>,
+  copies: { status: string; access?: string }[] = [],
+) {
   return {
     title: { id: "t1", title: "Tempo", classification: "Non-Fiksi - Majalah", ...title },
     copies: copies.map((copy, index) => ({
@@ -96,6 +99,26 @@ describe("OpacTitleView", () => {
   it("offers no reservation while a copy is on the shelf", () => {
     query.mockReturnValue({
       data: detail({}, [{ status: "available" }, { status: "on_loan" }]),
+      isLoading: false,
+      error: null,
+    });
+    render(<OpacTitleView titleId="t1" />);
+    expect(screen.queryByText("reserve:t1")).not.toBeInTheDocument();
+  });
+
+  it("offers a reservation when only a reference copy is on the shelf", () => {
+    query.mockReturnValue({
+      data: detail({}, [{ status: "available", access: "reference" }, { status: "on_loan" }]),
+      isLoading: false,
+      error: null,
+    });
+    render(<OpacTitleView titleId="t1" />);
+    expect(screen.getByText("reserve:t1")).toBeInTheDocument();
+  });
+
+  it("offers no reservation for a title no member could ever borrow", () => {
+    query.mockReturnValue({
+      data: detail({}, [{ status: "on_loan", access: "read_in_place" }]),
       isLoading: false,
       error: null,
     });

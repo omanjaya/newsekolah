@@ -25,7 +25,6 @@ export function ClassTitlePicker({
   id?: string;
 }): ReactElement {
   const t = useTranslations("app.library.classLoans");
-  const tCatalogue = useTranslations("app.library.catalogue");
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const debounce = useDebouncedCallback((value: string) => {
@@ -47,8 +46,10 @@ export function ClassTitlePicker({
       options={options.map((title) => ({
         value: title.id,
         label: title.title,
-        description: tCatalogue("copiesAvailable", {
-          available: title.available_copies,
+        // Only copies a class can take home: a reference set on the shelf
+        // pairs with no one in the preview.
+        description: t("titleLoanable", {
+          available: title.loanable_available_copies,
           total: title.total_copies,
         }),
       }))}

@@ -373,6 +373,7 @@
     "navLabel": "Peminjaman kelas",
     "changeTitle": "Ganti judul",
     "titleSearchPlaceholder": "Cari judul buku pelajaran",
+    "titleLoanable": "{available} dari {total} bisa dipinjamkan",
     "tabs": {
       "borrow": "Pinjam",
       "returns": "Kembalikan"

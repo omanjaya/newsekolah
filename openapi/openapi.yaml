@@ -24865,6 +24865,7 @@ components:
         - is_opac
         - total_copies
         - available_copies
+        - loanable_available_copies
       properties:
         id:
           type: string
@@ -24929,6 +24930,11 @@ components:
           type: integer
         available_copies:
           type: integer
+          description: Copies on the shelf, reference and read-in-place copies included.
+        loanable_available_copies:
+          type: integer
+          description: The available copies a member may borrow (reference and read-in-place copies left out). Zero with copies on
+            loan means the title can be reserved.
     LibraryTitleWrite:
       type: object
       required:

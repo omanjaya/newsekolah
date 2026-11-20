@@ -31,6 +31,7 @@ const title: LibraryTitle = {
   control_number: "CTRL-1",
   total_copies: 2,
   available_copies: 1,
+  loanable_available_copies: 1,
 };
 const policy: LibraryPolicy = {
   version: 2,

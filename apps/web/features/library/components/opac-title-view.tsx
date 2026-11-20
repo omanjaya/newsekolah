@@ -103,6 +103,12 @@ function TitleDetail({ detail }: { detail: LibraryOpacTitleDetail }): ReactEleme
   // "All on loan" only when that is true: a copy held for a reservation or
   // out of circulation is not on loan.
   const allOnLoan = total > 0 && copies.every((copy) => copy.status === "on_loan");
+  // A reference copy on the shelf can be read here but never lent, so it
+  // neither makes the title borrowable now nor can it fill a reservation:
+  // reserving is offered when the title has a copy a member could take home
+  // and none of those is on the shelf (the server's Reserve counts the same).
+  const loanable = copies.filter(isLoanable);
+  const canReserve = loanable.length > 0 && loanable.every((copy) => copy.status !== "available");
 
   return (
     <div className="flex animate-enter flex-col gap-6">
@@ -151,7 +157,7 @@ function TitleDetail({ detail }: { detail: LibraryOpacTitleDetail }): ReactEleme
             ))}
           </List>
         )}
-        {total > 0 && available === 0 && <OpacReserveAction titleId={title.id} />}
+        {canReserve && <OpacReserveAction titleId={title.id} />}
       </Card>
 
       <Card>
@@ -194,6 +200,11 @@ function TitleDetail({ detail }: { detail: LibraryOpacTitleDetail }): ReactEleme
       </Card>
     </div>
   );
+}
+
+/** Whether a member could borrow this copy at all; an unset access is loanable. */
+function isLoanable(copy: Copy): boolean {
+  return copy.access !== "read_in_place" && copy.access !== "reference";
 }
 
 /** One copy: its call number (where it sits on the shelf), barcode and status. */

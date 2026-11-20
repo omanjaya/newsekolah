@@ -10671,7 +10671,10 @@ export interface components {
             /** Format: uuid */
             cover_asset_id?: string;
             total_copies: number;
+            /** @description Copies on the shelf, reference and read-in-place copies included. */
             available_copies: number;
+            /** @description The available copies a member may borrow (reference and read-in-place copies left out). Zero with copies on loan means the title can be reserved. */
+            loanable_available_copies: number;
         };
         LibraryTitleWrite: {
             control_number?: string;

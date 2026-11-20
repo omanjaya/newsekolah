@@ -98,6 +98,52 @@ func TestReferenceCopiesAreNeverLent(t *testing.T) {
 	require.Equal(t, "available", status)
 }
 
+// TestReferenceCopyOnTheShelfDoesNotBlockAReservation covers a title with a
+// reference copy on the shelf and its only loanable copy out on loan: the
+// reference copy can be read but never lent, so the title can be reserved
+// and the catalogue counts no loanable copy. When the loaned copy comes
+// back it is held for the reservation; a copy turned reference while out
+// is never held, since the member could not take it home.
+func TestReferenceCopyOnTheShelfDoesNotBlockAReservation(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	w := seedLibraryRealtimeWorld(t, ctx, pg.AdminPool, "reference-hold-"+uuid.NewString())
+	svc := newCirculationService(pg.AppPool)
+
+	_, err := pg.AdminPool.Exec(ctx, `insert into library_copies (tenant_id, title_id, barcode, status, access)
+		values ($1, $2, $3, 'available', 'reference')`, w.tenantID, w.titleID, "REF-"+w.copyBarcode)
+	require.NoError(t, err)
+
+	_, err = svc.Reserve(ctx, w.tenantID, w.titleID, w.reserverID)
+	require.ErrorIs(t, err, domain.ErrCopyAvailableForLoan, "the loanable copy is still on the shelf")
+
+	_, err = svc.Borrow(ctx, w.tenantID, service.BorrowInput{
+		Barcode: w.copyBarcode, MemberUserID: w.borrowerID, CheckedOutBy: w.borrowerID, Channel: domain.ChannelDesk,
+	})
+	require.NoError(t, err)
+
+	title, err := svc.GetTitle(ctx, w.tenantID, w.titleID)
+	require.NoError(t, err)
+	require.Equal(t, 1, title.AvailableCopies, "the reference copy is still on the shelf")
+	require.Equal(t, 0, title.LoanableAvailableCopies)
+
+	reservation, err := svc.Reserve(ctx, w.tenantID, w.titleID, w.reserverID)
+	require.NoError(t, err, "a reference copy on the shelf cannot be borrowed, so it must not block a hold")
+
+	// The loaned copy is turned reference while it is out: on return it goes
+	// back on the shelf and the reservation keeps waiting.
+	_, err = pg.AdminPool.Exec(ctx, `update library_copies set access = 'reference' where id = $1`, w.copyID)
+	require.NoError(t, err)
+	_, err = svc.Return(ctx, w.tenantID, service.ReturnInput{Barcode: w.copyBarcode, CheckedInBy: w.borrowerID})
+	require.NoError(t, err)
+
+	var copyStatus, reservationStatus string
+	require.NoError(t, pg.AdminPool.QueryRow(ctx, `select status from library_copies where id = $1`, w.copyID).Scan(&copyStatus))
+	require.Equal(t, "available", copyStatus)
+	require.NoError(t, pg.AdminPool.QueryRow(ctx, `select status from library_reservations where id = $1`, reservation.ID).Scan(&reservationStatus))
+	require.Equal(t, "waiting", reservationStatus, "a copy no one may borrow is never held for a reservation")
+}
+
 // TestBatchBorrowKeepsTheMembersOwnReason covers a member blocked by an
 // unpaid fine at the desk: every barcode is rejected, and the batch must
 // say why (LIBRARY_UNPAID_FINE) instead of failing the whole request with

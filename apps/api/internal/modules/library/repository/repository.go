@@ -173,12 +173,14 @@ func (r *Repository) CountTitleCopies(ctx context.Context, tenantID, titleID uui
 	return int(n), nil
 }
 
-func (r *Repository) CountAvailableCopies(ctx context.Context, tenantID, titleID uuid.UUID) (int, error) {
-	n, err := r.queries(ctx).CountAvailableCopies(ctx, db.CountAvailableCopiesParams{TenantID: tenantID, TitleID: titleID})
+// CountAvailableCopies returns the copies of titleID on the shelf, and how
+// many of those may be lent (reference and read-in-place copies left out).
+func (r *Repository) CountAvailableCopies(ctx context.Context, tenantID, titleID uuid.UUID) (available, loanable int, err error) {
+	row, err := r.queries(ctx).CountAvailableCopies(ctx, db.CountAvailableCopiesParams{TenantID: tenantID, TitleID: titleID})
 	if err != nil {
-		return 0, fmt.Errorf("count available copies: %w", err)
+		return 0, 0, fmt.Errorf("count available copies: %w", err)
 	}
-	return int(n), nil
+	return int(row.Available), int(row.LoanableAvailable), nil
 }
 
 // Copies.

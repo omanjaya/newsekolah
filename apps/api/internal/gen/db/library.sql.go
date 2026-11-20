@@ -173,7 +173,11 @@ func (q *Queries) CountActiveLoansForMember(ctx context.Context, arg CountActive
 }
 
 const countAvailableCopies = `-- name: CountAvailableCopies :one
-select count(*)::int from library_copies where tenant_id = $1 and title_id = $2 and status = 'available'
+select
+  count(*)::int as available,
+  count(*) filter (where access not in ('reference', 'read_in_place'))::int as loanable_available
+from library_copies
+where tenant_id = $1 and title_id = $2 and status = 'available'
 `
 
 type CountAvailableCopiesParams struct {
@@ -181,11 +185,21 @@ type CountAvailableCopiesParams struct {
 	TitleID  uuid.UUID `json:"title_id"`
 }
 
-func (q *Queries) CountAvailableCopies(ctx context.Context, arg CountAvailableCopiesParams) (int32, error) {
+type CountAvailableCopiesRow struct {
+	Available         int32 `json:"available"`
+	LoanableAvailable int32 `json:"loanable_available"`
+}
+
+// available is every copy on the shelf, read-only ones included (what a
+// reader can pick up in the library); loanable_available leaves out the
+// reference and read-in-place copies no borrow path will lend
+// (domain.Copy.Loanable), so it alone decides whether a title can be
+// borrowed now or must be reserved.
+func (q *Queries) CountAvailableCopies(ctx context.Context, arg CountAvailableCopiesParams) (CountAvailableCopiesRow, error) {
 	row := q.db.QueryRow(ctx, countAvailableCopies, arg.TenantID, arg.TitleID)
-	var column_1 int32
-	err := row.Scan(&column_1)
-	return column_1, err
+	var i CountAvailableCopiesRow
+	err := row.Scan(&i.Available, &i.LoanableAvailable)
+	return i, err
 }
 
 const countStocktakeScans = `-- name: CountStocktakeScans :one

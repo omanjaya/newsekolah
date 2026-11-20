@@ -373,6 +373,7 @@
     "navLabel": "Class loans",
     "changeTitle": "Change title",
     "titleSearchPlaceholder": "Search a textbook title",
+    "titleLoanable": "{available} of {total} can be lent",
     "tabs": {
       "borrow": "Borrow",
       "returns": "Return"
