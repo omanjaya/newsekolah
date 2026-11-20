@@ -37,6 +37,7 @@ import {
 } from "../api";
 import { describeAudience } from "../lib/describe-audience";
 import { isMissedSchedule } from "../lib/missed-schedule";
+import { startsLater } from "../lib/starts-later";
 
 import { AnnouncementForm } from "./announcement-form";
 
@@ -106,7 +107,7 @@ export function AnnouncementsManage({
    */
   function publishConfirmBody(a: Announcement): string {
     const values = { title: a.title, audience: describeAudience(a.audience, t) };
-    if (a.starts_at && new Date(a.starts_at) > businessNow()) {
+    if (a.starts_at && startsLater(a, businessNow())) {
       return t("actions.publishConfirmBodyLater", {
         ...values,
         date: formatDateTime(a.starts_at, { locale, timeZone }),
@@ -115,10 +116,24 @@ export function AnnouncementsManage({
     return t("actions.publishConfirmBody", values);
   }
 
+  /**
+   * The result of a transition. A publish whose start is still ahead has
+   * not been sent to anyone yet, so it says from when it shows instead.
+   */
+  function doneMessage(action: "publish" | "schedule" | "archive", a: Announcement): string {
+    if (action === "publish" && a.starts_at && startsLater(a, businessNow())) {
+      return t("actions.publishDoneLater", {
+        date: formatDateTime(a.starts_at, { locale, timeZone }),
+      });
+    }
+    return t(`actions.${action}Done`);
+  }
+
   async function run(action: "publish" | "schedule" | "archive", a: Announcement) {
     try {
-      await transition.mutateAsync({ id: a.id, action });
-      toast.success(t(`actions.${action}Done`));
+      // The server's copy, not the row, is the truth for the start.
+      const updated = await transition.mutateAsync({ id: a.id, action });
+      toast.success(doneMessage(action, updated));
     } catch (error) {
       fail(error);
     }
