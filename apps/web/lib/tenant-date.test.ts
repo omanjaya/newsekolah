@@ -30,6 +30,10 @@ describe("startOfIsoMonth", () => {
   it("returns the 1st of the given date's month", () => {
     expect(startOfIsoMonth("2026-09-15")).toBe("2026-09-01");
   });
+
+  it("accepts a month picker's YYYY-MM value", () => {
+    expect(startOfIsoMonth("2026-11")).toBe("2026-11-01");
+  });
 });
 
 describe("startOfPreviousIsoMonth", () => {
