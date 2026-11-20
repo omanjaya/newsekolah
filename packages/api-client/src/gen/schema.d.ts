@@ -6268,6 +6268,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/exit-permits/awaiting-return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Students who left on an exit permit today and are not back yet
+         * @description The gate's list: today's permits (the school's own calendar day) whose student went through the gate, is expected back, and has not been recorded back. The earliest due return comes first; overdue is set once the end of the permit's last period has passed.
+         */
+        get: operations["listExitPermitsAwaitingReturn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/exit-permits/{instanceId}": {
         parameters: {
             query?: never;
@@ -6350,6 +6370,26 @@ export interface paths {
         put?: never;
         /** Security scans the gate QR; the permit is completed */
         post: operations["scanExitPermitGate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/exit-permits/{instanceId}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Security records the student back through the gate
+         * @description Stamps the return time on a permit whose student went out and is expected back. A return after the end of the permit's last period is late (returned_late). 409 EXIT_PERMIT_NOT_AWAITING_RETURN when the student has not gone out, is not expected back, or is already back.
+         */
+        post: operations["recordExitPermitReturn"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11496,12 +11536,48 @@ export interface components {
             exited_at?: string;
             student_name: string;
             class_name: string;
+            /** @description False when the student went home and is not expected back. */
+            return_required: boolean;
+            /**
+             * Format: date-time
+             * @description When the student is due back: the end of the permit's last period on the exit day, set at the gate scan.
+             */
+            expected_return_at?: string;
+            /**
+             * Format: date-time
+             * @description When security recorded the student back through the gate.
+             */
+            returned_at?: string;
+            /** @description Set once returned; true when the return came after expected_return_at. */
+            returned_late?: boolean;
+        };
+        ExitPermitAwaitingReturn: {
+            /** Format: uuid */
+            instance_id: string;
+            /** Format: uuid */
+            student_user_id: string;
+            /** Format: uuid */
+            class_id?: string;
+            destination: string;
+            student_name: string;
+            class_name: string;
+            /** Format: date-time */
+            exited_at: string;
+            /** Format: date-time */
+            expected_return_at?: string;
+            /** @description The student is still out after expected_return_at. */
+            overdue: boolean;
         };
         /** @description One of the student's own exit permits in their history: the workflow instance plus where they went and when they passed the gate, so a row can say so without opening the permit. */
         MyExitPermit: components["schemas"]["WorkflowInstance"] & {
             destination: string;
             /** Format: date-time */
             exited_at?: string;
+            return_required: boolean;
+            /** Format: date-time */
+            expected_return_at?: string;
+            /** Format: date-time */
+            returned_at?: string;
         };
         LateArrivalDetail: {
             instance: components["schemas"]["WorkflowInstance"];
@@ -25438,6 +25514,11 @@ export interface operations {
                     start_period_id: string;
                     /** Format: uuid */
                     end_period_id: string;
+                    /**
+                     * @description False when the student goes home and is not expected back the same day; otherwise the gate awaits their return.
+                     * @default true
+                     */
+                    return_required?: boolean;
                 };
             };
         };
@@ -25475,6 +25556,11 @@ export interface operations {
                     start_period_id: string;
                     /** Format: uuid */
                     end_period_id: string;
+                    /**
+                     * @description False when the student goes home and is not expected back today.
+                     * @default true
+                     */
+                    return_required?: boolean;
                 };
             };
         };
@@ -25516,6 +25602,30 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    listExitPermitsAwaitingReturn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Permits */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ExitPermitAwaitingReturn"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     getExitPermit: {
@@ -25655,6 +25765,32 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             410: components["responses"]["TokenGone"];
+        };
+    };
+    recordExitPermitReturn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                instanceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExitPermitDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     openLateArrival: {

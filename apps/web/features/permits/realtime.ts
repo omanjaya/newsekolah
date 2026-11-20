@@ -30,7 +30,9 @@ const EXIT_PERMIT_SELF_EVENTS = [
   "exit_permit.stage_changed",
   "exit_permit.issued",
   "exit_permit.exited",
+  "exit_permit.returned",
 ] as const;
+export const EXIT_PERMIT_RETURN_EVENTS = ["exit_permit.exited", "exit_permit.returned"] as const;
 export const LEAVE_REQUEST_QUEUE_EVENTS = [
   "leave_request.submitted",
   "leave_request.reviewed",
@@ -68,6 +70,16 @@ export function useExitPermitReviewQueueLive(enabled: boolean): void {
   useLiveTopic(enabled && canApprove ? "duty:leadership" : undefined);
   useLiveTopic(enabled && canGate ? "duty:security" : undefined);
   useLiveInvalidate(EXIT_PERMIT_QUEUE_EVENTS, [queryKeys.exitPermitReviewQueue()]);
+}
+
+/**
+ * The gate's "not back yet" list: every exit and every recorded return
+ * reaches `duty:security`, so a second guard's scan or return shows on
+ * this one's screen as well.
+ */
+export function useExitPermitsAwaitingReturnLive(enabled: boolean): void {
+  useLiveTopic(enabled ? "duty:security" : undefined);
+  useLiveInvalidate(EXIT_PERMIT_RETURN_EVENTS, [queryKeys.exitPermitsAwaitingReturn()]);
 }
 
 /** Sent to the teacher whose desk QR a student just scanned (their own user topic). */

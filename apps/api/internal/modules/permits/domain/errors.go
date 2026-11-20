@@ -30,6 +30,10 @@ var (
 
 	ErrExitPermitNotIssued = errors.New("exit permit has not been issued yet")
 	ErrExitPermitExited    = errors.New("exit permit already exited")
+	// ErrExitPermitNotAwaitingReturn is a return recorded for a permit
+	// whose student has not gone out, is not expected back, or is
+	// already back.
+	ErrExitPermitNotAwaitingReturn = errors.New("exit permit is not awaiting the student's return")
 
 	ErrLeaveRequestDateRangeInvalid = errors.New("leave request end date must not be before start date")
 	ErrLeaveRequestNotReviewable    = errors.New("leave request is not awaiting review")

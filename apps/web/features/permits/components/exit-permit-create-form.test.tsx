@@ -90,6 +90,30 @@ describe("CreateForm periods", () => {
     expect(screen.queryByText("noPeriodsLeft")).not.toBeInTheDocument();
   });
 
+  it("asks the gate to await the student back unless they go home", async () => {
+    mocks.now = new Date("2027-01-13T03:00:00Z");
+    mocks.create.mockResolvedValue({ instance: { id: "inst-1" } });
+    const user = userEvent.setup();
+    render(<CreateForm onDone={vi.fn()} />);
+
+    await user.type(screen.getByRole("textbox", { name: /destination/ }), "Pulang, sakit");
+    await user.click(screen.getByRole("combobox", { name: "from" }));
+    await user.click(screen.getByRole("option", { name: "Jam 6 (11.00 – 11.45)" }));
+    await user.click(screen.getByRole("combobox", { name: "to" }));
+    await user.click(screen.getByRole("option", { name: "Jam 7 (11.45 – 12.30)" }));
+    const returns = screen.getByRole("checkbox", { name: /returns/ });
+    expect(returns).toBeChecked();
+    await user.click(returns);
+    await user.click(screen.getByRole("button", { name: "submit" }));
+
+    expect(mocks.create).toHaveBeenCalledWith({
+      destination: "Pulang, sakit",
+      start_period_id: "p6",
+      end_period_id: "p7",
+      return_required: false,
+    });
+  });
+
   it("says the school day is over when no lesson is left", () => {
     mocks.now = new Date("2027-01-13T06:00:00Z");
     render(<CreateForm onDone={vi.fn()} />);

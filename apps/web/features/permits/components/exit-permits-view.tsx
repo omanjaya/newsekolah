@@ -25,8 +25,10 @@ import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
-import { todayInZone } from "../../../lib/tenant-date";
-import { type WorkflowInstance, useMyExitPermitsQuery } from "../api";
+import { useBusinessNow } from "../../../lib/simulation/clock";
+import { isoToZonedLocal, todayInZone } from "../../../lib/tenant-date";
+import { type MyExitPermit, type WorkflowInstance, useMyExitPermitsQuery } from "../api";
+import { exitReturnState } from "../lib/exit-return";
 import { formatShortWeekdayDate } from "../lib/permit-dates";
 import { useCanSubmitPermit } from "../lib/use-can-submit-permit";
 
@@ -40,6 +42,20 @@ import { WorkflowStatusBadge } from "./workflow-stepper";
 /** A permit still on its way, or approved and not yet through the gate. */
 function isActive(inst: WorkflowInstance): boolean {
   return inst.status === "in_progress" || inst.status === "approved";
+}
+
+/**
+ * Through the gate on the school's today and not recorded back yet: the
+ * student is still out on it, so the status card stays on it (due back at,
+ * or late by) instead of the idle prompt.
+ */
+function isOutToday(item: MyExitPermit, today: string, timeZone?: string): boolean {
+  return (
+    item.exited_at !== undefined &&
+    item.return_required &&
+    item.returned_at === undefined &&
+    isoToZonedLocal(item.exited_at, timeZone).slice(0, 10) === today
+  );
 }
 
 /**
@@ -165,7 +181,11 @@ function MyExitPermits(): ReactElement {
   const [creating, setCreating] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const items = data?.data ?? [];
-  const active = items.find(isActive);
+  const timeZone = me?.tenant.timezone;
+  // The school's today, so a row in its current year drops the year.
+  const today = todayInZone(timeZone);
+  const now = useBusinessNow();
+  const active = items.find(isActive) ?? items.find((item) => isOutToday(item, today, timeZone));
   // The permit the status card showed last. The gate scan completes it,
   // so it is no longer active; the card stays on it so that its exited
   // state ("Sudah keluar", with the time) answers the scan, instead of the
@@ -178,9 +198,18 @@ function MyExitPermits(): ReactElement {
     : items.find((item) => item.id === cardId && item.status === "completed");
   const onCard = active ?? exited;
   const history = items.filter((item) => item !== onCard);
-  const timeZone = me?.tenant.timezone;
-  // The school's today, so a row in its current year drops the year.
-  const today = todayInZone(timeZone);
+
+  /** "kembali 11.20" (", terlambat 20 menit") once the return is recorded. */
+  function returnMeta(item: MyExitPermit): string[] {
+    const state = exitReturnState(item, now);
+    if (state.kind !== "returned") return [];
+    const time = formatTime(state.at, { locale, timeZone });
+    return [
+      state.lateMinutes > 0
+        ? t("returnedLateMeta", { time, minutes: state.lateMinutes })
+        : t("returnedMeta", { time }),
+    ];
+  }
 
   return (
     // No header action: the idle card carries "Ajukan izin keluar", and
@@ -246,6 +275,7 @@ function MyExitPermits(): ReactElement {
                         : t("openedAt", {
                             time: formatTime(inst.opened_at, { locale, timeZone }),
                           }),
+                      ...returnMeta(inst),
                     ]}
                     // The day, the time and the status all stay whole on a
                     // 320-390px phone in every locale ("Diajukan pukul 15.49"

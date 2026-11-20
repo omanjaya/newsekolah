@@ -5,41 +5,43 @@ import type { Locale } from "@newsekolah/i18n";
 import { formatTime } from "@newsekolah/i18n";
 import {
   Avatar,
+  Badge,
   type BarcodeScanEvent,
+  Button,
   EmptyState,
-  IconButton,
   List,
   ListRow,
   Scanner,
   SectionHeader,
   type ScannerResultValue,
+  SkeletonList,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import { Undo2 } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
-import { businessNow } from "../../../lib/simulation/clock";
+import { useBusinessNow } from "../../../lib/simulation/clock";
 import { formatDisplayName } from "../../../lib/text/format-name";
-import { decodeScanPayload, useScanGateMutation } from "../api";
-
-interface GateLogEntry {
-  key: string;
-  studentName: string;
-  className: string;
-  at: string;
-}
+import {
+  type ExitPermitAwaitingReturn,
+  decodeScanPayload,
+  useExitPermitsAwaitingReturnQuery,
+  useRecordExitPermitReturnMutation,
+  useScanGateMutation,
+} from "../api";
+import { minutesLate } from "../lib/exit-return";
 
 /**
- * Security: scan the gate QR the student shows. Keeps a session-local
- * "just scanned" list with times (docs' "today's list with times") so the
- * gate can see who has already passed without leaving the screen -- this
- * list lives only in this tab's memory, not the server, so "undo" only
- * hides an entry here; it does not reverse the recorded gate scan.
+ * Security: scan the gate QR the student shows, then record the student
+ * back. Beside the scanner sits the server's list of today's students who
+ * went out and are not back yet, the earliest due first, with the ones
+ * past their due time marked late; "Catat kembali" records a return.
  *
  * The typed field is for a keyboard-wedge barcode scanner, which types the
  * whole QR payload (permit and token). The student's gate QR prints no
@@ -48,8 +50,6 @@ interface GateLogEntry {
 export function GatePanel({ modeSwitch }: { modeSwitch?: ReactNode } = {}): ReactElement {
   const t = useTranslations("app.permits.exit.gate");
   const tScan = useTranslations("app.permits.scan");
-  const locale = useLocale() as Locale;
-  const { me } = useSession();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
@@ -62,7 +62,6 @@ export function GatePanel({ modeSwitch }: { modeSwitch?: ReactNode } = {}): Reac
   }
 
   const scan = useScanGateMutation();
-  const [log, setLog] = useState<GateLogEntry[]>([]);
   const [result, setResult] = useState<ScannerResultValue | null>(null);
 
   async function handleScan(event: BarcodeScanEvent): Promise<boolean> {
@@ -73,17 +72,6 @@ export function GatePanel({ modeSwitch }: { modeSwitch?: ReactNode } = {}): Reac
     }
     try {
       const passed = await scan.mutateAsync({ id: instanceId, token });
-      setLog((prev) =>
-        [
-          {
-            key: `${instanceId}:${Date.now()}`,
-            studentName: passed.student_name,
-            className: passed.class_name,
-            at: businessNow().toISOString(),
-          },
-          ...prev,
-        ].slice(0, 20),
-      );
       setResult({
         tone: "success",
         title: t("passed"),
@@ -116,47 +104,98 @@ export function GatePanel({ modeSwitch }: { modeSwitch?: ReactNode } = {}): Reac
         submitLabel={tScan("submit")}
         result={result}
       />
-      <section className="flex flex-col gap-3" aria-labelledby="gate-log-title">
-        <SectionHeader
-          titleId="gate-log-title"
-          title={t("todayListTitle")}
-          description={t("todayListHint")}
-          count={log.length}
-        />
-        {log.length === 0 ? (
-          <EmptyState
-            variant="compact"
-            icon={<domainIcons.exitPermit aria-hidden="true" />}
-            title={t("todayListEmpty")}
-          />
-        ) : (
-          <List framed>
-            {log.map((entry, index) => (
-              <ListRow
-                key={entry.key}
-                leading={<Avatar size={40} name={entry.studentName} decorative />}
-                title={formatDisplayName(entry.studentName)}
-                titleLines={2}
-                meta={entry.className}
-                trailing={formatTime(entry.at, { locale, timeZone: me?.tenant.timezone })}
-                action={
-                  index === 0 ? (
-                    <IconButton
-                      icon={<Undo2 />}
-                      aria-label={t("undoLast")}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setLog((prev) => prev.slice(1));
-                      }}
-                    />
-                  ) : undefined
-                }
-              />
-            ))}
-          </List>
-        )}
-      </section>
+      <AwaitingReturnList />
     </div>
+  );
+}
+
+/** Today's students out on a permit and not back yet, each with "Catat kembali". */
+function AwaitingReturnList(): ReactElement {
+  const t = useTranslations("app.permits.exit.gate");
+  const { data, isLoading, isError, refetch } = useExitPermitsAwaitingReturnQuery();
+  const items = data?.data ?? [];
+
+  return (
+    <section className="flex flex-col gap-3" aria-labelledby="gate-out-title">
+      <SectionHeader
+        titleId="gate-out-title"
+        title={t("outTitle")}
+        description={t("outHint")}
+        count={items.length}
+      />
+      {isLoading ? (
+        <SkeletonList rows={2} leading framed />
+      ) : isError && !data ? (
+        <QueryError retry={() => refetch()} />
+      ) : items.length === 0 ? (
+        <EmptyState
+          variant="compact"
+          icon={<domainIcons.exitPermit aria-hidden="true" />}
+          title={t("outEmpty")}
+        />
+      ) : (
+        <List framed>
+          {items.map((item) => (
+            <AwaitingReturnRow key={item.instance_id} item={item} />
+          ))}
+        </List>
+      )}
+    </section>
+  );
+}
+
+function AwaitingReturnRow({ item }: { item: ExitPermitAwaitingReturn }): ReactElement {
+  const t = useTranslations("app.permits.exit.gate");
+  const locale = useLocale() as Locale;
+  const { me } = useSession();
+  const toast = useToast();
+  const apiErrorMessage = useApiErrorMessage();
+  const record = useRecordExitPermitReturnMutation();
+  const now = useBusinessNow();
+  const timeZone = me?.tenant.timezone;
+  const name = formatDisplayName(item.student_name);
+  const late = item.expected_return_at ? minutesLate(item.expected_return_at, now) : 0;
+
+  async function recordReturn() {
+    try {
+      await record.mutateAsync(item.instance_id);
+      toast.success(t("returnedToast", { name }));
+    } catch (error) {
+      toast.error(apiErrorMessage(error instanceof ApiError ? error.code : "UNKNOWN"));
+    }
+  }
+
+  return (
+    <ListRow
+      leading={<Avatar size={40} name={item.student_name} decorative />}
+      title={name}
+      titleLines={2}
+      meta={[
+        item.class_name,
+        item.expected_return_at
+          ? t("dueBack", { time: formatTime(item.expected_return_at, { locale, timeZone }) })
+          : t("exitedAt", { time: formatTime(item.exited_at, { locale, timeZone }) }),
+      ]}
+      keepMetaWhole
+      trailing={
+        // The server's flag is the decision; the minutes follow the clock
+        // on screen between refetches.
+        item.overdue || late > 0 ? (
+          <Badge tone="danger">{t("overdue", { minutes: Math.max(late, 1) })}</Badge>
+        ) : undefined
+      }
+      action={
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={<LogIn />}
+          loading={record.isPending}
+          aria-label={t("recordReturnFor", { name })}
+          onClick={() => void recordReturn()}
+        >
+          {t("recordReturn")}
+        </Button>
+      }
+    />
   );
 }

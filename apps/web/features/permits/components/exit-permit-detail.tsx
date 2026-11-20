@@ -6,6 +6,7 @@ import { formatDateTime, formatTime } from "@newsekolah/i18n";
 import {
   Button,
   Card,
+  Checkbox,
   ConfirmDialog,
   DataList,
   DataListItem,
@@ -45,6 +46,7 @@ import {
   useIssueGateTokenMutation,
   useScanExitPermitStageMutation,
 } from "../api";
+import { exitReturnState } from "../lib/exit-return";
 import {
   endAfterStartChange,
   endPeriodOptions,
@@ -52,6 +54,7 @@ import {
   upcomingLessonPeriods,
 } from "../lib/lesson-period-options";
 
+import { ExitedCard, useReturnText } from "./exit-permit-return";
 import { StageScanDialog } from "./stage-scan-dialog";
 import { WorkflowStepper, WorkflowSteps } from "./workflow-stepper";
 
@@ -81,6 +84,7 @@ export function CreateForm({
   const [destination, setDestination] = useState("");
   const [startId, setStartId] = useState("");
   const [endId, setEndId] = useState("");
+  const [returns, setReturns] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attempted, setAttempted] = useState(false);
 
@@ -93,6 +97,7 @@ export function CreateForm({
         destination: destination.trim(),
         start_period_id: startId,
         end_period_id: endId,
+        return_required: returns,
       });
       toast.success(t("created"));
       onDone(detail.instance.id);
@@ -148,6 +153,15 @@ export function CreateForm({
             placeholder={t("pick")}
           />
         </Field>
+        <Checkbox
+          containerClassName="col-span-full"
+          checked={returns}
+          onCheckedChange={(value) => {
+            setReturns(value === true);
+          }}
+          label={t("returns")}
+          description={t("returnsHint")}
+        />
       </FormSection>
       <p className="text-body-sm text-fg-muted">{t("stagesHint")}</p>
       <DialogFooter>
@@ -206,6 +220,7 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
   const gate = useIssueGateTokenMutation();
   const scan = useScanExitPermitStageMutation();
   const periodRange = usePeriodRange(data);
+  const now = useBusinessNow();
   const [scanning, setScanning] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const gateQrRef = useRef<HTMLDivElement>(null);
@@ -226,21 +241,18 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
   const opened = formatTime(inst.opened_at, { locale, timeZone: me?.tenant.timezone });
   const meta = [periodRange, t("openedAt", { time: opened })].filter(Boolean).join(" · ");
 
+  const timeZone = me?.tenant.timezone;
   if (data.exited_at) {
     return (
-      <HeroCard
-        tone="neutral"
-        eyebrow={t("hero.exitedEyebrow")}
-        title={data.destination}
-        meta={t("hero.exitedAt", {
-          time: formatTime(data.exited_at, { locale, timeZone: me?.tenant.timezone }),
-        })}
+      <ExitedCard
+        destination={data.destination}
+        exitedAt={formatTime(data.exited_at, { locale, timeZone })}
+        state={exitReturnState(data, now)}
       />
     );
   }
 
   const approved = inst.status === "approved";
-  const timeZone = me?.tenant.timezone;
   const scanStage = inst.status === "in_progress" && stage?.verification === "qr_scan";
   return (
     <HeroCard
@@ -391,6 +403,7 @@ export function ExitPermitDetail({ id }: { id: string }): ReactElement {
   const { me } = useSession();
   const { data, isLoading, error, refetch } = useExitPermitQuery(id);
   const periodRange = usePeriodRange(data);
+  const returnText = useReturnText(data);
 
   if (isLoading) return <SkeletonDetail rows={3} />;
   if (error || !data) return <QueryError retry={refetch} error={error} />;
@@ -414,6 +427,7 @@ export function ExitPermitDetail({ id }: { id: string }): ReactElement {
             {formatDateTime(data.exited_at, { locale, timeZone })}
           </DataListItem>
         )}
+        {returnText && <DataListItem label={t("returnLabel")}>{returnText}</DataListItem>}
       </DataList>
     </div>
   );

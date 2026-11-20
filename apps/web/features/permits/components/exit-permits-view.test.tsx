@@ -96,6 +96,7 @@ function permit(
     subject_user_id: "student-1",
     opened_at: "2026-11-18T02:00:00Z",
     destination: "Puskesmas",
+    return_required: true,
     ...extra,
   };
 }
@@ -200,9 +201,70 @@ describe("ExitPermitsView for a student", () => {
     expect(screen.getByRole("button", { name: "request" })).toBeInTheDocument();
     expect(screen.getByText("historyTitle")).toBeInTheDocument();
   });
+
+  // The regression: after the gate the card fell back to the idle prompt on
+  // the next visit, so a student still out had nothing telling them when to
+  // be back, and the late return showed nowhere.
+  it("keeps a permit the student is still out on today on the status card, on a fresh visit", () => {
+    mocks.items = [
+      permit("p1", "completed", {
+        exited_at: "2026-11-19T02:15:00Z",
+        expected_return_at: "2026-11-19T03:00:00Z",
+      }),
+    ];
+    render(<ExitPermitsView />);
+
+    expect(screen.getByTestId("status-card")).toHaveTextContent("p1");
+    expect(screen.queryByText("idleTitle")).not.toBeInTheDocument();
+  });
+
+  it("lets go of the permit once the student is back, or when no return is expected", () => {
+    mocks.items = [
+      permit("p1", "completed", {
+        exited_at: "2026-11-19T02:15:00Z",
+        expected_return_at: "2026-11-19T03:00:00Z",
+        returned_at: "2026-11-19T02:50:00Z",
+      }),
+      permit("p0", "completed", {
+        exited_at: "2026-11-19T00:15:00Z",
+        return_required: false,
+      }),
+    ];
+    render(<ExitPermitsView />);
+
+    expect(screen.queryByTestId("status-card")).not.toBeInTheDocument();
+    expect(screen.getByText("idleTitle")).toBeInTheDocument();
+  });
+
+  it("does not hold a permit from an earlier day the gate never closed", () => {
+    mocks.items = [
+      permit("p1", "completed", {
+        exited_at: "2026-11-18T02:15:00Z",
+        expected_return_at: "2026-11-18T03:00:00Z",
+      }),
+    ];
+    render(<ExitPermitsView />);
+
+    expect(screen.queryByTestId("status-card")).not.toBeInTheDocument();
+  });
 });
 
 describe("ExitPermitsView history rows", () => {
+  it("says when the student came back, and how late", () => {
+    mocks.items = [
+      permit("p0", "completed", {
+        exited_at: "2026-11-18T02:15:00Z",
+        expected_return_at: "2026-11-18T03:00:00Z",
+        returned_at: "2026-11-18T03:20:00Z",
+      }),
+    ];
+    render(<ExitPermitsView />);
+
+    const [row] = screen.getAllByRole("listitem");
+    expect(row).toHaveTextContent("exitedMeta 10.15");
+    expect(row).toHaveTextContent("returnedLateMeta 11.20");
+  });
+
   it("names each past permit by where the student went, with the day and the gate time", () => {
     mocks.items = [
       permit("p0", "completed", {

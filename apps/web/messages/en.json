@@ -957,7 +957,8 @@
         "cancel": "Cancel",
         "title": "Record without the student's phone",
         "kindLabel": "Record kind",
-        "studentRequired": "Pick a student first."
+        "studentRequired": "Pick a student first.",
+        "returns": "The student comes back to school afterwards"
       },
       "openMonitor": "Open the monitor screen",
       "modeLabel": "Duty mode",
@@ -1543,7 +1544,9 @@
           "submit": "Submit",
           "required": "Required.",
           "cancel": "Cancel",
-          "description": "Write where you are going and which periods you will miss."
+          "description": "Write where you are going and which periods you will miss.",
+          "returns": "I will come back to school afterwards",
+          "returnsHint": "Untick this if you go home and will not be back today. Security records your return at the gate."
         },
         "approve": {
           "title": "Approve the duty stage",
@@ -1556,14 +1559,18 @@
           "payloadLabel": "Gate QR code (barcode scanner)",
           "needPayload": "The gate code must come from the student's QR.",
           "passed": "Student cleared to leave",
-          "lastTitle": "Last exit",
-          "todayListTitle": "Just cleared the gate",
-          "undoLast": "Hide from this list",
           "title": "Scan the gate QR",
           "refused": "Cannot leave",
           "tokenGone": "This gate QR has expired or was already used. Ask the student to tap Generate a new code on their permit screen, then scan again.",
-          "todayListHint": "Kept on this screen while the page stays open.",
-          "todayListEmpty": "No student has passed the gate yet."
+          "outTitle": "Not back yet",
+          "outHint": "Students who left today and are not recorded back. Record each one as they come back through the gate.",
+          "outEmpty": "No student is out right now.",
+          "dueBack": "due back by {time}",
+          "exitedAt": "left {time}",
+          "overdue": "{minutes} min late",
+          "recordReturn": "Record return",
+          "recordReturnFor": "Record return: {name}",
+          "returnedToast": "{name} recorded back"
         },
         "queue": {
           "emptyTitle": "Nothing waiting right now",
@@ -1584,7 +1591,12 @@
           "exitedEyebrow": "Left school",
           "exitedAt": "Through the gate at {time}",
           "scanStage": "Scan the {stage} QR",
-          "scanHint": "Ask the {stage} to show the approval QR, then point the camera at it."
+          "scanHint": "Ask the {stage} to show the approval QR, then point the camera at it.",
+          "notBackChip": "Not back yet",
+          "dueBack": "Due back by {time}",
+          "wasDueBack": "Was due back at {time}",
+          "returnedEyebrow": "Back at school",
+          "returnedAt": "Back at {time}"
         },
         "waitManual": "Waiting for {stage} to review.",
         "gateQrLabel": "Exit permit gate QR code",
@@ -1604,7 +1616,17 @@
           "body": "Approvals already given are lost, and this permit cannot be resumed.",
           "confirm": "Cancel permit",
           "keep": "Go back"
-        }
+        },
+        "lateBy": "{minutes} min late",
+        "onTime": "On time",
+        "returnLabel": "Return",
+        "noReturn": "Not coming back to school",
+        "returnedOnTime": "Back at {time}, on time",
+        "returnedLate": "Back at {time}, {minutes} min late",
+        "notBack": "Not back yet, due by {time}",
+        "notBackLate": "Not back yet, {minutes} min past {time}",
+        "returnedMeta": "back {time}",
+        "returnedLateMeta": "back {time}, {minutes} min late"
       },
       "late": {
         "eyebrow": "Student affairs",

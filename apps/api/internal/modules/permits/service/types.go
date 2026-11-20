@@ -99,6 +99,14 @@ type ExitPermitReviewItem struct {
 	OpenedAt     time.Time
 }
 
+// ExitPermitAwaitingReturn is a permit whose student went through the gate
+// today and has not been recorded back, for the gate's list.
+type ExitPermitAwaitingReturn struct {
+	domain.ExitPermit
+	SubjectUserID uuid.UUID
+	ClassID       uuid.NullUUID
+}
+
 // LeaveRequestItem is a leave request joined with its workflow state.
 type LeaveRequestItem struct {
 	domain.LeaveRequest

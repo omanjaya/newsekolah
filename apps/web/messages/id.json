@@ -957,7 +957,8 @@
         "cancel": "Batal",
         "title": "Catat tanpa HP siswa",
         "kindLabel": "Jenis catatan",
-        "studentRequired": "Pilih siswa dulu."
+        "studentRequired": "Pilih siswa dulu.",
+        "returns": "Siswa kembali ke sekolah setelah urusan selesai"
       },
       "openMonitor": "Buka layar monitor",
       "modeLabel": "Mode piket",
@@ -1541,7 +1542,9 @@
           "submit": "Ajukan",
           "required": "Wajib diisi.",
           "cancel": "Batal",
-          "description": "Tulis tujuan dan jam pelajaran yang akan ditinggalkan."
+          "description": "Tulis tujuan dan jam pelajaran yang akan ditinggalkan.",
+          "returns": "Saya kembali ke sekolah setelah urusan selesai",
+          "returnsHint": "Hapus centang bila Anda pulang dan tidak kembali hari ini. Satpam mencatat jam kembali Anda di gerbang."
         },
         "approve": {
           "title": "Setujui tahap piket",
@@ -1554,14 +1557,18 @@
           "payloadLabel": "Kode QR gerbang (alat pemindai)",
           "needPayload": "Kode gerbang harus berasal dari QR siswa.",
           "passed": "Siswa diizinkan keluar",
-          "lastTitle": "Terakhir keluar",
-          "todayListTitle": "Baru saja keluar",
-          "undoLast": "Sembunyikan dari daftar ini",
           "title": "Pindai QR gerbang",
           "refused": "Tidak bisa keluar",
           "tokenGone": "QR gerbang sudah kedaluwarsa atau sudah dipakai. Minta siswa menekan Buat kode baru di layar izinnya, lalu pindai lagi.",
-          "todayListHint": "Tersimpan di layar ini selama halaman terbuka.",
-          "todayListEmpty": "Belum ada siswa yang lewat gerbang."
+          "outTitle": "Belum kembali",
+          "outHint": "Siswa yang keluar hari ini dan belum tercatat kembali. Catat saat siswa masuk lagi lewat gerbang.",
+          "outEmpty": "Tidak ada siswa yang sedang keluar.",
+          "dueBack": "kembali paling lambat {time}",
+          "exitedAt": "keluar {time}",
+          "overdue": "Terlambat {minutes} menit",
+          "recordReturn": "Catat kembali",
+          "recordReturnFor": "Catat kembali: {name}",
+          "returnedToast": "{name} tercatat kembali"
         },
         "queue": {
           "emptyTitle": "Belum ada yang menunggu",
@@ -1582,7 +1589,12 @@
           "exitedEyebrow": "Sudah keluar",
           "exitedAt": "Keluar gerbang pukul {time}",
           "scanStage": "Pindai QR {stage}",
-          "scanHint": "Minta {stage} menampilkan QR persetujuan, lalu arahkan kamera ke kode itu."
+          "scanHint": "Minta {stage} menampilkan QR persetujuan, lalu arahkan kamera ke kode itu.",
+          "notBackChip": "Belum kembali",
+          "dueBack": "Kembali paling lambat pukul {time}",
+          "wasDueBack": "Seharusnya kembali pukul {time}",
+          "returnedEyebrow": "Sudah kembali",
+          "returnedAt": "Kembali pukul {time}"
         },
         "waitManual": "Menunggu {stage} meninjau.",
         "gateQrLabel": "Kode QR gerbang izin keluar",
@@ -1602,7 +1614,17 @@
           "body": "Persetujuan yang sudah didapat ikut batal, dan izin ini tidak bisa dilanjutkan lagi.",
           "confirm": "Batalkan izin",
           "keep": "Kembali"
-        }
+        },
+        "lateBy": "Terlambat {minutes} menit",
+        "onTime": "Tepat waktu",
+        "returnLabel": "Kembali",
+        "noReturn": "Tidak kembali ke sekolah",
+        "returnedOnTime": "Kembali pukul {time}, tepat waktu",
+        "returnedLate": "Kembali pukul {time}, terlambat {minutes} menit",
+        "notBack": "Belum kembali, paling lambat pukul {time}",
+        "notBackLate": "Belum kembali, terlambat {minutes} menit dari pukul {time}",
+        "returnedMeta": "kembali {time}",
+        "returnedLateMeta": "kembali {time}, terlambat {minutes} menit"
       },
       "late": {
         "eyebrow": "Kesiswaan",

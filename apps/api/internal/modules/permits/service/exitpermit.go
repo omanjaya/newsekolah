@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -19,6 +20,9 @@ type CreateExitPermitInput struct {
 	Destination   string
 	StartPeriodID uuid.UUID
 	EndPeriodID   uuid.UUID
+	// NoReturn is a student who goes home and is not expected back the
+	// same day; by default the gate awaits the student's return.
+	NoReturn bool
 }
 
 // CreateExitPermit opens a new exit-permit workflow. Bug fix vs. the old
@@ -97,6 +101,7 @@ func (s *Service) CreateExitPermit(ctx context.Context, in CreateExitPermitInput
 			InstanceID: inst.ID, TenantID: in.TenantID, Destination: in.Destination,
 			StartPeriodID: in.StartPeriodID, EndPeriodID: in.EndPeriodID,
 			StudentNameSnapshot: studentName, ClassNameSnapshot: enrollment.ClassName,
+			ReturnRequired: !in.NoReturn,
 		})
 		return err
 	})
@@ -330,15 +335,31 @@ func (s *Service) GateScan(ctx context.Context, tenantID, instanceID, securityUs
 			return err
 		}
 
-		// Gate scan time is the domain event time a return is judged
-		// "on time" or "late" against, so it must follow the simulated
-		// business clock, not the server's real one.
+		permit, ok, err := s.repo.GetExitPermit(ctx, tenantID, instanceID)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return domain.ErrInstanceNotFound
+		}
+		// Bug fix vs. the old app: forced attendance status only overrides
+		// sessions within the permit's own period range, not the whole day.
+		// Tenant-local, not s.clock.Now() directly, for the same reason as
+		// IssueGateToken's periodEndsAt above.
+		from, to, err := s.exitPermitWindow(ctx, tenantID, permit)
+		if err != nil {
+			return err
+		}
+
+		// The exit time, and the due-back time a return is judged "on
+		// time" or "late" against, follow the simulated business clock,
+		// not the server's real one.
 		now := clock.Now(ctx, s.clock)
 		updated, err = s.repo.AdvanceInstance(ctx, tenantID, instanceID, inst.CurrentStageIndex, domain.StatusCompleted, &now)
 		if err != nil {
 			return err
 		}
-		if _, err := s.repo.MarkExitPermitExited(ctx, tenantID, instanceID, now, securityUserID); err != nil {
+		if _, err := s.repo.MarkExitPermitExited(ctx, tenantID, instanceID, now, securityUserID, dueBack(permit, to)); err != nil {
 			return err
 		}
 		_, err = s.repo.CreateEvent(ctx, domain.Event{
@@ -350,25 +371,6 @@ func (s *Service) GateScan(ctx context.Context, tenantID, instanceID, securityUs
 			return err
 		}
 
-		permit, ok, err := s.repo.GetExitPermit(ctx, tenantID, instanceID)
-		if err != nil || !ok {
-			return err
-		}
-		startPeriod, err := s.repo.GetPeriod(ctx, tenantID, permit.StartPeriodID)
-		if err != nil {
-			return err
-		}
-		endPeriod, err := s.repo.GetPeriod(ctx, tenantID, permit.EndPeriodID)
-		if err != nil {
-			return err
-		}
-		// Bug fix vs. the old app: forced attendance status only overrides
-		// sessions within the permit's own period range, not the whole day.
-		// Tenant-local, not s.clock.Now() directly, for the same reason as
-		// IssueGateToken's periodEndsAt above.
-		day := s.tenantNow(ctx, tenantID)
-		from := combineDateAndDuration(day, startPeriod.StartsAt)
-		to := combineDateAndDuration(day, endPeriod.EndsAt)
 		// "D" (dispensasi) matches tenant_policies(kind='attendance_statuses')
 		// default codes (docs/06-database-schema.md section 6): an exit
 		// permit is dispensation, distinct from a planned leave ("I").
@@ -381,6 +383,85 @@ func (s *Service) GateScan(ctx context.Context, tenantID, instanceID, securityUs
 	s.publishToUserTopic(ctx, tenantID, updated.SubjectUserID, "exit_permit.exited", instanceStageEventPayload{InstanceID: instanceID, Stage: "gate"})
 	s.publishToDutyStage(ctx, tenantID, uuid.NullUUID{}, "security", "exit_permit.exited", instanceStageEventPayload{InstanceID: instanceID, Stage: "gate"})
 	return updated, nil
+}
+
+// exitPermitWindow is the permit's lesson window on the tenant-local
+// today: from the start of its first period to the end of its last.
+func (s *Service) exitPermitWindow(ctx context.Context, tenantID uuid.UUID, permit domain.ExitPermit) (from, to time.Time, err error) {
+	startPeriod, err := s.repo.GetPeriod(ctx, tenantID, permit.StartPeriodID)
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+	endPeriod, err := s.repo.GetPeriod(ctx, tenantID, permit.EndPeriodID)
+	if err != nil {
+		return time.Time{}, time.Time{}, err
+	}
+	day := s.tenantNow(ctx, tenantID)
+	return combineDateAndDuration(day, startPeriod.StartsAt), combineDateAndDuration(day, endPeriod.EndsAt), nil
+}
+
+// dueBack is when a student leaving on permit must be back: the end of the
+// permit's last period, or the zero time when no return is expected.
+func dueBack(permit domain.ExitPermit, windowEnd time.Time) time.Time {
+	if !permit.ReturnRequired {
+		return time.Time{}
+	}
+	return windowEnd
+}
+
+// RecordExitPermitReturn is security recording the student back through
+// the gate after an exit permit. The return time follows the business
+// clock (so the simulation applies), and the event's note says whether it
+// came after the time the student was due back.
+func (s *Service) RecordExitPermitReturn(ctx context.Context, tenantID, instanceID, securityUserID uuid.UUID) (ExitPermitDetail, error) {
+	var studentID uuid.UUID
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		inst, ok, err := s.repo.GetInstanceForUpdate(ctx, tenantID, instanceID)
+		if err != nil {
+			return err
+		}
+		if !ok || inst.Kind != domain.KindExitPermit {
+			return domain.ErrInstanceNotFound
+		}
+		now := clock.Now(ctx, s.clock)
+		permit, ok, err := s.repo.MarkExitPermitReturned(ctx, tenantID, instanceID, now, securityUserID)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return domain.ErrExitPermitNotAwaitingReturn
+		}
+		studentID = inst.SubjectUserID
+		note := domain.NoteGateReturn
+		if permit.ReturnedLate() {
+			note = domain.NoteGateReturnLate
+		}
+		_, err = s.repo.CreateEvent(ctx, domain.Event{
+			TenantID: tenantID, InstanceID: instanceID, StageKey: "gate_return", FromStatus: inst.Status, ToStatus: inst.Status,
+			ActorUserID: uuid.NullUUID{UUID: securityUserID, Valid: true}, Verification: domain.VerificationManual,
+			Note: note, OccurredAt: now,
+		})
+		return err
+	})
+	if err != nil {
+		return ExitPermitDetail{}, err
+	}
+	s.publishToUserTopic(ctx, tenantID, studentID, "exit_permit.returned", instanceStageEventPayload{InstanceID: instanceID, Stage: "gate_return"})
+	s.publishToDutyStage(ctx, tenantID, uuid.NullUUID{}, "security", "exit_permit.returned", instanceStageEventPayload{InstanceID: instanceID, Stage: "gate_return"})
+	return s.GetExitPermit(ctx, tenantID, instanceID)
+}
+
+// ListExitPermitsAwaitingReturn is the gate's "not back yet" list: today's
+// permits (tenant-local day) whose student went out and has not been
+// recorded back, the earliest due first.
+func (s *Service) ListExitPermitsAwaitingReturn(ctx context.Context, tenantID uuid.UUID) ([]ExitPermitAwaitingReturn, error) {
+	var out []ExitPermitAwaitingReturn
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.ListExitPermitsAwaitingReturn(ctx, tenantID, s.tenantNow(ctx, tenantID))
+		return err
+	})
+	return out, err
 }
 
 // ListExitPermitsForApproval is the counselor/leadership/security queue:

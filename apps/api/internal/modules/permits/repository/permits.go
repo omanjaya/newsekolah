@@ -23,6 +23,8 @@ func toExitPermit(row db.ExitPermit) domain.ExitPermit {
 		GateTokenID: pdatabase.UUIDOrNil(row.GateTokenID), ExitedAt: pdatabase.TimePtr(row.ExitedAt),
 		SecurityUserID:      pdatabase.UUIDOrNil(row.SecurityUserID),
 		StudentNameSnapshot: row.StudentNameSnapshot, ClassNameSnapshot: row.ClassNameSnapshot,
+		ReturnRequired: row.ReturnRequired, ExpectedReturnAt: pdatabase.TimePtr(row.ExpectedReturnAt),
+		ReturnedAt: pdatabase.TimePtr(row.ReturnedAt), ReturnSecurityUserID: pdatabase.UUIDOrNil(row.ReturnSecurityUserID),
 	}
 }
 
@@ -31,6 +33,7 @@ func (r *Repository) CreateExitPermit(ctx context.Context, p domain.ExitPermit) 
 		InstanceID: p.InstanceID, TenantID: p.TenantID, Destination: p.Destination,
 		StartPeriodID: p.StartPeriodID, EndPeriodID: p.EndPeriodID,
 		StudentNameSnapshot: p.StudentNameSnapshot, ClassNameSnapshot: p.ClassNameSnapshot,
+		ReturnRequired: p.ReturnRequired,
 	})
 	if err != nil {
 		return domain.ExitPermit{}, fmt.Errorf("create exit permit: %w", err)
@@ -88,14 +91,57 @@ func (r *Repository) SetExitPermitGateToken(ctx context.Context, tenantID, insta
 	return toExitPermit(row), nil
 }
 
-func (r *Repository) MarkExitPermitExited(ctx context.Context, tenantID, instanceID uuid.UUID, exitedAt time.Time, securityUserID uuid.UUID) (domain.ExitPermit, error) {
+// MarkExitPermitExited records the gate exit; expectedReturnAt is the zero
+// time for a permit that needs no return.
+func (r *Repository) MarkExitPermitExited(ctx context.Context, tenantID, instanceID uuid.UUID, exitedAt time.Time, securityUserID uuid.UUID, expectedReturnAt time.Time) (domain.ExitPermit, error) {
 	row, err := r.queries(ctx).MarkExitPermitExited(ctx, db.MarkExitPermitExitedParams{
 		TenantID: tenantID, InstanceID: instanceID, ExitedAt: pdatabase.Timestamptz(exitedAt), SecurityUserID: uuidNullable(securityUserID),
+		ExpectedReturnAt: pdatabase.Timestamptz(expectedReturnAt),
 	})
 	if err != nil {
 		return domain.ExitPermit{}, fmt.Errorf("mark exit permit exited: %w", err)
 	}
 	return toExitPermit(row), nil
+}
+
+// MarkExitPermitReturned records the student back through the gate. ok is
+// false when the permit is not awaiting a return (never exited, needs no
+// return, or already returned).
+func (r *Repository) MarkExitPermitReturned(ctx context.Context, tenantID, instanceID uuid.UUID, returnedAt time.Time, securityUserID uuid.UUID) (domain.ExitPermit, bool, error) {
+	row, err := r.queries(ctx).MarkExitPermitReturned(ctx, db.MarkExitPermitReturnedParams{
+		TenantID: tenantID, InstanceID: instanceID, ReturnedAt: pdatabase.Timestamptz(returnedAt), ReturnSecurityUserID: uuidNullable(securityUserID),
+	})
+	if notFound(err) {
+		return domain.ExitPermit{}, false, nil
+	}
+	if err != nil {
+		return domain.ExitPermit{}, false, fmt.Errorf("mark exit permit returned: %w", err)
+	}
+	return toExitPermit(row), true, nil
+}
+
+// ListExitPermitsAwaitingReturn is the gate's "not back yet" list for the
+// tenant-local day today.
+func (r *Repository) ListExitPermitsAwaitingReturn(ctx context.Context, tenantID uuid.UUID, today time.Time) ([]service.ExitPermitAwaitingReturn, error) {
+	rows, err := r.queries(ctx).ListExitPermitsAwaitingReturn(ctx, db.ListExitPermitsAwaitingReturnParams{TenantID: tenantID, Today: pdatabase.Date(today)})
+	if err != nil {
+		return nil, fmt.Errorf("list exit permits awaiting return: %w", err)
+	}
+	out := make([]service.ExitPermitAwaitingReturn, len(rows))
+	for i, row := range rows {
+		out[i] = service.ExitPermitAwaitingReturn{
+			ExitPermit: toExitPermit(db.ExitPermit{
+				InstanceID: row.InstanceID, TenantID: row.TenantID, Destination: row.Destination,
+				StartPeriodID: row.StartPeriodID, EndPeriodID: row.EndPeriodID, IssuedAt: row.IssuedAt,
+				GateTokenID: row.GateTokenID, ExitedAt: row.ExitedAt, SecurityUserID: row.SecurityUserID,
+				StudentNameSnapshot: row.StudentNameSnapshot, ClassNameSnapshot: row.ClassNameSnapshot,
+				ReturnRequired: row.ReturnRequired, ExpectedReturnAt: row.ExpectedReturnAt,
+				ReturnedAt: row.ReturnedAt, ReturnSecurityUserID: row.ReturnSecurityUserID,
+			}),
+			SubjectUserID: row.SubjectUserID, ClassID: pdatabase.UUIDOrNil(row.ClassID),
+		}
+	}
+	return out, nil
 }
 
 // Late arrivals.

@@ -78,10 +78,11 @@ func (q *Queries) CountExitPermitsForApproval(ctx context.Context, arg CountExit
 
 const createExitPermit = `-- name: CreateExitPermit :one
 insert into exit_permits (
-  instance_id, tenant_id, destination, start_period_id, end_period_id, student_name_snapshot, class_name_snapshot
+  instance_id, tenant_id, destination, start_period_id, end_period_id, student_name_snapshot, class_name_snapshot,
+  return_required
 )
-values ($1, $2, $3, $4, $5, $6, $7)
-returning instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot
+values ($1, $2, $3, $4, $5, $6, $7, $8)
+returning instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot, return_required, expected_return_at, returned_at, return_security_user_id
 `
 
 type CreateExitPermitParams struct {
@@ -92,6 +93,7 @@ type CreateExitPermitParams struct {
 	EndPeriodID         uuid.UUID `json:"end_period_id"`
 	StudentNameSnapshot string    `json:"student_name_snapshot"`
 	ClassNameSnapshot   string    `json:"class_name_snapshot"`
+	ReturnRequired      bool      `json:"return_required"`
 }
 
 func (q *Queries) CreateExitPermit(ctx context.Context, arg CreateExitPermitParams) (ExitPermit, error) {
@@ -103,6 +105,7 @@ func (q *Queries) CreateExitPermit(ctx context.Context, arg CreateExitPermitPara
 		arg.EndPeriodID,
 		arg.StudentNameSnapshot,
 		arg.ClassNameSnapshot,
+		arg.ReturnRequired,
 	)
 	var i ExitPermit
 	err := row.Scan(
@@ -117,12 +120,16 @@ func (q *Queries) CreateExitPermit(ctx context.Context, arg CreateExitPermitPara
 		&i.SecurityUserID,
 		&i.StudentNameSnapshot,
 		&i.ClassNameSnapshot,
+		&i.ReturnRequired,
+		&i.ExpectedReturnAt,
+		&i.ReturnedAt,
+		&i.ReturnSecurityUserID,
 	)
 	return i, err
 }
 
 const getExitPermit = `-- name: GetExitPermit :one
-select instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot from exit_permits where tenant_id = $1 and instance_id = $2
+select instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot, return_required, expected_return_at, returned_at, return_security_user_id from exit_permits where tenant_id = $1 and instance_id = $2
 `
 
 type GetExitPermitParams struct {
@@ -145,12 +152,95 @@ func (q *Queries) GetExitPermit(ctx context.Context, arg GetExitPermitParams) (E
 		&i.SecurityUserID,
 		&i.StudentNameSnapshot,
 		&i.ClassNameSnapshot,
+		&i.ReturnRequired,
+		&i.ExpectedReturnAt,
+		&i.ReturnedAt,
+		&i.ReturnSecurityUserID,
 	)
 	return i, err
 }
 
+const listExitPermitsAwaitingReturn = `-- name: ListExitPermitsAwaitingReturn :many
+select ep.instance_id, ep.tenant_id, ep.destination, ep.start_period_id, ep.end_period_id, ep.issued_at, ep.gate_token_id, ep.exited_at, ep.security_user_id, ep.student_name_snapshot, ep.class_name_snapshot, ep.return_required, ep.expected_return_at, ep.returned_at, ep.return_security_user_id, wi.subject_user_id, wi.class_id
+from exit_permits ep
+join workflow_instances wi on wi.id = ep.instance_id
+where ep.tenant_id = $1
+  and wi.local_date = $2::date
+  and ep.exited_at is not null
+  and ep.return_required
+  and ep.returned_at is null
+order by ep.expected_return_at nulls last, ep.exited_at
+`
+
+type ListExitPermitsAwaitingReturnParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	Today    pgtype.Date `json:"today"`
+}
+
+type ListExitPermitsAwaitingReturnRow struct {
+	InstanceID           uuid.UUID          `json:"instance_id"`
+	TenantID             uuid.UUID          `json:"tenant_id"`
+	Destination          string             `json:"destination"`
+	StartPeriodID        uuid.UUID          `json:"start_period_id"`
+	EndPeriodID          uuid.UUID          `json:"end_period_id"`
+	IssuedAt             pgtype.Timestamptz `json:"issued_at"`
+	GateTokenID          pgtype.UUID        `json:"gate_token_id"`
+	ExitedAt             pgtype.Timestamptz `json:"exited_at"`
+	SecurityUserID       pgtype.UUID        `json:"security_user_id"`
+	StudentNameSnapshot  string             `json:"student_name_snapshot"`
+	ClassNameSnapshot    string             `json:"class_name_snapshot"`
+	ReturnRequired       bool               `json:"return_required"`
+	ExpectedReturnAt     pgtype.Timestamptz `json:"expected_return_at"`
+	ReturnedAt           pgtype.Timestamptz `json:"returned_at"`
+	ReturnSecurityUserID pgtype.UUID        `json:"return_security_user_id"`
+	SubjectUserID        uuid.UUID          `json:"subject_user_id"`
+	ClassID              pgtype.UUID        `json:"class_id"`
+}
+
+// The gate's "not back yet" list: permits that went through the gate on
+// the tenant-local day sqlc.arg('today') (workflow_instances.local_date,
+// the day the permit was opened, which is the exit day) and whose student
+// has not been recorded back. The earliest due return first.
+func (q *Queries) ListExitPermitsAwaitingReturn(ctx context.Context, arg ListExitPermitsAwaitingReturnParams) ([]ListExitPermitsAwaitingReturnRow, error) {
+	rows, err := q.db.Query(ctx, listExitPermitsAwaitingReturn, arg.TenantID, arg.Today)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListExitPermitsAwaitingReturnRow{}
+	for rows.Next() {
+		var i ListExitPermitsAwaitingReturnRow
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.TenantID,
+			&i.Destination,
+			&i.StartPeriodID,
+			&i.EndPeriodID,
+			&i.IssuedAt,
+			&i.GateTokenID,
+			&i.ExitedAt,
+			&i.SecurityUserID,
+			&i.StudentNameSnapshot,
+			&i.ClassNameSnapshot,
+			&i.ReturnRequired,
+			&i.ExpectedReturnAt,
+			&i.ReturnedAt,
+			&i.ReturnSecurityUserID,
+			&i.SubjectUserID,
+			&i.ClassID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listExitPermitsByInstances = `-- name: ListExitPermitsByInstances :many
-select instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot from exit_permits
+select instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot, return_required, expected_return_at, returned_at, return_security_user_id from exit_permits
 where tenant_id = $1 and instance_id = any($2::uuid[])
 `
 
@@ -181,6 +271,10 @@ func (q *Queries) ListExitPermitsByInstances(ctx context.Context, arg ListExitPe
 			&i.SecurityUserID,
 			&i.StudentNameSnapshot,
 			&i.ClassNameSnapshot,
+			&i.ReturnRequired,
+			&i.ExpectedReturnAt,
+			&i.ReturnedAt,
+			&i.ReturnSecurityUserID,
 		); err != nil {
 			return nil, err
 		}
@@ -193,7 +287,7 @@ func (q *Queries) ListExitPermitsByInstances(ctx context.Context, arg ListExitPe
 }
 
 const listExitPermitsForApproval = `-- name: ListExitPermitsForApproval :many
-select ep.instance_id, ep.tenant_id, ep.destination, ep.start_period_id, ep.end_period_id, ep.issued_at, ep.gate_token_id, ep.exited_at, ep.security_user_id, ep.student_name_snapshot, ep.class_name_snapshot, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id,
+select ep.instance_id, ep.tenant_id, ep.destination, ep.start_period_id, ep.end_period_id, ep.issued_at, ep.gate_token_id, ep.exited_at, ep.security_user_id, ep.student_name_snapshot, ep.class_name_snapshot, ep.return_required, ep.expected_return_at, ep.returned_at, ep.return_security_user_id, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id,
   (wd.stages -> wi.current_stage_index)::jsonb as current_stage
 from exit_permits ep
 join workflow_instances wi on wi.id = ep.instance_id
@@ -250,23 +344,27 @@ type ListExitPermitsForApprovalParams struct {
 }
 
 type ListExitPermitsForApprovalRow struct {
-	InstanceID          uuid.UUID          `json:"instance_id"`
-	TenantID            uuid.UUID          `json:"tenant_id"`
-	Destination         string             `json:"destination"`
-	StartPeriodID       uuid.UUID          `json:"start_period_id"`
-	EndPeriodID         uuid.UUID          `json:"end_period_id"`
-	IssuedAt            pgtype.Timestamptz `json:"issued_at"`
-	GateTokenID         pgtype.UUID        `json:"gate_token_id"`
-	ExitedAt            pgtype.Timestamptz `json:"exited_at"`
-	SecurityUserID      pgtype.UUID        `json:"security_user_id"`
-	StudentNameSnapshot string             `json:"student_name_snapshot"`
-	ClassNameSnapshot   string             `json:"class_name_snapshot"`
-	Status              string             `json:"status"`
-	OpenedAt            pgtype.Timestamptz `json:"opened_at"`
-	CurrentStageIndex   int32              `json:"current_stage_index"`
-	ClassID             pgtype.UUID        `json:"class_id"`
-	SubjectUserID       uuid.UUID          `json:"subject_user_id"`
-	CurrentStage        []byte             `json:"current_stage"`
+	InstanceID           uuid.UUID          `json:"instance_id"`
+	TenantID             uuid.UUID          `json:"tenant_id"`
+	Destination          string             `json:"destination"`
+	StartPeriodID        uuid.UUID          `json:"start_period_id"`
+	EndPeriodID          uuid.UUID          `json:"end_period_id"`
+	IssuedAt             pgtype.Timestamptz `json:"issued_at"`
+	GateTokenID          pgtype.UUID        `json:"gate_token_id"`
+	ExitedAt             pgtype.Timestamptz `json:"exited_at"`
+	SecurityUserID       pgtype.UUID        `json:"security_user_id"`
+	StudentNameSnapshot  string             `json:"student_name_snapshot"`
+	ClassNameSnapshot    string             `json:"class_name_snapshot"`
+	ReturnRequired       bool               `json:"return_required"`
+	ExpectedReturnAt     pgtype.Timestamptz `json:"expected_return_at"`
+	ReturnedAt           pgtype.Timestamptz `json:"returned_at"`
+	ReturnSecurityUserID pgtype.UUID        `json:"return_security_user_id"`
+	Status               string             `json:"status"`
+	OpenedAt             pgtype.Timestamptz `json:"opened_at"`
+	CurrentStageIndex    int32              `json:"current_stage_index"`
+	ClassID              pgtype.UUID        `json:"class_id"`
+	SubjectUserID        uuid.UUID          `json:"subject_user_id"`
+	CurrentStage         []byte             `json:"current_stage"`
 }
 
 // Missing feature (docs/analysis/backend-inventory.md 1.15): a queue for
@@ -298,6 +396,10 @@ func (q *Queries) ListExitPermitsForApproval(ctx context.Context, arg ListExitPe
 			&i.SecurityUserID,
 			&i.StudentNameSnapshot,
 			&i.ClassNameSnapshot,
+			&i.ReturnRequired,
+			&i.ExpectedReturnAt,
+			&i.ReturnedAt,
+			&i.ReturnSecurityUserID,
 			&i.Status,
 			&i.OpenedAt,
 			&i.CurrentStageIndex,
@@ -316,7 +418,7 @@ func (q *Queries) ListExitPermitsForApproval(ctx context.Context, arg ListExitPe
 }
 
 const listExitPermitsForReport = `-- name: ListExitPermitsForReport :many
-select ep.instance_id, ep.tenant_id, ep.destination, ep.start_period_id, ep.end_period_id, ep.issued_at, ep.gate_token_id, ep.exited_at, ep.security_user_id, ep.student_name_snapshot, ep.class_name_snapshot, wi.status, wi.opened_at, wi.closed_at, wi.academic_year_id
+select ep.instance_id, ep.tenant_id, ep.destination, ep.start_period_id, ep.end_period_id, ep.issued_at, ep.gate_token_id, ep.exited_at, ep.security_user_id, ep.student_name_snapshot, ep.class_name_snapshot, ep.return_required, ep.expected_return_at, ep.returned_at, ep.return_security_user_id, wi.status, wi.opened_at, wi.closed_at, wi.academic_year_id
 from exit_permits ep
 join workflow_instances wi on wi.id = ep.instance_id
 where ep.tenant_id = $1
@@ -334,21 +436,25 @@ type ListExitPermitsForReportParams struct {
 }
 
 type ListExitPermitsForReportRow struct {
-	InstanceID          uuid.UUID          `json:"instance_id"`
-	TenantID            uuid.UUID          `json:"tenant_id"`
-	Destination         string             `json:"destination"`
-	StartPeriodID       uuid.UUID          `json:"start_period_id"`
-	EndPeriodID         uuid.UUID          `json:"end_period_id"`
-	IssuedAt            pgtype.Timestamptz `json:"issued_at"`
-	GateTokenID         pgtype.UUID        `json:"gate_token_id"`
-	ExitedAt            pgtype.Timestamptz `json:"exited_at"`
-	SecurityUserID      pgtype.UUID        `json:"security_user_id"`
-	StudentNameSnapshot string             `json:"student_name_snapshot"`
-	ClassNameSnapshot   string             `json:"class_name_snapshot"`
-	Status              string             `json:"status"`
-	OpenedAt            pgtype.Timestamptz `json:"opened_at"`
-	ClosedAt            pgtype.Timestamptz `json:"closed_at"`
-	AcademicYearID      uuid.UUID          `json:"academic_year_id"`
+	InstanceID           uuid.UUID          `json:"instance_id"`
+	TenantID             uuid.UUID          `json:"tenant_id"`
+	Destination          string             `json:"destination"`
+	StartPeriodID        uuid.UUID          `json:"start_period_id"`
+	EndPeriodID          uuid.UUID          `json:"end_period_id"`
+	IssuedAt             pgtype.Timestamptz `json:"issued_at"`
+	GateTokenID          pgtype.UUID        `json:"gate_token_id"`
+	ExitedAt             pgtype.Timestamptz `json:"exited_at"`
+	SecurityUserID       pgtype.UUID        `json:"security_user_id"`
+	StudentNameSnapshot  string             `json:"student_name_snapshot"`
+	ClassNameSnapshot    string             `json:"class_name_snapshot"`
+	ReturnRequired       bool               `json:"return_required"`
+	ExpectedReturnAt     pgtype.Timestamptz `json:"expected_return_at"`
+	ReturnedAt           pgtype.Timestamptz `json:"returned_at"`
+	ReturnSecurityUserID pgtype.UUID        `json:"return_security_user_id"`
+	Status               string             `json:"status"`
+	OpenedAt             pgtype.Timestamptz `json:"opened_at"`
+	ClosedAt             pgtype.Timestamptz `json:"closed_at"`
+	AcademicYearID       uuid.UUID          `json:"academic_year_id"`
 }
 
 func (q *Queries) ListExitPermitsForReport(ctx context.Context, arg ListExitPermitsForReportParams) ([]ListExitPermitsForReportRow, error) {
@@ -377,6 +483,10 @@ func (q *Queries) ListExitPermitsForReport(ctx context.Context, arg ListExitPerm
 			&i.SecurityUserID,
 			&i.StudentNameSnapshot,
 			&i.ClassNameSnapshot,
+			&i.ReturnRequired,
+			&i.ExpectedReturnAt,
+			&i.ReturnedAt,
+			&i.ReturnSecurityUserID,
 			&i.Status,
 			&i.OpenedAt,
 			&i.ClosedAt,
@@ -393,24 +503,28 @@ func (q *Queries) ListExitPermitsForReport(ctx context.Context, arg ListExitPerm
 }
 
 const markExitPermitExited = `-- name: MarkExitPermitExited :one
-update exit_permits set exited_at = $3, security_user_id = $4
+update exit_permits set exited_at = $3, security_user_id = $4,
+  expected_return_at = $5
 where tenant_id = $1 and instance_id = $2
-returning instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot
+returning instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot, return_required, expected_return_at, returned_at, return_security_user_id
 `
 
 type MarkExitPermitExitedParams struct {
-	TenantID       uuid.UUID          `json:"tenant_id"`
-	InstanceID     uuid.UUID          `json:"instance_id"`
-	ExitedAt       pgtype.Timestamptz `json:"exited_at"`
-	SecurityUserID pgtype.UUID        `json:"security_user_id"`
+	TenantID         uuid.UUID          `json:"tenant_id"`
+	InstanceID       uuid.UUID          `json:"instance_id"`
+	ExitedAt         pgtype.Timestamptz `json:"exited_at"`
+	SecurityUserID   pgtype.UUID        `json:"security_user_id"`
+	ExpectedReturnAt pgtype.Timestamptz `json:"expected_return_at"`
 }
 
+// expected_return_at is null for a permit that needs no return.
 func (q *Queries) MarkExitPermitExited(ctx context.Context, arg MarkExitPermitExitedParams) (ExitPermit, error) {
 	row := q.db.QueryRow(ctx, markExitPermitExited,
 		arg.TenantID,
 		arg.InstanceID,
 		arg.ExitedAt,
 		arg.SecurityUserID,
+		arg.ExpectedReturnAt,
 	)
 	var i ExitPermit
 	err := row.Scan(
@@ -425,6 +539,10 @@ func (q *Queries) MarkExitPermitExited(ctx context.Context, arg MarkExitPermitEx
 		&i.SecurityUserID,
 		&i.StudentNameSnapshot,
 		&i.ClassNameSnapshot,
+		&i.ReturnRequired,
+		&i.ExpectedReturnAt,
+		&i.ReturnedAt,
+		&i.ReturnSecurityUserID,
 	)
 	return i, err
 }
@@ -432,7 +550,7 @@ func (q *Queries) MarkExitPermitExited(ctx context.Context, arg MarkExitPermitEx
 const markExitPermitIssued = `-- name: MarkExitPermitIssued :one
 update exit_permits set issued_at = $3
 where tenant_id = $1 and instance_id = $2
-returning instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot
+returning instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot, return_required, expected_return_at, returned_at, return_security_user_id
 `
 
 type MarkExitPermitIssuedParams struct {
@@ -456,6 +574,55 @@ func (q *Queries) MarkExitPermitIssued(ctx context.Context, arg MarkExitPermitIs
 		&i.SecurityUserID,
 		&i.StudentNameSnapshot,
 		&i.ClassNameSnapshot,
+		&i.ReturnRequired,
+		&i.ExpectedReturnAt,
+		&i.ReturnedAt,
+		&i.ReturnSecurityUserID,
+	)
+	return i, err
+}
+
+const markExitPermitReturned = `-- name: MarkExitPermitReturned :one
+update exit_permits set returned_at = $3, return_security_user_id = $4
+where tenant_id = $1 and instance_id = $2
+  and exited_at is not null and return_required and returned_at is null
+returning instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot, return_required, expected_return_at, returned_at, return_security_user_id
+`
+
+type MarkExitPermitReturnedParams struct {
+	TenantID             uuid.UUID          `json:"tenant_id"`
+	InstanceID           uuid.UUID          `json:"instance_id"`
+	ReturnedAt           pgtype.Timestamptz `json:"returned_at"`
+	ReturnSecurityUserID pgtype.UUID        `json:"return_security_user_id"`
+}
+
+// Records the student back through the gate. Only a permit that exited,
+// expects a return and has none yet matches, so a second record (or a
+// concurrent one) finds no row instead of moving the time.
+func (q *Queries) MarkExitPermitReturned(ctx context.Context, arg MarkExitPermitReturnedParams) (ExitPermit, error) {
+	row := q.db.QueryRow(ctx, markExitPermitReturned,
+		arg.TenantID,
+		arg.InstanceID,
+		arg.ReturnedAt,
+		arg.ReturnSecurityUserID,
+	)
+	var i ExitPermit
+	err := row.Scan(
+		&i.InstanceID,
+		&i.TenantID,
+		&i.Destination,
+		&i.StartPeriodID,
+		&i.EndPeriodID,
+		&i.IssuedAt,
+		&i.GateTokenID,
+		&i.ExitedAt,
+		&i.SecurityUserID,
+		&i.StudentNameSnapshot,
+		&i.ClassNameSnapshot,
+		&i.ReturnRequired,
+		&i.ExpectedReturnAt,
+		&i.ReturnedAt,
+		&i.ReturnSecurityUserID,
 	)
 	return i, err
 }
@@ -463,7 +630,7 @@ func (q *Queries) MarkExitPermitIssued(ctx context.Context, arg MarkExitPermitIs
 const setExitPermitGateToken = `-- name: SetExitPermitGateToken :one
 update exit_permits set gate_token_id = $3
 where tenant_id = $1 and instance_id = $2
-returning instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot
+returning instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot, return_required, expected_return_at, returned_at, return_security_user_id
 `
 
 type SetExitPermitGateTokenParams struct {
@@ -487,6 +654,10 @@ func (q *Queries) SetExitPermitGateToken(ctx context.Context, arg SetExitPermitG
 		&i.SecurityUserID,
 		&i.StudentNameSnapshot,
 		&i.ClassNameSnapshot,
+		&i.ReturnRequired,
+		&i.ExpectedReturnAt,
+		&i.ReturnedAt,
+		&i.ReturnSecurityUserID,
 	)
 	return i, err
 }

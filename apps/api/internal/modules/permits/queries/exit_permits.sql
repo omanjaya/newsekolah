@@ -1,8 +1,9 @@
 -- name: CreateExitPermit :one
 insert into exit_permits (
-  instance_id, tenant_id, destination, start_period_id, end_period_id, student_name_snapshot, class_name_snapshot
+  instance_id, tenant_id, destination, start_period_id, end_period_id, student_name_snapshot, class_name_snapshot,
+  return_required
 )
-values ($1, $2, $3, $4, $5, $6, $7)
+values ($1, $2, $3, $4, $5, $6, $7, $8)
 returning *;
 
 -- name: GetExitPermit :one
@@ -24,9 +25,35 @@ where tenant_id = $1 and instance_id = $2
 returning *;
 
 -- name: MarkExitPermitExited :one
-update exit_permits set exited_at = $3, security_user_id = $4
+-- expected_return_at is null for a permit that needs no return.
+update exit_permits set exited_at = $3, security_user_id = $4,
+  expected_return_at = sqlc.narg('expected_return_at')
 where tenant_id = $1 and instance_id = $2
 returning *;
+
+-- name: MarkExitPermitReturned :one
+-- Records the student back through the gate. Only a permit that exited,
+-- expects a return and has none yet matches, so a second record (or a
+-- concurrent one) finds no row instead of moving the time.
+update exit_permits set returned_at = $3, return_security_user_id = $4
+where tenant_id = $1 and instance_id = $2
+  and exited_at is not null and return_required and returned_at is null
+returning *;
+
+-- name: ListExitPermitsAwaitingReturn :many
+-- The gate's "not back yet" list: permits that went through the gate on
+-- the tenant-local day sqlc.arg('today') (workflow_instances.local_date,
+-- the day the permit was opened, which is the exit day) and whose student
+-- has not been recorded back. The earliest due return first.
+select ep.*, wi.subject_user_id, wi.class_id
+from exit_permits ep
+join workflow_instances wi on wi.id = ep.instance_id
+where ep.tenant_id = $1
+  and wi.local_date = sqlc.arg('today')::date
+  and ep.exited_at is not null
+  and ep.return_required
+  and ep.returned_at is null
+order by ep.expected_return_at nulls last, ep.exited_at;
 
 -- name: ListExitPermitsForApproval :many
 -- Missing feature (docs/analysis/backend-inventory.md 1.15): a queue for

@@ -70,7 +70,7 @@ Tetap memakai waktu asli (`new Date()`/`Date.now()`) secara sengaja:
 Modul permits (izin terlambat, izin keluar, cuti/leave request, workflow engine, template dokumen, antrean duty, scan gerbang) mengikuti simulasi waktu untuk setiap keputusan bisnis:
 
 - Waktu dan hari/periode pencatatan keterlambatan (late arrival): `opened_at`, `local_date`, dan waktu setiap event tahap workflow.
-- Jendela izin keluar (exit permit): pengecekan "satu izin keluar per hari", `IssueGateToken`'s periode berakhir, dan waktu scan gerbang (`GateScan`'s `exited_at`) yang menentukan kembali tepat waktu atau terlambat.
+- Jendela izin keluar (exit permit): pengecekan "satu izin keluar per hari", penolakan jam pelajaran yang sudah lewat (`CreateExitPermit` dan `IssueGateToken`, `EXIT_PERMIT_PERIOD_PASSED`), waktu scan gerbang (`GateScan`'s `exited_at`) beserta batas kembali (`expected_return_at`, akhir jam pelajaran terakhir izin), dan waktu satpam mencatat siswa kembali (`RecordExitPermitReturn`'s `returned_at`), yang menentukan kembali tepat waktu atau terlambat. Daftar "Belum kembali" di gerbang menandai siswa terlambat menurut jam simulasi.
 - Tanggal "aktif hari ini" untuk leave request: kelayakan approver berbasis duty (`tenantNow`) di `ReviewLeaveRequest`/`ListLeaveRequestsForReview`, dan `LeaveOverride`/`GetIssuedLeaveCoveringDate` yang menerima tanggal dari pemanggil.
 - Penomoran surat (letter numbering) berbasis bulan/tahun: `IssueDocument` dan `IssueLeaveLetter`.
 - Perhitungan tanggal lokal (local date) di zona waktu sekolah untuk seluruh keputusan di atas, lewat `service.tenantNow`.
@@ -82,7 +82,7 @@ Tetap memakai waktu asli (real time), bukan simulasi, karena berupa keamanan ata
 - Job latar belakang tanpa request context: `ExpireHangingInstances` dan `CleanupExpiredScanTokens`.
 - Bookkeeping `effective_from` saat `tenant_policies` diisi otomatis pertama kali (`evidenceRequired`, `lateArrivalActions`).
 
-Tes: `apps/api/internal/modules/permits/simulation_integration_test.go` membuktikan keterlambatan yang dibuka pada konteks Senin 07:20 simulasi jatuh di hari itu, status kembali tepat waktu/terlambat pada izin keluar mengikuti jam simulasi, dan kelayakan reviewer "aktif hari ini" pada leave request mengikuti tanggal simulasi.
+Tes: `apps/api/internal/modules/permits/simulation_integration_test.go` membuktikan keterlambatan yang dibuka pada konteks Senin 07:20 simulasi jatuh di hari itu, waktu keluar, batas kembali, dan waktu kembali (tepat waktu atau terlambat) pada izin keluar mengikuti jam simulasi, begitu pula waktu setiap event tahap workflow, dan kelayakan reviewer "aktif hari ini" pada leave request mengikuti tanggal simulasi.
 
 ## Cakupan kesiswaan dan pelaporan (student affairs and reporting coverage)
 

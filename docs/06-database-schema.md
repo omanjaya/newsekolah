@@ -160,7 +160,8 @@ workflow_instances (id, tenant_id, academic_year_id, definition_id, kind, subjec
 workflow_events (id, tenant_id, instance_id, stage_key null, from_status, to_status, actor_user_id null, verification text,
                  scan_token_id null, note, occurred_at)
 exit_permits (instance_id primary key, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id null,
-              exited_at, security_user_id null, student_name_snapshot, class_name_snapshot)
+              exited_at, security_user_id null, student_name_snapshot, class_name_snapshot,
+              return_required bool, expected_return_at null, returned_at null, return_security_user_id null)
 late_arrivals (instance_id primary key, tenant_id, reason, occurrence_number int, required_action text, homeroom_reported bool,
                completed_at)
 leave_requests (instance_id primary key, tenant_id, category text, reason, starts_on, ends_on, letter_number null, issued_at,

@@ -87,6 +87,7 @@ export function DutyManualRecordPanel({
   const [destination, setDestination] = useState("");
   const [startPeriodId, setStartPeriodId] = useState("");
   const [endPeriodId, setEndPeriodId] = useState("");
+  const [returns, setReturns] = useState(true);
   const [reason, setReason] = useState("");
   const [homeroomReported, setHomeroomReported] = useState(false);
   const [attempted, setAttempted] = useState(false);
@@ -112,6 +113,7 @@ export function DutyManualRecordPanel({
     setDestination("");
     setStartPeriodId("");
     setEndPeriodId("");
+    setReturns(true);
     setReason("");
     setHomeroomReported(false);
     setAttempted(false);
@@ -136,6 +138,7 @@ export function DutyManualRecordPanel({
           destination: destination.trim(),
           start_period_id: startPeriodId,
           end_period_id: endPeriodId,
+          return_required: returns,
         },
         {
           onSuccess: () => {
@@ -307,6 +310,14 @@ export function DutyManualRecordPanel({
               placeholder={t("selectPeriod")}
             />
           </Field>
+          <Checkbox
+            containerClassName="col-span-full"
+            label={t("returns")}
+            checked={returns}
+            onCheckedChange={(v) => {
+              setReturns(v === true);
+            }}
+          />
         </FormSection>
       ) : (
         <div className="flex flex-col gap-4">

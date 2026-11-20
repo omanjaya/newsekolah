@@ -516,6 +516,10 @@ approver/timestamp tiap stage-nya dari sini.
   belum kembali) masih mid-flow, dilewati. `permit_type = 'late'`
   (check-in terlambat lewat tabel yang sama) dilewati juga -- itu alur
   `late_arrival`, di luar cakupan pass ini.
+- `student_permits.return_required` -> `exit_permits.return_required`, dan
+  `security_in_at` (check-in satpam) -> `exit_permits.returned_at` bila
+  siswa memang wajib kembali. `expected_return_at` dibiarkan kosong: data
+  lama tidak dinilai terlambat atau tidak.
 - `permits`: kombinasi `class_admin_approve = 0` (ditolak wali kelas, tahap
   pertama) atau `bk_approve = 1 and class_admin_approve = 1` (kedua tahap
   disetujui) dianggap final; kombinasi lain (masih `NULL` di salah satu

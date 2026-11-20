@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type * as ClockModule from "../../../lib/simulation/clock";
 import type { ExitPermitDetail } from "../api";
 
 const PERMIT_ID = "0b5e8f5a-6a3c-4b1f-9a62-2f3c1d7e9a10";
@@ -14,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   reducedMotion: false,
   gate: undefined as { token: string; expires_at: string } | undefined,
   scanDialog: vi.fn(),
+  now: new Date("2026-09-29T03:30:00Z"),
 }));
 
 vi.mock("next-intl", () => ({
@@ -32,6 +34,10 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
 vi.mock("../../reference/api", () => ({ usePeriodsQuery: () => ({ data: { data: [] } }) }));
+vi.mock("../../../lib/simulation/clock", async () => {
+  const actual = await vi.importActual<typeof ClockModule>("../../../lib/simulation/clock");
+  return { ...actual, useBusinessNow: () => mocks.now };
+});
 vi.mock("../api", () => ({
   encodeScanPayload: (kind: string, id: string, token: string) => `sion:${kind}:${id}:${token}`,
   useExitPermitQuery: () => ({
@@ -52,7 +58,10 @@ vi.mock("./stage-scan-dialog", () => ({
   },
 }));
 
-import { ActiveExitPermitCard } from "./exit-permit-detail";
+import {
+  ActiveExitPermitCard,
+  ExitPermitDetail as ExitPermitDetailView,
+} from "./exit-permit-detail";
 
 function detail(status: "in_progress" | "approved"): ExitPermitDetail {
   const stages = [
@@ -85,6 +94,7 @@ function detail(status: "in_progress" | "approved"): ExitPermitDetail {
     end_period_id: "p2",
     student_name: "Siswa Satu",
     class_name: "10 A",
+    return_required: true,
   };
 }
 
@@ -103,6 +113,7 @@ beforeEach(() => {
   mocks.cancel.mockResolvedValue(undefined);
   mocks.gate = undefined;
   mocks.scanDialog.mockReset();
+  mocks.now = new Date("2026-09-29T03:30:00Z");
 });
 
 describe("ActiveExitPermitCard", () => {
@@ -188,5 +199,76 @@ describe("ActiveExitPermitCard", () => {
     };
     render(<ActiveExitPermitCard id={PERMIT_ID} />);
     expect(mocks.scrollIntoView).toHaveBeenCalledWith({ block: "center", behavior: "auto" });
+  });
+});
+
+/** Through the gate at 10.15 (02:15Z), due back at 11.00 (03:00Z). */
+function exited(extra: Partial<ExitPermitDetail> = {}): ExitPermitDetail {
+  const base = detail("approved");
+  return {
+    ...base,
+    instance: { ...base.instance, status: "completed" },
+    exited_at: "2026-09-29T02:15:00Z",
+    expected_return_at: "2026-09-29T03:00:00Z",
+    ...extra,
+  };
+}
+
+// The regression: half an hour past the return time the card still said
+// only "Sudah keluar", with no return time and no warning.
+describe("ActiveExitPermitCard after the gate", () => {
+  it("says when the student is due back while there is still time", () => {
+    mocks.now = new Date("2026-09-29T02:30:00Z");
+    mocks.detail = exited();
+    render(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    expect(screen.getByText("hero.exitedEyebrow")).toBeInTheDocument();
+    expect(screen.getByText("hero.notBackChip")).toBeInTheDocument();
+    expect(screen.getByText(/hero\.dueBack/)).toBeInTheDocument();
+    expect(screen.queryByText("lateBy")).not.toBeInTheDocument();
+  });
+
+  it("marks the student late once the return time has passed", () => {
+    mocks.now = new Date("2026-09-29T03:30:00Z");
+    mocks.detail = exited();
+    render(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    expect(screen.getByText("lateBy")).toBeInTheDocument();
+    expect(screen.getByText(/hero\.wasDueBack/)).toBeInTheDocument();
+  });
+
+  it("says the student is back, and that the return was late", () => {
+    mocks.detail = exited({ returned_at: "2026-09-29T03:20:00Z", returned_late: true });
+    render(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    expect(screen.getByText("hero.returnedEyebrow")).toBeInTheDocument();
+    expect(screen.getByText("lateBy")).toBeInTheDocument();
+    expect(screen.getByText(/hero\.returnedAt/)).toBeInTheDocument();
+  });
+
+  it("keeps the plain exited card for a student who went home", () => {
+    mocks.detail = exited({ return_required: false, expected_return_at: undefined });
+    render(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    expect(screen.getByText("hero.exitedEyebrow")).toBeInTheDocument();
+    expect(screen.queryByText("hero.notBackChip")).not.toBeInTheDocument();
+    expect(screen.queryByText("lateBy")).not.toBeInTheDocument();
+  });
+});
+
+describe("ExitPermitDetail return line", () => {
+  it("tells a late return in the permit's facts", () => {
+    mocks.detail = exited({ returned_at: "2026-09-29T03:20:00Z", returned_late: true });
+    render(<ExitPermitDetailView id={PERMIT_ID} />);
+
+    expect(screen.getByText("returnLabel")).toBeInTheDocument();
+    expect(screen.getByText("returnedLate")).toBeInTheDocument();
+  });
+
+  it("says a student who went home is not coming back", () => {
+    mocks.detail = exited({ return_required: false, expected_return_at: undefined });
+    render(<ExitPermitDetailView id={PERMIT_ID} />);
+
+    expect(screen.getByText("noReturn")).toBeInTheDocument();
   });
 });

@@ -118,15 +118,15 @@ func runExitPermitToGate(t *testing.T, ctx context.Context, svc *service.Service
 	return inst.ID, gate.RawValue
 }
 
-// TestSimulatedExitPermitLateReturnFollowsSimulatedClock proves GateScan
-// records the return (exited_at) at the simulated clock's instant, so
-// whether a return counts as "on time" or "late" against the exit permit's
-// own period window is a business decision that follows the simulated
-// clock, not the server's real one. Two independent permits (different
-// tenant-local days, so the "one exit permit per day" guard does not
-// collide) are driven through the same lifecycle; only the simulated
-// instant of the GateScan differs.
-func TestSimulatedExitPermitLateReturnFollowsSimulatedClock(t *testing.T) {
+// TestSimulatedExitPermitReturnFollowsSimulatedClock proves the exit and
+// the return of an exit permit follow the simulated clock: GateScan stores
+// the simulated exit time and the time the student is due back (the end of
+// the permit's last period, 09:00 local in seedRealtimeWorld), and
+// RecordExitPermitReturn stamps the simulated return time, which decides
+// whether the return was on time or late. Two permits on different
+// tenant-local days (one exit permit per day) differ only in the simulated
+// instant of the return.
+func TestSimulatedExitPermitReturnFollowsSimulatedClock(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx := context.Background()
 	w := seedRealtimeWorld(t, ctx, pg.AdminPool, "sim-exit-"+uuid.NewString())
@@ -142,46 +142,54 @@ func TestSimulatedExitPermitLateReturnFollowsSimulatedClock(t *testing.T) {
 
 	loc, err := time.LoadLocation("Asia/Jakarta")
 	require.NoError(t, err)
-	// The exit permit's end period runs 08:00-09:00 local (seedRealtimeWorld).
 	base := time.Now().In(loc).AddDate(0, 0, 5)
-	dayOnTime := time.Date(base.Year(), base.Month(), base.Day(), 7, 10, 0, 0, loc)
-	dayLate := dayOnTime.AddDate(0, 0, 1)
+	at := func(day, hour, minute int) time.Time {
+		return time.Date(base.Year(), base.Month(), base.Day()+day, hour, minute, 0, 0, loc)
+	}
 
-	// On-time return: the gate is scanned at 08:30, before the 09:00
-	// period end.
-	ctxOnTimeOpen := clock.WithTime(ctx, dayOnTime)
-	instOnTime, gateOnTime := runExitPermitToGate(t, ctxOnTimeOpen, svc, w)
+	cases := []struct {
+		name     string
+		day      int
+		returnAt time.Time
+		late     bool
+	}{
+		{name: "back at 08:50, before the 09:00 period end, is on time", day: 0, returnAt: at(0, 8, 50), late: false},
+		{name: "back at 09:45, after the 09:00 period end, is late", day: 1, returnAt: at(1, 9, 45), late: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			instID, gate := runExitPermitToGate(t, clock.WithTime(ctx, at(tc.day, 7, 10)), svc, w)
 
-	onTimeReturn := time.Date(dayOnTime.Year(), dayOnTime.Month(), dayOnTime.Day(), 8, 30, 0, 0, loc)
-	_, err = svc.GateScan(clock.WithTime(ctx, onTimeReturn), w.tenantID, instOnTime, w.dutyTeacherID, gateOnTime)
-	require.NoError(t, err)
+			exitedAt := at(tc.day, 7, 30)
+			_, err := svc.GateScan(clock.WithTime(ctx, exitedAt), w.tenantID, instID, w.dutyTeacherID, gate)
+			require.NoError(t, err)
 
-	detailOnTime, err := svc.GetExitPermit(ctx, w.tenantID, instOnTime)
-	require.NoError(t, err)
-	require.NotNil(t, detailOnTime.Permit.ExitedAt)
-	require.True(t, detailOnTime.Permit.ExitedAt.Equal(onTimeReturn),
-		"exited_at must be the simulated scan instant, not the real wall-clock time the test actually ran at")
-	periodEndOnTime := time.Date(dayOnTime.Year(), dayOnTime.Month(), dayOnTime.Day(), 9, 0, 0, 0, loc)
-	require.False(t, detailOnTime.Permit.ExitedAt.After(periodEndOnTime),
-		"returning at 08:30, before the 09:00 period end, must not be late")
+			out, err := svc.GetExitPermit(ctx, w.tenantID, instID)
+			require.NoError(t, err)
+			require.NotNil(t, out.Permit.ExitedAt)
+			require.True(t, out.Permit.ExitedAt.Equal(exitedAt), "exited_at must be the simulated scan instant")
+			require.NotNil(t, out.Permit.ExpectedReturnAt)
+			require.True(t, out.Permit.ExpectedReturnAt.Equal(at(tc.day, 9, 0)),
+				"the student is due back at the end of the permit's last period on the exit day")
+			require.True(t, out.Permit.AwaitingReturn())
 
-	// Late return: same lifecycle, a different tenant-local day, the gate
-	// is scanned at 09:45, after the 09:00 period end.
-	ctxLateOpen := clock.WithTime(ctx, dayLate)
-	instLate, gateLate := runExitPermitToGate(t, ctxLateOpen, svc, w)
+			back, err := svc.RecordExitPermitReturn(clock.WithTime(ctx, tc.returnAt), w.tenantID, instID, w.dutyTeacherID)
+			require.NoError(t, err)
+			require.NotNil(t, back.Permit.ReturnedAt)
+			require.True(t, back.Permit.ReturnedAt.Equal(tc.returnAt),
+				"returned_at must be the simulated instant, not the real wall-clock time the test ran at")
+			require.Equal(t, tc.late, back.Permit.ReturnedLate())
 
-	lateReturn := time.Date(dayLate.Year(), dayLate.Month(), dayLate.Day(), 9, 45, 0, 0, loc)
-	_, err = svc.GateScan(clock.WithTime(ctx, lateReturn), w.tenantID, instLate, w.dutyTeacherID, gateLate)
-	require.NoError(t, err)
-
-	detailLate, err := svc.GetExitPermit(ctx, w.tenantID, instLate)
-	require.NoError(t, err)
-	require.NotNil(t, detailLate.Permit.ExitedAt)
-	require.True(t, detailLate.Permit.ExitedAt.Equal(lateReturn),
-		"exited_at must be the simulated scan instant, not the real wall-clock time the test actually ran at")
-	periodEndLate := time.Date(dayLate.Year(), dayLate.Month(), dayLate.Day(), 9, 0, 0, 0, loc)
-	require.True(t, detailLate.Permit.ExitedAt.After(periodEndLate),
-		"returning at 09:45, after the 09:00 period end, must be recorded as late")
+			last := back.Events[len(back.Events)-1]
+			require.Equal(t, "gate_return", last.StageKey)
+			require.True(t, last.OccurredAt.Equal(tc.returnAt))
+			if tc.late {
+				require.Equal(t, domain.NoteGateReturnLate, last.Note)
+			} else {
+				require.Equal(t, domain.NoteGateReturn, last.Note)
+			}
+		})
+	}
 }
 
 // TestSimulatedLeaveRequestActiveTodayFollowsSimulatedDate proves the

@@ -9,6 +9,7 @@ import { useApiClient } from "../../lib/api/client";
 import {
   useExitPermitDetailLive,
   useExitPermitReviewQueueLive,
+  useExitPermitsAwaitingReturnLive,
   useLateArrivalQueueLive,
   useLeaveReviewQueueLive,
   useLeaveRequestDetailLive,
@@ -27,6 +28,8 @@ export type ExitPermitDetail = components["schemas"]["ExitPermitDetail"];
 /** A row of the student's own exit permit history: the instance, where to and when they left. */
 export type MyExitPermit = components["schemas"]["MyExitPermit"];
 export type ExitPermitSummary = components["schemas"]["ExitPermitSummary"];
+/** A student who left on an exit permit today and is not back yet. */
+export type ExitPermitAwaitingReturn = components["schemas"]["ExitPermitAwaitingReturn"];
 export type LateArrivalDetail = components["schemas"]["LateArrivalDetail"];
 export type LateArrivalSummary = components["schemas"]["LateArrivalSummary"];
 export type LeaveRequestDetail = components["schemas"]["LeaveRequestDetail"];
@@ -143,12 +146,49 @@ export function useExitPermitReviewQueueQuery(enabled = true) {
   });
 }
 
+/**
+ * The gate's "not back yet" list (scan_exit_permits): today's students who
+ * went out and are not recorded back, the earliest due first. Re-read every
+ * minute as well, so a student's due time passing turns them overdue
+ * without a push.
+ */
+export function useExitPermitsAwaitingReturnQuery(enabled = true) {
+  const client = useApiClient();
+  useExitPermitsAwaitingReturnLive(enabled);
+  return useQuery({
+    queryKey: queryKeys.exitPermitsAwaitingReturn(),
+    queryFn: () => client.GET("/v1/exit-permits/awaiting-return"),
+    enabled,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+  });
+}
+
+/** Security records the student back through the gate. */
+export function useRecordExitPermitReturnMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidatePermits();
+  return useMutation({
+    mutationFn: (id: string) =>
+      client.POST("/v1/exit-permits/{instanceId}/return", {
+        params: { path: { instanceId: id } },
+      }),
+    onSuccess: invalidate,
+
+    meta: { errorToast: false },
+  });
+}
+
 export function useCreateExitPermitMutation() {
   const client = useApiClient();
   const invalidate = useInvalidatePermits();
   return useMutation({
-    mutationFn: (body: { destination: string; start_period_id: string; end_period_id: string }) =>
-      client.POST("/v1/exit-permits", { body }),
+    mutationFn: (body: {
+      destination: string;
+      start_period_id: string;
+      end_period_id: string;
+      return_required?: boolean;
+    }) => client.POST("/v1/exit-permits", { body }),
     onSuccess: invalidate,
 
     meta: { errorToast: false },
@@ -171,6 +211,7 @@ export function useRecordExitPermitByStaffMutation() {
       destination: string;
       start_period_id: string;
       end_period_id: string;
+      return_required?: boolean;
     }) => client.POST("/v1/exit-permits/staff-record", { body }),
     onSuccess: invalidate,
 
