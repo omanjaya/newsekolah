@@ -27,6 +27,14 @@ export const AUDIT_ENTITY_TYPES = [
   "assessment_component",
   "feature_flag",
   "operator_alert_settings",
+  "announcement",
+  "webhook_endpoint",
+  "api_key",
+  "fee_type",
+  "bill",
+  "document_template",
+  "report_schedule",
+  "session",
 ] as const;
 
 export interface AuditLabels {

@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/integrations/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/auth"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 )
@@ -83,8 +84,10 @@ func (s *Service) CreateKey(ctx context.Context, tenantID, creatorUserID uuid.UU
 	var created domain.APIKey
 	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		created, err = s.keys.CreateKey(ctx, key)
-		return err
+		if created, err = s.keys.CreateKey(ctx, key); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "api_key.create", "api_key", created.ID, nil, toAuditKey(created))
 	})
 	if err != nil {
 		return CreatedKey{}, fmt.Errorf("create api key: %w", err)
@@ -115,8 +118,10 @@ func (s *Service) RevokeKey(ctx context.Context, tenantID, keyID uuid.UUID) (dom
 		if existing.RevokedAt != nil {
 			return domain.ErrKeyAlreadyRevoked
 		}
-		revoked, err = s.keys.RevokeKey(ctx, tenantID, keyID, s.clock.Now())
-		return err
+		if revoked, err = s.keys.RevokeKey(ctx, tenantID, keyID, s.clock.Now()); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "api_key.revoke", "api_key", keyID, toAuditKey(existing), toAuditKey(revoked))
 	})
 	return revoked, err
 }

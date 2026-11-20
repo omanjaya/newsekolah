@@ -91,6 +91,16 @@ type AuditRecorder interface {
 	Record(ctx context.Context, tenantID uuid.UUID, action, entityType string, entityID uuid.UUID) error
 }
 
+// recordAudit writes one entry inside the caller's transaction when an
+// auditor is wired (unit tests may leave it nil). Only the action and the
+// record's id: an incident's text may name people and stays on the record.
+func (s *Service) recordAudit(ctx context.Context, tenantID uuid.UUID, action, entityType string, entityID uuid.UUID) error {
+	if s.audit == nil {
+		return nil
+	}
+	return s.audit.Record(ctx, tenantID, action, entityType, entityID)
+}
+
 // RealtimePublisher pushes a live update to the tenant's gate board
 // (docs/analysis/realtime-plan-2026-09-25.md section 2, opportunity #5),
 // to every holder of a fixed role -- over realtime.TopicRole, without this

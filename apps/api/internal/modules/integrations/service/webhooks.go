@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/integrations/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 )
 
 // RegisterEndpointInput is what a school administrator submits to add a
@@ -65,8 +66,10 @@ func (s *Service) RegisterEndpoint(ctx context.Context, tenantID, createdBy uuid
 	var created domain.WebhookEndpoint
 	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		created, err = s.hooks.CreateEndpoint(ctx, endpoint, ciphertext)
-		return err
+		if created, err = s.hooks.CreateEndpoint(ctx, endpoint, ciphertext); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "webhook_endpoint.create", "webhook_endpoint", created.ID, nil, toAuditEndpoint(created))
 	})
 	if err != nil {
 		return RegisteredEndpoint{}, fmt.Errorf("register webhook endpoint: %w", err)
@@ -96,16 +99,29 @@ func (s *Service) UpdateEndpoint(ctx context.Context, tenantID, endpointID uuid.
 
 	var updated domain.WebhookEndpoint
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
-		updated, err = s.hooks.UpdateEndpoint(ctx, tenantID, endpointID, in.URL, in.Description, in.EventTypes)
-		return err
+		before, err := s.hooks.GetEndpoint(ctx, tenantID, endpointID)
+		if err != nil {
+			return err
+		}
+		if updated, err = s.hooks.UpdateEndpoint(ctx, tenantID, endpointID, in.URL, in.Description, in.EventTypes); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "webhook_endpoint.update", "webhook_endpoint", endpointID,
+			toAuditEndpoint(before.Endpoint), toAuditEndpoint(updated))
 	})
 	return updated, err
 }
 
 func (s *Service) DeleteEndpoint(ctx context.Context, tenantID, endpointID uuid.UUID) error {
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return s.hooks.DeleteEndpoint(ctx, tenantID, endpointID)
+		before, err := s.hooks.GetEndpoint(ctx, tenantID, endpointID)
+		if err != nil {
+			return err
+		}
+		if err := s.hooks.DeleteEndpoint(ctx, tenantID, endpointID); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "webhook_endpoint.delete", "webhook_endpoint", endpointID, toAuditEndpoint(before.Endpoint), nil)
 	})
 }
 

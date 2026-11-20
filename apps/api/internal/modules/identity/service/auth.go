@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/auth"
 )
 
@@ -311,7 +312,10 @@ func (s *Service) RevokeSession(ctx context.Context, tenantID, userID, sessionID
 		if !owned {
 			return domain.ErrSessionNotFound
 		}
-		return s.repo.RevokeSession(ctx, tenantID, sessionID, "revoked_by_user")
+		if err := s.repo.RevokeSession(ctx, tenantID, sessionID, "revoked_by_user"); err != nil {
+			return err
+		}
+		return audit.RecordSimple(ctx, tenantID, "session.revoke", "session", sessionID)
 	})
 	if err != nil {
 		return err
@@ -345,6 +349,12 @@ func (s *Service) ChangePassword(ctx context.Context, tenantID, userID, currentS
 
 		revokedIDs, err := s.repo.RevokeOtherSessions(ctx, tenantID, userID, currentSessionID, "password_changed")
 		if err != nil {
+			return err
+		}
+		// Never the password or its hash: only that it changed and how many
+		// other sessions that ended.
+		if err := audit.Record(ctx, tenantID, "user.change_password", "user", userID, nil,
+			map[string]int{"revoked_sessions": len(revokedIDs)}); err != nil {
 			return err
 		}
 		s.invalidateSessions(ctx, tenantID, revokedIDs)

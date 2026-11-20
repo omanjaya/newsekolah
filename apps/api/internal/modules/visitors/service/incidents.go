@@ -47,7 +47,10 @@ func (s *Service) CreateIncident(ctx context.Context, tenantID, reporterUserID u
 			TenantID: tenantID, OccurredAt: in.OccurredAt, Severity: in.Severity, Description: strings.TrimSpace(in.Description),
 			PersonsInvolved: strings.TrimSpace(in.PersonsInvolved), ActionTaken: strings.TrimSpace(in.ActionTaken), ReportedBy: reporterUserID,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		return s.recordAudit(ctx, tenantID, "visitor_incident.create", "visitor_incident", out.ID)
 	})
 	return out, err
 }
@@ -79,7 +82,7 @@ func (s *Service) UpdateIncident(ctx context.Context, tenantID, id uuid.UUID, in
 			return err
 		}
 		out = updated
-		return nil
+		return s.recordAudit(ctx, tenantID, "visitor_incident.update", "visitor_incident", id)
 	})
 	return out, err
 }
@@ -106,7 +109,7 @@ func (s *Service) CloseIncident(ctx context.Context, tenantID, id, closedBy uuid
 			return err
 		}
 		out = updated
-		return nil
+		return s.recordAudit(ctx, tenantID, "visitor_incident.close", "visitor_incident", id)
 	})
 	return out, err
 }

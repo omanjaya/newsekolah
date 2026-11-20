@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/billing/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 )
 
 // GenerationSummary is what the caller sees back from a preview or an
@@ -62,7 +63,11 @@ func (s *Service) GenerateBills(ctx context.Context, tenantID, actorUserID uuid.
 		}
 		summary.Created = created
 		summary.Skipped = len(toInsert) - len(created)
-		return nil
+		// One entry per run, not per bill: the period and the counts are
+		// what a reviewer needs; each bill keeps its own created_by.
+		return audit.Record(ctx, tenantID, "bill.generate", "bill", uuid.Nil, nil, map[string]any{
+			"period": strings.TrimSpace(period), "created": len(created), "skipped": summary.Skipped,
+		})
 	})
 	return summary, err
 }

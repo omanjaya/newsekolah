@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 )
 
 // SetupStepKey names one step of the onboarding checklist
@@ -130,6 +131,11 @@ func (s *Service) UpdateProfile(ctx context.Context, tenantID uuid.UUID, in Prof
 		return domain.ErrInvalidProfile
 	}
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return s.repo.UpdateTenantProfile(ctx, tenantID, name, in.EducationLevel, in.Timezone, in.Locale)
+		if err := s.repo.UpdateTenantProfile(ctx, tenantID, name, in.EducationLevel, in.Timezone, in.Locale); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "school_profile.update", "tenant", tenantID, nil, map[string]string{
+			"name": name, "education_level": in.EducationLevel, "timezone": in.Timezone, "locale": in.Locale,
+		})
 	})
 }

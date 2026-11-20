@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
@@ -216,8 +217,10 @@ func (s *ScheduleService) CreateSchedule(ctx context.Context, tenantID, requeste
 	var out domain.Schedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = s.repo.CreateSchedule(ctx, sched)
-		return err
+		if out, err = s.repo.CreateSchedule(ctx, sched); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "report_schedule.create", "report_schedule", out.ID, nil, out)
 	})
 	return out, err
 }
@@ -246,9 +249,14 @@ func (s *ScheduleService) UpdateSchedule(ctx context.Context, tenantID, requeste
 
 	var out domain.Schedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
-		out, err = s.repo.UpdateSchedule(ctx, sched)
-		return err
+		before, _, err := s.repo.GetSchedule(ctx, tenantID, id)
+		if err != nil {
+			return err
+		}
+		if out, err = s.repo.UpdateSchedule(ctx, sched); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "report_schedule.update", "report_schedule", id, before, out)
 	})
 	return out, err
 }
@@ -325,7 +333,14 @@ func (s *ScheduleService) DeleteSchedule(ctx context.Context, tenantID, id uuid.
 		return err
 	}
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return s.repo.DeleteSchedule(ctx, tenantID, id)
+		before, _, err := s.repo.GetSchedule(ctx, tenantID, id)
+		if err != nil {
+			return err
+		}
+		if err := s.repo.DeleteSchedule(ctx, tenantID, id); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "report_schedule.delete", "report_schedule", id, before, nil)
 	})
 }
 
@@ -336,8 +351,14 @@ func (s *ScheduleService) SetEnabled(ctx context.Context, tenantID, id uuid.UUID
 	var out domain.Schedule
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = s.repo.SetEnabled(ctx, tenantID, id, enabled)
-		return err
+		if out, err = s.repo.SetEnabled(ctx, tenantID, id, enabled); err != nil {
+			return err
+		}
+		action := "report_schedule.disable"
+		if enabled {
+			action = "report_schedule.enable"
+		}
+		return audit.RecordSimple(ctx, tenantID, action, "report_schedule", id)
 	})
 	return out, err
 }

@@ -29,7 +29,10 @@ func (s *Service) Create(ctx context.Context, tenantID, senderUserID uuid.UUID, 
 			BodyHTML: cleanHTML, BodyText: text, Audience: in.Audience, IsPinned: in.IsPinned,
 			Status: domain.StatusDraft, StartsAt: in.StartsAt, EndsAt: in.EndsAt,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		return recordAnnouncementAudit(ctx, tenantID, out.ID, "create", nil, &out)
 	})
 	return out, err
 }
@@ -48,12 +51,15 @@ func (s *Service) Update(ctx context.Context, tenantID, id uuid.UUID, in Input) 
 		if !current.Editable() {
 			return domain.ErrInvalidStatus
 		}
+		before := current
 		current.Title = strings.TrimSpace(in.Title)
 		current.BodyHTML, current.BodyText = cleanHTML, text
 		current.Audience, current.IsPinned = in.Audience, in.IsPinned
 		current.StartsAt, current.EndsAt = in.StartsAt, in.EndsAt
-		out, err = s.repo.Update(ctx, current)
-		return err
+		if out, err = s.repo.Update(ctx, current); err != nil {
+			return err
+		}
+		return recordAnnouncementAudit(ctx, tenantID, id, "update", &before, &out)
 	})
 	return out, err
 }
@@ -106,10 +112,14 @@ func (s *Service) List(ctx context.Context, tenantID uuid.UUID, status, cursorSt
 
 func (s *Service) Delete(ctx context.Context, tenantID, id uuid.UUID) error {
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		if _, err := s.repo.Get(ctx, tenantID, id); err != nil {
+		current, err := s.repo.Get(ctx, tenantID, id)
+		if err != nil {
 			return err
 		}
-		return s.repo.Delete(ctx, tenantID, id)
+		if err := s.repo.Delete(ctx, tenantID, id); err != nil {
+			return err
+		}
+		return recordAnnouncementAudit(ctx, tenantID, id, "delete", &current, nil)
 	})
 }
 
@@ -152,6 +162,11 @@ func (s *Service) publishLocked(ctx context.Context, tenantID, id uuid.UUID) (do
 	if err := s.notifier.AnnouncementPublished(ctx, tenantID, recipients, published); err != nil {
 		return domain.Announcement{}, err
 	}
+	// A scheduled publish runs in the worker with no request: the entry then
+	// has no actor, which the audit log shows as the system.
+	if err := recordAnnouncementAudit(ctx, tenantID, id, "publish", &current, &published); err != nil {
+		return domain.Announcement{}, err
+	}
 	return published, nil
 }
 
@@ -169,8 +184,10 @@ func (s *Service) Schedule(ctx context.Context, tenantID, id uuid.UUID) (domain.
 		if current.StartsAt == nil || !current.StartsAt.After(clock.Now(ctx, s.clock)) {
 			return domain.ErrScheduleNeedsStart
 		}
-		out, err = s.repo.SetStatus(ctx, tenantID, id, domain.StatusScheduled)
-		return err
+		if out, err = s.repo.SetStatus(ctx, tenantID, id, domain.StatusScheduled); err != nil {
+			return err
+		}
+		return recordAnnouncementAudit(ctx, tenantID, id, "schedule", &current, &out)
 	})
 	return out, err
 }
@@ -185,8 +202,10 @@ func (s *Service) Archive(ctx context.Context, tenantID, id uuid.UUID) (domain.A
 		if current.Status != domain.StatusPublished && current.Status != domain.StatusScheduled {
 			return domain.ErrInvalidStatus
 		}
-		out, err = s.repo.SetStatus(ctx, tenantID, id, domain.StatusArchived)
-		return err
+		if out, err = s.repo.SetStatus(ctx, tenantID, id, domain.StatusArchived); err != nil {
+			return err
+		}
+		return recordAnnouncementAudit(ctx, tenantID, id, "archive", &current, &out)
 	})
 	return out, err
 }

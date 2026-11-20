@@ -123,12 +123,73 @@
       "update_own_profile": "Mengubah profil sendiri",
       "import_create": "Membuat pengguna lewat impor",
       "import_commit": "Menyelesaikan impor pengguna",
-      "import_update": "Memperbarui pengguna lewat impor"
+      "import_update": "Memperbarui pengguna lewat impor",
+      "change_password": "Mengganti kata sandi"
     },
     "violation": {
       "void": "Membatalkan pelanggaran"
     },
-    "read": "Membuka data"
+    "read": "Membuka data",
+    "announcement": {
+      "create": "Membuat pengumuman",
+      "update": "Mengubah pengumuman",
+      "publish": "Menerbitkan pengumuman",
+      "schedule": "Menjadwalkan pengumuman",
+      "archive": "Mengarsipkan pengumuman",
+      "delete": "Menghapus pengumuman"
+    },
+    "tenant_branding": {
+      "update": "Mengubah merek sekolah",
+      "logo_update": "Mengganti logo sekolah",
+      "favicon_update": "Mengganti ikon tab sekolah"
+    },
+    "report_header": {
+      "update": "Mengubah kop laporan"
+    },
+    "school_profile": {
+      "update": "Mengubah profil sekolah"
+    },
+    "webhook_endpoint": {
+      "create": "Menambah endpoint webhook",
+      "update": "Mengubah endpoint webhook",
+      "delete": "Menghapus endpoint webhook"
+    },
+    "api_key": {
+      "create": "Membuat kunci API",
+      "revoke": "Mencabut kunci API"
+    },
+    "fee_type": {
+      "create": "Membuat jenis biaya",
+      "update": "Mengubah jenis biaya",
+      "delete": "Menghapus jenis biaya"
+    },
+    "bill": {
+      "generate": "Membuat tagihan massal"
+    },
+    "document_template": {
+      "create": "Membuat templat dokumen",
+      "update": "Mengubah templat dokumen",
+      "set_default": "Menjadikan templat dokumen bawaan"
+    },
+    "report_schedule": {
+      "create": "Membuat jadwal kirim laporan",
+      "update": "Mengubah jadwal kirim laporan",
+      "delete": "Menghapus jadwal kirim laporan",
+      "enable": "Mengaktifkan jadwal kirim laporan",
+      "disable": "Menonaktifkan jadwal kirim laporan"
+    },
+    "session": {
+      "revoke": "Mengakhiri sesi"
+    },
+    "visitor_visit": {
+      "check_in": "Mencatat tamu masuk",
+      "check_out": "Mencatat tamu keluar"
+    },
+    "visitor_incident": {
+      "create": "Mencatat insiden",
+      "update": "Mengubah insiden",
+      "close": "Menutup insiden"
+    }
   },
   "entityTypes": {
     "user": "Pengguna",
@@ -149,6 +210,14 @@
     "leave_request": "Pengajuan izin",
     "document": "Dokumen",
     "visitor_visit": "Kunjungan tamu",
-    "warning_letter": "Surat peringatan"
+    "warning_letter": "Surat peringatan",
+    "announcement": "Pengumuman",
+    "webhook_endpoint": "Endpoint webhook",
+    "api_key": "Kunci API",
+    "fee_type": "Jenis biaya",
+    "bill": "Tagihan",
+    "document_template": "Templat dokumen",
+    "report_schedule": "Jadwal kirim laporan",
+    "session": "Sesi"
   }
 }

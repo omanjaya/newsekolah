@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 )
@@ -39,7 +40,7 @@ func (s *Service) UpdateBranding(ctx context.Context, tenantID, actorID uuid.UUI
 				return fmt.Errorf("set %s: %w", key, err)
 			}
 		}
-		return nil
+		return audit.Record(ctx, tenantID, "tenant_branding.update", "tenant", tenantID, nil, writes)
 	})
 	if err != nil {
 		return domain.Branding{}, err
@@ -137,7 +138,11 @@ func (s *Service) confirmBrandingUpload(ctx context.Context, tenantID, actorID u
 		// presigned GET's response-content-type (and, for SVG, force
 		// response-content-disposition: attachment) rather than trusting
 		// whatever Content-Type the client's direct PUT left on the object.
-		return s.repo.SetBrandingSetting(ctx, tenantID, actorID, mimeSettingKey(settingKey), contentType)
+		if err := s.repo.SetBrandingSetting(ctx, tenantID, actorID, mimeSettingKey(settingKey), contentType); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "tenant_branding."+assetType+"_update", "tenant", tenantID, nil,
+			map[string]any{"object_key": objectKey, "mime": contentType, "size_bytes": len(data)})
 	})
 	if err != nil {
 		return domain.Branding{}, err

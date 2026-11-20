@@ -675,10 +675,28 @@ func (s *Service) CreateTemplate(ctx context.Context, t domain.Template) (domain
 	var out domain.Template
 	err := s.withTx(ctx, t.TenantID, func(ctx context.Context) error {
 		var err error
-		out, err = s.repo.CreateTemplate(ctx, t)
-		return err
+		if out, err = s.repo.CreateTemplate(ctx, t); err != nil {
+			return err
+		}
+		return audit.Record(ctx, t.TenantID, "document_template.create", "document_template", out.ID, nil, toAuditTemplate(out))
 	})
 	return out, err
+}
+
+// auditTemplate is what an audit entry keeps of a document template; the
+// body is summarised by its length, the full text stays on the template.
+type auditTemplate struct {
+	Name       string `json:"name"`
+	Kind       string `json:"kind"`
+	Engine     string `json:"engine"`
+	IsDefault  bool   `json:"is_default"`
+	BodyLength int    `json:"body_length"`
+}
+
+func toAuditTemplate(t domain.Template) auditTemplate {
+	return auditTemplate{
+		Name: t.Name, Kind: string(t.Kind), Engine: string(t.Engine), IsDefault: t.IsDefault, BodyLength: len(t.Body),
+	}
 }
 
 func (s *Service) UpdateTemplate(ctx context.Context, tenantID, id uuid.UUID, name, body string, variables []string, letterheadAssetID uuid.NullUUID) (domain.Template, error) {
@@ -697,8 +715,10 @@ func (s *Service) UpdateTemplate(ctx context.Context, tenantID, id uuid.UUID, na
 		if err := validateTemplateBody(current.Engine, body); err != nil {
 			return err
 		}
-		out, err = s.repo.UpdateTemplate(ctx, tenantID, id, name, body, variables, letterheadAssetID)
-		return err
+		if out, err = s.repo.UpdateTemplate(ctx, tenantID, id, name, body, variables, letterheadAssetID); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "document_template.update", "document_template", id, toAuditTemplate(current), toAuditTemplate(out))
 	})
 	return out, err
 }
@@ -730,8 +750,10 @@ func (s *Service) SetDefaultTemplate(ctx context.Context, tenantID, id uuid.UUID
 		if err := s.requireTemplateKind(ctx, tenantID, t.Kind); err != nil {
 			return err
 		}
-		out, err = s.repo.SetDefaultTemplate(ctx, tenantID, id, t.Kind)
-		return err
+		if out, err = s.repo.SetDefaultTemplate(ctx, tenantID, id, t.Kind); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "document_template.set_default", "document_template", id, toAuditTemplate(t), toAuditTemplate(out))
 	})
 	return out, err
 }
