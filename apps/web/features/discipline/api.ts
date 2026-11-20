@@ -119,20 +119,6 @@ export function useUpdateViolationTypeMutation() {
   });
 }
 
-export function useDeleteViolationTypeMutation() {
-  const client = useApiClient();
-  const invalidate = useInvalidateDiscipline();
-  return useMutation({
-    mutationFn: (id: string) =>
-      client.DELETE("/v1/discipline/violation-types/{typeId}", {
-        params: { path: { typeId: id } },
-      }),
-    onSuccess: invalidate,
-
-    meta: { errorToast: false },
-  });
-}
-
 // SP ladder policy.
 
 export function useDisciplinePolicyQuery(enabled = true) {

@@ -25,7 +25,7 @@ func (st *Store) migrateViolationTypes(ctx context.Context, tenantID uuid.UUID, 
 		id, created, err := st.upsertOne(ctx,
 			`insert into violation_types (tenant_id, code, name, points, is_active)
 			 values ($1, $2, $3, $4, $5)
-			 on conflict (tenant_id, code) do update set
+			 on conflict (tenant_id, code) where deleted_at is null do update set
 			   name = excluded.name, points = excluded.points, is_active = excluded.is_active
 			 returning id, (xmax = 0)`,
 			tenantID, v.Code, mapping.CleanName(v.Name), v.Points, v.IsActive,
