@@ -37,9 +37,9 @@
     "review": "Tinjau",
     "issueLetter": "Terbitkan surat",
     "atRisk": {
-      "title": "Siswa berisiko",
-      "count": "{count} siswa berisiko",
-      "empty": "Tidak ada siswa berisiko saat ini.",
+      "title": "Siswa perlu perhatian",
+      "count": "{atRisk} berisiko, {watch} siaga",
+      "empty": "Tidak ada siswa yang perlu perhatian saat ini.",
       "unknownStudent": "Siswa tidak dikenal",
       "viewAll": "Lihat analitik"
     },

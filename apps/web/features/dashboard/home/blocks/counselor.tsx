@@ -207,7 +207,8 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
           isLoading={atRisk.isLoading}
           error={atRisk.isError ? atRisk.error : null}
           refetch={atRisk.refetch}
-          total={flagged.length}
+          atRiskCount={flagged.filter((row) => row.level === "at_risk").length}
+          watchCount={flagged.filter((row) => row.level === "watch").length}
           rows={[...flagged].sort((a, b) => b.score - a.score).slice(0, AT_RISK_PREVIEW_SIZE)}
           studentMap={studentMap}
           classMap={classMap}
@@ -223,7 +224,8 @@ function AtRiskCard({
   isLoading,
   error,
   refetch,
-  total,
+  atRiskCount,
+  watchCount,
   rows,
   studentMap,
   classMap,
@@ -231,7 +233,9 @@ function AtRiskCard({
   isLoading: boolean;
   error: unknown;
   refetch: () => unknown;
-  total: number;
+  /** Counted per level, the way /analytics sums them: the card lists both. */
+  atRiskCount: number;
+  watchCount: number;
   rows: StudentRisk[];
   studentMap: Map<string, DirectoryUser>;
   classMap: Map<string, ClassRef>;
@@ -243,7 +247,9 @@ function AtRiskCard({
       <CardHeader action={<TextLink href={ANALYTICS_HREF}>{t("viewAll")}</TextLink>}>
         <CardTitle as="h2">{t("title")}</CardTitle>
         {!isLoading && !error && rows.length > 0 && (
-          <CardDescription>{t("count", { count: total })}</CardDescription>
+          <CardDescription>
+            {t("count", { atRisk: atRiskCount, watch: watchCount })}
+          </CardDescription>
         )}
       </CardHeader>
       {error ? (

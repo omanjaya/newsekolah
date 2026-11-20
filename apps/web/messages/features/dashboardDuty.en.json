@@ -37,9 +37,9 @@
     "review": "Review",
     "issueLetter": "Issue letter",
     "atRisk": {
-      "title": "At-risk students",
-      "count": "{count} at-risk students",
-      "empty": "No at-risk students right now.",
+      "title": "Students needing attention",
+      "count": "{atRisk} at risk, {watch} on watch",
+      "empty": "No students need attention right now.",
       "unknownStudent": "Unknown student",
       "viewAll": "View analytics"
     },
