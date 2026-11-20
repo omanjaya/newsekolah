@@ -10830,8 +10830,12 @@ export interface components {
             row_number: number;
             /** @enum {string} */
             status: "new_title" | "existing_title" | "error";
-            /** @description What the row will do or why it cannot be imported, as a stable code the client translates (NEW_TITLE, EXISTING_TITLE, TITLE_REQUIRED, MATERIAL_TYPE_UNKNOWN, CATEGORY_UNKNOWN, ACCESS_UNKNOWN, LOCATION_UNKNOWN, SOURCE_UNKNOWN, PUBLISH_YEAR_NOT_NUMBER, PRICE_NOT_NUMBER, COPIES_INVALID, DEDUPE_FAILED). NEW_TITLE and EXISTING_TITLE go with the row's copies count. */
+            /** @description What the row will do or why it cannot be imported, as a stable code the client translates (NEW_TITLE, EXISTING_TITLE, TITLE_REQUIRED, MATERIAL_TYPE_REQUIRED, MATERIAL_TYPE_UNKNOWN, CATEGORY_REQUIRED, CATEGORY_UNKNOWN, ACCESS_UNKNOWN, LOCATION_UNKNOWN, SOURCE_UNKNOWN, PUBLISH_YEAR_NOT_NUMBER, PRICE_NOT_NUMBER, COPIES_INVALID, ACCESSION_TAKEN, BARCODE_TAKEN, ACCESSION_IN_FILE, BARCODE_IN_FILE). NEW_TITLE and EXISTING_TITLE go with the row's copies count. */
             message_code: string;
+            /** @description The No. Induk or barcode an ACCESSION_TAKEN, BARCODE_TAKEN, ACCESSION_IN_FILE or BARCODE_IN_FILE code is about. */
+            message_value?: string;
+            /** @description The earlier row of the file that claimed the number, for ACCESSION_IN_FILE and BARCODE_IN_FILE. */
+            message_row?: number;
             title: string;
             copies: number;
         };
