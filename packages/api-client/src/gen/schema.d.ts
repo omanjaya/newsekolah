@@ -10858,6 +10858,7 @@ export interface components {
         };
         LibraryStocktakeResult: {
             expected_count: number;
+            /** @description Expected copies that were found; with the missing copies it adds up to expected_count. Scanned copies that were not expected are listed in unexpected only. */
             scanned_count: number;
             missing: components["schemas"]["LibraryCopy"][];
             unexpected: components["schemas"]["LibraryCopy"][];
@@ -10865,8 +10866,11 @@ export interface components {
         };
         LibraryStocktakeProgress: {
             expected_count: number;
+            /** @description Expected copies found so far; scanned_count + missing_count = expected_count. */
             scanned_count: number;
             missing_count: number;
+            /** @description Scanned copies that were not expected on the shelf (on loan, lost, donated). */
+            unexpected_count: number;
             misplaced_count: number;
         };
         LibraryOverdueMember: {

@@ -25355,6 +25355,8 @@ components:
           type: integer
         scanned_count:
           type: integer
+          description: Expected copies that were found; with the missing copies it adds up to expected_count. Scanned copies that
+            were not expected are listed in unexpected only.
         missing:
           type: array
           items:
@@ -25373,14 +25375,19 @@ components:
         - expected_count
         - scanned_count
         - missing_count
+        - unexpected_count
         - misplaced_count
       properties:
         expected_count:
           type: integer
         scanned_count:
           type: integer
+          description: Expected copies found so far; scanned_count + missing_count = expected_count.
         missing_count:
           type: integer
+        unexpected_count:
+          type: integer
+          description: Scanned copies that were not expected on the shelf (on loan, lost, donated).
         misplaced_count:
           type: integer
     LibraryOverdueMember:

@@ -56,7 +56,8 @@ func (h *LibraryHandler) GetLibraryStocktakeProgress(ctx context.Context, reques
 		return nil, mapError(err)
 	}
 	return api.GetLibraryStocktakeProgress200JSONResponse{
-		ExpectedCount: p.ExpectedCount, ScannedCount: p.ScannedCount, MissingCount: p.MissingCount, MisplacedCount: p.MisplacedCount,
+		ExpectedCount: p.ExpectedCount, ScannedCount: p.ScannedCount, MissingCount: p.MissingCount,
+		UnexpectedCount: p.UnexpectedCount, MisplacedCount: p.MisplacedCount,
 	}, nil
 }
 

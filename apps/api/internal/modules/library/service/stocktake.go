@@ -10,6 +10,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 func (s *Service) StartStocktake(ctx context.Context, tenantID uuid.UUID, name string, coordinatorUserID uuid.UUID, notes string) (domain.Stocktake, error) {
@@ -121,10 +122,15 @@ func (s *Service) ScanCodes(ctx context.Context, tenantID, stocktakeID uuid.UUID
 // Progress is a stocktake session's live counters, recomputed from the
 // scans recorded so far without waiting for Close.
 type Progress struct {
-	ExpectedCount  int
-	ScannedCount   int
-	MissingCount   int
-	MisplacedCount int
+	ExpectedCount int
+	// ScannedCount counts expected copies found; ScannedCount plus
+	// MissingCount is ExpectedCount.
+	ScannedCount int
+	MissingCount int
+	// UnexpectedCount counts scanned copies that were not expected on the
+	// shelf (on loan, lost, donated).
+	UnexpectedCount int
+	MisplacedCount  int
 }
 
 func (s *Service) StocktakeProgress(ctx context.Context, tenantID, stocktakeID uuid.UUID) (Progress, error) {
@@ -142,7 +148,7 @@ func (s *Service) StocktakeProgress(ctx context.Context, tenantID, stocktakeID u
 		}
 		progress = Progress{
 			ExpectedCount: result.ExpectedCount, ScannedCount: result.ScannedCount,
-			MissingCount: len(result.Missing), MisplacedCount: len(result.Misplaced),
+			MissingCount: len(result.Missing), UnexpectedCount: len(result.Unexpected), MisplacedCount: len(result.Misplaced),
 		}
 		return nil
 	})
@@ -298,7 +304,6 @@ func (s *Service) persistedResult(ctx context.Context, tenantID, stocktakeID uui
 		return domain.StocktakeResult{}, err
 	}
 	var result domain.StocktakeResult
-	result.ScannedCount = scanned
 	for _, row := range rows {
 		switch row.Outcome {
 		case "missing":
@@ -318,28 +323,31 @@ func (s *Service) persistedResult(ctx context.Context, tenantID, stocktakeID uui
 	// The session's expected set isn't stored row-by-row; it's derived
 	// from what was actually reconciled at close time: every scan that
 	// matched an expected copy, plus every expected copy that was missed.
-	result.ExpectedCount = scanned - len(result.Unexpected) + len(result.Missing)
+	result.ScannedCount = scanned - len(result.Unexpected)
+	result.ExpectedCount = result.ScannedCount + len(result.Missing)
 	return result, nil
 }
 
 // StocktakeReportXLSX renders one session's reconciliation as a
 // spreadsheet: one sheet per outcome (missing, unexpected, misplaced),
 // so a librarian can hand the missing list to whoever is chasing down
-// the books.
-// business-rule guard clauses gate one write or one aggregated read;
-// the branches are sequential guards, not nested decision logic, and
-// the module's existing test suite already covers them. Left as-is
-// here to avoid behaviour risk in a lint-only change.
-//
-//nolint:gocyclo // service method: several independent precondition/authorization/
+// the books. Each sheet is headed by the session's name and dates, and
+// every row names the book's title and its location and gives condition
+// and status in Indonesian: a list of bare accession numbers and raw
+// codes ("good", "on_loan") told nobody which book was missing.
 func (s *Service) StocktakeReportXLSX(ctx context.Context, tenantID, stocktakeID uuid.UUID) ([]byte, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	if _, err := s.GetStocktake(ctx, tenantID, stocktakeID); err != nil {
+	st, err := s.GetStocktake(ctx, tenantID, stocktakeID)
+	if err != nil {
 		return nil, err
 	}
 	result, err := s.StocktakeResults(ctx, tenantID, stocktakeID)
+	if err != nil {
+		return nil, err
+	}
+	names, err := s.stocktakeReportNames(ctx, tenantID, result)
 	if err != nil {
 		return nil, err
 	}
@@ -351,45 +359,63 @@ func (s *Service) StocktakeReportXLSX(ctx context.Context, tenantID, stocktakeID
 	if err != nil {
 		return nil, fmt.Errorf("stocktake report style: %w", err)
 	}
+	headingStyle, err := f.NewStyle(&excelize.Style{Font: &excelize.Font{Bold: true, Size: 12}})
+	if err != nil {
+		return nil, fmt.Errorf("stocktake report style: %w", err)
+	}
+	heading := stocktakeReportHeading(st)
 
-	writeCopySheet := func(name string, copies []domain.Copy, locationOf func(domain.Copy) string) error {
+	writeCopySheet := func(name string, copies []domain.Copy, foundAt func(domain.Copy) string) error {
 		if name != "Sheet1" {
 			if _, err := f.NewSheet(name); err != nil {
 				return err
 			}
 		}
-		headers := []string{"Nomor Induk", "Barcode", "Nomor Panggil", "Kondisi", "Status", "Lokasi Ditemukan"}
+		_ = f.SetCellValue(name, "A1", heading)
+		_ = f.SetCellStyle(name, "A1", "A1", headingStyle)
+		headers := []string{"Judul", "Nomor Induk", "Barcode", "Nomor Panggil", "Lokasi", "Kondisi", "Status"}
+		if foundAt != nil {
+			headers = append(headers, "Lokasi Ditemukan")
+		}
 		for i, h := range headers {
-			cell, _ := excelize.CoordinatesToCellName(i+1, 1)
+			cell, _ := excelize.CoordinatesToCellName(i+1, 2)
 			_ = f.SetCellValue(name, cell, h)
 			_ = f.SetCellStyle(name, cell, cell, headerStyle)
 		}
+		_ = f.SetColWidth(name, "A", "A", 40)
+		_ = f.SetColWidth(name, "B", "H", 16)
 		for row, c := range copies {
-			values := []any{c.AccessionNumber, c.Barcode, c.CallNumber, string(c.Condition), string(c.Status), locationOf(c)}
+			values := []any{
+				names.titles[c.TitleID], c.AccessionNumber, c.Barcode, c.CallNumber,
+				names.location(c.LocationID), copyConditionLabel(c.Condition), copyStatusLabel(c.Status),
+			}
+			if foundAt != nil {
+				values = append(values, foundAt(c))
+			}
 			for col, v := range values {
-				cell, _ := excelize.CoordinatesToCellName(col+1, row+2)
+				cell, _ := excelize.CoordinatesToCellName(col+1, row+3)
 				_ = f.SetCellValue(name, cell, v)
 			}
 		}
-		return f.SetPanes(name, &excelize.Panes{Freeze: true, Split: false, XSplit: 0, YSplit: 1, TopLeftCell: "A2", ActivePane: "bottomLeft"})
+		return f.SetPanes(name, &excelize.Panes{Freeze: true, Split: false, XSplit: 0, YSplit: 2, TopLeftCell: "A3", ActivePane: "bottomLeft"})
 	}
 
-	if err := writeCopySheet("Sheet1", result.Missing, func(domain.Copy) string { return "" }); err != nil {
+	if err := writeCopySheet("Sheet1", result.Missing, nil); err != nil {
 		return nil, fmt.Errorf("stocktake report missing sheet: %w", err)
 	}
 	if err := f.SetSheetName("Sheet1", "Hilang"); err != nil {
 		return nil, fmt.Errorf("stocktake report rename: %w", err)
 	}
-	if err := writeCopySheet("Tidak Terduga", result.Unexpected, func(domain.Copy) string { return "" }); err != nil {
+	if err := writeCopySheet("Tidak Terduga", result.Unexpected, nil); err != nil {
 		return nil, fmt.Errorf("stocktake report unexpected sheet: %w", err)
 	}
 	misplacedCopies := make([]domain.Copy, len(result.Misplaced))
-	misplacedLocation := make(map[uuid.UUID]string, len(result.Misplaced))
+	foundLocation := make(map[uuid.UUID]string, len(result.Misplaced))
 	for i, m := range result.Misplaced {
 		misplacedCopies[i] = m.Copy
-		misplacedLocation[m.Copy.ID] = m.FoundLocationID.String()
+		foundLocation[m.Copy.ID] = names.location(uuid.NullUUID{UUID: m.FoundLocationID, Valid: true})
 	}
-	if err := writeCopySheet("Salah Rak", misplacedCopies, func(c domain.Copy) string { return misplacedLocation[c.ID] }); err != nil {
+	if err := writeCopySheet("Salah Rak", misplacedCopies, func(c domain.Copy) string { return foundLocation[c.ID] }); err != nil {
 		return nil, fmt.Errorf("stocktake report misplaced sheet: %w", err)
 	}
 	f.SetActiveSheet(0)
@@ -399,4 +425,62 @@ func (s *Service) StocktakeReportXLSX(ctx context.Context, tenantID, stocktakeID
 		return nil, fmt.Errorf("stocktake report write: %w", err)
 	}
 	return buf.Bytes(), nil
+}
+
+// stocktakeReportHeading is the first line of every sheet: the session's
+// name and the days it ran.
+func stocktakeReportHeading(st domain.Stocktake) string {
+	heading := "Opname " + st.Name + ", mulai " + reportdoc.FormatDate("id", st.StartedOn)
+	if st.EndedOn != nil {
+		heading += " s.d. " + reportdoc.FormatDate("id", *st.EndedOn)
+	}
+	return heading
+}
+
+// stocktakeNames resolves the title and location names a stocktake
+// report prints in place of IDs.
+type stocktakeNames struct {
+	titles    map[uuid.UUID]string
+	locations map[uuid.UUID]string
+}
+
+func (n stocktakeNames) location(id uuid.NullUUID) string {
+	if !id.Valid {
+		return ""
+	}
+	if name, ok := n.locations[id.UUID]; ok {
+		return name
+	}
+	return ""
+}
+
+func (s *Service) stocktakeReportNames(ctx context.Context, tenantID uuid.UUID, result domain.StocktakeResult) (stocktakeNames, error) {
+	names := stocktakeNames{titles: map[uuid.UUID]string{}, locations: map[uuid.UUID]string{}}
+	copies := append(append([]domain.Copy{}, result.Missing...), result.Unexpected...)
+	for _, m := range result.Misplaced {
+		copies = append(copies, m.Copy)
+	}
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		for _, c := range copies {
+			if _, done := names.titles[c.TitleID]; done {
+				continue
+			}
+			title, found, err := s.repo.GetTitle(ctx, tenantID, c.TitleID)
+			if err != nil {
+				return err
+			}
+			if found {
+				names.titles[c.TitleID] = title.Title
+			}
+		}
+		locations, err := s.repo.ListLocations(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		for _, l := range locations {
+			names.locations[l.ID] = l.Name
+		}
+		return nil
+	})
+	return names, err
 }

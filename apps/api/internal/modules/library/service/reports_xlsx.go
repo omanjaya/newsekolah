@@ -81,8 +81,27 @@ func copyStatusLabel(status domain.CopyStatus) string {
 		return "Dihibahkan"
 	case domain.CopyReserveStack:
 		return "Rak cadangan"
+	case domain.CopyUnknown:
+		return "Tidak diketahui"
 	default:
 		return string(status)
+	}
+}
+
+// copyConditionLabel maps a CopyCondition onto the Indonesian label the
+// web app's own "app.library" catalogue uses.
+func copyConditionLabel(condition domain.CopyCondition) string {
+	switch condition {
+	case domain.ConditionGood:
+		return "Baik"
+	case domain.ConditionFair:
+		return "Cukup"
+	case domain.ConditionDamaged:
+		return "Rusak"
+	case domain.ConditionLost:
+		return "Hilang"
+	default:
+		return string(condition)
 	}
 }
 

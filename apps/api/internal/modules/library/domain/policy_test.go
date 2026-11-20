@@ -155,7 +155,11 @@ func TestDiffStocktakeFindsMissingAndUnexpected(t *testing.T) {
 	result := domain.DiffStocktake(expected, scans)
 
 	require.Equal(t, 2, result.ExpectedCount)
-	require.Equal(t, 2, result.ScannedCount, "rejected scans do not count as scanned")
+	// Only the expected copy that was found counts as scanned, so scanned
+	// plus missing adds up to expected; the copy on loan is unexpected.
+	// Rejected scans count nowhere.
+	require.Equal(t, 1, result.ScannedCount)
+	require.Equal(t, result.ExpectedCount, result.ScannedCount+len(result.Missing))
 	require.Len(t, result.Missing, 1)
 	require.Equal(t, missingCopy.ID, result.Missing[0].ID)
 	require.Len(t, result.Unexpected, 1)

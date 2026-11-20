@@ -950,9 +950,11 @@
       "recent": {
         "found": "Found",
         "rejected": "Code not recognized",
+        "unexpected": "Not expected on the shelf",
         "heading": "Earlier scans"
       },
       "foundDetail": "{barcode} counted in this stocktake",
+      "unexpectedDetail": "{barcode} is {status}, recorded as unexpected",
       "earlier": "Earlier scans"
     },
     "close": "Close session",

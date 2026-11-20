@@ -950,9 +950,11 @@
       "recent": {
         "found": "Ditemukan",
         "rejected": "Kode tidak dikenali",
+        "unexpected": "Tidak terduga di rak",
         "heading": "Pindaian sebelumnya"
       },
       "foundDetail": "{barcode} tercatat dalam opname",
+      "unexpectedDetail": "{barcode} berstatus {status}, tercatat sebagai tidak terduga",
       "earlier": "Pindaian sebelumnya"
     },
     "close": "Tutup sesi",

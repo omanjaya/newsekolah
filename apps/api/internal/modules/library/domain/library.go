@@ -400,10 +400,13 @@ type MisplacedCopy struct {
 // against what a scan session actually found.
 type StocktakeResult struct {
 	ExpectedCount int
-	ScannedCount  int
-	Missing       []Copy          // expected copies never scanned as found
-	Unexpected    []Copy          // scanned copies that were not part of the expected set (e.g. on loan, yet on the shelf)
-	Misplaced     []MisplacedCopy // expected copies scanned at a location other than their own
+	// ScannedCount is how many expected copies were found, so it and
+	// len(Missing) always add up to ExpectedCount; a scanned copy that was
+	// not expected is counted in Unexpected only.
+	ScannedCount int
+	Missing      []Copy          // expected copies never scanned as found
+	Unexpected   []Copy          // scanned copies that were not part of the expected set (e.g. on loan, yet on the shelf)
+	Misplaced    []MisplacedCopy // expected copies scanned at a location other than their own
 }
 
 // DiffStocktake compares the copies a stocktake session expected to find
@@ -422,16 +425,16 @@ func DiffStocktake(expected []Copy, scans []ScanRecord) StocktakeResult {
 	var misplaced []MisplacedCopy
 	scannedCount := 0
 	for _, rec := range scans {
-		if rec.Scan.Outcome != ScanFound || !rec.Scan.CopyID.Valid {
+		if rec.Scan.Outcome != ScanFound || !rec.Scan.CopyID.Valid || foundIDs[rec.Copy.ID] {
 			continue
 		}
-		scannedCount++
 		foundIDs[rec.Copy.ID] = true
 		exp, isExpected := expectedByID[rec.Copy.ID]
 		if !isExpected {
 			unexpected = append(unexpected, rec.Copy)
 			continue
 		}
+		scannedCount++
 		if rec.Scan.LocationID.Valid && exp.LocationID.Valid && rec.Scan.LocationID.UUID != exp.LocationID.UUID {
 			misplaced = append(misplaced, MisplacedCopy{Copy: exp, FoundLocationID: rec.Scan.LocationID.UUID})
 		}
