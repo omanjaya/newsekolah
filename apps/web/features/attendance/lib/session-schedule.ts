@@ -4,7 +4,8 @@ export type SessionFillStatus = "empty" | "saved" | "locked" | "upcoming";
 /**
  * Derives the badge state from what the list already has: a lesson on a
  * later day has not happened, so it is "upcoming" and cannot be opened
- * (the API refuses to record it); otherwise no submission yet is "empty";
+ * (the API refuses to record it) -- even if an older build let someone
+ * submit it already; otherwise no submission yet is "empty";
  * a submission on a past date is treated as "locked", while a submission
  * on today's date is "saved" -- still freely revisitable for the rest of
  * the lesson. Dates compare as "YYYY-MM-DD" strings, which sort correctly
@@ -15,7 +16,8 @@ export function deriveFillStatus(
   date: string,
   today: string,
 ): SessionFillStatus {
-  if (!submittedAt) return date > today ? "upcoming" : "empty";
+  if (date > today) return "upcoming";
+  if (!submittedAt) return "empty";
   return date < today ? "locked" : "saved";
 }
 

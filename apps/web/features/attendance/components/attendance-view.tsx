@@ -143,7 +143,12 @@ export function DaySessions(): ReactElement {
 
   async function openSession(session: SessionSummary) {
     // A lesson on a later day has not happened; the API refuses to open it.
-    if ((session.date || date) > today) return;
+    // The list already shows it as not held yet, so this only answers a
+    // click that slipped through, rather than doing nothing.
+    if ((session.date || date) > today) {
+      toast.info(apiErrorMessage("ATTENDANCE_SESSION_NOT_STARTED"));
+      return;
+    }
     const mode = viewingOther ? "correction" : "normal";
     try {
       const detail = await open.mutateAsync({
