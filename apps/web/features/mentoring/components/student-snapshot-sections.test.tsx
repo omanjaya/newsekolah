@@ -23,6 +23,7 @@ vi.mock("../../reference/api", () => ({
 import type { MentorStudentSnapshot } from "../api";
 
 import {
+  SnapshotActivitiesSection,
   SnapshotAttendanceSection,
   SnapshotDisciplineSection,
   SnapshotGradesSection,
@@ -61,6 +62,49 @@ describe("mentor snapshot sections with switched-off modules", () => {
     disabled.add("grading");
     render(<SnapshotGradesSection snapshot={snapshot} />);
     expect(screen.queryByText("grades.title")).not.toBeInTheDocument();
+  });
+});
+
+describe("mentor snapshot activities", () => {
+  beforeEach(() => {
+    disabled.clear();
+  });
+
+  const withActivities = {
+    ...snapshot,
+    achievements: [
+      {
+        id: "a1",
+        student_user_id: "s1",
+        competition_name: "Lomba Pionering",
+        level: "city",
+        placement: "Juara 1",
+        achieved_on: "2026-11-02",
+      },
+    ],
+    clubs: [
+      {
+        id: "m1",
+        extracurricular_id: "c1",
+        student_user_id: "s1",
+        club_name: "Pramuka",
+        joined_on: "2026-11-20",
+        status: "active",
+      },
+    ],
+  } as unknown as MentorStudentSnapshot;
+
+  it("shows the mentee's clubs and achievements to the guru wali", () => {
+    render(<SnapshotActivitiesSection snapshot={withActivities} />);
+    expect(screen.getByRole("heading", { name: "activities.title" })).toBeInTheDocument();
+    expect(screen.getByText("Pramuka")).toBeInTheDocument();
+    expect(screen.getByText("Lomba Pionering")).toBeInTheDocument();
+  });
+
+  it("leaves the activities out while activities is off", () => {
+    disabled.add("activities");
+    render(<SnapshotActivitiesSection snapshot={withActivities} />);
+    expect(screen.queryByText("activities.title")).not.toBeInTheDocument();
   });
 });
 

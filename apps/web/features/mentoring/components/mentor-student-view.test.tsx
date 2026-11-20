@@ -20,6 +20,7 @@ vi.mock("../../../lib/session/session-provider", () => ({
   useCan: (permission: string) => permission === "view_mentoring",
 }));
 vi.mock("./student-snapshot-sections", () => ({
+  SnapshotActivitiesSection: () => null,
   SnapshotAttendanceSection: () => null,
   SnapshotDisciplineSection: () => null,
   SnapshotGradesSection: () => null,

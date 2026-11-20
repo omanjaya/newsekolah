@@ -103,6 +103,9 @@
     },
     "emptyTitle": "No meeting notes yet",
     "emptyBody": "Mentoring meeting notes will show up here.",
+    "withheldTitle": "{count, plural, one {# meeting note is closed to you} other {# meeting notes are closed to you}}",
+    "withheldBody": "A meeting note can only be read by the guru wali who wrote it, counsellors and school leadership.",
+    "withheldNotice": "{count, plural, one {# more note can only be read by the guru wali, counsellors and school leadership.} other {# more notes can only be read by the guru wali, counsellors and school leadership.}}",
     "deleteTitle": "Delete meeting note",
     "deleteBody": "This note will be deleted permanently and cannot be undone.",
     "deleteConfirm": "Delete",
@@ -168,6 +171,9 @@
       "title": "Published report grades",
       "empty": "No published grades yet.",
       "unknownSubject": "Unknown subject"
+    },
+    "activities": {
+      "title": "Activities"
     },
     "termSummary": {
       "title": "Term summary"

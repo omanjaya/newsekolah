@@ -103,6 +103,9 @@
     },
     "emptyTitle": "Belum ada catatan pertemuan",
     "emptyBody": "Catatan pertemuan mentoring akan muncul di sini.",
+    "withheldTitle": "{count, plural, other {# catatan pertemuan tertutup untuk Anda}}",
+    "withheldBody": "Isi catatan pertemuan hanya bisa dibaca guru wali yang menulisnya, guru BK, dan pimpinan sekolah.",
+    "withheldNotice": "{count, plural, other {# catatan lain hanya bisa dibaca guru wali, guru BK, dan pimpinan sekolah.}}",
     "deleteTitle": "Hapus catatan pertemuan",
     "deleteBody": "Catatan ini akan dihapus permanen dan tidak bisa dikembalikan.",
     "deleteConfirm": "Hapus",
@@ -168,6 +171,9 @@
       "title": "Nilai rapor terbit",
       "empty": "Belum ada nilai rapor yang terbit.",
       "unknownSubject": "Mata pelajaran tidak diketahui"
+    },
+    "activities": {
+      "title": "Kegiatan"
     },
     "termSummary": {
       "title": "Rangkuman semester"

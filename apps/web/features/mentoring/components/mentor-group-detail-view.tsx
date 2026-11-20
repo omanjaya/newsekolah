@@ -101,7 +101,11 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
         </TabsContent>
         {canSeeNotes && (
           <TabsContent value="notes" className="pt-4">
-            <MentorMeetingNotesPanel groupId={groupId} members={members.data?.data ?? []} />
+            <MentorMeetingNotesPanel
+              groupId={groupId}
+              mentorUserId={group.data.mentor_user_id}
+              members={members.data?.data ?? []}
+            />
           </TabsContent>
         )}
       </Tabs>

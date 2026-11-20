@@ -14,14 +14,15 @@ import { useMentorGroupsHref } from "../permissions";
 
 import { MentorTermSummaryPanel } from "./mentor-term-summary-panel";
 import {
+  SnapshotActivitiesSection,
   SnapshotAttendanceSection,
   SnapshotDisciplineSection,
   SnapshotGradesSection,
 } from "./student-snapshot-sections";
 
 /**
- * The mentor's per-student view: attendance, discipline, and published
- * grades composed from other modules (docs/03-layered-architecture.md:
+ * The mentor's per-student view: attendance, discipline, published grades
+ * and the activities record (clubs, achievements) composed from other modules (docs/03-layered-architecture.md:
  * mentoring reads these through the API, never their own tables), plus the
  * mentor's own term summary for the same student. The trail leads back to
  * the group.
@@ -119,12 +120,15 @@ export function MentorStudentView({
       ]}
     >
       {/* Three short read-outs side by side once there is room, each card
-          stretched to the row height; the summary the mentor writes spans below. */}
+          stretched to the row height; the activities record and the summary
+          the mentor writes span below. */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <SnapshotAttendanceSection snapshot={data} />
         <SnapshotDisciplineSection snapshot={data} />
         <SnapshotGradesSection snapshot={data} />
       </div>
+
+      <SnapshotActivitiesSection snapshot={data} />
 
       <Card padding="md">
         <CardHeader>
