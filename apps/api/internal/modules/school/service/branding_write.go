@@ -26,7 +26,12 @@ func (s *Service) UpdateBranding(ctx context.Context, tenantID, actorID uuid.UUI
 		return domain.Branding{}, err
 	}
 
-	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+	t, err := s.repo.GetTenantByID(ctx, tenantID)
+	if err != nil {
+		return domain.Branding{}, domain.ErrTenantNotFound
+	}
+
+	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		writes := map[string]string{
 			"branding.name":       in.Name,
 			"branding.short_name": in.ShortName,
@@ -35,17 +40,59 @@ func (s *Service) UpdateBranding(ctx context.Context, tenantID, actorID uuid.UUI
 		if in.AccentColor != "" {
 			writes["branding.accent_color"] = in.AccentColor
 		}
+		current, err := s.repo.ListBrandingSettings(ctx, tenantID)
+		if err != nil {
+			return err
+		}
 		for key, value := range writes {
 			if err := s.repo.SetBrandingSetting(ctx, tenantID, actorID, key, value); err != nil {
 				return fmt.Errorf("set %s: %w", key, err)
 			}
 		}
-		return audit.Record(ctx, tenantID, "tenant_branding.update", "tenant", tenantID, nil, writes)
+		before, after := brandingChanges(effectiveBranding(t.Name, current), writes)
+		if len(after) == 0 {
+			return nil
+		}
+		return audit.Record(ctx, tenantID, "tenant_branding.update", "tenant", tenantID, before, after)
 	})
 	if err != nil {
 		return domain.Branding{}, err
 	}
 	return s.Branding(ctx, tenantID)
+}
+
+// effectiveBranding is the stored branding text as the school saw it:
+// an unset name is the tenant's name and an unset accent colour is the
+// default, the same fallbacks Branding() applies.
+func effectiveBranding(tenantName string, stored map[string]string) map[string]string {
+	out := make(map[string]string, len(stored)+2)
+	for key, value := range stored {
+		out[key] = value
+	}
+	if out["branding.name"] == "" {
+		out["branding.name"] = tenantName
+	}
+	if out["branding.accent_color"] == "" {
+		out["branding.accent_color"] = domain.DefaultAccentColor
+	}
+	return out
+}
+
+// brandingChanges keeps only the writes that change a stored value and
+// pairs each with the value it replaces, so the audit entry shows what
+// the name or colour was changed from and leaves out the fields the
+// admin did not touch. The colour compares case-insensitively, so
+// re-saving #1f3a60 as #1F3A60 is not a change.
+func brandingChanges(current, writes map[string]string) (before, after map[string]string) {
+	before, after = map[string]string{}, map[string]string{}
+	for key, value := range writes {
+		if current[key] == value || (key == "branding.accent_color" && strings.EqualFold(current[key], value)) {
+			continue
+		}
+		before[key] = current[key]
+		after[key] = value
+	}
+	return before, after
 }
 
 // AssetUploadTarget is what Request{Logo,Favicon}Upload hands the client:
@@ -124,6 +171,10 @@ func (s *Service) confirmBrandingUpload(ctx context.Context, tenantID, actorID u
 	sum := sha256.Sum256(data)
 
 	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		current, err := s.repo.ListBrandingSettings(ctx, tenantID)
+		if err != nil {
+			return err
+		}
 		if _, err := s.repo.CreateAssetRecord(ctx, NewAsset{
 			TenantID: tenantID, Bucket: s.storage.Bucket(), ObjectKey: objectKey,
 			Mime: contentType, SizeBytes: int64(len(data)), SHA256: hex.EncodeToString(sum[:]),
@@ -141,7 +192,13 @@ func (s *Service) confirmBrandingUpload(ctx context.Context, tenantID, actorID u
 		if err := s.repo.SetBrandingSetting(ctx, tenantID, actorID, mimeSettingKey(settingKey), contentType); err != nil {
 			return err
 		}
-		return audit.Record(ctx, tenantID, "tenant_branding."+assetType+"_update", "tenant", tenantID, nil,
+		// The replaced object, when there was one, so the entry says which
+		// logo or favicon this upload superseded.
+		var before any
+		if old := current[settingKey]; old != "" {
+			before = map[string]any{"object_key": old, "mime": current[mimeSettingKey(settingKey)]}
+		}
+		return audit.Record(ctx, tenantID, "tenant_branding."+assetType+"_update", "tenant", tenantID, before,
 			map[string]any{"object_key": objectKey, "mime": contentType, "size_bytes": len(data)})
 	})
 	if err != nil {
