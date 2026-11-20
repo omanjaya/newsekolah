@@ -81,8 +81,9 @@ export default function ScanRoute(): React.JSX.Element {
           if (kind === "approve_stage" && !named) {
             // The duty desk's QR ("sion:approve_stage::<token>") names no
             // permit: it approves the student's own exit permit waiting on
-            // the desk, never a late arrival.
-            const { data: mine } = await permits.refetch();
+            // the desk, never a late arrival. A failed lookup throws into
+            // the generic error below instead of reading as "no permit".
+            const { data: mine } = await permits.refetch({ throwOnError: true });
             const waiting = permitAwaitingDeskApproval(mine?.data ?? []);
             if (!waiting) {
               showToast(t("scan.no_permit_awaiting_desk"), "error");
