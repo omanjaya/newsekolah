@@ -23,6 +23,7 @@ import {
   type SPCandidate,
   useDisciplinePolicyQuery,
   useIssueWarningLetterMutation,
+  useRefreshDiscipline,
   useSPCandidatesQuery,
 } from "../../discipline/api";
 import { dueLevels } from "../../discipline/lib/sp-due-levels";
@@ -51,6 +52,7 @@ export function WarningLetterCandidatesSection(): ReactElement {
   const policy = useDisciplinePolicyQuery();
   const candidates = useSPCandidatesQuery(INBOX_SP_FILTERS);
   const issue = useIssueWarningLetterMutation();
+  const refreshDiscipline = useRefreshDiscipline();
   const [pendingIssue, setPendingIssue] = useState<PendingIssue | null>(null);
   const levels = policy.data?.levels ?? [];
   const rows = (candidates.data?.data ?? []).flatMap((candidate) => {
@@ -74,6 +76,9 @@ export function WarningLetterCandidatesSection(): ReactElement {
         onError: (error) => {
           if (error instanceof ApiError && error.code === "WARNING_LETTER_ALREADY_ISSUED") {
             setPendingIssue(null);
+            // The list still offers that level: reload it so the row moves
+            // on to the next level, or leaves when none is due.
+            void refreshDiscipline();
             toast.info(t("alreadyIssued", { level: label }));
             return;
           }

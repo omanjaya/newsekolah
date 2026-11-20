@@ -1,10 +1,12 @@
-import { render, screen, within } from "@testing-library/react";
+import { ApiError } from "@newsekolah/api-client";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   issue: vi.fn(),
+  refresh: vi.fn(),
   mutation: { isPending: false, variables: undefined as { student_user_id: string } | undefined },
 }));
 
@@ -55,12 +57,14 @@ vi.mock("../../discipline/api", () => ({
     isError: false,
   }),
   useIssueWarningLetterMutation: () => ({ mutate: mocks.issue, ...mocks.mutation }),
+  useRefreshDiscipline: () => mocks.refresh,
 }));
 
 import { WarningLetterCandidatesSection } from "./warning-letter-candidates-section";
 
 beforeEach(() => {
   mocks.issue.mockReset();
+  mocks.refresh.mockReset();
   mocks.mutation = { isPending: false, variables: undefined };
 });
 
@@ -82,6 +86,27 @@ describe("WarningLetterCandidatesSection", () => {
       { student_user_id: "s-1", level: 1 },
       expect.any(Object),
     );
+  });
+
+  it("closes the dialog and reloads the candidates when the letter was issued elsewhere", async () => {
+    mocks.issue.mockImplementation((_vars, options: { onError?: (e: Error) => void }) => {
+      options.onError?.(
+        new ApiError({ status: 409, code: "WARNING_LETTER_ALREADY_ISSUED", message: "exists" }),
+      );
+    });
+    const user = userEvent.setup();
+    render(<WarningLetterCandidatesSection />);
+
+    const [first] = screen.getAllByRole("button", { name: "issue SP1" });
+    if (!first) throw new Error("no issue button");
+    await user.click(first);
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "issue SP1" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(mocks.refresh).toHaveBeenCalledTimes(1);
   });
 
   it("shows the spinner only on the row being issued", () => {

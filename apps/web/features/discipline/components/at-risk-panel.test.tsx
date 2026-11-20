@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useSPCandidatesQuery: vi.fn(),
   issue: vi.fn(),
+  refresh: vi.fn(),
   canIssue: true,
   canManage: true,
   policy: {},
@@ -53,6 +54,7 @@ vi.mock("../../reference/api", () => ({
 vi.mock("../api", () => ({
   useDisciplinePolicyQuery: () => mocks.policy,
   useIssueWarningLetterMutation: () => ({ mutate: mocks.issue, isPending: false }),
+  useRefreshDiscipline: () => mocks.refresh,
   useSPCandidatesQuery: mocks.useSPCandidatesQuery,
 }));
 
@@ -133,6 +135,7 @@ describe("AtRiskPanel states and issuing", () => {
     mocks.canManage = true;
     mocks.policy = POLICY_OK;
     mocks.issue.mockReset();
+    mocks.refresh.mockReset();
     mocks.useSPCandidatesQuery.mockReset();
     window.history.replaceState(null, "", "/discipline/at-risk");
   });
@@ -215,7 +218,7 @@ describe("AtRiskPanel states and issuing", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
-  it("closes the dialog when the letter turns out to be issued already", async () => {
+  it("closes the dialog and reloads the candidates when the letter was issued already", async () => {
     mocks.useSPCandidatesQuery.mockReturnValue({
       data: { data: [candidate("s1", "Ayu")] },
       isLoading: false,
@@ -239,6 +242,7 @@ describe("AtRiskPanel states and issuing", () => {
     await waitFor(() => {
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
+    expect(mocks.refresh).toHaveBeenCalledTimes(1);
   });
 
   it("shows a policy load failure with a retry, not the no-policy notice", async () => {
