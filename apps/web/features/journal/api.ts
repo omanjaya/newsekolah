@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ReportExportOptions } from "../../components/report-export-dialog";
 import { getAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
+import { encodeColumnChoice } from "../../lib/api/report-export-query";
 import { API_URL } from "../../lib/env";
 import { useActiveYear } from "../../lib/hooks/use-active-year";
 
@@ -133,18 +134,6 @@ export async function downloadJournalExport(
   } finally {
     URL.revokeObjectURL(url);
   }
-}
-
-/**
- * Encodes one {@link ReportExportDialog}-chosen column as the `columns`
- * query param's `key` or `key:Label` form (docs/05-shared-components.md
- * "Laporan dan ekspor"). Left unencoded here on purpose: `query` below
- * gets exactly one `URLSearchParams` encoding pass, so pre-encoding the
- * label here (as features/reports/api.ts's own encodeColumnChoice does)
- * would double-encode it.
- */
-function encodeColumnChoice(choice: { key: string; label?: string }): string {
-  return choice.label ? `${choice.key}:${choice.label}` : choice.key;
 }
 
 /**

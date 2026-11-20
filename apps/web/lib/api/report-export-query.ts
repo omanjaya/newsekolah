@@ -3,13 +3,15 @@ import type { ReportExportOptions } from "../../components/report-export-dialog"
 /**
  * Encodes one chosen column as the `columns` query param's `key` or
  * `key:Label` form (see docs/05-shared-components.md "Laporan dan
- * ekspor"). The label half is URL-encoded on its own so a comma or colon
- * in a user-typed label cannot be mistaken for the list/key separators.
- * Mirrors `features/reports/api.ts`'s own `encodeColumnChoice` -- kept as
- * a small shared helper here since every {@link ReportExportDialog}
- * integration outside the report centre needs the exact same encoding.
+ * ekspor"). The label half is URL-encoded on its own (before the query
+ * string's own encoding pass) so a comma or colon in a user-typed label
+ * cannot be mistaken for the list/key separators; the API decodes it back
+ * (httpx.ParseReportColumns, and the report centre's own handler). Every
+ * {@link ReportExportDialog} integration must use this one encoding,
+ * including those that build their own query instead of calling
+ * {@link withReportExportParams}.
  */
-function encodeColumnChoice(choice: { key: string; label?: string }): string {
+export function encodeColumnChoice(choice: { key: string; label?: string }): string {
   return choice.label ? `${choice.key}:${encodeURIComponent(choice.label)}` : choice.key;
 }
 

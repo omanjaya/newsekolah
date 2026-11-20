@@ -4,23 +4,12 @@ import { ApiError } from "@newsekolah/api-client";
 
 import type { ReportExportOptions } from "../../components/report-export-dialog";
 import { getAccessToken } from "../../lib/api/access-token";
+import { encodeColumnChoice } from "../../lib/api/report-export-query";
 import { API_URL } from "../../lib/env";
 
 /** Either a single class or a whole grade level ("angkatan"), for the class roster export's scope picker. */
 export type RosterExportScope =
   { kind: "class"; classId: string } | { kind: "gradeLevel"; gradeLevelId: string };
-
-/**
- * Encodes one {@link ReportExportDialog}-chosen column as the `columns`
- * query param's `key` or `key:Label` form (docs/05-shared-components.md
- * "Laporan dan ekspor"). Left unencoded here on purpose: `params` below
- * gets exactly one `URLSearchParams` encoding pass, so pre-encoding the
- * label here (as features/reports/api.ts's own encodeColumnChoice does)
- * would double-encode it.
- */
-function encodeColumnChoice(choice: { key: string; label?: string }): string {
-  return choice.label ? `${choice.key}:${choice.label}` : choice.key;
-}
 
 async function readErrorCode(response: Response): Promise<string> {
   try {
