@@ -35,7 +35,7 @@ export interface DeskScanBarProps {
   onModeChange: (mode: DeskMode) => void;
   /** Pending borrow items, shown on the Pinjam segment. */
   pendingBorrow: number;
-  /** Whether a member is being served: the first scan of a session is their card. */
+  /** Whether a member is being served: before one is, a scan in Pinjam is their card. */
   hasMember: boolean;
   /** A scan is resolving; further codes wait for it (the session ignores them). */
   scanning: boolean;
@@ -91,8 +91,11 @@ export function DeskScanBar({
     onScan({ code, source: "manual", at: Date.now() });
   };
 
-  const label = hasMember ? t(`modes.scanLabel.${mode}`) : t("member.scanLabel");
-  const placeholder = hasMember ? t(`bar.placeholder.${mode}`) : t("bar.placeholder.member");
+  // Lending starts with a member card; a return or renewal takes the book
+  // barcode straight away.
+  const scansBooks = hasMember || mode !== "borrow";
+  const label = scansBooks ? t(`modes.scanLabel.${mode}`) : t("member.scanLabel");
+  const placeholder = scansBooks ? t(`bar.placeholder.${mode}`) : t("bar.placeholder.member");
 
   return (
     <Card padding="sm" data-testid="desk-scan-bar" className="md:gap-4 md:p-5">
@@ -167,7 +170,7 @@ export function DeskScanBar({
       </div>
 
       <p id={hintId} className="text-caption text-fg-muted">
-        {hasMember ? t("bar.shortcutsHint") : t("bar.idleHint")}
+        {scansBooks ? t("bar.shortcutsHint") : t("bar.idleHint")}
       </p>
 
       {/* Always mounted, so a new result is announced rather than only shown. */}

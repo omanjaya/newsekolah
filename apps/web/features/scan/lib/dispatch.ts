@@ -84,3 +84,14 @@ export type ScanFailureKind = "expired" | "error";
 export function classifyScanFailure(status: number | undefined): ScanFailureKind {
   return status === 410 ? "expired" : "error";
 }
+
+/**
+ * The message key for an expired or already-used code. A library visit QR
+ * is renewed on the library kiosk screen, not handed out by a teacher, so
+ * it gets its own wording.
+ */
+export function expiredScanMessageKey(
+  action: ScanAction,
+): "failures.expired" | "failures.libraryVisitExpired" {
+  return action === "library_visit" ? "failures.libraryVisitExpired" : "failures.expired";
+}

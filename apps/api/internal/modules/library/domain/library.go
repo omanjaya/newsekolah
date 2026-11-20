@@ -23,6 +23,8 @@ var (
 	ErrCopyAccessionExists    = errors.New("copy accession number already exists")
 	ErrCopyNotAvailable       = errors.New("copy is not available")
 	ErrCopyOnLoan             = errors.New("copy is already on loan")
+	ErrCopyNotLoanable        = errors.New("copy is for reference or reading in place only")
+	ErrCopyReservedForOther   = errors.New("copy is held for another member's reservation")
 	ErrCopyHasLoanHistory     = errors.New("copy has loan history")
 	ErrCopyStatusNotManual    = errors.New("status can only be set through circulation")
 	ErrLoanNotFound           = errors.New("loan not found")
@@ -63,6 +65,10 @@ var (
 	ErrViolationAlreadySettled = errors.New("library violation is already settled")
 
 	ErrVisitNotFound = errors.New("library visit not found")
+	// ErrKioskTokenInvalid is a visit-kiosk QR that is unknown, expired,
+	// already used, or issued for another purpose; the wiring adapter
+	// translates the scan-token pipeline's own errors into it.
+	ErrKioskTokenInvalid = errors.New("library kiosk token is invalid, used or expired")
 
 	ErrCoverTooLarge      = errors.New("cover image exceeds 3 MB")
 	ErrCoverInvalidType   = errors.New("cover image must be jpeg, png, or webp")
@@ -198,7 +204,19 @@ type Copy struct {
 	UpdatedAt       time.Time
 }
 
+// Loanable reports whether the copy's access allows taking it out at all:
+// reference and read-in-place copies stay in the library whatever their
+// status. An unset access predates the column and counts as loanable.
+func (c Copy) Loanable() bool {
+	return c.Access != AccessReference && c.Access != AccessReadInPlace
+}
+
+// CanBorrow is the copy side of every borrow path (desk, kiosk, mobile,
+// class loans): the copy must be loanable by access and available.
 func (c Copy) CanBorrow() error {
+	if !c.Loanable() {
+		return ErrCopyNotLoanable
+	}
 	if c.Status != CopyAvailable {
 		if c.Status == CopyOnLoan {
 			return ErrCopyOnLoan
@@ -211,10 +229,17 @@ func (c Copy) CanBorrow() error {
 // CanBorrowBy is CanBorrow plus the one exception the old app allowed and
 // the rebuild's first pass lost: a copy the module has already set aside
 // (status reserved) for one member's ready hold is borrowable by that
-// member, and only that member. Every other status is unchanged.
+// member, and only that member; anyone else is told the copy is held for
+// another member. Every other status is unchanged.
 func (c Copy) CanBorrowBy(reservedForThisMember bool) error {
-	if c.Status == CopyReserved && reservedForThisMember {
-		return nil
+	if !c.Loanable() {
+		return ErrCopyNotLoanable
+	}
+	if c.Status == CopyReserved {
+		if reservedForThisMember {
+			return nil
+		}
+		return ErrCopyReservedForOther
 	}
 	return c.CanBorrow()
 }

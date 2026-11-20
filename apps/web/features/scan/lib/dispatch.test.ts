@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { SCAN_ACTION_MODULE, classifyScanFailure, resolveScanRoute, scanOffer } from "./dispatch";
+import {
+  SCAN_ACTION_MODULE,
+  classifyScanFailure,
+  expiredScanMessageKey,
+  resolveScanRoute,
+  scanOffer,
+} from "./dispatch";
 
 describe("resolveScanRoute", () => {
   it.each([
@@ -115,5 +121,15 @@ describe("classifyScanFailure", () => {
   it("treats anything else as a generic error", () => {
     expect(classifyScanFailure(409)).toBe("error");
     expect(classifyScanFailure(undefined)).toBe("error");
+  });
+});
+
+describe("expiredScanMessageKey", () => {
+  it("points a stale library visit QR at the library screen", () => {
+    expect(expiredScanMessageKey("library_visit")).toBe("failures.libraryVisitExpired");
+  });
+
+  it("keeps the generic wording for permit codes", () => {
+    expect(expiredScanMessageKey("gate_exit")).toBe("failures.expired");
   });
 });

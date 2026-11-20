@@ -14,6 +14,9 @@ type TitleWithAvailability struct {
 	domain.Title
 	TotalCopies     int
 	AvailableCopies int
+	// LoanableAvailableCopies is AvailableCopies without the reference and
+	// read-in-place copies, which no borrow path lends.
+	LoanableAvailableCopies int
 }
 
 // prepareTitle normalizes the ISBN and fills the default language and
@@ -200,11 +203,13 @@ func (s *Service) withAvailability(ctx context.Context, tenantID uuid.UUID, t do
 	if err != nil {
 		return TitleWithAvailability{}, err
 	}
-	available, err := s.repo.CountAvailableCopies(ctx, tenantID, t.ID)
+	available, loanable, err := s.repo.CountAvailableCopies(ctx, tenantID, t.ID)
 	if err != nil {
 		return TitleWithAvailability{}, err
 	}
-	return TitleWithAvailability{Title: t, TotalCopies: total, AvailableCopies: available}, nil
+	return TitleWithAvailability{
+		Title: t, TotalCopies: total, AvailableCopies: available, LoanableAvailableCopies: loanable,
+	}, nil
 }
 
 func (s *Service) ListCopies(ctx context.Context, tenantID, titleID uuid.UUID) ([]domain.Copy, error) {

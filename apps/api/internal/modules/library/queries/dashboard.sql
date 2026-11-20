@@ -15,10 +15,14 @@ select count(*)::int from library_copies where tenant_id = $1 and status = $2;
 select count(*)::int from library_loans where tenant_id = $1 and borrowed_at >= $2 and borrowed_at < $3;
 
 -- name: CountReturnsBetween :one
-select count(*)::int from library_loans where tenant_id = $1 and returned_at >= $2 and returned_at < $3;
+-- A lost loan also gets returned_at (the time it was closed) but the book
+-- never came back, so only status 'returned' counts as a return.
+select count(*)::int from library_loans where tenant_id = $1 and status = 'returned' and returned_at >= $2 and returned_at < $3;
 
 -- name: SumUnpaidFines :one
-select coalesce(sum(fine_amount), 0)::int from library_loans where tenant_id = $1 and fine_amount > 0 and fine_paid_at is null;
+-- Fines are tracked and settled on library_violations (migration 0091), the
+-- same source as HasUnpaidFine; library_loans.fine_paid_at is never set.
+select coalesce(sum(amount), 0)::int from library_violations where tenant_id = $1 and status = 'unpaid' and penalty = 'fine';
 
 -- name: ListLatestLoans :many
 select * from library_loans where tenant_id = $1 order by borrowed_at desc limit $2;
@@ -44,9 +48,10 @@ group by day
 order by day;
 
 -- name: DailyReturnsSeries :many
--- Grouped by the tenant's calendar day, as DailyLoansSeries.
+-- Grouped by the tenant's calendar day, as DailyLoansSeries. Lost loans
+-- are not returns (see CountReturnsBetween).
 select (returned_at at time zone sqlc.arg(tz)::text)::date as day, count(*)::int as return_count
 from library_loans
-where tenant_id = sqlc.arg(tenant_id) and returned_at >= sqlc.arg(since)
+where tenant_id = sqlc.arg(tenant_id) and status = 'returned' and returned_at >= sqlc.arg(since)
 group by day
 order by day;

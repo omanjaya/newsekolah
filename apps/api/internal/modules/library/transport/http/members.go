@@ -159,6 +159,17 @@ func (h *LibraryHandler) GetLibraryMember(ctx context.Context, request api.GetLi
 	return api.GetLibraryMember200JSONResponse(toAPIMember(m)), nil
 }
 
+func (h *LibraryHandler) GetLibraryMemberBorrowingStatus(ctx context.Context, request api.GetLibraryMemberBorrowingStatusRequestObject) (api.GetLibraryMemberBorrowingStatusResponseObject, error) {
+	status, err := h.service.GetMemberBorrowingStatus(ctx, tenantID(ctx), request.UserId)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.GetLibraryMemberBorrowingStatus200JSONResponse{
+		AllowLoans: status.Limits.AllowLoans, MaxLoanItems: status.Limits.MaxLoanItems, MaxLoanDays: status.Limits.MaxLoanDays,
+		ActiveLoanCount: status.ActiveLoanCount, HasUnpaidFine: status.HasUnpaidFine, UnpaidFineBlocksLoans: status.FineBlocksLoans,
+	}, nil
+}
+
 func (h *LibraryHandler) UpdateLibraryMemberProfile(ctx context.Context, request api.UpdateLibraryMemberProfileRequestObject) (api.UpdateLibraryMemberProfileResponseObject, error) {
 	b := request.Body
 	var validUntil *time.Time

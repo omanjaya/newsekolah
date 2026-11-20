@@ -2,11 +2,13 @@ package wiring
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
+	librarydomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
 	libraryservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/library/service"
 	permitsdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
@@ -93,9 +95,25 @@ func (t LibraryScanTokens) IssueLibraryVisitToken(ctx context.Context, tenantID,
 	return result.RawValue, result.ExpiresAt, nil
 }
 
+// ConsumeLibraryVisitToken translates the scan-token pipeline's own
+// errors (unknown, expired, already used, wrong purpose or context) into
+// the library's ErrKioskTokenInvalid at this boundary, so the library
+// module answers 410 with its own message instead of an unmapped 500.
 func (t LibraryScanTokens) ConsumeLibraryVisitToken(ctx context.Context, tenantID uuid.UUID, rawValue string, consumedByUserID uuid.UUID) error {
 	_, err := t.Permits.ConsumeScanToken(ctx, permitsservice.ConsumeScanTokenInput{
 		TenantID: tenantID, Purpose: permitsdomain.PurposeLibraryVisit, RawValue: rawValue, ConsumedByUserID: consumedByUserID,
 	})
+	return translateLibraryTokenError(err)
+}
+
+func translateLibraryTokenError(err error) error {
+	for _, tokenErr := range []error{
+		permitsdomain.ErrTokenNotFound, permitsdomain.ErrTokenExpired, permitsdomain.ErrTokenConsumed,
+		permitsdomain.ErrTokenPurposeMismatch, permitsdomain.ErrTokenContextMismatch,
+	} {
+		if errors.Is(err, tokenErr) {
+			return librarydomain.ErrKioskTokenInvalid
+		}
+	}
 	return err
 }

@@ -22,18 +22,25 @@ import {
   type DeskMode,
   addBasketItem,
   classifyBorrowCopy,
-  confirmableItems,
+  confirmableItemsInScanOrder,
   matchDeskShortcut,
   removeBasketItem,
   undoLastBasketItem,
   updateBasketItem,
 } from "../lib/desk-basket";
 import { daysBetween } from "../lib/due-date";
-import { useLibraryMemberQuery } from "../members-api";
+import { useLibraryMemberBorrowingStatusQuery, useLibraryMemberQuery } from "../members-api";
 
 import type { DeskSelectedMember } from "./desk-member-panel";
 
 const EMPTY_BASKET: Record<DeskMode, DeskBasketItem[]> = { borrow: [], return: [], renew: [] };
+
+/** Why a code scanned for a member card did not select anyone. */
+const MEMBER_MISS_KEY = {
+  none: "member.notFound",
+  ambiguous: "member.ambiguous",
+  copy: "member.copyNotCard",
+} as const;
 
 /**
  * All the state and API orchestration behind the circulation desk's
@@ -47,7 +54,8 @@ const EMPTY_BASKET: Record<DeskMode, DeskBasketItem[]> = { borrow: [], return: [
  * copy per call and return its real due date/fine, so nothing would be
  * gained by queuing them behind a second click -- the basket for those two
  * modes is a running receipt of calls already made, not a queue of calls
- * still to make.
+ * still to make. Neither needs a member card first: the barcode alone
+ * names the loan, so a book handed back on its own is returned at once.
  */
 export function useDeskSession() {
   const t = useTranslations("app.library.desk");
@@ -63,6 +71,7 @@ export function useDeskSession() {
   const [receiptOpen, setReceiptOpen] = useState(false);
 
   const memberDetail = useLibraryMemberQuery(member?.userId ?? "");
+  const borrowingStatus = useLibraryMemberBorrowingStatusQuery(member?.userId ?? "");
   const findMember = useFindMemberByCodeMutation();
   const findCopy = useFindLibraryCopyByCodeMutation();
   const titleName = useLibraryTitleNameMutation();
@@ -70,9 +79,17 @@ export function useDeskSession() {
   const returnByBarcode = useReturnLoanByBarcodeMutation();
   const renewByBarcode = useRenewLoanByBarcodeMutation();
 
+  // A new member starts a new session. Of the returns and renewals already
+  // on the desk (an idle desk can take a whole drop-box from many readers),
+  // only that member's own loans stay, so their receipt never lists books
+  // someone else handed back; the rest, failed rows included, are dropped.
   const selectMember = useCallback((next: DeskSelectedMember) => {
+    setBasket((prev) => ({
+      borrow: [],
+      return: prev.return.filter((item) => item.memberUserId === next.userId),
+      renew: prev.renew.filter((item) => item.memberUserId === next.userId),
+    }));
     setMember(next);
-    setBasket(EMPTY_BASKET);
     setScanError("");
   }, []);
 
@@ -97,11 +114,7 @@ export function useDeskSession() {
         const match = await findMember.mutateAsync(code);
         if (match.status !== "found") {
           feedback.playError();
-          setScanError(
-            match.status === "ambiguous"
-              ? t("member.ambiguous", { code })
-              : t("member.notFound", { code }),
-          );
+          setScanError(t(MEMBER_MISS_KEY[match.status], { code }));
           return;
         }
         const found = match.member;
@@ -168,7 +181,13 @@ export function useDeskSession() {
         feedback.playSuccess();
         setBasket((prev) => ({
           ...prev,
-          return: addBasketItem(prev.return, { barcode: code, title, state: "done", detail }),
+          return: addBasketItem(prev.return, {
+            barcode: code,
+            title,
+            state: "done",
+            detail,
+            memberUserId: loan.member_user_id,
+          }),
         }));
       } catch (error) {
         feedback.playError();
@@ -201,6 +220,7 @@ export function useDeskSession() {
             title,
             state: "done",
             detail: t("basket.renewedUntil", { date: formatDate(loan.due_on, { locale }) }),
+            memberUserId: loan.member_user_id,
           }),
         }));
       } catch (error) {
@@ -227,13 +247,16 @@ export function useDeskSession() {
       if (!code || scanning) return;
       setScanError("");
       setScanning(true);
-      const run = !member
-        ? addMemberByScan(code)
-        : mode === "borrow"
-          ? addBorrowScan(code)
-          : mode === "return"
-            ? addReturnScan(code)
-            : addRenewScan(code);
+      // Only lending needs to know who is borrowing first; a return or a
+      // renewal is identified by the book's barcode alone.
+      const run =
+        mode === "return"
+          ? addReturnScan(code)
+          : mode === "renew"
+            ? addRenewScan(code)
+            : member
+              ? addBorrowScan(code)
+              : addMemberByScan(code);
       void run.finally(() => {
         setScanning(false);
       });
@@ -243,7 +266,9 @@ export function useDeskSession() {
 
   const confirmBorrow = useCallback(async () => {
     if (!member) return;
-    const pending = confirmableItems(basket.borrow);
+    // Oldest scan first: the server spends the member's remaining quota in
+    // request order, so the books scanned first must get it.
+    const pending = confirmableItemsInScanOrder(basket.borrow);
     if (pending.length === 0) return;
     try {
       const result = await batchBorrow.mutateAsync({
@@ -312,6 +337,7 @@ export function useDeskSession() {
     setMode,
     member,
     memberStatus: memberDetail.data?.status ?? null,
+    borrowingStatus: member ? (borrowingStatus.data ?? null) : null,
     selectMember,
     endSession,
     basket,

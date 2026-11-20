@@ -4317,6 +4317,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/library/members/{userId}/borrowing-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The loan limits a borrow by this member enforces today, quota in use, and unpaid fines */
+        get: operations["getLibraryMemberBorrowingStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/library/members/{userId}/status": {
         parameters: {
             query?: never;
@@ -10371,6 +10388,15 @@ export interface components {
             late_return_count: number;
             notes?: string;
         };
+        /** @description The limits a borrow by this member enforces today, resolved the same way the server does (a dated loan rule for the member type, then one for every type, then the member type, then the tenant policy), with the active loans already counted against max_loan_items and whether an unpaid fine is on record. */
+        LibraryMemberBorrowingStatus: {
+            allow_loans: boolean;
+            max_loan_items: number;
+            max_loan_days: number;
+            active_loan_count: number;
+            has_unpaid_fine: boolean;
+            unpaid_fine_blocks_loans: boolean;
+        };
         LibraryMemberRegister: {
             /** Format: uuid */
             user_id: string;
@@ -10768,7 +10794,10 @@ export interface components {
             /** Format: uuid */
             cover_asset_id?: string;
             total_copies: number;
+            /** @description Copies on the shelf, reference and read-in-place copies included. */
             available_copies: number;
+            /** @description The available copies a member may borrow (reference and read-in-place copies left out). Zero with copies on loan means the title can be reserved. */
+            loanable_available_copies: number;
         };
         LibraryTitleWrite: {
             control_number?: string;
@@ -21468,6 +21497,31 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    getLibraryMemberBorrowingStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Borrowing status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMemberBorrowingStatus"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     updateLibraryMemberStatus: {
         parameters: {
             query?: never;
@@ -22168,6 +22222,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             409: components["responses"]["Conflict"];
+            410: components["responses"]["TokenGone"];
         };
     };
     listLibraryReadInPlace: {

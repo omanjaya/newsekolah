@@ -46,6 +46,8 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrCopyAccessionExists:    httpx.ErrLibraryCopyAccessionExists,
 	domain.ErrCopyNotAvailable:       httpx.ErrLibraryCopyNotAvailable,
 	domain.ErrCopyOnLoan:             httpx.ErrLibraryCopyOnLoan,
+	domain.ErrCopyNotLoanable:        httpx.ErrLibraryCopyNotLoanable,
+	domain.ErrCopyReservedForOther:   httpx.ErrLibraryCopyReservedForOther,
 	domain.ErrCopyHasLoanHistory:     httpx.ErrLibraryCopyHasLoanHistory,
 	domain.ErrCopyStatusNotManual:    httpx.ErrLibraryCopyStatusNotManual,
 	domain.ErrLoanNotFound:           httpx.ErrLibraryLoanNotFound,
@@ -85,7 +87,8 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrViolationNotFound:       httpx.ErrLibraryViolationNotFound,
 	domain.ErrViolationAlreadySettled: httpx.ErrLibraryViolationAlreadySettled,
 
-	domain.ErrVisitNotFound: httpx.ErrLibraryVisitNotFound,
+	domain.ErrVisitNotFound:     httpx.ErrLibraryVisitNotFound,
+	domain.ErrKioskTokenInvalid: httpx.ErrLibraryVisitTokenGone,
 
 	domain.ErrCoverTooLarge:      httpx.ErrLibraryCoverTooLarge,
 	domain.ErrCoverInvalidType:   httpx.ErrLibraryCoverInvalidType,
@@ -180,6 +183,7 @@ func toAPITitle(t service.TitleWithAvailability) api.LibraryTitle {
 	out := toAPITitleBase(t.Title)
 	out.TotalCopies = t.TotalCopies
 	out.AvailableCopies = t.AvailableCopies
+	out.LoanableAvailableCopies = t.LoanableAvailableCopies
 	return out
 }
 

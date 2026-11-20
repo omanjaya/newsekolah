@@ -138,7 +138,7 @@ type Repository interface {
 	DeleteTitle(ctx context.Context, tenantID, id uuid.UUID) (bool, error)
 	ListTitles(ctx context.Context, tenantID uuid.UUID, f TitleFilter, limit, offset int) ([]domain.Title, error)
 	CountTitleCopies(ctx context.Context, tenantID, titleID uuid.UUID) (int, error)
-	CountAvailableCopies(ctx context.Context, tenantID, titleID uuid.UUID) (int, error)
+	CountAvailableCopies(ctx context.Context, tenantID, titleID uuid.UUID) (available, loanable int, err error)
 	FindTitleForDedupe(ctx context.Context, tenantID uuid.UUID, isbn, title, author string) ([]domain.Title, error)
 
 	CreateCopy(ctx context.Context, c domain.Copy) (domain.Copy, error)

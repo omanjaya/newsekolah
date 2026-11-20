@@ -23,6 +23,7 @@
   },
   "failures": {
     "expired": "Kode sudah kedaluwarsa atau sudah dipakai. Minta kode QR yang baru.",
+    "libraryVisitExpired": "Kode QR perpustakaan sudah dipakai atau kedaluwarsa. Pindai kode baru di layar perpustakaan.",
     "lateArrivalBusy": "Keterlambatan Anda sedang diproses dan tidak menunggu pindaian."
   },
   "unknown": {

@@ -24,11 +24,14 @@ func (s *Service) Reserve(ctx context.Context, tenantID, titleID, memberUserID u
 		} else if !found {
 			return domain.ErrTitleNotFound
 		}
-		available, err := s.repo.CountAvailableCopies(ctx, tenantID, titleID)
+		// Only a copy someone could borrow makes a reservation pointless: a
+		// reference copy on the shelf is refused at every borrow path
+		// (ErrCopyNotLoanable), so it must not block a hold either.
+		_, loanable, err := s.repo.CountAvailableCopies(ctx, tenantID, titleID)
 		if err != nil {
 			return err
 		}
-		if available > 0 {
+		if loanable > 0 {
 			return domain.ErrCopyAvailableForLoan
 		}
 		reservation, err = s.repo.CreateReservation(ctx, domain.Reservation{

@@ -16,7 +16,7 @@ import {
   useScanGateMutation,
   useScanLateArrivalStageMutation,
 } from "../../permits/api";
-import { classifyScanFailure, resolveScanRoute } from "../lib/dispatch";
+import { classifyScanFailure, expiredScanMessageKey, resolveScanRoute } from "../lib/dispatch";
 import type { ScanRoute } from "../lib/dispatch";
 
 export interface ScanOutcome {
@@ -118,7 +118,7 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
             ok: false,
             message:
               classifyScanFailure(error.status) === "expired"
-                ? t("failures.expired")
+                ? t(expiredScanMessageKey(route.action))
                 : apiErrorMessage(error.code),
           };
         }

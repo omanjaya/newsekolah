@@ -56,9 +56,11 @@ func (s *Service) PreviewClassLoans(ctx context.Context, tenantID, classID, titl
 		if err != nil {
 			return err
 		}
+		// Only copies a member could take home: reference and
+		// read-in-place copies never go out, whatever their status.
 		available := make([]domain.Copy, 0, len(copies))
 		for _, c := range copies {
-			if c.Status == domain.CopyAvailable {
+			if c.Status == domain.CopyAvailable && c.Loanable() {
 				available = append(available, c)
 			}
 		}

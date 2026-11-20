@@ -63,7 +63,7 @@ func (q *Queries) CountCopiesAddedInPeriod(ctx context.Context, arg CountCopiesA
 
 const countLateReturnsBetween = `-- name: CountLateReturnsBetween :one
 select count(*)::int from library_loans
-where tenant_id = $1 and returned_at >= $2 and returned_at < $3 and returned_at::date > due_on
+where tenant_id = $1 and status = 'returned' and returned_at >= $2 and returned_at < $3 and returned_at::date > due_on
 `
 
 type CountLateReturnsBetweenParams struct {

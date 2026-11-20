@@ -5,7 +5,7 @@ import type { DeskBasketItem } from "./desk-basket";
  * derived from the desk session's own state rather than a second history:
  * a scan error wins, then the most recent basket row of the active mode
  * (the basket keeps the newest scan first), then the member just picked.
- * `null` is the idle desk, before anyone is being served.
+ * `null` is the idle desk, before anything was scanned.
  */
 export type DeskLastResult =
   | { kind: "error"; message: string }
@@ -25,9 +25,11 @@ export function deskLastResult({
   items: readonly DeskBasketItem[];
 }): DeskLastResult {
   if (scanError) return { kind: "error", message: scanError };
-  if (memberName === null) return null;
+  // A return or renewal needs no member, so its row shows even before
+  // anyone is being served.
   const latest = items[0];
   if (latest) return { kind: "item", item: latest };
+  if (memberName === null) return null;
   return { kind: "member", name: memberName, attention: memberNeedsAttention };
 }
 

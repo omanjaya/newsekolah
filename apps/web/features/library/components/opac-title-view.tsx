@@ -26,6 +26,7 @@ import { useOpacTitleQuery, type LibraryOpacTitleDetail } from "../opac-api";
 import { OPAC_LAST_SEARCH_KEY } from "../use-opac-search-params";
 
 import { OpacCover } from "./opac-cover";
+import { OpacReserveAction } from "./opac-reserve-action";
 
 type Copy = LibraryOpacTitleDetail["copies"][number];
 
@@ -99,6 +100,15 @@ function TitleDetail({ detail }: { detail: LibraryOpacTitleDetail }): ReactEleme
   const { title, copies } = detail;
   const total = copies.length;
   const available = copies.filter((copy) => copy.status === "available").length;
+  // "All on loan" only when that is true: a copy held for a reservation or
+  // out of circulation is not on loan.
+  const allOnLoan = total > 0 && copies.every((copy) => copy.status === "on_loan");
+  // A reference copy on the shelf can be read here but never lent, so it
+  // neither makes the title borrowable now nor can it fill a reservation:
+  // reserving is offered when the title has a copy a member could take home
+  // and none of those is on the shelf (the server's Reserve counts the same).
+  const loanable = copies.filter(isLoanable);
+  const canReserve = loanable.length > 0 && loanable.every((copy) => copy.status !== "available");
 
   return (
     <div className="flex animate-enter flex-col gap-6">
@@ -123,7 +133,9 @@ function TitleDetail({ detail }: { detail: LibraryOpacTitleDetail }): ReactEleme
                 {t("detail.availability", { available, total })}
               </Badge>
             ) : (
-              <Badge tone="neutral">{t("detail.noneAvailable")}</Badge>
+              <Badge tone="neutral">
+                {t(allOnLoan ? "detail.noneAvailable" : "detail.noneOnShelf")}
+              </Badge>
             )}
           </div>
         </div>
@@ -145,6 +157,7 @@ function TitleDetail({ detail }: { detail: LibraryOpacTitleDetail }): ReactEleme
             ))}
           </List>
         )}
+        {canReserve && <OpacReserveAction titleId={title.id} />}
       </Card>
 
       <Card>
@@ -187,6 +200,11 @@ function TitleDetail({ detail }: { detail: LibraryOpacTitleDetail }): ReactEleme
       </Card>
     </div>
   );
+}
+
+/** Whether a member could borrow this copy at all; an unset access is loanable. */
+function isLoanable(copy: Copy): boolean {
+  return copy.access !== "read_in_place" && copy.access !== "reference";
 }
 
 /** One copy: its call number (where it sits on the shelf), barcode and status. */

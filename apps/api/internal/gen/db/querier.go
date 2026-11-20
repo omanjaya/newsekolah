@@ -282,7 +282,12 @@ type Querier interface {
 	CountActiveUsersByProfileKind(ctx context.Context, tenantID uuid.UUID) ([]CountActiveUsersByProfileKindRow, error)
 	CountAnnouncementReads(ctx context.Context, arg CountAnnouncementReadsParams) (int64, error)
 	CountAssignmentsForDutyType(ctx context.Context, arg CountAssignmentsForDutyTypeParams) (int64, error)
-	CountAvailableCopies(ctx context.Context, arg CountAvailableCopiesParams) (int32, error)
+	// available is every copy on the shelf, read-only ones included (what a
+	// reader can pick up in the library); loanable_available leaves out the
+	// reference and read-in-place copies no borrow path will lend
+	// (domain.Copy.Loanable), so it alone decides whether a title can be
+	// borrowed now or must be reserved.
+	CountAvailableCopies(ctx context.Context, arg CountAvailableCopiesParams) (CountAvailableCopiesRow, error)
 	CountCollectionCategoryUsage(ctx context.Context, arg CountCollectionCategoryUsageParams) (int32, error)
 	CountCopiesAddedInPeriod(ctx context.Context, arg CountCopiesAddedInPeriodParams) (int32, error)
 	CountCopiesByStatus(ctx context.Context, arg CountCopiesByStatusParams) (int32, error)
@@ -325,6 +330,8 @@ type Querier interface {
 	CountMembersTotal(ctx context.Context, tenantID uuid.UUID) (int32, error)
 	CountOverdueNow(ctx context.Context, arg CountOverdueNowParams) (int32, error)
 	CountPartnerUsage(ctx context.Context, arg CountPartnerUsageParams) (int32, error)
+	// A lost loan also gets returned_at (the time it was closed) but the book
+	// never came back, so only status 'returned' counts as a return.
 	CountReturnsBetween(ctx context.Context, arg CountReturnsBetweenParams) (int32, error)
 	// Batch form of CountSchedulesForClassDay for the analytics recompute: the
 	// expected-session count of every (class, weekday) pair among the given
@@ -469,7 +476,8 @@ type Querier interface {
 	// Days are the tenant's own calendar days (tz is its IANA zone), so a loan
 	// at 07:30 in UTC+8 lands on that local day, not the previous UTC one.
 	DailyLoansSeries(ctx context.Context, arg DailyLoansSeriesParams) ([]DailyLoansSeriesRow, error)
-	// Grouped by the tenant's calendar day, as DailyLoansSeries.
+	// Grouped by the tenant's calendar day, as DailyLoansSeries. Lost loans
+	// are not returns (see CountReturnsBetween).
 	DailyReturnsSeries(ctx context.Context, arg DailyReturnsSeriesParams) ([]DailyReturnsSeriesRow, error)
 	DeactivateActiveWorkflowDefinitions(ctx context.Context, arg DeactivateActiveWorkflowDefinitionsParams) error
 	DeactivateAllAcademicYears(ctx context.Context, tenantID uuid.UUID) error
@@ -1686,6 +1694,8 @@ type Querier interface {
 	SubmitAttendanceSession(ctx context.Context, arg SubmitAttendanceSessionParams) (AttendanceSession, error)
 	SumActivePoints(ctx context.Context, arg SumActivePointsParams) (int32, error)
 	SumFinesRecordedBetween(ctx context.Context, arg SumFinesRecordedBetweenParams) (int32, error)
+	// Fines are tracked and settled on library_violations (migration 0091), the
+	// same source as HasUnpaidFine; library_loans.fine_paid_at is never set.
 	SumUnpaidFines(ctx context.Context, tenantID uuid.UUID) (int32, error)
 	SupervisionCreateCycle(ctx context.Context, arg SupervisionCreateCycleParams) (SupervisionCycle, error)
 	SupervisionCreateObservation(ctx context.Context, arg SupervisionCreateObservationParams) (SupervisionObservation, error)

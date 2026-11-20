@@ -74,7 +74,16 @@ limit $2 offset $3;
 select count(*)::int from library_copies where tenant_id = $1 and title_id = $2;
 
 -- name: CountAvailableCopies :one
-select count(*)::int from library_copies where tenant_id = $1 and title_id = $2 and status = 'available';
+-- available is every copy on the shelf, read-only ones included (what a
+-- reader can pick up in the library); loanable_available leaves out the
+-- reference and read-in-place copies no borrow path will lend
+-- (domain.Copy.Loanable), so it alone decides whether a title can be
+-- borrowed now or must be reserved.
+select
+  count(*)::int as available,
+  count(*) filter (where access not in ('reference', 'read_in_place'))::int as loanable_available
+from library_copies
+where tenant_id = $1 and title_id = $2 and status = 'available';
 
 -- name: CreateCopy :one
 insert into library_copies (
