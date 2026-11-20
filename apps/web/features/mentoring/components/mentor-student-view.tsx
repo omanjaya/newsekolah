@@ -6,8 +6,8 @@ import type { ReactElement } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
-import { RecordNotFoundPage } from "../../../components/record-not-found";
-import { isNotFoundError } from "../../../lib/api/not-found";
+import { RecordForbiddenPage, RecordNotFoundPage } from "../../../components/record-not-found";
+import { isForbiddenError, isNotFoundError } from "../../../lib/api/not-found";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useMentorGroupQuery, useMentorStudentSnapshotQuery } from "../api";
 import { useMentorGroupsHref } from "../permissions";
@@ -53,6 +53,17 @@ export function MentorStudentView({
       />
     );
   }
+  // A group another guru wali mentors, or a student outside the reader's
+  // groups: the no-access page, since a retry is refused again.
+  if (group.isError && !group.data && isForbiddenError(group.error)) {
+    return (
+      <RecordForbiddenPage
+        error={group.error}
+        backHref={groupsHref}
+        backLabel={tGroup("backToGroups")}
+      />
+    );
+  }
   // Both requests fail for a malformed link in parallel. A failed snapshot
   // waits for the group's answer (the skeleton below), which may still
   // turn out to be the group's not-found page, so neither the student's
@@ -64,6 +75,16 @@ export function MentorStudentView({
         title={t("notFoundTitle")}
         backHref={`/mentoring/groups/${groupId}`}
         backLabel={t("backToGroup")}
+      />
+    );
+  }
+
+  if (snapshotFailed && !group.isPending && isForbiddenError(snapshot.error)) {
+    return (
+      <RecordForbiddenPage
+        error={snapshot.error}
+        backHref={groupsHref}
+        backLabel={tGroup("backToGroups")}
       />
     );
   }

@@ -24,5 +24,9 @@
   },
   "recordNotFound": {
     "body": "This link may be wrong, or the record has been deleted."
+  },
+  "recordForbidden": {
+    "title": "No access to this record",
+    "body": "Only authorised users can open this record."
   }
 }

@@ -124,6 +124,25 @@ describe("ClubDetailView", () => {
     expect(screen.queryByRole("tab")).not.toBeInTheDocument();
   });
 
+  it("shows the no-access page for a club another teacher coaches, with no retry", () => {
+    clubFailure.current = new ApiError({
+      status: 403,
+      code: "EXTRACURRICULAR_COACH_ONLY",
+      message: "Ekstrakurikuler ini dibina guru lain.",
+    });
+    render(<ClubDetailView clubId="club-1" />);
+
+    expect(screen.getByRole("heading", { name: "title" })).toBeInTheDocument();
+    expect(screen.getByText("EXTRACURRICULAR_COACH_ONLY")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "backToClubs" })).toHaveAttribute(
+      "href",
+      "/activities/clubs",
+    );
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /retry/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
+  });
+
   it("states the club's schedule and quota under its name", () => {
     render(<ClubDetailView clubId="club-1" />);
     expect(screen.getByText("weekdays.friday, 15.00 – 16.30")).toBeInTheDocument();

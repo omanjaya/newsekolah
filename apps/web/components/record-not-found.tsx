@@ -1,9 +1,12 @@
 "use client";
 
+import { ApiError } from "@newsekolah/api-client";
 import { Button, StatePage } from "@newsekolah/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
+
+import { useApiErrorMessage } from "../lib/i18n/api-error-message";
 
 import { AppPage } from "./app-page";
 
@@ -38,6 +41,48 @@ export function RecordNotFoundPage({
         kind="not-found"
         title={title}
         description={description ?? t("body")}
+        action={
+          <Button asChild>
+            <Link href={backHref}>{backLabel}</Link>
+          </Button>
+        }
+      />
+    </AppPage>
+  );
+}
+
+export interface RecordForbiddenPageProps {
+  /** The refused read's error: its code picks the sentence that says why. */
+  error: unknown;
+  /** Where the reader's own records are listed. */
+  backHref: string;
+  backLabel: string;
+}
+
+/**
+ * A detail screen whose record exists but is not the reader's to open:
+ * the API answered 403 for this one record (a club another teacher
+ * coaches, a group another guru wali mentors), told apart with
+ * `isForbiddenError` (lib/api/not-found.ts). It is the no-access state
+ * with the API's own reason and one way back, never a "Coba lagi" that
+ * can only be refused again or a raw error code.
+ */
+export function RecordForbiddenPage({
+  error,
+  backHref,
+  backLabel,
+}: RecordForbiddenPageProps): ReactElement {
+  const t = useTranslations("app.page.recordForbidden");
+  const apiErrorMessage = useApiErrorMessage();
+  const code = error instanceof ApiError ? error.code : undefined;
+  const reason = code && code !== "FORBIDDEN" ? apiErrorMessage(code) : t("body");
+  return (
+    <AppPage title={t("title")} nav={false} header={false}>
+      <StatePage
+        kind="forbidden"
+        title={t("title")}
+        description={reason}
+        code="403"
         action={
           <Button asChild>
             <Link href={backHref}>{backLabel}</Link>

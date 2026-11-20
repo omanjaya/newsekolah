@@ -79,6 +79,23 @@ describe("QueryError", () => {
     expect(alert).toHaveTextContent("Kode galat: FORBIDDEN");
   });
 
+  it("offers no retry for a 403, which the same request meets again", () => {
+    renderIn(
+      <QueryError
+        retry={() => undefined}
+        error={
+          new ApiError({
+            status: 403,
+            code: "EXTRACURRICULAR_COACH_ONLY",
+            message: "Ekstrakurikuler ini dibina guru lain.",
+          })
+        }
+      />,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("Data ini tidak bisa dibuka");
+    expect(screen.queryByRole("button", { name: "Coba lagi" })).not.toBeInTheDocument();
+  });
+
   it("says there is no connection when the request never reached the server", () => {
     renderIn(
       <QueryError

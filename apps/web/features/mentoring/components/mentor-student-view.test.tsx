@@ -120,4 +120,22 @@ describe("MentorStudentView", () => {
     expect(screen.queryByText("notFoundTitle")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "actions.retry" })).toBeInTheDocument();
   });
+
+  it("shows the no-access page for another mentor's group, with no retry", () => {
+    const refused = new ApiError({
+      status: 403,
+      code: "MENTOR_GROUP_FORBIDDEN",
+      message: "Kelompok mentoring ini dibina guru wali lain.",
+    });
+    errors.group = refused;
+    errors.snapshot = refused;
+    render(<MentorStudentView groupId="g1" studentId="s1" />);
+    expect(screen.getByRole("heading", { name: "title" })).toBeInTheDocument();
+    expect(screen.getByText("MENTOR_GROUP_FORBIDDEN")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "backToGroups" })).toHaveAttribute(
+      "href",
+      "/mentoring/groups",
+    );
+    expect(screen.queryByRole("button", { name: "actions.retry" })).not.toBeInTheDocument();
+  });
 });
