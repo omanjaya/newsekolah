@@ -198,6 +198,7 @@ func TestCommitImportUpsertRoles(t *testing.T) {
 	ctx := context.Background()
 	tenantID := insertTestTenant(t, pg.AdminPool, "import-roles")
 	insertTestRole(t, pg.AdminPool, tenantID, "student", "Siswa")
+	insertTestRole(t, pg.AdminPool, tenantID, "staff", "Pegawai")
 	insertTestRole(t, pg.AdminPool, tenantID, "librarian", "Pustakawan")
 
 	plainActorID := insertTestUser(t, pg.AdminPool, tenantID, "actor.plain")
@@ -207,13 +208,17 @@ func TestCommitImportUpsertRoles(t *testing.T) {
 	privilegedActorID := insertTestUser(t, pg.AdminPool, tenantID, "actor.privileged")
 	assignPrimaryRole(t, pg.AdminPool, tenantID, privilegedActorID, privilegedRoleID)
 
-	createRow := studentImportRow("siti", "siti@example.test", "0811111111", "Siti Aminah", "2026001")
+	createRow := domain.ImportRow{
+		Username: "siti", Email: "siti@example.test", Password: "Password123!",
+		ProfileKind: domain.ProfileStaff, RoleSlug: "staff",
+		Name: "Siti Aminah", EmployeeNumber: "P-2026001", Phone: "0811111111",
+	}
 	_, err := svc.CommitImport(ctx, tenantID, plainActorID, []domain.ImportRow{createRow}, service.ImportOptions{Mode: domain.ImportModeUpsert})
 	require.NoError(t, err)
 
 	var sitiID uuid.UUID
 	require.NoError(t, pg.AdminPool.QueryRow(ctx, `select id from users where tenant_id=$1 and username='siti'`, tenantID).Scan(&sitiID))
-	require.Equal(t, "student", primaryRoleSlug(t, pg.AdminPool, sitiID))
+	require.Equal(t, "staff", primaryRoleSlug(t, pg.AdminPool, sitiID))
 
 	roleChangeRow := createRow
 	roleChangeRow.RoleSlug = "librarian"
@@ -223,13 +228,13 @@ func TestCommitImportUpsertRoles(t *testing.T) {
 	defaultRun, err := svc.CommitImport(ctx, tenantID, plainActorID, []domain.ImportRow{roleChangeRow}, service.ImportOptions{Mode: domain.ImportModeUpsert})
 	require.NoError(t, err)
 	require.Equal(t, domain.ImportActionUnchanged, defaultRun[0].Action)
-	require.Equal(t, "student", primaryRoleSlug(t, pg.AdminPool, sitiID))
+	require.Equal(t, "staff", primaryRoleSlug(t, pg.AdminPool, sitiID))
 
 	// update_roles requested by an actor without manage_permissions: the
 	// whole request is rejected, not silently downgraded to "ignore roles".
 	_, err = svc.CommitImport(ctx, tenantID, plainActorID, []domain.ImportRow{roleChangeRow}, service.ImportOptions{Mode: domain.ImportModeUpsert, UpdateRoles: true})
 	require.ErrorIs(t, err, domain.ErrImportRoleUpdateForbidden)
-	require.Equal(t, "student", primaryRoleSlug(t, pg.AdminPool, sitiID), "a rejected request must not touch roles")
+	require.Equal(t, "staff", primaryRoleSlug(t, pg.AdminPool, sitiID), "a rejected request must not touch roles")
 
 	// update_roles requested by an actor who does hold manage_permissions:
 	// the role is replaced.
@@ -238,4 +243,12 @@ func TestCommitImportUpsertRoles(t *testing.T) {
 	require.Equal(t, domain.ImportActionUpdate, privileged[0].Action)
 	require.Contains(t, privileged[0].Changes, "role")
 	require.Equal(t, "librarian", primaryRoleSlug(t, pg.AdminPool, sitiID))
+
+	// A role change must still fit the matched user's kind: a staff
+	// member cannot be given the student role through an import.
+	toStudent := roleChangeRow
+	toStudent.RoleSlug = "student"
+	rejected, err := svc.PreviewImport(ctx, tenantID, privilegedActorID, []domain.ImportRow{toStudent}, service.ImportOptions{Mode: domain.ImportModeUpsert, UpdateRoles: true})
+	require.NoError(t, err)
+	require.Equal(t, []string{domain.ImportErrKindRoleMismatch}, domain.ImportRowErrorCodes(rejected[0].Errors))
 }

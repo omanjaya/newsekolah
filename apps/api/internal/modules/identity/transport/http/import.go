@@ -129,7 +129,7 @@ func toAPIImportOutcomes(outcomes []service.ImportRowOutcome) []api.UserImportRo
 	out := make([]api.UserImportRowResult, len(outcomes))
 	for i, o := range outcomes {
 		result := api.UserImportRowResult{
-			RowNumber: o.RowNumber, Action: api.UserImportRowAction(o.Action), Errors: o.Errors,
+			RowNumber: o.RowNumber, Action: api.UserImportRowAction(o.Action), Errors: toAPIImportRowErrors(o.Errors),
 		}
 		if o.Username != "" {
 			username := o.Username
@@ -140,6 +140,27 @@ func toAPIImportOutcomes(outcomes []service.ImportRowOutcome) []api.UserImportRo
 			result.ChangedFields = &changes
 		}
 		out[i] = result
+	}
+	return out
+}
+
+// toAPIImportRowErrors always returns a non-nil slice: the contract marks
+// errors as a required array, and a clean row's nil slice would otherwise
+// serialise as null, which the web import screen dereferenced and
+// crashed on.
+func toAPIImportRowErrors(errs []domain.ImportRowError) []api.UserImportRowError {
+	out := make([]api.UserImportRowError, len(errs))
+	for i, e := range errs {
+		item := api.UserImportRowError{Code: e.Code}
+		if e.Field != "" {
+			field := e.Field
+			item.Field = &field
+		}
+		if len(e.Params) > 0 {
+			params := e.Params
+			item.Params = &params
+		}
+		out[i] = item
 	}
 	return out
 }

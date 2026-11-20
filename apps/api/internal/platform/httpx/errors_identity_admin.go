@@ -22,6 +22,7 @@ var (
 	ErrUploadNotConfigured              = NewError(http.StatusServiceUnavailable, "UPLOAD_NOT_CONFIGURED")
 	ErrImportFileInvalid                = NewError(http.StatusBadRequest, "IMPORT_FILE_INVALID")
 	ErrPrimaryRoleNotSystem             = NewError(http.StatusBadRequest, "PRIMARY_ROLE_NOT_SYSTEM")
+	ErrUserKindRoleMismatch             = NewError(http.StatusBadRequest, "USER_KIND_ROLE_MISMATCH")
 	ErrAdditionalRoleSystem             = NewError(http.StatusBadRequest, "ADDITIONAL_ROLE_MUST_BE_CUSTOM")
 	ErrLeavePermissionDirect            = NewError(http.StatusBadRequest, "LEAVE_PERMISSION_REQUIRES_DUTY")
 	ErrImpersonationNested              = NewError(http.StatusForbidden, "IMPERSONATION_NESTED_NOT_ALLOWED")

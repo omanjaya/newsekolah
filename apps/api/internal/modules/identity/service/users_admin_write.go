@@ -27,6 +27,9 @@ func (s *Service) CreateUser(ctx context.Context, tenantID, actorID uuid.UUID, i
 		if err != nil {
 			return err
 		}
+		if err := domain.ValidateKindRole(in.ProfileKind, domain.PrimaryRoleSlug(grants)); err != nil {
+			return err
+		}
 
 		username, err := s.resolveNewUsername(ctx, tenantID, in.Username, in.Name)
 		if err != nil {
@@ -105,6 +108,17 @@ func (s *Service) UpdateUser(ctx context.Context, tenantID, actorID, userID uuid
 			}
 		}
 
+		var grants []domain.RoleGrant
+		if in.Roles != nil {
+			grants, err = s.prepareRoleGrants(ctx, tenantID, actorID, in.Roles)
+			if err != nil {
+				return err
+			}
+		}
+		if err := s.checkKindRoleOnUpdate(ctx, tenantID, userID, before.ProfileKind, in, grants); err != nil {
+			return err
+		}
+
 		if err := s.repo.UpdateUserBasic(ctx, tenantID, userID, in.Name, in.Email, in.Phone, in.Locale); err != nil {
 			return fmt.Errorf("update user: %w", err)
 		}
@@ -113,10 +127,6 @@ func (s *Service) UpdateUser(ctx context.Context, tenantID, actorID, userID uuid
 		}
 
 		if in.Roles != nil {
-			grants, err := s.prepareRoleGrants(ctx, tenantID, actorID, in.Roles)
-			if err != nil {
-				return err
-			}
 			if err := s.repo.DeleteUserRoles(ctx, tenantID, userID); err != nil {
 				return fmt.Errorf("clear user roles: %w", err)
 			}
@@ -136,6 +146,30 @@ func (s *Service) UpdateUser(ctx context.Context, tenantID, actorID, userID uuid
 		return recordUserAudit(ctx, tenantID, userID, "user.update", ptrAuditUser(toAuditUser(beforeView)), ptrAuditUser(toAuditUser(view)))
 	})
 	return view, err
+}
+
+// checkKindRoleOnUpdate applies domain.ValidateKindRole to an update: the
+// new grants' primary role when the request replaces roles, otherwise the
+// user's current primary role when only the kind changes. An edit that
+// touches neither leaves an older mismatched account editable rather than
+// blocking every save on it.
+func (s *Service) checkKindRoleOnUpdate(ctx context.Context, tenantID, userID uuid.UUID, beforeKind domain.ProfileKind, in UserWriteInput, grants []domain.RoleGrant) error {
+	if in.Roles != nil {
+		return domain.ValidateKindRole(in.ProfileKind, domain.PrimaryRoleSlug(grants))
+	}
+	if in.ProfileKind == beforeKind {
+		return nil
+	}
+	roles, err := s.repo.ListRolesForUser(ctx, tenantID, userID)
+	if err != nil {
+		return fmt.Errorf("list roles for %s: %w", userID, err)
+	}
+	for _, r := range roles {
+		if r.IsPrimary {
+			return domain.ValidateKindRole(in.ProfileKind, r.Slug)
+		}
+	}
+	return nil
 }
 
 // ArchiveUser soft-deletes a user (status inactive, deleted_at set). An

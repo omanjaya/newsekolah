@@ -45,14 +45,20 @@ type Role struct {
 	IsPrimary bool
 }
 
+// Password length bounds ValidatePasswordPolicy enforces.
+const (
+	minPasswordLength = 8
+	maxPasswordLength = 128
+)
+
 // PasswordPolicy validates a new password against docs/08-security.md
 // section 2: Argon2id storage aside, the plaintext must clear a minimum
 // length before it is ever hashed.
 func ValidatePasswordPolicy(password string) error {
-	if len(password) < 8 {
+	if len(password) < minPasswordLength {
 		return ErrPasswordTooShort
 	}
-	if len(password) > 128 {
+	if len(password) > maxPasswordLength {
 		return ErrPasswordTooLong
 	}
 	return nil

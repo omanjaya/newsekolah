@@ -36,13 +36,14 @@ func (o ImportOptions) mode() domain.ImportMode {
 // ImportRowOutcome is what preview and commit report back per row: Action
 // is what the row will do (preview) or did (commit); Changes names the
 // fields an update row's values differ on; Errors is non-empty exactly
-// when Action is domain.ImportActionError.
+// when Action is domain.ImportActionError, each a coded
+// domain.ImportRowError the client translates.
 type ImportRowOutcome struct {
 	RowNumber int
 	Username  string
 	Action    domain.ImportAction
 	Changes   []string
-	Errors    []string
+	Errors    []domain.ImportRowError
 }
 
 // evaluatedRow carries what evaluateImportRows resolved for one row, so
@@ -287,7 +288,7 @@ func (s *Service) evaluateImportRow(
 
 	if username != "" {
 		if seenUsernames[username] {
-			result.Errors = append(result.Errors, "duplicate username within this batch")
+			result.Errors = append(result.Errors, domain.NewImportRowError(domain.ImportErrUsernameDuplicateInBatch, "username"))
 		}
 		seenUsernames[username] = true
 		// A match is exactly what makes this an update, not a conflict; the
@@ -295,7 +296,7 @@ func (s *Service) evaluateImportRow(
 		// still going to create a new user.
 		if !isUpdate {
 			if exists, err := s.repo.UsernameExists(ctx, tenantID, username); err == nil && exists {
-				result.Errors = append(result.Errors, "username already in use")
+				result.Errors = append(result.Errors, domain.NewImportRowError(domain.ImportErrUsernameInUse, "username"))
 			}
 		}
 	}
@@ -313,31 +314,41 @@ func (s *Service) evaluateImportRow(
 	}
 	if effectiveEmail != "" {
 		if seenEmails[effectiveEmail] {
-			result.Errors = append(result.Errors, "duplicate email within this batch")
+			result.Errors = append(result.Errors, domain.NewImportRowError(domain.ImportErrEmailDuplicateInBatch, "email"))
 		}
 		seenEmails[effectiveEmail] = true
 		if emailChanged {
 			if exists, err := s.repo.EmailExists(ctx, tenantID, effectiveEmail); err == nil && exists {
-				result.Errors = append(result.Errors, "email already in use")
+				result.Errors = append(result.Errors, domain.NewImportRowError(domain.ImportErrEmailInUse, "email"))
 			}
 		}
 	}
 
 	if isUpdate && row.ProfileKind != existing.row.ProfileKind {
-		result.Errors = append(result.Errors, "profile_kind cannot be changed by import; the matched user is a different kind")
+		result.Errors = append(result.Errors, domain.NewImportRowError(domain.ImportErrProfileKindImmutable, "profile_kind"))
 	}
 
 	role, roleErr := s.repo.GetRoleBySlug(ctx, tenantID, roleSlug)
 	switch {
 	case roleErr != nil:
-		result.Errors = append(result.Errors, fmt.Sprintf("role %q not found", roleSlug))
+		// A blank role_slug already reported ROLE_REQUIRED.
+		if roleSlug != "" {
+			result.Errors = append(result.Errors, domain.NewImportRowError(domain.ImportErrRoleNotFound, "role_slug", "role", roleSlug))
+		}
 	case role.Slug == domain.SuperAdminRoleSlug && !actorIsSuper:
-		result.Errors = append(result.Errors, "only a super admin can grant the super admin role")
+		result.Errors = append(result.Errors, domain.NewImportRowError(domain.ImportErrSuperAdminGrantForbidden, "role_slug"))
 	case !role.IsSystem:
 		// A bulk import always sets exactly one, primary role; the same
 		// invariant ValidateRoleGrants enforces for the admin UI's
 		// multi-role assignment (domain/user_admin.go) applies here too.
-		result.Errors = append(result.Errors, fmt.Sprintf("role %q must be a system role to be an import's primary role", roleSlug))
+		result.Errors = append(result.Errors, domain.NewImportRowError(domain.ImportErrRoleNotSystem, "role_slug", "role", roleSlug))
+	case row.ProfileKind.Valid() && (!isUpdate || opts.UpdateRoles) && domain.ValidateKindRole(row.ProfileKind, role.Slug) != nil:
+		// The same kind/role rule CreateUser and UpdateUser enforce: a
+		// student row needs the student role, a staff row must not get it.
+		// An update row's role column only counts when update_roles asks
+		// for it; otherwise the matched user's role is left alone.
+		result.Errors = append(result.Errors, domain.NewImportRowError(domain.ImportErrKindRoleMismatch, "role_slug",
+			"kind", string(row.ProfileKind), "role", role.Slug))
 	default:
 		result.roleID = role.ID
 	}
@@ -357,7 +368,11 @@ func (s *Service) evaluateImportRow(
 
 	hash, hashErr := s.hashInitialPassword(row.Password)
 	if hashErr != nil {
-		result.Errors = append(result.Errors, hashErr.Error())
+		rowErr, ok := domain.PasswordPolicyRowError(row.Password)
+		if !ok {
+			rowErr = domain.NewImportRowError(domain.ImportErrPasswordInvalid, "password")
+		}
+		result.Errors = append(result.Errors, rowErr)
 		result.Action = domain.ImportActionError
 		return result
 	}
@@ -433,8 +448,8 @@ func hasPrimaryRole(roles []domain.Role, slug string) bool {
 // errors are returned as row errors rather than silently dropped. Used
 // directly for a create row's profile; an update row instead merges the
 // same row onto the matched user's existing fields (mergeProfileFields).
-func buildImportProfileFields(row domain.ImportRow) (UserProfileFields, []string) {
-	var errs []string
+func buildImportProfileFields(row domain.ImportRow) (UserProfileFields, []domain.ImportRowError) {
+	var errs []domain.ImportRowError
 	f := UserProfileFields{
 		NIK: row.NIK, BirthPlace: row.BirthPlace, Religion: row.Religion,
 		Address: row.Address, District: row.District, City: row.City,
@@ -462,14 +477,14 @@ func buildImportProfileFields(row domain.ImportRow) (UserProfileFields, []string
 		if y, err := strconv.Atoi(row.EntryYear); err == nil {
 			f.EntryYear = y
 		} else {
-			errs = append(errs, "entry_year must be a number")
+			errs = append(errs, domain.NewImportRowError(domain.ImportErrEntryYearNotNumber, "entry_year"))
 		}
 	}
 	if row.JoinedYear != "" {
 		if y, err := strconv.Atoi(row.JoinedYear); err == nil {
 			f.JoinedYear = y
 		} else {
-			errs = append(errs, "joined_year must be a number")
+			errs = append(errs, domain.NewImportRowError(domain.ImportErrJoinedYearNotNumber, "joined_year"))
 		}
 	}
 	return f, errs

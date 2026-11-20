@@ -31,6 +31,7 @@ var adminErrorMap = map[error]error{
 	domain.ErrOnlySuperAdminGrants:        httpx.ErrOnlySuperAdminCanGrantSuperAdmin,
 	domain.ErrNoPrimaryRole:               httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "roles", Code: "PRIMARY_ROLE_REQUIRED"}),
 	domain.ErrPrimaryRoleNotSystem:        httpx.ErrPrimaryRoleNotSystem,
+	domain.ErrKindRoleMismatch:            httpx.ErrUserKindRoleMismatch,
 	domain.ErrAdditionalRoleSystem:        httpx.ErrAdditionalRoleSystem,
 	domain.ErrLeavePermissionDirect:       httpx.ErrLeavePermissionDirect,
 	domain.ErrInvalidSessionDays:          httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "session_days", Code: "OUT_OF_RANGE"}),

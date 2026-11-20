@@ -28,6 +28,7 @@ var (
 	ErrPrimaryRoleNotSystem = errors.New("the primary role must be a system role")
 	ErrAdditionalRoleSystem = errors.New("additional roles must be custom roles, not system roles")
 	ErrInvalidProfileKind   = errors.New("invalid profile kind")
+	ErrKindRoleMismatch     = errors.New("a student profile needs the student primary role, and only a student profile may hold it")
 	ErrTooManyDirectoryIDs  = errors.New("too many ids in one directory lookup")
 
 	// Roles and permissions

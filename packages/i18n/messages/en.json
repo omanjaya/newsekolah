@@ -353,6 +353,7 @@
     "GRADE_RANGE_OVERLAP": "These ranges overlap; adjust them so no score falls in two ranges",
     "TP_EXPORT_CODE_EXISTS": "This export code is already used by another component in this class, subject and term",
     "TP_KIND_NOT_ELIGIBLE": "Only formative components (or the tenant's configured TP kind) can be mapped",
+    "USER_KIND_ROLE_MISMATCH": "A Student user must have Student as the primary role, and only a Student user may have it",
     "PRIMARY_ROLE_NOT_SYSTEM": "The primary role must be a system role, not a custom one",
     "ADDITIONAL_ROLE_MUST_BE_CUSTOM": "Additional roles must be custom roles, not system roles",
     "LEAVE_PERMISSION_REQUIRES_DUTY": "Reviewing leave requests and issuing leave letters cannot be granted directly to the teacher role, that access comes from a duty assignment",

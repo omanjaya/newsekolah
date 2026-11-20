@@ -38,7 +38,7 @@ func TestValidateImportRow(t *testing.T) {
 				r.Name = ""
 				return r
 			},
-			wantErrs: []string{"name is required"},
+			wantErrs: []string{ImportErrNameRequired},
 		},
 		{
 			name: "name too long",
@@ -47,7 +47,7 @@ func TestValidateImportRow(t *testing.T) {
 				r.Name = string(make([]byte, 151))
 				return r
 			},
-			wantErrs: []string{"name must be at most 150 characters"},
+			wantErrs: []string{ImportErrNameTooLong},
 		},
 		{
 			name: "invalid profile kind",
@@ -56,7 +56,7 @@ func TestValidateImportRow(t *testing.T) {
 				r.ProfileKind = "alien"
 				return r
 			},
-			wantErrs: []string{"profile_kind must be one of student, teacher, staff"},
+			wantErrs: []string{ImportErrProfileKindInvalid},
 		},
 		{
 			name: "missing role slug",
@@ -65,7 +65,7 @@ func TestValidateImportRow(t *testing.T) {
 				r.RoleSlug = ""
 				return r
 			},
-			wantErrs: []string{"role_slug is required"},
+			wantErrs: []string{ImportErrRoleRequired},
 		},
 		{
 			name: "student without nis",
@@ -74,21 +74,21 @@ func TestValidateImportRow(t *testing.T) {
 				r.NIS = ""
 				return r
 			},
-			wantErrs: []string{"nis is required for student profiles"},
+			wantErrs: []string{ImportErrNISRequired},
 		},
 		{
 			name: "teacher without nip",
 			row: func() ImportRow {
 				return ImportRow{Name: "Pak Guru", ProfileKind: ProfileTeacher, RoleSlug: "guru", Password: "Password123!"}
 			},
-			wantErrs: []string{"nip is required for teacher profiles"},
+			wantErrs: []string{ImportErrNIPRequired},
 		},
 		{
 			name: "staff without employee number",
 			row: func() ImportRow {
 				return ImportRow{Name: "Bu Staf", ProfileKind: ProfileStaff, RoleSlug: "pegawai", Password: "Password123!"}
 			},
-			wantErrs: []string{"employee_number is required for staff profiles"},
+			wantErrs: []string{ImportErrEmployeeNumberRequired},
 		},
 		{
 			name: "invalid gender",
@@ -97,7 +97,7 @@ func TestValidateImportRow(t *testing.T) {
 				r.Gender = "other"
 				return r
 			},
-			wantErrs: []string{"gender must be L/P (or male/female)"},
+			wantErrs: []string{ImportErrGenderInvalid},
 		},
 		{
 			name: "weak password on create",
@@ -106,7 +106,7 @@ func TestValidateImportRow(t *testing.T) {
 				r.Password = "short"
 				return r
 			},
-			wantErrs: []string{ErrPasswordTooShort.Error()},
+			wantErrs: []string{ImportErrPasswordTooShort},
 		},
 		{
 			name: "weak password ignored on update",
@@ -123,9 +123,28 @@ func TestValidateImportRow(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			errs := ValidateImportRow(tt.row(), tt.isUpdate)
-			require.Equal(t, tt.wantErrs, errs)
+			require.Equal(t, tt.wantErrs, ImportRowErrorCodes(errs))
 		})
 	}
+}
+
+// TestValidateImportRowCarriesFieldAndParams pins what the web needs to
+// translate a row error: the column it concerns and the values the
+// sentence interpolates, never an English sentence.
+func TestValidateImportRowCarriesFieldAndParams(t *testing.T) {
+	row := validStudentRow()
+	row.Name = string(make([]byte, 151))
+	row.Gender = "X"
+	row.BirthDate = "17/05/2010"
+	row.Password = "short"
+
+	errs := ValidateImportRow(row, false)
+	require.Equal(t, []ImportRowError{
+		{Code: ImportErrNameTooLong, Field: "name", Params: map[string]string{"max": "150"}},
+		{Code: ImportErrPasswordTooShort, Field: "password", Params: map[string]string{"min": "8"}},
+		{Code: ImportErrGenderInvalid, Field: "gender"},
+		{Code: ImportErrBirthDateFormat, Field: "birth_date"},
+	}, errs)
 }
 
 func TestNormalizeGender(t *testing.T) {

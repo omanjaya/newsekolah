@@ -8,6 +8,8 @@
 package domain
 
 import (
+	"errors"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -94,47 +96,73 @@ type ImportRow struct {
 // fields are mandatory for which kind. isUpdate is true when the service
 // already matched this row to an existing user by username/NIS/NIP, which
 // makes Password optional (an update never resets a password by itself --
-// use the admin reset-password action for that).
-func ValidateImportRow(row ImportRow, isUpdate bool) []string {
-	var errs []string
+// use the admin reset-password action for that). Each problem comes back
+// as a coded ImportRowError, never a prose sentence, so the client can
+// show it in the admin's language.
+func ValidateImportRow(row ImportRow, isUpdate bool) []ImportRowError {
+	var errs []ImportRowError
 
 	if row.Name == "" {
-		errs = append(errs, "name is required")
-	} else if len(row.Name) > 150 {
-		errs = append(errs, "name must be at most 150 characters")
+		errs = append(errs, importRowError(ImportErrNameRequired, "name"))
+	} else if len(row.Name) > maxImportNameLength {
+		errs = append(errs, importRowError(ImportErrNameTooLong, "name", "max", strconv.Itoa(maxImportNameLength)))
 	}
 
 	if !row.ProfileKind.Valid() {
-		errs = append(errs, "profile_kind must be one of student, teacher, staff")
+		errs = append(errs, importRowError(ImportErrProfileKindInvalid, "profile_kind"))
 	}
 	if row.RoleSlug == "" {
-		errs = append(errs, "role_slug is required")
+		errs = append(errs, importRowError(ImportErrRoleRequired, "role_slug"))
 	}
 
 	if !isUpdate && row.Password != "" {
-		if err := ValidatePasswordPolicy(row.Password); err != nil {
-			errs = append(errs, err.Error())
+		if e, ok := passwordPolicyRowError(row.Password); ok {
+			errs = append(errs, e)
 		}
 	}
 
 	if row.Gender != "" {
 		if _, ok := NormalizeGender(row.Gender); !ok {
-			errs = append(errs, "gender must be L/P (or male/female)")
+			errs = append(errs, importRowError(ImportErrGenderInvalid, "gender"))
 		}
 	}
 
 	if row.BloodType != "" && !ValidateBloodType(row.BloodType) {
-		errs = append(errs, "blood_type must be one of A, B, AB, O, optionally suffixed with + or -")
+		errs = append(errs, importRowError(ImportErrBloodTypeInvalid, "blood_type"))
 	}
 
 	if row.BirthDate != "" {
 		if _, err := time.Parse(ImportBirthDateLayout, row.BirthDate); err != nil {
-			errs = append(errs, "birth_date must be in YYYY-MM-DD format")
+			errs = append(errs, importRowError(ImportErrBirthDateFormat, "birth_date"))
 		}
 	}
 
 	errs = append(errs, validateProfileFields(row)...)
 	return errs
+}
+
+// maxImportNameLength matches users.name's length check.
+const maxImportNameLength = 150
+
+// passwordPolicyRowError turns a ValidatePasswordPolicy failure into the
+// matching coded row error.
+func passwordPolicyRowError(password string) (ImportRowError, bool) {
+	switch err := ValidatePasswordPolicy(password); {
+	case err == nil:
+		return ImportRowError{}, false
+	case errors.Is(err, ErrPasswordTooShort):
+		return importRowError(ImportErrPasswordTooShort, "password", "min", strconv.Itoa(minPasswordLength)), true
+	case errors.Is(err, ErrPasswordTooLong):
+		return importRowError(ImportErrPasswordTooLong, "password", "max", strconv.Itoa(maxPasswordLength)), true
+	default:
+		return importRowError(ImportErrPasswordInvalid, "password"), true
+	}
+}
+
+// PasswordPolicyRowError is passwordPolicyRowError for the service, which
+// re-checks an explicit password when hashing it.
+func PasswordPolicyRowError(password string) (ImportRowError, bool) {
+	return passwordPolicyRowError(password)
 }
 
 // NormalizeGender accepts the old app's Indonesian L/P codes alongside
@@ -191,20 +219,20 @@ func ResolveRoleAlias(s string) string {
 	return key
 }
 
-func validateProfileFields(row ImportRow) []string {
-	var errs []string
+func validateProfileFields(row ImportRow) []ImportRowError {
+	var errs []ImportRowError
 	switch row.ProfileKind {
 	case ProfileStudent:
 		if row.NIS == "" {
-			errs = append(errs, "nis is required for student profiles")
+			errs = append(errs, importRowError(ImportErrNISRequired, "nis"))
 		}
 	case ProfileTeacher:
 		if row.NIP == "" {
-			errs = append(errs, "nip is required for teacher profiles")
+			errs = append(errs, importRowError(ImportErrNIPRequired, "nip"))
 		}
 	case ProfileStaff:
 		if row.EmployeeNumber == "" {
-			errs = append(errs, "employee_number is required for staff profiles")
+			errs = append(errs, importRowError(ImportErrEmployeeNumberRequired, "employee_number"))
 		}
 	}
 	return errs

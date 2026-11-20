@@ -71,9 +71,9 @@ func toAPIImportRows(rows []service.ImportRowResult) []api.ImportRowResult {
 			studentName := r.StudentName
 			row.StudentName = &studentName
 		}
-		if r.Message != "" {
-			message := r.Message
-			row.Message = &message
+		if r.MessageCode != "" {
+			code := string(r.MessageCode)
+			row.MessageCode = &code
 		}
 		data[i] = row
 	}

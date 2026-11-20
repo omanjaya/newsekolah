@@ -71,7 +71,7 @@ func TestEvaluateImportRowRejectsInactiveStudent(t *testing.T) {
 	result := svc.evaluate(context.Background(), tenantID, yearID, row)
 
 	require.Equal(t, ImportRowError, result.Action)
-	require.NotEmpty(t, result.Message)
+	require.Equal(t, ImportMsgStudentNotActive, result.MessageCode)
 	require.Equal(t, uuid.Nil, result.matchedID, "a rejected row must not carry an id to act on")
 }
 

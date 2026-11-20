@@ -328,6 +328,7 @@ export type MessageKey =
   | "errors.UPLOAD_NOT_CONFIGURED"
   | "errors.USER_ALREADY_EXISTS"
   | "errors.USER_CANNOT_ARCHIVE_SELF"
+  | "errors.USER_KIND_ROLE_MISMATCH"
   | "errors.VALIDATION_FAILED"
   | "errors.VIOLATION_INVALID"
   | "errors.VIOLATION_RECORD_NOT_FOUND"
@@ -776,6 +777,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.UPLOAD_NOT_CONFIGURED",
   "errors.USER_ALREADY_EXISTS",
   "errors.USER_CANNOT_ARCHIVE_SELF",
+  "errors.USER_KIND_ROLE_MISMATCH",
   "errors.VALIDATION_FAILED",
   "errors.VIOLATION_INVALID",
   "errors.VIOLATION_RECORD_NOT_FOUND",

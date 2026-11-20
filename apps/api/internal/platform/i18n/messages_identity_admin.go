@@ -75,6 +75,10 @@ var identityAdminCatalog = map[string]map[string]string{
 		Indonesian: "Peran utama pengguna harus salah satu peran sistem.",
 		English:    "A user's primary role must be one of the system roles.",
 	},
+	"USER_KIND_ROLE_MISMATCH": {
+		Indonesian: "Pengguna jenis siswa harus berperan utama Siswa, dan peran Siswa hanya untuk pengguna jenis siswa.",
+		English:    "A student must have Student as their primary role, and only a student may have it.",
+	},
 	"ADDITIONAL_ROLE_MUST_BE_CUSTOM": {
 		Indonesian: "Peran tambahan hanya boleh berupa peran kustom.",
 		English:    "An additional role must be a custom role.",

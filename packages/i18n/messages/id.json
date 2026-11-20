@@ -353,6 +353,7 @@
     "GRADE_RANGE_OVERLAP": "Rentang ini saling tumpang tindih; atur ulang agar tidak ada nilai yang masuk ke dua rentang",
     "TP_EXPORT_CODE_EXISTS": "Kode ekspor ini sudah dipakai komponen lain pada kelas, mapel, dan semester yang sama",
     "TP_KIND_NOT_ELIGIBLE": "Hanya komponen formatif (atau jenis TP yang dikonfigurasi sekolah) yang bisa dipetakan",
+    "USER_KIND_ROLE_MISMATCH": "Pengguna jenis Siswa harus berperan utama Siswa, dan peran Siswa hanya untuk pengguna jenis Siswa",
     "PRIMARY_ROLE_NOT_SYSTEM": "Peran utama harus salah satu peran sistem (bukan peran khusus)",
     "ADDITIONAL_ROLE_MUST_BE_CUSTOM": "Peran tambahan harus peran khusus, bukan peran sistem",
     "LEAVE_PERMISSION_REQUIRES_DUTY": "Meninjau izin dan menerbitkan surat izin tidak bisa diberikan langsung ke peran guru, izin ini datang dari penugasan tugas",

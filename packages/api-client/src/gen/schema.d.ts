@@ -8329,7 +8329,8 @@ export interface components {
             class_name?: string;
             student_name?: string;
             action: components["schemas"]["ImportRowAction"];
-            message?: string;
+            /** @description Why an error or skipped row is not applied, as a stable code the client translates (DUPLICATE_IN_FILE, MOVE_NEEDS_CONFIRMATION, STUDENT_NOT_MATCHED, STUDENT_NOT_ACTIVE, CLASS_NOT_FOUND); absent otherwise. */
+            message_code?: string;
         };
         ImportRowResultList: {
             data: components["schemas"]["ImportRowResult"][];
@@ -9611,7 +9612,19 @@ export interface components {
             action: components["schemas"]["UserImportRowAction"];
             /** @description Field names that differ from the existing user's current values; only present when action is "update". */
             changed_fields?: string[];
-            errors: string[];
+            /** @description Always present; empty for a row with no problems. */
+            errors: components["schemas"]["UserImportRowError"][];
+        };
+        /** @description One problem with one import row, as a stable code the client translates (never a prose sentence), the template column it concerns, and the values the translated sentence needs. */
+        UserImportRowError: {
+            /** @description SCREAMING_SNAKE_CASE, e.g. NAME_REQUIRED, GENDER_INVALID, BIRTH_DATE_FORMAT, USERNAME_IN_USE, ROLE_NOT_FOUND, KIND_ROLE_MISMATCH. */
+            code: string;
+            /** @description Template column the problem concerns (name, gender, role_slug, ...). */
+            field?: string;
+            /** @description Values the message needs, e.g. {"role":"guru"} or {"max":"150"}. */
+            params?: {
+                [key: string]: string;
+            };
         };
         UserImportResult: {
             data: components["schemas"]["UserImportRowResult"][];

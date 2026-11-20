@@ -137,6 +137,36 @@ func TestValidateRoleGrants(t *testing.T) {
 	}
 }
 
+// TestValidateKindRole pins the rule that stops a "student" account from
+// holding a staff or admin primary role (and the reverse).
+func TestValidateKindRole(t *testing.T) {
+	tests := []struct {
+		kind    ProfileKind
+		slug    string
+		wantErr bool
+	}{
+		{ProfileStudent, "student", false},
+		{ProfileStudent, "admin", true},
+		{ProfileStudent, "teacher", true},
+		{ProfileStudent, "", true},
+		{ProfileTeacher, "teacher", false},
+		{ProfileTeacher, "admin", false},
+		{ProfileTeacher, "principal", false},
+		{ProfileTeacher, "student", true},
+		{ProfileStaff, "staff", false},
+		{ProfileStaff, "librarian", false},
+		{ProfileStaff, "student", true},
+	}
+	for _, tt := range tests {
+		err := ValidateKindRole(tt.kind, tt.slug)
+		if tt.wantErr {
+			require.ErrorIs(t, err, ErrKindRoleMismatch, "%s + %s", tt.kind, tt.slug)
+		} else {
+			require.NoError(t, err, "%s + %s", tt.kind, tt.slug)
+		}
+	}
+}
+
 func TestValidateArchiveTarget(t *testing.T) {
 	self := uuid.New()
 	other := uuid.New()

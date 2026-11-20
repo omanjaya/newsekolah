@@ -26,9 +26,22 @@ const (
 	ImportRowError     ImportRowAction = "error"
 )
 
+// ImportRowMessage explains an error or skipped row as a stable code the
+// client translates (the web's app.academic.enrollmentImport.rowMessage),
+// never as a prose sentence.
+type ImportRowMessage string
+
+const (
+	ImportMsgDuplicateInFile       ImportRowMessage = "DUPLICATE_IN_FILE"
+	ImportMsgMoveNeedsConfirmation ImportRowMessage = "MOVE_NEEDS_CONFIRMATION"
+	ImportMsgStudentNotMatched     ImportRowMessage = "STUDENT_NOT_MATCHED"
+	ImportMsgStudentNotActive      ImportRowMessage = "STUDENT_NOT_ACTIVE"
+	ImportMsgClassNotFound         ImportRowMessage = "CLASS_NOT_FOUND"
+)
+
 // ImportRowResult is one spreadsheet row's outcome, returned by both
 // preview (nothing written) and commit (written unless Action is
-// ImportRowError).
+// ImportRowError). MessageCode is set for an error or skipped row.
 type ImportRowResult struct {
 	RowNumber   int
 	NIS         string
@@ -36,7 +49,7 @@ type ImportRowResult struct {
 	ClassName   string
 	StudentName string
 	Action      ImportRowAction
-	Message     string
+	MessageCode ImportRowMessage
 }
 
 // maxImportTemplateDropdownClasses caps how many class names go into the
@@ -192,14 +205,14 @@ func (s *Service) evaluateAll(ctx context.Context, tenantID, yearID uuid.UUID, r
 		if evaluated.matchedID != uuid.Nil {
 			if seen[evaluated.matchedID] {
 				evaluated.Action = ImportRowSkipped
-				evaluated.Message = "duplicate student in file, only the first row was considered"
+				evaluated.MessageCode = ImportMsgDuplicateInFile
 			} else {
 				seen[evaluated.matchedID] = true
 			}
 		}
 		if evaluated.Action == ImportRowMove && !moveExisting {
 			evaluated.Action = ImportRowSkipped
-			evaluated.Message = "student already has a different class this year; move_existing=true is required to move them"
+			evaluated.MessageCode = ImportMsgMoveNeedsConfirmation
 		}
 		results = append(results, evaluated)
 	}
@@ -274,7 +287,7 @@ func (s *Service) evaluate(ctx context.Context, tenantID, yearID uuid.UUID, row 
 	student, found := s.resolveStudent(ctx, tenantID, row.nis, row.username)
 	if !found {
 		base.Action = ImportRowError
-		base.Message = "student not matched by NIS or username"
+		base.MessageCode = ImportMsgStudentNotMatched
 		return evaluatedImportRow{ImportRowResult: base}
 	}
 	base.StudentName = student.Name
@@ -284,14 +297,14 @@ func (s *Service) evaluate(ctx context.Context, tenantID, yearID uuid.UUID, row 
 	// active-student rule the direct assign endpoints enforce.
 	if err := s.requireActiveStudent(ctx, tenantID, student.ID); err != nil {
 		base.Action = ImportRowError
-		base.Message = "student is not active"
+		base.MessageCode = ImportMsgStudentNotActive
 		return evaluatedImportRow{ImportRowResult: base}
 	}
 
 	targetClass, ok := s.findClassByName(ctx, tenantID, yearID, row.className)
 	if !ok {
 		base.Action = ImportRowError
-		base.Message = "class not found in this academic year"
+		base.MessageCode = ImportMsgClassNotFound
 		return evaluatedImportRow{ImportRowResult: base}
 	}
 

@@ -117,6 +117,35 @@ func ValidateRoleGrants(actorIsSuperAdmin bool, grants []RoleGrant) error {
 	return nil
 }
 
+// StudentRoleSlug is the system role every student account, and only a
+// student account, holds as its primary role (platform/authz
+// RoleSlugStudent).
+const StudentRoleSlug = "student"
+
+// ValidateKindRole keeps a user's profile kind and primary role telling
+// the same story: a student profile must hold the student role as its
+// primary role, and a teacher or staff profile must not. Without it an
+// admin could save a "student" who logs in with the full admin menu and
+// still shows up in class placement as a student.
+func ValidateKindRole(kind ProfileKind, primarySlug string) error {
+	isStudentRole := primarySlug == StudentRoleSlug
+	if (kind == ProfileStudent) != isStudentRole {
+		return ErrKindRoleMismatch
+	}
+	return nil
+}
+
+// PrimaryRoleSlug returns the slug of the grant marked primary, or "" when
+// none is.
+func PrimaryRoleSlug(grants []RoleGrant) string {
+	for _, g := range grants {
+		if g.IsPrimary {
+			return g.Slug
+		}
+	}
+	return ""
+}
+
 // ValidateArchiveTarget rejects an admin archiving their own account, the
 // one self-service action that must go through "change password" /
 // "delete my account" flows instead (docs/analysis/backend-inventory.md
