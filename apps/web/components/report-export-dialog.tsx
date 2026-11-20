@@ -77,6 +77,12 @@ export interface ReportExportDialogProps {
   columnsCustomizable?: boolean;
   /** Optional slot rendered above the format control (class/grade-level pickers, date, ...). */
   scopeSlot?: ReactNode;
+  /**
+   * The scope in `scopeSlot` is not complete yet (no class or grade level
+   * chosen): Unduh stays disabled, and the slot says what is missing,
+   * rather than sending a request the API can only refuse.
+   */
+  exportDisabled?: boolean;
   /** Runs the export; the dialog shows its own loading state around the returned promise. */
   onExport: (options: ReportExportOptions) => Promise<void>;
 }
@@ -232,6 +238,7 @@ function ReportExportForm({
   availableColumns,
   columnsCustomizable = true,
   scopeSlot,
+  exportDisabled = false,
   onExport,
 }: ReportExportDialogProps): ReactElement {
   const t = useTranslations("app.reportExport");
@@ -249,7 +256,10 @@ function ReportExportForm({
 
   const includedCount = columns.filter((c) => c.included).length;
   const canExport =
-    title.trim() !== "" && (!columnsCustomizable || includedCount > 0) && !submitting;
+    title.trim() !== "" &&
+    (!columnsCustomizable || includedCount > 0) &&
+    !exportDisabled &&
+    !submitting;
 
   function move(index: number, delta: number) {
     setColumns((current) => {

@@ -111,6 +111,8 @@ export function MonthlyReportTab(): ReactElement {
           icon={<Download />}
           className="sm:ml-auto"
           onClick={() => {
+            // The download starts from the class already on screen.
+            if (classId !== "") setDownloadScope({ kind: "class", classId });
             setExportOpen(true);
           }}
         >
@@ -125,6 +127,7 @@ export function MonthlyReportTab(): ReactElement {
         defaultTitle={t("exportTitle")}
         availableColumns={monthlyRecapExportColumns(tColumns)}
         onExport={handleExport}
+        exportDisabled={!scopeIsReady(downloadScope)}
         scopeSlot={
           <div className="flex flex-col gap-2">
             <ReportScopePicker

@@ -59,6 +59,27 @@ describe("ReportExportDialog", () => {
     });
   });
 
+  it("keeps Unduh disabled while the caller's scope is incomplete", async () => {
+    const onExport = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ReportExportDialog
+        open
+        onOpenChange={vi.fn()}
+        reportKey="test.report"
+        defaultTitle="Test Report"
+        availableColumns={COLUMNS}
+        onExport={onExport}
+        exportDisabled
+        scopeSlot={<p>pick a class</p>}
+      />,
+    );
+
+    const button = screen.getByRole("button", { name: "export" });
+    expect(button).toBeDisabled();
+    await userEvent.click(button);
+    expect(onExport).not.toHaveBeenCalled();
+  });
+
   it("excludes a column the user unchecks", async () => {
     const onExport = vi.fn().mockResolvedValue(undefined);
     renderDialog(onExport);

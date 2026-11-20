@@ -156,6 +156,7 @@ export function DailyReportTab(): ReactElement {
         defaultTitle={t("exportTitle")}
         availableColumns={dailyReportExportColumns(tColumns)}
         onExport={handleExport}
+        exportDisabled={!scopeIsReady(downloadScope)}
         scopeSlot={
           <div className="flex flex-col gap-2">
             <ReportScopePicker
