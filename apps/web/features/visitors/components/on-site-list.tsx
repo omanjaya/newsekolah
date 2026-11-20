@@ -81,8 +81,10 @@ export function OnSiteList({
                       {t("overdue")}
                     </Badge>
                   )}
+                  {/* Arrival first: on a phone a long host name is what
+                      the ellipsis cuts, never the time they came in. */}
                   <span className="truncate">
-                    {host ? `${t("host", { name: host })} · ${arrival}` : arrival}
+                    {host ? `${arrival} · ${t("host", { name: host })}` : arrival}
                   </span>
                 </span>
                 {/* The guard collects this card at check out, often from a

@@ -10,7 +10,9 @@ vi.mock("next-intl", () => ({
 vi.mock("../../../lib/simulation/clock", () => ({
   useBusinessNow: () => new Date("2026-11-19T03:00:00Z"),
 }));
-vi.mock("../../reference/directory-names", () => ({ useDirectoryNames: () => new Map() }));
+vi.mock("../../reference/directory-names", () => ({
+  useDirectoryNames: () => new Map([["host-1", { name: "Kepala Sekolah Contoh" }]]),
+}));
 
 import type { BoardEntry } from "../api";
 
@@ -46,6 +48,15 @@ it("names the visitor pass in the meta line for a phone, where the trailing badg
   const arrival = screen.getByText(/arrived/);
   expect(phonePass?.contains(arrival)).toBe(false);
   expect(arrival.parentElement?.contains(phonePass ?? null)).toBe(false);
+});
+
+it("puts the arrival before the host, so a long host name is what gets cut", () => {
+  const hosted: BoardEntry = { ...entry, visit: { ...entry.visit, host_user_id: "host-1" } };
+  render(<OnSiteList entries={[hosted]} canManage onCheckOut={vi.fn()} />);
+
+  const line = screen.getByText(/arrived/);
+  expect(line).toHaveClass("truncate");
+  expect(line.textContent).toBe("arrived · host");
 });
 
 it("gives a phone's two meta lines to the arrival and the pass, not the purpose", () => {
