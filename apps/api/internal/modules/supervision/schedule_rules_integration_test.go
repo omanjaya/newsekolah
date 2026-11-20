@@ -185,6 +185,10 @@ func TestCycleCriterionNamesMustDiffer(t *testing.T) {
 	}}
 	_, err = svc.UpdateCycle(ctx, tenant, legacy, service.CycleInput{Name: "Legacy diubah", Instrument: single})
 	require.NoError(t, err)
-	_, err = svc.UpdateCycle(ctx, tenant, legacy, service.CycleInput{Name: "Legacy diubah", Instrument: legacyInstrument})
+	repeatedAgain := domain.Instrument{Name: "Instrumen", ScaleMin: 1, ScaleMax: 4, Criteria: []domain.Criterion{
+		{Key: "pk", Name: "Penguasaan kelas"},
+		{Key: "pk_2", Name: "Penguasaan kelas"},
+	}}
+	_, err = svc.UpdateCycle(ctx, tenant, legacy, service.CycleInput{Name: "Legacy diubah", Instrument: repeatedAgain})
 	require.ErrorIs(t, err, domain.ErrCriterionNameTaken)
 }
