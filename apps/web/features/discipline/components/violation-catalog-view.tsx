@@ -2,6 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Alert,
   Badge,
   Button,
   DataTable,
@@ -14,7 +15,6 @@ import {
   EmptyState,
   IconButton,
   domainIcons,
-  useToast,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -29,9 +29,16 @@ import { type ViolationType, useUpdateViolationTypeMutation, useViolationTypesQu
 
 import { ViolationTypeForm } from "./violation-type-form";
 
+/** The outcome of the last status change, shown above the table. */
+interface StatusNotice {
+  tone: "success" | "danger";
+  message: string;
+  /** Switches the type back, for the change the user just made. */
+  undo?: () => void;
+}
+
 export function ViolationCatalogView(): ReactElement {
   const t = useTranslations("app.discipline.catalog");
-  const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const [includeInactiveParam, setIncludeInactiveParam] = useUrlState<"" | "true">(
     "include_inactive",
@@ -46,10 +53,15 @@ export function ViolationCatalogView(): ReactElement {
 
   const items = data?.data ?? [];
 
+  const [notice, setNotice] = useState<StatusNotice | null>(null);
+
   // "Nonaktifkan" only switches a type off: it stays listed under
   // "Tampilkan yang nonaktif" and "Aktifkan" switches it back on. Being
   // reversible, it runs at once and offers an undo instead of a confirm
-  // dialog (docs/07-ui-ux.md section 5).
+  // dialog (docs/07-ui-ux.md section 5). The catalog opens in a modal
+  // sheet, whose focus trap keeps the keyboard out of the app's toaster and
+  // hides it from screen readers, so the outcome and its undo sit inside
+  // the sheet, above the table, in a live region.
   const setActive = useCallback(
     (item: ViolationType, isActive: boolean) => {
       const change = async (active: boolean, offerUndo: boolean): Promise<void> => {
@@ -62,28 +74,26 @@ export function ViolationCatalogView(): ReactElement {
             category: item.category,
             is_active: active,
           });
-          toast.success(
-            t(active ? "activated" : "deactivated", { name: item.name }),
-            offerUndo
-              ? {
-                  action: {
-                    label: t("undo"),
-                    onClick: () => {
-                      void change(!active, false);
-                    },
-                  },
+          setNotice({
+            tone: "success",
+            message: t(active ? "activated" : "deactivated", { name: item.name }),
+            undo: offerUndo
+              ? () => {
+                  void change(!active, false);
                 }
               : undefined,
-          );
+          });
         } catch (error) {
-          toast.error(
-            error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-          );
+          setNotice({
+            tone: "danger",
+            message:
+              error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+          });
         }
       };
       void change(isActive, true);
     },
-    [updateType, toast, t, apiErrorMessage],
+    [updateType, t, apiErrorMessage],
   );
 
   const filters: DataTableFilterDef[] = [
@@ -159,6 +169,26 @@ export function ViolationCatalogView(): ReactElement {
   // whose body scrolls, so the table takes its natural height.
   return (
     <>
+      <div aria-live="polite" className="empty:hidden">
+        {notice && (
+          <Alert
+            tone={notice.tone}
+            className="mb-3"
+            action={
+              notice.undo && (
+                <Button size="sm" variant="secondary" onClick={notice.undo}>
+                  {t("undo")}
+                </Button>
+              )
+            }
+            onDismiss={() => {
+              setNotice(null);
+            }}
+          >
+            {notice.message}
+          </Alert>
+        )}
+      </div>
       <DataTable
         toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/discipline/components/violation-catalog-view:1"
