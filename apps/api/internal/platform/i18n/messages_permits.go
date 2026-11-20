@@ -15,6 +15,7 @@ func init() {
 		"PERIOD_RANGE_INVALID":            {"Jam pelajaran akhir tidak boleh sebelum jam pelajaran awal.", "The end period must not come before the start period."},
 		"EXIT_PERMIT_NOT_AWAITING_RETURN": {"Siswa ini tidak sedang ditunggu kembali: belum keluar gerbang, tidak perlu kembali, sudah tercatat kembali, atau hari keluarnya sudah lewat.", "This student is not awaited back: they have not gone through the gate, need not come back, are already recorded back, or their exit day is over."},
 		"EXIT_PERMIT_PERIOD_PASSED":       {"Jam pelajaran yang dipilih sudah lewat. Pilih jam yang sedang berjalan atau yang akan datang.", "The chosen lesson periods are already over. Pick a period that is running now or still to come."},
+		"EXIT_PERMIT_WINDOW_CLOSED":       {"Jam pelajaran izin keluar ini sudah selesai, jadi izin ini tidak bisa dipakai lagi.", "This exit permit's lesson periods are over, so the permit can no longer be used."},
 		"WORKFLOW_STAGE_MISMATCH":         {"Tahap yang sedang ditunggu tidak bisa disetujui dengan cara ini.", "The stage this request is waiting at cannot be approved this way."},
 		"EXIT_PERMIT_NOT_ISSUED":          {"Izin keluar belum disetujui sepenuhnya.", "The exit permit has not been fully approved yet."},
 		"LEAVE_DATE_RANGE_INVALID":        {"Tanggal selesai tidak boleh sebelum tanggal mulai.", "The end date must not be before the start date."},

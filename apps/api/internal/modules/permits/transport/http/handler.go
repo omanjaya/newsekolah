@@ -49,7 +49,7 @@ func (h *PermitsHandler) IssueScanToken(ctx context.Context, request api.IssueSc
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return api.IssueScanToken201JSONResponse(toAPIToken(result, h.clock.Now())), nil
+	return api.IssueScanToken201JSONResponse(toAPIToken(result)), nil
 }
 
 func (h *PermitsHandler) ScanClassroomEntry(ctx context.Context, request api.ScanClassroomEntryRequestObject) (api.ScanClassroomEntryResponseObject, error) {
@@ -66,8 +66,7 @@ func (h *PermitsHandler) ScanClassroomEntry(ctx context.Context, request api.Sca
 	}
 	// ScannedAt is the classroom-entry business event time (analogous to a
 	// gate scan's domain event time), so it follows the simulated business
-	// clock -- unlike toAPIToken's use of h.clock.Now() below, which is
-	// display math over a token's real-time security expiry.
+	// clock, unlike a scan token's real-time anti-replay expiry.
 	return api.ScanClassroomEntry200JSONResponse{TeacherUserId: result.TeacherUserID, TeacherName: result.TeacherName, ScannedAt: clock.Now(ctx, h.clock)}, nil
 }
 
@@ -223,7 +222,7 @@ func (h *PermitsHandler) IssueExitPermitGateToken(ctx context.Context, request a
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return api.IssueExitPermitGateToken201JSONResponse(toAPIToken(result, h.clock.Now())), nil
+	return api.IssueExitPermitGateToken201JSONResponse(toAPIToken(result)), nil
 }
 
 func (h *PermitsHandler) ScanExitPermitGate(ctx context.Context, request api.ScanExitPermitGateRequestObject) (api.ScanExitPermitGateResponseObject, error) {

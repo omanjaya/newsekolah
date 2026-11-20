@@ -55,6 +55,7 @@ func TestGateScanRefusesAPassShownBeforeTheLessonsEnded(t *testing.T) {
 	gate, err := svc.IssueGateToken(clock.WithTime(ctx, at(7, 30)), w.tenantID, inst.ID, w.studentID)
 	require.NoError(t, err)
 	require.True(t, gate.ExpiresAt.Equal(at(9, 0)), "the pass reads as valid until the last period ends, on the school's clock")
+	require.Equal(t, 90*time.Minute, gate.ValidFor, "the countdown is the 90 simulated minutes left, not the simulated period end minus the real now")
 
 	var stored time.Time
 	require.NoError(t, pg.AdminPool.QueryRow(ctx, `select expires_at from scan_tokens where id = $1`, gate.Token.ID).Scan(&stored))
@@ -62,7 +63,7 @@ func TestGateScanRefusesAPassShownBeforeTheLessonsEnded(t *testing.T) {
 		"the stored, real-clock expiry is the 90 simulated minutes left, not the real date of the simulated day")
 
 	_, err = svc.GateScan(clock.WithTime(ctx, at(9, 41)), w.tenantID, inst.ID, w.dutyTeacherID, gate.RawValue)
-	require.ErrorIs(t, err, domain.ErrExitPermitPeriodPassed)
+	require.ErrorIs(t, err, domain.ErrExitPermitWindowClosed)
 
 	out, err := svc.GetExitPermit(ctx, w.tenantID, inst.ID)
 	require.NoError(t, err)
@@ -113,7 +114,7 @@ func TestExitPermitLeftOpenOnAnEarlierDayDoesNotBlockToday(t *testing.T) {
 	require.NoError(t, err)
 	_, err = request(at(0, 7, 20))
 	require.ErrorIs(t, err, domain.ErrExitPermitAlreadyToday, "one exit permit a day still holds")
-	require.ErrorIs(t, approve(at(0, 9, 30), pending.ID, w.dutyTeacherID), domain.ErrExitPermitPeriodPassed,
+	require.ErrorIs(t, approve(at(0, 9, 30), pending.ID, w.dutyTeacherID), domain.ErrExitPermitWindowClosed,
 		"a stage of a permit whose lessons are over is not approved")
 
 	// Day 1: the stale request no longer blocks, and this one is approved
@@ -126,7 +127,7 @@ func TestExitPermitLeftOpenOnAnEarlierDayDoesNotBlockToday(t *testing.T) {
 	// Day 2: neither earlier permit blocks the desk record, and the
 	// approved one has no gate pass left to show.
 	_, err = svc.IssueGateToken(at(2, 7, 10), w.tenantID, approved.ID, w.studentID)
-	require.ErrorIs(t, err, domain.ErrExitPermitPeriodPassed, "yesterday's lessons are over, whatever today's clock says")
+	require.ErrorIs(t, err, domain.ErrExitPermitWindowClosed, "yesterday's lessons are over, whatever today's clock says")
 	_, err = svc.RecordExitPermitByStaff(at(2, 7, 30), service.RecordExitPermitByStaffInput{
 		TenantID: w.tenantID, StudentUserID: w.studentID, Destination: "Pulang",
 		StartPeriodID: w.startPeriodID, EndPeriodID: w.endPeriodID, RecordedBy: w.dutyTeacherID,

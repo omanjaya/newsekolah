@@ -13,6 +13,17 @@ describe("apiErrorMessageKey", () => {
     );
   });
 
+  it("tells a closed exit-permit window apart from a past period on the request form", () => {
+    // The guard at the gate and a student scanning a stage QR picked no
+    // periods, so they must not be told to pick another one.
+    const closed = new ApiError({ status: 422, code: "EXIT_PERMIT_WINDOW_CLOSED", message: "x" });
+    expect(apiErrorMessageKey(closed)).toBe("errors.EXIT_PERMIT_WINDOW_CLOSED");
+    expect(translate("id", apiErrorMessageKey(closed))).toBe(
+      "Jam pelajaran izin keluar ini sudah selesai, jadi izin ini tidak bisa dipakai lagi.",
+    );
+    expect(translate("en", apiErrorMessageKey(closed))).not.toMatch(/pick/i);
+  });
+
   it("falls back to errors.UNKNOWN for a code the catalog does not document", () => {
     const error = new ApiError({ status: 500, code: "SOMETHING_NEW", message: "x" });
     expect(apiErrorMessageKey(error)).toBe("errors.UNKNOWN");

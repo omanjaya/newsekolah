@@ -230,7 +230,7 @@ describe("ActiveExitPermitCard once the permit's lessons are over", () => {
   });
 
   // The regression: the button stayed, and the API could only answer
-  // EXIT_PERMIT_PERIOD_PASSED.
+  // EXIT_PERMIT_WINDOW_CLOSED.
   it("says the lessons are over instead of offering a gate QR the API refuses", () => {
     mocks.periods = PERMIT_PERIODS;
     mocks.now = new Date("2026-09-29T03:00:00Z");

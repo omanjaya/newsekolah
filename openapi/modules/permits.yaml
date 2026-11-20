@@ -289,7 +289,9 @@ paths:
       description: >-
         Accepts a token bound to this permit, or the picket desk's unbound token while
         the permit waits at its any_teacher qr_scan stage. A stage the token cannot
-        satisfy answers 409 WORKFLOW_STAGE_MISMATCH.
+        satisfy answers 409 WORKFLOW_STAGE_MISMATCH. Once the permit's last period is
+        over on the school's clock, no further stage is approved: 422
+        EXIT_PERMIT_WINDOW_CLOSED.
       parameters:
         - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -308,6 +310,8 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "410": { $ref: "#/components/responses/TokenGone" }
+        # EXIT_PERMIT_WINDOW_CLOSED: the permit's last period is over.
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
 
   /v1/exit-permits/{instanceId}/cancel:
     post:
@@ -334,6 +338,10 @@ paths:
       operationId: issueExitPermitGateToken
       x-permission: authenticated
       summary: Student generates the gate QR after the permit is approved
+      description: >-
+        The pass stays valid until the permit's last period ends on the school's clock:
+        expires_at is that time and expires_in_seconds the time left until it. Once
+        that period is over the pass is refused: 422 EXIT_PERMIT_WINDOW_CLOSED.
       parameters:
         - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
@@ -346,7 +354,7 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
-        # EXIT_PERMIT_PERIOD_PASSED: the permit's last period is over.
+        # EXIT_PERMIT_WINDOW_CLOSED: the permit's last period is over.
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
 
   /v1/exit-permits/{instanceId}/gate-scan:
@@ -355,6 +363,9 @@ paths:
       operationId: scanExitPermitGate
       x-permission: scan_exit_permits
       summary: Security scans the gate QR; the permit is completed
+      description: >-
+        A pass shown once the permit's last period is over on the school's clock is
+        refused, whatever its own expiry: 422 EXIT_PERMIT_WINDOW_CLOSED.
       parameters:
         - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -373,6 +384,8 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "410": { $ref: "#/components/responses/TokenGone" }
+        # EXIT_PERMIT_WINDOW_CLOSED: the permit's last period is over.
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
 
   /v1/exit-permits/{instanceId}/return:
     post:

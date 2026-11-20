@@ -13,7 +13,7 @@ export function useSchoolTime(): string {
 
 /**
  * Whether an exit permit's last lesson has ended on the school's clock: its
- * stages and gate QR are then refused (EXIT_PERMIT_PERIOD_PASSED), and the
+ * stages and gate QR are then refused (EXIT_PERMIT_WINDOW_CLOSED), and the
  * permit waits for the expiry job. A permit opened on an earlier school day
  * is over whatever the time now, as the API reads it (the permit's own
  * local day). False while the periods are unknown.

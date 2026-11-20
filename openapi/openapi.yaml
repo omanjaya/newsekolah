@@ -14672,8 +14672,10 @@ paths:
       operationId: scanExitPermitStage
       x-permission: authenticated
       summary: Student scans the current approver's token to advance a stage
-      description: Accepts a token bound to this permit, or the picket desk's unbound token while the permit waits at its
-        any_teacher qr_scan stage. A stage the token cannot satisfy answers 409 WORKFLOW_STAGE_MISMATCH.
+      description: "Accepts a token bound to this permit, or the picket desk's unbound token while the permit waits at its
+        any_teacher qr_scan stage. A stage the token cannot satisfy answers 409 WORKFLOW_STAGE_MISMATCH. Once the
+        permit's last period is over on the school's clock, no further stage is approved: 422
+        EXIT_PERMIT_WINDOW_CLOSED."
       parameters:
         - name: instanceId
           in: path
@@ -14704,6 +14706,8 @@ paths:
           $ref: "#/components/responses/Conflict"
         "410":
           $ref: "#/components/responses/TokenGone"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
   /v1/exit-permits/{instanceId}/cancel:
     post:
       tags:
@@ -14740,6 +14744,9 @@ paths:
       operationId: issueExitPermitGateToken
       x-permission: authenticated
       summary: Student generates the gate QR after the permit is approved
+      description: "The pass stays valid until the permit's last period ends on the school's clock: expires_at is that time
+        and expires_in_seconds the time left until it. Once that period is over the pass is refused: 422
+        EXIT_PERMIT_WINDOW_CLOSED."
       parameters:
         - name: instanceId
           in: path
@@ -14771,6 +14778,8 @@ paths:
       operationId: scanExitPermitGate
       x-permission: scan_exit_permits
       summary: Security scans the gate QR; the permit is completed
+      description: "A pass shown once the permit's last period is over on the school's clock is refused, whatever its own
+        expiry: 422 EXIT_PERMIT_WINDOW_CLOSED."
       parameters:
         - name: instanceId
           in: path
@@ -14801,6 +14810,8 @@ paths:
           $ref: "#/components/responses/Conflict"
         "410":
           $ref: "#/components/responses/TokenGone"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
   /v1/exit-permits/{instanceId}/return:
     post:
       tags:

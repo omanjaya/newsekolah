@@ -536,6 +536,7 @@
     "EXIT_PERMIT_ALREADY_TODAY": "This student already has an exit permit today.",
     "EXIT_PERMIT_NOT_AWAITING_RETURN": "This student is not awaited back: they have not gone through the gate, need not come back, are already recorded back, or their exit day is over.",
     "EXIT_PERMIT_PERIOD_PASSED": "The chosen lesson periods are already over. Pick a period that is running now or still to come.",
+    "EXIT_PERMIT_WINDOW_CLOSED": "This exit permit's lesson periods are over, so the permit can no longer be used.",
     "LEAVE_REQUEST_NOT_REVIEWABLE": "This leave request is no longer awaiting homeroom review. Reload to see its status.",
     "LEAVE_REQUEST_NOT_ISSUABLE": "This leave request is not ready to be issued. Reload to see its status.",
     "LEAVE_REJECTION_REASON_REQUIRED": "Enter a reason before rejecting the leave request.",

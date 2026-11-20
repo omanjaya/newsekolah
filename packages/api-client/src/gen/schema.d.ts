@@ -6370,7 +6370,7 @@ export interface paths {
         put?: never;
         /**
          * Student scans the current approver's token to advance a stage
-         * @description Accepts a token bound to this permit, or the picket desk's unbound token while the permit waits at its any_teacher qr_scan stage. A stage the token cannot satisfy answers 409 WORKFLOW_STAGE_MISMATCH.
+         * @description Accepts a token bound to this permit, or the picket desk's unbound token while the permit waits at its any_teacher qr_scan stage. A stage the token cannot satisfy answers 409 WORKFLOW_STAGE_MISMATCH. Once the permit's last period is over on the school's clock, no further stage is approved: 422 EXIT_PERMIT_WINDOW_CLOSED.
          */
         post: operations["scanExitPermitStage"];
         delete?: never;
@@ -6405,7 +6405,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Student generates the gate QR after the permit is approved */
+        /**
+         * Student generates the gate QR after the permit is approved
+         * @description The pass stays valid until the permit's last period ends on the school's clock: expires_at is that time and expires_in_seconds the time left until it. Once that period is over the pass is refused: 422 EXIT_PERMIT_WINDOW_CLOSED.
+         */
         post: operations["issueExitPermitGateToken"];
         delete?: never;
         options?: never;
@@ -6422,7 +6425,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Security scans the gate QR; the permit is completed */
+        /**
+         * Security scans the gate QR; the permit is completed
+         * @description A pass shown once the permit's last period is over on the school's clock is refused, whatever its own expiry: 422 EXIT_PERMIT_WINDOW_CLOSED.
+         */
         post: operations["scanExitPermitGate"];
         delete?: never;
         options?: never;
@@ -25819,6 +25825,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             410: components["responses"]["TokenGone"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     cancelExitPermit: {
@@ -25903,6 +25910,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             410: components["responses"]["TokenGone"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     recordExitPermitReturn: {

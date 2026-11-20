@@ -83,10 +83,19 @@ func (t ScanToken) IsExpired(now time.Time) bool { return now.After(t.ExpiresAt)
 // IssueResult is returned once, at mint time, carrying the only copy of
 // the raw token value the caller (a teacher's device showing a QR code)
 // will ever see.
+//
+// ExpiresAt and ValidFor describe the token to its holder. ValidFor is
+// how long it stays usable, measured on the clock that set its length:
+// the business clock for a gate pass (TokenTTL), the real clock for the
+// rest. ExpiresAt is when that time runs out on the same clock, so under
+// the time simulation a gate pass reads as valid until the simulated
+// period end while the stored, real-clock expiry (Token.ExpiresAt) stays
+// the same length away from the real now.
 type IssueResult struct {
 	Token     ScanToken
 	RawValue  string
 	ExpiresAt time.Time
+	ValidFor  time.Duration
 }
 
 // AcceptsUnboundApproval reports whether a stage may be satisfied by an

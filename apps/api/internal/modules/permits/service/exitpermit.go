@@ -188,7 +188,7 @@ func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scan
 			return err
 		}
 		if !periodEndsAt.After(clock.Now(ctx, s.clock)) {
-			return domain.ErrExitPermitPeriodPassed
+			return domain.ErrExitPermitWindowClosed
 		}
 
 		token, err := s.ConsumeScanToken(ctx, ConsumeScanTokenInput{
@@ -296,7 +296,7 @@ func (s *Service) IssueGateToken(ctx context.Context, tenantID, instanceID, issu
 			return err
 		}
 		if !periodEndsAt.After(now) {
-			return domain.ErrExitPermitPeriodPassed
+			return domain.ErrExitPermitWindowClosed
 		}
 
 		result, err = s.IssueScanToken(ctx, IssueScanTokenInput{
@@ -311,10 +311,11 @@ func (s *Service) IssueGateToken(ctx context.Context, tenantID, instanceID, issu
 			return err
 		}
 		// The pass reads as valid until the end of the permit's last
-		// period on the school's clock. Without a simulation that is the
-		// stored expiry itself; under one the stored expiry stays on the
-		// real clock (an anti-replay control), the same length away.
-		result.ExpiresAt = periodEndsAt
+		// period on the school's clock, ValidFor (the business-clock time
+		// left) away from the school's now. Without a simulation that is
+		// the stored expiry itself; under one the stored expiry stays on
+		// the real clock (an anti-replay control), the same length away.
+		result.ExpiresAt = now.Add(result.ValidFor)
 		_, err = s.repo.SetExitPermitGateToken(ctx, tenantID, instanceID, result.Token.ID)
 		return err
 	})
@@ -369,7 +370,7 @@ func (s *Service) GateScan(ctx context.Context, tenantID, instanceID, securityUs
 			return err
 		}
 		if !periodEndsAt.After(now) {
-			return domain.ErrExitPermitPeriodPassed
+			return domain.ErrExitPermitWindowClosed
 		}
 
 		token, err := s.ConsumeScanToken(ctx, ConsumeScanTokenInput{

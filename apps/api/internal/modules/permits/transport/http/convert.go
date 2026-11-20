@@ -50,6 +50,7 @@ var (
 	errLeaveReason         = httpx.NewError(http.StatusBadRequest, "LEAVE_REASON_REQUIRED")
 	errStudentOnLeave      = httpx.NewError(http.StatusConflict, "STUDENT_ON_LEAVE_TODAY")
 	errExitPeriodPassed    = httpx.NewError(http.StatusUnprocessableEntity, "EXIT_PERMIT_PERIOD_PASSED")
+	errExitWindowClosed    = httpx.NewError(http.StatusUnprocessableEntity, "EXIT_PERMIT_WINDOW_CLOSED")
 	errExitNotAwaitReturn  = httpx.NewError(http.StatusConflict, "EXIT_PERMIT_NOT_AWAITING_RETURN")
 )
 
@@ -94,6 +95,7 @@ var permitErrorMap = map[error]error{
 	domain.ErrLeaveReasonRequired:          errLeaveReason,
 	domain.ErrStudentOnLeaveToday:          errStudentOnLeave,
 	domain.ErrExitPermitPeriodPassed:       errExitPeriodPassed,
+	domain.ErrExitPermitWindowClosed:       errExitWindowClosed,
 	domain.ErrExitPermitNotAwaitingReturn:  errExitNotAwaitReturn,
 }
 
@@ -218,15 +220,15 @@ func toAPIInstance(inst domain.Instance, def domain.Definition, events []domain.
 	return out
 }
 
-// toAPIToken's now is deliberately the caller's h.clock.Now() (real time),
-// never the simulated business clock: ExpiresInSeconds is display math over
-// a scan token's real-time, security anti-replay expiry (see
-// docs/testing-time-simulation.md and service/scantoken.go), which the
-// simulated clock never overrides.
-func toAPIToken(r domain.IssueResult, now time.Time) api.IssuedScanToken {
+// toAPIToken reports how long the token stays usable from the service's
+// own ValidFor, not ExpiresAt minus a clock read here: a gate pass's
+// ExpiresAt is on the school's (possibly simulated) clock while its stored
+// anti-replay expiry is on the real one (domain.IssueResult), so no single
+// "now" here would give the right countdown for both.
+func toAPIToken(r domain.IssueResult) api.IssuedScanToken {
 	return api.IssuedScanToken{
 		Token: r.RawValue, Purpose: api.ScanPurpose(r.Token.Purpose), ContextId: uuidPtr(r.Token.ContextID),
-		ExpiresAt: r.ExpiresAt, ExpiresInSeconds: int(r.ExpiresAt.Sub(now).Seconds()),
+		ExpiresAt: r.ExpiresAt, ExpiresInSeconds: int(r.ValidFor.Seconds()),
 	}
 }
 

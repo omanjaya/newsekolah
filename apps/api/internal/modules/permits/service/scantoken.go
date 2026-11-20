@@ -53,7 +53,8 @@ func (s *Service) IssueScanToken(ctx context.Context, in IssueScanTokenInput) (d
 	// pass's length comes from the business clock (UntilPeriodEnd), so it
 	// is never measured against the other clock's date.
 	now := s.clock.Now()
-	expiresAt := now.Add(domain.TokenTTL(in.Purpose, in.UntilPeriodEnd))
+	ttl := domain.TokenTTL(in.Purpose, in.UntilPeriodEnd)
+	expiresAt := now.Add(ttl)
 
 	var token domain.ScanToken
 	err := s.withTx(ctx, in.TenantID, func(ctx context.Context) error {
@@ -81,7 +82,7 @@ func (s *Service) IssueScanToken(ctx context.Context, in IssueScanTokenInput) (d
 		return domain.IssueResult{}, err
 	}
 
-	return domain.IssueResult{Token: token, RawValue: rawValue, ExpiresAt: expiresAt}, nil
+	return domain.IssueResult{Token: token, RawValue: rawValue, ExpiresAt: expiresAt, ValidFor: ttl}, nil
 }
 
 // ConsumeScanTokenInput is what a scanner (a student's device, security's
