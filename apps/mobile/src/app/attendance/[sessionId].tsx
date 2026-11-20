@@ -145,7 +145,7 @@ function Editor({ session }: { session: SessionDetail }): React.JSX.Element {
               </View>
               {item.blocked ? (
                 <Text className="pl-8 text-xs text-ink/60 dark:text-ink-dark/60">
-                  {item.blocked_reason ?? t("attendance.locked")}
+                  {blockedLabel(item.blocked_reason)}
                 </Text>
               ) : (
                 <View className="flex-row pl-8" accessibilityRole="radiogroup">
@@ -225,4 +225,13 @@ function Editor({ session }: { session: SessionDetail }): React.JSX.Element {
       </View>
     </View>
   );
+}
+
+/** The lock explanation for a roster row. The API sends the reason as a
+ * code; a known code gets its own sentence and anything else the generic
+ * "Locked", so a raw code never reaches the teacher. */
+function blockedLabel(code: string | undefined): string {
+  return code === "late_arrival_in_progress"
+    ? t("attendance.locked.late_arrival_in_progress")
+    : t("attendance.locked");
 }

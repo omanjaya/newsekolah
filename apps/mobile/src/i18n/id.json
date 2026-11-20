@@ -70,6 +70,7 @@
   "attendance.reason_required": "Isi alasan koreksi",
   "attendance.saved": "Presensi tersimpan",
   "attendance.locked": "Terkunci",
+  "attendance.locked.late_arrival_in_progress": "Terkunci: keterlambatan belum selesai diproses",
   "attendance.calendar": "Kalender presensi",
   "attendance.prev_month": "Sebelumnya",
   "attendance.next_month": "Berikutnya",

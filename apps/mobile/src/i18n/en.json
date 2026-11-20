@@ -70,6 +70,7 @@
   "attendance.reason_required": "Enter the correction reason",
   "attendance.saved": "Attendance saved",
   "attendance.locked": "Locked",
+  "attendance.locked.late_arrival_in_progress": "Locked: late arrival still being processed",
   "attendance.calendar": "Attendance calendar",
   "attendance.prev_month": "Previous",
   "attendance.next_month": "Next",

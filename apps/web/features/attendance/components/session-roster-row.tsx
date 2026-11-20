@@ -125,7 +125,7 @@ export const SessionRosterRow = memo(function SessionRosterRow({
             {item.blocked && (
               <span className="flex items-center gap-1 text-caption font-normal text-fg-muted">
                 <Lock className="size-3" aria-hidden="true" />
-                {item.blocked_reason ?? t("blocked")}
+                {blockedLabel(item.blocked_reason, t)}
               </span>
             )}
             {!item.blocked && item.source && item.source !== "teacher" && (
@@ -182,3 +182,23 @@ export const SessionRosterRow = memo(function SessionRosterRow({
     </li>
   );
 });
+
+/** Lock reasons the API sends as codes (PermitsBlocker in the API wiring). */
+const BLOCKED_REASONS = ["late_arrival_in_progress"] as const;
+type BlockedReason = (typeof BLOCKED_REASONS)[number];
+
+function isBlockedReason(code: string | undefined): code is BlockedReason {
+  return BLOCKED_REASONS.includes(code as BlockedReason);
+}
+
+/**
+ * The row's lock explanation. The API sends a machine code; a known code
+ * gets its own sentence, anything else the generic "Locked", so a raw code
+ * never reaches the teacher.
+ */
+function blockedLabel(
+  code: string | undefined,
+  t: (key: "blocked" | `blockedReason.${BlockedReason}`) => string,
+): string {
+  return isBlockedReason(code) ? t(`blockedReason.${code}`) : t("blocked");
+}

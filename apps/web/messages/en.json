@@ -1218,6 +1218,9 @@
         "searchPlaceholder": "Search students",
         "filterByStatus": "Filter by status",
         "blocked": "Locked",
+        "blockedReason": {
+          "late_arrival_in_progress": "Locked: late arrival still being processed"
+        },
         "noMatch": "No matching students.",
         "notePlaceholder": "Note",
         "noteFor": "Note for {name}",

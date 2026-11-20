@@ -1218,6 +1218,9 @@
         "searchPlaceholder": "Cari siswa",
         "filterByStatus": "Filter berdasarkan status",
         "blocked": "Terkunci",
+        "blockedReason": {
+          "late_arrival_in_progress": "Terkunci: keterlambatan belum selesai diproses"
+        },
         "noMatch": "Tidak ada siswa yang cocok.",
         "notePlaceholder": "Catatan",
         "noteFor": "Catatan untuk {name}",
