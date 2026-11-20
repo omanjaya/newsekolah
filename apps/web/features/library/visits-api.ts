@@ -40,14 +40,34 @@ export function useLibraryVisitSummaryQuery() {
   });
 }
 
+/**
+ * Every cached figure a new visit changes: the guest book itself, the
+ * reports that count visits (the visits report and the accreditation
+ * summary, both under ["library", "reports"]) and the dashboard's visits
+ * tile. Without the last two a report opened again within the cache's
+ * stale time kept showing the count from before the visit.
+ */
+const VISIT_COUNT_QUERY_KEYS = [
+  ["library", "visits"],
+  ["library", "reports"],
+  ["library", "dashboard"],
+] as const;
+
+function useInvalidateVisitCounts() {
+  const queryClient = useQueryClient();
+  return () => {
+    for (const queryKey of VISIT_COUNT_QUERY_KEYS) {
+      void queryClient.invalidateQueries({ queryKey });
+    }
+  };
+}
+
 export function useRecordLibraryVisitMutation() {
   const client = useApiClient();
-  const queryClient = useQueryClient();
+  const invalidateVisitCounts = useInvalidateVisitCounts();
   return useMutation({
     mutationFn: (body: LibraryVisitWrite) => client.POST("/v1/library/visits", { body }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["library", "visits"] });
-    },
+    onSuccess: invalidateVisitCounts,
   });
 }
 
@@ -62,12 +82,10 @@ export function useIssueLibraryKioskTokenMutation() {
 /** The visitor's own device submits the kiosk token it just scanned; logs a visit for the signed-in user. */
 export function useScanLibraryKioskVisitMutation() {
   const client = useApiClient();
-  const queryClient = useQueryClient();
+  const invalidateVisitCounts = useInvalidateVisitCounts();
   return useMutation({
     mutationFn: (body: { token: string }) => client.POST("/v1/library/visits/kiosk-scan", { body }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["library", "visits"] });
-    },
+    onSuccess: invalidateVisitCounts,
 
     meta: { errorToast: false },
   });
