@@ -11,6 +11,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -280,8 +281,11 @@ func (s *Service) loadPolicy(ctx context.Context, tenantID uuid.UUID) (domain.Po
 	return policy, nil
 }
 
-// UpdatePolicy appends a new version of the tenant's scoring policy; the
-// next recompute run picks it up.
+// UpdatePolicy appends a new version of the tenant's scoring policy and
+// rescores the school under it right away, so the early-warning screens
+// never show levels from a policy the school has just replaced. The
+// policy is saved even when that rescoring fails; the nightly run then
+// catches up.
 func (s *Service) UpdatePolicy(ctx context.Context, tenantID, actorUserID uuid.UUID, next domain.Policy) (domain.Policy, error) {
 	if err := next.Validate(); err != nil {
 		return domain.Policy{}, err
@@ -298,5 +302,11 @@ func (s *Service) UpdatePolicy(ctx context.Context, tenantID, actorUserID uuid.U
 		}
 		return s.repo.CreatePolicy(ctx, tenantID, next.Version, encoded, s.clock.Now(), uuid.NullUUID{UUID: actorUserID, Valid: true})
 	})
-	return next, err
+	if err != nil {
+		return domain.Policy{}, err
+	}
+	if _, err := s.Recompute(ctx, tenantID); err != nil && !errors.Is(err, ErrNoActiveAcademicYear) {
+		slog.WarnContext(ctx, "analytics: rescore after policy update failed", "tenant_id", tenantID, "error", err)
+	}
+	return next, nil
 }

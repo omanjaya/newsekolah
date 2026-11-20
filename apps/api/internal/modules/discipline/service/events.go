@@ -28,6 +28,24 @@ type ThresholdReached struct {
 // subscriber (see scheduling's SubstitutionRequested.EventName).
 func (ThresholdReached) EventName() string { return "discipline.student_threshold_reached" }
 
+// ViolationRecorded is published for every RecordViolation call that
+// wrote at least one record, inside its transaction, so a reader of the
+// student's standing (early warning) can refresh it with the record.
+type ViolationRecorded struct {
+	TenantID      uuid.UUID
+	StudentUserID uuid.UUID
+}
+
+func (ViolationRecorded) EventName() string { return "discipline.violation.recorded" }
+
+// ViolationVoided is ViolationRecorded's counterpart for a voided record.
+type ViolationVoided struct {
+	TenantID      uuid.UUID
+	StudentUserID uuid.UUID
+}
+
+func (ViolationVoided) EventName() string { return "discipline.violation.voided" }
+
 // publishInTx publishes evt from inside the caller's transaction, wrapped
 // in a savepoint. Subscribers (the notification bridge writing a
 // counselor's inbox row) then commit together with the write that caused

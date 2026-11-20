@@ -62,24 +62,9 @@ func (s *Service) Recompute(ctx context.Context, tenantID uuid.UUID) (int, error
 
 	var scope recomputeScope
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		yearID, err := s.activeYear(ctx, tenantID)
-		if err != nil {
-			return err
-		}
-		policy, err := s.loadPolicy(ctx, tenantID)
-		if err != nil {
-			return fmt.Errorf("load policy: %w", err)
-		}
-		students, err := s.repo.ListActiveStudents(ctx, tenantID, yearID)
-		if err != nil {
-			return fmt.Errorf("list active students: %w", err)
-		}
-		today, err := s.tenantToday(ctx, tenantID, now)
-		if err != nil {
-			return err
-		}
-		scope = recomputeScope{yearID: yearID, policy: policy, students: students, today: today}
-		return nil
+		var err error
+		scope, err = s.loadScope(ctx, tenantID, now)
+		return err
 	})
 	if err != nil {
 		return 0, err
@@ -97,6 +82,61 @@ func (s *Service) Recompute(ctx context.Context, tenantID uuid.UUID) (int, error
 		scored += len(batch)
 	}
 	return scored, nil
+}
+
+// RecomputeStudents scores just these students now and stores the result,
+// so a change to one student's record (a violation recorded or voided, a
+// warning letter issued) shows on the early-warning screens at once rather
+// than after the nightly run. A student without an active enrollment is
+// skipped. It runs in the caller's transaction when there is one, so the
+// stored score commits together with the change that caused it.
+func (s *Service) RecomputeStudents(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID) error {
+	if len(studentIDs) == 0 {
+		return nil
+	}
+	now := s.clock.Now()
+	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		scope, err := s.loadScope(ctx, tenantID, now)
+		if err != nil {
+			return err
+		}
+		wanted := make(map[uuid.UUID]bool, len(studentIDs))
+		for _, id := range studentIDs {
+			wanted[id] = true
+		}
+		var batch []StudentRef
+		for _, student := range scope.students {
+			if wanted[student.StudentUserID] {
+				batch = append(batch, student)
+			}
+		}
+		if len(batch) == 0 {
+			return nil
+		}
+		return s.scoreBatch(ctx, tenantID, scope, batch, now)
+	})
+}
+
+// loadScope reads what a recompute run shares across its batches: the
+// active year, the scoring policy, the enrolled roster and today's date.
+func (s *Service) loadScope(ctx context.Context, tenantID uuid.UUID, now time.Time) (recomputeScope, error) {
+	yearID, err := s.activeYear(ctx, tenantID)
+	if err != nil {
+		return recomputeScope{}, err
+	}
+	policy, err := s.loadPolicy(ctx, tenantID)
+	if err != nil {
+		return recomputeScope{}, fmt.Errorf("load policy: %w", err)
+	}
+	students, err := s.repo.ListActiveStudents(ctx, tenantID, yearID)
+	if err != nil {
+		return recomputeScope{}, fmt.Errorf("list active students: %w", err)
+	}
+	today, err := s.tenantToday(ctx, tenantID, now)
+	if err != nil {
+		return recomputeScope{}, err
+	}
+	return recomputeScope{yearID: yearID, policy: policy, students: students, today: today}, nil
 }
 
 // scoreBatch reads the signals of every student in batch at once, scores

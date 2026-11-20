@@ -105,7 +105,12 @@ function RiskStats({ studentId }: { studentId: string }): ReactElement {
   const disciplineOn = useModuleEnabled("discipline");
   const gradingOn = useModuleEnabled("grading");
   const risk = useStudentRiskQuery(studentId);
-  const loading = risk.isLoading;
+  // Points and letters come from discipline itself, the same source as the
+  // timeline under them, so the two can never disagree; the risk result
+  // (a stored score) only supplies them for a reader without discipline.
+  const canDiscipline = useCan("view_discipline") && disciplineOn;
+  const live = useStudentDisciplineQuery(studentId, canDiscipline);
+  const loading = risk.isLoading || (canDiscipline && live.isLoading);
   // No stored result for this student this year (not computed yet, or
   // outside the reader's class): an answer, not a failure to retry.
   if (!risk.data && isNotFoundError(risk.error)) {
@@ -121,6 +126,17 @@ function RiskStats({ studentId }: { studentId: string }): ReactElement {
     return <QueryError retry={() => void risk.refetch()} error={risk.error} />;
   }
   const signals = risk.data?.signals;
+  const discipline = live.data
+    ? {
+        points: live.data.total_points,
+        active: live.data.records.filter((record) => !record.is_voided).length,
+        letters: live.data.letters.length,
+      }
+    : {
+        points: signals?.discipline_points ?? 0,
+        active: signals?.active_violation_count ?? 0,
+        letters: signals?.warning_letter_count ?? 0,
+      };
   const attendance =
     signals?.has_attendance && signals.considered_days > 0
       ? Math.round(
@@ -156,8 +172,8 @@ function RiskStats({ studentId }: { studentId: string }): ReactElement {
             icon={<ShieldAlert />}
             tone="red"
             label={t("disciplinePoints")}
-            value={signals?.discipline_points ?? 0}
-            hint={t("activeViolations", { n: signals?.active_violation_count ?? 0 })}
+            value={discipline.points}
+            hint={t("activeViolations", { n: discipline.active })}
             loading={loading}
           />
         )}
@@ -168,7 +184,7 @@ function RiskStats({ studentId }: { studentId: string }): ReactElement {
             icon={<FileWarning />}
             tone="amber"
             label={t("warningLetters")}
-            value={signals?.warning_letter_count ?? 0}
+            value={discipline.letters}
             loading={loading}
           />
         )}

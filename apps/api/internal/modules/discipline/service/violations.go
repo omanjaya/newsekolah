@@ -161,6 +161,7 @@ func (s *Service) RecordViolation(ctx context.Context, tenantID uuid.UUID, in Re
 		if err != nil {
 			return err
 		}
+		s.publishInTx(ctx, ViolationRecorded{TenantID: tenantID, StudentUserID: in.StudentUserID})
 		if len(crossed) == 0 {
 			return nil
 		}
@@ -539,7 +540,11 @@ func (s *Service) VoidViolation(ctx context.Context, tenantID, recordID, actorUs
 		if err != nil {
 			return err
 		}
-		return audit.Record(ctx, tenantID, "violation.void", "violation_record", recordID, current, out)
+		if err := audit.Record(ctx, tenantID, "violation.void", "violation_record", recordID, current, out); err != nil {
+			return err
+		}
+		s.publishInTx(ctx, ViolationVoided{TenantID: tenantID, StudentUserID: out.StudentUserID})
+		return nil
 	})
 	return out, err
 }
