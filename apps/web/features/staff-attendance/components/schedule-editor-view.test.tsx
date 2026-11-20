@@ -1,5 +1,5 @@
 import type * as UiModule from "@newsekolah/ui";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeAll, beforeEach, expect, it, vi } from "vitest";
 
@@ -60,7 +60,18 @@ beforeAll(() => {
   );
 });
 
+// Whether the viewport is `sm` or wider; the editor lays the week out as a
+// table there and as day cards on a phone.
+let wideViewport = true;
+
 beforeEach(() => {
+  wideViewport = true;
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: query === "(min-width: 640px)" ? wideViewport : false,
+    media: query,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  }));
   scheduleState.days = [];
   scheduleState.mutate = (_days, options) => {
     options.onSuccess();
@@ -142,4 +153,34 @@ it("offers staff who have no work schedule yet, so a fresh school can give the f
   await userEvent.click(guru);
   // The weekly form opens for the chosen person.
   expect(screen.getByText("schedule.weekdays.1")).toBeInTheDocument();
+});
+
+it("lays the week out as day cards on a phone, with every field of a working day on screen", async () => {
+  wideViewport = false;
+  scheduleState.days = [
+    { weekday: 1, is_working_day: true, start_minute: 480, end_minute: 960, grace_minutes: 10 },
+  ];
+  await openFormFor("Satpam Contoh");
+
+  // No five-column table to scroll sideways: each day is its own card.
+  expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  const cards = screen.getByTestId("schedule-day-cards");
+  expect(within(cards).getAllByRole("switch", { name: "schedule.workingDayFor" })).toHaveLength(7);
+  // Monday works, so its start, end and grace minutes are all there, labelled.
+  expect(within(cards).getByRole("combobox", { name: "schedule.startFor" })).toBeInTheDocument();
+  expect(within(cards).getByRole("combobox", { name: "schedule.endFor" })).toBeInTheDocument();
+  expect(within(cards).getByRole("spinbutton", { name: "schedule.graceFor" })).toBeInTheDocument();
+  expect(within(cards).getByText("schedule.grace")).toBeInTheDocument();
+
+  // Turning a day on shows its fields.
+  const [, tuesday] = within(cards).getAllByRole("switch", { name: "schedule.workingDayFor" });
+  if (!tuesday) throw new Error("no Tuesday switch");
+  await userEvent.click(tuesday);
+  expect(within(cards).getAllByRole("combobox", { name: "schedule.startFor" })).toHaveLength(2);
+});
+
+it("keeps the five-column table from sm up", async () => {
+  await openFormFor("Satpam Contoh");
+  expect(screen.getByRole("table")).toBeInTheDocument();
+  expect(screen.queryByTestId("schedule-day-cards")).not.toBeInTheDocument();
 });

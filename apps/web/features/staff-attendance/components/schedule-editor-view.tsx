@@ -3,6 +3,7 @@
 import { ApiError } from "@newsekolah/api-client";
 import {
   Button,
+  Card,
   EmptyState,
   Field,
   FormActions,
@@ -17,6 +18,7 @@ import {
   TableHeader,
   TableRow,
   TimePicker,
+  useMediaQuery,
   useToast,
 } from "@newsekolah/ui";
 import { CalendarClock } from "lucide-react";
@@ -38,6 +40,8 @@ import { minutesToTimeInput, timeInputToMinutes } from "../time";
 import { EmployeeCombobox } from "./employee-combobox";
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
+/** From `sm` up the week is a five-column table; below it, one card per day. */
+const WIDE_LAYOUT_QUERY = "(min-width: 640px)";
 
 function defaultDay(weekday: number): ScheduleDay {
   return {
@@ -117,6 +121,8 @@ function WeeklyScheduleForm({ employeeId }: { employeeId: string }): ReactElemen
       ? t("schedule.upToDate")
       : t("schedule.notSet");
 
+  const wide = useMediaQuery(WIDE_LAYOUT_QUERY);
+
   function updateDay(weekday: number, patch: Partial<ScheduleDay>) {
     setDays((prev) => prev.map((d) => (d.weekday === weekday ? { ...d, ...patch } : d)));
   }
@@ -126,77 +132,113 @@ function WeeklyScheduleForm({ employeeId }: { employeeId: string }): ReactElemen
     return <QueryError retry={() => schedule.refetch()} error={schedule.error} />;
   }
 
+  // One day's controls, laid out as a table row from `sm` up and as a card
+  // of labelled fields on a phone, where five columns do not fit and the
+  // grace minutes would sit off-screen in a sideways scroller.
+  function controlsFor(day: ScheduleDay) {
+    const name = t(`schedule.weekdays.${day.weekday}`);
+    const off = !canManage || !day.is_working_day;
+    return {
+      name,
+      working: (
+        <Switch
+          checked={day.is_working_day}
+          disabled={!canManage}
+          aria-label={t("schedule.workingDayFor", { day: name })}
+          onCheckedChange={(checked) => {
+            updateDay(day.weekday, { is_working_day: checked });
+          }}
+        />
+      ),
+      start: (
+        <TimePicker
+          value={minutesToTimeInput(day.start_minute)}
+          disabled={off}
+          aria-label={t("schedule.startFor", { day: name })}
+          onChange={(value) => {
+            if (value) updateDay(day.weekday, { start_minute: timeInputToMinutes(value) });
+          }}
+          className="w-36"
+        />
+      ),
+      end: (
+        <TimePicker
+          value={minutesToTimeInput(day.end_minute)}
+          disabled={off}
+          aria-label={t("schedule.endFor", { day: name })}
+          onChange={(value) => {
+            if (value) updateDay(day.weekday, { end_minute: timeInputToMinutes(value) });
+          }}
+          className="w-36"
+        />
+      ),
+      grace: (
+        <NumberInput
+          value={day.grace_minutes}
+          min={0}
+          max={240}
+          disabled={off}
+          suffix={t("schedule.minutesUnit")}
+          aria-label={t("schedule.graceFor", { day: name })}
+          onChange={(value) => {
+            updateDay(day.weekday, { grace_minutes: value ?? 0 });
+          }}
+          className="w-28"
+        />
+      ),
+    };
+  }
+
   return (
     <>
-      <Table density="compact">
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t("schedule.day")}</TableHead>
-            <TableHead>{t("schedule.isWorkingDay")}</TableHead>
-            <TableHead>{t("schedule.start")}</TableHead>
-            <TableHead>{t("schedule.end")}</TableHead>
-            <TableHead>{t("schedule.grace")}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+      {wide ? (
+        <Table density="compact">
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("schedule.day")}</TableHead>
+              <TableHead>{t("schedule.isWorkingDay")}</TableHead>
+              <TableHead>{t("schedule.start")}</TableHead>
+              <TableHead>{t("schedule.end")}</TableHead>
+              <TableHead>{t("schedule.grace")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {days.map((day) => {
+              const controls = controlsFor(day);
+              return (
+                <TableRow key={day.weekday}>
+                  <TableCell className="font-semibold text-fg">{controls.name}</TableCell>
+                  <TableCell>{controls.working}</TableCell>
+                  <TableCell>{controls.start}</TableCell>
+                  <TableCell>{controls.end}</TableCell>
+                  <TableCell>{controls.grace}</TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      ) : (
+        <div className="flex flex-col gap-3" data-testid="schedule-day-cards">
           {days.map((day) => {
-            const name = t(`schedule.weekdays.${day.weekday}`);
-            const off = !canManage || !day.is_working_day;
+            const controls = controlsFor(day);
             return (
-              <TableRow key={day.weekday}>
-                <TableCell className="font-semibold text-fg">{name}</TableCell>
-                <TableCell>
-                  <Switch
-                    checked={day.is_working_day}
-                    disabled={!canManage}
-                    aria-label={t("schedule.workingDayFor", { day: name })}
-                    onCheckedChange={(checked) => {
-                      updateDay(day.weekday, { is_working_day: checked });
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TimePicker
-                    value={minutesToTimeInput(day.start_minute)}
-                    disabled={off}
-                    aria-label={t("schedule.startFor", { day: name })}
-                    onChange={(value) => {
-                      if (value)
-                        updateDay(day.weekday, { start_minute: timeInputToMinutes(value) });
-                    }}
-                    className="w-36"
-                  />
-                </TableCell>
-                <TableCell>
-                  <TimePicker
-                    value={minutesToTimeInput(day.end_minute)}
-                    disabled={off}
-                    aria-label={t("schedule.endFor", { day: name })}
-                    onChange={(value) => {
-                      if (value) updateDay(day.weekday, { end_minute: timeInputToMinutes(value) });
-                    }}
-                    className="w-36"
-                  />
-                </TableCell>
-                <TableCell>
-                  <NumberInput
-                    value={day.grace_minutes}
-                    min={0}
-                    max={240}
-                    disabled={off}
-                    suffix={t("schedule.minutesUnit")}
-                    aria-label={t("schedule.graceFor", { day: name })}
-                    onChange={(value) => {
-                      updateDay(day.weekday, { grace_minutes: value ?? 0 });
-                    }}
-                    className="w-28"
-                  />
-                </TableCell>
-              </TableRow>
+              <Card key={day.weekday} padding="md" className="flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-label text-fg">{controls.name}</span>
+                  {controls.working}
+                </div>
+                {day.is_working_day && (
+                  <div className="flex flex-wrap gap-3">
+                    <Field label={t("schedule.start")}>{controls.start}</Field>
+                    <Field label={t("schedule.end")}>{controls.end}</Field>
+                    <Field label={t("schedule.grace")}>{controls.grace}</Field>
+                  </div>
+                )}
+              </Card>
             );
           })}
-        </TableBody>
-      </Table>
+        </div>
+      )}
       <p className="text-body-sm text-fg-muted">{t("schedule.endHint")}</p>
       {canManage && (
         <FormActions align="between">
