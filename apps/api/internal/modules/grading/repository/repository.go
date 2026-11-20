@@ -244,7 +244,10 @@ func (r *Repository) ListPublishedReportScores(ctx context.Context, tenantID, ye
 	}
 	out := make([]service.PublishedReportScore, len(rows))
 	for i, row := range rows {
-		out[i] = service.PublishedReportScore{StudentUserID: row.StudentUserID, SubjectID: row.SubjectID, FinalScore: pdatabase.FloatOrZero(row.FinalScore)}
+		out[i] = service.PublishedReportScore{
+			StudentUserID: row.StudentUserID, SubjectID: row.SubjectID,
+			FinalScore: pdatabase.FloatOrZero(row.FinalScore), SubjectKKTP: pdatabase.FloatPtr(row.SubjectKktp),
+		}
 	}
 	return out, nil
 }

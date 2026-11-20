@@ -1241,6 +1241,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/analytics/recompute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rescore every student of the school now, so absences, violations and grades recorded today show without waiting for the scheduled run. It changes no configuration, only the derived list, so anyone who can read the list may refresh it. One rescore of a school runs at a time: while one is running (from this endpoint, a policy save or the scheduled run) the call is refused with 409 ANALYTICS_RECOMPUTE_IN_PROGRESS. */
+        post: operations["recomputeEarlyWarning"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/analytics/admin-dashboard": {
         parameters: {
             query?: never;
@@ -8710,6 +8727,10 @@ export interface components {
             has_grade_trend: boolean;
             previous_average: number;
             current_average: number;
+            /** @description Subjects with a published report score in the active term */
+            scored_subjects: number;
+            /** @description Of scored_subjects, those below the subject's KKTP */
+            subjects_below_kktp: number;
         };
         StudentRisk: {
             /** Format: uuid */
@@ -8744,12 +8765,18 @@ export interface components {
             warning_letter_at_risk_count: number;
             grade_drop_watch_points: number;
             grade_drop_at_risk_points: number;
+            below_kktp_watch_count: number;
+            below_kktp_at_risk_count: number;
             attendance_weight: number;
             discipline_weight: number;
             warning_weight: number;
             grade_weight: number;
             watch_score: number;
             at_risk_score: number;
+        };
+        EarlyWarningPolicySaved: components["schemas"]["EarlyWarningPolicy"] & {
+            /** @description Whether the school was rescored with the new policy right after the save. */
+            recomputed: boolean;
         };
         EarlyWarningPolicyWrite: components["schemas"]["EarlyWarningPolicy"];
         /** @enum {string} */
@@ -9597,7 +9624,7 @@ export interface components {
             predicate: string;
         };
         /** @enum {string} */
-        EraporSkipReason: "missing_nisn" | "no_published_score";
+        EraporSkipReason: "missing_nisn" | "subject_not_published" | "no_score";
         EraporSkip: {
             student_name: string;
             subject_name: string;
@@ -15135,18 +15162,46 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Policy */
+            /** @description The saved policy. Saving also rescores the school at once; recomputed says whether that rescore finished. When it did not (it failed, ran too long, or another rescore was already running) the next scheduled run applies the new policy. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EarlyWarningPolicy"];
+                    "application/json": components["schemas"]["EarlyWarningPolicySaved"];
                 };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    recomputeEarlyWarning: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rescored */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Students rescored */
+                        scored: number;
+                        /** Format: date-time */
+                        computed_at: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
         };
     };
     getAdminDashboard: {

@@ -99,6 +99,7 @@ export type MessageKey =
   | "errors.ANALYTICS_INVALID_POLICY"
   | "errors.ANALYTICS_NOT_HOMEROOM_TEACHER"
   | "errors.ANALYTICS_NO_ACTIVE_ACADEMIC_YEAR"
+  | "errors.ANALYTICS_RECOMPUTE_IN_PROGRESS"
   | "errors.ANALYTICS_RESULT_NOT_FOUND"
   | "errors.ANNOUNCEMENT_AUDIENCE_EMPTY"
   | "errors.ANNOUNCEMENT_INVALID_STATUS"
@@ -321,6 +322,8 @@ export type MessageKey =
   | "errors.TP_EXPORT_CODE_EXISTS"
   | "errors.TP_KIND_NOT_ELIGIBLE"
   | "errors.TP_MAPPING_NOT_FOUND"
+  | "errors.TP_RANGES_OVERLAP"
+  | "errors.TP_RANGE_INVALID"
   | "errors.UNKNOWN"
   | "errors.UNKNOWN_PERMISSION"
   | "errors.UPLOAD_FILE_TOO_LARGE"
@@ -547,6 +550,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.ANALYTICS_INVALID_POLICY",
   "errors.ANALYTICS_NOT_HOMEROOM_TEACHER",
   "errors.ANALYTICS_NO_ACTIVE_ACADEMIC_YEAR",
+  "errors.ANALYTICS_RECOMPUTE_IN_PROGRESS",
   "errors.ANALYTICS_RESULT_NOT_FOUND",
   "errors.ANNOUNCEMENT_AUDIENCE_EMPTY",
   "errors.ANNOUNCEMENT_INVALID_STATUS",
@@ -769,6 +773,8 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.TP_EXPORT_CODE_EXISTS",
   "errors.TP_KIND_NOT_ELIGIBLE",
   "errors.TP_MAPPING_NOT_FOUND",
+  "errors.TP_RANGES_OVERLAP",
+  "errors.TP_RANGE_INVALID",
   "errors.UNKNOWN",
   "errors.UNKNOWN_PERMISSION",
   "errors.UPLOAD_FILE_TOO_LARGE",

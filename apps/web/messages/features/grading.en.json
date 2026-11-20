@@ -78,6 +78,7 @@
     "retry": "Retry",
     "missingCount": "{count, plural, one {# missing} other {# missing}}",
     "scoreRangeHint": "Score {min}-{max}",
+    "scoreFormatHint": "Enter a number, e.g. 78.5",
     "invalidCount": "{count, plural, one {# score invalid} other {# scores invalid}}",
     "invalidFocus": "Show",
     "draftFoundTitle": "There is an unsaved score draft",
@@ -103,6 +104,9 @@
     "editTitle": "Edit component",
     "addTitle": "Add component",
     "code": "Code",
+    "description": "Description",
+    "descriptionPlaceholder": "E.g. Chapter 3 quiz: fractions",
+    "descriptionHint": "Shown as the component title in the student's My grades.",
     "kind": "Kind",
     "weight": "Weight",
     "sequence": "Order",
@@ -113,7 +117,8 @@
     "save": "Save",
     "saved": "Component saved.",
     "deleteTitle": "Delete component",
-    "deleteBody": "Component {code} and every score already entered in this column will be deleted.",
+    "deleteBody": "Component {code} will be removed from this grade sheet.",
+    "deleteBlocked": "This column still holds scores. Clear every score and save first to delete the component.",
     "deleted": "Component deleted."
   },
   "starDialog": {
@@ -131,6 +136,18 @@
     "save": "Save",
     "added": "{count, plural, one {# star added} other {# stars added}}",
     "subtracted": "{count, plural, one {# star taken} other {# stars taken}}"
+  },
+  "starLedger": {
+    "title": "Star history",
+    "empty": "No stars given or taken yet.",
+    "error": "The star history could not be loaded.",
+    "retry": "Try again",
+    "given": "{count, plural, one {+# star} other {+# stars}} by {teacher}",
+    "taken": "{count, plural, one {-# star} other {-# stars}} by {teacher}",
+    "unknownTeacher": "Unknown teacher",
+    "givenCount": "{count, plural, one {+# star} other {+# stars}}",
+    "takenCount": "{count, plural, one {-# star} other {-# stars}}",
+    "teacherUnavailable": "a teacher (name could not be loaded)"
   },
   "manualScoreDialog": {
     "title": "Report score for {name}",
@@ -231,7 +248,8 @@
     "skippedRow": "{student} - {subject}",
     "reason": {
       "missing_nisn": "Missing NISN",
-      "no_published_score": "Score not published"
+      "subject_not_published": "Subject grades not published",
+      "no_score": "Student has no report score yet"
     },
     "download": "Download e-Rapor file",
     "downloadError": "Could not download the e-Rapor file.",
@@ -265,7 +283,12 @@
     "save": "Save",
     "saved": "Mapping saved.",
     "remove": "Remove",
-    "deleted": "Mapping removed."
+    "deleted": "Mapping removed.",
+    "problem": {
+      "incomplete": "Fill in all four R and T bounds.",
+      "invalid": "Each range must lie between {min} and {max}, with its lower bound no higher than its upper bound.",
+      "overlap": "The R and T ranges overlap. A score cannot fall in both, e.g. R 0-74 and T 75-100."
+    }
   },
   "noAssignmentsTitle": "No classes assigned to you yet",
   "noAssignmentsBody": "The gradebook opens once an admin assigns the classes and subjects you teach under Teaching assignments.",

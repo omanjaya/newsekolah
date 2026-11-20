@@ -26,6 +26,7 @@ var errorMap = map[error]*httpx.Error{
 	service.ErrNoActiveAcademicYear: httpx.ErrAnalyticsNoActiveAcademicYear,
 	service.ErrNotHomeroomTeacher:   httpx.ErrAnalyticsNotHomeroomTeacher,
 	service.ErrResultNotFound:       httpx.ErrAnalyticsResultNotFound,
+	service.ErrRecomputeInProgress:  httpx.ErrAnalyticsRecomputeInProgress,
 	domain.ErrInvalidPolicy:         httpx.ErrAnalyticsInvalidPolicy,
 }
 
@@ -83,11 +84,21 @@ func (h *AnalyticsHandler) UpdateEarlyWarningPolicy(ctx context.Context, request
 	if request.Body == nil {
 		return nil, httpx.ErrValidation
 	}
-	policy, err := h.service.UpdatePolicy(ctx, tenantID(ctx), userID(ctx), fromAPIPolicy(*request.Body))
+	policy, recomputed, err := h.service.UpdatePolicy(ctx, tenantID(ctx), userID(ctx), fromAPIPolicy(*request.Body))
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return api.UpdateEarlyWarningPolicy200JSONResponse(toAPIPolicy(policy)), nil
+	return api.UpdateEarlyWarningPolicy200JSONResponse(toAPIPolicySaved(policy, recomputed)), nil
+}
+
+// RecomputeEarlyWarning rescores the caller's school now, or answers 409
+// while another rescore of it is running.
+func (h *AnalyticsHandler) RecomputeEarlyWarning(ctx context.Context, _ api.RecomputeEarlyWarningRequestObject) (api.RecomputeEarlyWarningResponseObject, error) {
+	scored, computedAt, err := h.service.RecomputeNow(ctx, tenantID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.RecomputeEarlyWarning200JSONResponse{Scored: scored, ComputedAt: computedAt}, nil
 }
 
 func toAPIStudentRisk(r service.StoredResult) api.StudentRisk {
@@ -108,6 +119,7 @@ func toAPIStudentRiskDetail(r service.StoredResult) api.StudentRiskDetail {
 			ActiveViolationCount: r.Signals.ActiveViolationCount, DisciplinePoints: r.Signals.DisciplinePoints,
 			WarningLetterCount: r.Signals.WarningLetterCount, HasGradeTrend: r.Signals.HasGradeTrend,
 			PreviousAverage: float32(r.Signals.PreviousAverage), CurrentAverage: float32(r.Signals.CurrentAverage),
+			ScoredSubjects: r.Signals.ScoredSubjects, SubjectsBelowKktp: r.Signals.SubjectsBelowKKTP,
 		},
 		Reasons: make([]api.RiskReason, len(r.Reasons)),
 	}
@@ -127,8 +139,25 @@ func toAPIPolicy(p domain.Policy) api.EarlyWarningPolicy {
 		DisciplineWatchPoints: p.DisciplineWatchPoints, DisciplineAtRiskPoints: p.DisciplineAtRiskPoints,
 		WarningLetterWatchCount: p.WarningLetterWatchCount, WarningLetterAtRiskCount: p.WarningLetterAtRiskCount,
 		GradeDropWatchPoints: float32(p.GradeDropWatchPoints), GradeDropAtRiskPoints: float32(p.GradeDropAtRiskPoints),
+		BelowKktpWatchCount: p.BelowKKTPWatchCount, BelowKktpAtRiskCount: p.BelowKKTPAtRiskCount,
 		AttendanceWeight: p.AttendanceWeight, DisciplineWeight: p.DisciplineWeight, WarningWeight: p.WarningWeight, GradeWeight: p.GradeWeight,
 		WatchScore: p.WatchScore, AtRiskScore: p.AtRiskScore,
+	}
+}
+
+// toAPIPolicySaved is toAPIPolicy plus whether the save rescored the school.
+func toAPIPolicySaved(p domain.Policy, recomputed bool) api.EarlyWarningPolicySaved {
+	a := toAPIPolicy(p)
+	return api.EarlyWarningPolicySaved{
+		Version: a.Version, WindowDays: a.WindowDays,
+		AttendanceWatchRate: a.AttendanceWatchRate, AttendanceAtRiskRate: a.AttendanceAtRiskRate,
+		DisciplineWatchPoints: a.DisciplineWatchPoints, DisciplineAtRiskPoints: a.DisciplineAtRiskPoints,
+		WarningLetterWatchCount: a.WarningLetterWatchCount, WarningLetterAtRiskCount: a.WarningLetterAtRiskCount,
+		GradeDropWatchPoints: a.GradeDropWatchPoints, GradeDropAtRiskPoints: a.GradeDropAtRiskPoints,
+		BelowKktpWatchCount: a.BelowKktpWatchCount, BelowKktpAtRiskCount: a.BelowKktpAtRiskCount,
+		AttendanceWeight: a.AttendanceWeight, DisciplineWeight: a.DisciplineWeight, WarningWeight: a.WarningWeight, GradeWeight: a.GradeWeight,
+		WatchScore: a.WatchScore, AtRiskScore: a.AtRiskScore,
+		Recomputed: recomputed,
 	}
 }
 
@@ -139,6 +168,7 @@ func fromAPIPolicy(p api.EarlyWarningPolicyWrite) domain.Policy {
 		DisciplineWatchPoints: p.DisciplineWatchPoints, DisciplineAtRiskPoints: p.DisciplineAtRiskPoints,
 		WarningLetterWatchCount: p.WarningLetterWatchCount, WarningLetterAtRiskCount: p.WarningLetterAtRiskCount,
 		GradeDropWatchPoints: float64(p.GradeDropWatchPoints), GradeDropAtRiskPoints: float64(p.GradeDropAtRiskPoints),
+		BelowKKTPWatchCount: p.BelowKktpWatchCount, BelowKKTPAtRiskCount: p.BelowKktpAtRiskCount,
 		AttendanceWeight: p.AttendanceWeight, DisciplineWeight: p.DisciplineWeight, WarningWeight: p.WarningWeight, GradeWeight: p.GradeWeight,
 		WatchScore: p.WatchScore, AtRiskScore: p.AtRiskScore,
 	}

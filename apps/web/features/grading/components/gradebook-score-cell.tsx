@@ -6,7 +6,7 @@ import { memo, useEffect, useRef, useState, type ClipboardEvent, type ReactEleme
 
 import { formatScore } from "../lib/format-score";
 import { isMultiCellPaste, parsePastedGrid } from "../lib/gradebook-paste";
-import { isScoreOutOfRange } from "../lib/gradebook-scores";
+import { scoreProblem } from "../lib/gradebook-scores";
 
 const COMMIT_DEBOUNCE_MS = 400;
 
@@ -22,6 +22,11 @@ export interface GradebookScoreCellProps {
    * box that only looks editable.
    */
   readOnly?: boolean;
+  /**
+   * The scale's `round_decimal`, for the read-only text, so a cell shows
+   * the precision the average and report score beside it use.
+   */
+  decimals?: number;
   ariaLabel: string;
   /** Layout classes (width, shrink, text alignment) -- moved onto the wrapper, not the input, so they still apply once the range hint needs a sizing anchor. */
   className?: string;
@@ -34,6 +39,8 @@ export interface GradebookScoreCellProps {
    * screen reader announces it, not just the bare `aria-invalid`.
    */
   rangeHint?: string;
+  /** Same, for a cell whose text is not a number at all (e.g. "abc" or "1.234,5"). */
+  formatHint?: string;
   /** True when this cell differs from what was last saved -- shows a small accent marker. */
   changed?: boolean;
   /** "lg" is the mobile one-component-at-a-time entry mode's big tap target; "sm" (default) is the spreadsheet grid. */
@@ -69,11 +76,13 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
   rowIndex,
   value,
   readOnly = false,
+  decimals,
   ariaLabel,
   className,
   min,
   max,
   rangeHint,
+  formatHint,
   changed,
   size = "sm",
   onCommit,
@@ -86,9 +95,20 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
   const focusedRef = useRef(false);
   const draftRef = useRef(draft);
   const valueRef = useRef(value);
-  const commitDebounced = useDebouncedCallback((next: string) => {
-    onCommit(componentId, studentId, next);
+  // Each keystroke's debounced commit carries the generation it was typed
+  // in; a blur, Enter or pasted block moves to the next generation, so a
+  // commit still queued from before it is dropped instead of landing
+  // later and overwriting what reached the cell since (a pasted value).
+  const generationRef = useRef(0);
+  const debounced = useDebouncedCallback((next: string, generation: number) => {
+    if (generation === generationRef.current) onCommit(componentId, studentId, next);
   }, COMMIT_DEBOUNCE_MS);
+  function commitLater(next: string) {
+    debounced(next, generationRef.current);
+  }
+  function cancelPendingCommit() {
+    generationRef.current += 1;
+  }
 
   // Only follow external updates (save clearing the edit, a fresh sheet
   // load, or a multi-cell paste landing on this cell from elsewhere) while
@@ -115,8 +135,9 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
   }, [componentId, studentId, onCommit]);
 
   const refKey = `${componentId}:${rowIndex}`;
-  const invalid =
-    min !== undefined && max !== undefined ? isScoreOutOfRange(draft, min, max) : false;
+  const problem = min !== undefined && max !== undefined ? scoreProblem(draft, min, max) : null;
+  const invalid = problem !== null;
+  const hint = problem === "format" ? formatHint : rangeHint;
   const cellId = `gradebook-score-${componentId}-${studentId}`;
   const hintId = `${cellId}-hint`;
 
@@ -126,8 +147,11 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
     const rows = parsePastedGrid(text);
     if (!isMultiCellPaste(rows)) return; // A single value: let the input's own paste behaviour handle it.
     e.preventDefault();
+    // A keystroke still waiting to commit must not land after the block
+    // and overwrite the pasted value.
+    cancelPendingCommit();
     const first = rows[0]?.[0] ?? "";
-    setDraft(first);
+    setDraft(first.trim());
     onPasteBlock(componentId, studentId, rows);
   }
 
@@ -143,7 +167,7 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
           className,
         )}
       >
-        {Number.isFinite(score) ? formatScore(score, locale) : "-"}
+        {Number.isFinite(score) ? formatScore(score, locale, decimals) : "-"}
       </span>
     );
   }
@@ -159,17 +183,18 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
         // while typing, takes a pasted spreadsheet block and hands the arrow
         // keys to the grid, none of which NumberInput (a number|null field
         // with steppers) does.
-        // eslint-disable-next-line design-system/no-native-pickers -- grid cell, see above
-        type="number"
+        // Plain text with a decimal keypad, not type="number": a number
+        // input silently drops a comma ("8,5" became 85) and blanks a pasted
+        // "78,5", while the teacher's Indonesian spreadsheet writes exactly
+        // that. `parseScoreInput` reads either separator.
+        type="text"
         inputMode="decimal"
-        step="0.1"
-        min={min}
-        max={max}
+        autoComplete="off"
         value={draft}
         placeholder="-"
         aria-label={ariaLabel}
         invalid={invalid}
-        aria-describedby={invalid && rangeHint ? hintId : undefined}
+        aria-describedby={invalid && hint ? hintId : undefined}
         className={cn(
           "w-full",
           size === "lg" && "h-12 text-center text-title",
@@ -182,11 +207,15 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
         onChange={(e) => {
           const next = e.target.value;
           setDraft(next);
-          commitDebounced(next);
+          commitLater(next);
         }}
         onPaste={handlePaste}
         onBlur={() => {
           focusedRef.current = false;
+          // The blur commits the draft now; a debounced commit still queued
+          // from typing would otherwise land later and overwrite whatever
+          // reached this cell since (a pasted block, a save clearing it).
+          cancelPendingCommit();
           // Only write an entry when the value actually changed: blurring an
           // untouched cell (e.g. tabbing through) must not mark it "pending".
           if (draft !== value) onCommit(componentId, studentId, draft);
@@ -195,16 +224,16 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
           if (!onNavigate) return;
           if (e.key === "Enter" || e.key === "ArrowDown") {
             e.preventDefault();
+            cancelPendingCommit();
             if (draft !== value) onCommit(componentId, studentId, draft);
             onNavigate(componentId, rowIndex, "down");
           } else if (e.key === "ArrowUp") {
             e.preventDefault();
             onNavigate(componentId, rowIndex, "up");
           } else if (e.key === "ArrowLeft") {
-            // A number input has no meaningful in-field cursor to preserve
-            // (selectionStart is unsupported for type="number" across
-            // browsers), so left/right always move a column -- consistent
-            // with up/down/Enter always moving a row.
+            // Left/right always move a column, as in a spreadsheet's
+            // navigation mode -- consistent with up/down/Enter always
+            // moving a row; a score is short enough to retype.
             e.preventDefault();
             onNavigate(componentId, rowIndex, "left");
           } else if (e.key === "ArrowRight") {
@@ -213,13 +242,13 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
           }
         }}
       />
-      {invalid && rangeHint && (
+      {invalid && hint && (
         <p
           id={hintId}
           role="alert"
           className="absolute inset-x-0 top-full z-10 mt-0.5 text-caption text-danger"
         >
-          {rangeHint}
+          {hint}
         </p>
       )}
     </div>

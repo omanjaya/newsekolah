@@ -2826,17 +2826,52 @@ paths:
               $ref: "#/components/schemas/EarlyWarningPolicyWrite"
       responses:
         "200":
-          description: Policy
+          description: The saved policy. Saving also rescores the school at once; recomputed says whether that rescore finished.
+            When it did not (it failed, ran too long, or another rescore was already running) the next scheduled run
+            applies the new policy.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/EarlyWarningPolicy"
+                $ref: "#/components/schemas/EarlyWarningPolicySaved"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/analytics/recompute:
+    post:
+      tags:
+        - analytics
+      operationId: recomputeEarlyWarning
+      x-permission: view_early_warning
+      summary: "Rescore every student of the school now, so absences, violations and grades recorded today show without
+        waiting for the scheduled run. It changes no configuration, only the derived list, so anyone who can read the
+        list may refresh it. One rescore of a school runs at a time: while one is running (from this endpoint, a policy
+        save or the scheduled run) the call is refused with 409 ANALYTICS_RECOMPUTE_IN_PROGRESS."
+      responses:
+        "200":
+          description: Rescored
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - scored
+                  - computed_at
+                properties:
+                  scored:
+                    type: integer
+                    description: Students rescored
+                  computed_at:
+                    type: string
+                    format: date-time
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /v1/analytics/admin-dashboard:
     get:
       tags:
@@ -20147,6 +20182,8 @@ components:
         - has_grade_trend
         - previous_average
         - current_average
+        - scored_subjects
+        - subjects_below_kktp
       properties:
         has_attendance:
           type: boolean
@@ -20166,6 +20203,12 @@ components:
           type: number
         current_average:
           type: number
+        scored_subjects:
+          type: integer
+          description: Subjects with a published report score in the active term
+        subjects_below_kktp:
+          type: integer
+          description: Of scored_subjects, those below the subject's KKTP
     StudentRisk:
       type: object
       required:
@@ -20231,6 +20274,8 @@ components:
         - warning_letter_at_risk_count
         - grade_drop_watch_points
         - grade_drop_at_risk_points
+        - below_kktp_watch_count
+        - below_kktp_at_risk_count
         - attendance_weight
         - discipline_weight
         - warning_weight
@@ -20269,6 +20314,12 @@ components:
         grade_drop_at_risk_points:
           type: number
           minimum: 0
+        below_kktp_watch_count:
+          type: integer
+          minimum: 1
+        below_kktp_at_risk_count:
+          type: integer
+          minimum: 1
         attendance_weight:
           type: integer
           minimum: 1
@@ -20287,6 +20338,16 @@ components:
         at_risk_score:
           type: integer
           minimum: 1
+    EarlyWarningPolicySaved:
+      allOf:
+        - $ref: "#/components/schemas/EarlyWarningPolicy"
+        - type: object
+          required:
+            - recomputed
+          properties:
+            recomputed:
+              type: boolean
+              description: Whether the school was rescored with the new policy right after the save.
     EarlyWarningPolicyWrite:
       allOf:
         - $ref: "#/components/schemas/EarlyWarningPolicy"
@@ -22268,7 +22329,8 @@ components:
       type: string
       enum:
         - missing_nisn
-        - no_published_score
+        - subject_not_published
+        - no_score
     EraporSkip:
       type: object
       required:

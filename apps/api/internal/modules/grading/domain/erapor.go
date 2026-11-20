@@ -75,12 +75,30 @@ const (
 	// EraporSkipMissingNISN: e-Rapor matches students by NISN; without one
 	// there is nothing to key the import row on.
 	EraporSkipMissingNISN EraporSkipReason = "missing_nisn"
-	// EraporSkipNoPublishedScore covers both a subject whose grades were
-	// never published for this class-term and a single student inside a
-	// published subject who still has no computed report score (e.g. a
-	// student who transferred in after grading closed).
-	EraporSkipNoPublishedScore EraporSkipReason = "no_published_score"
+	// EraporSkipSubjectNotPublished: the subject's grades were never
+	// published for this class-term, so the teacher still has to publish.
+	EraporSkipSubjectNotPublished EraporSkipReason = "subject_not_published"
+	// EraporSkipNoScore: the subject is published but this one student has
+	// no report score (e.g. a student who transferred in after grading
+	// closed). Publishing again changes nothing; the score is missing.
+	EraporSkipNoScore EraporSkipReason = "no_score"
 )
+
+// Label is the reason in the words the export file uses, matching its
+// Indonesian column headers ("Alasan Dilewati"), so school staff reading
+// the skip sheet see a sentence rather than the enum value.
+func (r EraporSkipReason) Label() string {
+	switch r {
+	case EraporSkipMissingNISN:
+		return "NISN belum diisi"
+	case EraporSkipSubjectNotPublished:
+		return "Nilai mapel belum diterbitkan"
+	case EraporSkipNoScore:
+		return "Siswa belum punya nilai rapor"
+	default:
+		return string(r)
+	}
+}
 
 // EraporSourceRow is one student-subject pair as read from this platform,
 // before the e-Rapor shape is decided. Score is nil when no report score
@@ -151,9 +169,13 @@ func BuildEraporRows(scale Scale, sources []EraporSourceRow) EraporExport {
 			out.Skipped = append(out.Skipped, EraporSkip{
 				StudentName: src.StudentName, SubjectName: src.SubjectName, Reason: EraporSkipMissingNISN,
 			})
-		case !src.SubjectPublished || src.Score == nil:
+		case !src.SubjectPublished:
 			out.Skipped = append(out.Skipped, EraporSkip{
-				StudentName: src.StudentName, SubjectName: src.SubjectName, Reason: EraporSkipNoPublishedScore,
+				StudentName: src.StudentName, SubjectName: src.SubjectName, Reason: EraporSkipSubjectNotPublished,
+			})
+		case src.Score == nil:
+			out.Skipped = append(out.Skipped, EraporSkip{
+				StudentName: src.StudentName, SubjectName: src.SubjectName, Reason: EraporSkipNoScore,
 			})
 		default:
 			out.Rows = append(out.Rows, EraporRow{

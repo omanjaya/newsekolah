@@ -31,6 +31,7 @@ function renderEntry(missing: Map<string, number>) {
       scaleMin={0}
       scaleMax={100}
       rangeHint=""
+      formatHint=""
       missingByComponent={missing}
       activeComponentId="c1"
       onActiveComponentChange={vi.fn()}

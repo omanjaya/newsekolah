@@ -120,6 +120,8 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrTPExportCodeExists:   httpx.ErrTPExportCodeExists,
 	domain.ErrTPKindNotEligible:    httpx.ErrTPKindNotEligible,
 	domain.ErrTPMappingNotFound:    httpx.ErrTPMappingNotFound,
+	domain.ErrTPRangeInvalid:       httpx.ErrTPRangeInvalid,
+	domain.ErrTPRangesOverlap:      httpx.ErrTPRangesOverlap,
 	domain.ErrModuleDisabled:       httpx.ErrGradingModuleDisabled,
 	domain.ErrInvalidScope:         httpx.ErrGradebookInvalidScope,
 	reportdoc.ErrUnknownColumn:     httpx.ErrGradebookUnknownColumn,
@@ -242,9 +244,7 @@ func componentInput(b *api.AssessmentComponentWrite) service.ComponentInput {
 	in := service.ComponentInput{
 		ClassID: b.ClassId, SubjectID: b.SubjectId, TermID: nullUUID(b.TermId), Code: b.Code,
 		Kind: domain.ComponentKind(b.Kind), Weight: float64(b.Weight), Sequence: 1, KKTP: f64Ptr(b.Kktp),
-	}
-	if b.Description != nil {
-		in.Description = *b.Description
+		Description: b.Description,
 	}
 	if b.Sequence != nil {
 		in.Sequence = *b.Sequence

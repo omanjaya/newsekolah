@@ -254,7 +254,7 @@ func renderEraporCSV(export domain.EraporExport) ([]byte, error) {
 			return nil, fmt.Errorf("write csv skip header: %w", err)
 		}
 		for _, skip := range export.Skipped {
-			if err := w.Write([]string{skip.StudentName, skip.SubjectName, string(skip.Reason)}); err != nil {
+			if err := w.Write([]string{skip.StudentName, skip.SubjectName, skip.Reason.Label()}); err != nil {
 				return nil, fmt.Errorf("write csv skip row: %w", err)
 			}
 		}
@@ -306,7 +306,7 @@ func rowsToRecords(rows []domain.EraporRow) [][]any {
 func skipsToRecords(skips []domain.EraporSkip) [][]any {
 	out := make([][]any, len(skips))
 	for i, skip := range skips {
-		out[i] = []any{skip.StudentName, skip.SubjectName, string(skip.Reason)}
+		out[i] = []any{skip.StudentName, skip.SubjectName, skip.Reason.Label()}
 	}
 	return out
 }

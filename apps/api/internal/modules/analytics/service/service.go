@@ -103,10 +103,17 @@ type GradingReader interface {
 // Available is false when there is no previous term to compare against
 // (e.g. the student's first term at the school): the caller must not
 // invent a trend in that case.
+//
+// ScoredSubjects and SubjectsBelowKKTP describe the active term alone and
+// are filled whether or not a trend is Available: how many subjects have a
+// published report score, and how many of those are below their KKTP.
 type GradeTrend struct {
 	Available       bool
 	PreviousAverage float64
 	CurrentAverage  float64
+
+	ScoredSubjects    int
+	SubjectsBelowKKTP int
 }
 
 // IdentityReader is a wiring adapter over the identity module's own
@@ -189,6 +196,8 @@ var (
 	ErrNoActiveAcademicYear = errors.New("no active academic year")
 	ErrNotHomeroomTeacher   = errors.New("caller does not hold the homeroom duty for any class")
 	ErrResultNotFound       = errors.New("risk result not found")
+	// ErrRecomputeInProgress: a rescore of this tenant is already running.
+	ErrRecomputeInProgress = errors.New("a rescore of this school is already running")
 )
 
 type Service struct {
@@ -272,7 +281,10 @@ func (s *Service) loadPolicy(ctx context.Context, tenantID uuid.UUID) (domain.Po
 		}
 		return def, nil
 	}
-	var policy domain.Policy
+	// Decoded over the defaults, so a version saved before a threshold
+	// existed (e.g. below_kktp_*) scores with that threshold's default
+	// instead of a zero that every student would cross.
+	policy := domain.DefaultPolicy()
 	if err := json.Unmarshal(raw, &policy); err != nil {
 		return domain.Policy{}, err
 	}
@@ -280,13 +292,25 @@ func (s *Service) loadPolicy(ctx context.Context, tenantID uuid.UUID) (domain.Po
 	return policy, nil
 }
 
-// UpdatePolicy appends a new version of the tenant's scoring policy; the
-// next recompute run picks it up.
-func (s *Service) UpdatePolicy(ctx context.Context, tenantID, actorUserID uuid.UUID, next domain.Policy) (domain.Policy, error) {
+// policyRescoreTimeout bounds the rescore UpdatePolicy runs after a save,
+// well inside the API's request timeout, so a large school's save answers
+// in time (reporting that the list was not rescored) instead of failing
+// after the policy was already stored.
+const policyRescoreTimeout = 15 * time.Second
+
+// UpdatePolicy appends a new version of the tenant's scoring policy and
+// rescores the tenant at once, so the list reflects the new thresholds as
+// soon as it is saved instead of after the next scheduled run. The rescore
+// is best effort: the policy is saved either way, and recomputed reports
+// whether the rescore finished. It does not when it fails, runs past
+// policyRescoreTimeout, or another rescore of the tenant is already
+// running (one that read the previous policy); the next scheduled run then
+// applies the new policy.
+func (s *Service) UpdatePolicy(ctx context.Context, tenantID, actorUserID uuid.UUID, next domain.Policy) (policy domain.Policy, recomputed bool, err error) {
 	if err := next.Validate(); err != nil {
-		return domain.Policy{}, err
+		return domain.Policy{}, false, err
 	}
-	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		current, err := s.loadPolicy(ctx, tenantID)
 		if err != nil {
 			return err
@@ -298,5 +322,11 @@ func (s *Service) UpdatePolicy(ctx context.Context, tenantID, actorUserID uuid.U
 		}
 		return s.repo.CreatePolicy(ctx, tenantID, next.Version, encoded, s.clock.Now(), uuid.NullUUID{UUID: actorUserID, Valid: true})
 	})
-	return next, err
+	if err != nil {
+		return next, false, err
+	}
+	rescoreCtx, cancel := context.WithTimeout(ctx, policyRescoreTimeout)
+	defer cancel()
+	_, rescoreErr := s.Recompute(rescoreCtx, tenantID)
+	return next, rescoreErr == nil, nil
 }

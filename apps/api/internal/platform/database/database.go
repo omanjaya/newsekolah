@@ -188,3 +188,30 @@ func withTx(ctx context.Context, pool *pgxpool.Pool, fn func(ctx context.Context
 	err = fn(context.WithValue(ctx, txKey, tx), tx)
 	return err
 }
+
+// TryAdvisoryLock takes the transaction-scoped advisory lock named key
+// without waiting, on a connection of its own that it keeps in an open,
+// otherwise idle transaction, so the lock is held across work that spans
+// several of its own transactions (such as a batched rescore). acquired is
+// false when another holder has it. release ends the transaction, which
+// frees the lock; it must be called once whenever acquired is true. If the
+// rollback fails, pgx closes the connection, which frees the lock too, so a
+// lock is never left behind on a pooled connection.
+func TryAdvisoryLock(ctx context.Context, pool *pgxpool.Pool, key string) (release func(), acquired bool, err error) {
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return nil, false, fmt.Errorf("begin lock transaction: %w", err)
+	}
+	rollback := func() {
+		_ = tx.Rollback(context.WithoutCancel(ctx))
+	}
+	if err := tx.QueryRow(ctx, "select pg_try_advisory_xact_lock(hashtextextended($1::text, 0))", key).Scan(&acquired); err != nil {
+		rollback()
+		return nil, false, fmt.Errorf("take advisory lock: %w", err)
+	}
+	if !acquired {
+		rollback()
+		return nil, false, nil
+	}
+	return rollback, true, nil
+}

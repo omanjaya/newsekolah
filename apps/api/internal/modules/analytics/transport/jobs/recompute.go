@@ -31,13 +31,19 @@ func Register(workers *river.Workers, svc *service.Service) error {
 	return river.AddWorkerSafely(workers, &RecomputeWorker{Service: svc})
 }
 
-// PeriodicJobs schedules the nightly recompute: a risk level computed
-// hours before school starts is what puts it "in front of the person who
-// can act before the term ends" (this module's own brief), so once a day
-// is frequent enough without recomputing on every read.
+// recomputeInterval is how often every tenant is rescored. Hourly, so an
+// absence, violation or published grade recorded during the school day
+// shows on the list the same day; a day-long interval counted from process
+// start left the list hours stale in the middle of the school day. A reader
+// of the list can still rescore at once (POST /v1/analytics/recompute), and
+// saving the policy rescores too; a tenant already being rescored by one of
+// those when this runs is skipped (service.ErrRecomputeInProgress).
+const recomputeInterval = time.Hour
+
+// PeriodicJobs schedules the recurring recompute.
 func PeriodicJobs() []*river.PeriodicJob {
 	return []*river.PeriodicJob{
-		river.NewPeriodicJob(river.PeriodicInterval(24*time.Hour), func() (river.JobArgs, *river.InsertOpts) {
+		river.NewPeriodicJob(river.PeriodicInterval(recomputeInterval), func() (river.JobArgs, *river.InsertOpts) {
 			return RecomputeArgs{}, nil
 		}, &river.PeriodicJobOpts{ID: "analytics_recompute", RunOnStart: true}),
 	}

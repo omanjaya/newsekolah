@@ -44,7 +44,11 @@ func TestBuildEraporRowsReportsMissingNISN(t *testing.T) {
 	}, export.Skipped)
 }
 
-func TestBuildEraporRowsReportsNoPublishedScore(t *testing.T) {
+// A published subject with one student missing a score and a subject never
+// published are different problems with different fixes, so each gets its
+// own reason: telling the first teacher to publish again sends them in a
+// circle.
+func TestBuildEraporRowsTellsUnpublishedFromMissingScore(t *testing.T) {
 	scale := domain.DefaultScale()
 	sources := []domain.EraporSourceRow{
 		{
@@ -63,8 +67,8 @@ func TestBuildEraporRowsReportsNoPublishedScore(t *testing.T) {
 
 	require.Empty(t, export.Rows, "neither row has a published score to export")
 	require.Equal(t, []domain.EraporSkip{
-		{StudentName: "Dewi Lestari", SubjectName: "Ilmu Pengetahuan Alam", Reason: domain.EraporSkipNoPublishedScore},
-		{StudentName: "Andi Wijaya", SubjectName: "Ilmu Pengetahuan Sosial", Reason: domain.EraporSkipNoPublishedScore},
+		{StudentName: "Dewi Lestari", SubjectName: "Ilmu Pengetahuan Alam", Reason: domain.EraporSkipNoScore},
+		{StudentName: "Andi Wijaya", SubjectName: "Ilmu Pengetahuan Sosial", Reason: domain.EraporSkipSubjectNotPublished},
 	}, export.Skipped)
 }
 

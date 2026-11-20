@@ -143,7 +143,7 @@ func ensureComponents(ctx context.Context, module *grading.Module, tenantID, tea
 		}
 		if _, err := module.Service.CreateComponent(ctx, tenantID, teacherID, true, gradingservice.ComponentInput{
 			ClassID: classID, SubjectID: subjectID, TermID: uuid.NullUUID{UUID: termID, Valid: true},
-			Code: seed.code, Kind: seed.kind, Description: seed.description, Weight: seed.weight, Sequence: i + 1,
+			Code: seed.code, Kind: seed.kind, Description: &seed.description, Weight: seed.weight, Sequence: i + 1,
 		}); err != nil {
 			return fmt.Errorf("create component %s: %w", seed.code, err)
 		}

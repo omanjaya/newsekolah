@@ -14,6 +14,8 @@ func init() {
 	catalog["GRADE_RANGE_OVERLAP"] = map[string]string{Indonesian: "Rentang nilai tumpang tindih dengan rentang lain pada skala ini.", English: "The score range overlaps another range on this scale."}
 	catalog["TP_EXPORT_CODE_EXISTS"] = map[string]string{Indonesian: "Kode ekspor tujuan pembelajaran ini sudah dipakai.", English: "That learning objective export code is already in use."}
 	catalog["TP_KIND_NOT_ELIGIBLE"] = map[string]string{Indonesian: "Komponen penilaian ini tidak dapat dipetakan sebagai tujuan pembelajaran.", English: "This assessment component cannot be mapped as a learning objective."}
+	catalog["TP_RANGE_INVALID"] = map[string]string{Indonesian: "Rentang R atau T terbalik atau di luar skala nilai sekolah.", English: "The R or T range is reversed or outside the school's grading scale."}
+	catalog["TP_RANGES_OVERLAP"] = map[string]string{Indonesian: "Rentang R dan T tumpang tindih; satu nilai tidak boleh masuk keduanya.", English: "The R and T ranges overlap; a score cannot fall in both."}
 	catalog["TP_MAPPING_NOT_FOUND"] = map[string]string{Indonesian: "Pemetaan tujuan pembelajaran tidak ditemukan.", English: "Learning objective mapping not found."}
 	catalog["GRADING_MODULE_DISABLED"] = map[string]string{Indonesian: "Modul penilaian belum diaktifkan untuk sekolah Anda.", English: "The grading module is not enabled for your school."}
 }

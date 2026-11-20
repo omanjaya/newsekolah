@@ -45,10 +45,19 @@ func (s *Service) PreviousTerm(ctx context.Context, tenantID, currentTermID uuid
 // ReportTrend is a student's average published report score in the active
 // term and in the term before it. Available is false unless both terms
 // have at least one published report score to average.
+//
+// ScoredSubjects and SubjectsBelowKKTP describe the active term on its own,
+// so they are set even without a previous term to compare with (a first
+// semester): how many subjects have a published report score, and how many
+// of those are below the subject's KKTP, the same "not tuntas" a student
+// sees on their own grades page.
 type ReportTrend struct {
 	Available       bool
 	PreviousAverage float64
 	CurrentAverage  float64
+
+	ScoredSubjects    int
+	SubjectsBelowKKTP int
 }
 
 // ReportTrendsForStudents computes, for many students at once, the trend
@@ -75,10 +84,20 @@ func (s *Service) ReportTrendsForStudents(ctx context.Context, tenantID uuid.UUI
 		if err != nil {
 			return err
 		}
-		currentAvg, err := s.averageReportScores(ctx, tenantID, yearID, current.ID, studentIDs)
+		scale, err := s.loadScale(ctx, tenantID)
 		if err != nil {
 			return err
 		}
+		currentRows, err := s.repo.ListPublishedReportScores(ctx, tenantID, yearID, current.ID, studentIDs)
+		if err != nil {
+			return err
+		}
+		for id, standing := range subjectStandings(currentRows, scale.DefaultKKTP) {
+			trend := out[id]
+			trend.ScoredSubjects, trend.SubjectsBelowKKTP = standing.scored, standing.below
+			out[id] = trend
+		}
+		currentAvg := averagePerStudent(currentRows)
 		if len(currentAvg) == 0 {
 			return nil
 		}
@@ -92,12 +111,36 @@ func (s *Service) ReportTrendsForStudents(ctx context.Context, tenantID uuid.UUI
 		}
 		for id, cur := range currentAvg {
 			if prev, ok := previousAvg[id]; ok {
-				out[id] = ReportTrend{Available: true, PreviousAverage: prev, CurrentAverage: cur}
+				trend := out[id]
+				trend.Available, trend.PreviousAverage, trend.CurrentAverage = true, prev, cur
+				out[id] = trend
 			}
 		}
 		return nil
 	})
 	return out, err
+}
+
+type subjectStanding struct{ scored, below int }
+
+// subjectStandings counts, per student, the subjects with a published
+// report score and those below the subject's KKTP (its own, or the school
+// default when no component sets one).
+func subjectStandings(rows []PublishedReportScore, defaultKKTP float64) map[uuid.UUID]subjectStanding {
+	out := map[uuid.UUID]subjectStanding{}
+	for _, row := range rows {
+		kktp := defaultKKTP
+		if row.SubjectKKTP != nil {
+			kktp = *row.SubjectKKTP
+		}
+		standing := out[row.StudentUserID]
+		standing.scored++
+		if row.FinalScore < kktp {
+			standing.below++
+		}
+		out[row.StudentUserID] = standing
+	}
+	return out
 }
 
 // averageReportScores is each student's mean published report score in the
@@ -109,6 +152,11 @@ func (s *Service) averageReportScores(ctx context.Context, tenantID, yearID, ter
 	if err != nil {
 		return nil, err
 	}
+	return averagePerStudent(rows), nil
+}
+
+// averagePerStudent is averageReportScores over rows already read.
+func averagePerStudent(rows []PublishedReportScore) map[uuid.UUID]float64 {
 	sums := map[uuid.UUID]float64{}
 	counts := map[uuid.UUID]int{}
 	for _, row := range rows {
@@ -119,7 +167,7 @@ func (s *Service) averageReportScores(ctx context.Context, tenantID, yearID, ter
 	for id, sum := range sums {
 		out[id] = sum / float64(counts[id])
 	}
-	return out, nil
+	return out
 }
 
 // recomputeReportScores refreshes every student's automatic report score

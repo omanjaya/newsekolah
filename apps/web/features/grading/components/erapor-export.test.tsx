@@ -133,6 +133,26 @@ describe("EraporExport preview states", () => {
     const formatField = screen.getByText("formatLabel").closest(".w-full");
     expect(formatField).toHaveClass("md:w-auto");
   });
+
+  it("tells a published subject's missing score apart from an unpublished subject", () => {
+    previewMock.mockReturnValue({
+      data: {
+        rows: [],
+        skipped: [
+          { student_name: "Siswa Dua Contoh", subject_name: "Matematika", reason: "no_score" },
+          { student_name: "Siswa Contoh", subject_name: "Kimia", reason: "subject_not_published" },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch,
+    });
+    renderExport();
+
+    expect(screen.getByText("reason.no_score")).toBeInTheDocument();
+    expect(screen.getByText("reason.subject_not_published")).toBeInTheDocument();
+  });
 });
 
 describe("EraporExport class scope", () => {

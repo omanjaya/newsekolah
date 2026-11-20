@@ -9,6 +9,8 @@ const risk = vi.hoisted(() => ({
   has_grade_trend: false,
   previous_average: 0,
   current_average: 0,
+  scored_subjects: 0,
+  subjects_below_kktp: 0,
 }));
 
 vi.mock("next-intl", () => ({
@@ -46,6 +48,8 @@ vi.mock("../api", () => ({
               has_grade_trend: risk.has_grade_trend,
               previous_average: risk.previous_average,
               current_average: risk.current_average,
+              scored_subjects: risk.scored_subjects,
+              subjects_below_kktp: risk.subjects_below_kktp,
             },
           },
           isLoading: false,
@@ -100,6 +104,7 @@ describe("StudentRiskPanel signals with switched-off modules", () => {
     disabled.add("grading");
     render(<StudentRiskPanel studentId="s-1" />);
     expect(screen.queryByText("signals.gradeTrend")).not.toBeInTheDocument();
+    expect(screen.queryByText("signals.belowKktp")).not.toBeInTheDocument();
     expect(screen.getByText("signals.discipline")).toBeInTheDocument();
   });
 });
@@ -119,6 +124,19 @@ describe("StudentRiskPanel figures", () => {
     expect(screen.getAllByText("81,2").length).toBeGreaterThan(0);
     expect(screen.queryByText("78.5")).not.toBeInTheDocument();
     expect(screen.getByRole("img", { name: /78,5/ })).toBeInTheDocument();
+  });
+
+  it("counts subjects below KKTP in a first term that has no trend yet", () => {
+    risk.has_grade_trend = false;
+    risk.scored_subjects = 8;
+    risk.subjects_below_kktp = 3;
+    render(<StudentRiskPanel studentId="s-1" />);
+
+    expect(screen.getByText("signals.belowKktp")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByText('signals.belowKktpUnit {"scored":8}')).toBeInTheDocument();
+    risk.scored_subjects = 0;
+    risk.subjects_below_kktp = 0;
   });
 
   it("states when the score was computed in the school's time zone", () => {

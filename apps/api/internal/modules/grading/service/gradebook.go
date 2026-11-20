@@ -65,12 +65,15 @@ func (s *Service) Gradebook(ctx context.Context, tenantID, actorID uuid.UUID, ca
 }
 
 type ComponentInput struct {
-	ClassID     uuid.UUID
-	SubjectID   uuid.UUID
-	TermID      uuid.NullUUID
-	Code        string
-	Kind        domain.ComponentKind
-	Description string
+	ClassID   uuid.UUID
+	SubjectID uuid.UUID
+	TermID    uuid.NullUUID
+	Code      string
+	Kind      domain.ComponentKind
+	// Description is nil when the request left it out: a create stores
+	// none, an update keeps the stored one (a client that does not show
+	// the field must not erase it on every edit).
+	Description *string
 	KKTP        *float64
 	Weight      float64
 	Sequence    int
@@ -80,7 +83,10 @@ type ComponentInput struct {
 // validating (grading.go:154-158), so ValidateComponent sees the final
 // values and the caller does not have to remember to do it twice.
 func (in ComponentInput) normalize() (code, description string) {
-	return strings.ToUpper(strings.TrimSpace(in.Code)), strings.TrimSpace(in.Description)
+	if in.Description != nil {
+		description = strings.TrimSpace(*in.Description)
+	}
+	return strings.ToUpper(strings.TrimSpace(in.Code)), description
 }
 
 func (s *Service) CreateComponent(ctx context.Context, tenantID, actorID uuid.UUID, canManageAny bool, in ComponentInput) (domain.Component, error) {
@@ -135,7 +141,10 @@ func (s *Service) UpdateComponent(ctx context.Context, tenantID, componentID, ac
 			return err
 		}
 		current.Code = code
-		current.Kind, current.Description, current.KKTP, current.Weight, current.Sequence = in.Kind, description, in.KKTP, in.Weight, in.Sequence
+		if in.Description != nil {
+			current.Description = description
+		}
+		current.Kind, current.KKTP, current.Weight, current.Sequence = in.Kind, in.KKTP, in.Weight, in.Sequence
 		out, err = s.repo.UpdateComponent(ctx, current)
 		return err
 	})

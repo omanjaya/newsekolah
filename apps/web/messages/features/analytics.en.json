@@ -15,6 +15,8 @@
     "emptyTitle": "No students need attention",
     "emptyBody": "No student in this class has reached the watch or at-risk threshold yet.",
     "policy": "Configure policy",
+    "recompute": "Recalculate now",
+    "recomputed": "{count, plural, one {# student recalculated.} other {# students recalculated.}}",
     "summary": {
       "chartLabel": "Of {total} students: {none} none, {watch} watch, {at_risk} at risk.",
       "label": "Students per level",
@@ -65,7 +67,9 @@
       "absentUnit": "of {considered} days absent",
       "disciplineUnit": "active points",
       "warningLettersUnit": "{count, plural, one {letter} other {letters}}",
-      "gradeTrendUnit": "report average, previously {previous}"
+      "gradeTrendUnit": "report average, previously {previous}",
+      "belowKktp": "Subjects below KKTP",
+      "belowKktpUnit": "of {scored} subjects with a report score"
     },
     "reasons": {
       "attendance_absence_watch": "Absent {absent_days} of the last {considered_days} school days",
@@ -76,6 +80,8 @@
       "warning_letter_at_risk": "{warning_letter_count} warning letters already issued",
       "grade_drop_watch": "Report-score average dropped from {previous_average} to {current_average}",
       "grade_drop_at_risk": "Report-score average dropped from {previous_average} to {current_average}",
+      "grades_below_kktp_watch": "{below_kktp} of {scored_subjects} subjects below KKTP",
+      "grades_below_kktp_at_risk": "{below_kktp} of {scored_subjects} subjects below KKTP",
       "unknown": "Unknown signal"
     },
     "openProfile": "Open the student profile",
@@ -86,9 +92,10 @@
   },
   "policy": {
     "title": "Early-warning policy",
-    "description": "Set signal thresholds and weights. At-risk thresholds must exceed watch thresholds. Changes apply on the next calculation.",
+    "description": "Set signal thresholds and weights. At-risk thresholds must exceed watch thresholds. The list is recalculated as soon as the policy is saved, then every hour.",
     "thresholdError": "At-risk thresholds must exceed watch thresholds.",
-    "saved": "Policy saved.",
+    "saved": "Policy saved and the list recalculated.",
+    "savedRecomputeLater": "Policy saved; the list is recalculated on the next scheduled run.",
     "save": "Save",
     "cancel": "Cancel",
     "groups": {
@@ -96,6 +103,7 @@
       "discipline": "Discipline points",
       "warningLetter": "Warning letters",
       "gradeDrop": "Grade drop",
+      "belowKktp": "Subjects below KKTP",
       "weights": "Signal weights",
       "totalScore": "Total score"
     },
@@ -109,6 +117,8 @@
       "warning_letter_at_risk_count": "At risk",
       "grade_drop_watch_points": "Watch",
       "grade_drop_at_risk_points": "At risk",
+      "below_kktp_watch_count": "Watch",
+      "below_kktp_at_risk_count": "At risk",
       "attendance_weight": "Attendance",
       "discipline_weight": "Discipline",
       "warning_weight": "Warning letters",

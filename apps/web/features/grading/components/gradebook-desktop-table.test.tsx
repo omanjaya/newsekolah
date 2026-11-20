@@ -44,7 +44,9 @@ function renderTable(overrides: Partial<GradebookDesktopTableProps> = {}) {
     starBalances: new Map(),
     scaleMin: 0,
     scaleMax: 100,
+    scaleDecimals: 2,
     rangeHint: "",
+    formatHint: "",
     liveByStudent: new Map(),
     missingByComponent: new Map([["c1", 1]]),
     invalidComponentIds: new Set(),
@@ -106,13 +108,25 @@ describe("GradebookDesktopTable", () => {
 
   it("shows a reader the scores as plain text, not inputs that only look editable", () => {
     renderTable({ canManage: false });
-    expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     const budi = screen.getByRole("row", { name: /Budi/ });
     const citra = screen.getByRole("row", { name: /Citra/ });
     // In the reader's locale, like the average beside it; a missing score
     // is the same muted dash as every other empty cell.
     expect(within(budi).getAllByText("88,0")[0]).toHaveClass("text-fg", "block");
     expect(within(citra).getAllByText("-")[0]).toHaveClass("text-fg-muted");
+  });
+
+  it("shows a reader's score cells with the scale's decimals, like the average beside them", () => {
+    renderTable({
+      canManage: false,
+      scaleDecimals: 0,
+      liveByStudent: new Map([["s1", { average: 88, missing: 0 }]]),
+    });
+    const budiCells = within(screen.getByRole("row", { name: /Budi/ })).getAllByRole("cell");
+    // Columns: TG1, Rata-rata, Nilai rapor, stars.
+    expect(budiCells[0]).toHaveTextContent(/^88$/);
+    expect(budiCells[1]).toHaveTextContent(/^88$/);
   });
 
   it("mutes an empty average like the empty score and report-score cells beside it", () => {
@@ -135,7 +149,7 @@ describe("GradebookDesktopTable", () => {
 
   it("keeps editable score inputs for a manager", () => {
     renderTable();
-    expect(screen.getAllByRole("spinbutton")).toHaveLength(2);
+    expect(screen.getAllByRole("textbox")).toHaveLength(2);
   });
 
   it("shows a reader the star balance as text named as a balance, not a disabled action", () => {

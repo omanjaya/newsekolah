@@ -4,7 +4,14 @@ import type { EarlyWarningPolicy } from "../api";
 export type PolicyField = Exclude<keyof EarlyWarningPolicy, "version">;
 
 export type PolicyGroupId =
-  "window" | "attendance" | "discipline" | "warningLetter" | "gradeDrop" | "weights" | "totalScore";
+  | "window"
+  | "attendance"
+  | "discipline"
+  | "warningLetter"
+  | "gradeDrop"
+  | "belowKktp"
+  | "weights"
+  | "totalScore";
 
 export interface PolicyGroup {
   id: PolicyGroupId;
@@ -22,6 +29,7 @@ export const POLICY_GROUPS: PolicyGroup[] = [
   { id: "discipline", fields: ["discipline_watch_points", "discipline_at_risk_points"] },
   { id: "warningLetter", fields: ["warning_letter_watch_count", "warning_letter_at_risk_count"] },
   { id: "gradeDrop", fields: ["grade_drop_watch_points", "grade_drop_at_risk_points"] },
+  { id: "belowKktp", fields: ["below_kktp_watch_count", "below_kktp_at_risk_count"] },
   {
     id: "weights",
     fields: ["attendance_weight", "discipline_weight", "warning_weight", "grade_weight"],
@@ -46,6 +54,8 @@ const FIELD_MODULE: Partial<Record<PolicyField, FeatureModule>> = {
   warning_weight: "discipline",
   grade_drop_watch_points: "grading",
   grade_drop_at_risk_points: "grading",
+  below_kktp_watch_count: "grading",
+  below_kktp_at_risk_count: "grading",
   grade_weight: "grading",
 };
 

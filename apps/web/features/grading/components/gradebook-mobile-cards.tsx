@@ -31,7 +31,11 @@ export interface GradebookMobileCardsProps {
   starBalances: StarBalances;
   scaleMin: number;
   scaleMax: number;
+  /** The scale's `round_decimal`: how many decimals an average or report score shows. */
+  scaleDecimals: number;
   rangeHint: string;
+  /** Shown under a cell whose text is not a number at all. */
+  formatHint: string;
   liveByStudent: Map<string, { average: number | undefined; missing: number }>;
   pendingStudentIds: Set<string>;
   onManualOverride: (student: GradebookStudent) => void;
@@ -57,7 +61,9 @@ export function GradebookMobileCards({
   starBalances,
   scaleMin,
   scaleMax,
+  scaleDecimals,
   rangeHint,
+  formatHint,
   liveByStudent,
   pendingStudentIds,
   onManualOverride,
@@ -75,7 +81,9 @@ export function GradebookMobileCards({
         const live = liveByStudent.get(student.student_user_id);
         const pending = pendingStudentIds.has(student.student_user_id);
         const reportScore =
-          student.report_score !== undefined ? formatScore(student.report_score, locale) : "-";
+          student.report_score !== undefined
+            ? formatScore(student.report_score, locale, scaleDecimals)
+            : "-";
         return (
           <Card key={student.student_user_id}>
             <CardHeader
@@ -115,11 +123,13 @@ export function GradebookMobileCards({
                         rowIndex={rowIndex}
                         value={cellValue(component.id, student)}
                         readOnly={!canManage}
+                        decimals={scaleDecimals}
                         ariaLabel={t("scoreFor", { name: student.name, code: component.code })}
                         className="w-20 shrink-0 text-right tabular-nums"
                         min={scaleMin}
                         max={scaleMax}
                         rangeHint={rangeHint}
+                        formatHint={formatHint}
                         changed={changed}
                         onCommit={onCommit}
                         onRegisterRef={onRegisterRef}
@@ -132,7 +142,9 @@ export function GradebookMobileCards({
             <CardFooter className="justify-between gap-3 border-t border-line py-2 text-body-sm">
               <span className="text-fg-muted tabular-nums">
                 {t("averageColumn")}{" "}
-                {live?.average !== undefined ? formatScore(live.average, locale) : "-"}
+                {live?.average !== undefined
+                  ? formatScore(live.average, locale, scaleDecimals)
+                  : "-"}
               </span>
               {canManage ? (
                 <Button

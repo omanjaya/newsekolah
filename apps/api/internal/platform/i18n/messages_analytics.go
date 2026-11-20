@@ -13,4 +13,7 @@ func init() {
 	catalog["ANALYTICS_INVALID_POLICY"] = map[string]string{
 		Indonesian: "Kebijakan tidak valid: batas siaga harus di bawah batas berisiko.", English: "Invalid policy: watch thresholds must be below at-risk thresholds.",
 	}
+	catalog["ANALYTICS_RECOMPUTE_IN_PROGRESS"] = map[string]string{
+		Indonesian: "Daftar sedang dihitung ulang. Tunggu sebentar lalu muat ulang.", English: "The list is already being recalculated. Wait a moment, then reload.",
+	}
 }

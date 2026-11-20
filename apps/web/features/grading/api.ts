@@ -154,7 +154,8 @@ export function useDeleteComponentMutation() {
 
 export interface ScoreEntry {
   student_user_id: string;
-  score: number;
+  /** `null` deletes that student's score for the component (a cleared cell). */
+  score: number | null;
 }
 
 export function useSaveComponentScoresMutation() {
@@ -167,10 +168,22 @@ export function useSaveComponentScoresMutation() {
         body: { entries },
       }),
     onSuccess: (sheet) => {
+      // The saved sheet is cached under its concrete term, and also under
+      // every other key showing that same sheet: the default "active term"
+      // view asks without a term, so its key ends in "" while the response
+      // always names the term. Only an entry for the same term is replaced,
+      // never another term's sheet of this class and subject.
       queryClient.setQueryData(
         gradingKeys.gradebook(sheet.class_id, sheet.subject_id, sheet.term_id),
         sheet,
       );
+      queryClient.setQueriesData<Gradebook>(
+        { queryKey: ["grading", "gradebook", sheet.class_id, sheet.subject_id] },
+        (old) => (old && old.term_id === sheet.term_id ? sheet : old),
+      );
+      // Other views computed from the same scores.
+      void queryClient.invalidateQueries({ queryKey: ["grading", "erapor"] });
+      void queryClient.invalidateQueries({ queryKey: ["grading", "my-grades"] });
     },
   });
 }

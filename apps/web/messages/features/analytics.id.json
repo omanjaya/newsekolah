@@ -15,6 +15,8 @@
     "emptyTitle": "Tidak ada siswa yang perlu diperhatikan",
     "emptyBody": "Belum ada siswa di kelas ini yang mencapai ambang siaga atau berisiko.",
     "policy": "Atur kebijakan",
+    "recompute": "Hitung ulang sekarang",
+    "recomputed": "{count, plural, other {# siswa dihitung ulang.}}",
     "summary": {
       "chartLabel": "Dari {total} siswa: {none} aman, {watch} siaga, {at_risk} berisiko.",
       "label": "Siswa per level",
@@ -65,7 +67,9 @@
       "absentUnit": "dari {considered} hari tidak hadir",
       "disciplineUnit": "poin aktif",
       "warningLettersUnit": "surat",
-      "gradeTrendUnit": "rata-rata rapor, sebelumnya {previous}"
+      "gradeTrendUnit": "rata-rata rapor, sebelumnya {previous}",
+      "belowKktp": "Mapel di bawah KKTP",
+      "belowKktpUnit": "dari {scored} mapel bernilai rapor"
     },
     "reasons": {
       "attendance_absence_watch": "Tidak hadir {absent_days} dari {considered_days} hari sekolah terakhir",
@@ -76,6 +80,8 @@
       "warning_letter_at_risk": "{warning_letter_count} surat peringatan sudah diterbitkan",
       "grade_drop_watch": "Rata-rata nilai rapor turun dari {previous_average} ke {current_average}",
       "grade_drop_at_risk": "Rata-rata nilai rapor turun dari {previous_average} ke {current_average}",
+      "grades_below_kktp_watch": "{below_kktp} dari {scored_subjects} mapel di bawah KKTP",
+      "grades_below_kktp_at_risk": "{below_kktp} dari {scored_subjects} mapel di bawah KKTP",
       "unknown": "Sinyal tidak dikenal"
     },
     "openProfile": "Lihat profil siswa",
@@ -86,9 +92,10 @@
   },
   "policy": {
     "title": "Kebijakan peringatan dini",
-    "description": "Atur ambang dan bobot sinyal. Ambang berisiko harus lebih besar dari ambang siaga. Perubahan digunakan pada perhitungan berikutnya.",
+    "description": "Atur ambang dan bobot sinyal. Ambang berisiko harus lebih besar dari ambang siaga. Daftar dihitung ulang begitu kebijakan disimpan, lalu setiap jam.",
     "thresholdError": "Ambang berisiko harus lebih besar dari ambang siaga.",
-    "saved": "Kebijakan tersimpan.",
+    "saved": "Kebijakan tersimpan dan daftar sudah dihitung ulang.",
+    "savedRecomputeLater": "Kebijakan tersimpan; daftar dihitung ulang pada jadwal berikutnya.",
     "save": "Simpan",
     "cancel": "Batal",
     "groups": {
@@ -96,6 +103,7 @@
       "discipline": "Poin pelanggaran",
       "warningLetter": "Jumlah surat peringatan (SP)",
       "gradeDrop": "Penurunan nilai",
+      "belowKktp": "Mapel di bawah KKTP",
       "weights": "Bobot sinyal",
       "totalScore": "Skor total"
     },
@@ -109,6 +117,8 @@
       "warning_letter_at_risk_count": "Berisiko",
       "grade_drop_watch_points": "Siaga",
       "grade_drop_at_risk_points": "Berisiko",
+      "below_kktp_watch_count": "Siaga",
+      "below_kktp_at_risk_count": "Berisiko",
       "attendance_weight": "Presensi",
       "discipline_weight": "Pelanggaran",
       "warning_weight": "Surat peringatan",

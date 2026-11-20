@@ -1,4 +1,5 @@
 import { ApiError } from "@newsekolah/api-client";
+import type * as UiModule from "@newsekolah/ui";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -11,6 +12,11 @@ interface QueryState {
 }
 let query: QueryState = { data: undefined, isLoading: false, error: null };
 const push = vi.hoisted(() => vi.fn());
+const { recompute, toast, can } = vi.hoisted(() => ({
+  recompute: { mutateAsync: vi.fn(), isPending: false },
+  toast: { success: vi.fn(), error: vi.fn() },
+  can: { manage: false, view: true },
+}));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -25,7 +31,7 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
-  useCan: () => false,
+  useCan: (permission: string) => (permission === "view_early_warning" ? can.view : can.manage),
   useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
 }));
 vi.mock("../../reference/api", () => ({
@@ -45,8 +51,15 @@ vi.mock("../../../components/app-page", () => import("../../../test/app-page-stu
 vi.mock("../../student-services/components/service-workspace-nav", () => ({
   CounselingWorkspaceNav: () => null,
 }));
-vi.mock("../api", () => ({ useAtRiskStudentsQuery: () => query }));
+vi.mock("../api", () => ({
+  useAtRiskStudentsQuery: () => query,
+  useRecomputeEarlyWarningMutation: () => recompute,
+}));
 vi.mock("./policy-dialog", () => ({ PolicyDialog: () => null }));
+vi.mock("@newsekolah/ui", async () => {
+  const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
+  return { ...actual, useToast: () => toast };
+});
 vi.mock("./risk-level-summary", () => ({ RiskLevelSummary: () => null }));
 
 const row = (id: string, score: number) => ({
@@ -119,5 +132,80 @@ describe("AtRiskStudentsView", () => {
       expect(screen.getAllByText("Citra Lestari").length).toBeGreaterThan(0);
     });
     expect(screen.queryAllByText("Budi Santoso")).toHaveLength(0);
+  });
+});
+
+describe("AtRiskStudentsView recalculation", () => {
+  beforeEach(() => {
+    query = {
+      data: { data: [row("s1", 30)] },
+      isLoading: false,
+      error: null,
+    };
+    names = loadedNames;
+    recompute.mutateAsync.mockReset();
+    toast.success.mockReset();
+    toast.error.mockReset();
+  });
+
+  it("is offered to a reader of the list who cannot manage the policy", () => {
+    can.manage = false;
+    render(<AtRiskStudentsView />);
+    expect(screen.getByRole("button", { name: "recompute" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "policy" })).not.toBeInTheDocument();
+  });
+
+  it("is not offered without view_early_warning", () => {
+    can.view = false;
+    render(<AtRiskStudentsView />);
+    expect(screen.queryByRole("button", { name: "recompute" })).not.toBeInTheDocument();
+    can.view = true;
+  });
+
+  it("is not offered when the list turned the reader away", () => {
+    query = {
+      data: undefined,
+      isLoading: false,
+      error: new ApiError({
+        status: 403,
+        code: "ANALYTICS_NOT_HOMEROOM_TEACHER",
+        message: "forbidden",
+      }),
+    };
+    render(<AtRiskStudentsView />);
+    expect(screen.queryByRole("button", { name: "recompute" })).not.toBeInTheDocument();
+  });
+
+  it("says so when a rescore is already running", async () => {
+    recompute.mutateAsync.mockRejectedValue(
+      new ApiError({ status: 409, code: "ANALYTICS_RECOMPUTE_IN_PROGRESS", message: "conflict" }),
+    );
+    render(<AtRiskStudentsView />);
+    fireEvent.click(screen.getByRole("button", { name: "recompute" }));
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("ANALYTICS_RECOMPUTE_IN_PROGRESS");
+    });
+  });
+
+  it("lets a reader recalculate now, once per tap, and says how many were rescored", async () => {
+    can.manage = true;
+    let settle: (value: { scored: number }) => void = () => undefined;
+    recompute.mutateAsync.mockImplementation(
+      () =>
+        new Promise<{ scored: number }>((resolve) => {
+          settle = resolve;
+        }),
+    );
+    render(<AtRiskStudentsView />);
+    const button = screen.getByRole("button", { name: "recompute" });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(recompute.mutateAsync).toHaveBeenCalledTimes(1);
+
+    settle({ scored: 2 });
+    await waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith("recomputed");
+    });
+    can.manage = false;
   });
 });

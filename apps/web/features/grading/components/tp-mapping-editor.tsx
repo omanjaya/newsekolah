@@ -9,7 +9,6 @@ import {
   CardTitle,
   Field,
   Input,
-  NumberInput,
   Skeleton,
   Table,
   TableBody,
@@ -34,7 +33,9 @@ import {
   useSaveTPMappingMutation,
   useTPMappingsQuery,
 } from "../api";
-import { fromText, toText } from "../lib/number-text";
+import { tpRangeProblem, type TPRangeProblem } from "../lib/tp-ranges";
+
+import { RangeInputs, RangeProblem, type RangeScale } from "./tp-range-inputs";
 
 interface RowState {
   export_code: string;
@@ -55,6 +56,9 @@ interface RowState {
  * code takes the spare room.
  */
 const TABLE_MIN_WIDTH = 880;
+
+/** Until the sheet loads: the API's default scale (0-100, two decimals). */
+const DEFAULT_RANGE_SCALE: RangeScale = { min: 0, max: 100, decimals: 2 };
 
 function emptyRow(): RowState {
   return { export_code: "", r_min: "", r_max: "", t_min: "", t_max: "" };
@@ -94,6 +98,10 @@ export function TPMappingEditor({
   const mappings = useTPMappingsQuery(classId, subjectId, termId);
 
   const tpKind = gradebook.data?.scale.tp_kind;
+  const sheetScale = gradebook.data?.scale;
+  const scale: RangeScale = sheetScale
+    ? { min: sheetScale.min, max: sheetScale.max, decimals: sheetScale.round_decimal }
+    : DEFAULT_RANGE_SCALE;
   const eligibleComponents = (gradebook.data?.components ?? []).filter(
     (c) => c.kind === "formative" || (tpKind !== undefined && c.kind === tpKind),
   );
@@ -111,6 +119,7 @@ export function TPMappingEditor({
           key={`${classId}-${subjectId}-${gradebook.data?.term_id ?? ""}`}
           components={eligibleComponents}
           mappings={mappings.data?.data ?? []}
+          scale={scale}
         />
       )}
     </div>
@@ -120,6 +129,9 @@ export function TPMappingEditor({
 interface RowProps {
   component: AssessmentComponent;
   row: RowState;
+  scale: RangeScale;
+  /** Shown once Simpan was pressed with ranges the API would refuse. */
+  problem: TPRangeProblem | null;
   hasMapping: boolean;
   saving: boolean;
   removing: boolean;
@@ -140,9 +152,11 @@ interface RowProps {
 function TPMappingRows({
   components,
   mappings,
+  scale,
 }: {
   components: AssessmentComponent[];
   mappings: TPMapping[];
+  scale: RangeScale;
 }): ReactElement {
   const t = useTranslations("app.grading.tpMapping");
   const toast = useToast();
@@ -164,6 +178,10 @@ function TPMappingRows({
     return initial;
   });
 
+  // Rows whose Simpan was pressed with ranges that cannot be saved: their
+  // problem shows (and updates as the teacher fixes it) from then on.
+  const [attempted, setAttempted] = useState<ReadonlySet<string>>(() => new Set());
+
   function updateRow(componentId: string, patch: Partial<RowState>) {
     setRows((current) => ({
       ...current,
@@ -180,6 +198,10 @@ function TPMappingRows({
   function saveRow(componentId: string) {
     const row = rows[componentId];
     if (!row?.export_code.trim()) return;
+    if (tpRangeProblem(row, scale) !== null) {
+      setAttempted((current) => new Set(current).add(componentId));
+      return;
+    }
     save.mutate(
       {
         component_id: componentId,
@@ -216,6 +238,10 @@ function TPMappingRows({
   const rowProps = (component: AssessmentComponent): RowProps => ({
     component,
     row: rows[component.id] ?? emptyRow(),
+    scale,
+    problem: attempted.has(component.id)
+      ? tpRangeProblem(rows[component.id] ?? emptyRow(), scale)
+      : null,
     hasMapping: mappingByComponent.has(component.id),
     saving: save.isPending,
     removing: remove.isPending,
@@ -262,44 +288,6 @@ function TPMappingRows({
   );
 }
 
-/** The min and max of one range (R or T), each labelled for assistive tech. */
-function RangeInputs({
-  range,
-  row,
-  onChange,
-  inputClassName,
-}: {
-  range: "r" | "t";
-  row: RowState;
-  onChange: (patch: Partial<RowState>) => void;
-  inputClassName: string;
-}): ReactElement {
-  const t = useTranslations("app.grading.tpMapping");
-  const minKey = range === "r" ? "r_min" : "t_min";
-  const maxKey = range === "r" ? "r_max" : "t_max";
-  return (
-    <div className="flex items-center gap-1">
-      <NumberInput
-        className={inputClassName}
-        aria-label={t(range === "r" ? "columns.rMin" : "columns.tMin")}
-        value={fromText(row[minKey])}
-        onChange={(value) => {
-          onChange({ [minKey]: toText(value) });
-        }}
-      />
-      <span className="text-fg-muted">-</span>
-      <NumberInput
-        className={inputClassName}
-        aria-label={t(range === "r" ? "columns.rMax" : "columns.tMax")}
-        value={fromText(row[maxKey])}
-        onChange={(value) => {
-          onChange({ [maxKey]: toText(value) });
-        }}
-      />
-    </div>
-  );
-}
-
 function RowActions({
   row,
   hasMapping,
@@ -339,7 +327,9 @@ function RowActions({
 
 function TPMappingTableRow(props: RowProps): ReactElement {
   const t = useTranslations("app.grading.tpMapping");
-  const { component, row, onChange } = props;
+  const { component, row, scale, problem, onChange } = props;
+  const errorId = useId();
+  const range = { row, scale, invalid: problem !== null, errorId, onChange };
   return (
     <TableRow>
       <TableCell>{component.code}</TableCell>
@@ -355,10 +345,13 @@ function TPMappingTableRow(props: RowProps): ReactElement {
         />
       </TableCell>
       <TableCell>
-        <RangeInputs range="r" row={row} onChange={onChange} inputClassName="w-16" />
+        <RangeInputs range="r" {...range} inputClassName="w-16" />
       </TableCell>
       <TableCell>
-        <RangeInputs range="t" row={row} onChange={onChange} inputClassName="w-16" />
+        <div className="flex flex-col gap-1">
+          <RangeInputs range="t" {...range} inputClassName="w-16" />
+          <RangeProblem id={errorId} problem={problem} scale={scale} />
+        </div>
       </TableCell>
       <TableCell>
         <RowActions {...props} fullWidth={false} />
@@ -369,9 +362,11 @@ function TPMappingTableRow(props: RowProps): ReactElement {
 
 function TPMappingCard(props: RowProps): ReactElement {
   const t = useTranslations("app.grading.tpMapping");
-  const { component, row, onChange } = props;
+  const { component, row, scale, problem, onChange } = props;
   const rLabelId = useId();
   const tLabelId = useId();
+  const errorId = useId();
+  const range = { row, scale, invalid: problem !== null, errorId, onChange };
   return (
     <Card>
       <CardHeader>
@@ -392,14 +387,15 @@ function TPMappingCard(props: RowProps): ReactElement {
           <span id={rLabelId} className="text-label text-fg">
             {t("columns.rRange")}
           </span>
-          <RangeInputs range="r" row={row} onChange={onChange} inputClassName="min-w-0 flex-1" />
+          <RangeInputs range="r" {...range} inputClassName="min-w-0 flex-1" />
         </div>
         <div role="group" aria-labelledby={tLabelId} className="flex flex-col gap-2">
           <span id={tLabelId} className="text-label text-fg">
             {t("columns.tRange")}
           </span>
-          <RangeInputs range="t" row={row} onChange={onChange} inputClassName="min-w-0 flex-1" />
+          <RangeInputs range="t" {...range} inputClassName="min-w-0 flex-1" />
         </div>
+        <RangeProblem id={errorId} problem={problem} scale={scale} />
         <RowActions {...props} fullWidth />
       </CardContent>
     </Card>

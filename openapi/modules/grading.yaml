@@ -820,7 +820,7 @@ components:
         predicate: { type: string }
     EraporSkipReason:
       type: string
-      enum: [missing_nisn, no_published_score]
+      enum: [missing_nisn, subject_not_published, no_score]
     EraporSkip:
       type: object
       required: [student_name, subject_name, reason]
