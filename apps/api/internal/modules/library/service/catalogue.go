@@ -226,7 +226,7 @@ func (s *Service) ListTitles(ctx context.Context, tenantID uuid.UUID, q TitleSea
 		return nil, err
 	}
 	filter := TitleFilter{
-		MaterialTypeID: q.MaterialTypeID, DDCClass: q.DDCClass, AvailableOnly: q.AvailableOnly, Sort: q.Sort,
+		MaterialTypeID: q.MaterialTypeID, DDCClass: domain.DDCPrefix(q.DDCClass), AvailableOnly: q.AvailableOnly, Sort: q.Sort,
 	}
 	if q.Search != "" {
 		filter.Search = q.Search

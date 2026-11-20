@@ -1,6 +1,10 @@
 package domain
 
-import "github.com/google/uuid"
+import (
+	"strings"
+
+	"github.com/google/uuid"
+)
 
 // MasterKind names one of the five catalogue master-data tables, for
 // error messages and generic handling in the transport layer.
@@ -46,4 +50,21 @@ func (e MasterEntry) Validate(kind MasterKind) error {
 type DDCClass struct {
 	Code string
 	Name string
+}
+
+// DDCPrefix turns a catalogue classification filter into the prefix a DDC
+// number must start with. A three-digit code names a class, division or
+// section, which stands for its whole range, so its trailing zeros are not
+// part of the prefix: "800" (Sastra) covers 800-899 and becomes "8", "890"
+// becomes "89", "899" stays "899", and "000" becomes "0". A shorter value
+// is already a prefix and is kept as given; empty input means no filter.
+func DDCPrefix(class string) string {
+	class = strings.TrimSpace(class)
+	if len(class) != 3 {
+		return class
+	}
+	if trimmed := strings.TrimRight(class, "0"); trimmed != "" {
+		return trimmed
+	}
+	return "0"
 }
