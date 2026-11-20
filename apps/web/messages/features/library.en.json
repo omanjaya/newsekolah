@@ -704,7 +704,7 @@
     "emptyFile": "The file has no data rows. Check the filled template again.",
     "parseError": "The file could not be read. Make sure it is an XLSX file matching the template.",
     "committed": "Import applied",
-    "commitRowError": "Row {row}: {message}. Fix that row and upload the file again.",
+    "commitRowError": "Row {row}: {message} Fix that row and upload the file again.",
     "resultSummary": "{titles} new titles, {copies} copies added.",
     "importAnother": "Import another file",
     "mapping": {

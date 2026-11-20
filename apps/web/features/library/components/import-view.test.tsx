@@ -23,8 +23,10 @@ vi.mock("./library-workspace-nav", () => ({
   LibraryWorkspaceNav: () => null,
   useLibraryShortcuts: () => [],
 }));
+// The shared catalog is told apart from the library's own messages, which
+// the next-intl mock renders as their bare key.
 vi.mock("../../../lib/i18n/api-error-message", () => ({
-  useApiErrorMessage: () => (code: string) => code,
+  useApiErrorMessage: () => (code: string) => `shared:${code}`,
 }));
 vi.mock("../import-lib", () => ({
   parseImportFile: () =>
@@ -86,7 +88,28 @@ describe("ImportView commit failure", () => {
     await reachPreview();
     await waitFor(() => {
       expect(
-        screen.getByText('commitRowError {"row":"2","message":"LIBRARY_COPY_BARCODE_EXISTS"}'),
+        screen.getByText(
+          'commitRowError {"row":"2","message":"shared:LIBRARY_COPY_BARCODE_EXISTS."}',
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
+  // The accession code is a library message, not one from the shared
+  // catalog, so it used to fall back to the generic "try again".
+  it("words a taken accession number with the library's own message", async () => {
+    mocks.commit.mockRejectedValue(
+      new ApiError({
+        status: 409,
+        code: "LIBRARY_COPY_ACCESSION_EXISTS",
+        message: "Nomor induk sudah dipakai.",
+        details: [{ field: "row_number", code: "5" }],
+      }),
+    );
+    await reachPreview();
+    await waitFor(() => {
+      expect(
+        screen.getByText('commitRowError {"row":"5","message":"LIBRARY_COPY_ACCESSION_EXISTS."}'),
       ).toBeInTheDocument();
     });
   });

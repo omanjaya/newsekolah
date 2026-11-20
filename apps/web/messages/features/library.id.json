@@ -704,7 +704,7 @@
     "emptyFile": "Berkas tidak berisi baris data. Periksa kembali templat yang diisi.",
     "parseError": "Berkas tidak dapat dibaca. Pastikan formatnya XLSX dan sesuai templat.",
     "committed": "Impor berhasil diterapkan",
-    "commitRowError": "Baris {row}: {message}. Perbaiki baris itu lalu unggah ulang.",
+    "commitRowError": "Baris {row}: {message} Perbaiki baris itu lalu unggah ulang.",
     "resultSummary": "{titles} judul baru, {copies} eksemplar ditambahkan.",
     "importAnother": "Impor berkas lain",
     "mapping": {
