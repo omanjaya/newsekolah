@@ -106,6 +106,43 @@ func TestLateAndOverdueCountTheSchoolsDay(t *testing.T) {
 	require.Equal(t, policy.FinePerDay, overdue[0].TotalFine, "one day late")
 }
 
+// TestReturnAtDawnAfterTheDueDateIsLate proves Return itself reads the
+// school's day: a book due on Thu 19 Nov returned at 07:00 WITA on Fri 20
+// Nov (still 19 Nov in UTC) records the late outcome and counts on the
+// member, so the monthly report's late-return figure agrees with the
+// violations behind it. Return used the UTC date and recorded nothing.
+func TestReturnAtDawnAfterTheDueDateIsLate(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	w := witaWorld(t, ctx, pg, "dawn")
+	svc := service.New(pg.AppPool, repository.New(pg.AppPool), nil, nil, clock.Frozen{At: time.Date(2020, 6, 15, 12, 0, 0, 0, time.UTC)})
+
+	_, err := pg.AdminPool.Exec(ctx, `update library_copies set status = 'on_loan' where id = $1`, w.copyID)
+	require.NoError(t, err)
+	var loanID uuid.UUID
+	require.NoError(t, pg.AdminPool.QueryRow(ctx, `insert into library_loans
+		(tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, status)
+		values ($1, $2, $3, $4, $4, '2026-11-12T02:00:00Z', '2026-11-19', 'active') returning id`,
+		w.tenantID, w.copyID, w.titleID, w.memberUserID).Scan(&loanID))
+
+	// Fri 20 Nov 2026 07:00 WITA.
+	_, err = svc.Return(clock.WithTime(ctx, time.Date(2026, 11, 19, 23, 0, 0, 0, time.UTC)), w.tenantID,
+		service.ReturnInput{Barcode: w.copyBarcode, CheckedInBy: w.memberUserID})
+	require.NoError(t, err)
+
+	var violations, lateCount int
+	require.NoError(t, pg.AdminPool.QueryRow(ctx, `select count(*) from library_violations
+		where loan_id = $1 and kind = 'late'`, loanID).Scan(&violations))
+	require.Equal(t, 1, violations, "returned one school day late")
+	require.NoError(t, pg.AdminPool.QueryRow(ctx, `select late_return_count from library_members
+		where user_id = $1`, w.memberUserID).Scan(&lateCount))
+	require.Equal(t, 1, lateCount)
+
+	monthly, err := svc.MonthlyReport(ctx, w.tenantID, "2026-11")
+	require.NoError(t, err)
+	require.Equal(t, 1, monthly.LateReturns)
+}
+
 // TestReadyHoldLastsToTheEndOfItsOpenDays proves a hold readied on a Friday
 // afternoon with the library closed at the weekend lasts to the end of the
 // second open day (Tuesday) on the school's calendar, rather than lapsing

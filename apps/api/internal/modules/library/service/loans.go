@@ -337,7 +337,10 @@ func (s *Service) Return(ctx context.Context, tenantID uuid.UUID, in ReturnInput
 		if err != nil {
 			return err
 		}
-		lateDays := wdr.WorkingDaysLate(existing.DueOn, now)
+		// The return counts on the school's own day: 07:00 WITA the day after
+		// the due date is still 23:00 UTC on it, and the monthly report counts
+		// late returns on the school's day too.
+		lateDays := wdr.WorkingDaysLate(existing.DueOn, s.schoolDay(ctx, tenantID, now))
 
 		fine := 0
 		if lateDays > 0 {
