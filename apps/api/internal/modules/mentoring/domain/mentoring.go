@@ -121,8 +121,11 @@ func (k MeetingKind) Valid() bool {
 
 // MeetingNoteReader is what the service resolves about the caller before
 // applying the fixed read restriction: the mentor who wrote the note
-// always reads it; a counselor or a leadership duty holder also may,
-// because a note can describe a child's difficulties.
+// always reads it; a holder of the counselor or leadership duty (guru BK,
+// Wakil Kepala Sekolah) also may, because a note can describe a child's
+// difficulties. The principal role is not leadership here: it lacks
+// manage_mentoring, which the notes routes require (role_defaults.go), and
+// the web's withheld-notes copy names the vice principal accordingly.
 type MeetingNoteReader struct {
 	IsAuthor     bool
 	IsCounselor  bool
@@ -149,7 +152,8 @@ type MeetingNote struct {
 	UpdatedAt       time.Time
 }
 
-// VisibleTo applies the fixed restriction: mentor, counselor, leadership.
+// VisibleTo applies the fixed restriction: mentor, counselor duty,
+// leadership duty.
 // Unlike discipline's counseling, there is no per-note visibility choice
 // to configure, so the rule cannot be widened or narrowed by the author.
 func (n MeetingNote) VisibleTo(r MeetingNoteReader) bool {
