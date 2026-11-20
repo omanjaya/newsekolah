@@ -25,7 +25,7 @@ select count(*)::int from library_copies where tenant_id = $1 and created_at >= 
 
 -- name: CountLateReturnsBetween :one
 select count(*)::int from library_loans
-where tenant_id = $1 and returned_at >= $2 and returned_at < $3 and returned_at::date > due_on;
+where tenant_id = $1 and status = 'returned' and returned_at >= $2 and returned_at < $3 and returned_at::date > due_on;
 
 -- name: SumFinesRecordedBetween :one
 select coalesce(sum(fine_amount), 0)::int from library_loans

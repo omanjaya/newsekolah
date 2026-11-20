@@ -91,7 +91,7 @@ func (q *Queries) CountLoansBetween(ctx context.Context, arg CountLoansBetweenPa
 }
 
 const countReturnsBetween = `-- name: CountReturnsBetween :one
-select count(*)::int from library_loans where tenant_id = $1 and returned_at >= $2 and returned_at < $3
+select count(*)::int from library_loans where tenant_id = $1 and status = 'returned' and returned_at >= $2 and returned_at < $3
 `
 
 type CountReturnsBetweenParams struct {
@@ -100,6 +100,8 @@ type CountReturnsBetweenParams struct {
 	ReturnedAt_2 pgtype.Timestamptz `json:"returned_at_2"`
 }
 
+// A lost loan also gets returned_at (the time it was closed) but the book
+// never came back, so only status 'returned' counts as a return.
 func (q *Queries) CountReturnsBetween(ctx context.Context, arg CountReturnsBetweenParams) (int32, error) {
 	row := q.db.QueryRow(ctx, countReturnsBetween, arg.TenantID, arg.ReturnedAt, arg.ReturnedAt_2)
 	var column_1 int32
@@ -166,7 +168,7 @@ func (q *Queries) DailyLoansSeries(ctx context.Context, arg DailyLoansSeriesPara
 const dailyReturnsSeries = `-- name: DailyReturnsSeries :many
 select (returned_at at time zone $1::text)::date as day, count(*)::int as return_count
 from library_loans
-where tenant_id = $2 and returned_at >= $3
+where tenant_id = $2 and status = 'returned' and returned_at >= $3
 group by day
 order by day
 `
@@ -182,7 +184,8 @@ type DailyReturnsSeriesRow struct {
 	ReturnCount int32       `json:"return_count"`
 }
 
-// Grouped by the tenant's calendar day, as DailyLoansSeries.
+// Grouped by the tenant's calendar day, as DailyLoansSeries. Lost loans
+// are not returns (see CountReturnsBetween).
 func (q *Queries) DailyReturnsSeries(ctx context.Context, arg DailyReturnsSeriesParams) ([]DailyReturnsSeriesRow, error) {
 	rows, err := q.db.Query(ctx, dailyReturnsSeries, arg.Tz, arg.TenantID, arg.Since)
 	if err != nil {
@@ -397,9 +400,11 @@ func (q *Queries) PopularTitlesAllTime(ctx context.Context, arg PopularTitlesAll
 }
 
 const sumUnpaidFines = `-- name: SumUnpaidFines :one
-select coalesce(sum(fine_amount), 0)::int from library_loans where tenant_id = $1 and fine_amount > 0 and fine_paid_at is null
+select coalesce(sum(amount), 0)::int from library_violations where tenant_id = $1 and status = 'unpaid' and penalty = 'fine'
 `
 
+// Fines are tracked and settled on library_violations (migration 0091), the
+// same source as HasUnpaidFine; library_loans.fine_paid_at is never set.
 func (q *Queries) SumUnpaidFines(ctx context.Context, tenantID uuid.UUID) (int32, error) {
 	row := q.db.QueryRow(ctx, sumUnpaidFines, tenantID)
 	var column_1 int32
