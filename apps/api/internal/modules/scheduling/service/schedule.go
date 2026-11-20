@@ -257,14 +257,10 @@ func (s *Service) changeFrom(
 		return domain.Schedule{}, err
 	}
 
-	// The new version keeps the block's planned end, if it had one (a
-	// lesson already removed from a later date stays removed).
-	var until *time.Time
-	if primary.EffectiveUntil != nil {
-		last := domain.DateInWeek(domain.WeekStart(*primary.EffectiveUntil), candidate.DayOfWeek)
-		until = &last
-	}
-	from, until, ok := domain.SnapRange(candidate.DayOfWeek, d, until)
+	// The new version keeps the block's planned end, if it had one: a
+	// lesson already removed from a later date stays removed (on the new
+	// weekday, its last date on or before that end).
+	from, until, ok := domain.SnapRange(candidate.DayOfWeek, d, primary.EffectiveUntil)
 	if !ok {
 		return domain.Schedule{}, domain.ErrScheduleEnded
 	}

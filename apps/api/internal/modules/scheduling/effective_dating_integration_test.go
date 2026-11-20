@@ -310,6 +310,19 @@ func TestRemovingALessonFromADateKeepsItsPast(t *testing.T) {
 	// A version already over cannot be removed again.
 	err = w.svc.DeleteScheduleBlock(w.ctx, w.tenant, tuesday.ID, []uuid.UUID{tuesday.ID}, datePtr(t, "2026-09-23"), w.actor)
 	require.ErrorIs(t, err, domain.ErrScheduleEnded)
+
+	// A lesson already removed from a later date keeps that end when it is
+	// changed before it: the new version stops where the old one would.
+	friday := w.create(w.lesson(w.classA, w.t2, 5, w.p1))
+	require.NoError(t, w.svc.DeleteScheduleBlock(w.ctx, w.tenant, friday.ID, []uuid.UUID{friday.ID}, datePtr(t, "2026-10-05"), w.actor))
+	require.Equal(t, mustParseDate(t, "2026-10-02"), *w.get(friday.ID).EffectiveUntil)
+	swap := w.lesson(w.classA, w.t3, 5, w.p1)
+	swap.EffectiveFrom = datePtr(t, "2026-09-21")
+	next, err := w.svc.UpdateSchedule(w.ctx, w.tenant, friday.ID, swap, w.actor)
+	require.NoError(t, err)
+	require.Equal(t, mustParseDate(t, "2026-09-25"), next.EffectiveFrom)
+	require.Equal(t, mustParseDate(t, "2026-10-02"), *next.EffectiveUntil)
+	require.Equal(t, mustParseDate(t, "2026-09-18"), *w.get(friday.ID).EffectiveUntil)
 }
 
 // The anti-clash rule compares versions that share a date: the slot a
