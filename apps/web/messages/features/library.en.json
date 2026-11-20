@@ -279,8 +279,8 @@
       },
       "borrowedDue": "Borrowed, due {date}",
       "returnedOnTime": "Returned on time",
-      "returnedLate": "{days} days late",
-      "returnedLateFine": "{days} days late, fine {amount}",
+      "returnedLate": "{days, plural, one {# working day late} other {# working days late}}",
+      "returnedLateFine": "{days, plural, one {# working day late} other {# working days late}}, fine {amount}",
       "renewedUntil": "Renewed until {date}",
       "heading": {
         "borrow": "Books to lend",

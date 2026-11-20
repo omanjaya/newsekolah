@@ -9,7 +9,6 @@ import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { isoToZonedLocal } from "../../../lib/tenant-date";
 import {
   useBatchBorrowLoansMutation,
   useFindLibraryCopyByCodeMutation,
@@ -30,9 +29,7 @@ import {
   undoLastBasketItem,
   updateBasketItem,
 } from "../lib/desk-basket";
-import { daysBetween } from "../lib/due-date";
 import { useLibraryMemberBorrowingStatusQuery, useLibraryMemberQuery } from "../members-api";
-import { useTenantTimeZone } from "../use-tenant-timezone";
 
 import type { DeskSelectedMember } from "./desk-member-panel";
 
@@ -64,7 +61,6 @@ export function useDeskSession() {
   const t = useTranslations("app.library.desk");
   const apiErrorMessage = useApiErrorMessage();
   const locale = useLocale() as Locale;
-  const timeZone = useTenantTimeZone();
   const feedback = useScanFeedback();
 
   const [mode, setMode] = useState<DeskMode>("borrow");
@@ -175,11 +171,11 @@ export function useDeskSession() {
       try {
         const loan = await returnByBarcode.mutateAsync({ barcode: code });
         const title = await titleName.mutateAsync(loan.title_id).catch(() => code);
-        // Days late on the school's calendar: the return instant's UTC date
-        // is still the day before until 08:00 in a UTC+8 school.
-        const lateDays = loan.returned_at
-          ? daysBetween(loan.due_on, isoToZonedLocal(loan.returned_at, timeZone).slice(0, 10))
-          : 0;
+        // The working days late the server charged for (late_days): closed
+        // weekend days and holidays do not count, so recounting calendar
+        // days here would disagree with the fine and the per-working-day
+        // rate the settings show.
+        const lateDays = loan.late_days ?? 0;
         // The fine is the one the server charged (fine_amount); with
         // currency fines off a late return suspends or warns instead, and
         // claims no "Rp0" fine.
@@ -218,7 +214,7 @@ export function useDeskSession() {
         }));
       }
     },
-    [returnByBarcode, titleName, feedback, apiErrorMessage, t, locale, timeZone],
+    [returnByBarcode, titleName, feedback, apiErrorMessage, t, locale],
   );
 
   const addRenewScan = useCallback(

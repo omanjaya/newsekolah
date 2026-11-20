@@ -27,7 +27,6 @@ vi.mock("../members-api", () => ({
 vi.mock("@newsekolah/ui", () => ({
   useScanFeedback: () => ({ playSuccess: vi.fn(), playError: vi.fn() }),
 }));
-vi.mock("../use-tenant-timezone", () => ({ useTenantTimeZone: () => "Asia/Makassar" }));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => `error:${code}`,
 }));
@@ -58,6 +57,7 @@ describe("useDeskSession", () => {
       due_on: "2026-11-20",
       returned_at: "2026-11-20T08:00:00Z",
       fine_amount: 0,
+      late_days: 0,
     });
     const { result } = renderHook(() => useDeskSession());
     act(() => {
@@ -79,13 +79,15 @@ describe("useDeskSession", () => {
     expect(result.current.scanError).toBe("");
   });
 
-  it("counts lateness on the school's day and shows the fine the server charged", async () => {
-    // 07:30 WITA on Friday 25 Dec is still 24 Dec in UTC.
+  it("shows the working days late and the fine the server charged", async () => {
+    // 07:30 WITA on Friday 25 Dec is still 24 Dec in UTC: the server
+    // counted one working day late on the school's calendar.
     returnByBarcode.mockResolvedValue({
       title_id: "t1",
       due_on: "2026-12-24",
       returned_at: "2026-12-24T23:30:00Z",
       fine_amount: 500,
+      late_days: 1,
     });
     const { result } = renderHook(() => useDeskSession());
     act(() => {
@@ -109,6 +111,7 @@ describe("useDeskSession", () => {
       due_on: "2026-12-24",
       returned_at: "2026-12-28T01:00:00Z",
       fine_amount: 0,
+      late_days: 2,
     });
     const { result } = renderHook(() => useDeskSession());
     act(() => {
@@ -120,7 +123,55 @@ describe("useDeskSession", () => {
     await waitFor(() => {
       expect(result.current.basket.return).toHaveLength(1);
     });
-    expect(result.current.basket.return[0]?.detail).toBe('basket.returnedLate {"days":4}');
+    expect(result.current.basket.return[0]?.detail).toBe('basket.returnedLate {"days":2}');
+  });
+
+  it("counts a Friday-due book returned on Monday as one working day late, not three", async () => {
+    // Due Fri 18 Dec, returned Mon 21 Dec: the closed weekend is not
+    // charged, so the server reports one working day late.
+    returnByBarcode.mockResolvedValue({
+      title_id: "t1",
+      due_on: "2026-12-18",
+      returned_at: "2026-12-21T01:00:00Z",
+      fine_amount: 500,
+      late_days: 1,
+    });
+    const { result } = renderHook(() => useDeskSession());
+    act(() => {
+      result.current.setMode("return");
+    });
+
+    scan(result, "2026/00015");
+
+    await waitFor(() => {
+      expect(result.current.basket.return).toHaveLength(1);
+    });
+    const detail = result.current.basket.return[0]?.detail ?? "";
+    expect(detail).toContain("basket.returnedLateFine");
+    expect(detail).toContain('"days":1');
+  });
+
+  it("reports an on-time return when the server charged no working day late", async () => {
+    // Due Fri 18 Dec, handed to a kiosk on Saturday 19 Dec with the
+    // library closed on weekends: a calendar day passed, no working day.
+    returnByBarcode.mockResolvedValue({
+      title_id: "t1",
+      due_on: "2026-12-18",
+      returned_at: "2026-12-19T02:00:00Z",
+      fine_amount: 0,
+      late_days: 0,
+    });
+    const { result } = renderHook(() => useDeskSession());
+    act(() => {
+      result.current.setMode("return");
+    });
+
+    scan(result, "2026/00016");
+
+    await waitFor(() => {
+      expect(result.current.basket.return).toHaveLength(1);
+    });
+    expect(result.current.basket.return[0]?.detail).toBe("basket.returnedOnTime");
   });
 
   it("shows a renewal saved on a re-scan in place of the earlier refusal", async () => {

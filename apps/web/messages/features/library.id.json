@@ -279,8 +279,8 @@
       },
       "borrowedDue": "Dipinjam, jatuh tempo {date}",
       "returnedOnTime": "Dikembalikan tepat waktu",
-      "returnedLate": "Terlambat {days} hari",
-      "returnedLateFine": "Terlambat {days} hari, denda {amount}",
+      "returnedLate": "Terlambat {days} hari kerja",
+      "returnedLateFine": "Terlambat {days} hari kerja, denda {amount}",
       "renewedUntil": "Diperpanjang sampai {date}",
       "heading": {
         "borrow": "Daftar pinjam",
