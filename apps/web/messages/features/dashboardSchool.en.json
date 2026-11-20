@@ -48,9 +48,9 @@
       }
     },
     "atRisk": {
-      "title": "At-risk students",
+      "title": "Students needing attention",
       "viewAll": "View all",
-      "empty": "No at-risk students right now.",
+      "empty": "No students need attention right now.",
       "unknownStudent": "Unknown student"
     }
   },

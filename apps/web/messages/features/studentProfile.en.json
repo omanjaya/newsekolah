@@ -42,8 +42,8 @@
   "editData": "Edit details",
   "overview": {
     "statsLabel": "Student summary",
-    "attendance": "Attendance",
-    "absentDays": "Absent {absent} of {days} days",
+    "unexcusedAbsence": "Unexcused absences",
+    "unexcusedOf": "Of the last {days} school days; sick and excused days not counted",
     "noAttendance": "No attendance data yet",
     "disciplinePoints": "Violation points",
     "activeViolations": "{n} active violations",

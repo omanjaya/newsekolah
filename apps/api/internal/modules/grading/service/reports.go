@@ -176,13 +176,19 @@ func averagePerStudent(rows []PublishedReportScore) map[uuid.UUID]float64 {
 // winning as final_score -- UpsertReportScore only replaces final_score
 // with the automatic value when no override exists (domain.
 // ComputeReportScore's doc comment has the full rule).
+//
+// A student left with nothing to average (every grade cleared, or the last
+// component removed) loses their automatic report score instead of keeping
+// the last one computed: the gradebook, the e-Rapor export and the
+// student's own grades then all agree there is no report score yet. A
+// manual override stays, because the teacher set it explicitly.
 func (s *Service) recomputeReportScores(ctx context.Context, tenantID, yearID, termID, classID, subjectID uuid.UUID, scale domain.Scale) error {
 	components, err := s.repo.ListComponents(ctx, tenantID, termID, classID, subjectID)
 	if err != nil {
 		return err
 	}
 	if len(components) == 0 {
-		return nil
+		return s.repo.DeleteUngradedReportScores(ctx, tenantID, yearID, termID, classID, subjectID, nil)
 	}
 	componentIDs := make([]uuid.UUID, len(components))
 	for i, c := range components {
@@ -210,6 +216,7 @@ func (s *Service) recomputeReportScores(ctx context.Context, tenantID, yearID, t
 		return err
 	}
 	computedAt := clock.Now(ctx, s.clock)
+	scored := make([]uuid.UUID, 0, len(byStudent))
 	for studentID, scores := range byStudent {
 		raw, ok := domain.WeightedAverage(components, scores)
 		if !ok {
@@ -219,8 +226,9 @@ func (s *Service) recomputeReportScores(ctx context.Context, tenantID, yearID, t
 		if _, err := s.repo.UpsertReportScore(ctx, tenantID, yearID, termID, classID, subjectID, studentID, previous[studentID], nil, result.Automatic, computedAt); err != nil {
 			return err
 		}
+		scored = append(scored, studentID)
 	}
-	return nil
+	return s.repo.DeleteUngradedReportScores(ctx, tenantID, yearID, termID, classID, subjectID, scored)
 }
 
 // applicableRanges keeps the ranges that target this subject or teacher,
@@ -276,13 +284,18 @@ func (s *Service) previousScores(ctx context.Context, tenantID, yearID, termID, 
 // SetManualReportScore to UPDATE. When that happens this falls back to
 // inserting the row with the automatic value the student would otherwise
 // have (studentAutomaticScore), then applying the override on top, so the
-// override always succeeds and clearing it later still restores the same
-// automatic baseline.
-func (s *Service) SetManualScore(ctx context.Context, tenantID, actorID uuid.UUID, canManageAny bool, classID, subjectID, studentID uuid.UUID, termID uuid.NullUUID, manual *float64) (ReportScore, error) {
+// override always succeeds.
+//
+// Clearing an override recomputes the class-subject, the rule every other
+// score change follows: a student with grades gets their automatic score
+// back, and one with no grades (whose row only existed to carry the
+// override) is left with no report score at all, so the e-Rapor export
+// and the student's own grades agree. The result is nil in that case.
+func (s *Service) SetManualScore(ctx context.Context, tenantID, actorID uuid.UUID, canManageAny bool, classID, subjectID, studentID uuid.UUID, termID uuid.NullUUID, manual *float64) (*ReportScore, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
-		return ReportScore{}, err
+		return nil, err
 	}
-	var out ReportScore
+	var out *ReportScore
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeYear(ctx, tenantID)
 		if err != nil {
@@ -303,21 +316,51 @@ func (s *Service) SetManualScore(ctx context.Context, tenantID, actorID uuid.UUI
 			return domain.ErrScoreOutOfRange
 		}
 		computedAt := clock.Now(ctx, s.clock)
-		out, err = s.repo.SetManualReportScore(ctx, tenantID, yearID, term.ID, classID, subjectID, studentID, manual, computedAt)
-		if err == nil {
-			return nil
-		}
-		if !errors.Is(err, domain.ErrComponentNotFound) {
+		row, err := s.repo.SetManualReportScore(ctx, tenantID, yearID, term.ID, classID, subjectID, studentID, manual, computedAt)
+		switch {
+		case err == nil:
+			if manual != nil {
+				out = &row
+				return nil
+			}
+		case !errors.Is(err, domain.ErrComponentNotFound):
+			return err
+		case manual != nil:
+			automatic, previous, err := s.studentAutomaticScore(ctx, tenantID, yearID, term.ID, classID, subjectID, studentID, scale)
+			if err != nil {
+				return err
+			}
+			row, err = s.repo.UpsertReportScore(ctx, tenantID, yearID, term.ID, classID, subjectID, studentID, previous, manual, automatic, computedAt)
+			out = &row
 			return err
 		}
-		automatic, previous, err := s.studentAutomaticScore(ctx, tenantID, yearID, term.ID, classID, subjectID, studentID, scale)
-		if err != nil {
+		// The override is cleared (or there was none to clear): recompute,
+		// then report whatever row the student has left.
+		if err := s.recomputeReportScores(ctx, tenantID, yearID, term.ID, classID, subjectID, scale); err != nil {
 			return err
 		}
-		out, err = s.repo.UpsertReportScore(ctx, tenantID, yearID, term.ID, classID, subjectID, studentID, previous, manual, automatic, computedAt)
+		out, err = s.studentReportScore(ctx, tenantID, term.ID, classID, subjectID, studentID)
 		return err
 	})
-	return out, err
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// studentReportScore is one student's stored report score for a
+// class-subject, or nil when they have none.
+func (s *Service) studentReportScore(ctx context.Context, tenantID, termID, classID, subjectID, studentID uuid.UUID) (*ReportScore, error) {
+	rows, err := s.repo.ListReportScores(ctx, tenantID, termID, classID, subjectID)
+	if err != nil {
+		return nil, err
+	}
+	for i := range rows {
+		if rows[i].StudentUserID == studentID {
+			return &rows[i], nil
+		}
+	}
+	return nil, nil
 }
 
 // studentAutomaticScore computes the automatic report score one student

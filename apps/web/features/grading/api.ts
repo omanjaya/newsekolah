@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError, type components } from "@newsekolah/api-client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 
 import { getAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
@@ -112,9 +112,30 @@ function useInvalidateGradebook() {
   return useInvalidate(["grading", "gradebook"]);
 }
 
+/** Invalidates the views computed from the report scores: the e-Rapor preview and the student's grades. */
+function invalidateReportScoreViews(queryClient: QueryClient) {
+  void queryClient.invalidateQueries({ queryKey: ["grading", "erapor"] });
+  void queryClient.invalidateQueries({ queryKey: ["grading", "my-grades"] });
+}
+
+/**
+ * For a change the server follows by recomputing, rewriting or dropping
+ * report scores (a component added, reweighed or deleted, an override set
+ * or cleared): the gradebook and every view built from those scores, so
+ * the e-Rapor tab does not keep a deleted component's score until the
+ * cache goes stale.
+ */
+function useInvalidateReportScores() {
+  const queryClient = useQueryClient();
+  return () => {
+    void queryClient.invalidateQueries({ queryKey: ["grading", "gradebook"] });
+    invalidateReportScoreViews(queryClient);
+  };
+}
+
 export function useCreateComponentMutation() {
   const client = useApiClient();
-  const invalidate = useInvalidateGradebook();
+  const invalidate = useInvalidateReportScores();
   return useMutation({
     mutationFn: (body: AssessmentComponentWrite) => client.POST("/v1/grading/components", { body }),
     onSuccess: invalidate,
@@ -125,7 +146,7 @@ export function useCreateComponentMutation() {
 
 export function useUpdateComponentMutation() {
   const client = useApiClient();
-  const invalidate = useInvalidateGradebook();
+  const invalidate = useInvalidateReportScores();
   return useMutation({
     mutationFn: ({ id, body }: { id: string; body: AssessmentComponentWrite }) =>
       client.PUT("/v1/grading/components/{componentId}", {
@@ -140,7 +161,7 @@ export function useUpdateComponentMutation() {
 
 export function useDeleteComponentMutation() {
   const client = useApiClient();
-  const invalidate = useInvalidateGradebook();
+  const invalidate = useInvalidateReportScores();
   return useMutation({
     mutationFn: (id: string) =>
       client.DELETE("/v1/grading/components/{componentId}", {
@@ -182,15 +203,14 @@ export function useSaveComponentScoresMutation() {
         (old) => (old && old.term_id === sheet.term_id ? sheet : old),
       );
       // Other views computed from the same scores.
-      void queryClient.invalidateQueries({ queryKey: ["grading", "erapor"] });
-      void queryClient.invalidateQueries({ queryKey: ["grading", "my-grades"] });
+      invalidateReportScoreViews(queryClient);
     },
   });
 }
 
 export function useSetManualReportScoreMutation() {
   const client = useApiClient();
-  const invalidate = useInvalidateGradebook();
+  const invalidate = useInvalidateReportScores();
   return useMutation({
     mutationFn: (body: {
       class_id: string;

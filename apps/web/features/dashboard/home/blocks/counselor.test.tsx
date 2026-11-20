@@ -257,10 +257,10 @@ describe("useCounselorBlock", () => {
       refetchable({
         data: {
           data: [
-            { student_user_id: "s1", class_id: "c1", score: 80, level: "high" },
-            { student_user_id: "s2", class_id: "c1", score: 90, level: "high" },
-            { student_user_id: "s3", class_id: "c1", score: 70, level: "medium" },
-            { student_user_id: "s4", class_id: "c1", score: 60, level: "medium" },
+            { student_user_id: "s1", class_id: "c1", score: 80, level: "at_risk" },
+            { student_user_id: "s2", class_id: "c1", score: 90, level: "at_risk" },
+            { student_user_id: "s3", class_id: "c1", score: 70, level: "watch" },
+            { student_user_id: "s4", class_id: "c1", score: 60, level: "watch" },
             { student_user_id: "s5", class_id: "c1", score: 0, level: "none" },
           ],
         },
@@ -273,7 +273,8 @@ describe("useCounselorBlock", () => {
     expect(result.current.main.map((slot) => slot.key)).toContain("counselor.atRisk");
     expect(result.current.side).toEqual([]);
     render(<>{result.current.main.map((slot) => slot.node)}</>);
-    expect(screen.getByText('count:{"count":4}')).toBeInTheDocument();
+    // Counted per level, as /analytics sums them.
+    expect(screen.getByText('count:{"atRisk":2,"watch":2}')).toBeInTheDocument();
     expect(screen.getByText("Siswa A")).toBeInTheDocument();
     // Only the top three by score are listed (s2, s1, s3); s2 and s3 are unknown to the directory.
     expect(screen.getAllByText("unknownStudent")).toHaveLength(2);

@@ -80,6 +80,40 @@ func (q *Queries) DeleteTPMapping(ctx context.Context, arg DeleteTPMappingParams
 	return err
 }
 
+const deleteUngradedReportScores = `-- name: DeleteUngradedReportScores :exec
+delete from report_scores
+where tenant_id = $1 and academic_year_id = $2 and term_id = $3 and class_id = $4 and subject_id = $5
+  and manual_score is null
+  and not (student_user_id = any($6::uuid[]))
+`
+
+type DeleteUngradedReportScoresParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	TermID         uuid.UUID   `json:"term_id"`
+	ClassID        uuid.UUID   `json:"class_id"`
+	SubjectID      uuid.UUID   `json:"subject_id"`
+	KeepStudentIds []uuid.UUID `json:"keep_student_ids"`
+}
+
+// Drops the automatic report scores of one class-subject whose student has
+// no grade left to average (every score cleared, or the last component
+// removed), so the gradebook, the e-Rapor export and the student's own
+// grades all agree the student has no report score yet. keep_student_ids
+// are the students recomputation just wrote a score for. A row with a
+// manual override stays: the teacher set it explicitly.
+func (q *Queries) DeleteUngradedReportScores(ctx context.Context, arg DeleteUngradedReportScoresParams) error {
+	_, err := q.db.Exec(ctx, deleteUngradedReportScores,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.TermID,
+		arg.ClassID,
+		arg.SubjectID,
+		arg.KeepStudentIds,
+	)
+	return err
+}
+
 const getTPMapping = `-- name: GetTPMapping :one
 select id, tenant_id, component_id, export_code, r_min, r_max, t_min, t_max from report_tp_mappings where tenant_id = $1 and id = $2
 `

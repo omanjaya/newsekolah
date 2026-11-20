@@ -48,9 +48,9 @@
       }
     },
     "atRisk": {
-      "title": "Siswa berisiko",
+      "title": "Siswa perlu perhatian",
       "viewAll": "Lihat semua",
-      "empty": "Tidak ada siswa berisiko saat ini.",
+      "empty": "Tidak ada siswa yang perlu perhatian saat ini.",
       "unknownStudent": "Siswa tidak dikenal"
     }
   },

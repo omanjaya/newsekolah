@@ -10,6 +10,7 @@ import {
   DialogFooter,
   focusOnOpen,
   GrabHandle,
+  keepOpenForToasts,
   OverlayBody,
   OverlayDragDismiss,
   OverlayFooter,
@@ -101,6 +102,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
     size = "md",
     onOpenAutoFocus,
     onCloseAutoFocus,
+    onInteractOutside,
     returnFocusFallback,
     children,
     ...props
@@ -139,6 +141,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
           className,
         )}
         {...props}
+        onInteractOutside={keepOpenForToasts(onInteractOutside)}
         {...returnFocus}
       >
         <GrabHandle className="sm:hidden" />

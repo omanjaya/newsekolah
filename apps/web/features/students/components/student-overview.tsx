@@ -21,7 +21,7 @@ import {
   domainIcons,
 } from "@newsekolah/ui";
 import {
-  CalendarCheck,
+  CalendarX,
   FileWarning,
   MessagesSquare,
   ShieldAlert,
@@ -137,12 +137,11 @@ function RiskStats({ studentId }: { studentId: string }): ReactElement {
         active: signals?.active_violation_count ?? 0,
         letters: signals?.warning_letter_count ?? 0,
       };
-  const attendance =
-    signals?.has_attendance && signals.considered_days > 0
-      ? Math.round(
-          ((signals.considered_days - signals.absent_days) / signals.considered_days) * 100,
-        )
-      : undefined;
+  // The early-warning signal counts only alpha (unexcused) days; a sick or
+  // excused day is not an absence there. So the card shows that count by
+  // name instead of an attendance percentage that read a sick day as present.
+  const unexcused =
+    signals?.has_attendance && signals.considered_days > 0 ? signals.absent_days : undefined;
   const gradeDelta =
     signals?.has_grade_trend && signals.previous_average > 0
       ? Math.round((signals.current_average - signals.previous_average) * 10) / 10
@@ -152,15 +151,18 @@ function RiskStats({ studentId }: { studentId: string }): ReactElement {
     <div className="flex flex-col gap-3">
       <StatGrid variant="tiles" aria-label={t("statsLabel")}>
         <Stat
-          icon={<CalendarCheck />}
+          icon={<CalendarX />}
           className="animate-enter"
           style={enterStep(0)}
-          tone="green"
-          label={t("attendance")}
-          value={attendance === undefined ? "–" : `${attendance}%`}
+          // An absence count, so never the green of a good figure: amber
+          // once there is an alpha day, as the discipline tiles beside it
+          // turn red and amber, and a quiet hue while there is none.
+          tone={unexcused ? "amber" : "purple"}
+          label={t("unexcusedAbsence")}
+          value={unexcused ?? "–"}
           hint={
             signals?.has_attendance
-              ? t("absentDays", { absent: signals.absent_days, days: signals.considered_days })
+              ? t("unexcusedOf", { days: signals.considered_days })
               : t("noAttendance")
           }
           loading={loading}

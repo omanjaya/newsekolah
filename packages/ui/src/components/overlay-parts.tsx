@@ -294,6 +294,26 @@ export function focusOnOpen(
   };
 }
 
+/**
+ * An `onInteractOutside` for a modal overlay that ignores a press or focus
+ * on a toast: the toaster is mounted at the app root, outside the overlay,
+ * so Radix would otherwise treat clicking a toast's action (an undo for
+ * what was just done inside the overlay) as a click outside and close the
+ * overlay under it. Anything else reaches the caller's own handler.
+ */
+export function keepOpenForToasts<E extends Event>(
+  onInteractOutside: ((event: E) => void) | undefined,
+): (event: E) => void {
+  return (event) => {
+    const target = event.target;
+    if (target instanceof Element && target.closest("[data-sonner-toaster]")) {
+      event.preventDefault();
+      return;
+    }
+    onInteractOutside?.(event);
+  };
+}
+
 /** Hands `node` to a forwarded ref, whichever kind it is. */
 function assignRef<T>(ref: ForwardedRef<T>, node: T | null) {
   if (typeof ref === "function") ref(node);

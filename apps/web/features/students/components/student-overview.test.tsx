@@ -8,6 +8,9 @@ const risk = vi.hoisted(() => ({
   current_average: 0,
   previous_average: 0,
   has_grade_trend: false,
+  has_attendance: false,
+  absent_days: 0,
+  considered_days: 0,
   error: undefined as ApiError | undefined,
 }));
 const discipline = vi.hoisted(() => ({
@@ -62,9 +65,9 @@ vi.mock("../../analytics/api", () => ({
           computed_at: risk.computed_at,
           reasons: [],
           signals: {
-            has_attendance: false,
-            absent_days: 0,
-            considered_days: 0,
+            has_attendance: risk.has_attendance,
+            absent_days: risk.absent_days,
+            considered_days: risk.considered_days,
             discipline_points: 0,
             active_violation_count: 0,
             warning_letter_count: 0,
@@ -82,6 +85,13 @@ vi.mock("../../analytics/api", () => ({
 
 import { StudentOverviewTab } from "./student-overview";
 
+/** The soft circle behind the alpha-days tile's icon, which carries its hue. */
+function absenceIcon(): Element {
+  const circle = document.querySelector(".lucide-calendar-x")?.closest("[data-stat-icon]");
+  if (!circle) throw new Error("absence icon not found");
+  return circle;
+}
+
 describe("StudentOverviewTab risk figures", () => {
   beforeEach(() => {
     risk.computed_at = "2026-11-13T00:00:00Z";
@@ -89,6 +99,9 @@ describe("StudentOverviewTab risk figures", () => {
     risk.current_average = 0;
     risk.previous_average = 0;
     risk.error = undefined;
+    risk.has_attendance = false;
+    risk.absent_days = 0;
+    risk.considered_days = 0;
     discipline.permissions = ["view_early_warning"];
     discipline.live = undefined;
   });
@@ -100,6 +113,32 @@ describe("StudentOverviewTab risk figures", () => {
     render(<StudentOverviewTab studentId="s-1" />);
 
     expect(screen.getByText("78,5")).toBeInTheDocument();
+  });
+
+  it("names the attendance figure as alpha days, so a sick day never reads as present", () => {
+    // Two school days: one present, one sick. The signal counts alpha only.
+    risk.has_attendance = true;
+    risk.absent_days = 0;
+    risk.considered_days = 2;
+    render(<StudentOverviewTab studentId="s-1" />);
+
+    expect(screen.getByText("unexcusedAbsence")).toBeInTheDocument();
+    expect(screen.getByText('unexcusedOf {"days":2}')).toBeInTheDocument();
+    expect(screen.queryByText("100%")).not.toBeInTheDocument();
+    expect(screen.queryByText("attendance")).not.toBeInTheDocument();
+    expect(absenceIcon()).not.toHaveClass("text-category-amber");
+    expect(absenceIcon()).not.toHaveClass("text-category-green");
+  });
+
+  it("marks alpha days with an absence icon in a warning hue, never a green check", () => {
+    risk.has_attendance = true;
+    risk.absent_days = 5;
+    risk.considered_days = 20;
+    render(<StudentOverviewTab studentId="s-1" />);
+
+    expect(screen.getByText("5")).toBeInTheDocument();
+    expect(absenceIcon()).toHaveClass("text-category-amber");
+    expect(document.querySelector(".lucide-calendar-check")).toBeNull();
   });
 
   it("states when the score was computed in the school's time zone", () => {

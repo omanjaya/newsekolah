@@ -1,4 +1,3 @@
-import type * as UiModule from "@newsekolah/ui";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,10 +5,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useViolationTypesQuery: vi.fn(),
   update: vi.fn(),
-  toastSuccess: vi.fn(),
 }));
 
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string, params?: Record<string, unknown>) =>
+    params ? `${key} ${JSON.stringify(params)}` : key,
+}));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/discipline/catalog",
   useSearchParams: () => new URLSearchParams(window.location.search),
@@ -21,11 +22,6 @@ vi.mock("../api", () => ({
   useViolationTypesQuery: mocks.useViolationTypesQuery,
   useUpdateViolationTypeMutation: () => ({ mutateAsync: mocks.update, isPending: false }),
 }));
-
-vi.mock("@newsekolah/ui", async () => {
-  const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
-  return { ...actual, useToast: () => ({ success: mocks.toastSuccess, error: vi.fn() }) };
-});
 
 import { ViolationCatalogView } from "./violation-catalog-view";
 
@@ -103,7 +99,6 @@ describe("ViolationCatalogView status actions", () => {
   beforeEach(() => {
     mocks.update.mockReset();
     mocks.update.mockResolvedValue({});
-    mocks.toastSuccess.mockReset();
     mocks.useViolationTypesQuery.mockReset();
     mocks.useViolationTypesQuery.mockReturnValue({
       data: { data: [active, inactive] },
@@ -130,20 +125,45 @@ describe("ViolationCatalogView status actions", () => {
         is_active: false,
       });
     });
-    await waitFor(() => {
-      expect(mocks.toastSuccess).toHaveBeenCalled();
-    });
-    const [, options] = mocks.toastSuccess.mock.calls[0] as [
-      string,
-      { action: { label: string; onClick: () => void } },
-    ];
-    expect(options.action.label).toBe("undo");
-    options.action.onClick();
+    // The outcome and its undo sit in the view itself (inside the sheet's
+    // focus trap), announced as a status, not only in a toast outside it.
+    const status = await screen.findByRole("status");
+    expect(status).toHaveTextContent('deactivated {"name":"Membawa barang elektronik"}');
+    const undo = within(status).getByRole("button", { name: "undo" });
+
+    // Reached and pressed with the keyboard alone.
+    undo.focus();
+    await user.keyboard("{Enter}");
     await waitFor(() => {
       expect(mocks.update).toHaveBeenLastCalledWith(
         expect.objectContaining({ id: "t1", is_active: true }),
       );
     });
+    await waitFor(() => {
+      expect(screen.getByRole("status")).toHaveTextContent(
+        'activated {"name":"Membawa barang elektronik"}',
+      );
+    });
+    expect(
+      within(screen.getByRole("status")).queryByRole("button", { name: "undo" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("reaches the undo by tabbing from the row's actions menu", async () => {
+    const user = userEvent.setup();
+    render(<ViolationCatalogView />);
+
+    const row = screen.getByRole("row", { name: /LN01/ });
+    await user.click(within(row).getByRole("button", { name: "columns.actions" }));
+    await user.click(await screen.findByRole("menuitem", { name: "deactivate" }));
+    const status = await screen.findByRole("status");
+    const undo = within(status).getByRole("button", { name: "undo" });
+
+    // The notice sits before the table, so it is a backwards tab away.
+    for (let i = 0; i < 20 && document.activeElement !== undo; i += 1) {
+      await user.tab({ shift: true });
+    }
+    expect(undo).toHaveFocus();
   });
 
   it("offers to switch an inactive type back on", async () => {

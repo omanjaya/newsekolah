@@ -146,7 +146,16 @@ func (s *Service) UpdateComponent(ctx context.Context, tenantID, componentID, ac
 		}
 		current.Kind, current.KKTP, current.Weight, current.Sequence = in.Kind, in.KKTP, in.Weight, in.Sequence
 		out, err = s.repo.UpdateComponent(ctx, current)
-		return err
+		if err != nil {
+			return err
+		}
+		// A new weight changes every weighted average, so the report
+		// scores are recomputed with it, as SaveScores does for a score.
+		scale, err := s.loadScale(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		return s.recomputeReportScores(ctx, tenantID, current.AcademicYearID, current.TermID, current.ClassID, current.SubjectID, scale)
 	})
 	return out, err
 }
@@ -178,7 +187,16 @@ func (s *Service) DeleteComponent(ctx context.Context, tenantID, componentID, ac
 		if hasGrades {
 			return domain.ErrComponentHasGrades
 		}
-		return s.repo.DeleteComponent(ctx, tenantID, componentID)
+		if err := s.repo.DeleteComponent(ctx, tenantID, componentID); err != nil {
+			return err
+		}
+		// Removing the last component leaves nothing to average, so the
+		// report scores follow (recomputeReportScores drops them).
+		scale, err := s.loadScale(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		return s.recomputeReportScores(ctx, tenantID, current.AcademicYearID, current.TermID, current.ClassID, current.SubjectID, scale)
 	})
 }
 
