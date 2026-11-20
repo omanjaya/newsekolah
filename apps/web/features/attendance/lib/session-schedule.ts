@@ -1,9 +1,14 @@
-/** A lesson's fill state, for the session list's status badge (docs/07-ui-ux.md). */
-export type SessionFillStatus = "empty" | "saved" | "locked";
+/**
+ * A lesson's fill state, for the session list's status badge
+ * (docs/07-ui-ux.md). "handedOver" is one of the teacher's own lessons an
+ * accepted substitute fills instead; "upcoming" is a lesson on a date that
+ * has not arrived, which cannot be recorded ahead of the day.
+ */
+export type SessionFillStatus = "empty" | "saved" | "locked" | "handedOver" | "upcoming";
 
 /**
  * Derives the badge state from what the list already has: no submission
- * yet is always "empty"; a submission on a past date is treated as
+ * yet is "empty" (or "handedOver" / "upcoming", see SessionFillStatus); a submission on a past date is treated as
  * "locked" because reopening it always goes through the correction
  * workflow (`session-editor.tsx`'s `isCorrection`), while a submission on
  * today's date is "saved" -- still freely revisitable for the rest of the
@@ -14,8 +19,12 @@ export function deriveFillStatus(
   submittedAt: string | undefined,
   date: string,
   today: string,
+  handedOver = false,
 ): SessionFillStatus {
-  if (!submittedAt) return "empty";
+  if (!submittedAt) {
+    if (handedOver) return "handedOver";
+    return date > today ? "upcoming" : "empty";
+  }
   return date < today ? "locked" : "saved";
 }
 

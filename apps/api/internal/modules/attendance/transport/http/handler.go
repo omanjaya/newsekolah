@@ -85,6 +85,8 @@ var (
 	errInvalidScope             = httpx.NewError(http.StatusBadRequest, "ATTENDANCE_INVALID_SCOPE")
 	errUnknownColumn            = httpx.NewError(http.StatusBadRequest, "ATTENDANCE_REPORT_UNKNOWN_COLUMN")
 	errMonitorTokenInvalid      = httpx.NewError(http.StatusUnauthorized, "ATTENDANCE_MONITOR_TOKEN_INVALID")
+	errSessionNotStarted        = httpx.NewError(http.StatusUnprocessableEntity, "ATTENDANCE_SESSION_NOT_STARTED")
+	errNotSchoolDay             = httpx.NewError(http.StatusUnprocessableEntity, "ATTENDANCE_NOT_SCHOOL_DAY")
 )
 
 // mapAttendanceError translates an attendance/domain sentinel error into
@@ -110,6 +112,10 @@ func mapAttendanceError(err error) error {
 		return errStudentNotInClass
 	case errors.Is(err, domain.ErrSaveWindowClosed):
 		return errWindowClosed
+	case errors.Is(err, domain.ErrSessionNotStarted):
+		return errSessionNotStarted
+	case errors.Is(err, domain.ErrNotSchoolDay):
+		return errNotSchoolDay
 	case errors.Is(err, domain.ErrCorrectionWindowClosed):
 		return errCorrectionWindowClosed
 	case errors.Is(err, domain.ErrCorrectionNotAllowed):

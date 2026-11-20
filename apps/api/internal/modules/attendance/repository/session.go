@@ -34,9 +34,28 @@ func (r *Repository) OpenSession(ctx context.Context, s domain.Session) (domain.
 		if !found {
 			return domain.Session{}, false, domain.ErrSessionNotFound
 		}
+		if !existing.SubstituteUserID.Valid && s.SubstituteUserID.Valid {
+			filled, ferr := r.queries(ctx).FillAttendanceSessionSubstitute(ctx, db.FillAttendanceSessionSubstituteParams{
+				TenantID: s.TenantID, ID: existing.ID, SubstituteUserID: pdatabase.NullUUID(s.SubstituteUserID),
+			})
+			switch {
+			case ferr == nil:
+				return toSession(filled), false, nil
+			case errors.Is(ferr, pgx.ErrNoRows):
+				// Another request recorded a substitute first; keep it.
+				return r.reread(ctx, existing)
+			default:
+				return domain.Session{}, false, ferr
+			}
+		}
 		return existing, false, nil
 	}
 	return domain.Session{}, false, err
+}
+
+func (r *Repository) reread(ctx context.Context, s domain.Session) (domain.Session, bool, error) {
+	fresh, err := r.GetSessionByID(ctx, s.TenantID, s.ID)
+	return fresh, false, err
 }
 
 func (r *Repository) GetSessionByID(ctx context.Context, tenantID, id uuid.UUID) (domain.Session, error) {

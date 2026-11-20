@@ -161,6 +161,16 @@ func (r *Repository) ListAcceptedSubstitutionsForSubstituteDate(ctx context.Cont
 	return toSubstitutions(rows), nil
 }
 
+func (r *Repository) ListAcceptedSubstitutionsForRequesterDate(ctx context.Context, tenantID, requesterUserID uuid.UUID, date time.Time) ([]domain.Substitution, error) {
+	rows, err := r.queries(ctx).ListAcceptedSubstitutionsForRequesterDate(ctx, db.ListAcceptedSubstitutionsForRequesterDateParams{
+		TenantID: tenantID, RequesterUserID: requesterUserID, Date: pdatabase.Date(date),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return toSubstitutions(rows), nil
+}
+
 func toSubstitutions(rows []db.SubstitutionRequest) []domain.Substitution {
 	out := make([]domain.Substitution, len(rows))
 	for i, row := range rows {

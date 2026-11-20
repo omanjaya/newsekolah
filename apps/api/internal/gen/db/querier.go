@@ -545,6 +545,11 @@ type Querier interface {
 	// the caller release each held copy without a second lookup.
 	ExpireReadyReservations(ctx context.Context, arg ExpireReadyReservationsParams) ([]LibraryReservation, error)
 	FictionRatioCounts(ctx context.Context, tenantID uuid.UUID) (FictionRatioCountsRow, error)
+	// Records the accepted substitute on a session first opened without one
+	// (the original teacher's list opened it before the substitute's did), so
+	// the row names who teaches it whoever opens it first. Never overwrites a
+	// substitute already recorded.
+	FillAttendanceSessionSubstitute(ctx context.Context, arg FillAttendanceSessionSubstituteParams) (AttendanceSession, error)
 	// The identity-side mirror of academic's AcademicFindActiveHomeroomAssignment:
 	// lets CreateDutyAssignment end the class's previous active homeroom duty
 	// before creating a new one, so at most one stays active at a time.
@@ -937,6 +942,11 @@ type Querier interface {
 	ItemsByMaterialType(ctx context.Context, tenantID uuid.UUID) ([]ItemsByMaterialTypeRow, error)
 	ListAPIKeys(ctx context.Context, tenantID uuid.UUID) ([]IntegrationApiKey, error)
 	ListAcademicYears(ctx context.Context, tenantID uuid.UUID) ([]AcademicYear, error)
+	// The other side of ListAcceptedSubstitutionsForSubstituteDate: every
+	// lesson a teacher handed over to a substitute on one date (the requester
+	// is always the schedule's own teacher), so the attendance list can mark
+	// it handed over instead of asking that teacher to fill it.
+	ListAcceptedSubstitutionsForRequesterDate(ctx context.Context, arg ListAcceptedSubstitutionsForRequesterDateParams) ([]SubstitutionRequest, error)
 	// Every schedule a teacher is standing in for on one date, accepted only --
 	// the input to the attendance module's "today's sessions" list
 	// (own schedules plus accepted substitutions).

@@ -193,6 +193,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Violations: lateViolations, Discipline: lateDiscipline, Presence: presence,
 		Letterheads: wiring.ReportHeaderReports{Svc: schoolModule.Service},
 	})
+	attendanceModule.Service.SetCalendar(classCalendar)
 	sync.inner = attendanceSyncAdapter{force: attendanceModule.Service.ForceStatus}
 
 	staffAttendanceModule := staffattendance.Register(staffattendance.Dependencies{

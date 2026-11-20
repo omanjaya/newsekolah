@@ -3151,6 +3151,10 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/AttendanceSessionSummary"
+                  holiday_name:
+                    type: string
+                    description: Name of the academic calendar event (holiday, no-school day, semester break) that cancelled lessons on this
+                      date, when one did. Its lessons are left out of data.
         "401":
           $ref: "#/components/responses/Unauthorized"
   /v1/attendance/sessions:
@@ -20387,6 +20391,11 @@ components:
           format: uuid
         is_substitute:
           type: boolean
+        handed_over_to_user_id:
+          type: string
+          format: uuid
+          description: Set on one of the teacher's own lessons that an accepted substitution hands to this teacher; the substitute
+            fills it.
         submitted_at:
           type: string
           format: date-time

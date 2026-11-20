@@ -23,6 +23,7 @@ import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
+import { isoWeekdayOf } from "../../../lib/tenant-date";
 import {
   useClassesQuery,
   useLookup,
@@ -66,13 +67,6 @@ export function AttendanceView(): ReactElement {
 
   // A student's own month, with its month switcher in the page header.
   return <AttendanceCalendar />;
-}
-
-/** ISO weekday (1 Monday .. 7 Sunday) of a "YYYY-MM-DD" date. */
-function isoWeekday(date: string): number {
-  const [y, m, d] = date.split("-").map(Number) as [number, number, number];
-  const jsDay = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
-  return jsDay === 0 ? 7 : jsDay;
 }
 
 /**
@@ -139,7 +133,7 @@ export function DaySessions(): ReactElement {
   }, [schoolDays.data]);
   // Unknown (school-day list still loading) defaults to "is a school day"
   // so the more specific "not a school day" message never flashes wrong.
-  const isSchoolDay = schoolDays.isLoading || activeWeekdays.has(isoWeekday(date));
+  const isSchoolDay = schoolDays.isLoading || activeWeekdays.has(isoWeekdayOf(date));
 
   async function openSession(session: SessionSummary) {
     const mode = viewingOther ? "correction" : "normal";
@@ -235,27 +229,42 @@ export function DaySessions(): ReactElement {
     );
   }, [isToday, sortedItems, periodMap, now]);
 
-  const dayItems: DaySessionItem[] = sortedItems.map((session) => ({
-    session,
-    className: classMap.get(session.class_id)?.name ?? t("unknownClass"),
-    subjectName: subjectMap.get(session.subject_id)?.name ?? t("unknownSubject"),
-    start: periodMap.get(session.start_period_id),
-    end: periodMap.get(session.end_period_id),
-    fillStatus: deriveFillStatus(session.submitted_at, session.date || date, today),
-    timing:
-      session.schedule_id === ongoingScheduleId
-        ? "ongoing"
-        : session.schedule_id === nextScheduleId
-          ? "next"
-          : null,
-    submitting: open.isPending && open.variables.schedule_id === session.schedule_id,
-  }));
+  const dayItems: DaySessionItem[] = sortedItems.map((session) => {
+    const fillStatus = deriveFillStatus(
+      session.submitted_at,
+      session.date || date,
+      today,
+      Boolean(session.handed_over_to_user_id),
+    );
+    return {
+      session,
+      className: classMap.get(session.class_id)?.name ?? t("unknownClass"),
+      subjectName: subjectMap.get(session.subject_id)?.name ?? t("unknownSubject"),
+      start: periodMap.get(session.start_period_id),
+      end: periodMap.get(session.end_period_id),
+      fillStatus,
+      // A lesson handed to a substitute is theirs to fill, never this
+      // teacher's "now" or "next" hero.
+      timing:
+        fillStatus === "handedOver"
+          ? null
+          : session.schedule_id === ongoingScheduleId
+            ? "ongoing"
+            : session.schedule_id === nextScheduleId
+              ? "next"
+              : null,
+      submitting: open.isPending && open.variables.schedule_id === session.schedule_id,
+    };
+  });
   // The lesson running now is the hero; with none running, the next one today.
   const hero =
     dayItems.find((item) => item.timing === "ongoing") ??
     dayItems.find((item) => item.timing === "next");
   const others = dayItems.filter((item) => item !== hero);
   const savedCount = sortedItems.filter((s) => Boolean(s.submitted_at)).length;
+  // A handed-over lesson is neither saved nor waiting on this teacher.
+  const handedOverCount = dayItems.filter((item) => item.fillStatus === "handedOver").length;
+  const holidayName = sessions.data?.holiday_name;
 
   // The teacher's own report is the area's "Laporan presensi" tab, so the
   // header does not offer it again.
@@ -304,8 +313,9 @@ export function DaySessions(): ReactElement {
               {t("daySummary", {
                 total: sortedItems.length,
                 saved: savedCount,
-                pending: sortedItems.length - savedCount,
+                pending: sortedItems.length - savedCount - handedOverCount,
               })}
+              {handedOverCount > 0 && ` · ${t("dayHandedOver", { count: handedOverCount })}`}
             </p>
           )}
         </>
@@ -322,13 +332,21 @@ export function DaySessions(): ReactElement {
       ) : items.length === 0 ? (
         <EmptyState
           icon={<domainIcons.attendance aria-hidden="true" />}
-          title={!isSchoolDay ? t("notSchoolDayTitle") : t("noScheduleTitle")}
+          title={
+            holidayName
+              ? t("holidayTitle", { name: holidayName })
+              : !isSchoolDay
+                ? t("notSchoolDayTitle")
+                : t("noScheduleTitle")
+          }
           description={
-            !isSchoolDay
-              ? t("notSchoolDayBody")
-              : viewingOther
-                ? t("noScheduleOtherBody", { name: selectedTeacherName ?? "" })
-                : t("noScheduleSelfBody")
+            holidayName
+              ? t("holidayBody")
+              : !isSchoolDay
+                ? t("notSchoolDayBody")
+                : viewingOther
+                  ? t("noScheduleOtherBody", { name: selectedTeacherName ?? "" })
+                  : t("noScheduleSelfBody")
           }
           // A day with nothing to take still has a way on: the timetable.
           action={

@@ -48,6 +48,9 @@ type SaveWindowInput struct {
 // ResolveSaveWindow decides whether a save in the given mode is currently
 // allowed, returning a domain error identifying why not.
 func ResolveSaveWindow(in SaveWindowInput, mode SaveMode) error {
+	if SessionNotStarted(in.SessionDate, in.Now) {
+		return ErrSessionNotStarted
+	}
 	switch mode {
 	case SaveModeNormal:
 		if !in.Now.After(in.PeriodEndAt) {
@@ -68,6 +71,15 @@ func ResolveSaveWindow(in SaveWindowInput, mode SaveMode) error {
 	default:
 		return ErrCorrectionNotAllowed
 	}
+}
+
+// SessionNotStarted reports whether sessionDate's calendar date lies after
+// now's, both read as wall-clock dates (now already in the tenant's zone).
+// Attendance is never recorded ahead of the day, in any save mode.
+func SessionNotStarted(sessionDate, now time.Time) bool {
+	sy, sm, sd := sessionDate.Date()
+	ny, nm, nd := now.Date()
+	return time.Date(sy, sm, sd, 0, 0, 0, 0, time.UTC).After(time.Date(ny, nm, nd, 0, 0, 0, 0, time.UTC))
 }
 
 func correctionDeadline(sessionDate time.Time, correctionDays int) time.Time {

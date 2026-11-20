@@ -101,6 +101,32 @@ func (a *ScheduleReaderAdapter) CountSchedulesForClassDay(ctx context.Context, t
 	return out, err
 }
 
+// HandOver is one of a teacher's own lessons on a date that an accepted
+// substitution hands to SubstituteUserID.
+type HandOver struct {
+	ScheduleID       uuid.UUID
+	SubstituteUserID uuid.UUID
+}
+
+// ListHandOversForTeacherDate lists teacherUserID's lessons on date that an
+// accepted substitution hands to someone else, so attendance can mark them
+// handed over instead of asking the original teacher to fill them.
+func (a *ScheduleReaderAdapter) ListHandOversForTeacherDate(ctx context.Context, tenantID, teacherUserID uuid.UUID, date time.Time) ([]HandOver, error) {
+	var out []HandOver
+	err := a.svc.withTx(ctx, tenantID, func(ctx context.Context) error {
+		subs, err := a.svc.repo.ListAcceptedSubstitutionsForRequesterDate(ctx, tenantID, teacherUserID, date)
+		if err != nil {
+			return err
+		}
+		out = make([]HandOver, len(subs))
+		for i, sub := range subs {
+			out[i] = HandOver{ScheduleID: sub.ScheduleID, SubstituteUserID: sub.SubstituteUserID}
+		}
+		return nil
+	})
+	return out, err
+}
+
 // ClassDayCount is how many schedules one class has on one weekday: the
 // expected-session count attendance's daily status needs.
 type ClassDayCount struct {

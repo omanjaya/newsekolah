@@ -10,6 +10,15 @@ insert into attendance_sessions (
 on conflict (schedule_id, date) do nothing
 returning *;
 
+-- name: FillAttendanceSessionSubstitute :one
+-- Records the accepted substitute on a session first opened without one
+-- (the original teacher's list opened it before the substitute's did), so
+-- the row names who teaches it whoever opens it first. Never overwrites a
+-- substitute already recorded.
+update attendance_sessions set substitute_user_id = $3
+where tenant_id = $1 and id = $2 and substitute_user_id is null
+returning *;
+
 -- name: GetAttendanceSessionBySchedule :one
 select * from attendance_sessions where tenant_id = $1 and schedule_id = $2 and date = $3;
 

@@ -3,7 +3,7 @@
 import type { Locale } from "@newsekolah/i18n";
 import { formatTime } from "@newsekolah/i18n";
 import { Badge, Button, HeroCard, List, ListRow, Progress, SectionHeader } from "@newsekolah/ui";
-import { Lock } from "lucide-react";
+import { Lock, UserRoundCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 
@@ -62,6 +62,21 @@ function StatusBadge({
       <Badge tone="neutral" size="sm">
         <Lock className="size-3" aria-hidden="true" />
         {t("statusLocked")}
+      </Badge>
+    );
+  }
+  if (item.fillStatus === "handedOver") {
+    return (
+      <Badge tone="neutral" size="sm">
+        <UserRoundCheck className="size-3" aria-hidden="true" />
+        {t("statusHandedOver")}
+      </Badge>
+    );
+  }
+  if (item.fillStatus === "upcoming") {
+    return (
+      <Badge tone="neutral" size="sm">
+        {t("statusUpcoming")}
       </Badge>
     );
   }
@@ -209,7 +224,8 @@ function SessionRow({
       title={text.title}
       meta={text.meta}
       trailing={<StatusBadge item={item} timeZone={timeZone} />}
-      disabled={item.submitting}
+      // A lesson on a date that has not arrived cannot be recorded yet.
+      disabled={item.submitting || item.fillStatus === "upcoming"}
       onClick={() => {
         onOpen(item);
       }}

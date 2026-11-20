@@ -34,16 +34,16 @@ func (h *AttendanceHandler) ListMyAttendanceToday(ctx context.Context, request a
 		opts.CurrentOnly = *params.CurrentOnly
 	}
 
-	sessions, err := h.service.ListSessions(ctx, tenantID, teacherID, opts)
+	day, err := h.service.ListDay(ctx, tenantID, teacherID, opts)
 	if err != nil {
 		return nil, mapAttendanceError(err)
 	}
 
-	data := make([]api.AttendanceSessionSummary, len(sessions))
-	for i, s := range sessions {
+	data := make([]api.AttendanceSessionSummary, len(day.Sessions))
+	for i, s := range day.Sessions {
 		data[i] = toAPISessionSummary(s)
 	}
-	return api.ListMyAttendanceToday200JSONResponse{Data: data}, nil
+	return api.ListMyAttendanceToday200JSONResponse{Data: data, HolidayName: strPtrOrNil(day.HolidayName)}, nil
 }
 
 func (h *AttendanceHandler) OpenAttendanceSession(ctx context.Context, request api.OpenAttendanceSessionRequestObject) (api.OpenAttendanceSessionResponseObject, error) {

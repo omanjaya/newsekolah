@@ -90,6 +90,7 @@ type Repository interface {
 	ListSubstitutionsIncomingWithSchedule(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.SubstitutionWithSchedule, error)
 	ListSubstitutionsOutgoingWithSchedule(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.SubstitutionWithSchedule, error)
 	ListAcceptedSubstitutionsForSubstituteDate(ctx context.Context, tenantID, substituteUserID uuid.UUID, date time.Time) ([]domain.Substitution, error)
+	ListAcceptedSubstitutionsForRequesterDate(ctx context.Context, tenantID, requesterUserID uuid.UUID, date time.Time) ([]domain.Substitution, error)
 	// ListSubstitutionsAll is the manage_schedules-only "all" list scope;
 	// status filters to one status when non-nil.
 	ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.Substitution, error)

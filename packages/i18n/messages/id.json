@@ -520,6 +520,8 @@
     "SUBSTITUTION_DATE_IN_PAST": "Tanggal yang dipilih sudah lewat. Pilih tanggal hari ini atau yang akan datang.",
     "SUBSTITUTION_NOT_SCHOOL_DAY": "Tanggal yang dipilih adalah hari libur atau tidak ada KBM. Pilih tanggal lain.",
     "SUBSTITUTE_IS_REQUESTER": "Guru pengganti tidak boleh Anda sendiri. Pilih guru lain.",
+    "ATTENDANCE_SESSION_NOT_STARTED": "Presensi untuk tanggal ini belum bisa diisi. Isi pada hari pelajarannya.",
+    "ATTENDANCE_NOT_SCHOOL_DAY": "Tanggal ini hari libur atau tidak ada KBM untuk kelas ini, jadi presensi tidak diisi.",
     "SUBSTITUTE_NOT_TEACHER": "Guru pengganti harus guru aktif pada tahun ajaran ini. Pilih guru lain."
   }
 }

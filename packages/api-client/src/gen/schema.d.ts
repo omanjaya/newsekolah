@@ -8789,6 +8789,11 @@ export interface components {
             /** Format: uuid */
             end_period_id: string;
             is_substitute: boolean;
+            /**
+             * Format: uuid
+             * @description Set on one of the teacher's own lessons that an accepted substitution hands to this teacher; the substitute fills it.
+             */
+            handed_over_to_user_id?: string;
             /** Format: date-time */
             submitted_at?: string;
             /** @description Active enrollment count for the session's class. */
@@ -15376,6 +15381,8 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["AttendanceSessionSummary"][];
+                        /** @description Name of the academic calendar event (holiday, no-school day, semester break) that cancelled lessons on this date, when one did. Its lessons are left out of data. */
+                        holiday_name?: string;
                     };
                 };
             };

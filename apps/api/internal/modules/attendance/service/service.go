@@ -366,6 +366,34 @@ type Service struct {
 	// yet available to this module, so every report export renders
 	// without one, same as before reportdoc.LetterheadSource existed.
 	letterheads reportdoc.LetterheadSource
+	// calendar is optional (set via SetCalendar): nil leaves only the
+	// weekly school-day pattern, as before the academic calendar was
+	// wired in.
+	calendar ClassCalendar
+}
+
+// ClassCalendar answers whether one class has lessons on a date: the
+// weekly pattern plus the academic calendar's holidays, no-school days and
+// semester breaks scoped to the class's grade level, naming the event
+// when there is one. Implemented in internal/wiring over the academic
+// module (wiring.ClassCalendar).
+type ClassCalendar interface {
+	IsTeachingDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) (teaching bool, eventName string, err error)
+}
+
+// SetCalendar wires the academic calendar in after construction, so a
+// holiday stops sessions from being listed, opened or saved.
+func (s *Service) SetCalendar(c ClassCalendar) {
+	s.calendar = c
+}
+
+// teachingDay is the calendar check for one class on one date; with no
+// calendar wired every date passes.
+func (s *Service) teachingDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) (bool, string, error) {
+	if s.calendar == nil {
+		return true, "", nil
+	}
+	return s.calendar.IsTeachingDay(ctx, tenantID, academicYearID, classID, date)
 }
 
 func New(

@@ -190,6 +190,54 @@ func (q *Queries) GetSubstitutionByID(ctx context.Context, arg GetSubstitutionBy
 	return i, err
 }
 
+const listAcceptedSubstitutionsForRequesterDate = `-- name: ListAcceptedSubstitutionsForRequesterDate :many
+select id, tenant_id, academic_year_id, schedule_id, date, requester_user_id, substitute_user_id, status, requester_note, response_note, responded_at, created_at from substitution_requests
+where tenant_id = $1 and requester_user_id = $2 and date = $3 and status = 'accepted'
+`
+
+type ListAcceptedSubstitutionsForRequesterDateParams struct {
+	TenantID        uuid.UUID   `json:"tenant_id"`
+	RequesterUserID uuid.UUID   `json:"requester_user_id"`
+	Date            pgtype.Date `json:"date"`
+}
+
+// The other side of ListAcceptedSubstitutionsForSubstituteDate: every
+// lesson a teacher handed over to a substitute on one date (the requester
+// is always the schedule's own teacher), so the attendance list can mark
+// it handed over instead of asking that teacher to fill it.
+func (q *Queries) ListAcceptedSubstitutionsForRequesterDate(ctx context.Context, arg ListAcceptedSubstitutionsForRequesterDateParams) ([]SubstitutionRequest, error) {
+	rows, err := q.db.Query(ctx, listAcceptedSubstitutionsForRequesterDate, arg.TenantID, arg.RequesterUserID, arg.Date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SubstitutionRequest{}
+	for rows.Next() {
+		var i SubstitutionRequest
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.AcademicYearID,
+			&i.ScheduleID,
+			&i.Date,
+			&i.RequesterUserID,
+			&i.SubstituteUserID,
+			&i.Status,
+			&i.RequesterNote,
+			&i.ResponseNote,
+			&i.RespondedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAcceptedSubstitutionsForSubstituteDate = `-- name: ListAcceptedSubstitutionsForSubstituteDate :many
 select id, tenant_id, academic_year_id, schedule_id, date, requester_user_id, substitute_user_id, status, requester_note, response_note, responded_at, created_at from substitution_requests
 where tenant_id = $1 and substitute_user_id = $2 and date = $3 and status = 'accepted'

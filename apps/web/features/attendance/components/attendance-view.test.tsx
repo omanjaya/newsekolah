@@ -92,6 +92,7 @@ vi.mock("../../reference/api", async () => {
 });
 
 let todaySessions: SessionSummary[] = [];
+let holidayName: string | undefined;
 
 vi.mock("../api", async () => {
   const actual = await vi.importActual<typeof AttendanceApiModule>("../api");
@@ -99,7 +100,10 @@ vi.mock("../api", async () => {
     ...actual,
     todayInZone: () => TODAY,
     nowTimeInZone: () => "07:10:00",
-    useTodaySessionsQuery: () => ({ data: { data: todaySessions }, isLoading: false }),
+    useTodaySessionsQuery: () => ({
+      data: { data: todaySessions, holiday_name: holidayName },
+      isLoading: false,
+    }),
     useOpenSessionMutation: () => ({
       mutateAsync: vi.fn(),
       isPending: false,
@@ -190,6 +194,54 @@ describe("DaySessions", () => {
     expect(screen.getByTestId("attendance-day-summary")).toHaveTextContent(
       'daySummary:{"total":2,"saved":1,"pending":1}',
     );
+  });
+
+  it("marks a lesson handed to a substitute and does not count it as waiting", () => {
+    todaySessions = [
+      // Running now, but an accepted substitute teaches it.
+      session({ schedule_id: "handed", handed_over_to_user_id: "sub-1" }),
+      session({ schedule_id: "own", start_period_id: "p2", end_period_id: "p2" }),
+    ];
+    render(<DaySessions />);
+
+    expect(screen.getByTestId("attendance-session-hero")).not.toHaveTextContent("statusHandedOver");
+    expect(screen.getByTestId("attendance-session-row-handed")).toHaveTextContent(
+      "statusHandedOver",
+    );
+    expect(screen.getByTestId("attendance-session-row-handed")).not.toHaveTextContent(
+      "statusPending",
+    );
+    expect(screen.getByTestId("attendance-day-summary")).toHaveTextContent(
+      'daySummary:{"total":2,"saved":0,"pending":1}',
+    );
+    expect(screen.getByTestId("attendance-day-summary")).toHaveTextContent(
+      'dayHandedOver:{"count":1}',
+    );
+  });
+
+  it("shows a lesson on a date that has not arrived as not open yet, and does not open it", () => {
+    todaySessions = [
+      session({ schedule_id: "tomorrow", date: "2026-09-30", start_period_id: "p2" }),
+      session({ schedule_id: "today" }),
+    ];
+    render(<DaySessions />);
+
+    const row = screen.getByTestId("attendance-session-row-tomorrow");
+    expect(row).toHaveTextContent("statusUpcoming");
+    expect(within(row).queryByRole("button") ?? row.closest("button")).toBeDisabled();
+  });
+
+  it("names the holiday instead of listing lessons on a holiday", () => {
+    todaySessions = [];
+    holidayName = "Hari Guru Nasional";
+    try {
+      render(<DaySessions />);
+      expect(screen.getByText('holidayTitle:{"name":"Hari Guru Nasional"}')).toBeInTheDocument();
+      expect(screen.getByText("holidayBody")).toBeInTheDocument();
+      expect(screen.queryByText("noScheduleTitle")).not.toBeInTheDocument();
+    } finally {
+      holidayName = undefined;
+    }
   });
 
   it("offers the monitor once, in the school card, before a teacher is picked", () => {

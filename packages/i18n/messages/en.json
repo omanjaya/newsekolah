@@ -520,6 +520,8 @@
     "SUBSTITUTION_DATE_IN_PAST": "The selected date has passed. Pick today or a later date.",
     "SUBSTITUTION_NOT_SCHOOL_DAY": "The selected date is a holiday or has no lessons. Pick another date.",
     "SUBSTITUTE_IS_REQUESTER": "You cannot be your own substitute. Pick another teacher.",
+    "ATTENDANCE_SESSION_NOT_STARTED": "Attendance for this date cannot be recorded yet. Record it on the day of the lesson.",
+    "ATTENDANCE_NOT_SCHOOL_DAY": "This date is a holiday or has no lessons for this class, so no attendance is recorded.",
     "SUBSTITUTE_NOT_TEACHER": "The substitute must be an active teacher this academic year. Pick another teacher."
   }
 }

@@ -86,3 +86,11 @@ limit $4 offset $5;
 -- (own schedules plus accepted substitutions).
 select * from substitution_requests
 where tenant_id = $1 and substitute_user_id = $2 and date = $3 and status = 'accepted';
+
+-- name: ListAcceptedSubstitutionsForRequesterDate :many
+-- The other side of ListAcceptedSubstitutionsForSubstituteDate: every
+-- lesson a teacher handed over to a substitute on one date (the requester
+-- is always the schedule's own teacher), so the attendance list can mark
+-- it handed over instead of asking that teacher to fill it.
+select * from substitution_requests
+where tenant_id = $1 and requester_user_id = $2 and date = $3 and status = 'accepted';

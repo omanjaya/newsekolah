@@ -37,6 +37,9 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 		if err != nil {
 			return err
 		}
+		if err := s.requireLessonDay(ctx, tenantID, session.AcademicYearID, session.ClassID, session.Date); err != nil {
+			return err
+		}
 
 		accessOK, err := s.access.HasAccess(ctx, tenantID, session.ScheduleID, actor.UserID, session.Date)
 		if err != nil {
