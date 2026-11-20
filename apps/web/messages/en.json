@@ -1645,7 +1645,6 @@
         "tabMine": "My requests",
         "noAccessTitle": "No access",
         "noAccessBody": "Your role is not part of the planned leave flow.",
-        "issuerQueueUnavailableTitle": "Leave letters are issued from notifications",
         "issuerQueueInboxBody": "Requests the homeroom teacher approved wait in the leave queue. Open it to review them and issue their letters.",
         "openNotifications": "Open notifications",
         "notFoundTitle": "Request not found",
