@@ -5,9 +5,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useUsersQuery: vi.fn(),
   canCreate: true,
+  archiveMutate: vi.fn(),
+  archiveMutateAsync: vi.fn(),
 }));
 
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string, params?: Record<string, unknown>) =>
+    params ? `${key}:${Object.values(params).join(",")}` : key,
+}));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/school/users",
   useSearchParams: () => new URLSearchParams(window.location.search),
@@ -26,7 +31,11 @@ vi.mock("../../academic/components/academic-workspace-links", () => ({
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../api", () => ({
   useUsersQuery: mocks.useUsersQuery,
-  useArchiveUserMutation: () => ({ mutate: vi.fn(), isPending: false }),
+  useArchiveUserMutation: () => ({
+    mutate: mocks.archiveMutate,
+    mutateAsync: mocks.archiveMutateAsync,
+    isPending: false,
+  }),
   useResetPasswordMutation: () => ({ mutate: vi.fn(), isPending: false }),
   useRolesQuery: () => ({
     data: {
@@ -178,5 +187,95 @@ describe("UsersView density", () => {
       "false",
     );
     expect(nameLine()).not.toHaveClass("md:flex-row");
+  });
+});
+
+describe("UsersView archive", () => {
+  const account: AdminUser = {
+    id: "user-1",
+    username: "ujiarsip16",
+    name: "Uji Arsip Enambelas",
+    status: "active",
+    profile_kind: "staff",
+    must_change_password: false,
+    created_at: "2026-07-01T00:00:00Z",
+    roles: [{ id: "role-staff", slug: "staff", name: "Pegawai", is_primary: true }],
+  };
+
+  beforeEach(() => {
+    mocks.canCreate = true;
+    mocks.archiveMutate.mockReset();
+    mocks.archiveMutateAsync.mockReset().mockResolvedValue(undefined);
+    mocks.useUsersQuery.mockReset();
+    window.history.replaceState(null, "", "/school/users");
+  });
+
+  /** The row's action menu; the table and its phone cards both carry one. */
+  function rowMenu(): HTMLElement {
+    const [menu] = screen.getAllByRole("button", { name: "actions.menuFor:Uji Arsip Enambelas" });
+    if (!menu) throw new Error("no row menu");
+    return menu;
+  }
+
+  function showing(user: AdminUser) {
+    mocks.useUsersQuery.mockReturnValue({
+      data: { data: [user] },
+      isError: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+  }
+
+  // One misclick on Arsipkan used to cut a real teacher or student off at
+  // once (POST .../archive with no dialog). It now asks first, naming who
+  // loses access, and archives only on confirm.
+  it("asks for confirmation naming the user before archiving", async () => {
+    showing(account);
+    const user = userEvent.setup();
+    render(<UsersView />);
+
+    await user.click(rowMenu());
+    await user.click(await screen.findByRole("menuitem", { name: "actions.archive" }));
+
+    expect(mocks.archiveMutate).not.toHaveBeenCalled();
+    expect(mocks.archiveMutateAsync).not.toHaveBeenCalled();
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      within(dialog).getByText("actions.archiveTitle:Uji Arsip Enambelas"),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText("actions.archiveBody:Uji Arsip Enambelas")).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("button", { name: "actions.archive" }));
+    expect(mocks.archiveMutateAsync).toHaveBeenCalledWith({ id: "user-1", restore: false });
+  });
+
+  it("archives nothing when the confirmation is cancelled", async () => {
+    showing(account);
+    const user = userEvent.setup();
+    render(<UsersView />);
+
+    await user.click(rowMenu());
+    await user.click(await screen.findByRole("menuitem", { name: "actions.archive" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.keyboard("{Escape}");
+
+    expect(dialog).not.toBeInTheDocument();
+    expect(mocks.archiveMutate).not.toHaveBeenCalled();
+    expect(mocks.archiveMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("restores an archived user straight away, the safe direction", async () => {
+    showing({ ...account, status: "inactive", archived_at: "2026-11-20T00:00:00Z" } as AdminUser);
+    const user = userEvent.setup();
+    render(<UsersView />);
+
+    await user.click(rowMenu());
+    await user.click(await screen.findByRole("menuitem", { name: "actions.restore" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(mocks.archiveMutate).toHaveBeenCalledWith(
+      { id: "user-1", restore: true },
+      expect.any(Object),
+    );
   });
 });

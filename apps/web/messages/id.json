@@ -1813,7 +1813,9 @@
           "impersonateBody": "Anda akan bertindak sebagai {name} selama maksimal 30 menit. Semua tindakan selama itu dicatat.",
           "impersonatePrepareFailed": "Impersonasi tidak dimulai: aplikasi web tidak dapat melepas sesi halaman akun Anda. Coba lagi sebentar lagi.",
           "import": "Impor pengguna",
-          "menuFor": "Aksi untuk {name}"
+          "menuFor": "Aksi untuk {name}",
+          "archiveTitle": "Arsipkan {name}?",
+          "archiveBody": "{name} tidak bisa masuk lagi sampai dipulihkan. Pengguna yang diarsipkan bisa dipulihkan lewat filter Tampilkan yang diarsipkan."
         },
         "form": {
           "createTitle": "Tambah pengguna",

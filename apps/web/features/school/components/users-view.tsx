@@ -44,12 +44,12 @@ import {
   type AdminUser,
   type ProfileKind,
   type UserStatus,
-  useArchiveUserMutation,
   useRolesQuery,
   useUsersQuery,
 } from "../api";
 import { useImpersonateUserMutation } from "../duties-api";
 
+import { useArchiveUserAction } from "./archive-user-dialog";
 import { ResetPasswordFlow } from "./reset-password-flow";
 import { UserRolesCell, UserStatusCell } from "./user-cells";
 import { UserForm } from "./user-form";
@@ -101,7 +101,7 @@ export function UsersView(): ReactElement {
     cursor: cursor || undefined,
   });
   const roles = useRolesQuery();
-  const archive = useArchiveUserMutation();
+  const archiveAction = useArchiveUserAction();
   const [editing, setEditing] = useState<AdminUser | "new" | null>(null);
   // A school has hundreds of accounts, so the list starts compact (one
   // line per person) and the toolbar's toggle still opens it up.
@@ -254,15 +254,7 @@ export function UsersView(): ReactElement {
                     icon: restore ? <ArchiveRestore /> : <Archive />,
                     tone: restore ? ("default" as const) : ("danger" as const),
                     onClick: () => {
-                      archive.mutate(
-                        { id: user.id, restore },
-                        {
-                          onSuccess: () => {
-                            toast.success(restore ? t("actions.restored") : t("actions.archived"));
-                          },
-                          onError: fail,
-                        },
-                      );
+                      archiveAction.run(user, restore);
                     },
                   },
                 ]
@@ -386,6 +378,8 @@ export function UsersView(): ReactElement {
           setResetting(null);
         }}
       />
+
+      {archiveAction.dialog}
 
       <ConfirmDialog
         open={impersonating !== null}

@@ -1813,7 +1813,9 @@
           "impersonateBody": "You will act as {name} for up to 30 minutes. Everything done during that time is logged.",
           "impersonatePrepareFailed": "Impersonation not started: the web app could not release your account's page session. Try again in a moment.",
           "import": "Import users",
-          "menuFor": "Actions for {name}"
+          "menuFor": "Actions for {name}",
+          "archiveTitle": "Archive {name}?",
+          "archiveBody": "{name} can no longer sign in until restored. Archived users can be restored from the Show archived filter."
         },
         "form": {
           "createTitle": "Add user",
