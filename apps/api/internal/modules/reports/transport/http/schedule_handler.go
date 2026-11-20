@@ -27,18 +27,47 @@ func mapScheduleError(err error) error {
 		errors.Is(err, domain.ErrInvalidFormat),
 		errors.Is(err, domain.ErrInvalidHour),
 		errors.Is(err, domain.ErrInvalidWeekday),
-		errors.Is(err, domain.ErrInvalidDayOfMonth),
-		errors.Is(err, domain.ErrNoRecipients),
-		errors.Is(err, domain.ErrTooManyRecipients),
-		errors.Is(err, domain.ErrDuplicateRecipient),
-		errors.Is(err, domain.ErrRecipientNotTenantUser):
+		errors.Is(err, domain.ErrInvalidDayOfMonth):
 		return httpx.ErrValidation
+	}
+	if detail, ok := recipientErrorDetail(err); ok {
+		return httpx.ErrValidation.WithDetails(detail)
 	}
 	var appErr *httpx.Error
 	if errors.As(err, &appErr) {
 		return appErr
 	}
 	return httpx.Internal(err)
+}
+
+// Recipient error detail codes (field "recipients"), read by the web
+// schedule form to mark the Penerima field instead of a bare toast.
+const (
+	RecipientCodeRequired      = "REQUIRED"
+	RecipientCodeTooMany       = "TOO_MANY"
+	RecipientCodeDuplicate     = "DUPLICATE"
+	RecipientCodeNotTenantUser = "NOT_TENANT_USER"
+)
+
+// recipientErrorDetail turns a recipient validation error into a field
+// detail; for an address that is not a school account the detail's message
+// is that address.
+func recipientErrorDetail(err error) (httpx.ErrorDetail, bool) {
+	detail := httpx.ErrorDetail{Field: "recipients"}
+	var notUser domain.RecipientNotTenantUserError
+	switch {
+	case errors.As(err, &notUser):
+		detail.Code, detail.Message = RecipientCodeNotTenantUser, notUser.Email
+	case errors.Is(err, domain.ErrNoRecipients):
+		detail.Code = RecipientCodeRequired
+	case errors.Is(err, domain.ErrTooManyRecipients):
+		detail.Code = RecipientCodeTooMany
+	case errors.Is(err, domain.ErrDuplicateRecipient):
+		detail.Code = RecipientCodeDuplicate
+	default:
+		return httpx.ErrorDetail{}, false
+	}
+	return detail, true
 }
 
 func toAPISchedule(v service.ScheduleView) api.ReportSchedule {

@@ -56,6 +56,13 @@ export function ScheduleForm({
   const [dayOfMonth, setDayOfMonth] = useState(String(initial?.day_of_month ?? 1));
   const [hour, setHour] = useState(String(initial?.hour ?? 7));
   const [recipients, setRecipients] = useState<string[]>(initial?.recipients ?? []);
+  // The server's verdict on the recipient list (an address that is not a
+  // school account, too many, a duplicate), shown on the Penerima field
+  // until the list changes.
+  const [recipientsError, setRecipientsError] = useState<{
+    message: string;
+    invalid: string[];
+  } | null>(null);
 
   const selectedReport = reports.data?.data.find((r) => r.kind === reportKind);
   const needsClass = selectedReport?.arguments.some((a) => a.kind === "class") ?? false;
@@ -77,6 +84,21 @@ export function ScheduleForm({
   const requiredError = (missing: boolean) =>
     attempted && missing ? tValidation("required") : undefined;
 
+  function recipientsFieldError(error: ApiError): { message: string; invalid: string[] } | null {
+    const details = (error.details ?? []).filter((d) => d.field === "recipients");
+    const notUsers = details
+      .filter((d) => d.code === "NOT_TENANT_USER" && d.message)
+      .map((d) => d.message ?? "");
+    if (notUsers.length > 0) {
+      return { message: t("recipientNotUser", { email: notUsers.join(", ") }), invalid: notUsers };
+    }
+    const first = details[0];
+    if (!first) return null;
+    if (first.code === "TOO_MANY") return { message: t("recipientLimit"), invalid: [] };
+    if (first.code === "DUPLICATE") return { message: t("recipientDuplicate"), invalid: [] };
+    return { message: tValidation("required"), invalid: [] };
+  }
+
   function submitSchedule() {
     const body = {
       report_kind: reportKind,
@@ -97,6 +119,11 @@ export function ScheduleForm({
       onDone();
     };
     const onError = (error: unknown) => {
+      const fieldError = error instanceof ApiError ? recipientsFieldError(error) : null;
+      if (fieldError) {
+        setRecipientsError(fieldError);
+        return;
+      }
       toast.error(
         error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
       );
@@ -245,8 +272,20 @@ export function ScheduleForm({
         />
       </Field>
 
-      <Field label={t("recipients")} required error={requiredError(recipients.length === 0)}>
-        <ScheduleRecipientsInput value={recipients} onChange={setRecipients} />
+      <Field
+        label={t("recipients")}
+        hint={t("recipientsHint")}
+        required
+        error={requiredError(recipients.length === 0) ?? recipientsError?.message}
+      >
+        <ScheduleRecipientsInput
+          value={recipients}
+          onChange={(next) => {
+            setRecipients(next);
+            setRecipientsError(null);
+          }}
+          invalid={recipientsError?.invalid}
+        />
       </Field>
 
       <DialogFooter>

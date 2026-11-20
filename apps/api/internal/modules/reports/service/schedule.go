@@ -185,7 +185,7 @@ func (s *ScheduleService) checkRecipients(ctx context.Context, tenantID uuid.UUI
 			return fmt.Errorf("check recipient %s: %w", email, err)
 		}
 		if !ok {
-			return fmt.Errorf("%w: %s", domain.ErrRecipientNotTenantUser, email)
+			return domain.RecipientNotTenantUserError{Email: email}
 		}
 	}
 	return nil

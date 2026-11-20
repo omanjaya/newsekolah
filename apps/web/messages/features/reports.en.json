@@ -81,7 +81,9 @@
       "recipientLimit": "Up to 10 recipients.",
       "cancel": "Cancel",
       "submit": "Save",
-      "saved": "Schedule saved."
+      "saved": "Schedule saved.",
+      "recipientsHint": "Only emails of this school's user accounts; set them under Users and access.",
+      "recipientNotUser": "{email} is not the email of a user account at this school."
     },
     "runs": {
       "title": "Run history",

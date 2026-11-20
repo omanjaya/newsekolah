@@ -18,9 +18,12 @@ const MAX_RECIPIENTS = 10;
 export function ScheduleRecipientsInput({
   value,
   onChange,
+  invalid = [],
 }: {
   value: string[];
   onChange: (next: string[]) => void;
+  /** Addresses the server rejected (not a school account): shown in the danger tone. */
+  invalid?: readonly string[];
 }): ReactElement {
   const t = useTranslations("app.reports.schedules.form");
   const [draft, setDraft] = useState("");
@@ -50,7 +53,11 @@ export function ScheduleRecipientsInput({
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         {value.map((email) => (
-          <Badge key={email} variant="neutral" className="flex items-center gap-1 pr-1">
+          <Badge
+            key={email}
+            tone={invalid.includes(email) ? "danger" : "neutral"}
+            className="flex items-center gap-1 pr-1"
+          >
             {email}
             <IconButton
               icon={<X />}

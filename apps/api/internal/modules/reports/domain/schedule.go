@@ -27,6 +27,19 @@ var (
 	ErrScopeConflict          = errors.New("class_id and grade_level_id are mutually exclusive")
 )
 
+// RecipientNotTenantUserError names the recipient address that is not the
+// email of any user in the tenant, so the transport can point the form at
+// it. errors.Is matches it against ErrRecipientNotTenantUser.
+type RecipientNotTenantUserError struct{ Email string }
+
+func (e RecipientNotTenantUserError) Error() string {
+	return ErrRecipientNotTenantUser.Error() + ": " + e.Email
+}
+
+func (e RecipientNotTenantUserError) Is(target error) bool {
+	return target == ErrRecipientNotTenantUser
+}
+
 // MaxRecipients caps how many mailboxes one schedule can fan out to; this
 // is a mail relay, not a mailing list product.
 const MaxRecipients = 10
