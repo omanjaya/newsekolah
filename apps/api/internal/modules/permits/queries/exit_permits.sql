@@ -114,13 +114,17 @@ where ep.tenant_id = $1
 order by wi.opened_at;
 
 -- name: ListExitPermitsForReport :many
+-- The year's dates are the school's calendar days, so they are compared
+-- with local_date (the tenant-local day the permit was opened), not with
+-- opened_at: midnight UTC would cut the first hours of a UTC+7 school's
+-- first day off the report and add the first hours after its last day.
 select ep.*, wi.status, wi.opened_at, wi.closed_at, wi.academic_year_id
 from exit_permits ep
 join workflow_instances wi on wi.id = ep.instance_id
 where ep.tenant_id = $1
   and wi.academic_year_id = $2
-  and wi.opened_at >= $3
-  and wi.opened_at < $4
+  and wi.local_date >= sqlc.arg('starts_on')::date
+  and wi.local_date <= sqlc.arg('ends_on')::date
 order by wi.opened_at desc;
 
 -- name: CountExitPermitsForApproval :one

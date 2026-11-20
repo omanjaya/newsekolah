@@ -1227,6 +1227,10 @@ type Querier interface {
 	// current_stage is null once every stage has passed (an approved permit
 	// waiting at the gate): the index is then past the last stage.
 	ListExitPermitsForApproval(ctx context.Context, arg ListExitPermitsForApprovalParams) ([]ListExitPermitsForApprovalRow, error)
+	// The year's dates are the school's calendar days, so they are compared
+	// with local_date (the tenant-local day the permit was opened), not with
+	// opened_at: midnight UTC would cut the first hours of a UTC+7 school's
+	// first day off the report and add the first hours after its last day.
 	ListExitPermitsForReport(ctx context.Context, arg ListExitPermitsForReportParams) ([]ListExitPermitsForReportRow, error)
 	// The guard's lookup list: everyone expected on a given day, soonest first.
 	ListExpectedGuests(ctx context.Context, arg ListExpectedGuestsParams) ([]VisitorExpectedGuest, error)

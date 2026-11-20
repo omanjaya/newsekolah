@@ -423,16 +423,16 @@ from exit_permits ep
 join workflow_instances wi on wi.id = ep.instance_id
 where ep.tenant_id = $1
   and wi.academic_year_id = $2
-  and wi.opened_at >= $3
-  and wi.opened_at < $4
+  and wi.local_date >= $3::date
+  and wi.local_date <= $4::date
 order by wi.opened_at desc
 `
 
 type ListExitPermitsForReportParams struct {
-	TenantID       uuid.UUID          `json:"tenant_id"`
-	AcademicYearID uuid.UUID          `json:"academic_year_id"`
-	OpenedAt       pgtype.Timestamptz `json:"opened_at"`
-	OpenedAt_2     pgtype.Timestamptz `json:"opened_at_2"`
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	StartsOn       pgtype.Date `json:"starts_on"`
+	EndsOn         pgtype.Date `json:"ends_on"`
 }
 
 type ListExitPermitsForReportRow struct {
@@ -457,12 +457,16 @@ type ListExitPermitsForReportRow struct {
 	AcademicYearID       uuid.UUID          `json:"academic_year_id"`
 }
 
+// The year's dates are the school's calendar days, so they are compared
+// with local_date (the tenant-local day the permit was opened), not with
+// opened_at: midnight UTC would cut the first hours of a UTC+7 school's
+// first day off the report and add the first hours after its last day.
 func (q *Queries) ListExitPermitsForReport(ctx context.Context, arg ListExitPermitsForReportParams) ([]ListExitPermitsForReportRow, error) {
 	rows, err := q.db.Query(ctx, listExitPermitsForReport,
 		arg.TenantID,
 		arg.AcademicYearID,
-		arg.OpenedAt,
-		arg.OpenedAt_2,
+		arg.StartsOn,
+		arg.EndsOn,
 	)
 	if err != nil {
 		return nil, err

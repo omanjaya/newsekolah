@@ -774,13 +774,9 @@ func (r *Repository) ListExitPermitsForYear(ctx context.Context, tenantID, acade
 	if err != nil {
 		return nil, fmt.Errorf("get academic year range: %w", err)
 	}
-	from := pdatabase.DateOrZero(yearRange.StartsOn)
-	// ends_on is inclusive; opened_at < to needs the day after.
-	to := pdatabase.DateOrZero(yearRange.EndsOn).AddDate(0, 0, 1)
-
 	rows, err := r.queries(ctx).ListExitPermitsForReport(ctx, db.ListExitPermitsForReportParams{
 		TenantID: tenantID, AcademicYearID: academicYearID,
-		OpenedAt: pdatabase.Timestamptz(from), OpenedAt_2: pdatabase.Timestamptz(to),
+		StartsOn: yearRange.StartsOn, EndsOn: yearRange.EndsOn,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list exit permits for year: %w", err)
