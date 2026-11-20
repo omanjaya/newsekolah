@@ -94,7 +94,7 @@ type OverdueMemberSummary struct {
 // OverdueMembers is the overdue-members report: every member with at least
 // one active loan past its due date, with the fine those loans would be
 // charged if returned today. The fine is projected with the very rule a
-// return applies (Service.lateOutcome): working days late, priced by the
+// return applies (lateOutcomeWith, as Service.lateOutcome): working days late, priced by the
 // member's type, and zero while the policy keeps currency fines off (a
 // late return then suspends or warns instead).
 func (s *Service) OverdueMembers(ctx context.Context, tenantID uuid.UUID) ([]OverdueMemberSummary, error) {
@@ -112,23 +112,38 @@ func (s *Service) OverdueMembers(ctx context.Context, tenantID uuid.UUID) ([]Ove
 		if err != nil {
 			return err
 		}
+		if len(overdue) == 0 {
+			out = []OverdueMemberSummary{}
+			return nil
+		}
+		// One holiday calendar spans every overdue loan (earliest due date
+		// through today) and each member type is looked up once, so the
+		// report costs a fixed handful of queries plus one per member
+		// rather than several per loan.
+		earliestDue := overdue[0].DueOn
+		for _, loan := range overdue[1:] {
+			if loan.DueOn.Before(earliestDue) {
+				earliestDue = loan.DueOn
+			}
+		}
+		wdr, err := s.workingDayRule(ctx, tenantID, policy, earliestDue, daysUntil(earliestDue, today)+1)
+		if err != nil {
+			return err
+		}
 		byMember := make(map[uuid.UUID]*OverdueMemberSummary)
 		rules := make(map[uuid.UUID]domain.MemberType)
+		types := make(map[uuid.UUID]domain.MemberType)
 		order := make([]uuid.UUID, 0)
 		for _, loan := range overdue {
 			summary, ok := byMember[loan.MemberUserID]
 			if !ok {
 				summary = &OverdueMemberSummary{MemberUserID: loan.MemberUserID}
 				byMember[loan.MemberUserID] = summary
-				rules[loan.MemberUserID] = s.memberLateRule(ctx, tenantID, loan.MemberUserID, policy)
+				rules[loan.MemberUserID] = s.memberLateRule(ctx, tenantID, loan.MemberUserID, policy, types)
 				order = append(order, loan.MemberUserID)
 			}
 			summary.LoanCount++
-			_, outcome, err := s.lateOutcome(ctx, tenantID, loan, policy, today, rules[loan.MemberUserID])
-			if err != nil {
-				return err
-			}
-			if outcome.Penalty == domain.PenaltyFine {
+			if _, outcome := lateOutcomeWith(wdr, loan, policy, today, rules[loan.MemberUserID]); outcome.Penalty == domain.PenaltyFine {
 				summary.TotalFine += outcome.FineAmount
 			}
 		}

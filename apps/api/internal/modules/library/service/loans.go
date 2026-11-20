@@ -338,7 +338,7 @@ func (s *Service) Return(ctx context.Context, tenantID uuid.UUID, in ReturnInput
 		now := clock.Now(ctx, s.clock)
 		today := s.schoolToday(ctx, tenantID, now)
 
-		lateDays, outcome, err := s.lateOutcome(ctx, tenantID, existing, policy, today, s.memberLateRule(ctx, tenantID, existing.MemberUserID, policy))
+		lateDays, outcome, err := s.lateOutcome(ctx, tenantID, existing, policy, today, s.memberLateRule(ctx, tenantID, existing.MemberUserID, policy, nil))
 		if err != nil {
 			return err
 		}
@@ -383,35 +383,61 @@ func (s *Service) Return(ctx context.Context, tenantID uuid.UUID, in ReturnInput
 
 // memberLateRule is the late-return rule for a member: their member type's
 // fine and suspension settings, or the policy's per-day fine
-// (domain.PolicyLateRule) for a member with no type.
-func (s *Service) memberLateRule(ctx context.Context, tenantID, memberUserID uuid.UUID, policy domain.Policy) domain.MemberType {
-	if member, found, err := s.repo.GetMember(ctx, tenantID, memberUserID); err == nil && found {
-		if mt, foundType, err := s.repo.GetMemberType(ctx, tenantID, member.MemberTypeID); err == nil && foundType {
-			return mt
-		}
+// (domain.PolicyLateRule) for a member with no type. types, when not nil,
+// caches member types by ID so a report over many members looks each type
+// up once.
+func (s *Service) memberLateRule(ctx context.Context, tenantID, memberUserID uuid.UUID, policy domain.Policy, types map[uuid.UUID]domain.MemberType) domain.MemberType {
+	member, found, err := s.repo.GetMember(ctx, tenantID, memberUserID)
+	if err != nil || !found {
+		return domain.PolicyLateRule(policy)
 	}
-	return domain.PolicyLateRule(policy)
+	if mt, cached := types[member.MemberTypeID]; cached {
+		return mt
+	}
+	mt, foundType, err := s.repo.GetMemberType(ctx, tenantID, member.MemberTypeID)
+	if err != nil || !foundType {
+		return domain.PolicyLateRule(policy)
+	}
+	if types != nil {
+		types[member.MemberTypeID] = mt
+	}
+	return mt
 }
 
 // lateOutcome is what returning loan on today (the school's calendar day)
 // resolves to: the working days late under the tenant's weekend and
 // holiday calendar, and the fine, suspension or warning the member's rule
-// gives for them (domain.ComputeLateOutcome). A return and the overdue
-// report both go through it, so the report projects exactly what the desk
-// would charge.
+// gives for them (lateOutcomeWith). It loads the holiday calendar for this
+// one loan; the overdue report builds one calendar for all its loans and
+// calls lateOutcomeWith directly, so both price a late return the same way.
 func (s *Service) lateOutcome(ctx context.Context, tenantID uuid.UUID, loan domain.Loan, policy domain.Policy, today time.Time, rule domain.MemberType) (int, domain.LateOutcome, error) {
 	if !today.After(loan.DueOn) {
 		return 0, domain.LateOutcome{}, nil
 	}
-	wdr, err := s.workingDayRule(ctx, tenantID, policy, loan.DueOn, int(today.Sub(loan.DueOn).Hours()/24)+1)
+	wdr, err := s.workingDayRule(ctx, tenantID, policy, loan.DueOn, daysUntil(loan.DueOn, today)+1)
 	if err != nil {
 		return 0, domain.LateOutcome{}, err
 	}
+	lateDays, outcome := lateOutcomeWith(wdr, loan, policy, today, rule)
+	return lateDays, outcome, nil
+}
+
+// lateOutcomeWith prices returning loan on today under an already loaded
+// working-day calendar wdr, which must cover loan.DueOn through today:
+// the working days late, and the outcome domain.ComputeLateOutcome gives
+// the member's rule for them (zero outcome when not late).
+func lateOutcomeWith(wdr domain.WorkingDayRule, loan domain.Loan, policy domain.Policy, today time.Time, rule domain.MemberType) (int, domain.LateOutcome) {
 	lateDays := wdr.WorkingDaysLate(loan.DueOn, today)
 	if lateDays == 0 {
-		return 0, domain.LateOutcome{}, nil
+		return 0, domain.LateOutcome{}
 	}
-	return lateDays, domain.ComputeLateOutcome(lateDays, policy.FineCurrencyEnabled, rule), nil
+	return lateDays, domain.ComputeLateOutcome(lateDays, policy.FineCurrencyEnabled, rule)
+}
+
+// daysUntil is the whole calendar days from from to to (negative when to
+// is earlier), for sizing a holiday-calendar window.
+func daysUntil(from, to time.Time) int {
+	return int(to.Sub(from).Hours() / 24)
 }
 
 // recordLateOutcome applies the old app's late-return decision
