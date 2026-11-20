@@ -56,6 +56,20 @@ func TestBuiltinLeaveLetterCategoryText(t *testing.T) {
 		require.Contains(t, html, "dengan keterangan Lainnya: Acara keluarga ke luar kota.</p>")
 		require.NotContains(t, html, "kota..")
 	})
+
+	t.Run("a reason ending in other sentence punctuation still gets a single full stop", func(t *testing.T) {
+		for reason, want := range map[string]string{
+			"Wisuda kakak di Makassar!":   "Lainnya: Wisuda kakak di Makassar.</p>",
+			"Wisuda kakak di Makassar?":   "Lainnya: Wisuda kakak di Makassar.</p>",
+			"Wisuda kakak di Makassar…":   "Lainnya: Wisuda kakak di Makassar.</p>",
+			"Wisuda kakak di Makassar...": "Lainnya: Wisuda kakak di Makassar.</p>",
+			"Wisuda kakak di Makassar,":   "Lainnya: Wisuda kakak di Makassar.</p>",
+			"Wisuda kakak (di Makassar)":  "Lainnya: Wisuda kakak (di Makassar).</p>",
+		} {
+			html := render(t, domain.LeaveRequest{Category: domain.CategoryOther, Reason: reason, StartsOn: day, EndsOn: day})
+			require.Contains(t, html, want, reason)
+		}
+	})
 }
 
 func TestValidateTemplateBody(t *testing.T) {
