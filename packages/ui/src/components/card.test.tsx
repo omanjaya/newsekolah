@@ -21,6 +21,8 @@ describe("Card", () => {
     expect(card).toHaveClass("rounded-lg", "border-border", "bg-surface", "shadow-1");
     expect(card).not.toHaveClass("p-5");
     expect(screen.getByTestId("header")).toHaveClass("p-5");
+    // Marked like a header with an action, so one selector finds every header.
+    expect(screen.getByTestId("header")).toHaveAttribute("data-slot", "card-header");
     expect(screen.getByTestId("content")).toHaveClass("p-5", "pt-0");
     // Set apart by space, not a rule: the content's 20px inset and 4px more.
     expect(screen.getByTestId("footer")).toHaveClass("p-5", "pt-1");

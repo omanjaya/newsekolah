@@ -137,7 +137,11 @@ export function CardHeader({ className, action, children, ...props }: CardHeader
   const padding = inset ? "" : "p-5 [&:has(+[data-card-flush])]:pb-1";
   if (action === undefined || action === null || action === false) {
     return (
-      <div className={cn("flex flex-col gap-1", padding, className)} {...props}>
+      <div
+        data-slot="card-header"
+        className={cn("flex flex-col gap-1", padding, className)}
+        {...props}
+      >
         {children}
       </div>
     );
