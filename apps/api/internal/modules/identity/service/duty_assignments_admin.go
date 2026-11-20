@@ -192,6 +192,12 @@ func (s *Service) UpdateDutyAssignment(ctx context.Context, tenantID, id uuid.UU
 		}
 		reactivating := !before.IsActive && isActive
 		if reactivating {
+			// A duty ended because its class was deleted (or its student
+			// left) must stay ended: reactivating it would bring back a
+			// homeroom role on a class that no longer exists.
+			if err := s.checkScopeTargetsExist(ctx, tenantID, before); err != nil {
+				return err
+			}
 			if err := s.refuseDuplicateAssignment(ctx, tenantID, before); err != nil {
 				return err
 			}

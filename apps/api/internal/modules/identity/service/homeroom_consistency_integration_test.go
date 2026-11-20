@@ -192,3 +192,51 @@ func TestSingleHomeroomMigrationHealsATeacherWithTwoClasses(t *testing.T) {
 	require.Equal(t, uuid.NullUUID{UUID: guru, Valid: true}, classHomeroom(classC))
 	require.False(t, classHomeroom(classA).Valid, "the class whose holder was ended has no homeroom teacher")
 }
+
+// A homeroom duty ended because its class was deleted stays ended:
+// reactivating it is refused like assigning a deleted class, so the
+// teacher is not made homeroom of a class that no longer exists.
+func TestReactivatingADutyOfADeletedClassIsRefused(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	pool := pg.AdminPool
+	insertID := func(sql string, args ...any) uuid.UUID {
+		t.Helper()
+		var id uuid.UUID
+		require.NoError(t, pool.QueryRow(ctx, sql+" returning id", args...).Scan(&id))
+		return id
+	}
+
+	tenantID := insertTestTenant(t, pool, "homeroom-deleted-class")
+	year := insertID(`insert into academic_years (tenant_id,label,starts_on,ends_on) values ($1,'2026/2027','2026-01-01','2027-12-31')`, tenantID)
+	grade := insertID(`insert into grade_levels (tenant_id,code,name,sequence) values ($1,'X','X',1)`, tenantID)
+	class := insertID(`insert into classes (tenant_id,academic_year_id,grade_level_id,name) values ($1,$2,$3,'X-GONE')`, tenantID, year, grade)
+	homeroom := insertID(`insert into duty_types (tenant_id,slug,name,scope_kind) values ($1,'homeroom','Wali Kelas','class')`, tenantID)
+	guru := insertTestUser(t, pool, tenantID, "guru")
+	_, err := pool.Exec(ctx, `insert into user_profiles (user_id,tenant_id,kind) values ($1,$2,'teacher')`, guru, tenantID)
+	require.NoError(t, err)
+
+	svc := service.New(pg.AppPool, repository.New(pg.AppPool), fixedYear{id: year}, nil, nil, clock.Real{}, service.Config{}, auth.NewRefreshToken, service.Extras{})
+	row, err := svc.CreateDutyAssignment(ctx, tenantID, service.DutyAssignmentRecord{
+		AcademicYearID: year, DutyTypeID: homeroom, UserID: guru,
+		ScopeClassID: uuid.NullUUID{UUID: class, Valid: true}, StartsOn: time.Date(2026, 7, 13, 0, 0, 0, 0, time.UTC),
+	})
+	require.NoError(t, err)
+
+	// What academic.DeleteClass leaves behind: the class soft-deleted and
+	// its duty ended.
+	_, err = svc.UpdateDutyAssignment(ctx, tenantID, row.ID, false, nil)
+	require.NoError(t, err)
+	_, err = pool.Exec(ctx, `update classes set deleted_at = now(), homeroom_teacher_id = null where id = $1`, class)
+	require.NoError(t, err)
+
+	_, err = svc.UpdateDutyAssignment(ctx, tenantID, row.ID, true, nil)
+	require.ErrorIs(t, err, domain.ErrScopeTargetNotFound)
+
+	var active bool
+	require.NoError(t, pool.QueryRow(ctx, `select is_active from duty_assignments where id = $1`, row.ID).Scan(&active))
+	require.False(t, active, "the refused reactivation leaves the duty ended")
+	var holder uuid.NullUUID
+	require.NoError(t, pool.QueryRow(ctx, `select homeroom_teacher_id from classes where id = $1`, class).Scan(&holder))
+	require.False(t, holder.Valid, "the deleted class gets no homeroom teacher back")
+}

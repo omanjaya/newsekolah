@@ -6,6 +6,8 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { DutiesView } from "./duties-view";
 
 const assignmentsQuery = vi.fn<() => unknown>();
+// The active year's live classes; a deleted class is missing from it.
+const liveClasses = [{ id: "c1", name: "X-A" }];
 const mocks = vi.hoisted(() => ({ create: vi.fn(), remove: vi.fn() }));
 
 vi.mock("next-intl", () => ({
@@ -33,8 +35,9 @@ vi.mock("../../../lib/session/session-provider", () => ({
   }),
 }));
 vi.mock("../../reference/api", () => ({
-  useClassesQuery: () => ({ data: { data: [] } }),
-  useLookup: () => new Map(),
+  useClassesQuery: () => ({ data: { data: liveClasses } }),
+  useLookup: (items: { id: string }[] | undefined) =>
+    new Map((items ?? []).map((item) => [item.id, item])),
 }));
 vi.mock("../../reference/directory-names", async () => {
   const { directoryNamesStub } = await import("../../../test/directory-names-stub");
@@ -126,6 +129,42 @@ describe("DutiesView", () => {
     expect(
       within(menu).queryByRole("menuitem", { name: "cancelAssignment" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("offers no reactivation for a duty whose class was deleted", async () => {
+    loaded([
+      {
+        id: "a3",
+        user_id: "u1",
+        duty_name: "Wali kelas",
+        scope_class_id: "c1",
+        starts_on: "2026-07-13",
+        ends_on: "2026-11-01",
+        is_active: false,
+      },
+      {
+        id: "a4",
+        user_id: "u1",
+        duty_name: "Wali kelas lama",
+        scope_class_id: "deleted-class",
+        starts_on: "2026-07-13",
+        ends_on: "2026-11-20",
+        is_active: false,
+      },
+    ]);
+    const user = userEvent.setup();
+    render(<DutiesView />);
+    await user.click(screen.getByRole("switch"));
+
+    await user.click(screen.getByRole("button", { name: "rowActions:Bu Sari, Wali kelas" }));
+    let menu = await screen.findByRole("menu");
+    expect(within(menu).getByRole("menuitem", { name: "reactivate" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+
+    await user.click(screen.getByRole("button", { name: "rowActions:Bu Sari, Wali kelas lama" }));
+    menu = await screen.findByRole("menu");
+    expect(within(menu).queryByRole("menuitem", { name: "reactivate" })).not.toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "remove" })).toBeInTheDocument();
   });
 
   it("cancels an assignment that has not started instead of ending it before its start", async () => {

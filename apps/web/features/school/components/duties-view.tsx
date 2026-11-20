@@ -113,6 +113,23 @@ export function DutiesView(): ReactElement {
         },
       ];
     }
+    // A duty ended because its class was deleted stays ended: the API
+    // refuses bringing it back, so the menu offers only removing it.
+    const classGone =
+      a.scope_class_id !== undefined &&
+      classes.data !== undefined &&
+      !classMap.has(a.scope_class_id);
+    const remove: RowActionsMenuItem = {
+      label: t("remove"),
+      icon: <Trash2 />,
+      tone: "danger",
+      onClick: () => {
+        setRemoving(a);
+      },
+    };
+    if (classGone) {
+      return [remove];
+    }
     return [
       {
         label: t("reactivate"),
@@ -130,14 +147,7 @@ export function DutiesView(): ReactElement {
           );
         },
       },
-      {
-        label: t("remove"),
-        icon: <Trash2 />,
-        tone: "danger",
-        onClick: () => {
-          setRemoving(a);
-        },
-      },
+      remove,
     ];
   }
 
