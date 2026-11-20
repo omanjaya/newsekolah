@@ -40,9 +40,10 @@ func WithPrincipal(ctx context.Context, actorID, actingAsID uuid.UUID) context.C
 // are read from ctx (set by httpx's request middleware), never passed in by
 // callers, so every call site records them identically.
 //
-// before and after are marshaled to JSON as given; a nil value is stored as
-// SQL NULL rather than the JSON literal "null" so a create (no before) and a
-// delete (no after) are distinguishable from a corrupt row.
+// before and after are marshaled to JSON, a struct's untagged Go field
+// names turned into snake_case keys (see normalizePayload); a nil value is
+// stored as SQL NULL rather than the JSON literal "null" so a create (no
+// before) and a delete (no after) are distinguishable from a corrupt row.
 func Record(ctx context.Context, tenantID uuid.UUID, action, entityType string, entityID uuid.UUID, before, after any) error {
 	tx, ok := database.TxFromContext(ctx)
 	if !ok {
@@ -126,7 +127,11 @@ func marshalOrNil(v any) ([]byte, error) {
 	if v == nil {
 		return nil, nil
 	}
-	return json.Marshal(v)
+	raw, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	return normalizePayload(raw)
 }
 
 func nullableUUID(id uuid.UUID) pgtype.UUID {
