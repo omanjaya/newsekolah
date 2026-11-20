@@ -161,11 +161,12 @@ func (q *Queries) GetExitPermit(ctx context.Context, arg GetExitPermitParams) (E
 }
 
 const listExitPermitsAwaitingReturn = `-- name: ListExitPermitsAwaitingReturn :many
-select ep.instance_id, ep.tenant_id, ep.destination, ep.start_period_id, ep.end_period_id, ep.issued_at, ep.gate_token_id, ep.exited_at, ep.security_user_id, ep.student_name_snapshot, ep.class_name_snapshot, ep.return_required, ep.expected_return_at, ep.returned_at, ep.return_security_user_id, wi.subject_user_id, wi.class_id
+select ep.instance_id, ep.tenant_id, ep.destination, ep.start_period_id, ep.end_period_id, ep.issued_at, ep.gate_token_id, ep.exited_at, ep.security_user_id, ep.student_name_snapshot, ep.class_name_snapshot, ep.return_required, ep.expected_return_at, ep.returned_at, ep.return_security_user_id, wi.subject_user_id, wi.class_id,
+  (wi.local_date < $2::date)::boolean as unrecorded
 from exit_permits ep
 join workflow_instances wi on wi.id = ep.instance_id
 where ep.tenant_id = $1
-  and wi.local_date = $2::date
+  and wi.local_date between $3::date and $2::date
   and ep.exited_at is not null
   and ep.return_required
   and ep.expected_return_at is not null
@@ -176,6 +177,7 @@ order by ep.expected_return_at, ep.exited_at
 type ListExitPermitsAwaitingReturnParams struct {
 	TenantID uuid.UUID   `json:"tenant_id"`
 	Today    pgtype.Date `json:"today"`
+	Since    pgtype.Date `json:"since"`
 }
 
 type ListExitPermitsAwaitingReturnRow struct {
@@ -196,16 +198,20 @@ type ListExitPermitsAwaitingReturnRow struct {
 	ReturnSecurityUserID pgtype.UUID        `json:"return_security_user_id"`
 	SubjectUserID        uuid.UUID          `json:"subject_user_id"`
 	ClassID              pgtype.UUID        `json:"class_id"`
+	Unrecorded           bool               `json:"unrecorded"`
 }
 
-// The gate's "not back yet" list: permits that went through the gate on
-// the tenant-local day sqlc.arg('today') (workflow_instances.local_date,
-// the day the permit was opened, which is the exit day) and whose student
-// has not been recorded back. A permit without expected_return_at exited
-// before returns were tracked (or came from SION) and is never listed.
-// The earliest due return first; matches ix_exit_permits_awaiting_return.
+// The gate's "not back yet" list: permits that went through the gate on a
+// tenant-local day from sqlc.arg('since') to sqlc.arg('today')
+// (workflow_instances.local_date, the day the permit was opened, which is
+// the exit day) and whose student has not been recorded back. One from
+// before today is unrecorded: its day ended without a return on record,
+// and it stays listed for the look-back the caller chose so staff can
+// still follow it up. A permit without expected_return_at exited before
+// returns were tracked (or came from SION) and is never listed. The
+// earliest due return first; matches ix_exit_permits_awaiting_return.
 func (q *Queries) ListExitPermitsAwaitingReturn(ctx context.Context, arg ListExitPermitsAwaitingReturnParams) ([]ListExitPermitsAwaitingReturnRow, error) {
-	rows, err := q.db.Query(ctx, listExitPermitsAwaitingReturn, arg.TenantID, arg.Today)
+	rows, err := q.db.Query(ctx, listExitPermitsAwaitingReturn, arg.TenantID, arg.Today, arg.Since)
 	if err != nil {
 		return nil, err
 	}
@@ -231,6 +237,7 @@ func (q *Queries) ListExitPermitsAwaitingReturn(ctx context.Context, arg ListExi
 			&i.ReturnSecurityUserID,
 			&i.SubjectUserID,
 			&i.ClassID,
+			&i.Unrecorded,
 		); err != nil {
 			return nil, err
 		}

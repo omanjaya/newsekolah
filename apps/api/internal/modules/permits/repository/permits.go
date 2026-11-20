@@ -121,9 +121,11 @@ func (r *Repository) MarkExitPermitReturned(ctx context.Context, tenantID, insta
 }
 
 // ListExitPermitsAwaitingReturn is the gate's "not back yet" list for the
-// tenant-local day today.
-func (r *Repository) ListExitPermitsAwaitingReturn(ctx context.Context, tenantID uuid.UUID, today time.Time) ([]service.ExitPermitAwaitingReturn, error) {
-	rows, err := r.queries(ctx).ListExitPermitsAwaitingReturn(ctx, db.ListExitPermitsAwaitingReturnParams{TenantID: tenantID, Today: pdatabase.Date(today)})
+// tenant-local days since to today; one from before today is unrecorded.
+func (r *Repository) ListExitPermitsAwaitingReturn(ctx context.Context, tenantID uuid.UUID, since, today time.Time) ([]service.ExitPermitAwaitingReturn, error) {
+	rows, err := r.queries(ctx).ListExitPermitsAwaitingReturn(ctx, db.ListExitPermitsAwaitingReturnParams{
+		TenantID: tenantID, Since: pdatabase.Date(since), Today: pdatabase.Date(today),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list exit permits awaiting return: %w", err)
 	}
@@ -139,6 +141,7 @@ func (r *Repository) ListExitPermitsAwaitingReturn(ctx context.Context, tenantID
 				ReturnedAt: row.ReturnedAt, ReturnSecurityUserID: row.ReturnSecurityUserID,
 			}),
 			SubjectUserID: row.SubjectUserID, ClassID: pdatabase.UUIDOrNil(row.ClassID),
+			Unrecorded: row.Unrecorded,
 		}
 	}
 	return out, nil

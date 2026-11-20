@@ -6330,8 +6330,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Students who left on an exit permit today and are not back yet
-         * @description The gate's list: today's permits (the school's own calendar day) whose student went through the gate, is expected back, and has not been recorded back. The earliest due return comes first; overdue is set once the end of the permit's last period has passed.
+         * Students who left on an exit permit and are not recorded back
+         * @description The gate's list: today's permits (the school's own calendar day) whose student went through the gate, is expected back, and has not been recorded back, plus those of the previous seven days whose exit day ended that way (unrecorded). The earliest due return comes first; overdue is set once the end of the permit's last period has passed.
          */
         get: operations["listExitPermitsAwaitingReturn"];
         put?: never;
@@ -6441,7 +6441,7 @@ export interface paths {
         put?: never;
         /**
          * Security records the student back through the gate
-         * @description Stamps the return time on a permit whose student went out and is expected back. A return after the end of the permit's last period is late (returned_late). 409 EXIT_PERMIT_NOT_AWAITING_RETURN when the student has not gone out, is not expected back, or is already back.
+         * @description Stamps the return time on a permit whose student went out and is expected back. A return after the end of the permit's last period is late (returned_late). 409 EXIT_PERMIT_NOT_AWAITING_RETURN when the student has not gone out, is not expected back, is already back, or the exit day is over (the return is recorded on the exit day only).
          */
         post: operations["recordExitPermitReturn"];
         delete?: never;
@@ -11653,6 +11653,8 @@ export interface components {
             expected_return_at?: string;
             /** @description The student is still out after expected_return_at. */
             overdue: boolean;
+            /** @description The permit is from an earlier day: its exit day ended with no return on record. It stays listed for a week so staff can follow it up, and its return can no longer be recorded. */
+            unrecorded: boolean;
         };
         /** @description One of the student's own exit permits in their history: the workflow instance plus where they went and when they passed the gate, so a row can say so without opening the permit. */
         MyExitPermit: components["schemas"]["WorkflowInstance"] & {

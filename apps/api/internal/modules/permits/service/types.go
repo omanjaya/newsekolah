@@ -100,11 +100,14 @@ type ExitPermitReviewItem struct {
 }
 
 // ExitPermitAwaitingReturn is a permit whose student went through the gate
-// today and has not been recorded back, for the gate's list.
+// and has not been recorded back, for the gate's list.
 type ExitPermitAwaitingReturn struct {
 	domain.ExitPermit
 	SubjectUserID uuid.UUID
 	ClassID       uuid.NullUUID
+	// Unrecorded is a permit from an earlier day: its exit day ended with
+	// no return on record, and the return can no longer be recorded.
+	Unrecorded bool
 }
 
 // LeaveRequestItem is a leave request joined with its workflow state.

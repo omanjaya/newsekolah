@@ -254,6 +254,7 @@ func toAPIExitPermitAwaitingReturn(it service.ExitPermitAwaitingReturn, now time
 		InstanceId: it.InstanceID, StudentUserId: it.SubjectUserID, ClassId: uuidPtr(it.ClassID),
 		Destination: it.Destination, StudentName: it.StudentNameSnapshot, ClassName: it.ClassNameSnapshot,
 		ExitedAt: exitedAt, ExpectedReturnAt: it.ExpectedReturnAt, Overdue: it.IsOverdue(now),
+		Unrecorded: it.Unrecorded,
 	}
 }
 

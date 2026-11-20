@@ -534,7 +534,7 @@
     "PERIOD_RANGE_INVALID": "Jam pelajaran akhir tidak boleh sebelum jam pelajaran awal.",
     "EXIT_PERMIT_NOT_ISSUED": "Izin keluar ini belum disetujui sepenuhnya, jadi belum bisa dipakai.",
     "EXIT_PERMIT_ALREADY_TODAY": "Siswa ini sudah memiliki izin keluar hari ini.",
-    "EXIT_PERMIT_NOT_AWAITING_RETURN": "Siswa ini tidak sedang ditunggu kembali: belum keluar gerbang, tidak perlu kembali, atau sudah tercatat kembali.",
+    "EXIT_PERMIT_NOT_AWAITING_RETURN": "Siswa ini tidak sedang ditunggu kembali: belum keluar gerbang, tidak perlu kembali, sudah tercatat kembali, atau hari keluarnya sudah lewat.",
     "EXIT_PERMIT_PERIOD_PASSED": "Jam pelajaran yang dipilih sudah lewat. Pilih jam yang sedang berjalan atau yang akan datang.",
     "LEAVE_REQUEST_NOT_REVIEWABLE": "Pengajuan izin ini tidak lagi menunggu tinjauan wali kelas. Muat ulang untuk melihat statusnya.",
     "LEAVE_REQUEST_NOT_ISSUABLE": "Pengajuan izin ini belum siap diterbitkan. Muat ulang untuk melihat statusnya.",

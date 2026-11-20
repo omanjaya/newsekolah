@@ -48,7 +48,7 @@ type Repository interface {
 	SetExitPermitGateToken(ctx context.Context, tenantID, instanceID, gateTokenID uuid.UUID) (domain.ExitPermit, error)
 	MarkExitPermitExited(ctx context.Context, tenantID, instanceID uuid.UUID, exitedAt time.Time, securityUserID uuid.UUID, expectedReturnAt time.Time) (domain.ExitPermit, error)
 	MarkExitPermitReturned(ctx context.Context, tenantID, instanceID uuid.UUID, returnedAt time.Time, securityUserID uuid.UUID) (domain.ExitPermit, bool, error)
-	ListExitPermitsAwaitingReturn(ctx context.Context, tenantID uuid.UUID, today time.Time) ([]ExitPermitAwaitingReturn, error)
+	ListExitPermitsAwaitingReturn(ctx context.Context, tenantID uuid.UUID, since, today time.Time) ([]ExitPermitAwaitingReturn, error)
 
 	// Late arrivals.
 	CreateLateArrival(ctx context.Context, l domain.LateArrival) (domain.LateArrival, error)

@@ -84,6 +84,7 @@ function out(
     exited_at: "2027-02-16T02:15:00Z",
     expected_return_at: "2027-02-16T04:00:00Z",
     overdue: false,
+    unrecorded: false,
     ...extra,
   };
 }
@@ -127,6 +128,29 @@ describe("GatePanel not-back-yet list", () => {
     render(<GatePanel />);
 
     expect(screen.getByText("app.permits.exit.gate.outEmpty")).toBeInTheDocument();
+  });
+
+  // A missing return dropped off the list the next morning without a
+  // trace; it now stays a week, apart from today's, with no record action.
+  it("keeps a past day's missing return in its own section, without Catat kembali", () => {
+    mocks.out = [
+      out("old", {
+        student_name: "Siswa Lama",
+        exited_at: "2027-02-11T02:15:00Z",
+        expected_return_at: "2027-02-11T03:00:00Z",
+        overdue: true,
+        unrecorded: true,
+      }),
+    ];
+    render(<GatePanel />);
+
+    expect(screen.getByText("app.permits.exit.gate.outEmpty")).toBeInTheDocument();
+    const section = screen.getByRole("region", { name: "app.permits.exit.gate.unrecordedTitle" });
+    const [row] = within(section).getAllByRole("listitem");
+    expect(row).toHaveTextContent("Siswa Lama");
+    expect(row).toHaveTextContent("app.permits.exit.gate.unrecordedBadge");
+    expect(row).toHaveTextContent("app.permits.exit.gate.dueBack:10.00");
+    expect(within(section).queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("lists who is still out with the time they are due back", () => {

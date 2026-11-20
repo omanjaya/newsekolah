@@ -241,12 +241,13 @@ paths:
       tags: [permits]
       operationId: listExitPermitsAwaitingReturn
       x-permission: scan_exit_permits
-      summary: Students who left on an exit permit today and are not back yet
+      summary: Students who left on an exit permit and are not recorded back
       description: >-
         The gate's list: today's permits (the school's own calendar day) whose
         student went through the gate, is expected back, and has not been
-        recorded back. The earliest due return comes first; overdue is set
-        once the end of the permit's last period has passed.
+        recorded back, plus those of the previous seven days whose exit day
+        ended that way (unrecorded). The earliest due return comes first;
+        overdue is set once the end of the permit's last period has passed.
       responses:
         "200":
           description: Permits
@@ -383,7 +384,8 @@ paths:
         Stamps the return time on a permit whose student went out and is
         expected back. A return after the end of the permit's last period is
         late (returned_late). 409 EXIT_PERMIT_NOT_AWAITING_RETURN when the
-        student has not gone out, is not expected back, or is already back.
+        student has not gone out, is not expected back, is already back, or
+        the exit day is over (the return is recorded on the exit day only).
       parameters:
         - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
@@ -1132,7 +1134,16 @@ components:
     ExitPermitAwaitingReturn:
       type: object
       required:
-        [instance_id, student_user_id, destination, student_name, class_name, exited_at, overdue]
+        [
+          instance_id,
+          student_user_id,
+          destination,
+          student_name,
+          class_name,
+          exited_at,
+          overdue,
+          unrecorded,
+        ]
       properties:
         instance_id: { type: string, format: uuid }
         student_user_id: { type: string, format: uuid }
@@ -1145,6 +1156,12 @@ components:
         overdue:
           type: boolean
           description: The student is still out after expected_return_at.
+        unrecorded:
+          type: boolean
+          description: >-
+            The permit is from an earlier day: its exit day ended with no
+            return on record. It stays listed for a week so staff can follow
+            it up, and its return can no longer be recorded.
 
     MyExitPermit:
       description: >-

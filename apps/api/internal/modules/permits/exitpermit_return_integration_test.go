@@ -55,7 +55,10 @@ func TestExitPermitReturnAtTheGate(t *testing.T) {
 		require.False(t, list[0].IsOverdue(time.Date(base.Year(), base.Month(), base.Day(), 8, 59, 0, 0, loc)))
 		require.True(t, list[0].IsOverdue(time.Date(base.Year(), base.Month(), base.Day(), 9, 30, 0, 0, loc)),
 			"half an hour past the 09:00 period end the student is overdue")
-		require.Empty(t, awaiting(t, at(1, 9, 30)), "the list covers the school's own today only")
+		require.False(t, list[0].Unrecorded, "today's student is still awaited")
+		nextDay := awaiting(t, at(1, 9, 30))
+		require.Len(t, nextDay, 1, "a missing return stays on the list after its day")
+		require.True(t, nextDay[0].Unrecorded)
 
 		back, err := svc.RecordExitPermitReturn(at(0, 9, 30), w.tenantID, instID, w.dutyTeacherID)
 		require.NoError(t, err)

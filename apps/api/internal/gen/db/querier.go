@@ -1263,12 +1263,15 @@ type Querier interface {
 	// for each (student, date) across that date's submitted sessions, the raw
 	// input to attendance/domain.ComputeDailyStatus.
 	ListEntryStatusesForStudentsDates(ctx context.Context, arg ListEntryStatusesForStudentsDatesParams) ([]ListEntryStatusesForStudentsDatesRow, error)
-	// The gate's "not back yet" list: permits that went through the gate on
-	// the tenant-local day sqlc.arg('today') (workflow_instances.local_date,
-	// the day the permit was opened, which is the exit day) and whose student
-	// has not been recorded back. A permit without expected_return_at exited
-	// before returns were tracked (or came from SION) and is never listed.
-	// The earliest due return first; matches ix_exit_permits_awaiting_return.
+	// The gate's "not back yet" list: permits that went through the gate on a
+	// tenant-local day from sqlc.arg('since') to sqlc.arg('today')
+	// (workflow_instances.local_date, the day the permit was opened, which is
+	// the exit day) and whose student has not been recorded back. One from
+	// before today is unrecorded: its day ended without a return on record,
+	// and it stays listed for the look-back the caller chose so staff can
+	// still follow it up. A permit without expected_return_at exited before
+	// returns were tracked (or came from SION) and is never listed. The
+	// earliest due return first; matches ix_exit_permits_awaiting_return.
 	ListExitPermitsAwaitingReturn(ctx context.Context, arg ListExitPermitsAwaitingReturnParams) ([]ListExitPermitsAwaitingReturnRow, error)
 	// The permit rows of a page of a student's own exit permit instances.
 	ListExitPermitsByInstances(ctx context.Context, arg ListExitPermitsByInstancesParams) ([]ExitPermit, error)

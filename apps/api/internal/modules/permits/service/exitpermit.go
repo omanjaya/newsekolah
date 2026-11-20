@@ -478,6 +478,12 @@ func (s *Service) RecordExitPermitReturn(ctx context.Context, tenantID, instance
 		if !ok || inst.Kind != domain.KindExitPermit {
 			return domain.ErrInstanceNotFound
 		}
+		// A return is recorded as it happens, on the exit day. Once that
+		// day is over the permit stays unrecorded: stamping it now would
+		// date the return to a later day than the student came back.
+		if inst.LocalDate.Format(time.DateOnly) != s.tenantNow(ctx, tenantID).Format(time.DateOnly) {
+			return domain.ErrExitPermitNotAwaitingReturn
+		}
 		now := clock.Now(ctx, s.clock)
 		permit, ok, err := s.repo.MarkExitPermitReturned(ctx, tenantID, instanceID, now, securityUserID)
 		if err != nil {
@@ -506,14 +512,23 @@ func (s *Service) RecordExitPermitReturn(ctx context.Context, tenantID, instance
 	return s.GetExitPermit(ctx, tenantID, instanceID)
 }
 
-// ListExitPermitsAwaitingReturn is the gate's "not back yet" list: today's
-// permits (tenant-local day) whose student went out and has not been
-// recorded back, the earliest due first.
+// unrecordedReturnLookback is how many earlier days the gate's list still
+// shows a student who went out and was never recorded back: long enough
+// for staff to follow up over a weekend and the week after, short enough
+// that the list does not grow with every forgotten return of the year.
+const unrecordedReturnLookback = 7
+
+// ListExitPermitsAwaitingReturn is the gate's "not back yet" list, the
+// earliest due first: today's permits (tenant-local day) whose student went
+// out and has not been recorded back, and, marked unrecorded, those of the
+// previous unrecordedReturnLookback days whose day ended that way. Before,
+// a missing return dropped off the list the next morning without a trace.
 func (s *Service) ListExitPermitsAwaitingReturn(ctx context.Context, tenantID uuid.UUID) ([]ExitPermitAwaitingReturn, error) {
 	var out []ExitPermitAwaitingReturn
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		today := s.tenantNow(ctx, tenantID)
 		var err error
-		out, err = s.repo.ListExitPermitsAwaitingReturn(ctx, tenantID, s.tenantNow(ctx, tenantID))
+		out, err = s.repo.ListExitPermitsAwaitingReturn(ctx, tenantID, today.AddDate(0, 0, -unrecordedReturnLookback), today)
 		return err
 	})
 	return out, err
