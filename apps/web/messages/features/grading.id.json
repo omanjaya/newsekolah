@@ -144,7 +144,10 @@
     "retry": "Coba lagi",
     "given": "{count, plural, other {+# bintang}} oleh {teacher}",
     "taken": "{count, plural, other {-# bintang}} oleh {teacher}",
-    "unknownTeacher": "Guru tidak dikenal"
+    "unknownTeacher": "Guru tidak dikenal",
+    "givenCount": "{count, plural, other {+# bintang}}",
+    "takenCount": "{count, plural, other {-# bintang}}",
+    "teacherUnavailable": "guru (nama tidak dapat dimuat)"
   },
   "manualScoreDialog": {
     "title": "Nilai rapor {name}",

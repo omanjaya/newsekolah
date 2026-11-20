@@ -144,7 +144,10 @@
     "retry": "Try again",
     "given": "{count, plural, one {+# star} other {+# stars}} by {teacher}",
     "taken": "{count, plural, one {-# star} other {-# stars}} by {teacher}",
-    "unknownTeacher": "Unknown teacher"
+    "unknownTeacher": "Unknown teacher",
+    "givenCount": "{count, plural, one {+# star} other {+# stars}}",
+    "takenCount": "{count, plural, one {-# star} other {-# stars}}",
+    "teacherUnavailable": "a teacher (name could not be loaded)"
   },
   "manualScoreDialog": {
     "title": "Report score for {name}",

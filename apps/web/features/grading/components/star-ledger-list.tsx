@@ -4,11 +4,11 @@ import { formatShortDateTime, type Locale } from "@newsekolah/i18n";
 import { Button, IconCircle, List, ListRow, SectionHeader, Skeleton } from "@newsekolah/ui";
 import { Minus, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 import { useSession } from "../../../lib/session/session-provider";
-import { useDirectoryNames } from "../../reference/directory-names";
-import { useStarLedgerQuery } from "../api";
+import { useDirectoryLookup } from "../../reference/directory-names";
+import { useStarLedgerQuery, type StarEvent } from "../api";
 
 /** The newest events shown in the dialog: enough to spot a duplicate award or read the last notes. */
 export const STAR_LEDGER_LIMIT = 20;
@@ -29,7 +29,26 @@ export function StarLedgerList({ studentId }: StarLedgerListProps): ReactElement
   const { me } = useSession();
   const ledger = useStarLedgerQuery(studentId, STAR_LEDGER_LIMIT);
   const events = ledger.data?.data ?? [];
-  const teachers = useDirectoryNames(events.map((event) => event.teacher_user_id));
+  const teachers = useDirectoryLookup(events.map((event) => event.teacher_user_id));
+
+  // "Unknown teacher" only once the lookup has answered and the school has
+  // no such person; while it is still loading the name is a placeholder,
+  // and a failed lookup gets a neutral label rather than blaming the id.
+  function rowTitle(event: StarEvent): ReactNode {
+    const count = Math.abs(event.delta);
+    const given = event.delta > 0;
+    const name = teachers.names.get(event.teacher_user_id)?.name;
+    if (name === undefined && teachers.isLoading) {
+      return (
+        <span className="inline-flex items-center gap-2">
+          {given ? t("givenCount", { count }) : t("takenCount", { count })}
+          <Skeleton className="inline-block h-4 w-24" aria-hidden="true" />
+        </span>
+      );
+    }
+    const teacher = name ?? (teachers.isError ? t("teacherUnavailable") : t("unknownTeacher"));
+    return given ? t("given", { count, teacher }) : t("taken", { count, teacher });
+  }
 
   let body: ReactElement;
   if (ledger.isLoading) {
@@ -62,7 +81,6 @@ export function StarLedgerList({ studentId }: StarLedgerListProps): ReactElement
       <List variant="plain" dense>
         {events.map((event) => {
           const given = event.delta > 0;
-          const teacher = teachers.get(event.teacher_user_id)?.name ?? t("unknownTeacher");
           const when = formatShortDateTime(event.created_at, {
             locale,
             timeZone: me?.tenant.timezone,
@@ -75,11 +93,7 @@ export function StarLedgerList({ studentId }: StarLedgerListProps): ReactElement
                   {given ? <Plus aria-hidden="true" /> : <Minus aria-hidden="true" />}
                 </IconCircle>
               }
-              title={
-                given
-                  ? t("given", { count: event.delta, teacher })
-                  : t("taken", { count: -event.delta, teacher })
-              }
+              title={rowTitle(event)}
               meta={event.note.trim() ? [when, event.note.trim()] : [when]}
             />
           );
