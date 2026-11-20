@@ -1971,14 +1971,23 @@
               "update": "Will update",
               "unchanged": "Unchanged",
               "error": "Invalid"
+            },
+            "done": {
+              "create": "Created",
+              "update": "Updated",
+              "unchanged": "Unchanged",
+              "error": "Invalid"
             }
           },
           "prepareTitle": "Prepare the file",
           "fileLabel": "User file",
           "reviewTitle": "Review the result",
+          "doneReviewTitle": "Import result",
           "rowsLabel": "Rows",
           "createLabel": "To create",
           "updateLabel": "To update",
+          "createdLabel": "Created",
+          "updatedLabel": "Updated",
           "unchangedLabel": "Unchanged",
           "invalidLabel": "Invalid",
           "backToUsers": "Back to the user list",

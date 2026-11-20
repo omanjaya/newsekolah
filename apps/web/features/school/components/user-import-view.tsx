@@ -93,6 +93,11 @@ export function UserImportView(): ReactElement {
   const updateCount = (results ?? []).filter((r) => r.action === "update").length;
   const unchangedCount = (results ?? []).filter((r) => r.action === "unchanged").length;
   const rowCount = rows?.length ?? 0;
+  // Once committed, the counts and each row say what was done, not what
+  // will be: "Dibuat" under "Impor selesai", never "Akan dibuat".
+  const done = stage === "done";
+  const reviewTitle = done ? t("doneReviewTitle") : t("reviewTitle");
+  const createLabel = done ? t("createdLabel") : t("createLabel");
 
   function reset() {
     setFileName(null);
@@ -255,21 +260,16 @@ export function UserImportView(): ReactElement {
 
       {rows && results && (
         <section className="flex flex-col gap-4" aria-labelledby="user-import-review">
-          <SectionHeader titleId="user-import-review" title={t("reviewTitle")} />
-          <StatGrid variant="strip" aria-label={t("reviewTitle")}>
+          <SectionHeader titleId="user-import-review" title={reviewTitle} />
+          <StatGrid variant="strip" aria-label={reviewTitle}>
             <Stat icon={<FileSpreadsheet />} tone="blue" label={t("rowsLabel")} value={rowCount} />
             {mode === "upsert" ? (
               <>
-                <Stat
-                  icon={<UserPlus />}
-                  tone="green"
-                  label={t("createLabel")}
-                  value={createCount}
-                />
+                <Stat icon={<UserPlus />} tone="green" label={createLabel} value={createCount} />
                 <Stat
                   icon={<UserPen />}
                   tone="purple"
-                  label={t("updateLabel")}
+                  label={done ? t("updatedLabel") : t("updateLabel")}
                   value={updateCount}
                 />
                 <Stat
@@ -283,7 +283,7 @@ export function UserImportView(): ReactElement {
               <Stat
                 icon={<UserPlus />}
                 tone="green"
-                label={t("createLabel")}
+                label={createLabel}
                 value={rowCount - errorCount}
               />
             )}
@@ -295,7 +295,7 @@ export function UserImportView(): ReactElement {
             />
           </StatGrid>
 
-          {stage === "done" ? (
+          {done ? (
             <Alert tone="success" title={t("doneTitle")}>
               {mode === "upsert"
                 ? t("doneBodyUpsert", {
@@ -331,10 +331,15 @@ export function UserImportView(): ReactElement {
               problems={errorCount}
             />
           )}
-          <UserImportPreviewTable rows={rows} results={results} onlyProblems={problemsOnly} />
+          <UserImportPreviewTable
+            rows={rows}
+            results={results}
+            onlyProblems={problemsOnly}
+            committed={done}
+          />
 
           <FormActions>
-            {stage === "done" ? (
+            {done ? (
               <>
                 <Button asChild variant="secondary">
                   <Link href="/school/users">{t("backToUsers")}</Link>

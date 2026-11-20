@@ -154,3 +154,32 @@ describe("UserImportView preview", () => {
     expect(screen.getByRole("button", { name: "commit" })).toBeEnabled();
   });
 });
+
+describe("UserImportView commit", () => {
+  // After "Impor sekarang" the heading said "Impor selesai / 2 pengguna
+  // berhasil dibuat" while every row and the stat strip still read
+  // "Akan dibuat" (will be created). They now say what was done.
+  it("labels the committed rows and counts in the past tense", async () => {
+    const clean = {
+      data: [
+        { row_number: 2, action: "create", username: "budi.santoso", errors: [] },
+        { row_number: 3, action: "create", username: "siti.rahma", errors: [] },
+      ],
+    };
+    mocks.preview.mockResolvedValue(clean);
+    mocks.commit.mockResolvedValue({ created: 2, ...clean });
+
+    const user = await upload();
+    expect((await screen.findAllByText("table.action.create")).length).toBeGreaterThan(0);
+    expect(screen.getByText("createLabel")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "commit" }));
+
+    expect(await screen.findByText("doneTitle")).toBeInTheDocument();
+    expect(screen.getByText("doneReviewTitle", { selector: "h2" })).toBeInTheDocument();
+    expect(screen.getAllByText("table.done.create").length).toBeGreaterThan(0);
+    expect(screen.queryByText("table.action.create")).not.toBeInTheDocument();
+    expect(screen.getByText("createdLabel")).toBeInTheDocument();
+    expect(screen.queryByText("createLabel")).not.toBeInTheDocument();
+  });
+});

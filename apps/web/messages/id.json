@@ -1969,14 +1969,23 @@
               "update": "Akan diperbarui",
               "unchanged": "Tidak berubah",
               "error": "Tidak valid"
+            },
+            "done": {
+              "create": "Dibuat",
+              "update": "Diperbarui",
+              "unchanged": "Tidak berubah",
+              "error": "Tidak valid"
             }
           },
           "prepareTitle": "Siapkan berkas",
           "fileLabel": "Berkas pengguna",
           "reviewTitle": "Tinjau hasil",
+          "doneReviewTitle": "Hasil impor",
           "rowsLabel": "Baris",
           "createLabel": "Akan dibuat",
           "updateLabel": "Akan diperbarui",
+          "createdLabel": "Dibuat",
+          "updatedLabel": "Diperbarui",
           "unchangedLabel": "Tidak berubah",
           "invalidLabel": "Tidak valid",
           "backToUsers": "Kembali ke daftar pengguna",

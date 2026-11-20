@@ -36,16 +36,19 @@ function orDash(value: string): string {
  * Row-by-row outcome from preview or commit, joined back to the parsed
  * row so the table can show the name/kind the admin will recognize
  * alongside the row number and any errors. `onlyProblems` keeps the rows
- * with errors.
+ * with errors. `committed` says the results are the commit's, so each row
+ * reads what was done ("Dibuat") rather than what will be ("Akan dibuat").
  */
 export function UserImportPreviewTable({
   rows,
   results,
   onlyProblems = false,
+  committed = false,
 }: {
   rows: UserImportRow[];
   results: UserImportRowResult[];
   onlyProblems?: boolean;
+  committed?: boolean;
 }): ReactElement {
   const t = useTranslations("app.school.users.import");
   const tKinds = useTranslations("app.school.users.kinds");
@@ -124,7 +127,9 @@ export function UserImportPreviewTable({
           return (
             <div className="flex flex-col items-start gap-1">
               <Badge tone={action === "unchanged" ? "neutral" : "success"}>
-                {action ? t(`table.action.${action}`) : t("table.valid")}
+                {action
+                  ? t(committed ? `table.done.${action}` : `table.action.${action}`)
+                  : t("table.valid")}
               </Badge>
               {action === "update" && changedFields.length > 0 && (
                 <span className="text-caption text-fg-muted">
@@ -136,7 +141,7 @@ export function UserImportPreviewTable({
         },
       },
     ],
-    [t, tKinds],
+    [t, tKinds, committed],
   );
 
   return (
