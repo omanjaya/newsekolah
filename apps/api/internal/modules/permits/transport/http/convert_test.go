@@ -28,3 +28,12 @@ func TestMapErrorStageVerificationMismatch(t *testing.T) {
 	require.Equal(t, http.StatusConflict, appErr.Status)
 	require.Equal(t, "WORKFLOW_STAGE_MISMATCH", appErr.Code)
 }
+
+// An approver who already approved a stage the current one must be
+// distinct from gets a code of its own, not the QR scan's "not eligible".
+func TestMapErrorApproverNotDistinct(t *testing.T) {
+	var appErr *httpx.Error
+	require.True(t, errors.As(mapError(domain.ErrApproverNotDistinct), &appErr))
+	require.Equal(t, http.StatusForbidden, appErr.Status)
+	require.Equal(t, "WORKFLOW_APPROVER_NOT_DISTINCT", appErr.Code)
+}

@@ -35,6 +35,7 @@ import {
   useReviewLeaveRequestMutation,
   useUploadEvidenceMutation,
 } from "../api";
+import { approvedDistinctStage } from "../lib/distinct-approver";
 import { formatDayRange } from "../lib/permit-dates";
 
 import { isLeaveRequestMissing } from "./leave-request-not-found";
@@ -93,7 +94,12 @@ export function LeaveRequestDetail({
   };
   const stageKey = inst.current_stage?.key;
   const canAct = inst.status === "in_progress" && canReview && stageKey === "homeroom" && !isOwner;
-  const canIssueNow = inst.status === "in_progress" && canIssue && stageKey === "counselor";
+  const atIssueStage = inst.status === "in_progress" && canIssue && stageKey === "counselor";
+  // A homeroom teacher who also holds a Guru BK duty approved this request
+  // themselves: the letter must come from another counselor (the API's
+  // distinct_from rule), so they get a note rather than a dead button.
+  const approvedStage = atIssueStage ? approvedDistinctStage(inst, me?.id) : undefined;
+  const canIssueNow = atIssueStage && approvedStage === undefined;
 
   async function openDocument(kind: "evidence" | "letter") {
     try {
@@ -260,6 +266,11 @@ export function LeaveRequestDetail({
             </Button>
           </DecisionDock>
         </>
+      )}
+      {approvedStage !== undefined && (
+        <Alert variant="info" title={t("issueByOtherTitle")}>
+          {t("issueByOtherBody", { stage: approvedStage })}
+        </Alert>
       )}
       {canIssueNow && (
         <DecisionDock

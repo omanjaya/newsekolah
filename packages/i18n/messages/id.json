@@ -386,6 +386,7 @@
     "TEMPLATE_INVALID": "Isi templat tidak valid. Periksa tanda '{{ }}' yang belum ditutup atau salah tulis.",
     "WORKFLOW_STAGE_MISMATCH": "Tahap yang sedang ditunggu tidak bisa disetujui dengan cara ini.",
     "WORKFLOW_APPROVER_NOT_ELIGIBLE": "Anda atau pemilik kode ini tidak berhak menyetujui tahap ini.",
+    "WORKFLOW_APPROVER_NOT_DISTINCT": "Tahap ini harus disetujui orang lain, karena Anda atau pemilik kode ini sudah menyetujui tahap sebelumnya pada pengajuan ini.",
     "ASSESSMENT_COMPONENT_NOT_FOUND": "Komponen penilaian tidak ditemukan. Muat ulang lembar nilai.",
     "ASSESSMENT_COMPONENT_CODE_EXISTS": "Kode komponen sudah dipakai di kelas dan mapel ini. Pakai kode lain.",
     "ASSESSMENT_COMPONENT_HAS_GRADES": "Komponen ini sudah berisi nilai, jadi tidak bisa dihapus. Kosongkan nilainya dulu.",

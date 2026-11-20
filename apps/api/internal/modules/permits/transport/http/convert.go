@@ -19,6 +19,11 @@ import (
 var (
 	errTokenGone           = httpx.NewError(http.StatusGone, "SCAN_TOKEN_GONE")
 	errApproverNotEligible = httpx.NewError(http.StatusForbidden, "WORKFLOW_APPROVER_NOT_ELIGIBLE")
+	// The approver passes the stage's rule but already approved an earlier
+	// stage this one must be distinct from (a homeroom teacher who is also
+	// Guru BK issuing the letter of a request they approved): a code of its
+	// own, so the client can say so instead of the QR scan's "not eligible".
+	errApproverNotDistinct = httpx.NewError(http.StatusForbidden, "WORKFLOW_APPROVER_NOT_DISTINCT")
 	errAlreadyInProgress   = httpx.NewError(http.StatusConflict, "WORKFLOW_ALREADY_IN_PROGRESS")
 	errNotInProgress       = httpx.NewError(http.StatusConflict, "WORKFLOW_NOT_IN_PROGRESS")
 	errNotSubject          = httpx.NewError(http.StatusForbidden, "WORKFLOW_NOT_SUBJECT")
@@ -56,7 +61,7 @@ var permitErrorMap = map[error]error{
 	domain.ErrStageIndexOutOfRange:         errNotInProgress,
 	domain.ErrStageVerificationMismatch:    errStageMismatch,
 	domain.ErrApproverNotEligible:          errApproverNotEligible,
-	domain.ErrApproverNotDistinct:          errApproverNotEligible,
+	domain.ErrApproverNotDistinct:          errApproverNotDistinct,
 	domain.ErrAlreadyInProgress:            errAlreadyInProgress,
 	domain.ErrNotWorkflowSubject:           errNotSubject,
 	domain.ErrAcademicYearRequired:         errAcademicYear,

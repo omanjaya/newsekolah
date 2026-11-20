@@ -1744,6 +1744,8 @@
         "rejected": "Pengajuan ditolak",
         "approved": "Pengajuan disetujui dan diteruskan ke tahap berikutnya",
         "issueLetter": "Terbitkan surat",
+        "issueByOtherTitle": "Surat diterbitkan Guru BK lain",
+        "issueByOtherBody": "Anda menyetujui pengajuan ini di tahap {stage}, jadi suratnya harus diterbitkan oleh Guru BK lain.",
         "issued": "Surat izin diterbitkan",
         "issuedTitle": "Surat izin sudah terbit",
         "issuedBody": "Presensi pada tanggal izin sudah diisi otomatis.",

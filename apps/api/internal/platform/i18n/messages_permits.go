@@ -5,6 +5,7 @@ func init() {
 	for code, msg := range map[string][2]string{
 		"SCAN_TOKEN_GONE":                 {"Kode QR tidak valid, sudah dipakai, atau kedaluwarsa. Minta kode baru.", "The QR code is invalid, already used, or expired. Ask for a new one."},
 		"WORKFLOW_APPROVER_NOT_ELIGIBLE":  {"Orang yang memindai tidak berwenang menyetujui tahap ini.", "The scanned approver is not eligible for this stage."},
+		"WORKFLOW_APPROVER_NOT_DISTINCT":  {"Tahap ini harus disetujui orang lain: penyetujunya sudah menyetujui tahap sebelumnya pada pengajuan ini.", "Someone else must approve this stage: this approver already approved an earlier stage of this request."},
 		"WORKFLOW_ALREADY_IN_PROGRESS":    {"Masih ada pengajuan yang sedang berjalan.", "A request of this kind is already in progress."},
 		"WORKFLOW_NOT_IN_PROGRESS":        {"Pengajuan ini sudah selesai atau dibatalkan.", "This request is no longer in progress."},
 		"WORKFLOW_NOT_SUBJECT":            {"Hanya pemilik pengajuan yang dapat melakukan aksi ini.", "Only the request owner may perform this action."},

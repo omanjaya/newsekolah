@@ -1746,6 +1746,8 @@
         "rejected": "Request rejected",
         "approved": "Request approved and forwarded to the next stage",
         "issueLetter": "Issue letter",
+        "issueByOtherTitle": "Another counselor issues the letter",
+        "issueByOtherBody": "You approved this request at the {stage} stage, so another counselor must issue its letter.",
         "issued": "Leave letter issued",
         "issuedTitle": "Leave letter issued",
         "issuedBody": "Attendance for the leave dates has been filled automatically.",

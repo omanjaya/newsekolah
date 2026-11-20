@@ -386,6 +386,7 @@
     "TEMPLATE_INVALID": "The template body is invalid. Check for a '{{ }}' tag that is unclosed or mistyped.",
     "WORKFLOW_STAGE_MISMATCH": "The stage this request is waiting at cannot be approved this way.",
     "WORKFLOW_APPROVER_NOT_ELIGIBLE": "You, or whoever showed this code, cannot approve this stage.",
+    "WORKFLOW_APPROVER_NOT_DISTINCT": "Someone else must approve this stage: you, or whoever showed this code, already approved an earlier stage of this request.",
     "ASSESSMENT_COMPONENT_NOT_FOUND": "Assessment component not found. Reload the gradebook.",
     "ASSESSMENT_COMPONENT_CODE_EXISTS": "That component code is already used for this class and subject. Use another code.",
     "ASSESSMENT_COMPONENT_HAS_GRADES": "This component already has scores, so it cannot be deleted. Clear its scores first.",
