@@ -42,7 +42,11 @@ import {
   useCommitImportMutation,
   usePreviewImportMutation,
 } from "../api";
-import { downloadUserImportTemplate, parseUserImportFile } from "../lib/user-import";
+import {
+  downloadUserImportTemplate,
+  importRowErrors,
+  parseUserImportFile,
+} from "../lib/user-import";
 
 import { ImportProgress, ImportRowFilter, XLSX_ACCEPT, type ImportStage } from "./import-layout";
 import { UserImportPreviewTable } from "./user-import-preview-table";
@@ -84,7 +88,7 @@ export function UserImportView(): ReactElement {
     );
   };
 
-  const errorCount = (results ?? []).filter((r) => r.errors.length > 0).length;
+  const errorCount = (results ?? []).filter((r) => importRowErrors(r).length > 0).length;
   const createCount = (results ?? []).filter((r) => r.action === "create").length;
   const updateCount = (results ?? []).filter((r) => r.action === "update").length;
   const unchangedCount = (results ?? []).filter((r) => r.action === "unchanged").length;

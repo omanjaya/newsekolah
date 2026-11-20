@@ -22,6 +22,7 @@ export type DutyType = components["schemas"]["DutyType"];
 export type DutyAssignment = components["schemas"]["DutyAssignment"];
 export type UserImportRow = components["schemas"]["UserImportRow"];
 export type UserImportRowResult = components["schemas"]["UserImportRowResult"];
+export type UserImportRowError = components["schemas"]["UserImportRowError"];
 export type UserImportMode = components["schemas"]["UserImportMode"];
 export type UserImportRowAction = components["schemas"]["UserImportRowAction"];
 export type UserImportResult = components["schemas"]["UserImportResult"];

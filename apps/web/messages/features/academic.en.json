@@ -235,6 +235,14 @@
       "action": "Outcome",
       "message": "Note"
     },
+    "rowMessage": {
+      "DUPLICATE_IN_FILE": "This student appears more than once in the file; only the first row is used.",
+      "MOVE_NEEDS_CONFIRMATION": "The student already has another class this year. Tick the move option to move them.",
+      "STUDENT_NOT_MATCHED": "No student matches this NIS or username.",
+      "STUDENT_NOT_ACTIVE": "This student is not active.",
+      "CLASS_NOT_FOUND": "The class was not found in this academic year.",
+      "unknown": "This row cannot be applied."
+    },
     "action": {
       "assign": "Assigned",
       "move": "Moved",

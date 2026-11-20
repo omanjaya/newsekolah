@@ -27,7 +27,7 @@ import { Download, FileSpreadsheet, School, SkipForward, TriangleAlert } from "l
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
@@ -119,6 +119,16 @@ export function EnrollmentImportView(): ReactElement {
     setRowFilter("all");
   }
 
+  const rowMessage = useCallback(
+    (row: ImportRowResult): string => {
+      const code = row.message_code;
+      if (!code) return "";
+      const key = `rowMessage.${code}`;
+      return t.has(key) ? t(key) : t("rowMessage.unknown");
+    },
+    [t],
+  );
+
   const columns = useMemo<DataTableProps<ImportRowResult>["columns"]>(
     () => [
       {
@@ -160,16 +170,19 @@ export function EnrollmentImportView(): ReactElement {
       {
         id: "message",
         header: t("table.message"),
-        accessorFn: (row) => row.message ?? "",
+        // The API explains an error or skipped row as a code, never an
+        // English sentence; the note (and the search over it) reads in the
+        // admin's language.
+        accessorFn: (row) => rowMessage(row),
         meta: { card: "field", label: t("table.message") },
         cell: ({ row }) => (
           <span className={row.original.action === "error" ? "text-danger" : "text-fg-muted"}>
-            {row.original.message ?? "-"}
+            {rowMessage(row.original) || "-"}
           </span>
         ),
       },
     ],
-    [t],
+    [t, rowMessage],
   );
 
   return (

@@ -235,6 +235,14 @@
       "action": "Hasil",
       "message": "Keterangan"
     },
+    "rowMessage": {
+      "DUPLICATE_IN_FILE": "Siswa ini muncul lebih dari sekali di berkas; hanya baris pertama yang dipakai.",
+      "MOVE_NEEDS_CONFIRMATION": "Siswa sudah punya kelas lain tahun ini. Centang pilihan pindahkan siswa untuk memindahkannya.",
+      "STUDENT_NOT_MATCHED": "Siswa tidak ditemukan dari NIS atau nama pengguna.",
+      "STUDENT_NOT_ACTIVE": "Siswa ini tidak aktif.",
+      "CLASS_NOT_FOUND": "Kelas tidak ditemukan di tahun ajaran ini.",
+      "unknown": "Baris ini tidak bisa diterapkan."
+    },
     "action": {
       "assign": "Ditempatkan",
       "move": "Dipindah",

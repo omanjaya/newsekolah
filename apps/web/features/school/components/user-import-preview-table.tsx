@@ -5,12 +5,26 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
 
-import type { UserImportRow, UserImportRowResult } from "../api";
+import type { UserImportRow, UserImportRowError, UserImportRowResult } from "../api";
+import { importRowErrors } from "../lib/user-import";
 
 interface PreviewRow {
   rowNumber: number;
   row: UserImportRow;
   result?: UserImportRowResult;
+}
+
+/**
+ * The API sends each row error as a code (never a sentence), so it reads in
+ * the admin's language; a code this build does not know yet still says the
+ * row is invalid rather than showing the raw code.
+ */
+function rowErrorMessage(
+  t: ReturnType<typeof useTranslations<"app.school.users.import">>,
+  error: UserImportRowError,
+): string {
+  const key = `rowError.${error.code}`;
+  return t.has(key) ? t(key, error.params ?? {}) : t("rowError.unknown");
 }
 
 /** A blank cell reads as missing data, so render an explicit dash instead. */
@@ -43,7 +57,7 @@ export function UserImportPreviewTable({
         const rowNumber = row.row_number ?? index + 1;
         return { rowNumber, row, result: resultByRow.get(rowNumber) };
       })
-      .filter((item) => !onlyProblems || (item.result?.errors.length ?? 0) > 0);
+      .filter((item) => !onlyProblems || importRowErrors(item.result).length > 0);
   }, [onlyProblems, results, rows]);
 
   const columns = useMemo<DataTableProps<PreviewRow>["columns"]>(
@@ -90,7 +104,7 @@ export function UserImportPreviewTable({
         meta: { card: "field", label: t("table.status") },
         cell: ({ row }) => {
           const result = row.original.result;
-          const errors = result?.errors ?? [];
+          const errors = importRowErrors(result);
           const action = result?.action;
           const changedFields = result?.changed_fields ?? [];
           if (errors.length > 0) {
@@ -100,8 +114,8 @@ export function UserImportPreviewTable({
                   {t("table.invalid")}
                 </Badge>
                 <ul className="list-disc pl-4 text-caption text-danger">
-                  {errors.map((message, i) => (
-                    <li key={i}>{message}</li>
+                  {errors.map((error, i) => (
+                    <li key={i}>{rowErrorMessage(t, error)}</li>
                   ))}
                 </ul>
               </div>

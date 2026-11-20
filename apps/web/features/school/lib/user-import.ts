@@ -8,6 +8,20 @@ import { getAccessToken } from "../../../lib/api/access-token";
 import { API_URL } from "../../../lib/env";
 
 export type UserImportRow = components["schemas"]["UserImportRow"];
+type UserImportRowResult = components["schemas"]["UserImportRowResult"];
+type UserImportRowError = components["schemas"]["UserImportRowError"];
+
+/**
+ * A row result's errors, always as an array. The contract marks errors as a
+ * required array, but an API build from before that was enforced sent null
+ * for a clean row, and reading `.length` on it took the whole import page
+ * down; the screen never trusts the field blindly again.
+ */
+export function importRowErrors(
+  result: Pick<UserImportRowResult, "errors"> | null | undefined,
+): UserImportRowError[] {
+  return Array.isArray(result?.errors) ? result.errors : [];
+}
 
 const IMPORT_DATA_SHEET = "Import";
 
