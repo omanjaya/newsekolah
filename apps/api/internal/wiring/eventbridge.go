@@ -97,7 +97,7 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 	subscribe(b, func(_ context.Context, e schedulingservice.SubstitutionRequested) ([]events.Envelope, error) {
 		return one(events.Envelope{
 			Name: events.SubstitutionRequested, Tenant: e.TenantID, Actor: e.RequesterUserID, Subject: []uuid.UUID{e.SubstituteUserID},
-			Payload: map[string]any{"substitution_id": e.SubstitutionID.String(), "date": e.Date.Format("2006-01-02"), "href": "/substitutions"},
+			Payload: map[string]any{"substitution_id": e.SubstitutionID.String(), "schedule_id": e.ScheduleID.String(), "date": e.Date.Format("2006-01-02"), "href": "/substitutions"},
 		}, nil)
 	})
 	subscribe(b, func(_ context.Context, e schedulingservice.SubstitutionResponded) ([]events.Envelope, error) {
@@ -107,7 +107,7 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 		}
 		return one(events.Envelope{
 			Name: events.SubstitutionResponded, Tenant: e.TenantID, Actor: e.SubstituteUserID, Subject: []uuid.UUID{e.RequesterUserID},
-			Payload: map[string]any{"substitution_id": e.SubstitutionID.String(), "accepted": e.Accepted, "summary": summary, "href": "/substitutions"},
+			Payload: map[string]any{"substitution_id": e.SubstitutionID.String(), "schedule_id": e.ScheduleID.String(), "accepted": e.Accepted, "summary": summary, "href": "/substitutions"},
 		}, nil)
 	})
 	subscribe(b, func(ctx context.Context, e disciplineservice.WarningLetterIssued) ([]events.Envelope, error) {

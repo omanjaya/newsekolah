@@ -154,6 +154,7 @@ func TestSubstitutionBridge_NotifiesWithoutPanic(t *testing.T) {
 	requester := uuid.New()
 	substitute := uuid.New()
 	substitutionID := uuid.New()
+	scheduleID := uuid.New()
 	date := time.Date(2026, 12, 2, 0, 0, 0, 0, time.UTC)
 
 	bus := events.NewBus()
@@ -162,11 +163,11 @@ func TestSubstitutionBridge_NotifiesWithoutPanic(t *testing.T) {
 
 	require.NotPanics(t, func() {
 		require.NoError(t, bus.Publish(context.Background(), schedulingservice.SubstitutionRequested{
-			TenantID: tenantID, SubstitutionID: substitutionID, ScheduleID: uuid.New(), Date: date,
+			TenantID: tenantID, SubstitutionID: substitutionID, ScheduleID: scheduleID, Date: date,
 			RequesterUserID: requester, SubstituteUserID: substitute,
 		}))
 		require.NoError(t, bus.Publish(context.Background(), schedulingservice.SubstitutionResponded{
-			TenantID: tenantID, SubstitutionID: substitutionID, ScheduleID: uuid.New(), Date: date,
+			TenantID: tenantID, SubstitutionID: substitutionID, ScheduleID: scheduleID, Date: date,
 			RequesterUserID: requester, SubstituteUserID: substitute, Accepted: true,
 		}))
 	})
@@ -175,9 +176,12 @@ func TestSubstitutionBridge_NotifiesWithoutPanic(t *testing.T) {
 	require.Equal(t, events.SubstitutionRequested, (*got)[0].Name)
 	require.Equal(t, []uuid.UUID{substitute}, (*got)[0].Subject)
 	require.Equal(t, "2026-12-02", (*got)[0].Payload["date"])
+	// Webhook consumers fan out from these Envelopes and key on the schedule.
+	require.Equal(t, scheduleID.String(), (*got)[0].Payload["schedule_id"])
 	require.Equal(t, events.SubstitutionResponded, (*got)[1].Name)
 	require.Equal(t, []uuid.UUID{requester}, (*got)[1].Subject)
 	require.Equal(t, true, (*got)[1].Payload["accepted"])
+	require.Equal(t, scheduleID.String(), (*got)[1].Payload["schedule_id"])
 }
 
 // TestBridge_IgnoresEnvelopeUnderTypedName keeps a future name collision a
