@@ -6,9 +6,9 @@ import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import type * as TenantDateModule from "../../../lib/tenant-date";
 
 const create = vi.hoisted(() => vi.fn());
-const schedules = vi.hoisted(() => ({
+const schedules = vi.hoisted((): { filter: unknown; blocks: Record<string, unknown>[] } => ({
   filter: undefined,
-  blocks: [] as Record<string, unknown>[],
+  blocks: [],
 }));
 
 vi.mock("next-intl", () => ({
