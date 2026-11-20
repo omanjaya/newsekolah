@@ -19,22 +19,27 @@ const reportDefaultDays = 30
 // returned is a half-open [from, toExclusive) where toExclusive is the
 // day after "to" -- so a caller filtering with >= from and < toExclusive
 // still includes everything that happened on "to" itself.
-func (s *Service) resolveReportPeriod(ctx context.Context, from, to *time.Time) (time.Time, time.Time) {
-	now := clock.Now(ctx, s.clock)
+//
+// The days are the tenant's calendar days: from and to arrive as bare
+// dates (midnight UTC), so their year, month and day are read and midnight
+// is placed in the tenant's zone. Using the dates' own UTC midnight cut a
+// UTC+8 school's report at 08:00, dropping the first morning's activity
+// and counting the morning after the period.
+func (s *Service) resolveReportPeriod(ctx context.Context, tenantID uuid.UUID, from, to *time.Time) (time.Time, time.Time) {
+	loc := s.tenantLocation(ctx, tenantID)
 	var toDay time.Time
 	if to != nil {
 		toDay = *to
 	} else {
-		toDay = now
+		toDay = clock.Now(ctx, s.clock).In(loc)
 	}
-	toDay = time.Date(toDay.Year(), toDay.Month(), toDay.Day(), 0, 0, 0, 0, toDay.Location())
+	toDay = time.Date(toDay.Year(), toDay.Month(), toDay.Day(), 0, 0, 0, 0, loc)
 	var fromDay time.Time
 	if from != nil {
-		fromDay = *from
+		fromDay = time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, loc)
 	} else {
 		fromDay = toDay.AddDate(0, 0, -reportDefaultDays)
 	}
-	fromDay = time.Date(fromDay.Year(), fromDay.Month(), fromDay.Day(), 0, 0, 0, 0, fromDay.Location())
 	return fromDay, toDay.AddDate(0, 0, 1)
 }
 
@@ -54,7 +59,7 @@ func (s *Service) LoansInPeriod(ctx context.Context, tenantID uuid.UUID, from, t
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	fromDay, toExclusive := s.resolveReportPeriod(ctx, from, to)
+	fromDay, toExclusive := s.resolveReportPeriod(ctx, tenantID, from, to)
 	var out []LoanReportRow
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		rows, err := s.repo.ListLoansInPeriodWithTitle(ctx, tenantID, fromDay, toExclusive)
@@ -138,7 +143,7 @@ func (s *Service) MostBorrowedTitles(ctx context.Context, tenantID uuid.UUID, fr
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	fromDay, toExclusive := s.resolveReportPeriod(ctx, from, to)
+	fromDay, toExclusive := s.resolveReportPeriod(ctx, tenantID, from, to)
 	var out []MostBorrowedTitle
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		counts, err := s.repo.MostBorrowedTitles(ctx, tenantID, fromDay, toExclusive, clampLimit(limit))
@@ -197,7 +202,7 @@ func (s *Service) PopularReport(ctx context.Context, tenantID uuid.UUID, from, t
 		if err != nil {
 			return err
 		}
-		fromDay, toExclusive := s.resolveReportPeriod(ctx, from, to)
+		fromDay, toExclusive := s.resolveReportPeriod(ctx, tenantID, from, to)
 		rows, err := s.repo.TopBorrowersInPeriod(ctx, tenantID, fromDay, toExclusive, clampLimit(limit))
 		if err != nil {
 			return err
@@ -245,14 +250,14 @@ func (s *Service) VisitsReport(ctx context.Context, tenantID uuid.UUID, from, to
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return VisitsReport{}, err
 	}
-	fromDay, toExclusive := s.resolveReportPeriod(ctx, from, to)
+	fromDay, toExclusive := s.resolveReportPeriod(ctx, tenantID, from, to)
 	var report VisitsReport
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		total, err := s.repo.CountVisitsBetween(ctx, tenantID, fromDay, toExclusive)
 		if err != nil {
 			return err
 		}
-		perDay, err := s.repo.VisitsPerDay(ctx, tenantID, fromDay, toExclusive)
+		perDay, err := s.repo.VisitsPerDay(ctx, tenantID, fromDay, toExclusive, fromDay.Location().String())
 		if err != nil {
 			return err
 		}
@@ -356,7 +361,7 @@ func (s *Service) CatalogueSummary(ctx context.Context, tenantID uuid.UUID, from
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return CatalogueSummary{}, err
 	}
-	fromDay, toExclusive := s.resolveReportPeriod(ctx, from, to)
+	fromDay, toExclusive := s.resolveReportPeriod(ctx, tenantID, from, to)
 	var summary CatalogueSummary
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		byDDC, err := s.repo.TitlesByDDCClass(ctx, tenantID)
@@ -439,7 +444,7 @@ func (s *Service) AccessionRegister(ctx context.Context, tenantID uuid.UUID, fro
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	fromDay, toExclusive := s.resolveReportPeriod(ctx, from, to)
+	fromDay, toExclusive := s.resolveReportPeriod(ctx, tenantID, from, to)
 	toInclusive := toExclusive.AddDate(0, 0, -1)
 	var copies []domain.Copy
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {

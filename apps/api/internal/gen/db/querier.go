@@ -1771,6 +1771,8 @@ type Querier interface {
 	// a member at all -- a walk-in guest) is applied by the service layer,
 	// which is where every other report's display labels are resolved.
 	VisitsPerClass(ctx context.Context, arg VisitsPerClassParams) ([]VisitsPerClassRow, error)
+	// Days are the tenant's own calendar days (tz is its IANA zone), so a
+	// visit at 04:34 in UTC+8 lands on that local day, not the previous UTC one.
 	VisitsPerDay(ctx context.Context, arg VisitsPerDayParams) ([]VisitsPerDayRow, error)
 	VoidPayment(ctx context.Context, arg VoidPaymentParams) (Payment, error)
 	VoidViolationRecord(ctx context.Context, arg VoidViolationRecordParams) (ViolationRecord, error)

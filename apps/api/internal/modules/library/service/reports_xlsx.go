@@ -108,13 +108,18 @@ func (s *Service) ExportLoansReport(ctx context.Context, tenantID uuid.UUID, fro
 	if err != nil {
 		return nil, err
 	}
+	// Borrowed and returned are instants: both renderers write a time's own
+	// wall clock, so they are moved to the school's zone first, or a loan
+	// at 07:30 WITA shows the previous day. The due date is a calendar
+	// date already.
+	loc := s.tenantLocation(ctx, tenantID)
 	tableRows := make([][]any, len(rows))
 	for i, r := range rows {
 		var returned any
 		if r.Loan.ReturnedAt != nil {
-			returned = *r.Loan.ReturnedAt
+			returned = r.Loan.ReturnedAt.In(loc)
 		}
-		tableRows[i] = []any{r.Title, r.MemberName, r.Loan.BorrowedAt, r.Loan.DueOn, returned, loanStatusLabel(r.Loan.Status), r.Loan.FineAmount}
+		tableRows[i] = []any{r.Title, r.MemberName, r.Loan.BorrowedAt.In(loc), r.Loan.DueOn, returned, loanStatusLabel(r.Loan.Status), r.Loan.FineAmount}
 	}
 	doc := reportdoc.Document{
 		Title:    "Laporan Peminjaman",

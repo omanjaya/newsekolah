@@ -265,7 +265,8 @@ type Repository interface {
 	CountCopiesAddedInPeriod(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
 	CountLateReturnsBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
 	SumFinesRecordedBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
-	VisitsPerDay(ctx context.Context, tenantID uuid.UUID, from, to time.Time) ([]DaySeriesPoint, error)
+	// VisitsPerDay groups by the tenant's calendar day; tz is its IANA zone.
+	VisitsPerDay(ctx context.Context, tenantID uuid.UUID, from, to time.Time, tz string) ([]DaySeriesPoint, error)
 	VisitsPerClass(ctx context.Context, tenantID uuid.UUID, from, to time.Time) ([]ClassCount, error)
 	MembersByType(ctx context.Context, tenantID uuid.UUID) ([]MemberTypeCount, error)
 	MembersByClass(ctx context.Context, tenantID uuid.UUID) ([]ClassCount, error)

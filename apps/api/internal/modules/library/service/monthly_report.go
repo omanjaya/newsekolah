@@ -38,13 +38,15 @@ type MonthlyReport struct {
 }
 
 // parseReportMonth turns a "YYYY-MM" string into the half-open [from, to)
-// range that month covers, defaulting to the tenant clock's current month
-// when month is empty (old app: parseLibraryReportMonth).
-func parseReportMonth(month string, now time.Time) (time.Time, time.Time, error) {
+// range that month covers on the school's calendar (loc is the tenant's
+// zone), defaulting to the current month there when month is empty (old
+// app: parseLibraryReportMonth). A UTC month started at 08:00 WITA on the
+// 1st and ran into the next month's first morning.
+func parseReportMonth(month string, now time.Time, loc *time.Location) (time.Time, time.Time, error) {
 	if month == "" {
-		month = now.Format("2006-01")
+		month = now.In(loc).Format("2006-01")
 	}
-	from, err := time.Parse("2006-01", month)
+	from, err := time.ParseInLocation("2006-01", month, loc)
 	if err != nil {
 		return time.Time{}, time.Time{}, domain.ErrInvalidInput
 	}
@@ -61,7 +63,7 @@ func (s *Service) MonthlyReport(ctx context.Context, tenantID uuid.UUID, month s
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return MonthlyReport{}, err
 	}
-	from, to, err := parseReportMonth(month, clock.Now(ctx, s.clock))
+	from, to, err := parseReportMonth(month, clock.Now(ctx, s.clock), s.tenantLocation(ctx, tenantID))
 	if err != nil {
 		return MonthlyReport{}, err
 	}
