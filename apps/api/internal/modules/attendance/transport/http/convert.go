@@ -48,7 +48,7 @@ func toAPISessionSummary(s service.SessionSummary) api.AttendanceSessionSummary 
 		SubjectId: sess.SubjectID, TeacherUserId: sess.TeacherUserID, SubstituteUserId: nullUUIDPtr(sess.SubstituteUserID),
 		StartPeriodId: sess.StartPeriodID, EndPeriodId: sess.EndPeriodID, IsSubstitute: s.IsSubstitute, SubmittedAt: sess.SubmittedAt,
 		RosterCount: &rosterCount, EnteredCount: &enteredCount, HandedOverToUserId: nullUUIDPtr(s.HandedOverTo),
-		StartsAt: timePtrOrNil(s.StartsAt),
+		StartsAt: timePtrOrNil(s.StartsAt), EditableUntil: s.EditableUntil, OwnerEditableUntil: s.OwnerEditableUntil,
 	}
 }
 

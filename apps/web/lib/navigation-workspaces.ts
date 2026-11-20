@@ -131,6 +131,7 @@ const WORKSPACES: WorkspaceDefinition[] = [
       "settings-whatsapp",
       "settings-integrations",
       "settings-workflows",
+      "settings-attendance",
       "settings-audit",
       "setup",
     ],

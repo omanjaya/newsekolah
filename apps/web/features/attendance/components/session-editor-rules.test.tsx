@@ -39,8 +39,10 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
 vi.mock("../../../lib/navigation/use-unsaved-changes-protection", () => ({
   useUnsavedChangesProtection: () => undefined,
 }));
+const granted = vi.hoisted(() => new Set<string>());
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
+  useCan: (permission: string) => granted.has(permission),
 }));
 vi.mock("../../discipline/api", () => ({
   useViolationTypesQuery: () => ({ data: undefined, isLoading: false }),
@@ -301,6 +303,42 @@ describe("SessionEditor -- a session whose save window has closed", () => {
     expect(screen.getByRole("button", { name: "save" })).toBeDisabled();
     clickSave();
     expect(saveMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("points a reader who sets the correction window at the setting, not at the admin", () => {
+    granted.add("manage_settings");
+    try {
+      syncSimulationIdentity(superadmin());
+      setSimulation("frozen", new Date("2027-01-12T02:00:00Z"));
+      render(
+        <SessionEditor
+          session={session({ save_mode: "correction", editable_until: "2027-01-11T16:59:59Z" })}
+          openedInCorrection
+        />,
+      );
+
+      expect(screen.getByText(/closedBodyManager/)).toBeInTheDocument();
+      expect(screen.queryByText(/closedBody /)).not.toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "closedSettingsLink" })).toHaveAttribute(
+        "href",
+        "/settings/attendance",
+      );
+    } finally {
+      granted.delete("manage_settings");
+    }
+  });
+
+  it("offers no settings link to a reader who cannot change the window", () => {
+    syncSimulationIdentity(superadmin());
+    setSimulation("frozen", new Date("2027-01-12T02:00:00Z"));
+    render(
+      <SessionEditor
+        session={session({ save_mode: "normal", editable_until: "2027-01-11T16:59:59Z" })}
+        openedInCorrection={false}
+      />,
+    );
+
+    expect(screen.queryByRole("link", { name: "closedSettingsLink" })).not.toBeInTheDocument();
   });
 
   it("stays editable while the window is open", () => {

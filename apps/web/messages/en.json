@@ -611,6 +611,16 @@
         "channelsTitle": "Default channels per kind",
         "channelsBody": "The in-app inbox always receives everything. Each change saves at once."
       },
+      "attendance": {
+        "navLabel": "Attendance rules",
+        "intro": "Applies to student attendance across the school.",
+        "correctionTitle": "Correction window",
+        "correctionDaysLabel": "Correction period",
+        "correctionDaysHint": "How many days after a session's date its teacher, the homeroom teacher and a corrector can still change its attendance, until 23:59 on the last day. Between {min} and {max} days. Lengthening it reopens sessions whose window has closed.",
+        "correctionDaysRangeError": "The correction period must be between {min} and {max} days.",
+        "daysUnit": "days",
+        "saved": "Attendance rules saved"
+      },
       "session": {
         "navLabel": "Sessions and sign-in",
         "eyebrow": "Settings",
@@ -1149,6 +1159,7 @@
       "statusUpcoming": "Not open yet",
       "statusSavedAt": "Saved at {time}",
       "statusLocked": "Locked",
+      "statusMissed": "Locked, not filled",
       "ongoingBadge": "In progress",
       "nextBadge": "Next",
       "fillProgress": "{entered}/{roster} filled",
@@ -1285,7 +1296,9 @@
         "handedOverTitle": "This lesson was handed to a substitute",
         "handedOverBody": "The substitute records its attendance. You can still look at it.",
         "closedTitle": "This session's attendance is locked",
-        "closedBody": "The time to change it ended {time}. Contact the school admin if it still needs changing.",
+        "closedBody": "The time to change it ended {time}. A school admin can lengthen the correction window in the attendance settings if it still needs changing.",
+        "closedBodyManager": "The time to change it ended {time}. Lengthen the correction window in the attendance settings if it still needs changing.",
+        "closedSettingsLink": "Open attendance settings",
         "overriddenByLeave": "{names} kept the status set by their leave letter, not the one you chose.",
         "blockedReasons": {
           "late_arrival_in_progress": "Late, waiting for the late-arrival pass to be completed"
@@ -1301,6 +1314,7 @@
         "recapAllClear": "This year: nothing to note."
       },
       "daySummary": "{total, plural, one {# session} other {# sessions}} · {saved} saved · {pending} to fill",
+      "dayMissed": "{count} locked, not filled",
       "dayHandedOver": "{count} handed to a substitute",
       "otherSessions": "Other sessions",
       "daySessions": "Teaching sessions",

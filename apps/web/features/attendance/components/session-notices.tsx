@@ -3,11 +3,16 @@
 import type { Locale } from "@newsekolah/i18n";
 import { formatDateTime, formatTime, formatWeekdayDate } from "@newsekolah/i18n";
 import { Alert, Button } from "@newsekolah/ui";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useCan } from "../../../lib/session/session-provider";
 import { isoToZonedLocal } from "../../../lib/tenant-date";
+
+/** Where a school's attendance policy, its correction window included, is set. */
+export const ATTENDANCE_SETTINGS_HREF = "/settings/attendance";
 
 /**
  * Why the session cannot be saved right now, above the roster: the lesson
@@ -43,6 +48,7 @@ export function SessionWindowNotice({
   const t = useTranslations("app.attendance.session");
   const locale = useLocale() as Locale;
   const apiErrorMessage = useApiErrorMessage();
+  const canManageSettings = useCan("manage_settings");
 
   if (handedOver) {
     return (
@@ -52,10 +58,23 @@ export function SessionWindowNotice({
     );
   }
   if (windowEnded || closedCode !== null) {
+    // A reader who sets the school's correction window is pointed at the
+    // setting itself, not told to ask the admin they are.
+    const time = editableUntil ? formatDateTime(editableUntil, { locale, timeZone }) : "";
     return (
-      <Alert tone="warning" title={t("closedTitle")}>
+      <Alert
+        tone="warning"
+        title={t("closedTitle")}
+        action={
+          canManageSettings ? (
+            <Button asChild size="sm" variant="secondary">
+              <Link href={ATTENDANCE_SETTINGS_HREF}>{t("closedSettingsLink")}</Link>
+            </Button>
+          ) : undefined
+        }
+      >
         {windowEnded && editableUntil
-          ? t("closedBody", { time: formatDateTime(editableUntil, { locale, timeZone }) })
+          ? t(canManageSettings ? "closedBodyManager" : "closedBody", { time })
           : apiErrorMessage(closedCode ?? "ATTENDANCE_WINDOW_CLOSED")}
       </Alert>
     );

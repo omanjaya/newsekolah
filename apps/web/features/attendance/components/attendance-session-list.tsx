@@ -47,7 +47,7 @@ function useSessionText(item: DaySessionItem) {
   };
 }
 
-/** Saved, locked or still to fill, as one badge. */
+/** Saved, locked (with or without a save) or still to fill, as one badge. */
 function StatusBadge({
   item,
   timeZone,
@@ -64,11 +64,11 @@ function StatusBadge({
       </Badge>
     );
   }
-  if (item.fillStatus === "locked") {
+  if (item.fillStatus === "locked" || item.fillStatus === "missed") {
     return (
       <Badge tone="neutral" size="sm">
         <Lock className="size-3" aria-hidden="true" />
-        {t("statusLocked")}
+        {item.fillStatus === "locked" ? t("statusLocked") : t("statusMissed")}
       </Badge>
     );
   }

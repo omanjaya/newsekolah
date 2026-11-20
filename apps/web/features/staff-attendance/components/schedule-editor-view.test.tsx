@@ -1,5 +1,5 @@
 import type * as UiModule from "@newsekolah/ui";
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeAll, beforeEach, expect, it, vi } from "vitest";
 
@@ -60,7 +60,23 @@ beforeAll(() => {
   );
 });
 
+// The viewport width in px; the editor lays the week out as a table from
+// `lg` (1024px) up and as day cards below it.
+let viewportWidth = 1280;
+
+function matchesWidth(query: string): boolean {
+  const minWidth = /\(min-width: (\d+)px\)/.exec(query)?.[1];
+  return minWidth !== undefined && viewportWidth >= Number(minWidth);
+}
+
 beforeEach(() => {
+  viewportWidth = 1280;
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: matchesWidth(query),
+    media: query,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  }));
   scheduleState.days = [];
   scheduleState.mutate = (_days, options) => {
     options.onSuccess();
@@ -142,4 +158,47 @@ it("offers staff who have no work schedule yet, so a fresh school can give the f
   await userEvent.click(guru);
   // The weekly form opens for the chosen person.
   expect(screen.getByText("schedule.weekdays.1")).toBeInTheDocument();
+});
+
+it("lays the week out as day cards on a phone, with every field of a working day on screen", async () => {
+  viewportWidth = 390;
+  scheduleState.days = [
+    { weekday: 1, is_working_day: true, start_minute: 480, end_minute: 960, grace_minutes: 10 },
+  ];
+  await openFormFor("Satpam Contoh");
+
+  // No five-column table to scroll sideways: each day is its own card.
+  expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  const cards = screen.getByTestId("schedule-day-cards");
+  expect(within(cards).getAllByRole("switch", { name: "schedule.workingDayFor" })).toHaveLength(7);
+  // Monday works, so its start, end and grace minutes are all there, labelled.
+  expect(within(cards).getByRole("combobox", { name: "schedule.startFor" })).toBeInTheDocument();
+  expect(within(cards).getByRole("combobox", { name: "schedule.endFor" })).toBeInTheDocument();
+  expect(within(cards).getByRole("spinbutton", { name: "schedule.graceFor" })).toBeInTheDocument();
+  expect(within(cards).getByText("schedule.grace")).toBeInTheDocument();
+
+  // Turning a day on shows its fields.
+  const [, tuesday] = within(cards).getAllByRole("switch", { name: "schedule.workingDayFor" });
+  if (!tuesday) throw new Error("no Tuesday switch");
+  await userEvent.click(tuesday);
+  expect(within(cards).getAllByRole("combobox", { name: "schedule.startFor" })).toHaveLength(2);
+});
+
+it("keeps the day cards on a tablet, where the sidebar leaves the table too little room", async () => {
+  // From md the shell's 15rem sidebar leaves about 480-730px for content,
+  // narrower than the five-column table.
+  for (const width of [640, 768, 1023]) {
+    viewportWidth = width;
+    cleanup();
+    await openFormFor("Satpam Contoh");
+    expect(screen.queryByRole("table"), `${width}px`).not.toBeInTheDocument();
+    expect(screen.getByTestId("schedule-day-cards")).toBeInTheDocument();
+  }
+});
+
+it("lays the week out as the five-column table from lg up", async () => {
+  viewportWidth = 1024;
+  await openFormFor("Satpam Contoh");
+  expect(screen.getByRole("table")).toBeInTheDocument();
+  expect(screen.queryByTestId("schedule-day-cards")).not.toBeInTheDocument();
 });

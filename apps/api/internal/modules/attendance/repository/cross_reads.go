@@ -189,6 +189,19 @@ func (r *Repository) GetCorrectionDays(ctx context.Context, tenantID uuid.UUID) 
 	return v, true, nil
 }
 
+// SetCorrectionDays writes attendance.correction_days through the shared
+// tenant_settings upsert, the key GetCorrectionDays reads.
+func (r *Repository) SetCorrectionDays(ctx context.Context, tenantID, actorID uuid.UUID, days int) error {
+	value, err := json.Marshal(days)
+	if err != nil {
+		return err
+	}
+	return r.queries(ctx).UpsertTenantSetting(ctx, db.UpsertTenantSettingParams{
+		TenantID: tenantID, Key: "attendance.correction_days", Value: value,
+		UpdatedBy: pdatabase.NullUUID(uuid.NullUUID{UUID: actorID, Valid: actorID != uuid.Nil}),
+	})
+}
+
 // IsSchoolDay reuses scheduling's own IsSchoolDayRef query (already
 // generated for its schedule-day validation) rather than duplicating it:
 // school_days is a weekly pattern ("is Monday a school day"), not a full

@@ -128,3 +128,66 @@ func TestForceStatusSkipsDaysWithoutLessons(t *testing.T) {
 	).Scan(&count))
 	require.Zero(t, count, "nothing is written into a holiday's session")
 }
+
+// TestIssuedLeaveDecidesEveryScreen: the homeroom roster applies an issued
+// letter on a lesson day the way the student's own calendar does, and an
+// INCOMPLETE daily summary (a session opened but not saved) gives way to
+// the letter on the calendar, the batch statuses and the roster alike,
+// instead of reading "not complete" on a day of leave (audit S13).
+func TestIssuedLeaveDecidesEveryScreen(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	w := seedWorld(t, ctx, pg.AdminPool, "leave-every-screen")
+	svc := buildServiceWithOverrider(pg.AppPool, rangeOverrider{student: w.student1ID, from: w.today, to: w.today, code: "I"})
+	homeroom := service.Actor{UserID: w.teacherID}
+
+	statusOf := func(roster service.HomeroomRoster, student uuid.UUID) string {
+		t.Helper()
+		for _, e := range roster.Students {
+			if e.StudentUserID == student {
+				return e.StatusCode
+			}
+		}
+		t.Fatalf("student %s missing from the roster", student)
+		return ""
+	}
+
+	roster, err := svc.GetHomeroomAttendance(ctx, w.tenantID, homeroom, w.today, service.HomeroomFilter{})
+	require.NoError(t, err)
+	require.Equal(t, "I", statusOf(roster, w.student1ID), "the homeroom roster shows the letter like the student calendar")
+	require.NotEqual(t, "I", statusOf(roster, w.student2ID))
+	require.Equal(t, 1, roster.StatusCounts["I"])
+
+	_, err = pg.AdminPool.Exec(ctx,
+		`insert into attendance_daily_summary (tenant_id, academic_year_id, student_user_id, date, status_code, expected_sessions, submitted_sessions)
+		 values ($1, $2, $3, $4, 'INCOMPLETE', 1, 0), ($1, $2, $5, $4, 'INCOMPLETE', 1, 0)`,
+		w.tenantID, w.yearID, w.student1ID, w.today, w.student2ID,
+	)
+	require.NoError(t, err)
+
+	days, err := svc.GetStudentCalendarMonth(ctx, w.tenantID, w.student1ID, w.today.Format("2006-01"))
+	require.NoError(t, err)
+	found := false
+	for _, d := range days {
+		if sameDate(d.Date, w.today) {
+			found = true
+			require.Equal(t, "I", d.StatusCode, "an unsaved session does not hide the letter")
+			require.True(t, d.Complete)
+		}
+	}
+	require.True(t, found)
+
+	statuses, err := svc.DayStatusesForStudents(ctx, w.tenantID, []uuid.UUID{w.student1ID, w.student2ID}, []time.Time{w.today})
+	require.NoError(t, err)
+	byStudent := map[uuid.UUID]string{}
+	for _, st := range statuses {
+		byStudent[st.StudentUserID] = st.StatusCode
+	}
+	require.Equal(t, "I", byStudent[w.student1ID])
+	require.Equal(t, "INCOMPLETE", byStudent[w.student2ID], "without a letter the summary stands")
+
+	roster, err = svc.GetHomeroomAttendance(ctx, w.tenantID, homeroom, w.today, service.HomeroomFilter{})
+	require.NoError(t, err)
+	require.Equal(t, "I", statusOf(roster, w.student1ID))
+	require.Equal(t, "INCOMPLETE", statusOf(roster, w.student2ID))
+}

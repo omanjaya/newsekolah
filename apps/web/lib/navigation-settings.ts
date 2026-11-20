@@ -95,6 +95,15 @@ export const settingsNavItems: NavItem[] = [
     sidebarPlacement: "footer",
   },
   {
+    key: "settings-attendance",
+    labelKey: "app.settings.attendance.navLabel",
+    href: "/settings/attendance",
+    icon: domainIcons.attendance,
+    permission: "manage_settings",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "footer",
+  },
+  {
     key: "settings-branding",
     labelKey: "app.settings.branding.navLabel",
     href: "/settings/branding",

@@ -611,6 +611,16 @@
         "channelsTitle": "Kanal bawaan per jenis",
         "channelsBody": "Kotak masuk aplikasi selalu menerima semuanya. Setiap perubahan langsung tersimpan."
       },
+      "attendance": {
+        "navLabel": "Aturan presensi",
+        "intro": "Berlaku untuk presensi siswa di seluruh sekolah.",
+        "correctionTitle": "Batas koreksi",
+        "correctionDaysLabel": "Lama koreksi",
+        "correctionDaysHint": "Berapa hari setelah tanggal sesi guru pengampu, wali kelas, dan petugas koreksi masih bisa mengubah presensinya, sampai pukul 23.59 di hari terakhir. Antara {min} dan {max} hari. Memperpanjangnya membuka kembali sesi yang batasnya sudah lewat.",
+        "correctionDaysRangeError": "Lama koreksi harus antara {min} dan {max} hari.",
+        "daysUnit": "hari",
+        "saved": "Aturan presensi tersimpan"
+      },
       "session": {
         "navLabel": "Sesi dan masuk",
         "eyebrow": "Pengaturan",
@@ -1149,6 +1159,7 @@
       "statusUpcoming": "Belum bisa diisi",
       "statusSavedAt": "Tersimpan pukul {time}",
       "statusLocked": "Terkunci",
+      "statusMissed": "Terkunci, belum diisi",
       "ongoingBadge": "Sedang berlangsung",
       "nextBadge": "Berikutnya",
       "fillProgress": "{entered}/{roster} diisi",
@@ -1285,7 +1296,9 @@
         "handedOverTitle": "Pelajaran ini diserahkan ke guru pengganti",
         "handedOverBody": "Guru pengganti yang mengisi presensinya. Anda tetap bisa melihatnya.",
         "closedTitle": "Presensi sesi ini sudah dikunci",
-        "closedBody": "Batas waktu mengubahnya berakhir {time}. Hubungi admin sekolah bila masih perlu diubah.",
+        "closedBody": "Batas waktu mengubahnya berakhir {time}. Admin sekolah dapat memperpanjang batas koreksi di pengaturan presensi bila masih perlu diubah.",
+        "closedBodyManager": "Batas waktu mengubahnya berakhir {time}. Perpanjang batas koreksi di pengaturan presensi bila masih perlu diubah.",
+        "closedSettingsLink": "Buka pengaturan presensi",
         "overriddenByLeave": "Status {names} tetap mengikuti surat izin, bukan pilihan Anda.",
         "blockedReasons": { "late_arrival_in_progress": "Terlambat, menunggu izin masuk selesai" },
         "locked": {
@@ -1299,6 +1312,7 @@
         "recapAllClear": "Tahun ini: tidak ada catatan."
       },
       "daySummary": "{total, plural, other {# sesi}} · {saved} tersimpan · {pending} belum diisi",
+      "dayMissed": "{count} terkunci belum diisi",
       "dayHandedOver": "{count} digantikan guru pengganti",
       "otherSessions": "Sesi lainnya",
       "daySessions": "Sesi mengajar",

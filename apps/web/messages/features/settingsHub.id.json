@@ -24,7 +24,7 @@
     },
     "workflow": {
       "title": "Alur kerja",
-      "description": "Alur persetujuan dan penyiapan awal."
+      "description": "Alur persetujuan, aturan presensi, dan penyiapan awal."
     },
     "account": {
       "title": "Akun saya",
@@ -45,6 +45,7 @@
     "whatsapp": "Sambungkan dan atur pesan WhatsApp sekolah.",
     "integrations": "Hubungkan aplikasi dan layanan pihak ketiga.",
     "workflows": "Atur alur pengajuan dan persetujuan.",
+    "attendance": "Atur batas koreksi presensi sesi yang sudah lewat.",
     "setup": "Panduan langkah penyiapan awal sekolah.",
     "notifications": "Kanal pemberitahuan dan jam tenang Anda.",
     "appearance": "Tema terang atau gelap di perangkat ini."

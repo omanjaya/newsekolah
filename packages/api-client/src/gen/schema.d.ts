@@ -1545,6 +1545,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/attendance/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The school's attendance policy (how long attendance stays correctable) */
+        get: operations["getAttendanceSettings"];
+        /**
+         * Change the school's attendance policy
+         * @description A longer correction window reopens every session whose new deadline is still ahead, so a school can correct attendance after the window it had set has closed.
+         */
+        put: operations["updateAttendanceSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/attendance/me/calendar": {
         parameters: {
             query?: never;
@@ -9111,6 +9132,20 @@ export interface components {
              * @description When the session's first period begins on its date. Attendance cannot be saved before it.
              */
             starts_at?: string;
+            /**
+             * Format: date-time
+             * @description The last instant the viewer may save this session, the same deadline the session detail gives in editable_until (normal mode for its own teacher or accepted substitute, correction for anyone else). After it the session is locked for the viewer. Absent for a lesson on a later day with no session yet, or when the viewer may not save it at all.
+             */
+            editable_until?: string;
+            /**
+             * Format: date-time
+             * @description The last instant the teacher whose day is listed may save this session, sent only when the viewer reads another teacher's day (teacher_user_id), so a monitoring view shows that teacher's fill state instead of the viewer's own lock. Absent on the viewer's own day, for a lesson with no session yet, or when that teacher may not save it.
+             */
+            owner_editable_until?: string;
+        };
+        AttendanceSettings: {
+            /** @description How many days after a session's date its own teacher, its class's homeroom teacher and a global corrector may still change it, until 23.59 school time on the last day. 7 when the school has not set it. */
+            correction_days: number;
         };
         AttendanceRosterItem: {
             /** Format: uuid */
@@ -16078,6 +16113,55 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+        };
+    };
+    getAttendanceSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updateAttendanceSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttendanceSettings"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     getMyAttendanceCalendar: {

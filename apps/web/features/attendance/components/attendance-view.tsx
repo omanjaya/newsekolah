@@ -16,13 +16,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
+import { useBusinessNow } from "../../../lib/simulation/clock";
 import { isoWeekdayOf } from "../../../lib/tenant-date";
 import {
   useClassesQuery,
@@ -186,18 +187,13 @@ export function DaySessions(): ReactElement {
     [items, periodMap],
   );
 
-  // Re-evaluated every 30s so "sedang berlangsung"/"berikutnya" stays
-  // accurate through a lesson without a full page reload; only meaningful
-  // for today's own list, never for a past or future date.
-  const [now, setNow] = useState(() => nowTimeInZone(me?.tenant.timezone));
-  useEffect(() => {
-    const id = setInterval(() => {
-      setNow(nowTimeInZone(me?.tenant.timezone));
-    }, 30_000);
-    return () => {
-      clearInterval(id);
-    };
-  }, [me?.tenant.timezone]);
+  // Read from the business clock on every render: useBusinessNow re-renders
+  // every 30s, so "sedang berlangsung"/"berikutnya" stays accurate through
+  // a lesson, and at once when the simulated time is applied or moved (on
+  // a full page load it is applied only after the first render). Only
+  // meaningful for today's own list, never for a past or future date.
+  const instant = useBusinessNow();
+  const now = nowTimeInZone(me?.tenant.timezone);
   const isToday = date === today;
 
   const ongoingScheduleId = useMemo(() => {
@@ -237,12 +233,17 @@ export function DaySessions(): ReactElement {
   }, [isToday, sortedItems, periodMap, now]);
 
   const dayItems: DaySessionItem[] = sortedItems.map((session) => {
-    const fillStatus = deriveFillStatus(
-      session.submitted_at,
-      session.date || date,
+    const fillStatus = deriveFillStatus({
+      submittedAt: session.submitted_at,
+      date: session.date || date,
       today,
-      Boolean(session.handed_over_to_user_id),
-    );
+      handedOver: Boolean(session.handed_over_to_user_id),
+      // On another teacher's day the badge follows that teacher's own
+      // deadline: a manager without correction rights may not save the
+      // session, yet the teacher can still fill it.
+      editableUntil: viewingOther ? session.owner_editable_until : session.editable_until,
+      now: instant,
+    });
     return {
       session,
       className: classMap.get(session.class_id)?.name ?? t("unknownClass"),
@@ -273,6 +274,9 @@ export function DaySessions(): ReactElement {
   const handedOverCount = dayItems.filter((item) => item.fillStatus === "handedOver").length;
   // Nor is a lesson on a date that has not arrived: it cannot be filled yet.
   const upcomingCount = dayItems.filter((item) => item.fillStatus === "upcoming").length;
+  // Nor one whose save deadline closed before anything was saved: it can
+  // no longer be filled, so it is not a task left to do.
+  const missedCount = dayItems.filter((item) => item.fillStatus === "missed").length;
   const holidayName = sessions.data?.holiday_name;
 
   // The teacher's own report is the area's "Laporan presensi" tab, so the
@@ -322,8 +326,10 @@ export function DaySessions(): ReactElement {
               {t("daySummary", {
                 total: sortedItems.length,
                 saved: savedCount,
-                pending: sortedItems.length - savedCount - handedOverCount - upcomingCount,
+                pending:
+                  sortedItems.length - savedCount - handedOverCount - upcomingCount - missedCount,
               })}
+              {missedCount > 0 && ` · ${t("dayMissed", { count: missedCount })}`}
               {handedOverCount > 0 && ` · ${t("dayHandedOver", { count: handedOverCount })}`}
             </p>
           )}

@@ -47,8 +47,9 @@ func dayKey(t time.Time) string { return t.Format("2006-01-02") }
 // the calendar's lesson days for the whole date window -- one class read
 // per distinct class and two calendar reads per distinct grade level
 // (ClassCalendar.TeachingDays). The resolution order mirrors
-// calendarDaysForRange exactly: a materialized daily summary row wins, then
-// an Overrider status (an issued leave letter) on a day with lessons, then
+// calendarDaysForRange exactly: a materialized daily summary row wins
+// unless it is INCOMPLETE, then an Overrider status (an issued leave
+// letter) on a day with lessons, then an INCOMPLETE summary row, then
 // the status computed live from the class's schedules, its submitted
 // sessions and the student's recorded entries via
 // domain.ComputeDailyStatus.
@@ -76,7 +77,7 @@ func (s *Service) DayStatusesForStudents(ctx context.Context, tenantID uuid.UUID
 		if err != nil {
 			return err
 		}
-		pending := pendingPairs(studentIDs, dates, resolved)
+		pending := overridablePairs(studentIDs, dates, resolved)
 		lessons, err := s.loadLessonDays(ctx, tenantID, yearID, pending)
 		if err != nil {
 			return err
@@ -108,6 +109,21 @@ func (s *Service) summarizedStatuses(ctx context.Context, tenantID, yearID uuid.
 		resolved[studentDate{row.StudentUserID, dayKey(row.Date)}] = row.StatusCode
 	}
 	return resolved, nil
+}
+
+// overridablePairs lists the (student, date) pairs an Overrider status may
+// decide: those with no status in resolved yet, and those whose summary
+// yields to an issued letter (summaryYieldsToOverride).
+func overridablePairs(studentIDs []uuid.UUID, dates []time.Time, resolved map[studentDate]string) []StudentDayStatus {
+	var out []StudentDayStatus
+	for _, id := range studentIDs {
+		for _, d := range dates {
+			if code, ok := resolved[studentDate{id, dayKey(d)}]; !ok || summaryYieldsToOverride(code) {
+				out = append(out, StudentDayStatus{StudentUserID: id, Date: d})
+			}
+		}
+	}
+	return out
 }
 
 // pendingPairs lists the (student, date) pairs with no status in resolved yet.

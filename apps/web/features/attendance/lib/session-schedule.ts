@@ -2,31 +2,54 @@
  * A lesson's fill state, for the session list's status badge
  * (docs/07-ui-ux.md). "handedOver" is one of the teacher's own lessons an
  * accepted substitute fills instead; "upcoming" is a lesson on a later day,
- * which cannot be recorded ahead of the day.
+ * which cannot be recorded ahead of the day; "locked" is a saved lesson
+ * past the viewer's save deadline, and "missed" one that deadline closed
+ * before anything was saved.
  */
-export type SessionFillStatus = "empty" | "saved" | "locked" | "handedOver" | "upcoming";
+export type SessionFillStatus = "empty" | "saved" | "locked" | "missed" | "handedOver" | "upcoming";
+
+export interface FillStatusInput {
+  submittedAt?: string;
+  /** The lesson's date and the school's today, both "YYYY-MM-DD". */
+  date: string;
+  today: string;
+  handedOver?: boolean;
+  /**
+   * The last instant the session may still be saved by whoever's fill
+   * state the list shows: the viewer's own editable_until (the same
+   * deadline the editor enforces), or owner_editable_until on another
+   * teacher's day. Absent on a lesson that has a session means that
+   * person may not save it at all.
+   */
+  editableUntil?: string;
+  /** The business clock's current instant. */
+  now: Date;
+}
 
 /**
  * Derives the badge state from what the list already has: a lesson an
  * accepted substitute fills instead is "handedOver" on any date, so the
  * handover shows ahead of the day as well; a lesson on a later day has not
  * happened, so it is "upcoming" and cannot be opened (the API refuses to
- * record it) -- even if an older build let someone submit it already;
- * otherwise no submission yet is "empty"; a submission on a past date is
- * treated as "locked", while a submission on today's date is "saved" --
- * still freely revisitable for the rest of the lesson. Dates compare as
- * "YYYY-MM-DD" strings, which sort correctly lexicographically.
+ * record it) -- even if an older build let someone submit it already.
+ * Otherwise the viewer's save deadline decides: before it a saved lesson is
+ * "saved" and an unsaved one "empty", still to fill; after it they are
+ * "locked" and "missed". Dates compare as "YYYY-MM-DD" strings, which sort
+ * correctly lexicographically.
  */
-export function deriveFillStatus(
-  submittedAt: string | undefined,
-  date: string,
-  today: string,
+export function deriveFillStatus({
+  submittedAt,
+  date,
+  today,
   handedOver = false,
-): SessionFillStatus {
+  editableUntil,
+  now,
+}: FillStatusInput): SessionFillStatus {
   if (handedOver && !submittedAt) return "handedOver";
   if (date > today) return "upcoming";
-  if (!submittedAt) return "empty";
-  return date < today ? "locked" : "saved";
+  const closed = editableUntil === undefined || now.getTime() > Date.parse(editableUntil);
+  if (!submittedAt) return closed ? "missed" : "empty";
+  return closed ? "locked" : "saved";
 }
 
 /** A period's clock-time span, "HH:MM:SS" (or "HH:MM"), compared as plain strings. */

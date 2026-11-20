@@ -136,7 +136,8 @@ func (s *Service) calendarDaysForRange(
 			day.Sessions = append(day.Sessions, cds)
 		}
 
-		if row, ok := byDate[d.Format("2006-01-02")]; ok {
+		row, hasRow := byDate[d.Format("2006-01-02")]
+		if hasRow && !summaryYieldsToOverride(row.StatusCode) {
 			day.StatusCode, day.ExpectedSessions, day.SubmittedSessions = row.StatusCode, row.ExpectedSessions, row.SubmittedSessions
 			day.Complete = row.ExpectedSessions == 0 || row.SubmittedSessions >= row.ExpectedSessions
 			days = append(days, day)
@@ -162,9 +163,19 @@ func (s *Service) calendarDaysForRange(
 			return nil, err
 		} else if ok {
 			day.StatusCode, day.Complete = overrideCode, true
+			if hasRow {
+				day.ExpectedSessions, day.SubmittedSessions = row.ExpectedSessions, row.SubmittedSessions
+			}
 			if len(day.Sessions) == 0 {
 				day.Sessions = []CalendarDaySession{{StatusCode: overrideCode, Source: overrideSource}}
 			}
+			days = append(days, day)
+			continue
+		}
+
+		if hasRow {
+			day.StatusCode, day.ExpectedSessions, day.SubmittedSessions = row.StatusCode, row.ExpectedSessions, row.SubmittedSessions
+			day.Complete = row.ExpectedSessions == 0 || row.SubmittedSessions >= row.ExpectedSessions
 			days = append(days, day)
 			continue
 		}
@@ -214,6 +225,16 @@ func (s *Service) studentHasLessons(ctx context.Context, tenantID, academicYearI
 	}
 	teaching, _, err := s.teachingDay(ctx, tenantID, academicYearID, classID, date)
 	return teaching, err
+}
+
+// summaryYieldsToOverride reports whether a materialized daily status gives
+// way to an issued leave letter or exit permit on a day with lessons. An
+// INCOMPLETE day only says a session is still unsaved; the letter already
+// decides the student's status for it, so the student calendar, the
+// homeroom roster and the batch status all show the letter's status
+// instead of "not complete".
+func summaryYieldsToOverride(statusCode string) bool {
+	return statusCode == domain.StatusIncomplete
 }
 
 // overrideOnLessonDay is the Overrider's status for student on date, but
@@ -411,9 +432,37 @@ func (s *Service) buildRoster(ctx context.Context, tenantID, academicYearID, cla
 	}
 	submitted := int(submittedCount)
 
+	// An issued leave letter or exit permit decides the day on a lesson
+	// day, as on the student's own calendar (calendarDaysForRange), so the
+	// homeroom roster and the daily report agree with it.
+	overrides := map[uuid.UUID]string{}
+	if isSchoolDay {
+		pending := make([]uuid.UUID, 0, len(students))
+		for _, student := range students {
+			if row, ok := byStudent[student.ID]; !ok || summaryYieldsToOverride(row.StatusCode) {
+				pending = append(pending, student.ID)
+			}
+		}
+		if overrides, err = s.overridesForDate(ctx, tenantID, pending, date); err != nil {
+			return nil, 0, 0, err
+		}
+	}
+
 	roster := make([]RosterEntry, 0, len(students))
 	for _, student := range students {
-		if row, ok := byStudent[student.ID]; ok {
+		row, hasRow := byStudent[student.ID]
+		if code, ok := overrides[student.ID]; ok {
+			entry := RosterEntry{
+				StudentUserID: student.ID, Name: student.Name, StatusCode: code,
+				ExpectedSessions: expected, SubmittedSessions: submitted, Complete: true,
+			}
+			if hasRow {
+				entry.ExpectedSessions, entry.SubmittedSessions = row.ExpectedSessions, row.SubmittedSessions
+			}
+			roster = append(roster, entry)
+			continue
+		}
+		if hasRow {
 			roster = append(roster, RosterEntry{
 				StudentUserID: student.ID, Name: student.Name, StatusCode: row.StatusCode,
 				ExpectedSessions: row.ExpectedSessions, SubmittedSessions: row.SubmittedSessions,
@@ -434,4 +483,35 @@ func (s *Service) buildRoster(ctx context.Context, tenantID, academicYearID, cla
 		})
 	}
 	return roster, expected, submitted, nil
+}
+
+// overridesForDate is the Overrider's status for each of studentIDs on
+// date that it forces one for, in one query when the Overrider batches.
+func (s *Service) overridesForDate(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID, date time.Time) (map[uuid.UUID]string, error) {
+	out := make(map[uuid.UUID]string, len(studentIDs))
+	if len(studentIDs) == 0 {
+		return out, nil
+	}
+	if batch, ok := s.overrider.(BatchOverrider); ok {
+		rows, err := batch.OverridesForDates(ctx, tenantID, studentIDs, []time.Time{date})
+		if err != nil {
+			return nil, err
+		}
+		for _, o := range rows {
+			if dayKey(o.Date) == dayKey(date) {
+				out[o.StudentUserID] = o.StatusCode
+			}
+		}
+		return out, nil
+	}
+	for _, id := range studentIDs {
+		code, _, ok, err := s.overrider.Override(ctx, tenantID, id, date)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			out[id] = code
+		}
+	}
+	return out, nil
 }

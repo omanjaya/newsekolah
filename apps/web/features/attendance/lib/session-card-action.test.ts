@@ -19,6 +19,11 @@ describe("deriveSessionCardAction", () => {
     expect(deriveSessionCardAction("locked", null)).toBe("saved");
   });
 
+  it("only shows a session whose save deadline closed before it was filled", () => {
+    expect(deriveSessionCardAction("missed", "ongoing")).toBe("saved");
+    expect(deriveSessionCardAction("missed", null)).toBe("saved");
+  });
+
   it("offers nothing for a lesson on a later day", () => {
     expect(deriveSessionCardAction("upcoming", null)).toBe("upcoming");
   });

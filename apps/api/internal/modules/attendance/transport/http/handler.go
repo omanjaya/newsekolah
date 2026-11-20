@@ -129,6 +129,8 @@ func mapAttendanceError(err error) error {
 		return errNoActiveYear
 	case errors.Is(err, domain.ErrInvalidMonth):
 		return errInvalidMonth
+	case errors.Is(err, domain.ErrInvalidCorrectionDays):
+		return httpx.ErrValidation
 	case errors.Is(err, domain.ErrInvalidScope):
 		return errInvalidScope
 	case errors.Is(err, reportdoc.ErrUnknownColumn):

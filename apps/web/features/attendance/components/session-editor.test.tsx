@@ -39,8 +39,10 @@ vi.mock("../../../lib/navigation/use-unsaved-changes-protection", () => ({
   useUnsavedChangesProtection: () => undefined,
 }));
 
+const granted = vi.hoisted(() => new Set<string>());
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
+  useCan: (permission: string) => granted.has(permission),
 }));
 
 vi.mock("../../discipline/api", () => ({

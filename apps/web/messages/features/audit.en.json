@@ -144,6 +144,9 @@
       "logo_update": "Replaced the school logo",
       "favicon_update": "Replaced the school tab icon"
     },
+    "attendance_settings": {
+      "update": "Changed the attendance rules"
+    },
     "report_header": {
       "update": "Changed the report header"
     },

@@ -144,6 +144,9 @@
       "logo_update": "Mengganti logo sekolah",
       "favicon_update": "Mengganti ikon tab sekolah"
     },
+    "attendance_settings": {
+      "update": "Mengubah aturan presensi"
+    },
     "report_header": {
       "update": "Mengubah kop laporan"
     },

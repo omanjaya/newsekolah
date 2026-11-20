@@ -228,6 +228,8 @@ type Repository interface {
 	ListClassesWithoutCurrentSchedule(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, nowLocal time.Time) ([]NoScheduleClassRow, error)
 	GetMonitorDisplayToken(ctx context.Context, tenantID uuid.UUID) (token string, configured bool, err error)
 	GetCorrectionDays(ctx context.Context, tenantID uuid.UUID) (days int, configured bool, err error)
+	// SetCorrectionDays stores attendance.correction_days (Settings).
+	SetCorrectionDays(ctx context.Context, tenantID, actorID uuid.UUID, days int) error
 
 	// IsSchoolDay and GetPeriodEndTime read two more academic-module tables
 	// attendance needs but ScheduleReader does not expose: whether a
