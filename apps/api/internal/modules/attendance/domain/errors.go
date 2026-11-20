@@ -10,7 +10,7 @@ var (
 
 	ErrInvalidStatusCode = errors.New("status code is not part of the tenant's attendance status policy")
 
-	ErrSaveWindowClosed       = errors.New("the same-day save window for this session has closed")
+	ErrSaveWindowClosed       = errors.New("the save window for this session has closed (correction deadline passed)")
 	ErrCorrectionNotAllowed   = errors.New("user is not permitted to correct attendance for this class")
 	ErrCorrectionWindowClosed = errors.New("the correction window for this session has closed")
 	// ErrSessionNotStarted refuses attendance for a lesson that has not

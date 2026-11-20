@@ -30,8 +30,8 @@ func init() {
 		English:    "Fill in both the journal topic and activities, or leave both empty.",
 	}
 	catalog["ATTENDANCE_WINDOW_CLOSED"] = map[string]string{
-		Indonesian: "Batas waktu mengubah absensi sesi ini sudah lewat.",
-		English:    "The time to change attendance for this session has passed.",
+		Indonesian: "Batas waktu mengubah absensi sesi ini sudah lewat. Hubungi admin sekolah bila masih perlu diubah.",
+		English:    "The time to change attendance for this session has passed. Contact the school admin if it still needs changing.",
 	}
 	catalog["ATTENDANCE_CORRECTION_WINDOW_CLOSED"] = map[string]string{
 		Indonesian: "Waktu koreksi absensi untuk sesi ini sudah ditutup.",
