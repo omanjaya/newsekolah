@@ -5,6 +5,7 @@ import {
   draftKey,
   readDraft,
   removeAllDrafts,
+  removeDraftsOf,
   removeDraft,
   writeDraft,
 } from "./draft-storage";
@@ -89,6 +90,32 @@ describe("removeAllDrafts", () => {
     removeAllDrafts();
 
     expect(storedKeys()).toEqual(["newsekolah:navigation:school-1:user-a", "newsekolah:theme"]);
+  });
+});
+
+describe("removeDraftsOf", () => {
+  it("removes one owner's drafts of every kind and leaves everyone else's alone", () => {
+    writeDraft(`${OWNER_A}~admin-1`, "journal", "class-1:subject-1:2026-09-21", { text: "a" });
+    writeDraft(`${OWNER_A}~admin-1`, "counseling", "new", { text: "b" });
+    writeDraft(OWNER_A, "counseling", "new", { text: "c" });
+    writeDraft(OWNER_B, "attendance", "session-1", { text: "d" });
+    window.localStorage.setItem("newsekolah:theme", "dark");
+
+    removeDraftsOf(`${OWNER_A}~admin-1`);
+
+    expect(storedKeys()).toEqual([
+      `newsekolah:draft:${OWNER_A}:counseling:new`,
+      `newsekolah:draft:${OWNER_B}:attendance:session-1`,
+      "newsekolah:theme",
+    ]);
+  });
+
+  it("does nothing without an owner", () => {
+    writeDraft(OWNER_A, "counseling", "new", { text: "a" });
+
+    removeDraftsOf(null);
+
+    expect(storedKeys()).toEqual([`newsekolah:draft:${OWNER_A}:counseling:new`]);
   });
 });
 

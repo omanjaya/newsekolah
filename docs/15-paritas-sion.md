@@ -205,7 +205,8 @@ Draf lokal (`lib/drafts/`, lima modul draf, lima form, `lib/session/`):
 - Pemilik draf adalah tenant dan user, ditambah id admin yang sedang bertindak saat impersonasi atau role testing. Kunci baru: `newsekolah:draft:<pemilik>:<jenis>:<rekaman>`. Pemilik juga ditulis di dalam isi draf dan diperiksa lagi saat dibaca.
 - Draf hanya ditawarkan kepada pemiliknya. Tanpa pemilik (sesi belum termuat atau anonim) tidak ada yang ditulis atau dibaca. Bila akun berganti saat form masih terbuka (misalnya tab lain login sebagai orang lain), form itu berhenti menyimpan draf sampai ditutup.
 - Draf tetap bertahan melewati muat ulang, tab tertutup, koneksi putus, dan sesi yang kedaluwarsa, hanya untuk pemiliknya.
-- Logout eksplisit (menu akun, layar wajib ganti password, hentikan impersonasi) menghapus semua draf di browser itu, milik siapa pun. Penghapusan dilakukan sebelum permintaan logout dikirim, jadi tetap terjadi walau jaringan gagal.
+- Logout eksplisit (menu akun, layar wajib ganti password) menghapus semua draf di browser itu, milik siapa pun. Penghapusan dilakukan sebelum permintaan logout dikirim, jadi tetap terjadi walau jaringan gagal.
+- Hentikan impersonasi bergantung pada hasilnya. Bila server mengembalikan sesi admin, hanya draf milik sesi impersonasi (pemilik `<tenant>:<user>~<admin>`) dan cache akun yang dihapus; draf admin sendiri tetap ada karena admin masih login di browser itu. Bila tidak ada sesi yang dikembalikan atau impersonasi sudah berakhir, itu logout eksplisit dan semua draf dihapus. Penghentian yang gagal tidak menghapus apa pun, karena impersonasi masih berjalan.
 - Draf dengan kunci lama tidak bisa dikaitkan ke siapa pun, jadi dihapus sekali saat aplikasi dibuka. Akibatnya, draf yang belum tersimpan pada saat rilis hilang satu kali.
 - Tidak ada penghapusan yang dipicu oleh `me` yang teramati, karena nilainya bisa tertinggal sesaat ketika identitas berganti.
 
