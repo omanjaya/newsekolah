@@ -10,6 +10,7 @@ import {
   formatShortDate,
   formatShortDateTime,
   formatTime,
+  formatTimeZoneName,
 } from "./format.js";
 
 const TZ = "Asia/Jakarta";
@@ -39,6 +40,23 @@ describe("formatDateTime", () => {
     expect(formatDateTime(SAMPLE, { locale: "id", timeZone: TZ })).toBe(
       "9 September 2026 pukul 14.05",
     );
+  });
+
+  it("names the zone when asked, so a reader elsewhere sees the school's time", () => {
+    expect(formatDateTime(SAMPLE, { locale: "id", timeZone: TZ, withZone: true })).toBe(
+      "9 September 2026 pukul 14.05 WIB",
+    );
+    expect(
+      formatDateTime(SAMPLE, { locale: "id", timeZone: "Asia/Makassar", withZone: true }),
+    ).toBe("9 September 2026 pukul 15.05 WITA");
+  });
+});
+
+describe("formatTimeZoneName", () => {
+  it("returns the Indonesian zone abbreviations", () => {
+    expect(formatTimeZoneName(SAMPLE, { locale: "id", timeZone: "Asia/Jakarta" })).toBe("WIB");
+    expect(formatTimeZoneName(SAMPLE, { locale: "id", timeZone: "Asia/Makassar" })).toBe("WITA");
+    expect(formatTimeZoneName(SAMPLE, { locale: "id", timeZone: "Asia/Jayapura" })).toBe("WIT");
   });
 });
 

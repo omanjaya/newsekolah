@@ -1753,8 +1753,11 @@
       "kind": "Kind",
       "kinds": {
         "leave_letter": "Leave letter",
-        "warning_letter": "Warning letter"
+        "warning_letter": "Warning letter",
+        "receipt": "Payment receipt",
+        "visitor_badge": "Visitor badge"
       },
+      "kindOther": "Document",
       "issuedAt": "Issued",
       "student": "Student",
       "validity": "Valid",

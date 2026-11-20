@@ -1753,8 +1753,11 @@
       "kind": "Jenis",
       "kinds": {
         "leave_letter": "Surat izin",
-        "warning_letter": "Surat peringatan"
+        "warning_letter": "Surat peringatan",
+        "receipt": "Kuitansi pembayaran",
+        "visitor_badge": "Kartu tamu"
       },
+      "kindOther": "Dokumen",
       "issuedAt": "Diterbitkan",
       "student": "Siswa",
       "validity": "Berlaku",

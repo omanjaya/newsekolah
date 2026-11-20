@@ -27,6 +27,44 @@ func (q *Queries) CountAnnouncementReads(ctx context.Context, arg CountAnnouncem
 	return count, err
 }
 
+const countAnnouncementReadsByIDs = `-- name: CountAnnouncementReadsByIDs :many
+select announcement_id, count(*)::bigint as read_count from announcement_reads
+where tenant_id = $1 and announcement_id = any($2::uuid[])
+group by announcement_id
+`
+
+type CountAnnouncementReadsByIDsParams struct {
+	TenantID        uuid.UUID   `json:"tenant_id"`
+	AnnouncementIds []uuid.UUID `json:"announcement_ids"`
+}
+
+type CountAnnouncementReadsByIDsRow struct {
+	AnnouncementID uuid.UUID `json:"announcement_id"`
+	ReadCount      int64     `json:"read_count"`
+}
+
+// Read counts for a page of the admin list, in one round trip; an
+// announcement nobody has read has no row here (the caller reads it as 0).
+func (q *Queries) CountAnnouncementReadsByIDs(ctx context.Context, arg CountAnnouncementReadsByIDsParams) ([]CountAnnouncementReadsByIDsRow, error) {
+	rows, err := q.db.Query(ctx, countAnnouncementReadsByIDs, arg.TenantID, arg.AnnouncementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CountAnnouncementReadsByIDsRow{}
+	for rows.Next() {
+		var i CountAnnouncementReadsByIDsRow
+		if err := rows.Scan(&i.AnnouncementID, &i.ReadCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listReadAnnouncementIDsForUser = `-- name: ListReadAnnouncementIDsForUser :many
 select announcement_id from announcement_reads
 where tenant_id = $1 and user_id = $2 and announcement_id = any($3::uuid[])

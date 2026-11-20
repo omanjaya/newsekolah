@@ -29,19 +29,21 @@ func TestPlanGeneration_Idempotent(t *testing.T) {
 	}
 
 	firstRun := domain.PlanGeneration([]domain.FeeType{feeType}, students, "2026-07", nil, nil)
-	require.Len(t, firstRun, 3, "one bill per student on the first run")
+	require.Len(t, firstRun.Candidates, 3, "one bill per student on the first run")
+	require.Zero(t, firstRun.AlreadyBilled)
 
-	existing := make(map[domain.BillKey]bool, len(firstRun))
-	for _, c := range firstRun {
+	existing := make(map[domain.BillKey]bool, len(firstRun.Candidates))
+	for _, c := range firstRun.Candidates {
 		existing[c.Key] = true
 	}
 
 	secondRun := domain.PlanGeneration([]domain.FeeType{feeType}, students, "2026-07", nil, existing)
-	require.Empty(t, secondRun, "re-running generation for the same period must not double-charge")
+	require.Empty(t, secondRun.Candidates, "re-running generation for the same period must not double-charge")
+	require.Equal(t, 3, secondRun.AlreadyBilled, "every skipped candidate is counted as already billed")
 
 	// A new period is a different key and must still be charged.
 	nextMonth := domain.PlanGeneration([]domain.FeeType{feeType}, students, "2026-08", nil, existing)
-	require.Len(t, nextMonth, 3)
+	require.Len(t, nextMonth.Candidates, 3)
 }
 
 func TestPlanGeneration_SkipsInactiveFeeType(t *testing.T) {
@@ -49,7 +51,7 @@ func TestPlanGeneration_SkipsInactiveFeeType(t *testing.T) {
 	students := []domain.StudentEnrollment{{StudentUserID: mustV7(t)}}
 
 	plan := domain.PlanGeneration([]domain.FeeType{feeType}, students, "2026-07", nil, nil)
-	require.Empty(t, plan)
+	require.Empty(t, plan.Candidates)
 }
 
 func TestPlanGeneration_OneOffUsesFeeTypePeriod(t *testing.T) {
@@ -60,8 +62,42 @@ func TestPlanGeneration_OneOffUsesFeeTypePeriod(t *testing.T) {
 	student := domain.StudentEnrollment{StudentUserID: mustV7(t)}
 
 	plan := domain.PlanGeneration([]domain.FeeType{feeType}, []domain.StudentEnrollment{student}, "2026-07", nil, nil)
-	require.Len(t, plan, 1)
-	require.Equal(t, "2026-uang-pangkal", plan[0].Key.Period, "a one-off fee type ignores the requested period")
+	require.Len(t, plan.Candidates, 1)
+	require.Equal(t, "2026-uang-pangkal", plan.Candidates[0].Key.Period, "a one-off fee type ignores the requested period")
+}
+
+// TestPlanGeneration_OneOffBilledOnceAcrossMonths pins the preview bug
+// where a one-off fee billed in one month was offered again as new in the
+// next: the existing keys carry the fee type's own period, and the plan
+// counts them as already billed.
+func TestPlanGeneration_OneOffBilledOnceAcrossMonths(t *testing.T) {
+	monthly := domain.FeeType{ID: mustV7(t), Name: "SPP", AmountMinor: 150_000, Currency: "IDR", Recurrence: domain.RecurrenceMonthly, IsActive: true}
+	oneOff := domain.FeeType{
+		ID: mustV7(t), Name: "Class meeting", AmountMinor: 75_000, Currency: "IDR",
+		Recurrence: domain.RecurrenceOneOff, Period: "2026-classmeeting", IsActive: true,
+	}
+	feeTypes := []domain.FeeType{monthly, oneOff}
+	students := []domain.StudentEnrollment{{StudentUserID: mustV7(t)}, {StudentUserID: mustV7(t)}}
+
+	require.ElementsMatch(t, []string{"2026-11", "2026-classmeeting"}, domain.BillingPeriods(feeTypes, "2026-11"))
+
+	first := domain.PlanGeneration(feeTypes, students, "2026-11", nil, nil)
+	require.Len(t, first.Candidates, 4)
+	existing := map[domain.BillKey]bool{}
+	for _, c := range first.Candidates {
+		existing[c.Key] = true
+	}
+
+	again := domain.PlanGeneration(feeTypes, students, "2026-11", nil, existing)
+	require.Empty(t, again.Candidates)
+	require.Equal(t, 4, again.AlreadyBilled)
+
+	nextMonth := domain.PlanGeneration(feeTypes, students, "2026-12", nil, existing)
+	require.Len(t, nextMonth.Candidates, 2, "only the monthly fee is new in December")
+	for _, c := range nextMonth.Candidates {
+		require.Equal(t, monthly.ID, c.FeeType.ID)
+	}
+	require.Equal(t, 2, nextMonth.AlreadyBilled, "the one-off fee stays billed")
 }
 
 func TestPlanGeneration_AppliesDiscount(t *testing.T) {
@@ -73,9 +109,9 @@ func TestPlanGeneration_AppliesDiscount(t *testing.T) {
 		{FeeTypeID: feeType.ID, StudentUserID: student.StudentUserID}: discount,
 	}
 	plan := domain.PlanGeneration([]domain.FeeType{feeType}, []domain.StudentEnrollment{student}, "2026-07", discounts, nil)
-	require.Len(t, plan, 1)
-	require.Equal(t, int64(100_000), plan[0].DiscountAmountMinor)
-	require.Equal(t, int64(100_000), plan[0].AmountMinor)
+	require.Len(t, plan.Candidates, 1)
+	require.Equal(t, int64(100_000), plan.Candidates[0].DiscountAmountMinor)
+	require.Equal(t, int64(100_000), plan.Candidates[0].AmountMinor)
 }
 
 func TestDiscountApply(t *testing.T) {

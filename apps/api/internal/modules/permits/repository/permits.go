@@ -541,6 +541,16 @@ func (r *Repository) GetIssuedDocumentByEntity(ctx context.Context, tenantID uui
 	return toIssuedDocument(row), true, nil
 }
 
+// RevokeIssuedDocumentByEntity marks every document of kind issued for
+// the entity as revoked and reports how many rows it touched.
+func (r *Repository) RevokeIssuedDocumentByEntity(ctx context.Context, tenantID uuid.UUID, entityType string, entityID uuid.UUID, kind string) (int, error) {
+	rows, err := r.queries(ctx).RevokeIssuedDocumentByEntity(ctx, db.RevokeIssuedDocumentByEntityParams{TenantID: tenantID, EntityType: entityType, EntityID: entityID, Kind: kind})
+	if err != nil {
+		return 0, fmt.Errorf("revoke issued document: %w", err)
+	}
+	return len(rows), nil
+}
+
 // Cross-module reads (replace with reader interfaces after the academic
 // and identity modules expose them).
 

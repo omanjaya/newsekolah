@@ -525,6 +525,51 @@ func (q *Queries) ListVisitsForRange(ctx context.Context, arg ListVisitsForRange
 	return items, nil
 }
 
+const setVisitBadge = `-- name: SetVisitBadge :one
+update visitor_visits set badge_number = $3, badge_asset_id = $4
+where tenant_id = $1 and id = $2
+returning id, tenant_id, expected_guest_id, full_name, organization, host_user_id, purpose, id_checked, id_type, badge_number, badge_asset_id, arrived_at, departed_at, checked_in_by, checked_out_by, created_at, updated_at
+`
+
+type SetVisitBadgeParams struct {
+	TenantID     uuid.UUID   `json:"tenant_id"`
+	ID           uuid.UUID   `json:"id"`
+	BadgeNumber  string      `json:"badge_number"`
+	BadgeAssetID pgtype.UUID `json:"badge_asset_id"`
+}
+
+// Stores the badge issued right after the visit row exists (the badge's
+// document record points at the visit id, so the row is inserted first).
+func (q *Queries) SetVisitBadge(ctx context.Context, arg SetVisitBadgeParams) (VisitorVisit, error) {
+	row := q.db.QueryRow(ctx, setVisitBadge,
+		arg.TenantID,
+		arg.ID,
+		arg.BadgeNumber,
+		arg.BadgeAssetID,
+	)
+	var i VisitorVisit
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ExpectedGuestID,
+		&i.FullName,
+		&i.Organization,
+		&i.HostUserID,
+		&i.Purpose,
+		&i.IDChecked,
+		&i.IDType,
+		&i.BadgeNumber,
+		&i.BadgeAssetID,
+		&i.ArrivedAt,
+		&i.DepartedAt,
+		&i.CheckedInBy,
+		&i.CheckedOutBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const todayVisitSummary = `-- name: TodayVisitSummary :one
 select
   count(*)::int as total_visits,

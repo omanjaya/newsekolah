@@ -261,6 +261,9 @@ type Querier interface {
 	// Backs the admin dashboard's "active users per profile kind" panel.
 	CountActiveUsersByProfileKind(ctx context.Context, tenantID uuid.UUID) ([]CountActiveUsersByProfileKindRow, error)
 	CountAnnouncementReads(ctx context.Context, arg CountAnnouncementReadsParams) (int64, error)
+	// Read counts for a page of the admin list, in one round trip; an
+	// announcement nobody has read has no row here (the caller reads it as 0).
+	CountAnnouncementReadsByIDs(ctx context.Context, arg CountAnnouncementReadsByIDsParams) ([]CountAnnouncementReadsByIDsRow, error)
 	CountAssignmentsForDutyType(ctx context.Context, arg CountAssignmentsForDutyTypeParams) (int64, error)
 	// The input to "meeting_number" in the session payload: how many prior
 	// meetings this schedule has already had, so meeting_number = count + 1.
@@ -1051,10 +1054,13 @@ type Querier interface {
 	// this gives newest-first without needing a second sort key even though
 	// the table's primary key is (id, occurred_at) for partitioning.
 	ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error)
-	// Existing (fee_type_id, student_user_id) pairs already billed for one
-	// period, used to keep a second generation run from even attempting a
-	// duplicate insert (the unique index on bills is the backstop).
-	ListBillKeysForPeriod(ctx context.Context, arg ListBillKeysForPeriodParams) ([]ListBillKeysForPeriodRow, error)
+	// Existing (fee_type_id, student_user_id, period) keys already billed
+	// for any of the given periods, used to keep a second generation run
+	// from even attempting a duplicate insert (the unique index on bills is
+	// the backstop) and to count them as already billed. Several periods
+	// because a one-off fee type bills under its own period code, not the
+	// requested month.
+	ListBillKeysForPeriods(ctx context.Context, arg ListBillKeysForPeriodsParams) ([]ListBillKeysForPeriodsRow, error)
 	ListBills(ctx context.Context, arg ListBillsParams) ([]Bill, error)
 	ListBillsForStudent(ctx context.Context, arg ListBillsForStudentParams) ([]Bill, error)
 	// Names the classes a user's class-scoped duties point at (a homeroom
@@ -1575,6 +1581,10 @@ type Querier interface {
 	RestoreUser(ctx context.Context, arg RestoreUserParams) error
 	ReturnLoan(ctx context.Context, arg ReturnLoanParams) (LibraryLoan, error)
 	RevokeAPIKey(ctx context.Context, arg RevokeAPIKeyParams) (IntegrationApiKey, error)
+	// Marks the document issued for an entity as no longer valid, so the
+	// public verify page reports it revoked. Idempotent: an already revoked
+	// row keeps its original revoked_at.
+	RevokeIssuedDocumentByEntity(ctx context.Context, arg RevokeIssuedDocumentByEntityParams) ([]IssuedDocument, error)
 	RevokeOtherUserSessions(ctx context.Context, arg RevokeOtherUserSessionsParams) ([]uuid.UUID, error)
 	RevokeSession(ctx context.Context, arg RevokeSessionParams) error
 	RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) ([]uuid.UUID, error)
@@ -1599,6 +1609,9 @@ type Querier interface {
 	SetReportScheduleEnabled(ctx context.Context, arg SetReportScheduleEnabledParams) (ReportSchedule, error)
 	SetUserAvatarAsset(ctx context.Context, arg SetUserAvatarAssetParams) error
 	SetUserStatus(ctx context.Context, arg SetUserStatusParams) error
+	// Stores the badge issued right after the visit row exists (the badge's
+	// document record points at the visit id, so the row is inserted first).
+	SetVisitBadge(ctx context.Context, arg SetVisitBadgeParams) (VisitorVisit, error)
 	SettleViolation(ctx context.Context, arg SettleViolationParams) (LibraryViolation, error)
 	// One round trip for the onboarding checklist: how much of the school's
 	// master data exists. Every count is scoped to the active academic year

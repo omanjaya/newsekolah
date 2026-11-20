@@ -121,35 +121,41 @@ func (q *Queries) GetBill(ctx context.Context, arg GetBillParams) (Bill, error) 
 	return i, err
 }
 
-const listBillKeysForPeriod = `-- name: ListBillKeysForPeriod :many
-select fee_type_id, student_user_id from bills
-where tenant_id = $1 and period = $2 and fee_type_id = any($3::uuid[])
+const listBillKeysForPeriods = `-- name: ListBillKeysForPeriods :many
+select fee_type_id, student_user_id, period from bills
+where tenant_id = $1
+  and period = any($2::text[])
+  and fee_type_id = any($3::uuid[])
 `
 
-type ListBillKeysForPeriodParams struct {
+type ListBillKeysForPeriodsParams struct {
 	TenantID   uuid.UUID   `json:"tenant_id"`
-	Period     string      `json:"period"`
+	Periods    []string    `json:"periods"`
 	FeeTypeIds []uuid.UUID `json:"fee_type_ids"`
 }
 
-type ListBillKeysForPeriodRow struct {
+type ListBillKeysForPeriodsRow struct {
 	FeeTypeID     uuid.UUID `json:"fee_type_id"`
 	StudentUserID uuid.UUID `json:"student_user_id"`
+	Period        string    `json:"period"`
 }
 
-// Existing (fee_type_id, student_user_id) pairs already billed for one
-// period, used to keep a second generation run from even attempting a
-// duplicate insert (the unique index on bills is the backstop).
-func (q *Queries) ListBillKeysForPeriod(ctx context.Context, arg ListBillKeysForPeriodParams) ([]ListBillKeysForPeriodRow, error) {
-	rows, err := q.db.Query(ctx, listBillKeysForPeriod, arg.TenantID, arg.Period, arg.FeeTypeIds)
+// Existing (fee_type_id, student_user_id, period) keys already billed
+// for any of the given periods, used to keep a second generation run
+// from even attempting a duplicate insert (the unique index on bills is
+// the backstop) and to count them as already billed. Several periods
+// because a one-off fee type bills under its own period code, not the
+// requested month.
+func (q *Queries) ListBillKeysForPeriods(ctx context.Context, arg ListBillKeysForPeriodsParams) ([]ListBillKeysForPeriodsRow, error) {
+	rows, err := q.db.Query(ctx, listBillKeysForPeriods, arg.TenantID, arg.Periods, arg.FeeTypeIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListBillKeysForPeriodRow{}
+	items := []ListBillKeysForPeriodsRow{}
 	for rows.Next() {
-		var i ListBillKeysForPeriodRow
-		if err := rows.Scan(&i.FeeTypeID, &i.StudentUserID); err != nil {
+		var i ListBillKeysForPeriodsRow
+		if err := rows.Scan(&i.FeeTypeID, &i.StudentUserID, &i.Period); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -37,17 +37,27 @@ type BillCandidate struct {
 	AmountMinor         int64
 }
 
+// GenerationPlan is what PlanGeneration returns: the bills to create and
+// how many candidates it left out because their key was already billed.
+type GenerationPlan struct {
+	Candidates    []BillCandidate
+	AlreadyBilled int
+}
+
 // PlanGeneration computes the bills that charging feeTypes to students
 // for period would create, applying each student's active discount for
-// that fee type and skipping any key already in existing.
+// that fee type and skipping (and counting) any key already in existing.
+// existing must be keyed by each fee type's own billing period
+// (FeeType.BillingPeriod), so a one-off fee type billed earlier under its
+// fixed period code is recognised as already billed for every month.
 //
 // This is the property the module is built around: calling PlanGeneration
 // a second time with existing populated from the first call's own output
 // always returns an empty plan, so running generation twice never
 // double-charges a student. The unique constraint on bills is the
 // belt-and-suspenders backstop; this function is the intended behavior.
-func PlanGeneration(feeTypes []FeeType, students []StudentEnrollment, period string, discounts map[FeeStudentKey]Discount, existing map[BillKey]bool) []BillCandidate {
-	var out []BillCandidate
+func PlanGeneration(feeTypes []FeeType, students []StudentEnrollment, period string, discounts map[FeeStudentKey]Discount, existing map[BillKey]bool) GenerationPlan {
+	var out GenerationPlan
 	for _, ft := range feeTypes {
 		if !ft.IsActive {
 			continue
@@ -56,17 +66,36 @@ func PlanGeneration(feeTypes []FeeType, students []StudentEnrollment, period str
 		for _, st := range students {
 			key := BillKey{FeeTypeID: ft.ID, StudentUserID: st.StudentUserID, Period: billPeriod}
 			if existing[key] {
+				out.AlreadyBilled++
 				continue
 			}
 			discountMinor := int64(0)
 			if d, ok := discounts[FeeStudentKey{FeeTypeID: ft.ID, StudentUserID: st.StudentUserID}]; ok {
 				discountMinor = d.Apply(ft.AmountMinor)
 			}
-			out = append(out, BillCandidate{
+			out.Candidates = append(out.Candidates, BillCandidate{
 				Key: key, FeeType: ft, StudentUserID: st.StudentUserID,
 				OriginalAmountMinor: ft.AmountMinor, DiscountAmountMinor: discountMinor,
 				AmountMinor: ft.AmountMinor - discountMinor,
 			})
+		}
+	}
+	return out
+}
+
+// BillingPeriods is every period a generation run for period can bill
+// under: the requested one plus each active one-off fee type's own fixed
+// period, deduplicated. The existing-bill lookup must cover all of them.
+func BillingPeriods(feeTypes []FeeType, period string) []string {
+	seen := map[string]bool{period: true}
+	out := []string{period}
+	for _, ft := range feeTypes {
+		if !ft.IsActive {
+			continue
+		}
+		if p := ft.BillingPeriod(period); !seen[p] {
+			seen[p] = true
+			out = append(out, p)
 		}
 	}
 	return out

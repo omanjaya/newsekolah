@@ -25,17 +25,17 @@ func toBill(row db.Bill) domain.Bill {
 	}
 }
 
-func (r *Repository) ExistingBillKeys(ctx context.Context, tenantID uuid.UUID, feeTypeIDs []uuid.UUID, period string) (map[domain.BillKey]bool, error) {
-	if len(feeTypeIDs) == 0 {
+func (r *Repository) ExistingBillKeys(ctx context.Context, tenantID uuid.UUID, feeTypeIDs []uuid.UUID, periods []string) (map[domain.BillKey]bool, error) {
+	if len(feeTypeIDs) == 0 || len(periods) == 0 {
 		return map[domain.BillKey]bool{}, nil
 	}
-	rows, err := r.queries(ctx).ListBillKeysForPeriod(ctx, db.ListBillKeysForPeriodParams{TenantID: tenantID, Period: period, FeeTypeIds: feeTypeIDs})
+	rows, err := r.queries(ctx).ListBillKeysForPeriods(ctx, db.ListBillKeysForPeriodsParams{TenantID: tenantID, Periods: periods, FeeTypeIds: feeTypeIDs})
 	if err != nil {
 		return nil, fmt.Errorf("list existing bill keys: %w", err)
 	}
 	out := make(map[domain.BillKey]bool, len(rows))
 	for _, row := range rows {
-		out[domain.BillKey{FeeTypeID: row.FeeTypeID, StudentUserID: row.StudentUserID, Period: period}] = true
+		out[domain.BillKey{FeeTypeID: row.FeeTypeID, StudentUserID: row.StudentUserID, Period: row.Period}] = true
 	}
 	return out, nil
 }

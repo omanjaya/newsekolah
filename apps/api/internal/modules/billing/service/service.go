@@ -42,7 +42,7 @@ type Repository interface {
 	UpdateDiscount(ctx context.Context, d domain.Discount) (domain.Discount, error)
 	DeleteDiscount(ctx context.Context, tenantID, id uuid.UUID) error
 
-	ExistingBillKeys(ctx context.Context, tenantID uuid.UUID, feeTypeIDs []uuid.UUID, period string) (map[domain.BillKey]bool, error)
+	ExistingBillKeys(ctx context.Context, tenantID uuid.UUID, feeTypeIDs []uuid.UUID, periods []string) (map[domain.BillKey]bool, error)
 	CreateBills(ctx context.Context, bills []domain.Bill) ([]domain.Bill, error)
 	ListBills(ctx context.Context, tenantID, yearID uuid.UUID, f BillFilter) ([]domain.Bill, error)
 	GetBill(ctx context.Context, tenantID, id uuid.UUID) (domain.Bill, bool, error)
@@ -96,6 +96,10 @@ type IssuedReceipt struct {
 // imports permits directly.
 type ReceiptIssuer interface {
 	IssueReceipt(ctx context.Context, tenantID uuid.UUID, in ReceiptDocument) (IssuedReceipt, error)
+	// RevokeReceipt marks the receipt issued for a payment as no longer
+	// valid (a no-op when none was issued). It runs inside the caller's
+	// transaction, so a void and its revocation commit together.
+	RevokeReceipt(ctx context.Context, tenantID, paymentID uuid.UUID) error
 	DocumentURL(ctx context.Context, tenantID, assetID uuid.UUID) (string, error)
 }
 

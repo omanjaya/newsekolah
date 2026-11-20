@@ -8,10 +8,11 @@ import { setDocumentSchoolName } from "../../../lib/page-title";
 import { VerifyView } from "./verify-view";
 
 const get = vi.hoisted(() => vi.fn());
+const tenant = vi.hoisted(() => ({ branding: undefined as { timezone: string } | undefined }));
 
 vi.mock("../../../lib/api/client", () => ({ useApiClient: () => ({ GET: get }) }));
 vi.mock("../../../lib/tenant/tenant-provider", () => ({
-  useTenant: () => ({ displayName: "SMA 1 Denpasar", branding: undefined, isLoading: false }),
+  useTenant: () => ({ displayName: "SMA 1 Denpasar", branding: tenant.branding, isLoading: false }),
 }));
 vi.mock("next-intl", () => {
   const t = Object.assign(
@@ -43,6 +44,27 @@ function renderView() {
 describe("VerifyView", () => {
   beforeEach(() => {
     get.mockReset();
+    tenant.branding = undefined;
+  });
+
+  it("names every issued kind, and never shows a raw kind code", async () => {
+    get.mockResolvedValue({ ...DOC, kind: "receipt" });
+    renderView();
+    expect(await screen.findByText("kinds.receipt")).toBeInTheDocument();
+  });
+
+  it("falls back to a generic label for a kind it does not know", async () => {
+    get.mockResolvedValue({ ...DOC, kind: "some_future_kind" });
+    renderView();
+    expect(await screen.findByText("kindOther")).toBeInTheDocument();
+    expect(screen.queryByText("some_future_kind")).not.toBeInTheDocument();
+  });
+
+  it("shows the issue time in the school's zone and names it, whatever the viewer's zone", async () => {
+    tenant.branding = { timezone: "Asia/Makassar" };
+    get.mockResolvedValue({ ...DOC, issued_at: "2026-11-20T02:02:16Z" });
+    renderView();
+    expect(await screen.findByText("20 November 2026 pukul 10.02 WITA")).toBeInTheDocument();
   });
 
   it("makes a genuine document the verdict, naming the issuing school, then its facts", async () => {

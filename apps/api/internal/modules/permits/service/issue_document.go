@@ -118,6 +118,22 @@ func (s *Service) IssueDocument(ctx context.Context, tenantID uuid.UUID, in Issu
 	return out, err
 }
 
+// RevokeDocument marks the document issued for an entity as no longer
+// valid, so the public verify page reports it revoked instead of genuine
+// (a voided payment's receipt, say). It joins the caller's tenant
+// transaction, so the revocation commits or rolls back with the change
+// that caused it. Revoking an entity that has no document is a no-op,
+// and revoking twice keeps the first revoked_at.
+func (s *Service) RevokeDocument(ctx context.Context, tenantID uuid.UUID, entityType string, entityID uuid.UUID, kind domain.TemplateKind) error {
+	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		n, err := s.repo.RevokeIssuedDocumentByEntity(ctx, tenantID, entityType, entityID, string(kind))
+		if err != nil || n == 0 {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "document.revoke", entityType, entityID, nil, map[string]any{"kind": kind})
+	})
+}
+
 // DocumentDownloadURLForAsset presigns any asset this module stored, for
 // callers that keep the asset id on their own rows (warning letters).
 func (s *Service) DocumentDownloadURLForAsset(ctx context.Context, tenantID, assetID uuid.UUID) (string, error) {
