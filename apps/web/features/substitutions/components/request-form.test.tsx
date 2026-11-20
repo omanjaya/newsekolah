@@ -3,6 +3,8 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, expect, it, vi } from "vitest";
 
+import type * as TenantDateModule from "../../../lib/tenant-date";
+
 const create = vi.hoisted(() => vi.fn());
 
 vi.mock("next-intl", () => ({
@@ -16,7 +18,28 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
-  useSession: () => ({ me: { id: "me" } }),
+  useSession: () => ({ me: { id: "me", tenant: { timezone: "Asia/Makassar" } } }),
+}));
+vi.mock("../../../lib/tenant-date", async () => {
+  const actual = await vi.importActual<typeof TenantDateModule>("../../../lib/tenant-date");
+  // Friday 20 November 2026 is the school's today.
+  return { ...actual, todayInZone: () => "2026-11-20" };
+});
+vi.mock("../../calendar/api", () => ({
+  useCalendarEventsQuery: () => ({
+    data: {
+      data: [
+        {
+          id: "e1",
+          name: "Libur",
+          date: "2026-11-30",
+          end_date: "2026-11-30",
+          kind: "holiday",
+          academic_year_id: "year-1",
+        },
+      ],
+    },
+  }),
 }));
 vi.mock("../../reference/api", () => ({
   useClassesQuery: () => ({ data: { data: [{ id: "class-1", name: "X-A" }] } }),
@@ -92,4 +115,21 @@ it("shows each missing field's own error on Send and focuses the first, with no 
   await waitFor(() => {
     expect(date).toHaveFocus();
   });
+});
+
+it("offers only future dates on the lesson's weekday that are not holidays", async () => {
+  const user = userEvent.setup();
+  render(<RequestForm onDone={vi.fn()} initialScheduleId="s1" />);
+
+  expect(screen.getByText("dateHint")).toBeInTheDocument();
+  await user.click(screen.getByRole("combobox", { name: "date" }));
+  await screen.findByRole("grid");
+  const cell = (iso: string) => document.querySelector(`[role="gridcell"][data-date="${iso}"]`);
+
+  // The lesson is on Monday (day 1).
+  expect(cell("2026-11-23")).not.toHaveAttribute("aria-disabled");
+  // Past Monday, a Tuesday, and the Monday holiday cannot be picked.
+  expect(cell("2026-11-16")).toHaveAttribute("aria-disabled", "true");
+  expect(cell("2026-11-24")).toHaveAttribute("aria-disabled", "true");
+  expect(cell("2026-11-30")).toHaveAttribute("aria-disabled", "true");
 });

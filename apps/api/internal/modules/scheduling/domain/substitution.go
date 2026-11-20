@@ -47,19 +47,28 @@ type SubstitutionWithSchedule struct {
 }
 
 // ValidateNewSubstitution checks the request-time rules that do not need a
-// database round trip: the substitute cannot be the requester, and the
+// database round trip: the substitute cannot be the requester, the
 // requested date must actually fall on the schedule's day of week
-// (docs/analysis/backend-inventory.md section 1.13). Everything else
-// (schedule ownership, substitute-is-a-teacher, no duplicate active
+// (docs/analysis/backend-inventory.md section 1.13), and it must not lie
+// before today (the tenant's calendar date). Everything else (schedule
+// ownership, substitute-is-a-teacher, holidays, no duplicate active
 // request) needs a repository lookup and lives in the service.
-func ValidateNewSubstitution(requesterUserID, substituteUserID uuid.UUID, scheduleDayOfWeek int16, date time.Time) error {
+func ValidateNewSubstitution(requesterUserID, substituteUserID uuid.UUID, scheduleDayOfWeek int16, date, today time.Time) error {
 	if requesterUserID == substituteUserID {
 		return ErrSubstituteIsRequester
+	}
+	if calendarDate(date).Before(calendarDate(today)) {
+		return ErrSubstitutionDateInPast
 	}
 	if isoWeekday(date) != scheduleDayOfWeek {
 		return ErrSubstitutionWeekdayMismatch
 	}
 	return nil
+}
+
+// calendarDate drops the time of day and zone, keeping the wall-clock date.
+func calendarDate(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
 }
 
 // isoWeekday maps time.Weekday (Sunday=0..Saturday=6) onto the schema's

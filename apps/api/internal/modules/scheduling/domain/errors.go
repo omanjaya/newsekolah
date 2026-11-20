@@ -31,6 +31,8 @@ var (
 	ErrSubstituteIsRequester        = errors.New("the substitute cannot be the requesting teacher")
 	ErrSubstituteNotTeacher         = errors.New("the substitute must be an active teacher")
 	ErrSubstitutionWeekdayMismatch  = errors.New("the requested date does not fall on the schedule's day of week")
+	ErrSubstitutionDateInPast       = errors.New("the requested date has already passed")
+	ErrSubstitutionNotSchoolDay     = errors.New("the requested date is a holiday or has no lessons")
 	ErrSubstitutionDuplicateActive  = errors.New("a pending or accepted substitution already exists for this schedule and date")
 	ErrSubstitutionNotPending       = errors.New("substitution request is no longer pending")
 	ErrSubstitutionNotRequester     = errors.New("only the requester may perform this action")

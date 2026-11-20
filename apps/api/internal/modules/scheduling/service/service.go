@@ -139,6 +139,24 @@ type Service struct {
 	// tenant letterhead, same as before reportdoc.LetterheadSource
 	// existed.
 	letterheads reportdoc.LetterheadSource
+	// calendar is optional (set via SetCalendar): nil skips the holiday
+	// check on substitution requests, leaving only the weekly pattern.
+	calendar ClassCalendar
+}
+
+// ClassCalendar answers whether a dated lesson of one class actually takes
+// place: the weekly pattern plus the academic calendar's holidays,
+// no-school days and semester breaks scoped to the class's grade level.
+// eventName names the non-teaching event when there is one. Implemented in
+// internal/wiring over the academic module, per
+// docs/03-layered-architecture.md section 1.
+type ClassCalendar interface {
+	IsTeachingDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) (teaching bool, eventName string, err error)
+}
+
+// SetCalendar wires the academic calendar in after construction.
+func (s *Service) SetCalendar(c ClassCalendar) {
+	s.calendar = c
 }
 
 func New(pool *pgxpool.Pool, repo Repository) *Service {

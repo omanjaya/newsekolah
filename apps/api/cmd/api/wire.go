@@ -152,6 +152,8 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	wiring.RegisterNotificationBridge(eventBus, identityModule.Service, logger)
 	schedulingModule := scheduling.Register(pool, eventBus, identityModule.Service)
 	schedulingModule.Service.SetLetterheadSource(wiring.ReportHeaderReports{Svc: schoolModule.Service})
+	classCalendar := wiring.ClassCalendar{Calendar: academicModule.Service, Classes: academicModule.Service}
+	schedulingModule.Service.SetCalendar(classCalendar)
 
 	hub := realtime.NewHub(broadcasterFor(redisClient))
 	// presenceTTL mirrors the old system's presence.go (teacher_attendance

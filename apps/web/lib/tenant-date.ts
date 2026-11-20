@@ -33,6 +33,12 @@ export function shiftIsoDate(iso: string, days: number): string {
   return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
 }
 
+/** ISO weekday (1 Monday .. 7 Sunday) of `iso` ("YYYY-MM-DD"), the API's day_of_week. */
+export function isoWeekdayOf(iso: string): number {
+  const [year, month, day] = iso.split("-").map(Number) as [number, number, number];
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay() || 7;
+}
+
 /** The first day of the month containing `iso` ("YYYY-MM-DD"). */
 export function startOfIsoMonth(iso: string): string {
   return `${iso.slice(0, 7)}-01`;

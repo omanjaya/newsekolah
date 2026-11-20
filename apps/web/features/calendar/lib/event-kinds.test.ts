@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import type { CalendarEvent } from "../api";
 
-import { EVENT_KIND_TONE, EVENT_KINDS, eventsInMonth, eventsOn } from "./event-kinds";
+import {
+  EVENT_KIND_TONE,
+  EVENT_KINDS,
+  eventsInMonth,
+  eventsOn,
+  nonTeachingEventOn,
+} from "./event-kinds";
 
 function event(id: string, date: string, endDate = date): CalendarEvent {
   return { id, name: id, date, end_date: endDate, kind: "event" } as CalendarEvent;
@@ -35,5 +41,24 @@ describe("calendar event lookups", () => {
   it("gives every kind its own colour", () => {
     const tones = EVENT_KINDS.map((kind) => EVENT_KIND_TONE[kind]);
     expect(new Set(tones).size).toBe(EVENT_KINDS.length);
+  });
+});
+
+describe("nonTeachingEventOn", () => {
+  const events = [
+    { ...event("libur", "2026-11-25"), kind: "holiday" },
+    { ...event("ujian", "2026-11-26"), kind: "exam" },
+    { ...event("study-tour-x", "2026-11-27"), kind: "no_school", grade_level_ids: ["grade-x"] },
+  ] as CalendarEvent[];
+
+  it("finds a school-wide holiday but not an exam day", () => {
+    expect(nonTeachingEventOn(events, "2026-11-25")?.id).toBe("libur");
+    expect(nonTeachingEventOn(events, "2026-11-26")).toBeUndefined();
+  });
+
+  it("applies a grade-scoped day off only to that grade", () => {
+    expect(nonTeachingEventOn(events, "2026-11-27", "grade-x")?.id).toBe("study-tour-x");
+    expect(nonTeachingEventOn(events, "2026-11-27", "grade-xi")).toBeUndefined();
+    expect(nonTeachingEventOn(events, "2026-11-27")).toBeUndefined();
   });
 });

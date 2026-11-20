@@ -84,6 +84,27 @@ var (
 	errSubstitutionConflict    = httpx.NewError(http.StatusConflict, "SUBSTITUTION_CONFLICT")
 	errJournalConflict         = httpx.NewError(http.StatusConflict, "JOURNAL_CONFLICT")
 	errJournalReportColumn     = httpx.NewError(http.StatusBadRequest, "JOURNAL_REPORT_UNKNOWN_COLUMN")
+
+	// Each rule a schedule or substitution can break has its own code, so
+	// the form can say which one instead of a bare VALIDATION_FAILED.
+	errTeacherNotAssigned = httpx.NewError(http.StatusBadRequest, "ACADEMIC_TEACHER_NOT_ASSIGNED").
+				WithDetails(httpx.ErrorDetail{Field: "teacher_user_id", Code: "NOT_ASSIGNED"})
+	errPeriodRangeInvalid = httpx.NewError(http.StatusBadRequest, "PERIOD_RANGE_INVALID").
+				WithDetails(httpx.ErrorDetail{Field: "end_period_id", Code: "BEFORE_START"})
+	errScheduleDayNotSchoolDay = httpx.NewError(http.StatusBadRequest, "SCHEDULE_DAY_NOT_SCHOOL_DAY").
+					WithDetails(httpx.ErrorDetail{Field: "day_of_week", Code: "NOT_SCHOOL_DAY"})
+	errSchedulePeriodInvalid = httpx.NewError(http.StatusBadRequest, "SCHEDULE_PERIOD_INVALID").
+					WithDetails(httpx.ErrorDetail{Field: "start_period_id", Code: "INVALID"})
+	errSubstitutionWeekdayMismatch = httpx.NewError(http.StatusBadRequest, "SUBSTITUTION_WEEKDAY_MISMATCH").
+					WithDetails(httpx.ErrorDetail{Field: "date", Code: "WEEKDAY_MISMATCH"})
+	errSubstitutionDateInPast = httpx.NewError(http.StatusBadRequest, "SUBSTITUTION_DATE_IN_PAST").
+					WithDetails(httpx.ErrorDetail{Field: "date", Code: "DATE_IN_PAST"})
+	errSubstitutionNotSchoolDay = httpx.NewError(http.StatusBadRequest, "SUBSTITUTION_NOT_SCHOOL_DAY").
+					WithDetails(httpx.ErrorDetail{Field: "date", Code: "NOT_SCHOOL_DAY"})
+	errSubstituteIsRequester = httpx.NewError(http.StatusBadRequest, "SUBSTITUTE_IS_REQUESTER").
+					WithDetails(httpx.ErrorDetail{Field: "substitute_user_id", Code: "IS_REQUESTER"})
+	errSubstituteNotTeacher = httpx.NewError(http.StatusBadRequest, "SUBSTITUTE_NOT_TEACHER").
+				WithDetails(httpx.ErrorDetail{Field: "substitute_user_id", Code: "NOT_TEACHER"})
 )
 
 // mapScheduleError translates a scheduling/domain sentinel error into the
@@ -121,10 +142,14 @@ func mapScheduleError(err error) error {
 		return withConflictDetails(errScheduleConflictTeacher, err)
 	case errors.Is(err, domain.ErrTeacherEditForbidden), errors.Is(err, domain.ErrTeacherEditDeadline), errors.Is(err, domain.ErrAdminOnlySource):
 		return httpx.ErrForbidden
-	case errors.Is(err, domain.ErrInvalidPeriodRange), errors.Is(err, domain.ErrDayNotSchoolDay),
-		errors.Is(err, domain.ErrTeacherNotAssigned), errors.Is(err, domain.ErrPeriodNotFound),
-		errors.Is(err, domain.ErrPeriodIsBreak), errors.Is(err, domain.ErrPeriodTemplateDay):
-		return httpx.ErrValidation
+	case errors.Is(err, domain.ErrTeacherNotAssigned):
+		return errTeacherNotAssigned
+	case errors.Is(err, domain.ErrInvalidPeriodRange):
+		return errPeriodRangeInvalid
+	case errors.Is(err, domain.ErrDayNotSchoolDay):
+		return errScheduleDayNotSchoolDay
+	case errors.Is(err, domain.ErrPeriodNotFound), errors.Is(err, domain.ErrPeriodIsBreak), errors.Is(err, domain.ErrPeriodTemplateDay):
+		return errSchedulePeriodInvalid
 	case errors.Is(err, domain.ErrScheduleHasHistory):
 		return httpx.WrapError(409, "SCHEDULE_HAS_HISTORY", err)
 	case errors.Is(err, domain.ErrInvalidScheduleBlock):
@@ -151,9 +176,16 @@ func mapSubstitutionError(err error) error {
 	case errors.Is(err, domain.ErrSubstitutionDuplicateActive), errors.Is(err, domain.ErrSubstitutionNotPending),
 		errors.Is(err, domain.ErrSubstitutionAlreadyResponded), errors.Is(err, domain.ErrSubstitutionScheduleMismatch):
 		return errSubstitutionConflict
-	case errors.Is(err, domain.ErrSubstituteIsRequester), errors.Is(err, domain.ErrSubstitutionWeekdayMismatch),
-		errors.Is(err, domain.ErrSubstituteNotTeacher):
-		return httpx.ErrValidation
+	case errors.Is(err, domain.ErrSubstitutionWeekdayMismatch):
+		return errSubstitutionWeekdayMismatch
+	case errors.Is(err, domain.ErrSubstitutionDateInPast):
+		return errSubstitutionDateInPast
+	case errors.Is(err, domain.ErrSubstitutionNotSchoolDay):
+		return errSubstitutionNotSchoolDay
+	case errors.Is(err, domain.ErrSubstituteIsRequester):
+		return errSubstituteIsRequester
+	case errors.Is(err, domain.ErrSubstituteNotTeacher):
+		return errSubstituteNotTeacher
 	default:
 		var appErr *httpx.Error
 		if errors.As(err, &appErr) {
@@ -173,7 +205,9 @@ func mapJournalError(err error) error {
 		return httpx.ErrForbidden
 	case errors.Is(err, domain.ErrJournalDuplicate):
 		return errJournalConflict
-	case errors.Is(err, domain.ErrJournalMissingTopic), errors.Is(err, domain.ErrJournalMissingActivity), errors.Is(err, domain.ErrTeacherNotAssigned):
+	case errors.Is(err, domain.ErrTeacherNotAssigned):
+		return errTeacherNotAssigned
+	case errors.Is(err, domain.ErrJournalMissingTopic), errors.Is(err, domain.ErrJournalMissingActivity):
 		return httpx.ErrValidation
 	case errors.Is(err, reportdoc.ErrUnknownColumn):
 		return errJournalReportColumn

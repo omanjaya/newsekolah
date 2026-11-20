@@ -1415,7 +1415,9 @@
         "pick": "Pilih",
         "sent": "Permintaan terkirim",
         "cancel": "Batal",
-        "send": "Kirim permintaan"
+        "send": "Kirim permintaan",
+        "dateHint": "Pilih hari {day} mulai hari ini. Hari libur tidak bisa dipilih.",
+        "dateHintNoLesson": "Pilih jadwal dulu; hanya tanggal pada hari jadwal itu yang bisa dipilih."
       },
       "directionLabel": "Arah permintaan",
       "rejectConfirm": {

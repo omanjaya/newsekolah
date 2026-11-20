@@ -78,8 +78,17 @@ func (s *Service) RequestSubstitution(
 			return domain.ErrTeacherEditForbidden
 		}
 
-		if err := domain.ValidateNewSubstitution(requesterUserID, substituteUserID, sched.DayOfWeek, date); err != nil {
+		if err := domain.ValidateNewSubstitution(requesterUserID, substituteUserID, sched.DayOfWeek, date, s.now(ctx)); err != nil {
 			return err
+		}
+		if s.calendar != nil {
+			teaching, _, err := s.calendar.IsTeachingDay(ctx, tenantID, sched.AcademicYearID, sched.ClassID, date)
+			if err != nil {
+				return err
+			}
+			if !teaching {
+				return domain.ErrSubstitutionNotSchoolDay
+			}
 		}
 
 		if _, ok, err := s.repo.GetActiveSubstitutionForScheduleDate(ctx, tenantID, scheduleID, date); err != nil {

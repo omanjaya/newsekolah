@@ -21,6 +21,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/service"
 	schedulehttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
@@ -304,6 +305,19 @@ type noopSubstitutionPublisher struct{}
 
 func (noopSubstitutionPublisher) Publish(context.Context, service.Event) error { return nil }
 
+// holidayCalendar marks one date of one class as a holiday.
+type holidayCalendar struct {
+	class uuid.UUID
+	date  time.Time
+}
+
+func (h holidayCalendar) IsTeachingDay(_ context.Context, _, _, classID uuid.UUID, date time.Time) (bool, string, error) {
+	if classID == h.class && date.Equal(h.date) {
+		return false, "Libur", nil
+	}
+	return true, "", nil
+}
+
 // A substitution request's incoming/outgoing list must come back joined
 // with the class/subject/period it covers (domain.SubstitutionWithSchedule),
 // not just the bare request row -- what the web substitutions page renders
@@ -343,13 +357,26 @@ func TestListSubstitutionsWithSchedule(t *testing.T) {
 	exec(`insert into school_days (tenant_id,academic_year_id,day_of_week) values ($1,$2,1)`, tenant, year)
 	exec(`insert into period_day_assignments (tenant_id,academic_year_id,day_of_week,template_id) values ($1,$2,1,$3)`, tenant, year, template)
 
-	svc := service.New(pg.AppPool, repository.New(pg.AppPool))
+	// "Today" is pinned before the requested date so the past-date guard
+	// does not depend on when the suite runs.
+	svc := service.New(pg.AppPool, repository.New(pg.AppPool)).WithClock(clock.Frozen{At: time.Date(2026, 9, 1, 3, 0, 0, 0, time.UTC)})
 	actor := service.Actor{CanManage: true, UserID: teacher}
 	sched, err := svc.CreateSchedule(ctx, tenant, service.ScheduleInput{
 		AcademicYearID: year, ClassID: class, SubjectID: subject, TeacherUserID: teacher,
 		DayOfWeek: 1, StartPeriodID: p1, EndPeriodID: p1, Source: domain.SourceAdmin,
 	}, actor)
 	require.NoError(t, err)
+
+	// A past date, a date on another weekday, and a holiday are refused
+	// with their own errors instead of being stored.
+	_, err = svc.RequestSubstitution(ctx, tenant, sched.ID, mustParseDate(t, "2026-08-31"), teacher, substitute, "", noopSubstitutionPublisher{})
+	require.ErrorIs(t, err, domain.ErrSubstitutionDateInPast)
+	_, err = svc.RequestSubstitution(ctx, tenant, sched.ID, mustParseDate(t, "2026-09-22"), teacher, substitute, "", noopSubstitutionPublisher{})
+	require.ErrorIs(t, err, domain.ErrSubstitutionWeekdayMismatch)
+	holiday := mustParseDate(t, "2026-09-28")
+	svc.SetCalendar(holidayCalendar{class: class, date: holiday})
+	_, err = svc.RequestSubstitution(ctx, tenant, sched.ID, holiday, teacher, substitute, "", noopSubstitutionPublisher{})
+	require.ErrorIs(t, err, domain.ErrSubstitutionNotSchoolDay)
 
 	// 2026-09-21 is a Monday, matching the schedule's day_of_week above.
 	date := mustParseDate(t, "2026-09-21")

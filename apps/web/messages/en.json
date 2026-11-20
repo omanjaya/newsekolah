@@ -1415,7 +1415,9 @@
         "pick": "Pick",
         "sent": "Request sent",
         "cancel": "Cancel",
-        "send": "Send request"
+        "send": "Send request",
+        "dateHint": "Pick a {day} from today on. Holidays cannot be picked.",
+        "dateHintNoLesson": "Pick the lesson first; only dates on that lesson's weekday can be picked."
       },
       "directionLabel": "Request direction",
       "rejectConfirm": {

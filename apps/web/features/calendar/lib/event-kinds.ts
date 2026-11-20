@@ -46,6 +46,35 @@ export function eventsOn(events: readonly CalendarEvent[], iso: string): Calenda
   return events.filter((event) => iso >= event.date && iso <= event.end_date);
 }
 
+/**
+ * The kinds that cancel lessons for the days they cover, matching the
+ * API's academic calendar rule; an exam or an ordinary event is still a
+ * school day.
+ */
+export const NON_TEACHING_KINDS: ReadonlySet<CalendarEventKind> = new Set([
+  "holiday",
+  "no_school",
+  "semester_break",
+]);
+
+/**
+ * The non-teaching event that cancels lessons on `iso` for a class of
+ * `gradeLevelId`, if any. An event scoped to other grade levels does not
+ * count; a school-wide event (no grade levels) always does.
+ */
+export function nonTeachingEventOn(
+  events: readonly CalendarEvent[],
+  iso: string,
+  gradeLevelId?: string,
+): CalendarEvent | undefined {
+  return eventsOn(events, iso).find(
+    (event) =>
+      NON_TEACHING_KINDS.has(event.kind) &&
+      (!event.grade_level_ids?.length ||
+        (gradeLevelId !== undefined && event.grade_level_ids.includes(gradeLevelId))),
+  );
+}
+
 /** The events that touch the month `month` ("YYYY-MM"), earliest first. */
 export function eventsInMonth(events: readonly CalendarEvent[], month: string): CalendarEvent[] {
   const first = `${month}-01`;
