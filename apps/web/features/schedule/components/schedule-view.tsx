@@ -72,6 +72,13 @@ export function ScheduleView(): ReactElement {
 
   const format = useFormatter();
   const [mode, setMode] = useState<Mode>(isTeacher ? "teacher" : "class");
+  const schoolDays = useSchoolDaysQuery();
+  // The school's open weekdays, empty until known: the day view opens on
+  // and steps between them.
+  const openDays = useMemo(
+    () => (schoolDays.data?.data ?? []).filter((d) => d.is_active).map((d) => d.day_of_week),
+    [schoolDays.data],
+  );
   const {
     today: todayIso,
     dayDate,
@@ -79,7 +86,9 @@ export function ScheduleView(): ReactElement {
     dayOfWeek: dayFilter,
     setDayDate,
     setWeekOf,
-  } = useScheduleDates(me?.tenant.timezone);
+    stepDay,
+    normalizeDay,
+  } = useScheduleDates(me?.tenant.timezone, openDays);
   const [classId, setClassId] = useState("");
   const [teacherId, setTeacherId] = useState(isTeacher ? (me?.id ?? "") : "");
   const [creating, setCreating] = useState<{ day: number; startSeq: number } | null>(null);
@@ -97,7 +106,6 @@ export function ScheduleView(): ReactElement {
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
   const periods = usePeriodsQuery();
-  const schoolDays = useSchoolDaysQuery();
   // Ties the "period in session now" strip above the grid to the grid
   // itself, so the reader does not have to match a time by eye.
   const periodNow = usePeriodTodayQuery(year.id);
@@ -122,7 +130,7 @@ export function ScheduleView(): ReactElement {
     teacherUserId: mode === "day" ? undefined : effectiveTeacherId || undefined,
     dayOfWeek: mode === "day" ? dayFilter : undefined,
     allClasses: mode === "day",
-    asOf: dayDate,
+    asOf: mode === "day" ? dayDate : weekOf,
   });
   // The week the server resolved (it keeps the week inside the year).
   const weekStart = schedules.data?.week_starts_on ?? weekOf;
@@ -133,12 +141,9 @@ export function ScheduleView(): ReactElement {
   const namedConflict = useNamedConflict();
 
   const activeDays = useMemo(() => {
-    const active = new Set(
-      (schoolDays.data?.data ?? []).filter((d) => d.is_active).map((d) => d.day_of_week),
-    );
-    const days = WEEKDAYS.filter((d) => active.has(d));
+    const days = WEEKDAYS.filter((d) => openDays.includes(d));
     return days.length > 0 ? days : [1, 2, 3, 4, 5];
-  }, [schoolDays.data]);
+  }, [openDays]);
 
   const lessonPeriods = useMemo(() => periods.data?.data ?? [], [periods.data]);
 
@@ -284,6 +289,8 @@ export function ScheduleView(): ReactElement {
               weekLabel: formatCalendarDateRange(format, weekStart, cellDate(weekStart, 7)),
               yearStart,
               yearEnd,
+              stepDay,
+              normalizeDay,
             }}
             classOptions={classOptions}
             classId={effectiveClassId}

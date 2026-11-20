@@ -2,7 +2,7 @@
 
 import { SegmentedControl, Select } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import { useId, type ReactElement } from "react";
 
 import { DayStepper } from "../../attendance/components/day-stepper";
 import {
@@ -33,6 +33,10 @@ export interface ScheduleDates {
   /** The academic year's span, when known: the steppers stay inside it. */
   yearStart?: string;
   yearEnd?: string;
+  /** The day view's arrows: the school day before or after a date. */
+  stepDay?: (date: string, direction: 1 | -1) => string;
+  /** A date picked in the day view, moved onto the next school day. */
+  normalizeDay?: (date: string) => string;
 }
 
 const WEEK_FORMAT: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
@@ -76,6 +80,7 @@ export function ScheduleScopeBar({
 }): ReactElement {
   const t = useTranslations("app.schedule");
   const teacherLabels = useDirectoryPickerLabels(t("pickTeacher"));
+  const weekRangeId = useId();
 
   const stepper =
     mode === "day" ? (
@@ -83,6 +88,8 @@ export function ScheduleScopeBar({
         value={dates.dayDate}
         onChange={dates.onDayDateChange}
         today={dates.today}
+        step={dates.stepDay}
+        normalize={dates.normalizeDay}
         min={dates.yearStart}
         max={dates.yearEnd}
         labels={{
@@ -100,6 +107,7 @@ export function ScheduleScopeBar({
           today={dates.today}
           stepDays={7}
           normalize={startOfIsoWeek}
+          describedBy={weekRangeId}
           formatOptions={WEEK_FORMAT}
           min={dates.yearStart && startOfIsoWeek(dates.yearStart)}
           max={dates.yearEnd}
@@ -110,7 +118,13 @@ export function ScheduleScopeBar({
             date: t("pickWeek"),
           }}
         />
-        <span className="hidden whitespace-nowrap text-body-sm text-fg-muted lg:inline">
+        {/* The picker shows only the Monday, so the range says the control is a
+            week: in view wherever the week grid is (from md), and read with the
+            picker at every width. */}
+        <span
+          id={weekRangeId}
+          className="sr-only whitespace-nowrap text-body-sm text-fg-muted md:not-sr-only"
+        >
           {t("weekLabel", { range: dates.weekLabel })}
         </span>
       </div>

@@ -8,6 +8,8 @@ vi.mock("../../reference/components/directory-picker", async () => {
   return directoryPickerStubModule;
 });
 
+import { nearestSchoolDay, stepSchoolDay } from "../week";
+
 import { ScheduleScopeBar } from "./schedule-scope-bar";
 
 beforeAll(() => {
@@ -102,6 +104,10 @@ describe("ScheduleScopeBar dates", () => {
       />,
     );
 
+    // The picker shows the Monday; the range it stands for describes it.
+    expect(screen.getByRole("combobox", { name: "pickWeek" })).toHaveAccessibleDescription(
+      "weekLabel",
+    );
     await user.click(screen.getByRole("button", { name: "nextWeek" }));
     expect(onWeekOfChange).toHaveBeenCalledWith("2026-11-23");
     await user.click(screen.getByRole("button", { name: "previousWeek" }));
@@ -140,5 +146,43 @@ describe("ScheduleScopeBar dates", () => {
     expect(onDayDateChange).toHaveBeenCalledWith("2026-11-24");
     await user.click(screen.getByRole("button", { name: "today" }));
     expect(onDayDateChange).toHaveBeenCalledWith("2026-11-20");
+  });
+
+  it("steps the day view over the days the school is closed", async () => {
+    const user = userEvent.setup();
+    const onDayDateChange = vi.fn();
+    const weekdays = [1, 2, 3, 4, 5];
+    render(
+      <ScheduleScopeBar
+        mode="day"
+        onModeChange={vi.fn()}
+        isStudent={false}
+        ownTimetableOnly={false}
+        canViewAll
+        dates={{
+          weekOf: "2026-11-16",
+          onWeekOfChange: vi.fn(),
+          dayDate: "2026-11-20",
+          onDayDateChange,
+          // A Saturday: "today" leads to the next school day.
+          today: "2026-11-21",
+          weekLabel: "16–22 Nov 2026",
+          stepDay: (date, direction) => stepSchoolDay(date, direction, weekdays),
+          normalizeDay: (date) => nearestSchoolDay(date, weekdays),
+        }}
+        classOptions={[]}
+        classId=""
+        onClassChange={vi.fn()}
+        teacherId=""
+        onTeacherChange={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "nextDay" }));
+    expect(onDayDateChange).toHaveBeenLastCalledWith("2026-11-23");
+    await user.click(screen.getByRole("button", { name: "previousDay" }));
+    expect(onDayDateChange).toHaveBeenLastCalledWith("2026-11-19");
+    await user.click(screen.getByRole("button", { name: "today" }));
+    expect(onDayDateChange).toHaveBeenLastCalledWith("2026-11-23");
   });
 });

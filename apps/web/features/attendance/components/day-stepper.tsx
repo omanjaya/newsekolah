@@ -28,6 +28,13 @@ export interface DayStepperProps {
   stepDays?: number;
   /** Maps a picked date onto the value the stepper holds (e.g. its week's Monday). */
   normalize?: (date: string) => string;
+  /**
+   * Where an arrow moves from `date`, in place of `stepDays`: the
+   * timetable's day view steps from school day to school day.
+   */
+  step?: (date: string, direction: 1 | -1) => string;
+  /** Id of text that describes the date field (e.g. the week it stands for). */
+  describedBy?: string;
   /** How the picker shows the value; default "Jum, 20 Nov". */
   formatOptions?: Intl.DateTimeFormatOptions;
   min?: string;
@@ -51,21 +58,25 @@ export function DayStepper({
   labels,
   stepDays = 1,
   normalize = (date) => date,
+  step,
+  describedBy,
   formatOptions = DAY_FORMAT,
   min,
   max,
 }: DayStepperProps): ReactElement {
   const dateRef = useRef<HTMLButtonElement>(null);
   const home = normalize(today);
+  const previous = step ? step(value, -1) : normalize(shiftDate(value, -stepDays));
+  const next = step ? step(value, 1) : normalize(shiftDate(value, stepDays));
   return (
     <div className="flex w-full items-center gap-1.5 sm:w-auto">
       <IconButton
         icon={<ChevronLeft />}
         aria-label={labels.previous}
         variant="surface"
-        disabled={min !== undefined && shiftDate(value, -1) < min}
+        disabled={min !== undefined && previous < min}
         onClick={() => {
-          onChange(normalize(shiftDate(value, -stepDays)));
+          onChange(previous);
         }}
       />
       <DatePicker
@@ -80,15 +91,16 @@ export function DayStepper({
         min={min}
         max={max}
         aria-label={labels.date}
+        aria-describedby={describedBy}
         className="min-w-0 flex-1 sm:w-40 sm:flex-none"
       />
       <IconButton
         icon={<ChevronRight />}
         aria-label={labels.next}
         variant="surface"
-        disabled={max !== undefined && shiftDate(value, stepDays) > max}
+        disabled={max !== undefined && next > max}
         onClick={() => {
-          onChange(normalize(shiftDate(value, stepDays)));
+          onChange(next);
         }}
       />
       {value !== home && (
