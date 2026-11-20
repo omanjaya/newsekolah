@@ -36,12 +36,18 @@ export function useLibraryLookupQuery(query: string) {
   });
 }
 
-/** Resolves one scanned barcode to its copy, to preview a title before borrowing or returning it. */
+/**
+ * Resolves one scanned barcode to its copy, to preview a title before
+ * borrowing or returning it. Silent on failure: a code that names no copy
+ * is an answer, not an error, and every caller reports it in its own way
+ * (the desk's "not found" line or failed row, the stocktake's scan feed).
+ */
 export function useFindLibraryCopyByCodeMutation() {
   const client = useApiClient();
   return useMutation({
     mutationFn: (code: string) =>
       client.GET("/v1/library/copies/find", { params: { query: { code } } }),
+    meta: { errorToast: false },
   });
 }
 
@@ -105,7 +111,11 @@ export function useBatchBorrowLoansMutation() {
   });
 }
 
-/** Returns a copy by its barcode, without needing the loan id. */
+/**
+ * Returns a copy by its barcode, without needing the loan id. Silent on
+ * failure: the desk session reports every refusal itself, as a failed row
+ * or its scan line, and a member card scanned here is not a failure at all.
+ */
 export function useReturnLoanByBarcodeMutation() {
   const client = useApiClient();
   const invalidate = useInvalidateLibrary();
@@ -113,10 +123,15 @@ export function useReturnLoanByBarcodeMutation() {
     mutationFn: (body: { barcode: string; condition?: LibraryCopy["condition"] }) =>
       client.POST("/v1/library/loans/return-by-barcode", { body }),
     onSuccess: invalidate,
+    meta: { errorToast: false },
   });
 }
 
-/** Renews a loan by its copy's barcode, without needing the loan id -- the desk's continuous scan flow. */
+/**
+ * Renews a loan by its copy's barcode, without needing the loan id -- the
+ * desk's continuous scan flow. Silent on failure for the same reason as
+ * `useReturnLoanByBarcodeMutation`.
+ */
 export function useRenewLoanByBarcodeMutation() {
   const client = useApiClient();
   const invalidate = useInvalidateLibrary();
@@ -124,6 +139,7 @@ export function useRenewLoanByBarcodeMutation() {
     mutationFn: (body: { barcode: string }) =>
       client.POST("/v1/library/loans/renew-by-barcode", { body }),
     onSuccess: invalidate,
+    meta: { errorToast: false },
   });
 }
 
