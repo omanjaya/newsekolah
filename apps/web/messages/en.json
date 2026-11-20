@@ -1858,7 +1858,8 @@
           "all": "All kinds",
           "teacher": "Teacher",
           "staff": "Staff",
-          "student": "Student"
+          "student": "Student",
+          "none": "No profile"
         },
         "status": {
           "active": "Active",

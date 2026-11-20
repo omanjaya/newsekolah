@@ -1210,7 +1210,7 @@ components:
 
     AdminUser:
       type: object
-      required: [id, username, name, status, profile_kind, roles, must_change_password, created_at]
+      required: [id, username, name, status, roles, must_change_password, created_at]
       properties:
         id: { type: string, format: uuid }
         username: { type: string }
@@ -1218,7 +1218,11 @@ components:
         phone: { type: string }
         name: { type: string }
         status: { $ref: "#/components/schemas/UserStatus" }
-        profile_kind: { $ref: "#/components/schemas/ProfileKind" }
+        profile_kind:
+          description: >-
+            The user's school profile. Absent for an account with no school
+            profile, such as the platform's Super Admin.
+          allOf: [{ $ref: "#/components/schemas/ProfileKind" }]
         locale: { type: string }
         avatar_url: { type: string, format: uri }
         must_change_password: { type: boolean }

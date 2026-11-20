@@ -212,12 +212,19 @@ func toAPIAdminUser(u service.UserAdminView) api.AdminUser {
 	for i, r := range u.Roles {
 		roles[i] = toAPIRole(r)
 	}
-	return api.AdminUser{
+	out := api.AdminUser{
 		Id: u.ID, Username: u.Username, Email: strPtr(u.Email), Phone: strPtr(u.Phone), Name: u.Name,
-		Status: api.UserStatus(u.Status), ProfileKind: api.ProfileKind(u.ProfileKind), Locale: strPtr(u.Locale),
+		Status: api.UserStatus(u.Status), Locale: strPtr(u.Locale),
 		AvatarUrl: strPtr(u.AvatarURL), MustChangePassword: u.MustChangePassword,
 		LastLoginAt: timePtr(u.LastLoginAt), CreatedAt: u.CreatedAt, Roles: roles, Profile: toAPIProfile(u.Profile),
 	}
+	// An account with no school profile (the platform's Super Admin) has no
+	// kind: leave it out rather than send "", which is not a ProfileKind.
+	if u.ProfileKind != "" {
+		kind := api.ProfileKind(u.ProfileKind)
+		out.ProfileKind = &kind
+	}
+	return out
 }
 
 func fromAPIUserWrite(w api.UserWriteFields) service.UserWriteInput {

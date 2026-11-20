@@ -1856,7 +1856,8 @@
           "all": "Semua jenis",
           "teacher": "Guru",
           "staff": "Pegawai",
-          "student": "Siswa"
+          "student": "Siswa",
+          "none": "Tanpa profil"
         },
         "status": {
           "active": "Aktif",

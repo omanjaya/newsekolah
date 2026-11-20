@@ -51,7 +51,7 @@ import { useImpersonateUserMutation } from "../duties-api";
 
 import { useArchiveUserAction } from "./archive-user-dialog";
 import { ResetPasswordFlow } from "./reset-password-flow";
-import { UserRolesCell, UserStatusCell } from "./user-cells";
+import { UserKindCell, UserRolesCell, UserStatusCell } from "./user-cells";
 import { UserForm } from "./user-form";
 
 const KINDS: ProfileKind[] = ["teacher", "staff", "student"];
@@ -194,7 +194,7 @@ export function UsersView(): ReactElement {
         header: t("columns.kind"),
         enableSorting: false,
         meta: { card: "meta" },
-        cell: ({ row }) => t(`kinds.${row.original.profile_kind}`),
+        cell: ({ row }) => <UserKindCell user={row.original} />,
       },
       {
         id: "roles",
@@ -217,8 +217,11 @@ export function UsersView(): ReactElement {
         cell: ({ row }) => {
           const user = row.original;
           const restore = user.status === "inactive";
+          // The form edits a school profile; saving a system account with
+          // none there would turn it into a teacher.
+          const editable = user.profile_kind !== undefined;
           const items: RowActionsMenuItem[] = [
-            ...(canEdit
+            ...(canEdit && editable
               ? [
                   {
                     label: t("actions.edit"),
@@ -227,6 +230,10 @@ export function UsersView(): ReactElement {
                       setEditing(user);
                     },
                   },
+                ]
+              : []),
+            ...(canEdit
+              ? [
                   {
                     label: t("actions.resetPassword"),
                     icon: <KeyRound />,

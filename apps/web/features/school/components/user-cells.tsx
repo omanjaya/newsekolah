@@ -6,6 +6,16 @@ import type { ReactElement } from "react";
 
 import type { AdminUser } from "../api";
 
+/**
+ * The account's kind. A system account (the platform's Super Admin) has no
+ * school profile and so no kind: it reads "No profile", never a bare key.
+ */
+export function UserKindCell({ user }: { user: AdminUser }): ReactElement {
+  const t = useTranslations("app.school.users");
+  if (!user.profile_kind) return <span className="text-fg-muted">{t("kinds.none")}</span>;
+  return <>{t(`kinds.${user.profile_kind}`)}</>;
+}
+
 /** The primary role as a quiet pill, and how many more the account holds. */
 export function UserRolesCell({ user }: { user: AdminUser }): ReactElement | null {
   const t = useTranslations("app.school.users");

@@ -23232,7 +23232,6 @@ components:
         - username
         - name
         - status
-        - profile_kind
         - roles
         - must_change_password
         - created_at
@@ -23251,7 +23250,9 @@ components:
         status:
           $ref: "#/components/schemas/UserStatus"
         profile_kind:
-          $ref: "#/components/schemas/ProfileKind"
+          description: The user's school profile. Absent for an account with no school profile, such as the platform's Super Admin.
+          allOf:
+            - $ref: "#/components/schemas/ProfileKind"
         locale:
           type: string
         avatar_url:

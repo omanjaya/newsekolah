@@ -10057,7 +10057,8 @@ export interface components {
             phone?: string;
             name: string;
             status: components["schemas"]["UserStatus"];
-            profile_kind: components["schemas"]["ProfileKind"];
+            /** @description The user's school profile. Absent for an account with no school profile, such as the platform's Super Admin. */
+            profile_kind?: components["schemas"]["ProfileKind"];
             locale?: string;
             /** Format: uri */
             avatar_url?: string;

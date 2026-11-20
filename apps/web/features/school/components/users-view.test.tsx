@@ -279,3 +279,50 @@ describe("UsersView archive", () => {
     );
   });
 });
+
+describe("UsersView system account", () => {
+  // The platform's Super Admin has no school profile, so the API leaves
+  // profile_kind out. The kind cell used to look up "kinds." and show the
+  // raw key "app.school.users.kinds." on that row.
+  const operator: AdminUser = {
+    id: "user-op",
+    username: "operator",
+    name: "Operator Uji",
+    status: "active",
+    must_change_password: false,
+    created_at: "2026-11-20T00:00:00Z",
+    roles: [{ id: "role-super", slug: "super_admin", name: "Super Admin", is_primary: true }],
+  };
+
+  beforeEach(() => {
+    mocks.canCreate = true;
+    mocks.useUsersQuery.mockReset();
+    mocks.useUsersQuery.mockReturnValue({
+      data: { data: [operator] },
+      isError: false,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+    window.history.replaceState(null, "", "/school/users");
+  });
+
+  it("labels an account with no profile instead of showing a bare message key", () => {
+    render(<UsersView />);
+
+    const table = screen.getByRole("table");
+    expect(within(table).getByText("kinds.none")).toBeInTheDocument();
+    expect(within(table).queryByText(/^kinds\.$/)).not.toBeInTheDocument();
+  });
+
+  it("does not offer the school user form for an account with no profile", async () => {
+    const user = userEvent.setup();
+    render(<UsersView />);
+
+    const [menu] = screen.getAllByRole("button", { name: "actions.menuFor:Operator Uji" });
+    if (!menu) throw new Error("no row menu");
+    await user.click(menu);
+
+    expect(await screen.findByRole("menuitem", { name: "actions.resetPassword" })).toBeVisible();
+    expect(screen.queryByRole("menuitem", { name: "actions.edit" })).not.toBeInTheDocument();
+  });
+});
