@@ -15,7 +15,9 @@
   "historyTitle": "Earlier scans",
   "results": {
     "classroom_entry": "Your attendance is recorded in {teacher}'s class.",
-    "exit_stage": "Exit permit stage confirmed for {student}.",
+    "exit_stage": "The {stage} stage of your exit permit is confirmed.",
+    "exit_stage_plain": "Your exit permit stage is confirmed.",
+    "exit_approved": "Every stage of your exit permit is approved. Show the gate QR to security.",
     "gate_exit": "{student} ({className}) may leave.",
     "late_arrival_open": "Late arrival opened and waiting for the next step.",
     "late_arrival_stage": "Late arrival stage confirmed.",
@@ -26,7 +28,9 @@
     "expired": "The code has expired or was already used. Ask for a new QR code.",
     "libraryVisitExpired": "This library QR code was already used or has expired. Scan the new code on the library screen.",
     "lateArrivalBusy": "Your late arrival is already being processed and is not waiting for a scan.",
-    "noPermitAwaitingDesk": "You have no exit permit waiting for the duty teacher's approval. Request an exit permit first, then scan this code again."
+    "noPermitAwaitingDesk": "None of your exit permits is waiting for the duty teacher's approval. This code only approves the duty teacher stage of an exit permit in progress.",
+    "permitAtOtherStage": "Your exit permit is not waiting for the duty teacher but for {stage}. Scan the QR code from {stage}.",
+    "permitAwaitingGate": "Every stage of your exit permit is already approved, so this code is not needed. Show the gate QR to security."
   },
   "unknown": {
     "empty": "The code is empty.",

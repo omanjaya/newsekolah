@@ -22,9 +22,23 @@ import {
   type LibraryScanParams,
 } from "@/features/scan/library-scan";
 import { t } from "@/i18n/t";
-import { permitAwaitingDeskApproval } from "@/lib/permits/exit-permit";
+import { deskApprovalTarget, type DeskApprovalTarget } from "@/lib/permits/exit-permit";
 
 type Pending = { token: string; kind?: string; instanceId?: string } | null;
+
+/** Why the duty desk's QR approved nothing for the scanning student. */
+function deskRefusalMessage(
+  target: Exclude<DeskApprovalTarget<unknown>, { kind: "ready" }>,
+): string {
+  switch (target.kind) {
+    case "elsewhere":
+      return t("scan.permit_at_other_stage").replaceAll("{stage}", target.stage.label);
+    case "awaitingGate":
+      return t("scan.permit_awaiting_gate");
+    case "none":
+      return t("scan.no_permit_awaiting_desk");
+  }
+}
 
 /**
  * Full-screen scanner (docs/07-ui-ux.md "Scanner"), shared by every role
@@ -84,12 +98,12 @@ export default function ScanRoute(): React.JSX.Element {
             // the desk, never a late arrival. A failed lookup throws into
             // the generic error below instead of reading as "no permit".
             const { data: mine } = await permits.refetch({ throwOnError: true });
-            const waiting = permitAwaitingDeskApproval(mine?.data ?? []);
-            if (!waiting) {
-              showToast(t("scan.no_permit_awaiting_desk"), "error");
+            const target = deskApprovalTarget(mine?.data ?? []);
+            if (target.kind !== "ready") {
+              showToast(deskRefusalMessage(target), "error");
               return;
             }
-            await stage.mutateAsync({ id: waiting.id, token });
+            await stage.mutateAsync({ id: target.permit.id, token });
           } else if (id && id === activePermit?.id) {
             await stage.mutateAsync({ id, token });
           } else if (activeLate) {

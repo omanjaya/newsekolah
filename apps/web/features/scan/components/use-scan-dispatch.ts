@@ -1,6 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
+import type { components } from "@newsekolah/api-client";
 import { useTranslations } from "next-intl";
 import { useCallback, useRef } from "react";
 
@@ -17,7 +18,8 @@ import {
   useScanGateMutation,
   useScanLateArrivalStageMutation,
 } from "../../permits/api";
-import { permitAwaitingDeskApproval } from "../../permits/lib/desk-approval";
+import { deskApprovalTarget, stageJustApproved } from "../../permits/lib/desk-approval";
+import type { DeskApprovalTarget } from "../../permits/lib/desk-approval";
 import { classifyScanFailure, expiredScanMessageKey, resolveScanRoute } from "../lib/dispatch";
 import type { ScanRoute } from "../lib/dispatch";
 
@@ -52,6 +54,18 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
   // names no permit, to find the student's own permit waiting on the desk.
   const myExitPermits = useMyExitPermitsQuery(false);
 
+  // Only the permit's own student can scan a stage QR (the API refuses
+  // anyone else), so the result speaks to them, as the exit permit
+  // screen's scan dialog does, and never names them back to themselves.
+  const exitStageResult = useCallback(
+    (instance: WorkflowInstance, approved?: WorkflowStage): string => {
+      if (instance.status !== "in_progress") return t("results.exit_approved");
+      const label = (approved ?? stageJustApproved(instance))?.label;
+      return label ? t("results.exit_stage", { stage: label }) : t("results.exit_stage_plain");
+    },
+    [t],
+  );
+
   const run = useCallback(
     async (route: Exclude<ScanRoute, { action: "unknown" }>): Promise<string> => {
       const { token, instanceId = "" } = route;
@@ -66,10 +80,10 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
             // exit permit, never a late arrival (the API accepts it only
             // for an exit permit's any-teacher stage).
             const { data: mine } = await myExitPermits.refetch({ throwOnError: true });
-            const permit = permitAwaitingDeskApproval(mine?.data ?? []);
-            if (!permit) throw new NoPermitAwaitingDeskError();
-            const data = await exitStage.mutateAsync({ id: permit.id, token });
-            return t("results.exit_stage", { student: formatDisplayName(data.student_name) });
+            const target = deskApprovalTarget(mine?.data ?? []);
+            if (target.kind !== "ready") throw new DeskScanRefusal(target);
+            const data = await exitStage.mutateAsync({ id: target.permit.id, token });
+            return exitStageResult(data.instance, target.permit.current_stage);
           }
           // The approver panel encodes the same "approve" payload for an
           // exit permit and a late arrival. Only the scanning student's own
@@ -81,7 +95,7 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
             return t("results.late_arrival_stage");
           }
           const data = await exitStage.mutateAsync({ id: instanceId, token });
-          return t("results.exit_stage", { student: formatDisplayName(data.student_name) });
+          return exitStageResult(data.instance);
         }
         case "gate_exit": {
           const data = await gate.mutateAsync({ id: instanceId, token });
@@ -116,6 +130,7 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
     },
     [
       t,
+      exitStageResult,
       classroomEntry,
       exitStage,
       gate,
@@ -125,6 +140,20 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
       currentLate,
       myExitPermits,
     ],
+  );
+
+  const deskRefusalMessage = useCallback(
+    (target: DeskRefusalTarget): string => {
+      switch (target.kind) {
+        case "elsewhere":
+          return t("failures.permitAtOtherStage", { stage: target.stage.label });
+        case "awaitingGate":
+          return t("failures.permitAwaitingGate");
+        case "none":
+          return t("failures.noPermitAwaitingDesk");
+      }
+    },
+    [t],
   );
 
   return useCallback(
@@ -140,8 +169,8 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
         if (error instanceof LateArrivalBusyError) {
           return { key, ok: false, message: t("failures.lateArrivalBusy") };
         }
-        if (error instanceof NoPermitAwaitingDeskError) {
-          return { key, ok: false, message: t("failures.noPermitAwaitingDesk") };
+        if (error instanceof DeskScanRefusal) {
+          return { key, ok: false, message: deskRefusalMessage(error.target) };
         }
         if (error instanceof ApiError) {
           return {
@@ -156,11 +185,19 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
         return { key, ok: false, message: apiErrorMessage("UNKNOWN") };
       }
     },
-    [t, run, apiErrorMessage, me?.disabled_modules],
+    [t, run, apiErrorMessage, deskRefusalMessage, me?.disabled_modules],
   );
 }
 
 class LateArrivalBusyError extends Error {}
 
+type WorkflowInstance = components["schemas"]["WorkflowInstance"];
+type WorkflowStage = components["schemas"]["WorkflowStage"];
+type DeskRefusalTarget = Exclude<DeskApprovalTarget<unknown>, { kind: "ready" }>;
+
 /** A desk approval QR scanned while no own exit permit waits on the desk. */
-class NoPermitAwaitingDeskError extends Error {}
+class DeskScanRefusal extends Error {
+  constructor(readonly target: DeskRefusalTarget) {
+    super(`desk scan refused: ${target.kind}`);
+  }
+}

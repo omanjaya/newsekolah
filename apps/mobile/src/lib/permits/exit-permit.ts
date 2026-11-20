@@ -139,6 +139,37 @@ export function permitAwaitingDeskApproval<
   );
 }
 
+interface DeskStage {
+  label: string;
+  approver_rule: string;
+  verification: string;
+}
+
+/**
+ * What the desk QR means for the scanning student (as deskApprovalTarget
+ * in apps/web/features/permits/lib/desk-approval.ts), so a scan that
+ * approves nothing says why instead of sending them to request a permit
+ * they already have: `elsewhere` names the stage the permit waits on,
+ * `awaitingGate` means every stage has passed, `none` that no exit permit
+ * is under way.
+ */
+export type DeskApprovalTarget<T> =
+  | { kind: "ready"; permit: T }
+  | { kind: "elsewhere"; stage: DeskStage }
+  | { kind: "awaitingGate" }
+  | { kind: "none" };
+
+export function deskApprovalTarget<T extends { status: string; current_stage?: DeskStage }>(
+  permits: readonly T[],
+): DeskApprovalTarget<T> {
+  const waiting = permitAwaitingDeskApproval(permits);
+  if (waiting) return { kind: "ready", permit: waiting };
+  const stage = permits.find((p) => p.status === "in_progress" && p.current_stage)?.current_stage;
+  if (stage) return { kind: "elsewhere", stage };
+  if (permits.some((p) => p.status === "approved")) return { kind: "awaitingGate" };
+  return { kind: "none" };
+}
+
 export interface ExitReturnFields {
   exited_at?: string;
   return_required: boolean;

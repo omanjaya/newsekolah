@@ -15,7 +15,9 @@
   "historyTitle": "Pindaian sebelumnya",
   "results": {
     "classroom_entry": "Presensi Anda tercatat di kelas {teacher}.",
-    "exit_stage": "Tahap izin keluar {student} dikonfirmasi.",
+    "exit_stage": "Tahap {stage} izin keluar Anda dikonfirmasi.",
+    "exit_stage_plain": "Tahap izin keluar Anda dikonfirmasi.",
+    "exit_approved": "Semua tahap izin keluar Anda disetujui. Tunjukkan QR gerbang ke satpam.",
     "gate_exit": "{student} ({className}) diizinkan keluar.",
     "late_arrival_open": "Keterlambatan dibuka dan menunggu proses berikutnya.",
     "late_arrival_stage": "Tahap keterlambatan dikonfirmasi.",
@@ -26,7 +28,9 @@
     "expired": "Kode sudah kedaluwarsa atau sudah dipakai. Minta kode QR yang baru.",
     "libraryVisitExpired": "Kode QR perpustakaan sudah dipakai atau kedaluwarsa. Pindai kode baru di layar perpustakaan.",
     "lateArrivalBusy": "Keterlambatan Anda sedang diproses dan tidak menunggu pindaian.",
-    "noPermitAwaitingDesk": "Anda tidak punya izin keluar yang menunggu persetujuan guru piket. Ajukan izin keluar dulu, lalu pindai kode ini lagi."
+    "noPermitAwaitingDesk": "Tidak ada izin keluar Anda yang sedang menunggu persetujuan guru piket. Kode ini hanya menyetujui tahap guru piket pada izin keluar yang sedang berjalan.",
+    "permitAtOtherStage": "Izin keluar Anda tidak menunggu guru piket, tetapi menunggu {stage}. Pindai kode QR dari {stage}.",
+    "permitAwaitingGate": "Semua tahap izin keluar Anda sudah disetujui, jadi kode ini tidak diperlukan. Tunjukkan QR gerbang ke satpam."
   },
   "unknown": {
     "empty": "Kode kosong.",
