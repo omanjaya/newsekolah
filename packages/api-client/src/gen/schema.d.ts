@@ -7214,7 +7214,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Delete every schedule for one academic year */
+        /**
+         * Clear one academic year's timetable, entirely or from a date on
+         * @description Without effective_from every schedule of the year is deleted, which fails with SCHEDULE_HAS_HISTORY when any of them has history. With it the timetable is cleared from that date on: each lesson ends on its last date before it (or goes when it has none) and every earlier week keeps its lessons and history.
+         */
         post: operations["clearSchedules"];
         delete?: never;
         options?: never;
@@ -7250,10 +7253,16 @@ export interface paths {
         };
         /** One schedule */
         get: operations["getSchedule"];
-        /** Update a schedule (admin, or the owning teacher within the edit deadline) */
+        /**
+         * Update a schedule (admin, or the owning teacher within the edit deadline)
+         * @description With effective_from in the body the change takes effect from that date: the block ends on its last lesson before it and a new version (a new id, returned) starts on its first lesson on or after it. Without it the block is corrected in place for the whole academic year, which fails with SCHEDULE_HAS_HISTORY once it has history.
+         */
         put: operations["updateSchedule"];
         post?: never;
-        /** Delete a schedule (admin, or the owning teacher within the edit deadline) */
+        /**
+         * Delete a schedule (admin, or the owning teacher within the edit deadline)
+         * @description Without effective_from the block is deleted outright, which fails with SCHEDULE_HAS_HISTORY once it has history. With effective_from (manage_schedules only) the block is removed from that date on: earlier dates keep it, with everything recorded against it.
+         */
         delete: operations["deleteSchedule"];
         options?: never;
         head?: never;
@@ -7270,7 +7279,10 @@ export interface paths {
         /** Substitution requests directed at me (incoming), made by me (outgoing), or (requires manage_schedules) every request tenant-wide (all) */
         get: operations["listSubstitutions"];
         put?: never;
-        /** Request a substitute for one dated occurrence of my own schedule */
+        /**
+         * Request a substitute for one dated occurrence of my own schedule
+         * @description The date must fall on the schedule's weekday and inside its effective dates; a date after this version of the lesson ended (or before it started) is refused with SUBSTITUTION_LESSON_NOT_ON_DATE.
+         */
         post: operations["createSubstitution"];
         delete?: never;
         options?: never;
@@ -7672,7 +7684,10 @@ export interface paths {
         /** Planned visits in a cycle */
         get: operations["listScheduledObservations"];
         put?: never;
-        /** Plan a visit to a specific lesson, resolved through the scheduling module */
+        /**
+         * Plan a visit to a specific lesson, resolved through the scheduling module
+         * @description lesson_date must fall on the lesson's weekday and inside the effective dates of that version of the lesson (SUPERVISION_LESSON_NOT_ON_DATE otherwise).
+         */
         post: operations["scheduleObservation"];
         delete?: never;
         options?: never;
@@ -12014,8 +12029,15 @@ export interface components {
         MutationPolicy: {
             can_edit: boolean;
             can_delete: boolean;
-            /** @description The schedule has an attendance session or a substitution request, so it can no longer be edited or deleted (the history is kept). */
+            /** @description The schedule has recorded attendance or a substitution request; changes must carry effective_from and leave earlier dates as they were. */
             has_history?: boolean;
+            /** @description An edit or delete must say from which date it takes effect (effective_from). */
+            requires_effective_from?: boolean;
+            /**
+             * Format: date
+             * @description The earliest effective_from the server accepts (today, or the day after the last history date).
+             */
+            min_effective_from?: string;
             reason?: string;
         };
         Schedule: {
@@ -12040,6 +12062,16 @@ export interface components {
             end_period_id: string;
             source: components["schemas"]["ScheduleSource"];
             notes?: string;
+            /**
+             * Format: date
+             * @description First date this version of the lesson is on the timetable (on its weekday).
+             */
+            effective_from: string;
+            /**
+             * Format: date
+             * @description Last date this version is on the timetable (inclusive); absent while it runs to the end of the year.
+             */
+            effective_until?: string;
             mutation_policy?: components["schemas"]["MutationPolicy"];
             /** Format: date-time */
             created_at: string;
@@ -12060,8 +12092,20 @@ export interface components {
             start_seq: number;
             end_seq: number;
             source: components["schemas"]["ScheduleSource"];
-            /** @description Some schedule in the block has an attendance session or a substitution request, so the block can no longer be edited or deleted. */
+            /**
+             * Format: date
+             * @description First date the block is on the timetable.
+             */
+            effective_from: string;
+            /**
+             * Format: date
+             * @description Last date the block is on the timetable (inclusive); absent while it runs to the end of the year.
+             */
+            effective_until?: string;
+            /** @description Some schedule in the block has recorded attendance or a substitution request: it can no longer be corrected in place, only changed or removed from a date after that history. */
             has_history?: boolean;
+            /** @description What the caller may do with the block; present for callers with manage_schedules. */
+            mutation_policy?: components["schemas"]["MutationPolicy"];
         };
         ScheduleWriteRequest: {
             /** Format: uuid */
@@ -12083,6 +12127,11 @@ export interface components {
             end_period_id: string;
             source?: components["schemas"]["ScheduleSource"];
             notes?: string;
+            /**
+             * Format: date
+             * @description Create and bulk import: first date the lesson is on the timetable (default: the start of the academic year), moved to the next date on its weekday. Update: the date the change takes effect; omit it to correct the block in place (SCHEDULE_HAS_HISTORY once it has history). manage_schedules only.
+             */
+            effective_from?: string;
         };
         /** @enum {string} */
         SubstitutionStatus: "pending" | "accepted" | "rejected" | "cancelled";
@@ -12664,7 +12713,7 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description Schedule overlaps another lesson, the year is archived, or recorded attendance/substitution history prevents mutation */
+        /** @description Schedule overlaps another lesson (SCHEDULE_CONFLICT_CLASS / SCHEDULE_CONFLICT_TEACHER, details name the clashing lesson and its effective dates), the year is archived (SCHEDULE_YEAR_ARCHIVED), history prevents an undated change (SCHEDULE_HAS_HISTORY, details give the earliest effective_from), the change date is too early (SCHEDULE_CHANGE_BEFORE_HISTORY, details give the earliest effective_from), or the lesson already ended (SCHEDULE_ENDED). */
         ScheduleConflict: {
             headers: {
                 [name: string]: unknown;
@@ -16003,7 +16052,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
-            /** @description The date is after today, so the lesson has not happened yet (ATTENDANCE_SESSION_NOT_STARTED) */
+            /** @description The date is after today, so the lesson has not happened yet (ATTENDANCE_SESSION_NOT_STARTED), or this version of the lesson is not on the timetable on that date (ATTENDANCE_LESSON_NOT_ON_DATE) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -27260,6 +27309,8 @@ export interface operations {
                 teacher_user_id?: string;
                 /** @description 1 (Monday) through 7 (Sunday) */
                 day_of_week?: number;
+                /** @description Any date in the week to show. Each weekday lists the lessons in effect on that weekday's date in the same Monday-Sunday week, so a change that takes effect mid-week shows the old lesson before it and the new one from it. Default: today in the school's time zone. Clamped to the academic year. */
+                as_of?: string;
             };
             header?: never;
             path?: never;
@@ -27275,6 +27326,11 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["ScheduleBlock"][];
+                        /**
+                         * Format: date
+                         * @description The Monday of the week the blocks were resolved for.
+                         */
+                        week_starts_on: string;
                     };
                 };
             };
@@ -27352,6 +27408,11 @@ export interface operations {
                 "application/json": {
                     /** Format: uuid */
                     academic_year_id: string;
+                    /**
+                     * Format: date
+                     * @description First date the timetable is empty. Not before today nor on or before a date with history.
+                     */
+                    effective_from?: string;
                 };
             };
         };
@@ -27456,6 +27517,8 @@ export interface operations {
             query?: {
                 /** @description All rows of a merged block, including scheduleId. The operation is atomic. */
                 schedule_ids?: string[];
+                /** @description Remove the block from this date on; earlier dates keep it. See MutationPolicy.min_effective_from. */
+                effective_from?: string;
             };
             header?: never;
             path: {
