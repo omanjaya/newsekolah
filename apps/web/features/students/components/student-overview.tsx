@@ -21,7 +21,7 @@ import {
   domainIcons,
 } from "@newsekolah/ui";
 import {
-  CalendarCheck,
+  CalendarX,
   FileWarning,
   MessagesSquare,
   ShieldAlert,
@@ -151,10 +151,13 @@ function RiskStats({ studentId }: { studentId: string }): ReactElement {
     <div className="flex flex-col gap-3">
       <StatGrid variant="tiles" aria-label={t("statsLabel")}>
         <Stat
-          icon={<CalendarCheck />}
+          icon={<CalendarX />}
           className="animate-enter"
           style={enterStep(0)}
-          tone="green"
+          // An absence count, so never the green of a good figure: amber
+          // once there is an alpha day, as the discipline tiles beside it
+          // turn red and amber, and a quiet hue while there is none.
+          tone={unexcused ? "amber" : "purple"}
           label={t("unexcusedAbsence")}
           value={unexcused ?? "–"}
           hint={
