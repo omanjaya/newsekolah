@@ -337,7 +337,7 @@ var spaceRun = regexp.MustCompile(`[ \t\r\n\f]+`)
 // lineBreak is what a <br> writes into the text being collected. It is a
 // rune templates never contain, so source newlines (plain whitespace in
 // HTML) and <br> line breaks stay apart until collapseText.
-const lineBreak = " "
+const lineBreak = "\u2028"
 
 // collapseText collapses whitespace the way a browser does, then turns
 // each <br> into "\n", dropping empty lines.

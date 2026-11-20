@@ -137,11 +137,7 @@ const (
 // top of the first page. See layoutHTML for the HTML it understands and
 // the package doc comment for why this is not a full HTML layout engine.
 func htmlToPDF(renderedHTML, letterhead []byte) ([]byte, error) {
-	pdf := fpdf.New("P", "mm", "A4", "")
-	pdf.SetMargins(pageMarginMM, pageMarginMM, pageMarginMM)
-	pdf.SetAutoPageBreak(true, pageMarginMM)
-	pdf.AddPage()
-	pdf.SetFont(fontFamilyName, "", bodyFontPt)
+	pdf := newPDF()
 
 	if len(letterhead) > 0 {
 		if err := placeLetterhead(pdf, letterhead); err != nil {
@@ -169,6 +165,17 @@ func htmlToPDF(renderedHTML, letterhead []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// newPDF starts an A4 document with the package's page margins and its
+// first page open in the body font.
+func newPDF() *fpdf.Fpdf {
+	pdf := fpdf.New("P", "mm", "A4", "")
+	pdf.SetMargins(pageMarginMM, pageMarginMM, pageMarginMM)
+	pdf.SetAutoPageBreak(true, pageMarginMM)
+	pdf.AddPage()
+	pdf.SetFont(fontFamilyName, "", bodyFontPt)
+	return pdf
+}
+
 func setFont(pdf *fpdf.Fpdf, bold bool, size float64) {
 	style := ""
 	if bold {
@@ -194,11 +201,15 @@ func drawParagraph(pdf *fpdf.Fpdf, tr func(string) string, p layoutParagraph) {
 
 // drawTable lays a table's rows out as columns. Each column is as wide as
 // its widest cell, scaled to the printable width when the table asks for
-// width:100% or would not fit; a cell's text wraps inside its column.
+// width:100% or would not fit; a cell's text wraps inside its column. A
+// row that does not fit the rest of the page moves to the next one; a row
+// taller than a whole page is split across pages instead, a slice of its
+// lines (with its own border) per page.
 func drawTable(pdf *fpdf.Fpdf, tr func(string) string, t layoutTable) {
 	widths := columnWidths(pdf, tr, t)
-	left, _, _, _ := pdf.GetMargins()
+	left, top, _, _ := pdf.GetMargins()
 	_, pageH := pdf.GetPageSize()
+	bottom := pageH - pageMarginMM
 	for _, row := range t.Rows {
 		lines := make([][]string, len(row.Cells))
 		rowLines := 1
@@ -212,25 +223,58 @@ func drawTable(pdf *fpdf.Fpdf, tr func(string) string, t layoutTable) {
 			}
 		}
 		rowH := float64(rowLines) * lineHeightMM
-		if pdf.GetY()+row.PadTop+rowH > pageH-pageMarginMM {
-			pdf.AddPage()
-		}
 		y := pdf.GetY() + row.PadTop
-		x := left
-		for i, cell := range row.Cells {
-			if t.Border {
-				pdf.Rect(x, y, widths[i], rowH, "D")
-			}
-			setFont(pdf, cell.Bold, 0)
-			for j, line := range lines[i] {
-				pdf.SetXY(x+cellPaddingMM, y+float64(j)*lineHeightMM)
-				pdf.CellFormat(widths[i]-2*cellPaddingMM, lineHeightMM, line, "", 0, cell.Align, false, 0, "")
-			}
-			x += widths[i]
+		if y+rowH > bottom && (rowH <= bottom-top || linesThatFit(y, bottom) == 0) {
+			pdf.AddPage()
+			y = pdf.GetY() + row.PadTop
 		}
-		pdf.SetXY(left, y+rowH)
+		for first := 0; first < rowLines; {
+			n := min(linesThatFit(y, bottom), rowLines-first)
+			if n == 0 {
+				// Only reachable when PadTop alone fills the fresh page.
+				pdf.AddPage()
+				y = pdf.GetY()
+				continue
+			}
+			drawRowSlice(pdf, row, lines, widths, left, y, first, n, t.Border)
+			first += n
+			y += float64(n) * lineHeightMM
+			if first < rowLines {
+				pdf.AddPage()
+				y = pdf.GetY()
+			}
+		}
+		pdf.SetXY(left, y)
 	}
 	setFont(pdf, false, 0)
+}
+
+// linesThatFit is how many table lines fit between y and the bottom
+// margin. The small tolerance keeps a line that ends exactly on the
+// margin from being pushed to the next page by float rounding.
+func linesThatFit(y, bottom float64) int {
+	if y >= bottom {
+		return 0
+	}
+	return int((bottom - y + 1e-6) / lineHeightMM)
+}
+
+// drawRowSlice draws lines [first, first+n) of every cell of row, the
+// slice's top at y, with a border around each cell's slice when border.
+func drawRowSlice(pdf *fpdf.Fpdf, row layoutRow, lines [][]string, widths []float64, left, y float64, first, n int, border bool) {
+	h := float64(n) * lineHeightMM
+	x := left
+	for i, cell := range row.Cells {
+		if border {
+			pdf.Rect(x, y, widths[i], h, "D")
+		}
+		setFont(pdf, cell.Bold, 0)
+		for j := first; j < first+n && j < len(lines[i]); j++ {
+			pdf.SetXY(x+cellPaddingMM, y+float64(j-first)*lineHeightMM)
+			pdf.CellFormat(widths[i]-2*cellPaddingMM, lineHeightMM, lines[i][j], "", 0, cell.Align, false, 0, "")
+		}
+		x += widths[i]
+	}
 }
 
 func columnWidths(pdf *fpdf.Fpdf, tr func(string) string, t layoutTable) []float64 {
@@ -259,29 +303,30 @@ func columnWidths(pdf *fpdf.Fpdf, tr func(string) string, t layoutTable) []float
 	for _, w := range widths {
 		total += w
 	}
-	if total > 0 && (t.FullWidth || total > available) {
-		// Narrow columns keep their natural width when the table shrinks,
-		// so a short "Poin" column is not squeezed to make room.
-		if !t.FullWidth {
-			fair := available / float64(cols)
-			fixed, flexible := 0.0, 0.0
-			for _, w := range widths {
-				if w <= fair {
-					fixed += w
-				} else {
-					flexible += w
-				}
+	switch {
+	case total > available:
+		// A table that does not fit shrinks only its wide columns: a column
+		// no wider than an equal share keeps its natural width, so a short
+		// "Poin" or "Rp 1.275.000" column is not squeezed to make room for
+		// a long name, full-width table or not.
+		fair := available / float64(cols)
+		fixed, flexible := 0.0, 0.0
+		for _, w := range widths {
+			if w <= fair {
+				fixed += w
+			} else {
+				flexible += w
 			}
-			for i, w := range widths {
-				if w > fair {
-					widths[i] = w * (available - fixed) / flexible
-				}
-			}
-			return widths
 		}
-		// A full-width table whose cells all fit an equal share (a
-		// signature block) gets equal columns; otherwise widths keep
-		// their proportions.
+		for i, w := range widths {
+			if w > fair {
+				widths[i] = w * (available - fixed) / flexible
+			}
+		}
+	case t.FullWidth && total > 0:
+		// A full-width table that fits grows to the printable width: equal
+		// columns when every cell fits an equal share (a signature block),
+		// otherwise the widths keep their proportions.
 		equal := true
 		for _, w := range widths {
 			if w > available/float64(cols) {
