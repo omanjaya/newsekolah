@@ -18,7 +18,7 @@ import {
 import { Camera, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { compressImage, formatFileSize } from "../../../lib/media/compress-image";
@@ -35,16 +35,30 @@ const CATEGORIES: LeaveCategory[] = ["sick", "religious_ceremony", "dispensation
 
 const EMPTY_RANGE: DateRange = { from: "", to: "" };
 
-/** A preview URL for the picked photo, released when the photo changes or the form closes. */
+/**
+ * A preview of the picked photo as a data: URL. A blob: object URL would be
+ * lighter, but the page's Content-Security-Policy allows images only from
+ * 'self', data: and https: (apps/web/middleware.ts), so the browser blocks
+ * a blob: thumbnail and shows a broken image. The photo is already
+ * compressed (compressImage), so reading it whole is cheap. A read that
+ * finishes after the photo changed is dropped.
+ */
 function usePreviewUrl(file: File | null): string | null {
-  const url = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
-  useEffect(
-    () => () => {
-      if (url) URL.revokeObjectURL(url);
-    },
-    [url],
-  );
-  return url;
+  const [preview, setPreview] = useState<{ file: File; url: string } | null>(null);
+  useEffect(() => {
+    if (!file) return;
+    let current = true;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (current && typeof reader.result === "string") setPreview({ file, url: reader.result });
+    };
+    reader.readAsDataURL(file);
+    return () => {
+      current = false;
+      reader.abort();
+    };
+  }, [file]);
+  return file && preview?.file === file ? preview.url : null;
 }
 
 export function SubmitForm({

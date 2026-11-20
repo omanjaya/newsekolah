@@ -14,6 +14,10 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { tenant: { timezone: "Asia/Makassar" } } }),
 }));
+vi.mock("../../../lib/media/compress-image", () => ({
+  compressImage: (file: File) => Promise.resolve({ file, wasCompressed: false }),
+  formatFileSize: (bytes: number) => `${bytes} B`,
+}));
 vi.mock("../api", () => ({
   LEAVE_EVIDENCE_MAX_LONG_EDGE: 1600,
   useSubmitLeaveRequestMutation: () => ({ mutateAsync: submit, isPending: false }),
@@ -50,6 +54,20 @@ beforeAll(() => {
 beforeEach(() => {
   submit.mockReset();
   submit.mockResolvedValue({ instance: { id: "inst-1" } });
+});
+
+describe("SubmitForm evidence preview", () => {
+  it("previews the photo as a data: URL, which the page's image policy allows", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<SubmitForm onDone={vi.fn()} />);
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]');
+    if (!input) throw new Error("no file input");
+
+    await user.upload(input, new File(["photo"], "bukti.png", { type: "image/png" }));
+
+    const preview = await screen.findByRole("img", { name: "form.evidencePreview" });
+    expect(preview.getAttribute("src")).toMatch(/^data:image\/png;base64,/);
+  });
 });
 
 describe("SubmitForm reason", () => {
