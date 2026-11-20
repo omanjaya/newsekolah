@@ -23078,7 +23078,7 @@ export interface operations {
                 /** @description Fulltext for 3+ characters, substring for fewer, plus a normalized ISBN prefix match */
                 search?: string;
                 material_type_id?: string;
-                /** @description Filters by the first digits of the DDC number, e.g. '800' */
+                /** @description Filters by DDC class. A three-digit class, division or section code covers its whole range ('800' matches 899.221, '890' matches 890-899); a shorter value is a prefix of the DDC number */
                 ddc_class?: string;
                 availability?: "available";
                 sort?: "title" | "newest";

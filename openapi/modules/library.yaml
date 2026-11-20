@@ -51,7 +51,7 @@ paths:
             name: ddc_class,
             in: query,
             schema: { type: string, maxLength: 3 },
-            description: "Filters by the first digits of the DDC number, e.g. '800'",
+            description: "Filters by DDC class. A three-digit class, division or section code covers its whole range ('800' matches 899.221, '890' matches 890-899); a shorter value is a prefix of the DDC number",
           }
         - { name: availability, in: query, schema: { type: string, enum: [available] } }
         - { name: sort, in: query, schema: { type: string, enum: [title, newest], default: title } }

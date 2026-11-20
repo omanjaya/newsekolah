@@ -21,6 +21,12 @@ const (
 	pdfLandscapeContentMM = 297 - 2*pdfMarginMM
 	pdfLogoHeightMM       = 16.0
 	pdfMinColWidthMM      = 14.0
+	// pdfSectionHeadingMM is the height a named section's heading takes,
+	// its 7 mm line plus the 1 mm gap above the table.
+	pdfSectionHeadingMM = 8.0
+	// pdfEmptyRowHeightMM is the height of writePDFEmptyRow's single-line
+	// row; pdfSectionStartHeight reserves the same amount for it.
+	pdfEmptyRowHeightMM = pdfCellLineHeightMM + 2*pdfCellPadMM
 	// pdfContentBottomMM is how far from the page's bottom edge table
 	// rows and the signature block must stop -- deliberately not
 	// pdf.GetMargins()'s own bottom value, since RenderPDF calls
@@ -301,11 +307,13 @@ func writePDFTitleScope(pdf *fpdf.Fpdf, title string, scope []ScopeLine) {
 func writePDFSection(pdf *fpdf.Fpdf, columns []Column, widths []float64, section Section, emptyLabel string) {
 	left, _, _, _ := pdf.GetMargins()
 
+	KeepTogether(pdf, pdfSectionStartHeight(pdf, columns, widths, section, emptyLabel))
+
 	if section.Name != "" {
 		pageW, _ := pdf.GetPageSize()
 		_, _, right, _ := pdf.GetMargins()
 		pdf.SetFont("Helvetica", "B", 12)
-		pdf.CellFormat(pageW-left-right, 7, section.Name, "", 1, "L", false, 0, "")
+		pdf.CellFormat(pageW-left-right, pdfSectionHeadingMM-1, section.Name, "", 1, "L", false, 0, "")
 		pdf.Ln(1)
 	}
 
@@ -338,6 +346,34 @@ func writePDFSection(pdf *fpdf.Fpdf, columns []Column, widths []float64, section
 	pdf.Ln(2)
 }
 
+// pdfSectionStartHeight is the room writePDFSection needs before its first
+// row is down: the heading, the header row and the first data, empty or
+// footer row. Checking it up front keeps the heading and the header from
+// being left at the foot of a page with every row on the next one.
+func pdfSectionStartHeight(pdf *fpdf.Fpdf, columns []Column, widths []float64, section Section, emptyLabel string) float64 {
+	height := 0.0
+	if section.Name != "" {
+		height += pdfSectionHeadingMM
+	}
+	if len(columns) == 0 {
+		return height
+	}
+	headerStyle := pdfRowStyle{bold: true, isHeader: true}
+	setRowFont(pdf, headerStyle)
+	height += pdfRowHeight(pdf, widths, rowTexts(columns, nil, true))
+	switch {
+	case len(section.Rows) > 0:
+		setRowFont(pdf, pdfRowStyle{})
+		height += pdfRowHeight(pdf, widths, rowTexts(columns, section.Rows[0], false))
+	case len(section.Footer) > 0:
+		setRowFont(pdf, pdfRowStyle{bold: true})
+		height += pdfRowHeight(pdf, widths, rowTexts(columns, section.Footer[0], false))
+	case emptyLabel != "":
+		height += pdfEmptyRowHeightMM
+	}
+	return height
+}
+
 // writePDFEmptyRow draws one bordered row spanning every column's
 // combined width, centered italic text -- "Tidak ada data" and
 // equivalents -- in place of a section that has nothing to show.
@@ -347,7 +383,7 @@ func writePDFEmptyRow(pdf *fpdf.Fpdf, left float64, widths []float64, label stri
 		total += w
 	}
 	pdf.SetFont("Helvetica", "I", 9)
-	height := pdfCellLineHeightMM + 2*pdfCellPadMM
+	height := pdfEmptyRowHeightMM
 	y := pdf.GetY()
 	pdf.SetDrawColor(pdfBorder[0], pdfBorder[1], pdfBorder[2])
 	pdf.Rect(left, y, total, height, "D")
