@@ -530,6 +530,9 @@ type Querier interface {
 	// cross-module read: users (identity) and enrollments/classes (academic),
 	// for the name and class printed on a warning letter.
 	DisciplineStudentSnapshot(ctx context.Context, arg DisciplineStudentSnapshotParams) (DisciplineStudentSnapshotRow, error)
+	// cross-module read: user_roles/roles (identity). Counseling treats the
+	// principal role as school leadership, alongside the "leadership" duty.
+	DisciplineUserHasRole(ctx context.Context, arg DisciplineUserHasRoleParams) (bool, error)
 	DisciplineUserName(ctx context.Context, arg DisciplineUserNameParams) (string, error)
 	EmailExists(ctx context.Context, arg EmailExistsParams) (bool, error)
 	EndMembership(ctx context.Context, arg EndMembershipParams) (ExtracurricularMembership, error)
@@ -1084,9 +1087,10 @@ type Querier interface {
 	// The counselor's own notes, optionally by student name/NIS (never note
 	// content: it is encrypted at rest).
 	ListCounselingsByCounselor(ctx context.Context, arg ListCounselingsByCounselorParams) ([]Counseling, error)
-	// Cross-student view for any counselor (duty "counselor"): every note the
-	// author chose to share with the whole BK team, optionally by topic and
-	// student name/NIS (never note content: it is encrypted at rest).
+	// Cross-student view of the notes their authors shared with one audience:
+	// 'bk_team' for any counselor (duty "counselor"), 'leadership' for school
+	// leadership. Optionally by topic and student name/NIS (never note
+	// content: it is encrypted at rest).
 	ListCounselingsByVisibility(ctx context.Context, arg ListCounselingsByVisibilityParams) ([]Counseling, error)
 	ListCounselingsForStudent(ctx context.Context, arg ListCounselingsForStudentParams) ([]Counseling, error)
 	// Every schedule occurrence whose period is currently running (start

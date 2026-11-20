@@ -75,8 +75,20 @@ func (s *Service) readerRole(ctx context.Context, tenantID, yearID, userID, auth
 	if role.IsLeadership, err = s.repo.HasActiveDuty(ctx, tenantID, yearID, userID, "leadership", uuid.NullUUID{}, today); err != nil {
 		return role, err
 	}
+	// School leadership is the leadership duty (wakasek) or the principal
+	// role (kepsek, who holds no duty): both read the notes a counselor
+	// shares with leadership (docs/08-security.md section 5).
+	if !role.IsLeadership {
+		if role.IsLeadership, err = s.repo.HasRole(ctx, tenantID, userID, principalRoleSlug); err != nil {
+			return role, err
+		}
+	}
 	return role, nil
 }
+
+// principalRoleSlug is identity's system role for the head of school
+// (authz.RoleSlugPrincipal).
+const principalRoleSlug = "principal"
 
 func (s *Service) seal(text string) ([]byte, error) {
 	if text == "" {
@@ -316,21 +328,53 @@ func (s *Service) ListBKTeamCounselings(ctx context.Context, tenantID, readerUse
 		if !isCounselor {
 			return domain.ErrCounselingForbidden
 		}
-		rows, err := s.repo.ListCounselingsByVisibility(ctx, tenantID, yearID, string(topic), SearchTerm(search), limit, max(offset, 0))
+		out, err = s.listByVisibility(ctx, tenantID, yearID, domain.VisibilityBKTeam, string(topic), search, limit, offset)
+		return err
+	})
+	return out, err
+}
+
+// ListLeadershipCounselings is the cross-student view for school
+// leadership (the leadership duty or the principal role): every note its
+// author shared with leadership. Counselors may read it too, as VisibleTo
+// lets them read each of those notes.
+func (s *Service) ListLeadershipCounselings(ctx context.Context, tenantID, readerUserID uuid.UUID, search string, limit, offset int) ([]domain.Counseling, error) {
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	var out []domain.Counseling
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		yearID, err := s.activeYear(ctx, tenantID)
 		if err != nil {
 			return err
 		}
-		out = make([]domain.Counseling, 0, len(rows))
-		for _, enc := range rows {
-			c, err := s.open(enc)
-			if err != nil {
-				return err
-			}
-			out = append(out, c)
+		role, err := s.readerRole(ctx, tenantID, yearID, readerUserID, uuid.Nil)
+		if err != nil {
+			return err
 		}
-		return nil
+		if !role.IsLeadership && !role.IsCounselor {
+			return domain.ErrCounselingForbidden
+		}
+		out, err = s.listByVisibility(ctx, tenantID, yearID, domain.VisibilityLeadership, "", search, limit, offset)
+		return err
 	})
 	return out, err
+}
+
+func (s *Service) listByVisibility(ctx context.Context, tenantID, yearID uuid.UUID, visibility domain.Visibility, topic, search string, limit, offset int) ([]domain.Counseling, error) {
+	rows, err := s.repo.ListCounselingsByVisibility(ctx, tenantID, yearID, visibility, topic, SearchTerm(search), limit, max(offset, 0))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.Counseling, 0, len(rows))
+	for _, enc := range rows {
+		c, err := s.open(enc)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, nil
 }
 
 func (s *Service) DeleteCounseling(ctx context.Context, tenantID, id, actorUserID uuid.UUID) error {

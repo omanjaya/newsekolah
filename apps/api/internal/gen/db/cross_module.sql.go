@@ -458,6 +458,29 @@ func (q *Queries) DisciplineStudentSnapshot(ctx context.Context, arg DisciplineS
 	return i, err
 }
 
+const disciplineUserHasRole = `-- name: DisciplineUserHasRole :one
+select exists (
+  select 1 from user_roles ur
+  join roles r on r.id = ur.role_id
+  where ur.tenant_id = $1 and ur.user_id = $2 and r.slug = $3
+)::bool as has_role
+`
+
+type DisciplineUserHasRoleParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	UserID   uuid.UUID `json:"user_id"`
+	Slug     string    `json:"slug"`
+}
+
+// cross-module read: user_roles/roles (identity). Counseling treats the
+// principal role as school leadership, alongside the "leadership" duty.
+func (q *Queries) DisciplineUserHasRole(ctx context.Context, arg DisciplineUserHasRoleParams) (bool, error) {
+	row := q.db.QueryRow(ctx, disciplineUserHasRole, arg.TenantID, arg.UserID, arg.Slug)
+	var has_role bool
+	err := row.Scan(&has_role)
+	return has_role, err
+}
+
 const disciplineUserName = `-- name: DisciplineUserName :one
 select name from users where tenant_id = $1 and id = $2
 `

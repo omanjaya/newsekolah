@@ -66,7 +66,7 @@ Ini bukan pelemahan isolasi tenant: ketiga endpoint tersebut sudah didesain publ
 ## 5. Data pribadi dan UU PDP
 
 - Klasifikasi data: publik (nama sekolah), internal (jadwal), rahasia (NIK, alamat, kontak orang tua), sangat rahasia (catatan konseling, kesehatan). Kolom sangat rahasia dienkripsi di aplikasi (AES-256-GCM, kunci per tenant di KMS atau file kunci terpisah), hanya modul discipline yang punya akses dekripsi.
-- Catatan konseling hanya bisa dibaca oleh BK yang menangani dan kepala sekolah bila diaktifkan; wali kelas melihat ringkasan tanpa isi.
+- Catatan konseling hanya bisa dibaca oleh BK yang menangani dan kepala sekolah bila diaktifkan; wali kelas melihat ringkasan tanpa isi. "Diaktifkan" berarti visibilitas catatan "Pimpinan": pimpinan (peran kepala sekolah atau tugas wakasek) membacanya lewat izin baca `view_counseling`, tanpa `manage_counseling` sehingga tidak bisa menulis catatan; catatan "Hanya saya" dan "Tim BK" tetap tertutup bagi mereka (`Counseling.VisibleTo`).
 - Minimisasi: tidak menyimpan data yang tidak dipakai fitur. Foto bukti izin dihapus otomatis setelah retensi (default 1 tahun ajaran + 1).
 - Log aplikasi tidak memuat PII (nama, NIK, token); hanya ID.
 - Persetujuan orang tua untuk akun siswa di bawah umur dicatat saat onboarding.

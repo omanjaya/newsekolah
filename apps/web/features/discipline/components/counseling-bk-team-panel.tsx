@@ -1,25 +1,15 @@
 "use client";
 
-import type { Locale } from "@newsekolah/i18n";
-import { formatDate } from "@newsekolah/i18n";
-import {
-  Avatar,
-  DataTable,
-  EmptyState,
-  domainIcons,
-  type DataTableFilterDef,
-} from "@newsekolah/ui";
-import type { ColumnDef } from "@tanstack/react-table";
-import { useLocale, useTranslations } from "next-intl";
+import { type DataTableFilterDef } from "@newsekolah/ui";
+import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo } from "react";
 
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
-import { useDirectoryNames } from "../../reference/directory-names";
-import { StudentLink } from "../../students/components/student-link";
-import { type Counseling, type CounselingTopic } from "../api";
+import { type CounselingTopic } from "../api";
 import { useBKTeamCounselingsQuery } from "../api-counseling-extras";
+
+import { CounselingSharedTable } from "./counseling-shared-table";
 
 /** Rows per page; the counseling API pages by offset and reports no total. */
 const PAGE_SIZE = 50;
@@ -28,13 +18,12 @@ const TOPIC_VALUES = ["", ...TOPICS] as const;
 
 /**
  * Notes shared with the whole BK team (visibility "bk_team"), for a
- * counselor to see what colleagues are handling. The API further requires
- * the caller to be a duty counselor; a caller who is not sees an empty
- * list rather than an error, so the empty state stays honest either way.
+ * counselor to see what colleagues are handling. The API answers only a
+ * duty counselor (403 COUNSELING_FORBIDDEN for anyone else), so the
+ * counseling page mounts this panel for duty counselors alone.
  */
 export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void }): ReactElement {
   const t = useTranslations("app.discipline.counseling");
-  const locale = useLocale() as Locale;
   const [topic, setTopic] = useUrlState<(typeof TOPIC_VALUES)[number]>("topic", TOPIC_VALUES, "");
 
   const [search, setSearch] = useUrlState<string>("team_q", () => true, "");
@@ -44,9 +33,6 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
     offset: paging.offset,
     search,
   });
-
-  const items = data?.data ?? [];
-  const studentMap = useDirectoryNames(items.map((item) => item.student_user_id));
 
   const filters: DataTableFilterDef[] = [
     {
@@ -64,87 +50,20 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
     },
   ];
 
-  const columns = useMemo<ColumnDef<Counseling>[]>(
-    () => [
-      { accessorKey: "title", header: t("columns.title"), enableSorting: false },
-      {
-        id: "student",
-        header: t("columns.student"),
-        enableSorting: false,
-        cell: ({ row }) => {
-          const student = studentMap.get(row.original.student_user_id);
-          return student ? (
-            <div className="flex min-w-0 items-center gap-3">
-              <Avatar size={32} name={student.name} />
-              <span className="truncate">
-                <StudentLink studentId={student.id} tab="counseling">
-                  {student.name}
-                </StudentLink>
-              </span>
-            </div>
-          ) : (
-            t("unknownStudent")
-          );
-        },
-      },
-      {
-        id: "date",
-        header: t("columns.date"),
-        enableSorting: false,
-        cell: ({ row }) => formatDate(row.original.session_at, { locale }),
-      },
-      {
-        id: "topic",
-        header: t("columns.topic"),
-        enableSorting: false,
-        cell: ({ row }) => t(`form.topicOptions.${row.original.topic}`),
-      },
-    ],
-    [t, locale, studentMap],
-  );
-
   return (
-    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex flex-col md:min-h-0 md:flex-1">
-        <DataTable
-          stateKey="features/discipline/components/counseling-bk-team-panel:1"
-          mode="cursor"
-          data={items}
-          columns={columns}
-          rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: PAGE_SIZE }}
-          onPaginationChange={() => undefined}
-          cursorPagination={{
-            hasPrevious: paging.hasPrevious,
-            hasNext: paging.hasNextFor(items.length),
-            onPrevious: paging.goPrevious,
-            onNext: paging.goNext,
-            page: paging.page,
-            pageSize: paging.limit,
-          }}
-          error={error}
-          onRetry={() => void refetch()}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter={search}
-          onGlobalFilterChange={paging.resetting(setSearch)}
-          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
-          filters={filters}
-          isLoading={isLoading}
-          getRowId={(item) => item.id}
-          onRowActivate={(item) => {
-            onOpen(item.id);
-          }}
-          fillHeight
-          emptyState={
-            <EmptyState
-              icon={<domainIcons.users aria-hidden="true" />}
-              title={t("bkTeam.emptyTitle")}
-              description={t("bkTeam.emptyBody")}
-            />
-          }
-        />
-      </div>
-    </div>
+    <CounselingSharedTable
+      stateKey="features/discipline/components/counseling-bk-team-panel:1"
+      items={data?.data ?? []}
+      isLoading={isLoading}
+      error={error}
+      onRetry={() => void refetch()}
+      paging={paging}
+      search={search}
+      onSearchChange={setSearch}
+      filters={filters}
+      emptyTitle={t("bkTeam.emptyTitle")}
+      emptyBody={t("bkTeam.emptyBody")}
+      onOpen={onOpen}
+    />
   );
 }

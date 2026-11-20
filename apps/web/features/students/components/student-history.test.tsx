@@ -5,7 +5,12 @@ import { describe, expect, it, vi } from "vitest";
 import studentProfile from "../../../messages/features/studentProfile.id.json";
 
 vi.mock("../../../lib/modules/use-module-enabled", () => ({ useModuleEnabled: () => true }));
-vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => true }));
+vi.mock("../../../lib/session/session-provider", () => ({
+  useCan: () => true,
+  useSession: () => ({
+    me: { permissions: ["view_discipline", "manage_counseling"], roles: [], duties: [] },
+  }),
+}));
 vi.mock("../../discipline/api", () => ({
   useStudentDisciplineQuery: () => ({
     isLoading: false,

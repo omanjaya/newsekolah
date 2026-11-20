@@ -41,6 +41,7 @@ import { useStudentRiskQuery } from "../../analytics/api";
 import { StudentRiskPanel } from "../../analytics/components/student-risk-panel";
 import { useStudentDisciplineQuery } from "../../discipline/api";
 import { useStudentCounselingsQuery } from "../../discipline/api-counseling-extras";
+import { useCounselingAccess } from "../../discipline/lib/counseling-access";
 import { useMentorStudentSnapshotQuery } from "../../mentoring/api";
 import {
   SnapshotAttendanceSection,
@@ -71,7 +72,7 @@ export function StudentOverviewTab({ studentId }: { studentId: string }): ReactE
   const risk = useStudentRiskQuery(studentId, canRisk);
   const disciplineOn = useModuleEnabled("discipline");
   const canDiscipline = useCan("view_discipline");
-  const canCounsel = useCan("manage_counseling");
+  const canCounsel = useCounselingAccess().canRead;
   const hasHistory = (canDiscipline || canCounsel) && disciplineOn;
 
   return (
@@ -293,7 +294,7 @@ export function StudentHistory({ studentId }: { studentId: string }): ReactEleme
   const format = useFormatter();
   const disciplineOn = useModuleEnabled("discipline");
   const canDiscipline = useCan("view_discipline") && disciplineOn;
-  const canCounsel = useCan("manage_counseling") && disciplineOn;
+  const canCounsel = useCounselingAccess().canRead && disciplineOn;
   const discipline = useStudentDisciplineQuery(studentId, canDiscipline);
   const counselings = useStudentCounselingsQuery(studentId, canCounsel);
 

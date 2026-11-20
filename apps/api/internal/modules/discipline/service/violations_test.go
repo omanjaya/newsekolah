@@ -162,7 +162,7 @@ func (f *fakeRecordRepo) ListCounselingsByCounselor(context.Context, uuid.UUID, 
 	f.unimplemented()
 	return nil, nil
 }
-func (f *fakeRecordRepo) ListCounselingsByVisibility(context.Context, uuid.UUID, uuid.UUID, string, string, int, int) ([]EncryptedCounseling, error) {
+func (f *fakeRecordRepo) ListCounselingsByVisibility(context.Context, uuid.UUID, uuid.UUID, domain.Visibility, string, string, int, int) ([]EncryptedCounseling, error) {
 	f.unimplemented()
 	return nil, nil
 }
@@ -195,6 +195,10 @@ func (f *fakeRecordRepo) StudentSnapshot(context.Context, uuid.UUID, uuid.UUID, 
 	return StudentSnapshot{}, nil
 }
 func (f *fakeRecordRepo) HasActiveDuty(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string, uuid.NullUUID, time.Time) (bool, error) {
+	f.unimplemented()
+	return false, nil
+}
+func (f *fakeRecordRepo) HasRole(context.Context, uuid.UUID, uuid.UUID, string) (bool, error) {
 	f.unimplemented()
 	return false, nil
 }

@@ -449,12 +449,13 @@ func (r *Repository) ListCounselingsByCounselor(ctx context.Context, tenantID, y
 	return toCounselings(rows), nil
 }
 
-func (r *Repository) ListCounselingsByVisibility(ctx context.Context, tenantID, yearID uuid.UUID, topic, search string, limit, offset int) ([]service.EncryptedCounseling, error) {
+func (r *Repository) ListCounselingsByVisibility(ctx context.Context, tenantID, yearID uuid.UUID, visibility domain.Visibility, topic, search string, limit, offset int) ([]service.EncryptedCounseling, error) {
 	rows, err := r.queries(ctx).ListCounselingsByVisibility(ctx, db.ListCounselingsByVisibilityParams{
-		TenantID: tenantID, AcademicYearID: yearID, Limit: int32(limit), Offset: int32(offset), Topic: pdatabase.Text(topic), Search: pdatabase.Text(search), //nolint:gosec // clamped
+		TenantID: tenantID, AcademicYearID: yearID, Visibility: string(visibility),
+		Limit: int32(limit), Offset: int32(offset), Topic: pdatabase.Text(topic), Search: pdatabase.Text(search), //nolint:gosec // clamped
 	})
 	if err != nil {
-		return nil, fmt.Errorf("list bk team counselings: %w", err)
+		return nil, fmt.Errorf("list %s counselings: %w", visibility, err)
 	}
 	return toCounselings(rows), nil
 }
@@ -561,6 +562,10 @@ func (r *Repository) HasActiveDuty(ctx context.Context, tenantID, yearID, userID
 	return r.queries(ctx).DisciplineHasActiveDuty(ctx, db.DisciplineHasActiveDutyParams{
 		TenantID: tenantID, AcademicYearID: yearID, UserID: userID, Slug: slug, ClassID: pdatabase.NullUUID(classID), Today: pdatabase.Date(today),
 	})
+}
+
+func (r *Repository) HasRole(ctx context.Context, tenantID, userID uuid.UUID, slug string) (bool, error) {
+	return r.queries(ctx).DisciplineUserHasRole(ctx, db.DisciplineUserHasRoleParams{TenantID: tenantID, UserID: userID, Slug: slug})
 }
 
 func (r *Repository) GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error) {

@@ -10,6 +10,7 @@ import { WorkspaceNav } from "../../../components/workspace-nav";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { registryLabelKey } from "../../../lib/navigation-labels";
 import { useCan } from "../../../lib/session/session-provider";
+import { useCounselingAccess } from "../../discipline/lib/counseling-access";
 
 /**
  * Student Activities workspace: clubs, events, achievements and mentoring
@@ -107,7 +108,7 @@ export function CounselingWorkspaceNav(): ReactElement {
   const t = useTranslations("app.serviceWorkspace");
   const label = useTranslations();
   const disciplineOn = useModuleEnabled("discipline");
-  const canCounsel = useCan("manage_counseling") && disciplineOn;
+  const canCounsel = useCounselingAccess().canRead && disciplineOn;
   const canMonitor = useCan("view_early_warning");
   return (
     <WorkspaceNav

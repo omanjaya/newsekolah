@@ -2479,6 +2479,10 @@
           "label": "Lihat nilai anak",
           "description": "Lihat nilai anak"
         },
+        "view_counseling": {
+          "label": "Baca catatan konseling",
+          "description": "Membaca catatan konseling yang dibagikan ke pimpinan sekolah"
+        },
         "view_dashboard": {
           "label": "Lihat beranda",
           "description": "Membuka halaman beranda"

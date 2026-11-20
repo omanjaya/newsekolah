@@ -33,6 +33,15 @@ select exists (
     and (dt.scope_kind = 'school' or (sqlc.narg(class_id)::uuid is not null and da.scope_class_id = sqlc.narg(class_id)::uuid))
 )::bool as has_duty;
 
+-- name: DisciplineUserHasRole :one
+-- cross-module read: user_roles/roles (identity). Counseling treats the
+-- principal role as school leadership, alongside the "leadership" duty.
+select exists (
+  select 1 from user_roles ur
+  join roles r on r.id = ur.role_id
+  where ur.tenant_id = $1 and ur.user_id = $2 and r.slug = $3
+)::bool as has_role;
+
 -- name: DisciplineGetTenantTimezone :one
 -- Mirrors attendance's GetTenantTimezoneForAttendance / permits'
 -- GetTenantTimezoneForPermits: discipline must resolve HasActiveDuty's

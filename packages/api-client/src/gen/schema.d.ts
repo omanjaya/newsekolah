@@ -2306,6 +2306,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/discipline/counselings/leadership": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Notes any author shared with school leadership (requires the leadership duty, the principal role or duty counselor) */
+        get: operations["listLeadershipCounselings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/discipline/counselings/{counselingId}/report": {
         parameters: {
             query?: never;
@@ -17166,6 +17183,35 @@ export interface operations {
         parameters: {
             query?: {
                 topic?: components["schemas"]["CounselingTopic"];
+                /** @description Student name or NIS; ignored under 2 characters */
+                search?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Notes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Counseling"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listLeadershipCounselings: {
+        parameters: {
+            query?: {
                 /** @description Student name or NIS; ignored under 2 characters */
                 search?: string;
                 limit?: number;

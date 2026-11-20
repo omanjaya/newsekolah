@@ -31,6 +31,7 @@ import {
   useIssueWarningLetterMutation,
   useStudentDisciplineQuery,
 } from "../api";
+import { useCounselingAccess } from "../lib/counseling-access";
 
 import { PointsMeter, nextLevel } from "./points-meter";
 import { StudentCounselingHistory } from "./student-counseling-history";
@@ -59,7 +60,7 @@ export function StudentDisciplinePanel({
   const { me } = useSession();
   const timeZone = me?.tenant.timezone;
   const canIssue = useCan("issue_warning_letters");
-  const canSeeCounseling = useCan("manage_counseling");
+  const canSeeCounseling = useCounselingAccess().canRead;
   const canRecordViolations = useCan("record_violations");
   const [viewingRecord, setViewingRecord] = useState<ViolationRecord | null>(null);
 

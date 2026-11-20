@@ -144,26 +144,14 @@ func RoleDefaults() []RoleDefault {
 			PermViewBilling,      // billing reports only -- never generate_bills/record_payments/void_payments
 
 			// Discipline: view_discipline covers violation records and
-			// warning letters (all read endpoints in
-			// openapi/modules/discipline.yaml use only this permission) --
-			// visible, not confidential. manage_counseling is deliberately
-			// EXCLUDED: it is the single permission gating every
-			// counseling-note route, list/read AND create/update/delete
-			// alike (discipline.yaml lines ~596-836). docs/08-security.md
-			// section 5 says a principal may read a counseling note "bila
-			// diaktifkan" (when its visibility is set to "leadership") --
-			// GetCounseling/ListCounselingsForStudent already enforce that
-			// visibility server-side (service/counseling.go's VisibleTo) --
-			// but granting manage_counseling would also let the principal
-			// call CreateCounseling and author a note as if they were the
-			// assigned counselor, which is reserved to the counselor alone.
-			// The catalog has no separate read-only counseling permission
-			// to grant instead, so the principal cannot open individual
-			// counseling notes through the API today; this is a known gap,
-			// not a decision to leave counseling opaque to leadership (see
-			// the report for the suggested follow-up: split
-			// manage_counseling into view_counseling/manage_counseling).
-			PermViewDiscipline,
+			// warning letters -- visible, not confidential. Counseling notes
+			// are read through view_counseling, the read-only half of
+			// manage_counseling: docs/08-security.md section 5 lets a
+			// principal read a note its counselor shared with leadership,
+			// and the service's VisibleTo keeps every other note hidden.
+			// Never manage_counseling, which would let the principal author
+			// notes as if they were the assigned counselor.
+			PermViewDiscipline, PermViewCounseling,
 
 			// Mentoring (guru wali): view_mentoring covers group rosters and
 			// the student snapshot, not meeting notes. manage_mentoring is

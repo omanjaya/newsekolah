@@ -2479,6 +2479,10 @@
           "label": "View child's grades",
           "description": "See a linked child's grades"
         },
+        "view_counseling": {
+          "label": "Read counseling notes",
+          "description": "Read counseling notes shared with school leadership"
+        },
         "view_dashboard": {
           "label": "View dashboard",
           "description": "Open the dashboard"

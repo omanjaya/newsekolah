@@ -237,7 +237,8 @@
     "add": "Catat konseling",
     "tabs": {
       "mine": "Catatan saya",
-      "bkTeam": "Tim BK"
+      "bkTeam": "Tim BK",
+      "leadership": "Pimpinan"
     },
     "columns": {
       "title": "Judul",
@@ -250,6 +251,10 @@
     "emptyTitle": "Belum ada catatan konseling",
     "emptyBody": "Catatan konseling Anda akan muncul di sini.",
     "unknownStudent": "Siswa tidak diketahui",
+    "leadership": {
+      "emptyTitle": "Belum ada catatan yang dibagikan ke pimpinan",
+      "emptyBody": "Catatan yang ditandai konselor sebagai terlihat oleh pimpinan sekolah muncul di sini."
+    },
     "bkTeam": {
       "topicFilter": "Topik",
       "topicAll": "Semua topik",

@@ -17,6 +17,8 @@ const keys = {
   counselingAttachments: (id: string) => ["discipline", "counselings", "attachments", id] as const,
   bkTeamCounselings: (topic: string, page: ListPage) =>
     ["discipline", "counselings", "bk-team", topic, page] as const,
+  leadershipCounselings: (page: ListPage) =>
+    ["discipline", "counselings", "leadership", page] as const,
 };
 
 function useInvalidateDiscipline() {
@@ -26,9 +28,10 @@ function useInvalidateDiscipline() {
 
 // Counseling notes (counselor's own).
 
-export function useMyCounselingsQuery(page: ListPage) {
+export function useMyCounselingsQuery(page: ListPage, enabled = true) {
   const client = useApiClient();
   return useQuery({
+    enabled,
     queryKey: keys.myCounselings(page),
     queryFn: () =>
       client.GET("/v1/discipline/counselings", {
@@ -119,6 +122,20 @@ export function useBKTeamCounselingsQuery(topic: CounselingTopic | "", page: Lis
             limit: page.limit,
             offset: page.offset,
           },
+        },
+      }),
+  });
+}
+
+/** Notes any counselor shared with school leadership ("Pimpinan"). */
+export function useLeadershipCounselingsQuery(page: ListPage) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.leadershipCounselings(page),
+    queryFn: () =>
+      client.GET("/v1/discipline/counselings/leadership", {
+        params: {
+          query: { search: searchParam(page), limit: page.limit, offset: page.offset },
         },
       }),
   });

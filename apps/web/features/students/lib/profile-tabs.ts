@@ -31,7 +31,7 @@ export const STUDENT_PROFILE_TAB_PERMISSIONS: Record<StudentProfileTab, readonly
   // GET /v1/discipline/students/{id}
   discipline: ["view_discipline"],
   // GET /v1/discipline/students/{id}/counselings
-  counseling: ["manage_counseling"],
+  counseling: ["manage_counseling", "view_counseling"],
   // GET /v1/library/members/{id}
   library: ["manage_library_members"],
   // GET /v1/users/{id} (father, mother, guardian)
@@ -48,6 +48,7 @@ export const STUDENT_PROFILE_PERMISSION_MODULES: Readonly<Record<string, Feature
   review_leave_requests: "permits",
   view_discipline: "discipline",
   manage_counseling: "discipline",
+  view_counseling: "discipline",
   manage_library_members: "library",
 };
 

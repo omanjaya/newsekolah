@@ -428,6 +428,14 @@ func (h *DisciplineHandler) ListBKTeamCounselings(ctx context.Context, request a
 	return api.ListBKTeamCounselings200JSONResponse{Data: toAPICounselings(notes)}, nil
 }
 
+func (h *DisciplineHandler) ListLeadershipCounselings(ctx context.Context, request api.ListLeadershipCounselingsRequestObject) (api.ListLeadershipCounselingsResponseObject, error) {
+	notes, err := h.service.ListLeadershipCounselings(ctx, tenantID(ctx), userID(ctx), strOr(request.Params.Search), intOr(request.Params.Limit, 50), intOr(request.Params.Offset, 0))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.ListLeadershipCounselings200JSONResponse{Data: toAPICounselings(notes)}, nil
+}
+
 func (h *DisciplineHandler) CreateCounseling(ctx context.Context, request api.CreateCounselingRequestObject) (api.CreateCounselingResponseObject, error) {
 	note, err := h.service.CreateCounseling(ctx, tenantID(ctx), userID(ctx), counselingInput(request.Body))
 	if err != nil {

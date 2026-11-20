@@ -212,6 +212,7 @@ export const navigation: NavItem[] = [
       "review_leave_requests",
       "view_discipline",
       "manage_counseling",
+      "view_counseling",
       "manage_library_members",
       "view_users",
     ],
@@ -379,7 +380,9 @@ export const navigation: NavItem[] = [
     // Not the violation shield: counseling sits next to discipline in the
     // tab bar and the menu, and two shields read as one destination.
     icon: HeartHandshake,
-    permission: "manage_counseling",
+    // Counselors write notes; the principal and the leadership duty read
+    // the ones shared with them (view_counseling).
+    anyPermission: ["manage_counseling", "view_counseling"],
     group: GROUP.students,
   },
   {
@@ -391,6 +394,19 @@ export const navigation: NavItem[] = [
     // Reached from a student's name, never browsed. It only carries the
     // module, so the detail route is refused while discipline is off; the
     // page keeps its own permission checks.
+    sidebarPlacement: "hidden",
+    routeOnly: true,
+    group: GROUP.students,
+  },
+  {
+    key: "warning-letter-legacy",
+    labelKey: "app.discipline.warningLetters.title",
+    href: "/discipline/letters",
+    module: "discipline",
+    icon: MailWarning,
+    // Old warning-letter notification links; the page only redirects each
+    // reader to their own letters, so it carries the module and no
+    // permission (students, who hold none, land here too).
     sidebarPlacement: "hidden",
     routeOnly: true,
     group: GROUP.students,

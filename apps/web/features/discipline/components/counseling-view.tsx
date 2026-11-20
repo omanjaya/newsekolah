@@ -30,15 +30,16 @@ import { AppPage } from "../../../components/app-page";
 import { useOffsetPage } from "../../../lib/hooks/use-offset-page";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { StudentLink } from "../../students/components/student-link";
 import { type Counseling } from "../api";
 import { useDeleteCounselingMutation, useMyCounselingsQuery } from "../api-counseling-extras";
+import { counselingTabs, useCounselingAccess } from "../lib/counseling-access";
 
 import { CounselingBKTeamPanel } from "./counseling-bk-team-panel";
 import { CounselingDetailDialog } from "./counseling-detail-dialog";
 import { CounselingForm } from "./counseling-form";
+import { CounselingLeadershipPanel } from "./counseling-leadership-panel";
 
 /** Rows per page; the counseling API pages by offset and reports no total. */
 const PAGE_SIZE = 50;
@@ -48,17 +49,20 @@ export function CounselingView(): ReactElement {
   const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const canManage = useCan("manage_counseling");
+  const access = useCounselingAccess();
+  const canManage = access.canWrite;
+  // Only the lists this reader can actually open: "Tim BK" answers duty
+  // counselors alone, "Pimpinan" the leadership duty and the principal.
+  const tabs = counselingTabs(access);
   const searchParams = useSearchParams();
   const initialStudentId = searchParams.get("studentId") ?? undefined;
 
   const [search, setSearch] = useUrlState<string>("mine_q", () => true, "");
   const paging = useOffsetPage(PAGE_SIZE, "mine_page");
-  const { data, isLoading, error, refetch } = useMyCounselingsQuery({
-    limit: paging.limit,
-    offset: paging.offset,
-    search,
-  });
+  const { data, isLoading, error, refetch } = useMyCounselingsQuery(
+    { limit: paging.limit, offset: paging.offset, search },
+    canManage,
+  );
   const remove = useDeleteCounselingMutation();
 
   const [editing, setEditing] = useState<Counseling | "new" | null>(() =>
@@ -66,7 +70,7 @@ export function CounselingView(): ReactElement {
   );
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Counseling | null>(null);
-  const [tab, setTab] = useUrlState<string>("tab", ["mine", "bkTeam"], "mine");
+  const [tab, setTab] = useUrlState<string>("tab", tabs, tabs[0] ?? "mine");
 
   const items = data?.data ?? [];
   const studentMap = useDirectoryNames(items.map((item) => item.student_user_id));
@@ -140,11 +144,19 @@ export function CounselingView(): ReactElement {
       }
     >
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col md:min-h-0 md:flex-1">
-        <TabsList>
-          <TabsTrigger value="mine">{t("tabs.mine")}</TabsTrigger>
-          <TabsTrigger value="bkTeam">{t("tabs.bkTeam")}</TabsTrigger>
-        </TabsList>
-        <TabsContent value="mine" className="pt-4 md:min-h-0 md:flex-1">
+        {tabs.length > 1 && (
+          <TabsList>
+            {tabs.map((value) => (
+              <TabsTrigger key={value} value={value}>
+                {t(`tabs.${value}`)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        )}
+        <TabsContent
+          value="mine"
+          className={tabs.length > 1 ? "pt-4 md:min-h-0 md:flex-1" : "md:min-h-0 md:flex-1"}
+        >
           <div className="flex flex-col md:h-full md:min-h-0">
             <DataTable
               stateKey="features/discipline/components/counseling-view:1"
@@ -207,13 +219,27 @@ export function CounselingView(): ReactElement {
             />
           </div>
         </TabsContent>
-        <TabsContent value="bkTeam" className="pt-4 md:min-h-0 md:flex-1">
-          <CounselingBKTeamPanel
-            onOpen={(id) => {
-              setViewingId(id);
-            }}
-          />
-        </TabsContent>
+        {tabs.includes("bkTeam") && (
+          <TabsContent value="bkTeam" className="pt-4 md:min-h-0 md:flex-1">
+            <CounselingBKTeamPanel
+              onOpen={(id) => {
+                setViewingId(id);
+              }}
+            />
+          </TabsContent>
+        )}
+        {tabs.includes("leadership") && (
+          <TabsContent
+            value="leadership"
+            className={tabs.length > 1 ? "pt-4 md:min-h-0 md:flex-1" : "md:min-h-0 md:flex-1"}
+          >
+            <CounselingLeadershipPanel
+              onOpen={(id) => {
+                setViewingId(id);
+              }}
+            />
+          </TabsContent>
+        )}
       </Tabs>
 
       <Dialog

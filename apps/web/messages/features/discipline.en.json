@@ -237,7 +237,8 @@
     "add": "Log counseling",
     "tabs": {
       "mine": "My notes",
-      "bkTeam": "BK team"
+      "bkTeam": "BK team",
+      "leadership": "Leadership"
     },
     "columns": {
       "title": "Title",
@@ -250,6 +251,10 @@
     "emptyTitle": "No counseling notes yet",
     "emptyBody": "Your counseling notes will appear here.",
     "unknownStudent": "Unknown student",
+    "leadership": {
+      "emptyTitle": "No notes shared with leadership yet",
+      "emptyBody": "Notes a counselor marks as visible to school leadership appear here."
+    },
     "bkTeam": {
       "topicFilter": "Topic",
       "topicAll": "Every topic",
