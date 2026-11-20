@@ -297,20 +297,20 @@ func renderMonthlyReportPDF(report MonthlyReport, letterhead *reportdoc.Letterhe
 	// Every row wraps its cells inside their columns (a long title used to
 	// run over the author and count columns and off the page), and a row
 	// that does not fit starts a new page under a repeated header.
-	writeTable := func(title string, headers []string, widths []float64, rows [][]string) {
+	writeTable := func(table monthlyReportTable, rows [][]string) {
 		pdf.SetFont("Helvetica", "B", 11)
-		pdf.CellFormat(0, 7, title, "", 1, "L", false, 0, "")
+		pdf.CellFormat(0, 7, table.title, "", 1, "L", false, 0, "")
 		drawHeader := func() {
-			pdf.SetFont("Helvetica", "B", 8)
-			reportdoc.DrawWrappedRow(pdf, widths, headers, nil)
+			pdf.SetFont(monthlyReportHeaderFont())
+			reportdoc.DrawWrappedRow(pdf, table.widths, table.headers, nil)
 			pdf.SetFont("Helvetica", "", 8)
 		}
 		drawHeader()
 		if len(rows) == 0 {
-			reportdoc.DrawWrappedRow(pdf, []float64{sumWidths(widths)}, []string{"Tidak ada data."}, drawHeader)
+			reportdoc.DrawWrappedRow(pdf, []float64{sumWidths(table.widths)}, []string{"Tidak ada data."}, drawHeader)
 		}
 		for _, row := range rows {
-			reportdoc.DrawWrappedRow(pdf, widths, row, drawHeader)
+			reportdoc.DrawWrappedRow(pdf, table.widths, row, drawHeader)
 		}
 		pdf.Ln(3)
 	}
@@ -319,19 +319,19 @@ func renderMonthlyReportPDF(report MonthlyReport, letterhead *reportdoc.Letterhe
 	for i, t := range report.TopTitles {
 		titleRows[i] = []string{strconv.Itoa(i + 1), t.Title.Title.Title, t.Title.Author, strconv.Itoa(t.LoanCount)}
 	}
-	writeTable("Judul Terpopuler", []string{"No", "Judul", "Pengarang", "Dipinjam"}, []float64{10, 90, 60, 14}, titleRows)
+	writeTable(monthlyTopTitlesTable, titleRows)
 
 	borrowerRows := make([][]string, len(report.TopBorrowers))
 	for i, b := range report.TopBorrowers {
 		borrowerRows[i] = []string{strconv.Itoa(i + 1), b.MemberName, b.ClassName, strconv.Itoa(b.LoanCount)}
 	}
-	writeTable("Peminjam Teraktif", []string{"No", "Nama", "Kelas", "Dipinjam"}, []float64{10, 90, 46, 28}, borrowerRows)
+	writeTable(monthlyTopBorrowersTable, borrowerRows)
 
 	classRows := make([][]string, len(report.VisitsPerClass))
 	for i, c := range report.VisitsPerClass {
 		classRows[i] = []string{c.ClassName, strconv.Itoa(c.Count)}
 	}
-	writeTable("Kunjungan per Kelas", []string{"Kelas", "Jumlah Kunjungan"}, []float64{90, 40}, classRows)
+	writeTable(monthlyVisitsPerClassTable, classRows)
 
 	pdf.Ln(10)
 	pdf.SetFont("Helvetica", "", 9)
@@ -359,6 +359,46 @@ func renderMonthlyReportPDF(report MonthlyReport, letterhead *reportdoc.Letterhe
 		return nil, fmt.Errorf("render monthly report pdf: %w", err)
 	}
 	return buf.Bytes(), nil
+}
+
+// monthlyReportTable is one table of the monthly report: its heading, its
+// column headers and their widths in millimetres. The widths of a table add
+// up to at most the page's content width, and each column is wide enough
+// for its header on one line.
+type monthlyReportTable struct {
+	title   string
+	headers []string
+	widths  []float64
+}
+
+// monthlyReportContentWidthMM is the A4 portrait page less the report's
+// 18 mm side margins.
+const monthlyReportContentWidthMM = 210 - 2*18
+
+var (
+	// The count column matches "Peminjam Teraktif" (28 mm): at 14 mm the
+	// wrapped header cell broke "Dipinjam" mid-word.
+	monthlyTopTitlesTable = monthlyReportTable{
+		title:   "Judul Terpopuler",
+		headers: []string{"No", "Judul", "Pengarang", "Dipinjam"},
+		widths:  []float64{10, 82, 54, 28},
+	}
+	monthlyTopBorrowersTable = monthlyReportTable{
+		title:   "Peminjam Teraktif",
+		headers: []string{"No", "Nama", "Kelas", "Dipinjam"},
+		widths:  []float64{10, 90, 46, 28},
+	}
+	monthlyVisitsPerClassTable = monthlyReportTable{
+		title:   "Kunjungan per Kelas",
+		headers: []string{"Kelas", "Jumlah Kunjungan"},
+		widths:  []float64{90, 40},
+	}
+	monthlyReportTables = []monthlyReportTable{monthlyTopTitlesTable, monthlyTopBorrowersTable, monthlyVisitsPerClassTable}
+)
+
+// monthlyReportHeaderFont is the font the tables' header rows are drawn in.
+func monthlyReportHeaderFont() (family, style string, size float64) {
+	return "Helvetica", "B", 8
 }
 
 func sumWidths(widths []float64) float64 {

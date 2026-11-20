@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-pdf/fpdf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -102,4 +103,21 @@ func TestRenderMonthlyReportPDFSignatureWithNoSignersUsesFallbackBlock(t *testin
 	pdf, err := renderMonthlyReportPDF(sampleMonthlyReport(), nil, signature)
 	require.NoError(t, err)
 	require.NotEmpty(t, pdf)
+}
+
+// Every header label fits its column on one line: a wrapped header cell
+// used to break "Dipinjam" mid-word as "Dipinj" / "am" in the 14 mm count
+// column of "Judul Terpopuler". Each table also stays inside the page.
+func TestMonthlyReportTableHeadersFitTheirColumns(t *testing.T) {
+	pdf := fpdf.New("P", "mm", "A4", "")
+	pdf.AddPage()
+	pdf.SetFont(monthlyReportHeaderFont())
+	for _, table := range monthlyReportTables {
+		require.Len(t, table.widths, len(table.headers), table.title)
+		assert.LessOrEqual(t, sumWidths(table.widths), float64(monthlyReportContentWidthMM), table.title)
+		for i, header := range table.headers {
+			assert.Equal(t, 1, reportdoc.WrappedCellLines(pdf, table.widths[i], header),
+				"%s: header %q wraps in its %.0f mm column", table.title, header, table.widths[i])
+		}
+	}
 }
