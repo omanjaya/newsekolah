@@ -76,6 +76,28 @@ export function formatShortDate(
 }
 
 /**
+ * A day named with its weekday, for a sentence that points at another day
+ * than today: "Sabtu, 21 Nov" (id) / "Saturday 21 Nov" (en), the year only
+ * outside the current one, like `formatShortDate`.
+ */
+export function formatWeekdayDate(
+  value: Date | string | number,
+  options: FormatOptions & { now?: Date },
+): string {
+  const { date, timeZone } = placed(value, options.timeZone);
+  const currentYear = yearIn(options.now ?? new Date(), options.timeZone);
+  return new Intl.DateTimeFormat(SHORT_DATE_LOCALE[options.locale], {
+    weekday: "long",
+    day: "numeric",
+    month: "short",
+    year: yearIn(date, timeZone) === currentYear ? undefined : "numeric",
+    timeZone,
+  })
+    .format(date)
+    .replace(/\.$/, "");
+}
+
+/**
  * A span of days said once, joined by an en dash: "13 Jul 2026 – 18 Jun
  * 2027", "13–20 Jul 2026", or "13 Jul 2026" when both ends are the same
  * day (Intl's own range format, so each locale joins them its own way).

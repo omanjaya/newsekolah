@@ -156,7 +156,12 @@ export function SessionEditor({
   // window locks the editor too (an older API sends no editable_until).
   const windowEnded =
     session.editable_until !== undefined && now.getTime() > Date.parse(session.editable_until);
-  const windowClosed = windowEnded || closedCode !== null;
+  // A lesson handed to an accepted substitute is theirs to fill: its own
+  // teacher may look at it, and saves it only with the correction rights a
+  // homeroom teacher has (the API then sends an editable_until).
+  const handedOver = Boolean(session.handed_over_to_user_id);
+  const windowClosed =
+    windowEnded || closedCode !== null || (handedOver && session.editable_until === undefined);
   // A journal is optional, but once either required field is filled both are.
   const journalStarted = topic.trim() !== "" || activities.trim() !== "";
   const journalComplete = topic.trim() !== "" && activities.trim() !== "";
@@ -362,6 +367,8 @@ export function SessionEditor({
         editableUntil={session.editable_until}
         windowEnded={windowEnded}
         closedCode={closedCode}
+        handedOver={handedOver}
+        today={todayInZone(me?.tenant.timezone)}
         timeZone={me?.tenant.timezone}
       />
       {draftOffer && !windowClosed && (

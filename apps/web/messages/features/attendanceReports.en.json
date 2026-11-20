@@ -33,6 +33,7 @@
     "sessionSubmitted": "Saved",
     "sessionPending": "Not filled",
     "sessionNoEntries": "No students in this session.",
+    "entryLeftClass": "No longer in this class",
     "columns": {
       "name": "Student name",
       "status": "Status",

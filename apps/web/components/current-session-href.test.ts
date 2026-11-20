@@ -39,6 +39,15 @@ describe("currentSessionHref (the teacher's centre button)", () => {
     expect(currentSessionHref(sessions, PERIODS, at("08:40"))).toBe("/attendance/b");
   });
 
+  it("never offers a lesson handed to a substitute", () => {
+    const sessions = [
+      { ...session("a", "p1", "p2"), handed_over_to_user_id: "sub" },
+      session("b", "p3", "p3"),
+    ];
+    expect(currentSessionHref(sessions, PERIODS, at("07:50"))).toBe("/attendance/b");
+    expect(currentSessionHref(sessions.slice(0, 1), PERIODS, at("07:50"))).toBe(ATTENDANCE_HREF);
+  });
+
   it("falls back to the attendance list when nothing is left today", () => {
     const sessions = [session("a", "p1", "p2", true)];
     expect(currentSessionHref(sessions, PERIODS, at("12:00"))).toBe(ATTENDANCE_HREF);

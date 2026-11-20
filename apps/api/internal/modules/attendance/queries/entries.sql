@@ -12,12 +12,23 @@ select * from attendance_entries where tenant_id = $1 and session_id = $2;
 -- name: ListEntryReportRowsBySessions :many
 -- Batch read behind the daily report: every entry of every given session
 -- with the student's display name, in one round trip instead of one entries
--- query per session plus one name lookup per student.
-select e.session_id, e.student_user_id, e.status_code, e.notes, coalesce(u.name, '')::text as student_name
+-- query per session plus one name lookup per student. left_class marks an
+-- entry of a student no longer actively enrolled in the session's class
+-- (moved or left since): the entry stays a true record of that lesson,
+-- but the report's student table -- the class's current roster -- no
+-- longer lists them, so the detail says why the name is there. Those rows
+-- come after the current roster's.
+select e.session_id, e.student_user_id, e.status_code, e.notes, coalesce(u.name, '')::text as student_name,
+  (not exists (
+    select 1 from enrollments en
+    where en.tenant_id = e.tenant_id and en.class_id = s.class_id and en.academic_year_id = s.academic_year_id
+      and en.student_user_id = e.student_user_id and en.status = 'active'
+  ))::boolean as left_class
 from attendance_entries e
+join attendance_sessions s on s.tenant_id = e.tenant_id and s.id = e.session_id
 left join users u on u.tenant_id = e.tenant_id and u.id = e.student_user_id
 where e.tenant_id = $1 and e.session_id = any(sqlc.arg(session_ids)::uuid[])
-order by e.session_id, u.name, e.student_user_id;
+order by e.session_id, left_class, u.name, e.student_user_id;
 
 -- name: GetEntryBySessionStudent :one
 select * from attendance_entries where tenant_id = $1 and session_id = $2 and student_user_id = $3;

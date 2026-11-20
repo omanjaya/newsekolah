@@ -110,8 +110,8 @@ func TestScheduleBlockMutationsPreserveHistory(t *testing.T) {
 	require.ErrorIs(t, svc.DeleteScheduleBlock(ctx, tenant, c.ID, []uuid.UUID{c.ID, d.ID}, service.Actor{UserID: substitute}), domain.ErrTeacherEditForbidden)
 	require.ErrorIs(t, svc.DeleteScheduleBlock(ctx, tenant, c.ID, []uuid.UUID{a.ID, c.ID}, actor), domain.ErrInvalidScheduleBlock)
 	require.Equal(t, 3, count("schedules"))
-	// An attendance session on the second row must protect both rows of a delete.
-	exec(`insert into attendance_sessions (tenant_id,academic_year_id,schedule_id,date,class_id,subject_id,teacher_user_id,start_period_id,end_period_id) values ($1,$2,$3,'2026-09-15',$4,$5,$6,$7,$7)`, tenant, year, d.ID, class, subject, teacher, p2)
+	// A submitted attendance session on the second row must protect both rows of a delete.
+	exec(`insert into attendance_sessions (tenant_id,academic_year_id,schedule_id,date,class_id,subject_id,teacher_user_id,start_period_id,end_period_id,submitted_at) values ($1,$2,$3,'2026-09-15',$4,$5,$6,$7,$7,now())`, tenant, year, d.ID, class, subject, teacher, p2)
 	require.ErrorIs(t, svc.DeleteScheduleBlock(ctx, tenant, c.ID, []uuid.UUID{c.ID, d.ID}, actor), domain.ErrScheduleHasHistory)
 	require.Equal(t, 3, count("schedules"))
 	require.Equal(t, 1, count("attendance_sessions"))
@@ -328,6 +328,104 @@ func (h holidayCalendar) IsTeachingDay(_ context.Context, _, _, classID uuid.UUI
 		return false, "Libur", nil
 	}
 	return true, "", nil
+}
+
+// A session only opened -- nothing submitted, entered or journaled -- is a
+// placeholder, not history: it must neither lock the schedule in the grid
+// nor block its edit or delete, and it goes with the row it copied. A
+// journal attached to the session still makes it history.
+func TestPlaceholderSessionsDoNotFreezeTheSchedule(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test requires Docker")
+	}
+	ctx := context.Background()
+	pg := dbtest.Start(t)
+	pool := pg.AdminPool
+	insertID := func(sql string, args ...any) uuid.UUID {
+		t.Helper()
+		var id uuid.UUID
+		require.NoError(t, pool.QueryRow(ctx, sql+" returning id", args...).Scan(&id))
+		return id
+	}
+	exec := func(sql string, args ...any) {
+		t.Helper()
+		_, err := pool.Exec(ctx, sql, args...)
+		require.NoError(t, err)
+	}
+	count := func(sql string, args ...any) int {
+		t.Helper()
+		var n int
+		require.NoError(t, pool.QueryRow(ctx, sql, args...).Scan(&n))
+		return n
+	}
+	tenant := insertID(`insert into tenants (slug,name,education_level,timezone,locale,status,plan) values ('placeholder-test','Test','sma','UTC','id','active','default')`)
+	year := insertID(`insert into academic_years (tenant_id,label,starts_on,ends_on) values ($1,'2026/2027','2026-01-01','2027-12-31')`, tenant)
+	grade := insertID(`insert into grade_levels (tenant_id,code,name,sequence) values ($1,'X','X',1)`, tenant)
+	class := insertID(`insert into classes (tenant_id,academic_year_id,grade_level_id,name) values ($1,$2,$3,'X-A')`, tenant, year, grade)
+	subject := insertID(`insert into subjects (tenant_id,code,name) values ($1,'MTK','Math')`, tenant)
+	teacher := insertID(`insert into users (tenant_id,username,password_hash,name,status,locale) values ($1,'teacher','x','Teacher','active','id')`, tenant)
+	template := insertID(`insert into period_templates (tenant_id,name) values ($1,'Default')`, tenant)
+	p1 := insertID(`insert into periods (tenant_id,template_id,name,sequence,starts_at,ends_at) values ($1,$2,'P1',1,'08:00','09:00')`, tenant, template)
+	p2 := insertID(`insert into periods (tenant_id,template_id,name,sequence,starts_at,ends_at) values ($1,$2,'P2',2,'09:00','10:00')`, tenant, template)
+	exec(`insert into teaching_assignments (tenant_id,academic_year_id,teacher_user_id,subject_id,class_id) values ($1,$2,$3,$4,$5)`, tenant, year, teacher, subject, class)
+	for day := 1; day <= 5; day++ {
+		exec(`insert into school_days (tenant_id,academic_year_id,day_of_week) values ($1,$2,$3)`, tenant, year, day)
+		exec(`insert into period_day_assignments (tenant_id,academic_year_id,day_of_week,template_id) values ($1,$2,$3,$4)`, tenant, year, day, template)
+	}
+	svc := service.New(pg.AppPool, repository.New(pg.AppPool))
+	actor := service.Actor{CanManage: true, UserID: teacher}
+	create := func(day int16) domain.Schedule {
+		t.Helper()
+		sched, err := svc.CreateSchedule(ctx, tenant, service.ScheduleInput{
+			AcademicYearID: year, ClassID: class, SubjectID: subject, TeacherUserID: teacher,
+			DayOfWeek: day, StartPeriodID: p1, EndPeriodID: p1, Source: domain.SourceAdmin,
+		}, actor)
+		require.NoError(t, err)
+		return sched
+	}
+	openSession := func(sched domain.Schedule, date string) uuid.UUID {
+		t.Helper()
+		return insertID(`insert into attendance_sessions (tenant_id,academic_year_id,schedule_id,date,class_id,subject_id,teacher_user_id,start_period_id,end_period_id) values ($1,$2,$3,$4,$5,$6,$7,$8,$8)`,
+			tenant, year, sched.ID, date, class, subject, teacher, p1)
+	}
+	sessionsOf := func(sched domain.Schedule) int {
+		return count(`select count(*) from attendance_sessions where schedule_id=$1`, sched.ID)
+	}
+
+	monday := create(1)
+	openSession(monday, "2026-09-14")
+	openSession(monday, "2026-09-21")
+	blocks, err := svc.ListByClass(ctx, tenant, year, class, nil)
+	require.NoError(t, err)
+	require.Len(t, blocks, 1)
+	require.False(t, blocks[0].HasHistory, "an opened but empty session is not history")
+	policy := svc.MutationPolicyFor(ctx, tenant, monday, actor)
+	require.True(t, policy.CanEdit)
+	require.True(t, policy.CanDelete)
+
+	// Moving the lesson drops the placeholders that copied its old periods.
+	moved := service.ScheduleInput{
+		AcademicYearID: year, ClassID: class, SubjectID: subject, TeacherUserID: teacher,
+		DayOfWeek: 1, StartPeriodID: p2, EndPeriodID: p2, Source: domain.SourceAdmin,
+	}
+	_, err = svc.UpdateSchedule(ctx, tenant, monday.ID, moved, actor)
+	require.NoError(t, err)
+	require.Zero(t, sessionsOf(monday))
+
+	// Deleting clears them before the RESTRICT foreign key looks.
+	tuesday := create(2)
+	openSession(tuesday, "2026-09-15")
+	require.NoError(t, svc.DeleteSchedule(ctx, tenant, tuesday.ID, actor))
+	require.Zero(t, count(`select count(*) from schedules where id=$1`, tuesday.ID))
+
+	// A journal written for the session is history, as is a submission.
+	wednesday := create(3)
+	journaled := openSession(wednesday, "2026-09-16")
+	exec(`insert into class_journals (tenant_id,academic_year_id,teacher_user_id,written_by_user_id,class_id,subject_id,lesson_date,topic,activities,attendance_session_id) values ($1,$2,$3,$3,$4,$5,'2026-09-16','Topic','Work',$6)`,
+		tenant, year, teacher, class, subject, journaled)
+	require.True(t, svc.MutationPolicyFor(ctx, tenant, wednesday, actor).HasHistory)
+	require.ErrorIs(t, svc.DeleteSchedule(ctx, tenant, wednesday.ID, actor), domain.ErrScheduleHasHistory)
+	require.Equal(t, 1, sessionsOf(wednesday))
 }
 
 // A substitution request's incoming/outgoing list must come back joined

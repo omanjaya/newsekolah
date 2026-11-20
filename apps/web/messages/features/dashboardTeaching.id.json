@@ -7,6 +7,7 @@
       "holiday": "Libur: {name}",
       "statusSubmitted": "Tersimpan",
       "statusPending": "Belum diisi",
+      "statusHandedOver": "Digantikan",
       "runningMeta": "{subject} · sedang berlangsung"
     },
     "tiles": {
@@ -27,6 +28,8 @@
       "idleEyebrow": "Mengajar hari ini",
       "doneTitle": "Semua presensi hari ini sudah diisi",
       "doneMeta": "{total} sesi selesai dipresensi. Jurnal mengajar bisa dilengkapi sekarang.",
+      "handedOverTitle": "Pelajaran hari ini digantikan guru pengganti",
+      "handedOverMeta": "Guru pengganti yang mengisi presensinya, jadi tidak ada yang perlu Anda isi.",
       "freeTitle": "Tidak ada jadwal mengajar hari ini",
       "freeMeta": "Jadwal minggu ini tetap bisa dilihat.",
       "holidayTitle": "Libur: {name}",

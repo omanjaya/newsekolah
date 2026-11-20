@@ -24,9 +24,10 @@ type ListSessionsOptions struct {
 
 // ListSessions returns every session teacherUserID should see for
 // opts.Date: their own schedules plus any accepted substitution covering
-// that date, each opened idempotently (see domain/session.go and
-// queries/sessions.sql's OpenAttendanceSession) so the list always carries
-// a real session ID the caller can act on next. Returns an empty list
+// that date. A lesson today or earlier is opened idempotently (see
+// domain/session.go and queries/sessions.sql's OpenAttendanceSession) so
+// its row carries a real session ID the caller can act on next; a lesson on
+// a later day is listed without being opened (listedSession). Returns an empty list
 // outright on a day the tenant does not hold school
 // (docs/analysis/backend-inventory.md section 1.9, L361-364), a case the
 // merge logic below would otherwise silently treat as "no schedules
@@ -63,6 +64,9 @@ func (s *Service) ListDay(ctx context.Context, tenantID, teacherUserID uuid.UUID
 			date = time.Date(y, m, d, 0, 0, 0, 0, loc)
 		}
 		dayOfWeek := domain.IsoWeekday(date)
+		// A lesson on a later day is listed, never opened: browsing next
+		// week must not write a session row (see listedSession).
+		future := domain.SessionNotStarted(date, now)
 
 		own, err := s.schedules.ListSchedulesForTeacherDay(ctx, tenantID, yearID, teacherUserID, dayOfWeek)
 		if err != nil {
@@ -135,11 +139,12 @@ func (s *Service) ListDay(ctx context.Context, tenantID, teacherUserID uuid.UUID
 				}
 			}
 
-			session, _, err := s.repo.OpenSession(ctx, domain.Session{
+			occurrence := domain.Session{
 				TenantID: tenantID, AcademicYearID: yearID, ScheduleID: occ.schedule.ID, Date: date,
 				ClassID: occ.schedule.ClassID, SubjectID: occ.schedule.SubjectID, TeacherUserID: occ.schedule.TeacherUserID,
 				SubstituteUserID: substituteUserID, StartPeriodID: occ.schedule.StartPeriodID, EndPeriodID: occ.schedule.EndPeriodID,
-			})
+			}
+			session, err := s.listedSession(ctx, occurrence, future)
 			if err != nil {
 				return err
 			}
@@ -148,9 +153,12 @@ func (s *Service) ListDay(ctx context.Context, tenantID, teacherUserID uuid.UUID
 			if err != nil {
 				return err
 			}
-			entries, err := s.repo.ListEntriesBySession(ctx, tenantID, session.ID)
-			if err != nil {
-				return err
+			var entries []domain.Entry
+			if session.ID != uuid.Nil {
+				entries, err = s.repo.ListEntriesBySession(ctx, tenantID, session.ID)
+				if err != nil {
+					return err
+				}
 			}
 			startsAt, err := s.periodStartAt(ctx, tenantID, session)
 			if err != nil {
@@ -166,6 +174,25 @@ func (s *Service) ListDay(ctx context.Context, tenantID, teacherUserID uuid.UUID
 		return nil
 	})
 	return day, err
+}
+
+// listedSession is the session a list row stands for. A lesson today or
+// earlier is opened idempotently, so the row carries a real session ID the
+// caller can act on next. A lesson on a later day is only looked up: it
+// cannot be recorded yet, and opening it would write a placeholder row for
+// a lesson that has not happened -- one the scheduling module would have
+// to tell apart from history. With no session yet, the occurrence comes
+// back as is, with no ID.
+func (s *Service) listedSession(ctx context.Context, occurrence domain.Session, future bool) (domain.Session, error) {
+	if !future {
+		session, _, err := s.repo.OpenSession(ctx, occurrence)
+		return session, err
+	}
+	existing, found, err := s.repo.GetSessionBySchedule(ctx, occurrence.TenantID, occurrence.ScheduleID, occurrence.Date)
+	if err != nil || found {
+		return existing, err
+	}
+	return occurrence, nil
 }
 
 // requireLessonDay refuses a session dated after the school's today
@@ -285,11 +312,12 @@ func (s *Service) OpenSession(ctx context.Context, tenantID uuid.UUID, actor Act
 		if err != nil {
 			return err
 		}
-		window, err := s.saveWindowInput(ctx, tenantID, actor, session)
+		window, handedOverTo, err := s.saveWindowInput(ctx, tenantID, actor, session)
 		if err != nil {
 			return err
 		}
 		detail.SaveMode, detail.EditableUntil = viewerSaveMode(window)
+		detail.HandedOverTo = handedOverTo
 		return nil
 	})
 	return detail, err
@@ -297,7 +325,9 @@ func (s *Service) OpenSession(ctx context.Context, tenantID uuid.UUID, actor Act
 
 // GetSessionDetail reads one session's full recording payload. A caller
 // without CanViewAll (a supervisory grant, e.g. view_reports) must be the
-// session's own teacher or accepted substitute for that date.
+// session's own teacher or accepted substitute for that date -- or the
+// lesson's own teacher after handing it to a substitute, who may still
+// look at it but no longer saves it.
 func (s *Service) GetSessionDetail(ctx context.Context, tenantID uuid.UUID, actor Actor, sessionID uuid.UUID) (SessionDetail, error) {
 	var detail SessionDetail
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -306,12 +336,12 @@ func (s *Service) GetSessionDetail(ctx context.Context, tenantID uuid.UUID, acto
 			return err
 		}
 
-		window, err := s.saveWindowInput(ctx, tenantID, actor, session)
+		window, handedOverTo, err := s.saveWindowInput(ctx, tenantID, actor, session)
 		if err != nil {
 			return err
 		}
 		saveMode, editableUntil := viewerSaveMode(window)
-		if !actor.CanViewAll && saveMode != domain.SaveModeNormal {
+		if !actor.CanViewAll && saveMode != domain.SaveModeNormal && !handedOverTo.Valid {
 			return domain.ErrNoAccess
 		}
 
@@ -321,6 +351,7 @@ func (s *Service) GetSessionDetail(ctx context.Context, tenantID uuid.UUID, acto
 		}
 		detail, err = s.buildSessionDetail(ctx, tenantID, session, policy)
 		detail.SaveMode, detail.EditableUntil = saveMode, editableUntil
+		detail.HandedOverTo = handedOverTo
 		return err
 	})
 	return detail, err

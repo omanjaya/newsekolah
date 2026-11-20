@@ -22,6 +22,7 @@ export {
   formatShortDateTime,
   formatTime,
   formatTimeZoneName,
+  formatWeekdayDate,
   type FormatOptions,
   type NumberFormatOptions,
 } from "./format.js";

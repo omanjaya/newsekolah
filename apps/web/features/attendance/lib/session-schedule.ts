@@ -7,15 +7,15 @@
 export type SessionFillStatus = "empty" | "saved" | "locked" | "handedOver" | "upcoming";
 
 /**
- * Derives the badge state from what the list already has: a lesson on a
- * later day has not happened, so it is "upcoming" and cannot be opened
- * (the API refuses to record it) -- even if an older build let someone
- * submit it already; otherwise no submission yet is "empty" (or
- * "handedOver" when a substitute fills it); a submission on a past date is
+ * Derives the badge state from what the list already has: a lesson an
+ * accepted substitute fills instead is "handedOver" on any date, so the
+ * handover shows ahead of the day as well; a lesson on a later day has not
+ * happened, so it is "upcoming" and cannot be opened (the API refuses to
+ * record it) -- even if an older build let someone submit it already;
+ * otherwise no submission yet is "empty"; a submission on a past date is
  * treated as "locked", while a submission on today's date is "saved" --
  * still freely revisitable for the rest of the lesson. Dates compare as
- * "YYYY-MM-DD" strings, which sort correctly
- * lexicographically.
+ * "YYYY-MM-DD" strings, which sort correctly lexicographically.
  */
 export function deriveFillStatus(
   submittedAt: string | undefined,
@@ -23,8 +23,9 @@ export function deriveFillStatus(
   today: string,
   handedOver = false,
 ): SessionFillStatus {
+  if (handedOver && !submittedAt) return "handedOver";
   if (date > today) return "upcoming";
-  if (!submittedAt) return handedOver ? "handedOver" : "empty";
+  if (!submittedAt) return "empty";
   return date < today ? "locked" : "saved";
 }
 

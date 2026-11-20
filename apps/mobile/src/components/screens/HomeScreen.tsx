@@ -106,35 +106,45 @@ export function HomeScreen(): React.JSX.Element {
               </Card>
             ) : (
               <View className="gap-2.5 px-5">
-                {(sessions.data?.data ?? []).map((s) => (
-                  <Card key={s.schedule_id} className="flex-row items-center gap-3 p-4">
-                    <View className="flex-1">
-                      <Text className="font-body-semibold text-base text-ink dark:text-ink-dark">
-                        {classMap.get(s.class_id) ?? "-"} · {subjectMap.get(s.subject_id) ?? ""}
-                      </Text>
-                      <Text className="text-sm text-muted dark:text-muted-dark">
-                        {s.submitted_at ? t("home.submitted") : t("home.pending")}
-                      </Text>
-                    </View>
-                    <Button
-                      label={s.submitted_at ? t("home.open_session") : t("home.fill_attendance")}
-                      variant={s.submitted_at ? "secondary" : "primary"}
-                      loading={open.isPending && open.variables.schedule_id === s.schedule_id}
-                      onPress={() => {
-                        open.mutate(
-                          { schedule_id: s.schedule_id, date: s.date },
-                          {
-                            onSuccess: (detail) =>
-                              router.push({
-                                pathname: "/attendance/[sessionId]",
-                                params: { sessionId: detail.id },
-                              }),
-                          },
-                        );
-                      }}
-                    />
-                  </Card>
-                ))}
+                {(sessions.data?.data ?? []).map((s) => {
+                  // A lesson an accepted substitute fills is not this
+                  // teacher's to-do: it says so and only opens to look.
+                  const handedOver = !s.submitted_at && Boolean(s.handed_over_to_user_id);
+                  const toFill = !s.submitted_at && !handedOver;
+                  return (
+                    <Card key={s.schedule_id} className="flex-row items-center gap-3 p-4">
+                      <View className="flex-1">
+                        <Text className="font-body-semibold text-base text-ink dark:text-ink-dark">
+                          {classMap.get(s.class_id) ?? "-"} · {subjectMap.get(s.subject_id) ?? ""}
+                        </Text>
+                        <Text className="text-sm text-muted dark:text-muted-dark">
+                          {s.submitted_at
+                            ? t("home.submitted")
+                            : handedOver
+                              ? t("home.handed_over")
+                              : t("home.pending")}
+                        </Text>
+                      </View>
+                      <Button
+                        label={toFill ? t("home.fill_attendance") : t("home.open_session")}
+                        variant={toFill ? "primary" : "secondary"}
+                        loading={open.isPending && open.variables.schedule_id === s.schedule_id}
+                        onPress={() => {
+                          open.mutate(
+                            { schedule_id: s.schedule_id, date: s.date },
+                            {
+                              onSuccess: (detail) =>
+                                router.push({
+                                  pathname: "/attendance/[sessionId]",
+                                  params: { sessionId: detail.id },
+                                }),
+                            },
+                          );
+                        }}
+                      />
+                    </Card>
+                  );
+                })}
               </View>
             )}
           </Section>

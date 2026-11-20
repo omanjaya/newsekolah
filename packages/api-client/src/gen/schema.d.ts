@@ -9070,8 +9070,11 @@ export interface components {
             counts_as_present: boolean;
         };
         AttendanceSessionSummary: {
-            /** Format: uuid */
-            id: string;
+            /**
+             * Format: uuid
+             * @description The session's ID. Absent on a lesson on a later day that nobody has opened yet -- listing a day never opens a session ahead of it, since attendance cannot be recorded before the lesson's date.
+             */
+            id?: string;
             /** Format: uuid */
             schedule_id: string;
             /** Format: date */
@@ -9091,7 +9094,7 @@ export interface components {
             is_substitute: boolean;
             /**
              * Format: uuid
-             * @description Set on one of the teacher's own lessons that an accepted substitution hands to this teacher; the substitute fills it.
+             * @description Set on one of the viewer's own lessons that an accepted substitution hands to another teacher (this ID). That substitute fills it; the viewer may still open it but no longer saves it as its owner.
              */
             handed_over_to_user_id?: string;
             /** Format: date-time */
@@ -9126,6 +9129,8 @@ export interface components {
             locked?: boolean;
         };
         AttendanceSessionDetail: components["schemas"]["AttendanceSessionSummary"] & {
+            /** Format: uuid */
+            id: string;
             meeting_number: number;
             previous_journal_topic?: string;
             statuses: components["schemas"]["AttendanceStatusDef"][];
@@ -9218,6 +9223,8 @@ export interface components {
             name: string;
             status_code: string;
             notes?: string;
+            /** @description True for a student no longer actively enrolled in the session's class (moved or left since). The entry is still that lesson's record, but the report's student list, the class's current roster, leaves them out. */
+            left_class?: boolean;
         };
         AttendanceDailyReportSession: {
             /** Format: uuid */

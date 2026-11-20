@@ -305,6 +305,7 @@ export function JournalView(): ReactElement {
           {editing !== null && (
             <JournalForm
               initial={editing === "new" ? undefined : editing}
+              onOpenExisting={setEditing}
               onDone={() => {
                 setEditing(null);
                 setPagination((current) => ({ ...current, pageIndex: 0 }));

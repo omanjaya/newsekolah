@@ -22,18 +22,18 @@ export function BlockAction({
   lockedReason?: string;
 }): ReactElement {
   const locked = lockedReason !== undefined;
+  // The reason shows on hover as well as on focus: IconButton keeps a
+  // button unavailable for a reason within the pointer's reach, and puts
+  // the label before the reason in the tooltip itself.
   return (
     <IconButton
       icon={icon}
-      aria-label={locked ? `${label}: ${lockedReason}` : label}
-      aria-disabled={locked || undefined}
+      aria-label={label}
+      disabledReason={lockedReason}
       variant="ghost"
       size="sm"
-      onClick={locked ? undefined : onClick}
-      className={cn(
-        "text-fg-muted",
-        locked ? "cursor-not-allowed opacity-50" : danger ? "hover:text-danger" : "hover:text-fg",
-      )}
+      onClick={onClick}
+      className={cn("text-fg-muted", !locked && (danger ? "hover:text-danger" : "hover:text-fg"))}
     />
   );
 }

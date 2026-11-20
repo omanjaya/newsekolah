@@ -27,7 +27,9 @@ type DailyReportSession = components["schemas"]["AttendanceDailyReportSession"];
  * session it was, whether it was submitted, and (expanded) every
  * student's entry for that session specifically -- the level the
  * aggregate status_code cannot show once a student's day mixes statuses
- * across sessions.
+ * across sessions. An entry of a student who has since left the class
+ * stays, since it is that lesson's record, but says so: the student table
+ * above lists the class's current roster only.
  */
 export function AttendanceDailySessions({
   sessions,
@@ -81,7 +83,11 @@ export function AttendanceDailySessions({
                           <ListRow
                             key={entry.student_user_id}
                             title={entry.name}
-                            meta={entry.notes === "" ? undefined : entry.notes}
+                            meta={
+                              [entry.left_class ? t("entryLeftClass") : "", entry.notes ?? ""]
+                                .filter(Boolean)
+                                .join(" · ") || undefined
+                            }
                             trailing={
                               token ? (
                                 <StatusBadge

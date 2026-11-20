@@ -569,4 +569,47 @@ describe("useTeacherBlock", () => {
     expect(screen.getByText("card.holiday")).toBeInTheDocument();
     expect(screen.queryByText("card.empty")).not.toBeInTheDocument();
   });
+
+  it("leaves a lesson handed to a substitute out of the hero and the pending tile", () => {
+    runningLessonLoaded();
+    sessionsQuery.mockReturnValue({
+      data: {
+        data: [
+          session({ id: "s1", submitted_at: undefined, handed_over_to_user_id: "sub" }),
+          session({ id: "s2", schedule_id: "sc2", start_period_id: "p1", end_period_id: "p1" }),
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      refetch: vi.fn(),
+    });
+
+    const { result } = renderHook(() => useTeacherBlock(me, true));
+
+    // s1 runs now (08.50) but is the substitute's; s2 is already over.
+    expect(result.current.hero?.priority).toBe(HERO_PRIORITY.teacherIdle);
+    const pendingTile = result.current.tiles.find((tile) => tile.key === "teacher.pending");
+    expect(pendingTile?.value).toBe("1");
+    render(<>{result.current.main.map((slot) => slot.node)}</>);
+    expect(screen.getByText("card.statusHandedOver")).toBeInTheDocument();
+    expect(screen.getAllByText("card.statusPending")).toHaveLength(1);
+  });
+
+  it("says a day whose every lesson went to a substitute leaves nothing to fill", () => {
+    runningLessonLoaded();
+    sessionsQuery.mockReturnValue({
+      data: { data: [session({ submitted_at: undefined, handed_over_to_user_id: "sub" })] },
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      refetch: vi.fn(),
+    });
+
+    const { result } = renderHook(() => useTeacherBlock(me, true));
+
+    expect(result.current.hero?.title).toBe("hero.handedOverTitle");
+    expect(result.current.hero?.meta).toBe("hero.handedOverMeta");
+    expect(result.current.tiles).toHaveLength(0);
+  });
 });

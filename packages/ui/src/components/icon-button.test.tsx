@@ -130,6 +130,40 @@ describe("IconButton", () => {
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 
+  it("explains a disabledReason on mouse hover, and ignores clicks and Enter", async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    render(
+      <IconButton
+        icon={<svg />}
+        aria-label="Ubah jadwal"
+        disabledReason="terkunci, sudah ada riwayat presensi"
+        onClick={onClick}
+      />,
+    );
+    const button = screen.getByRole("button", { name: "Ubah jadwal" });
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    expect(button).not.toBeDisabled();
+    // jsdom applies no Tailwind, so it would let a pointer through even a
+    // `pointer-events-none` button: check the class that blocks it live is
+    // overridden, the way the browser would resolve it.
+    expect(button).not.toHaveClass("aria-disabled:pointer-events-none");
+    expect(button).toHaveClass("aria-disabled:pointer-events-auto", "cursor-not-allowed");
+
+    await user.hover(button);
+    // The tooltip names the button before the reason; the description is
+    // the reason alone, since the name is already read out.
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "Ubah jadwal: terkunci, sudah ada riwayat presensi",
+    );
+    expect(button).toHaveAccessibleDescription("terkunci, sudah ada riwayat presensi");
+
+    await user.click(button);
+    button.focus();
+    await user.keyboard("{Enter}");
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
   it("turns a title into the tooltip instead of a second, native one", async () => {
     const { unmount } = render(
       <IconButton icon={<svg />} aria-label="3 belum dibaca" title="Notifikasi: 3 belum dibaca" />,

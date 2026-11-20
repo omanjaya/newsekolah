@@ -41,8 +41,10 @@ func toAPIStatusDefs(defs []domain.StatusDef) []api.AttendanceStatusDef {
 func toAPISessionSummary(s service.SessionSummary) api.AttendanceSessionSummary {
 	sess := s.Session
 	rosterCount, enteredCount := s.RosterCount, s.EnteredCount
+	// A lesson on a later day nobody has opened has no session yet.
+	id := uuid.NullUUID{UUID: sess.ID, Valid: sess.ID != uuid.Nil}
 	return api.AttendanceSessionSummary{
-		Id: sess.ID, ScheduleId: sess.ScheduleID, Date: openapi_types.Date{Time: sess.Date}, ClassId: sess.ClassID,
+		Id: nullUUIDPtr(id), ScheduleId: sess.ScheduleID, Date: openapi_types.Date{Time: sess.Date}, ClassId: sess.ClassID,
 		SubjectId: sess.SubjectID, TeacherUserId: sess.TeacherUserID, SubstituteUserId: nullUUIDPtr(sess.SubstituteUserID),
 		StartPeriodId: sess.StartPeriodID, EndPeriodId: sess.EndPeriodID, IsSubstitute: s.IsSubstitute, SubmittedAt: sess.SubmittedAt,
 		RosterCount: &rosterCount, EnteredCount: &enteredCount, HandedOverToUserId: nullUUIDPtr(s.HandedOverTo),
@@ -100,6 +102,7 @@ func toAPISessionDetail(d service.SessionDetail) api.AttendanceSessionDetail {
 		MeetingNumber: d.MeetingNumber, PreviousJournalTopic: strPtrOrNil(d.PreviousJournalTopic),
 		Statuses: toAPIStatusDefs(d.Statuses), Roster: toAPIRosterItems(d.Roster),
 		JournalTopic: strPtrOrNil(d.JournalTopic), JournalActivities: strPtrOrNil(d.JournalActivities), JournalReflection: strPtrOrNil(d.JournalReflection),
+		HandedOverToUserId: nullUUIDPtr(d.HandedOverTo),
 	}
 	if len(d.SkippedBlockedStudentIDs) > 0 {
 		out.SkippedBlockedStudentIds = &d.SkippedBlockedStudentIDs
@@ -215,6 +218,10 @@ func toAPIDailyReportSessionEntry(e service.DailyReportSessionEntry) api.Attenda
 	out := api.AttendanceDailyReportSessionEntry{StudentUserId: e.StudentUserID, Name: e.Name, StatusCode: e.StatusCode}
 	if e.Notes != "" {
 		out.Notes = &e.Notes
+	}
+	if e.LeftClass {
+		leftClass := true
+		out.LeftClass = &leftClass
 	}
 	return out
 }
