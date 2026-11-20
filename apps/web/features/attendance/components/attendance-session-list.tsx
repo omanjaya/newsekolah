@@ -80,13 +80,6 @@ function StatusBadge({
       </Badge>
     );
   }
-  if (item.fillStatus === "upcoming") {
-    return (
-      <Badge tone="neutral" size="sm">
-        {t("statusUpcoming")}
-      </Badge>
-    );
-  }
   if (item.fillStatus !== "empty") {
     return (
       <Badge tone="success" size="sm" dot>

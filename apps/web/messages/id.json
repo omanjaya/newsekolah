@@ -1143,7 +1143,6 @@
       "statusUpcoming": "Belum bisa diisi",
       "statusSavedAt": "Tersimpan pukul {time}",
       "statusLocked": "Terkunci",
-      "statusUpcoming": "Belum berlangsung",
       "ongoingBadge": "Sedang berlangsung",
       "nextBadge": "Berikutnya",
       "fillProgress": "{entered}/{roster} diisi",

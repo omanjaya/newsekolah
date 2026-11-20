@@ -1143,7 +1143,6 @@
       "statusUpcoming": "Not open yet",
       "statusSavedAt": "Saved at {time}",
       "statusLocked": "Locked",
-      "statusUpcoming": "Not held yet",
       "ongoingBadge": "In progress",
       "nextBadge": "Next",
       "fillProgress": "{entered}/{roster} filled",
