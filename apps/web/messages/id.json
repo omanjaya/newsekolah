@@ -2176,7 +2176,7 @@
       "system": "Bawaan",
       "systemHint": "Peran bawaan tidak bisa diubah. Untuk kombinasi izin lain, buat peran baru.",
       "systemHintReadOnly": "Peran bawaan, hanya bisa dilihat.",
-      "readOnlyNotice": "Hanya superadmin yang bisa membuat peran dan mengubah izin. Hubungi superadmin sekolah bila butuh peran baru, misalnya Bendahara.",
+      "readOnlyNotice": "Hanya superadmin yang bisa membuat peran dan mengubah izin. Hubungi superadmin sekolah bila butuh peran baru.",
       "deleteRole": "Hapus peran",
       "deleteBody": "Peran {name} akan dihapus. Pengguna yang memilikinya kehilangan izin dari peran ini.",
       "deleted": "Peran dihapus",

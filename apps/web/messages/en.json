@@ -2176,7 +2176,7 @@
       "system": "Built-in",
       "systemHint": "Built-in roles cannot be changed. For another combination of permissions, create a new role.",
       "systemHintReadOnly": "Built-in role, view only.",
-      "readOnlyNotice": "Only a superadmin can create roles and change permissions. Ask your school's superadmin when you need a new role, such as Treasurer.",
+      "readOnlyNotice": "Only a superadmin can create roles and change permissions. Ask your school's superadmin when you need a new role.",
       "deleteRole": "Delete role",
       "deleteBody": "The {name} role will be deleted. Users holding it lose its permissions.",
       "deleted": "Role deleted",
