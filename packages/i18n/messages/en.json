@@ -509,6 +509,8 @@
     "LEAVE_REQUEST_NOT_REVIEWABLE": "This leave request is no longer awaiting homeroom review. Reload to see its status.",
     "LEAVE_REQUEST_NOT_ISSUABLE": "This leave request is not ready to be issued. Reload to see its status.",
     "LEAVE_REJECTION_REASON_REQUIRED": "Enter a reason before rejecting the leave request.",
+    "LEAVE_REASON_REQUIRED": "Write a reason for an Other leave request.",
+    "STUDENT_ON_LEAVE_TODAY": "This student already has a leave letter for today, so an exit permit cannot be made.",
     "LATE_ARRIVAL_REVIEWER_ONLY": "Only the duty officer or an admin can review this late arrival.",
     "EVIDENCE_REQUIRED": "Attach evidence before submitting.",
     "EVIDENCE_TOO_LARGE": "The evidence file is larger than 6 MB. Pick a smaller file.",

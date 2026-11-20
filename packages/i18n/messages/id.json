@@ -509,6 +509,8 @@
     "LEAVE_REQUEST_NOT_REVIEWABLE": "Pengajuan izin ini tidak lagi menunggu tinjauan wali kelas. Muat ulang untuk melihat statusnya.",
     "LEAVE_REQUEST_NOT_ISSUABLE": "Pengajuan izin ini belum siap diterbitkan. Muat ulang untuk melihat statusnya.",
     "LEAVE_REJECTION_REASON_REQUIRED": "Isi alasan sebelum menolak pengajuan izin.",
+    "LEAVE_REASON_REQUIRED": "Tulis keterangan izin untuk kategori Lainnya.",
+    "STUDENT_ON_LEAVE_TODAY": "Siswa ini sudah memiliki surat izin tidak masuk untuk hari ini, jadi tidak bisa membuat izin keluar.",
     "LATE_ARRIVAL_REVIEWER_ONLY": "Hanya petugas piket atau admin yang dapat meninjau keterlambatan ini.",
     "EVIDENCE_REQUIRED": "Lampirkan bukti sebelum mengirim.",
     "EVIDENCE_TOO_LARGE": "Berkas bukti lebih dari 6 MB. Pilih berkas yang lebih kecil.",

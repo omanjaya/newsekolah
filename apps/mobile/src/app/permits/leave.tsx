@@ -94,8 +94,11 @@ function LeaveForm({
   const [reason, setReason] = useState("");
   const [startsOn, setStartsOn] = useState("");
   const [endsOn, setEndsOn] = useState("");
+  // Every category but "other" puts its fixed label on the letter (the API
+  // ignores a typed reason for them), so only "other" asks for one.
+  const asksReason = category === "other";
   const valid =
-    reason.trim() &&
+    (!asksReason || reason.trim()) &&
     /^\d{4}-\d{2}-\d{2}$/.test(startsOn) &&
     /^\d{4}-\d{2}-\d{2}$/.test(endsOn) &&
     endsOn >= startsOn;
@@ -140,13 +143,15 @@ function LeaveForm({
           autoCapitalize="none"
           className={INPUT}
         />
-        <TextInput
-          value={reason}
-          onChangeText={setReason}
-          placeholder={t("leave.reason")}
-          multiline
-          className={`${INPUT} min-h-20`}
-        />
+        {asksReason ? (
+          <TextInput
+            value={reason}
+            onChangeText={setReason}
+            placeholder={t("leave.reason")}
+            multiline
+            className={`${INPUT} min-h-20`}
+          />
+        ) : null}
         <Button
           label={t("leave.send")}
           fullWidth
@@ -154,7 +159,12 @@ function LeaveForm({
           disabled={!valid}
           onPress={() =>
             submit.mutate(
-              { category, reason: reason.trim(), starts_on: startsOn, ends_on: endsOn },
+              {
+                category,
+                ...(asksReason ? { reason: reason.trim() } : {}),
+                starts_on: startsOn,
+                ends_on: endsOn,
+              },
               { onSuccess: (d) => onDone(d.instance.id) },
             )
           }

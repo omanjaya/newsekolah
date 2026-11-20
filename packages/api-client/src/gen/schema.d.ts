@@ -25417,7 +25417,8 @@ export interface operations {
             content: {
                 "application/json": {
                     category: components["schemas"]["LeaveCategory"];
-                    reason: string;
+                    /** @description The student's own reason. Required (non-blank) for category "other" only (LEAVE_REASON_REQUIRED); every other category stores its fixed label and ignores this field. */
+                    reason?: string;
                     /** Format: date */
                     starts_on: string;
                     /** Format: date */

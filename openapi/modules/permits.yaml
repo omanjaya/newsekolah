@@ -557,10 +557,16 @@ paths:
           application/json:
             schema:
               type: object
-              required: [category, reason, starts_on, ends_on]
+              required: [category, starts_on, ends_on]
               properties:
                 category: { $ref: "#/components/schemas/LeaveCategory" }
-                reason: { type: string, minLength: 1, maxLength: 500 }
+                reason:
+                  type: string
+                  maxLength: 500
+                  description: >-
+                    The student's own reason. Required (non-blank) for category
+                    "other" only (LEAVE_REASON_REQUIRED); every other category
+                    stores its fixed label and ignores this field.
                 starts_on: { type: string, format: date }
                 ends_on: { type: string, format: date }
       responses:

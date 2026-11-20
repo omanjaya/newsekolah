@@ -365,8 +365,12 @@ func (h *PermitsHandler) ListMyLeaveRequests(ctx context.Context, request api.Li
 func (h *PermitsHandler) SubmitLeaveRequest(ctx context.Context, request api.SubmitLeaveRequestRequestObject) (api.SubmitLeaveRequestResponseObject, error) {
 	tenant := tenantID(ctx)
 	actor := userID(ctx)
+	reason := ""
+	if request.Body.Reason != nil {
+		reason = *request.Body.Reason
+	}
 	created, err := h.service.SubmitLeaveRequest(ctx, service.SubmitLeaveRequestInput{
-		TenantID: tenant, ActorUserID: actor, StudentUserID: actor, Category: domain.Category(request.Body.Category), Reason: request.Body.Reason,
+		TenantID: tenant, ActorUserID: actor, StudentUserID: actor, Category: domain.Category(request.Body.Category), Reason: reason,
 		StartsOn: request.Body.StartsOn.Time, EndsOn: request.Body.EndsOn.Time,
 	})
 	if err != nil {

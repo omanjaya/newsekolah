@@ -10,6 +10,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -49,7 +50,8 @@ const (
 // SubmitLeaveRequest opens the planned-leave flow for a student. Two rules
 // from the old app (student_leave_api.go) that had no equivalent in the
 // rebuilt version: the reason is forced to the category's fixed label for
-// every category but "other" (a student cannot free-type over "Sakit"),
+// every category but "other" (a student cannot free-type over "Sakit"; the
+// clients therefore ask for a reason only for "other", which must have one),
 // and the class must already have an active homeroom teacher or the
 // request would hang forever with nobody able to review it.
 func (s *Service) SubmitLeaveRequest(ctx context.Context, in SubmitLeaveRequestInput) (LeaveRequestDetail, error) {
@@ -61,6 +63,10 @@ func (s *Service) SubmitLeaveRequest(ctx context.Context, in SubmitLeaveRequestI
 	}
 	if label, ok := domain.DefaultReasonFor(in.Category); ok {
 		in.Reason = label
+	} else if strings.TrimSpace(in.Reason) == "" {
+		// Only "other" carries the student's own words, so only it needs
+		// them; the clients offer the field for that category alone.
+		return LeaveRequestDetail{}, domain.ErrLeaveReasonRequired
 	}
 
 	var detail LeaveRequestDetail

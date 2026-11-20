@@ -389,7 +389,7 @@ export function useSubmitLeaveRequestMutation() {
   return useMutation({
     mutationFn: (body: {
       category: LeaveCategory;
-      reason: string;
+      reason?: string;
       starts_on: string;
       ends_on: string;
     }) => client.POST("/v1/leave-requests", { body }),

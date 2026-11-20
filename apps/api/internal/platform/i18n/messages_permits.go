@@ -25,6 +25,8 @@ func init() {
 		"LATE_ARRIVAL_REVIEWER_ONLY":      {"Hanya petugas piket atau admin yang dapat meninjau keterlambatan ini.", "Only a picket-duty holder or an admin may review this late arrival."},
 		"SCAN_TOKEN_CONSUMER_NOT_STUDENT": {"Kode QR ini hanya dapat dipindai oleh siswa.", "This QR code can only be scanned by a student."},
 		"LEAVE_REJECTION_REASON_REQUIRED": {"Alasan wajib diisi saat menolak pengajuan izin.", "A reason is required when rejecting a leave request."},
+		"LEAVE_REASON_REQUIRED":           {"Keterangan wajib diisi untuk izin lainnya.", "A reason is required for an other leave request."},
+		"STUDENT_ON_LEAVE_TODAY":          {"Siswa sedang izin tidak masuk hari ini.", "The student is on an issued leave today."},
 		"REASON_TOO_LONG":                 {"Alasan tidak boleh lebih dari 500 karakter.", "Reason must not exceed 500 characters."},
 		"TEMPLATE_INVALID":                {"Isi templat tidak valid. Periksa tanda {{ }} yang belum ditutup atau salah tulis.", "The template body is invalid. Check for an unclosed or mistyped {{ }} tag."},
 	} {

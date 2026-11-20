@@ -72,6 +72,9 @@ export function SubmitForm({
   const sending = submit.isPending || upload.isPending;
   const startsOn = range.from;
   const endsOn = range.to || range.from;
+  // Every category but "other" puts its own fixed label on the letter (the
+  // API ignores a typed reason for them), so only "other" asks for one.
+  const asksReason = category === "other";
 
   async function pickEvidence(file: File | undefined) {
     if (!file) {
@@ -87,7 +90,7 @@ export function SubmitForm({
   async function send() {
     setError(null);
     setAttempted(true);
-    if (!reason.trim() || !startsOn || !endsOn) return;
+    if ((asksReason && !reason.trim()) || !startsOn || !endsOn) return;
     if (endsOn < startsOn) {
       setError(t("form.rangeError"));
       return;
@@ -95,7 +98,7 @@ export function SubmitForm({
     try {
       const detail = await submit.mutateAsync({
         category,
-        reason: reason.trim(),
+        ...(asksReason ? { reason: reason.trim() } : {}),
         starts_on: startsOn,
         ends_on: endsOn,
       });
@@ -131,7 +134,11 @@ export function SubmitForm({
     >
       {error && <FormError>{error}</FormError>}
       <FormSection>
-        <Field label={t("form.category")} required>
+        <Field
+          label={t("form.category")}
+          hint={asksReason ? undefined : t("form.categoryHint")}
+          required
+        >
           <Select
             options={CATEGORIES.map((c) => ({ value: c, label: t(`categories.${c}`) }))}
             value={category}
@@ -152,23 +159,25 @@ export function SubmitForm({
             today={todayInZone(me?.tenant.timezone)}
           />
         </Field>
-        <Field
-          label={t("form.reason")}
-          error={attempted && !reason.trim() ? t("form.reasonRequired") : undefined}
-          required
-          className="col-span-full"
-        >
-          <Textarea
-            rows={3}
-            autoResize
-            value={reason}
-            maxLength={500}
-            onChange={(e) => {
-              setReason(e.target.value);
-            }}
-            placeholder={t("form.reasonPlaceholder")}
-          />
-        </Field>
+        {asksReason && (
+          <Field
+            label={t("form.reason")}
+            error={attempted && !reason.trim() ? t("form.reasonRequired") : undefined}
+            required
+            className="col-span-full"
+          >
+            <Textarea
+              rows={3}
+              autoResize
+              value={reason}
+              maxLength={500}
+              onChange={(e) => {
+                setReason(e.target.value);
+              }}
+              placeholder={t("form.reasonPlaceholder")}
+            />
+          </Field>
+        )}
         <Field
           label={t("form.evidence")}
           hint={t("form.evidenceHint")}

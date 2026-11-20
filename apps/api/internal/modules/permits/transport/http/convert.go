@@ -42,6 +42,8 @@ var (
 	errReasonTooLong       = httpx.NewError(http.StatusBadRequest, "REASON_TOO_LONG")
 	errTemplateInvalid     = httpx.NewError(http.StatusUnprocessableEntity, "TEMPLATE_INVALID")
 	errStageMismatch       = httpx.NewError(http.StatusConflict, "WORKFLOW_STAGE_MISMATCH")
+	errLeaveReason         = httpx.NewError(http.StatusBadRequest, "LEAVE_REASON_REQUIRED")
+	errStudentOnLeave      = httpx.NewError(http.StatusConflict, "STUDENT_ON_LEAVE_TODAY")
 )
 
 var permitErrorMap = map[error]error{
@@ -82,6 +84,8 @@ var permitErrorMap = map[error]error{
 	domain.ErrViolationInvalid:             errViolationInvalid,
 	domain.ErrScanTokenConsumerNotStudent:  errScanConsumerStudent,
 	domain.ErrReasonTooLong:                errReasonTooLong,
+	domain.ErrLeaveReasonRequired:          errLeaveReason,
+	domain.ErrStudentOnLeaveToday:          errStudentOnLeave,
 }
 
 func mapError(err error) error {
