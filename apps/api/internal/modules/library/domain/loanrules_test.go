@@ -135,8 +135,21 @@ func TestCopyCanBorrowByAllowsOnlyTheMemberTheHoldIsFor(t *testing.T) {
 	reserved := domain.Copy{Status: domain.CopyReserved}
 
 	require.NoError(t, reserved.CanBorrowBy(true), "the member the copy was held for may borrow it")
-	require.ErrorIs(t, reserved.CanBorrowBy(false), domain.ErrCopyNotAvailable, "nobody else may")
+	require.ErrorIs(t, reserved.CanBorrowBy(false), domain.ErrCopyReservedForOther, "nobody else may, and is told why")
 
 	available := domain.Copy{Status: domain.CopyAvailable}
 	require.NoError(t, available.CanBorrowBy(false))
+}
+
+func TestCopyCanBorrowRefusesReferenceAndReadInPlaceCopies(t *testing.T) {
+	for _, access := range []domain.CopyAccess{domain.AccessReference, domain.AccessReadInPlace} {
+		item := domain.Copy{Status: domain.CopyAvailable, Access: access}
+		require.ErrorIs(t, item.CanBorrow(), domain.ErrCopyNotLoanable, string(access))
+		require.ErrorIs(t, item.CanBorrowBy(false), domain.ErrCopyNotLoanable, string(access))
+
+		held := domain.Copy{Status: domain.CopyReserved, Access: access}
+		require.ErrorIs(t, held.CanBorrowBy(true), domain.ErrCopyNotLoanable, "a hold never makes a reference copy lendable")
+	}
+	loanable := domain.Copy{Status: domain.CopyAvailable, Access: domain.AccessLoanable}
+	require.NoError(t, loanable.CanBorrow())
 }

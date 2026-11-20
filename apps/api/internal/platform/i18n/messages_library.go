@@ -6,6 +6,8 @@ func init() {
 	catalog["LIBRARY_COPY_BARCODE_EXISTS"] = map[string]string{Indonesian: "Barcode eksemplar sudah dipakai.", English: "Copy barcode already in use."}
 	catalog["LIBRARY_COPY_NOT_AVAILABLE"] = map[string]string{Indonesian: "Eksemplar ini tidak tersedia untuk dipinjam.", English: "This copy is not available to borrow."}
 	catalog["LIBRARY_COPY_ON_LOAN"] = map[string]string{Indonesian: "Eksemplar ini sedang dipinjam.", English: "This copy is already on loan."}
+	catalog["LIBRARY_COPY_NOT_LOANABLE"] = map[string]string{Indonesian: "Eksemplar ini hanya untuk dibaca di tempat, tidak bisa dipinjam.", English: "This copy is for reading in the library only and cannot be borrowed."}
+	catalog["LIBRARY_COPY_RESERVED_FOR_OTHER"] = map[string]string{Indonesian: "Eksemplar ini disimpan untuk anggota lain yang memesannya.", English: "This copy is held for another member who reserved it."}
 	catalog["LIBRARY_LOAN_NOT_FOUND"] = map[string]string{Indonesian: "Peminjaman tidak ditemukan.", English: "Loan not found."}
 	catalog["LIBRARY_LOAN_ALREADY_RETURNED"] = map[string]string{Indonesian: "Peminjaman ini sudah dikembalikan.", English: "This loan is already returned."}
 	catalog["LIBRARY_LOAN_LIMIT_REACHED"] = map[string]string{Indonesian: "Anggota sudah mencapai batas jumlah pinjaman aktif.", English: "The member has reached the active loan limit."}
@@ -48,6 +50,7 @@ func init() {
 	catalog["LIBRARY_VIOLATION_ALREADY_SETTLED"] = map[string]string{Indonesian: "Pelanggaran ini sudah diselesaikan.", English: "This violation is already settled."}
 
 	catalog["LIBRARY_VISIT_NOT_FOUND"] = map[string]string{Indonesian: "Kunjungan tidak ditemukan.", English: "Visit not found."}
+	catalog["LIBRARY_VISIT_TOKEN_GONE"] = map[string]string{Indonesian: "Kode QR sudah dipakai atau kedaluwarsa. Pindai kode baru di layar perpustakaan.", English: "This QR code was already used or has expired. Scan the new code on the library screen."}
 
 	catalog["LIBRARY_COVER_TOO_LARGE"] = map[string]string{Indonesian: "Ukuran sampul melebihi 3 MB.", English: "Cover image exceeds 3 MB."}
 	catalog["LIBRARY_COVER_INVALID_TYPE"] = map[string]string{Indonesian: "Tipe berkas sampul tidak didukung. Gunakan JPEG, PNG, atau WebP.", English: "Unsupported cover file type. Use JPEG, PNG, or WebP."}

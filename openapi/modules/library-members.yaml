@@ -196,6 +196,24 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  /v1/library/members/{userId}/borrowing-status:
+    get:
+      tags: [library]
+      operationId: getLibraryMemberBorrowingStatus
+      x-permission: manage_library_circulation
+      summary: The loan limits a borrow by this member enforces today, quota in use, and unpaid fines
+      parameters:
+        - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Borrowing status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryMemberBorrowingStatus" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
   /v1/library/members/{userId}/status:
     put:
       tags: [library]
@@ -782,6 +800,7 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "409": { $ref: "#/components/responses/Conflict" }
+        "410": { $ref: "#/components/responses/TokenGone" }
 
   /v1/library/copies/{copyId}/read-in-place:
     get:
@@ -958,6 +977,30 @@ components:
         suspended_until: { type: string, format: date }
         late_return_count: { type: integer }
         notes: { type: string }
+    LibraryMemberBorrowingStatus:
+      type: object
+      description: >-
+        The limits a borrow by this member enforces today, resolved the same
+        way the server does (a dated loan rule for the member type, then one
+        for every type, then the member type, then the tenant policy), with
+        the active loans already counted against max_loan_items and whether
+        an unpaid fine is on record.
+      required:
+        [
+          allow_loans,
+          max_loan_items,
+          max_loan_days,
+          active_loan_count,
+          has_unpaid_fine,
+          unpaid_fine_blocks_loans,
+        ]
+      properties:
+        allow_loans: { type: boolean }
+        max_loan_items: { type: integer }
+        max_loan_days: { type: integer }
+        active_loan_count: { type: integer }
+        has_unpaid_fine: { type: boolean }
+        unpaid_fine_blocks_loans: { type: boolean }
     LibraryMemberRegister:
       type: object
       required: [user_id, member_type_id]

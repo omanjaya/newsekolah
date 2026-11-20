@@ -3,6 +3,8 @@ package http
 import (
 	"context"
 	"errors"
+	"fmt"
+	nethttp "net/http"
 	"testing"
 
 	"github.com/google/uuid"
@@ -11,20 +13,35 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
 
 func TestErrorCodeMapsDomainErrors(t *testing.T) {
 	cases := map[error]string{
-		domain.ErrMemberSuspended:    "LIBRARY_MEMBER_SUSPENDED",
-		domain.ErrMemberNotActive:    "LIBRARY_MEMBER_NOT_ACTIVE",
-		domain.ErrMemberHasTitle:     "LIBRARY_ALREADY_HAS_TITLE",
-		domain.ErrNoCopyForClassLoan: "LIBRARY_NO_COPY_AVAILABLE",
-		domain.ErrMemberNoExhausted:  "LIBRARY_MEMBER_NO_EXHAUSTED",
-		errors.New("boom"):           "INTERNAL_ERROR",
+		domain.ErrMemberSuspended:      "LIBRARY_MEMBER_SUSPENDED",
+		domain.ErrMemberNotActive:      "LIBRARY_MEMBER_NOT_ACTIVE",
+		domain.ErrMemberHasTitle:       "LIBRARY_ALREADY_HAS_TITLE",
+		domain.ErrNoCopyForClassLoan:   "LIBRARY_NO_COPY_AVAILABLE",
+		domain.ErrMemberNoExhausted:    "LIBRARY_MEMBER_NO_EXHAUSTED",
+		domain.ErrCopyNotLoanable:      "LIBRARY_COPY_NOT_LOANABLE",
+		domain.ErrCopyReservedForOther: "LIBRARY_COPY_RESERVED_FOR_OTHER",
+		domain.ErrUnpaidFine:           "LIBRARY_UNPAID_FINE",
+		domain.ErrKioskTokenInvalid:    "LIBRARY_VISIT_TOKEN_GONE",
+		errors.New("boom"):             "INTERNAL_ERROR",
 	}
 	for err, want := range cases {
 		require.Equal(t, want, errorCode(err), err.Error())
 	}
+}
+
+// TestKioskTokenErrorIsGoneNotInternal covers a reused or expired visit
+// kiosk QR, which used to fall through the error map into a 500 "server
+// error, try again" that retrying could never fix.
+func TestKioskTokenErrorIsGoneNotInternal(t *testing.T) {
+	var appErr *httpx.Error
+	require.ErrorAs(t, mapError(fmt.Errorf("scan: %w", domain.ErrKioskTokenInvalid)), &appErr)
+	require.Equal(t, nethttp.StatusGone, appErr.Status)
+	require.Equal(t, "LIBRARY_VISIT_TOKEN_GONE", appErr.Code)
 }
 
 func TestToAPIBatchResultCarriesCode(t *testing.T) {

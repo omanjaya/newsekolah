@@ -88,4 +88,13 @@ func TestPreviewClassLoansRejectsWithDomainErrors(t *testing.T) {
 	again, err := svc.PreviewClassLoans(ctx, tenant, class, title)
 	require.NoError(t, err)
 	require.ErrorIs(t, rejectedErrs(again)[andi], domain.ErrMemberHasTitle)
+
+	// A reference title's copies stay in the library: the preview pairs
+	// none of them, whatever their status.
+	_, err = pg.AdminPool.Exec(ctx, `update library_copies set access = 'reference' where title_id = $1`, title)
+	require.NoError(t, err)
+	reference, err := svc.PreviewClassLoans(ctx, tenant, class, title)
+	require.NoError(t, err)
+	require.Empty(t, reference.Pairs)
+	require.ErrorIs(t, rejectedErrs(reference)[dewi], domain.ErrNoCopyForClassLoan)
 }

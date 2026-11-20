@@ -64,8 +64,11 @@ type BatchBorrowResult struct {
 
 // BatchBorrow issues as many of the given barcodes as it can to one member
 // in a single transaction, collecting failures into Rejected instead of
-// aborting the whole batch. It fails outright (no loans at all) only when
-// every barcode was rejected.
+// aborting the whole batch. Barcodes are tried in the order given, so the
+// caller decides which ones get the member's remaining quota. Even when
+// every barcode is rejected the result is returned without an error: each
+// row keeps its own reason (an unpaid fine, the loan limit, a suspended
+// member), which a single generic "not available" error used to hide.
 func (s *Service) BatchBorrow(ctx context.Context, tenantID uuid.UUID, in BatchBorrowInput) (BatchBorrowResult, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return BatchBorrowResult{}, err
@@ -82,9 +85,6 @@ func (s *Service) BatchBorrow(ctx context.Context, tenantID uuid.UUID, in BatchB
 				continue
 			}
 			result.Loans = append(result.Loans, loan)
-		}
-		if len(result.Loans) == 0 && len(result.Rejected) > 0 {
-			return domain.ErrCopyNotAvailable
 		}
 		return nil
 	})
@@ -140,18 +140,10 @@ func (s *Service) borrowOneWithQuota(ctx context.Context, tenantID uuid.UUID, in
 		return domain.Loan{}, err
 	}
 
-	memberType, foundType, err := s.repo.GetMemberType(ctx, tenantID, member.MemberTypeID)
+	limits, err := s.effectiveLimits(ctx, tenantID, member, policy, now)
 	if err != nil {
 		return domain.Loan{}, err
 	}
-	if !foundType {
-		return domain.Loan{}, domain.ErrMemberTypeNotFound
-	}
-	rules, err := s.repo.ListLoanRulesActive(ctx, tenantID, now)
-	if err != nil {
-		return domain.Loan{}, err
-	}
-	limits := domain.ResolveEffectiveLimits(rules, memberType, policy, now)
 	if !limits.AllowLoans {
 		return domain.Loan{}, domain.ErrLoansClosed
 	}
@@ -213,6 +205,72 @@ func (s *Service) borrowOneWithQuota(ctx context.Context, tenantID uuid.UUID, in
 		}
 	}
 	return loan, nil
+}
+
+// effectiveLimits resolves the limits a borrow by member enforces on now:
+// a dated loan rule for the member's type, then one for every type, then
+// the member type's own limit, then the tenant policy. Borrowing and the
+// circulation screens' quota display both read it, so the counter a
+// reader sees is the one the server applies.
+func (s *Service) effectiveLimits(ctx context.Context, tenantID uuid.UUID, member domain.Member, policy domain.Policy, now time.Time) (domain.EffectiveLimits, error) {
+	memberType, foundType, err := s.repo.GetMemberType(ctx, tenantID, member.MemberTypeID)
+	if err != nil {
+		return domain.EffectiveLimits{}, err
+	}
+	if !foundType {
+		return domain.EffectiveLimits{}, domain.ErrMemberTypeNotFound
+	}
+	rules, err := s.repo.ListLoanRulesActive(ctx, tenantID, now)
+	if err != nil {
+		return domain.EffectiveLimits{}, err
+	}
+	return domain.ResolveEffectiveLimits(rules, memberType, policy, now), nil
+}
+
+// MemberBorrowingStatus is what a circulation screen shows about a member
+// before lending: the limits a borrow would enforce today, how much of the
+// quota is in use, and whether an unpaid fine is in the way.
+type MemberBorrowingStatus struct {
+	Limits          domain.EffectiveLimits
+	ActiveLoanCount int
+	HasUnpaidFine   bool
+	// FineBlocksLoans is HasUnpaidFine under a policy that refuses loans
+	// while a fine is unpaid.
+	FineBlocksLoans bool
+}
+
+// GetMemberBorrowingStatus reports MemberBorrowingStatus for one member,
+// using the same rules borrowOneWithQuota enforces.
+func (s *Service) GetMemberBorrowingStatus(ctx context.Context, tenantID, userID uuid.UUID) (MemberBorrowingStatus, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return MemberBorrowingStatus{}, err
+	}
+	var out MemberBorrowingStatus
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		member, found, err := s.repo.GetMember(ctx, tenantID, userID)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return domain.ErrMemberNotFound
+		}
+		policy, err := s.loadPolicy(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		if out.Limits, err = s.effectiveLimits(ctx, tenantID, member, policy, clock.Now(ctx, s.clock)); err != nil {
+			return err
+		}
+		if out.ActiveLoanCount, err = s.repo.CountActiveLoansForMember(ctx, tenantID, userID); err != nil {
+			return err
+		}
+		if out.HasUnpaidFine, err = s.repo.HasUnpaidFine(ctx, tenantID, userID); err != nil {
+			return err
+		}
+		out.FineBlocksLoans = out.HasUnpaidFine && policy.BlockLoansWithUnpaidFines
+		return nil
+	})
+	return out, err
 }
 
 // workingDayRule loads the tenant's holiday calendar for a window starting
