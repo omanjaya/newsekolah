@@ -52,6 +52,15 @@ export function GatePanel({ modeSwitch }: { modeSwitch?: ReactNode } = {}): Reac
   const { me } = useSession();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+
+  // The generic expired-code copy speaks to a student scanning a teacher's
+  // QR. At the gate the guard scans and the student holds the code, so the
+  // guard is told to ask the student for a fresh one.
+  function gateRefusalText(error: unknown): string {
+    if (!(error instanceof ApiError)) return apiErrorMessage("UNKNOWN");
+    return error.code === "SCAN_TOKEN_GONE" ? t("tokenGone") : apiErrorMessage(error.code);
+  }
+
   const scan = useScanGateMutation();
   const [log, setLog] = useState<GateLogEntry[]>([]);
   const [result, setResult] = useState<ScannerResultValue | null>(null);
@@ -87,8 +96,7 @@ export function GatePanel({ modeSwitch }: { modeSwitch?: ReactNode } = {}): Reac
       setResult({
         tone: "danger",
         title: t("refused"),
-        description:
-          error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+        description: gateRefusalText(error),
         key: Date.now(),
       });
       return false;

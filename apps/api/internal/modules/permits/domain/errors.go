@@ -10,7 +10,7 @@ var (
 	ErrStageIndexOutOfRange  = errors.New("stage index out of range")
 	ErrApproverNotEligible   = errors.New("actor does not satisfy the stage approver rule")
 	ErrApproverNotDistinct   = errors.New("actor already approved an earlier stage this rule requires to be distinct")
-	ErrAlreadyInProgress     = errors.New("subject already has an in-progress workflow of this kind today")
+	ErrAlreadyInProgress     = errors.New("subject already has an in-progress workflow of this kind")
 	ErrNotWorkflowSubject    = errors.New("only the workflow's own subject may perform this action")
 	ErrAcademicYearRequired  = errors.New("tenant has no active academic year")
 	ErrEnrollmentNotFound    = errors.New("student has no active enrollment")

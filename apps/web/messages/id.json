@@ -1534,6 +1534,7 @@
           "undoLast": "Sembunyikan dari daftar ini",
           "title": "Pindai QR gerbang",
           "refused": "Tidak bisa keluar",
+          "tokenGone": "QR gerbang sudah kedaluwarsa atau sudah dipakai. Minta siswa menekan Buat kode baru di layar izinnya, lalu pindai lagi.",
           "todayListHint": "Tersimpan di layar ini selama halaman terbuka.",
           "todayListEmpty": "Belum ada siswa yang lewat gerbang."
         },

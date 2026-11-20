@@ -1534,6 +1534,7 @@
           "undoLast": "Hide from this list",
           "title": "Scan the gate QR",
           "refused": "Cannot leave",
+          "tokenGone": "This gate QR has expired or was already used. Ask the student to tap Generate a new code on their permit screen, then scan again.",
           "todayListHint": "Kept on this screen while the page stays open.",
           "todayListEmpty": "No student has passed the gate yet."
         },
