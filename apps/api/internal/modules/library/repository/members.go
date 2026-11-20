@@ -135,15 +135,16 @@ func (r *Repository) CreateMember(ctx context.Context, m domain.Member) (domain.
 	return toMember(row), nil
 }
 
+// mapMemberInsertError tells the two unique constraints on
+// library_members apart: the primary key (tenant_id, user_id) means the
+// user is already a member, the member_no key means the number is taken.
+// *pgconn.PgError carries the constraint name as a field, so this goes
+// through constraintName rather than an interface assertion.
 func mapMemberInsertError(err error) error {
-	var pgErr interface {
-		SQLState() string
-		ConstraintName() string
-	}
-	if errors.As(err, &pgErr) && pgErr.SQLState() == "23505" {
-		if pgErr.ConstraintName() == "library_members_pkey" {
-			return domain.ErrMemberAlreadyExists
-		}
+	switch constraintName(err) {
+	case "library_members_pkey":
+		return domain.ErrMemberAlreadyExists
+	case "library_members_tenant_id_member_no_key":
 		return domain.ErrMemberNoCollision
 	}
 	return fmt.Errorf("create member: %w", err)
