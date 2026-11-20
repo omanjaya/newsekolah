@@ -22,8 +22,9 @@ export function useStayLabel(): (minutes: number) => string {
 
 /**
  * The visitors on site as one list: who, from where and why, whom they
- * came to see, since when and for how long (each on a line of its own), the badge they wear (with a
- * print action), and the one-tap check out (confirmed by the caller). A
+ * came to see, since when and for how long (each on a line of its own),
+ * the badge they wear (with a print action), and the one-tap check out
+ * (confirmed by the caller). A
  * visitor still here past the school day is marked and was already sorted
  * to the top.
  */
@@ -70,12 +71,13 @@ export function OnSiteList({
             // Whom they came to see, since when, and the badge each get a
             // line of their own: sharing one, the host or the time was cut
             // to "Menemui Kep..." beside the row's buttons, on a phone and
-            // in the board's narrow desktop column alike.
-            metaLines={3}
+            // in the board's narrow desktop column alike. The fourth line
+            // is the host's second on a phone (below).
+            metaLines={4}
             meta={
               <>
-                {/* Only three lines: on a phone with a host and a badge,
-                    the organization and purpose give way to those. */}
+                {/* On a phone with a host and a badge, the organization and
+                    purpose give way to those. */}
                 {about && (
                   <span
                     title={about}
@@ -87,8 +89,12 @@ export function OnSiteList({
                     {about}
                   </span>
                 )}
+                {/* A phone's text column (about 184px beside the row's
+                    buttons) cuts "Menemui Wakil Kepala Sekolah Contoh" on
+                    one line, and a title cannot be read there, so the host
+                    wraps instead; from sm it keeps one line. */}
                 {hostLine && (
-                  <span title={hostLine} className="block truncate">
+                  <span title={hostLine} className="block break-words sm:truncate">
                     {hostLine}
                   </span>
                 )}

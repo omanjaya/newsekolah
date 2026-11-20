@@ -57,7 +57,7 @@ it("gives whom they came to see a line of its own, apart from the arrival and th
   // Sharing one line with "Masuk 06.45 · 5 j 42 mnt" left the host cut to
   // "Menemui Kep..." on a phone and in the board's desktop column.
   const host = screen.getByText("host");
-  expect(host).toHaveClass("block", "truncate");
+  expect(host).toHaveClass("block");
   expect(host).not.toHaveClass("max-sm:hidden", "sm:hidden");
   expect(host).toHaveAttribute("title", "host");
   const arrival = screen.getByText("arrived");
@@ -70,9 +70,10 @@ it("gives whom they came to see a line of its own, apart from the arrival and th
     .find((el) => el.classList.contains("sm:hidden"));
   expect(host.contains(phonePass ?? null)).toBe(false);
 
-  // Host, arrival and pass: the row's meta holds all three lines.
+  // Host, arrival and pass: the row's meta holds all three lines, and one
+  // more for a host that wraps on a phone.
   const meta = host.parentElement;
-  expect(meta).toHaveClass("line-clamp-3");
+  expect(meta).toHaveClass("line-clamp-4");
   expect(meta?.contains(arrival)).toBe(true);
   expect(meta?.contains(phonePass ?? null)).toBe(true);
   expect(Array.from(meta?.children ?? []).indexOf(host)).toBeLessThan(
@@ -80,7 +81,18 @@ it("gives whom they came to see a line of its own, apart from the arrival and th
   );
 });
 
-it("gives a phone's three lines to the host, arrival and pass, not the purpose", () => {
+it("lets the host wrap on a phone, where one line cuts it and a title cannot be read", () => {
+  const hosted: BoardEntry = { ...entry, visit: { ...entry.visit, host_user_id: "host-1" } };
+  render(<OnSiteList entries={[hosted]} canManage onCheckOut={vi.fn()} onPrintBadge={vi.fn()} />);
+
+  const host = screen.getByText("host");
+  // Below sm nothing cuts it; from sm, beside the trailing badge, it keeps
+  // one line and its title.
+  expect(host).not.toHaveClass("truncate");
+  expect(host).toHaveClass("break-words", "sm:truncate");
+});
+
+it("gives a phone's lines to the host, arrival and pass, not the purpose", () => {
   const hosted: BoardEntry = { ...entry, visit: { ...entry.visit, host_user_id: "host-1" } };
   render(<OnSiteList entries={[hosted]} canManage={false} onCheckOut={vi.fn()} />);
 
