@@ -1318,6 +1318,12 @@ components:
         reservations: { type: array, items: { $ref: "#/components/schemas/LibraryReservation" } }
         violations: { type: array, items: { $ref: "#/components/schemas/LibraryViolation" } }
         booking_enabled: { type: boolean }
+        max_renewals:
+          type: integer
+          description: >-
+            How many times one of the member's loans may be renewed: their member
+            type's limit, or the tenant policy's for a member with no type. A loan
+            whose renewal_count has reached it cannot be renewed again.
 
     LibraryOpacCopy:
       type: object

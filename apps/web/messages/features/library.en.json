@@ -1637,6 +1637,7 @@
     "renewAction": "Renew",
     "renewed": "Renewed until {date}",
     "renewBlockedOverdue": "This loan is past due and cannot be renewed. Bring the book back to the library.",
+    "renewBlockedLimit": "Already renewed as many times as allowed. Bring the book back by its due date.",
     "titleUnavailable": "Title unavailable",
     "browseCatalogue": "Browse the catalogue",
     "unpaidFinesTotal": "Unpaid fines: {amount}",

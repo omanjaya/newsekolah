@@ -1637,6 +1637,7 @@
     "renewAction": "Perpanjang",
     "renewed": "Diperpanjang sampai {date}",
     "renewBlockedOverdue": "Tidak bisa diperpanjang karena sudah lewat jatuh tempo. Kembalikan bukunya ke perpustakaan.",
+    "renewBlockedLimit": "Sudah diperpanjang sebanyak batas yang diizinkan. Kembalikan bukunya sebelum jatuh tempo.",
     "titleUnavailable": "Judul tidak tersedia",
     "browseCatalogue": "Jelajahi katalog",
     "unpaidFinesTotal": "Denda belum dibayar: {amount}",

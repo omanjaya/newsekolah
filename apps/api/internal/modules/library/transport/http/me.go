@@ -14,7 +14,7 @@ func (h *LibraryHandler) GetMyLibraryProfile(ctx context.Context, _ api.GetMyLib
 	out := api.LibraryMyProfile{
 		ActiveLoans: make([]api.LibraryLoan, len(profile.ActiveLoans)), History: make([]api.LibraryLoan, len(profile.History)),
 		Reservations: make([]api.LibraryReservation, len(profile.Reservations)), Violations: make([]api.LibraryViolation, len(profile.Violations)),
-		BookingEnabled: &profile.BookingEnabled,
+		BookingEnabled: &profile.BookingEnabled, MaxRenewals: &profile.MaxRenewals,
 	}
 	for i, l := range profile.ActiveLoans {
 		out.ActiveLoans[i] = toAPILoan(l)

@@ -136,6 +136,9 @@ func TestRenewalLimitFollowsTheMemberType(t *testing.T) {
 	policy, err := svc.Policy(ctx, w.tenantID)
 	require.NoError(t, err)
 	require.Equal(t, 1, policy.MaxRenewals)
+	profile, err := svc.MyProfile(ctx, w.tenantID, w.memberID)
+	require.NoError(t, err)
+	require.Equal(t, 2, profile.MaxRenewals, "the member's own page offers as many renewals as the server allows")
 
 	day := at(t, ctx, "2026-12-14T01:00:00Z")
 	loan := w.borrow(t, day, svc, w.barcodes[0])

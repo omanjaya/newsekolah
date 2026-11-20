@@ -20,6 +20,10 @@ type MyProfile struct {
 	Reservations   []domain.Reservation
 	Violations     []domain.Violation
 	BookingEnabled bool
+	// MaxRenewals is how often one of the member's loans may be renewed
+	// (domain.RenewalLimits), so the page can stop offering a renewal the
+	// server would refuse.
+	MaxRenewals int
 }
 
 func (s *Service) MyProfile(ctx context.Context, tenantID, userID uuid.UUID) (MyProfile, error) {
@@ -66,6 +70,14 @@ func (s *Service) MyProfile(ctx context.Context, tenantID, userID uuid.UUID) (My
 			return err
 		}
 		out.BookingEnabled = policy.BookingEnabled
+		var memberType domain.MemberType
+		hasType := false
+		if out.Member != nil {
+			if memberType, hasType, err = s.repo.GetMemberType(ctx, tenantID, out.Member.MemberTypeID); err != nil {
+				return err
+			}
+		}
+		out.MaxRenewals, _ = domain.RenewalLimits(memberType, hasType, policy)
 		return nil
 	})
 	if err != nil {
