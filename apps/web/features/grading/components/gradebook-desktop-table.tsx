@@ -262,6 +262,12 @@ export function GradebookDesktopTable({
                       onManualOverride(student);
                     }}
                     title={pending ? t("reportScorePending") : undefined}
+                    // Named for the student, as the pencil it replaces is,
+                    // not by the bare number.
+                    aria-label={t("reportScoreOf", {
+                      name: student.name,
+                      score: formatScore(student.report_score, locale, scaleDecimals),
+                    })}
                     className="text-fg underline decoration-dotted underline-offset-2"
                   >
                     {formatScore(student.report_score, locale, scaleDecimals)}

@@ -58,6 +58,24 @@ describe("GradebookMobileCards", () => {
     expect(screen.getByRole("button", { name: 'starsFor:{"name":"Budi"}' })).toBeEnabled();
   });
 
+  it("names a manager's report score button for the student", () => {
+    renderCards({ canManage: true });
+    expect(
+      screen.getByRole("button", { name: 'reportScoreSet:{"name":"Budi"}' }),
+    ).toBeInTheDocument();
+  });
+
+  it("names a manager's set report score for the student and its value, pending as a description", () => {
+    renderCards({
+      students: [{ ...student, report_score: 75.5 }],
+      pendingStudentIds: new Set(["s1"]),
+    });
+    const button = screen.getByRole("button", {
+      name: 'reportScoreOf:{"name":"Budi","score":"75,5"}',
+    });
+    expect(button).toHaveAccessibleDescription("reportScorePending");
+  });
+
   it("gives a reader the score and star balance as text, with no disabled controls", () => {
     renderCards({ canManage: false });
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();

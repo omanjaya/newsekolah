@@ -153,15 +153,29 @@ export function GradebookMobileCards({
                   onClick={() => {
                     onManualOverride(student);
                   }}
+                  // Named for the student, not only "Nilai rapor 75,5"; the
+                  // pending dot inside it becomes its description.
+                  aria-label={
+                    student.report_score === undefined
+                      ? t("reportScoreSet", { name: student.name })
+                      : t("reportScoreOf", { name: student.name, score: reportScore })
+                  }
+                  aria-describedby={
+                    pending ? `report-score-pending-${student.student_user_id}` : undefined
+                  }
                   className="text-fg underline decoration-dotted underline-offset-2"
                 >
                   {t("reportScoreColumn")} {reportScore}
                   {pending && (
-                    <span
-                      role="img"
-                      className="ml-1 inline-block size-1.5 rounded-full bg-accent"
-                      aria-label={t("reportScorePending")}
-                    />
+                    <>
+                      <span
+                        aria-hidden="true"
+                        className="ml-1 inline-block size-1.5 rounded-full bg-accent"
+                      />
+                      <span id={`report-score-pending-${student.student_user_id}`} hidden>
+                        {t("reportScorePending")}
+                      </span>
+                    </>
                   )}
                 </Button>
               ) : (

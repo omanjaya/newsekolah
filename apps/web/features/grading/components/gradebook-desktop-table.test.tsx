@@ -84,8 +84,15 @@ describe("GradebookDesktopTable", () => {
   });
 
   it("keeps an existing report score as an underlined value a manager can change", () => {
-    renderTable();
-    expect(screen.getByRole("button", { name: /^88/ })).toHaveClass("underline");
+    const onManualOverride = vi.fn();
+    renderTable({ onManualOverride });
+    // Named for the student (grades-discipline-R2), not by the bare score.
+    const button = screen.getByRole("button", {
+      name: /^reportScoreOf:\{"name":"Budi","score":"88/,
+    });
+    expect(button).toHaveClass("underline");
+    fireEvent.click(button);
+    expect(onManualOverride).toHaveBeenCalledWith(scored);
   });
 
   it("shows a dash, not a false zero, while the star balances are unknown", () => {

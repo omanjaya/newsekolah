@@ -9775,7 +9775,10 @@ export interface components {
             };
             average?: number;
             final_kktp?: number;
+            /** @description The score on the report card, the teacher's manual score when set, else the automatic one. */
             report_score?: number;
+            /** @description The teacher's manual report score alone; absent while the report score is automatic. */
+            manual_score?: number;
         };
         Gradebook: {
             /** Format: uuid */

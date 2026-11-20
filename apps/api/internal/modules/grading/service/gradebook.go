@@ -28,7 +28,12 @@ type GradebookStudent struct {
 	Scores        map[uuid.UUID]float64
 	Average       *float64
 	FinalKKTP     *float64
-	ReportScore   *float64
+	// ReportScore is the score on the report card: the teacher's manual
+	// score when one is set, else the automatic one.
+	ReportScore *float64
+	// ManualScore is the teacher's override alone, nil when the report
+	// score is automatic, so the edit form can start from it.
+	ManualScore *float64
 }
 
 type GradebookQuery struct {
@@ -301,7 +306,7 @@ func (s *Service) gradebookInTx(ctx context.Context, tenantID, yearID, termID, c
 	if err != nil {
 		return Gradebook{}, err
 	}
-	finals, err := s.finalScores(ctx, tenantID, termID, classID, subjectID)
+	finals, err := s.reportScoresByStudent(ctx, tenantID, termID, classID, subjectID)
 	if err != nil {
 		return Gradebook{}, err
 	}
@@ -338,19 +343,21 @@ func (s *Service) scoresByStudent(ctx context.Context, tenantID uuid.UUID, compo
 	return out, nil
 }
 
-func (s *Service) finalScores(ctx context.Context, tenantID, termID, classID, subjectID uuid.UUID) (map[uuid.UUID]float64, error) {
+// reportScoresByStudent indexes the stored report scores (the final score
+// and the manual override behind it) by student.
+func (s *Service) reportScoresByStudent(ctx context.Context, tenantID, termID, classID, subjectID uuid.UUID) (map[uuid.UUID]ReportScore, error) {
 	reports, err := s.repo.ListReportScores(ctx, tenantID, termID, classID, subjectID)
 	if err != nil {
 		return nil, err
 	}
-	out := make(map[uuid.UUID]float64, len(reports))
+	out := make(map[uuid.UUID]ReportScore, len(reports))
 	for _, r := range reports {
-		out[r.StudentUserID] = r.FinalScore
+		out[r.StudentUserID] = r
 	}
 	return out, nil
 }
 
-func (s *Service) gradebookStudents(ctx context.Context, tenantID, yearID, classID uuid.UUID, components []domain.Component, scores map[uuid.UUID]map[uuid.UUID]float64, finals map[uuid.UUID]float64, scale domain.Scale) ([]GradebookStudent, error) {
+func (s *Service) gradebookStudents(ctx context.Context, tenantID, yearID, classID uuid.UUID, components []domain.Component, scores map[uuid.UUID]map[uuid.UUID]float64, reports map[uuid.UUID]ReportScore, scale domain.Scale) ([]GradebookStudent, error) {
 	studentIDs, err := s.repo.ClassStudentIDs(ctx, tenantID, yearID, classID)
 	if err != nil {
 		return nil, err
@@ -374,9 +381,13 @@ func (s *Service) gradebookStudents(ctx context.Context, tenantID, yearID, class
 			rounded := scale.Round(kktp)
 			student.FinalKKTP = &rounded
 		}
-		if final, ok := finals[id]; ok {
-			value := final
-			student.ReportScore = &value
+		if report, ok := reports[id]; ok {
+			final := report.FinalScore
+			student.ReportScore = &final
+			if report.ManualScore != nil {
+				manual := *report.ManualScore
+				student.ManualScore = &manual
+			}
 		}
 		out = append(out, student)
 	}
