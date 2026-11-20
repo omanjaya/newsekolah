@@ -52,4 +52,24 @@ func TestTitleCallNumberFollowsTheClassNumber(t *testing.T) {
 	updated, err = f.svc.UpdateTitle(f.ctx, edit)
 	require.NoError(t, err)
 	require.Equal(t, "R 899.2213 PRA b", updated.CallNumber)
+
+	// A title catalogued by hand before the class number was read from the
+	// classification stored "PRA b". Filling in its DDC number regenerates
+	// the call number although the current rule would build "899.221 PRA b"
+	// from what is stored, and its copy follows.
+	legacy, legacyCopies, err := f.svc.CreateTitle(f.ctx, domain.Title{
+		TenantID: f.tenant, Title: "Bumi Manusia", Author: "Pramoedya Ananta Toer",
+		Classification: "899.221", CallNumber: "PRA b",
+	}, 1, service.CopyDefaults{})
+	require.NoError(t, err)
+	require.Equal(t, "PRA b", legacy.CallNumber)
+	require.Equal(t, "PRA b", legacyCopies[0].CallNumber)
+	edit = legacy
+	edit.DDCNumber = "899.221"
+	updated, err = f.svc.UpdateTitle(f.ctx, edit)
+	require.NoError(t, err)
+	require.Equal(t, "899.221 PRA b", updated.CallNumber)
+	listed, err = f.svc.ListCopies(f.ctx, f.tenant, legacy.ID)
+	require.NoError(t, err)
+	require.Equal(t, "899.221 PRA b", listed[0].CallNumber)
 }

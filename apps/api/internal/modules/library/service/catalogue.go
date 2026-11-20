@@ -47,6 +47,15 @@ func autoCallNumber(t domain.Title) string {
 	return domain.GenerateCallNumber(class, t.Author, t.Title)
 }
 
+// isGeneratedCallNumber reports whether a stored title's call number is
+// one the app built rather than one a librarian typed: it equals what the
+// current rule builds, or what the rule built before it read a DDC-shaped
+// classification (a hand-catalogued "899.221" title stored "PRA b").
+func isGeneratedCallNumber(t domain.Title) bool {
+	return t.CallNumber == autoCallNumber(t) ||
+		t.CallNumber == domain.GenerateCallNumber(t.DDCNumber, t.Author, t.Title)
+}
+
 func (s *Service) CreateTitle(ctx context.Context, t domain.Title, copyCount int, copyDefaults CopyDefaults) (domain.Title, []domain.Copy, error) {
 	if err := s.requireEnabled(ctx, t.TenantID); err != nil {
 		return domain.Title{}, nil, err
@@ -81,8 +90,8 @@ func (s *Service) CreateTitle(ctx context.Context, t domain.Title, copyCount int
 	return created, copies, nil
 }
 
-// UpdateTitle saves a title. A call number that was generated (it still
-// equals what the stored DDC, author and title produce) is regenerated
+// UpdateTitle saves a title. A call number that was generated (see
+// isGeneratedCallNumber) is regenerated
 // from the new values, so correcting the DDC number fixes the call number
 // too; one the librarian typed is kept. Copies that inherited the old call
 // number follow the new one, and making a hidden title public makes its
@@ -103,7 +112,7 @@ func (s *Service) UpdateTitle(ctx context.Context, t domain.Title) (domain.Title
 		if !found {
 			return domain.ErrTitleNotFound
 		}
-		if t.CallNumber == existing.CallNumber && existing.CallNumber == autoCallNumber(existing) {
+		if t.CallNumber == existing.CallNumber && isGeneratedCallNumber(existing) {
 			t.CallNumber = ""
 		}
 		t, err = prepareTitle(t)

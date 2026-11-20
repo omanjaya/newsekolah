@@ -472,11 +472,6 @@ func NormalizeISBN(raw string) string {
 	return strings.ToUpper(isbnStripPattern.ReplaceAllString(strings.TrimSpace(raw), ""))
 }
 
-// GenerateCallNumber builds the default call number the old app derived
-// when a librarian left the field empty: the DDC number, then the first
-// three letters of the author's name upper-cased, then the first letter
-// of the title lower-cased (old app: libraryCallNumber). Returns "" when
-// there isn't enough information (no DDC and no author).
 // LooksLikeDDC reports whether s is a Dewey class number: three digits,
 // optionally followed by a decimal part ("899", "899.221").
 func LooksLikeDDC(s string) bool {
@@ -496,6 +491,11 @@ func LooksLikeDDC(s string) bool {
 	return true
 }
 
+// GenerateCallNumber builds the default call number the old app derived
+// when a librarian left the field empty: the DDC number, then the first
+// three letters of the author's name upper-cased, then the first letter
+// of the title lower-cased (old app: libraryCallNumber). Returns "" when
+// there isn't enough information (no DDC and no author).
 func GenerateCallNumber(ddcNumber, author, title string) string {
 	parts := make([]string, 0, 3)
 	if ddcNumber != "" {
