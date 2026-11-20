@@ -107,4 +107,25 @@ describe("MemberReservations", () => {
 
     expect(screen.getByText("Ambil paling lambat 24 Nov pukul 23.59")).toBeInTheDocument();
   });
+
+  // The whole status line used to sit in the trailing slot, which never
+  // shrinks or wraps: on a phone it pushed the title to nothing and ran
+  // past the card. Only the badge belongs there; the deadline is meta.
+  it("keeps only the badge in the trailing slot and the deadline under the title", () => {
+    const { container } = withMessages(
+      <MemberReservations
+        reservations={[hold({ expires_at: "2026-11-18T01:00:00Z" })]}
+        locale="id"
+        timeZone="Asia/Makassar"
+        today="2026-11-20"
+      />,
+    );
+
+    const trailing = container.querySelector('[data-slot="list-row-trailing"]');
+    expect(trailing).toHaveTextContent(/^Kedaluwarsa$/);
+    // The meta line, which wraps, describes the row's link.
+    expect(screen.getByRole("link")).toHaveAccessibleDescription(
+      "Batas ambil 18 Nov pukul 09.00 sudah lewat",
+    );
+  });
 });

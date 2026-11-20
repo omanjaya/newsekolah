@@ -1473,6 +1473,8 @@
         "waiting": "Anda sudah memesan judul ini.",
         "queued": "Anda sudah memesan judul ini, antrean ke-{position}.",
         "ready": "Pesanan Anda siap diambil di perpustakaan.",
+        "readyBy": "Pesanan Anda siap diambil di perpustakaan paling lambat {date} pukul {time}.",
+        "pickupPassed": "Batas ambil pesanan Anda {date} pukul {time} sudah lewat.",
         "myLibrary": "Lihat perpustakaan saya",
         "signIn": "Masuk untuk memesan judul ini"
       },

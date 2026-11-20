@@ -27,7 +27,14 @@ vi.mock("@newsekolah/ui", async (importOriginal) => ({
   useToast: () => ({ success: toastSuccess, error: vi.fn() }),
 }));
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  useLocale: () => "id",
+  useTranslations: () => (key: string, values?: Record<string, string>) =>
+    values?.date ? `${key} ${values.date} ${values.time}` : key,
+}));
+vi.mock("../use-tenant-timezone", () => ({ useTenantTimeZone: () => "Asia/Makassar" }));
+// Fri 20 Nov 2026 16:00 WITA.
+vi.mock("../../../lib/simulation/clock", () => ({
+  businessNow: () => new Date("2026-11-20T08:00:00Z"),
 }));
 
 const signedIn = { status: "authenticated", isReady: true };
@@ -77,6 +84,40 @@ describe("OpacReserveAction", () => {
     expect(screen.getByText("ready")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "action" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "myLibrary" })).toHaveAttribute("href", "/library/me");
+  });
+
+  it("says until when a ready reservation is kept", () => {
+    session.mockReturnValue(signedIn);
+    profile.mockReturnValue({
+      data: myProfile({
+        reservations: [
+          { id: "r1", title_id: "t1", status: "ready", expires_at: "2026-11-24T15:59:59Z" },
+        ],
+      }),
+      isError: false,
+    });
+    render(<OpacReserveAction titleId="t1" />);
+
+    expect(screen.getByText("readyBy 24 Nov 23.59")).toBeInTheDocument();
+  });
+
+  // The expiry job releases a lapsed hold on its next run; until then the
+  // catalogue must not still tell the member it is ready.
+  it("says a ready reservation's pickup deadline has passed", () => {
+    session.mockReturnValue(signedIn);
+    profile.mockReturnValue({
+      data: myProfile({
+        reservations: [
+          { id: "r1", title_id: "t1", status: "ready", expires_at: "2026-11-18T01:00:00Z" },
+        ],
+      }),
+      isError: false,
+    });
+    render(<OpacReserveAction titleId="t1" />);
+
+    expect(screen.getByText("pickupPassed 18 Nov 09.00")).toBeInTheDocument();
+    expect(screen.queryByText(/^ready/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "action" })).not.toBeInTheDocument();
   });
 
   it("points a reader who cannot book here to their library page", () => {

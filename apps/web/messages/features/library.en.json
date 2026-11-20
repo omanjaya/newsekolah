@@ -1473,6 +1473,8 @@
         "waiting": "You have already reserved this title.",
         "queued": "You have already reserved this title, number {position} in the queue.",
         "ready": "Your reservation is ready to collect at the library.",
+        "readyBy": "Your reservation is ready to collect at the library by {date} at {time}.",
+        "pickupPassed": "The pickup deadline for your reservation, {date} at {time}, has passed.",
         "myLibrary": "See my library",
         "signIn": "Sign in to reserve this title"
       },
