@@ -294,7 +294,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	})
 	pushDevices.svc = notificationsModule.Service
 	announcementsModule := announcements.Register(announcements.Dependencies{
-		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service}, Clock: clock.Real{}, Logger: logger,
+		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service, Bus: eventBus}, Clock: clock.Real{}, Logger: logger,
 		Flags: wiring.ModuleFlag{Flags: backgroundFlags, Module: platformdomain.ModuleAnnouncements},
 	})
 	integrationsModule := integrations.Register(integrations.Dependencies{

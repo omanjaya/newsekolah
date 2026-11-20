@@ -237,16 +237,18 @@ func run(logger *slog.Logger) error {
 	})
 
 	announcementsModule := announcements.Register(announcements.Dependencies{
-		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service}, Clock: clock.Real{}, Logger: logger,
+		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service, Bus: eventBus}, Clock: clock.Real{}, Logger: logger,
 		Flags: wiring.ModuleFlag{Flags: moduleFlags, Module: platformdomain.ModuleAnnouncements},
 	})
 
-	// Perms is nil: this process only works the delivery job, it never
-	// serves CreateAPIKey (the only use case that consults it), so there is
-	// no PermissionsProvider to build here without pulling in the whole
-	// identity module for a call path that never runs.
+	// Perms is nil: this process never serves CreateAPIKey (the only use
+	// case that consults it), so there is no PermissionsProvider to build
+	// here without pulling in the whole identity module for a call path
+	// that never runs. Bus and Jobs are set: events published by jobs in
+	// this process (a scheduled announcement going live) must reach
+	// subscribed webhooks the same way they do in cmd/api.
 	integrationsModule := integrations.Register(integrations.Dependencies{
-		Pool: pool, Perms: nil, Sealer: sealer, Jobs: nil, Clock: clock.Real{}, Logger: logger,
+		Pool: pool, Bus: eventBus, Perms: nil, Sealer: sealer, Jobs: jobInserter, Clock: clock.Real{}, Logger: logger,
 	})
 	integrationsModule.RegisterJobs(workers, clock.Real{})
 
