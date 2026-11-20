@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/auth"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
+	"github.com/omanjaya/newsekolah/apps/api/migrations"
 )
 
 // A class has exactly one homeroom teacher, and the class record and the
@@ -97,6 +99,10 @@ func TestHomeroomDutyStaysConsistentWithTheClass(t *testing.T) {
 	_, err = pool.Exec(ctx, `insert into duty_assignments (tenant_id,academic_year_id,duty_type_id,user_id,scope_class_id,starts_on) values ($1,$2,$3,$4,$5,'2026-07-01')`,
 		tenantID, year, homeroom, wakasek, classA)
 	require.ErrorContains(t, err, "class already has an active homeroom teacher")
+	// ... and a second active homeroom class for one teacher.
+	_, err = pool.Exec(ctx, `insert into duty_assignments (tenant_id,academic_year_id,duty_type_id,user_id,scope_class_id,starts_on) values ($1,$2,$3,$4,$5,'2026-07-01')`,
+		tenantID, year, homeroom, guru, classC)
+	require.ErrorContains(t, err, "teacher is already homeroom teacher of another class")
 
 	// Older data, written before that guard existed, can still hold two
 	// active holders: ending the one the class does not point at keeps the
@@ -125,4 +131,64 @@ func TestHomeroomDutyStaysConsistentWithTheClass(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []uuid.UUID{wakasek}, activeHolders(classA))
 	require.Equal(t, held(wakasek), classHomeroom(classA))
+}
+
+// Migration 0130 heals a teacher left as homeroom of several classes by
+// older code: the newest class is kept, the others are ended and lose
+// their homeroom teacher, so the class list and the duty list agree.
+func TestSingleHomeroomMigrationHealsATeacherWithTwoClasses(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	pool := pg.AdminPool
+	insertID := func(sql string, args ...any) uuid.UUID {
+		t.Helper()
+		var id uuid.UUID
+		require.NoError(t, pool.QueryRow(ctx, sql+" returning id", args...).Scan(&id))
+		return id
+	}
+
+	tenantID := insertTestTenant(t, pool, "homeroom-heal-teacher")
+	year := insertID(`insert into academic_years (tenant_id,label,starts_on,ends_on) values ($1,'2026/2027','2026-01-01','2027-12-31')`, tenantID)
+	grade := insertID(`insert into grade_levels (tenant_id,code,name,sequence) values ($1,'X','X',1)`, tenantID)
+	classA := insertID(`insert into classes (tenant_id,academic_year_id,grade_level_id,name) values ($1,$2,$3,'X-A')`, tenantID, year, grade)
+	classC := insertID(`insert into classes (tenant_id,academic_year_id,grade_level_id,name) values ($1,$2,$3,'X-C')`, tenantID, year, grade)
+	homeroom := insertID(`insert into duty_types (tenant_id,slug,name,scope_kind) values ($1,'homeroom','Wali Kelas','class')`, tenantID)
+	guru := insertTestUser(t, pool, tenantID, "guru")
+
+	// The state older code could reach: one teacher active on X-A and X-C.
+	_, err := pool.Exec(ctx, "alter table duty_assignments disable trigger trg_duty_assignments_single_active_homeroom")
+	require.NoError(t, err)
+	older := insertID(`insert into duty_assignments (tenant_id,academic_year_id,duty_type_id,user_id,scope_class_id,starts_on) values ($1,$2,$3,$4,$5,'2026-07-13')`,
+		tenantID, year, homeroom, guru, classA)
+	newer := insertID(`insert into duty_assignments (tenant_id,academic_year_id,duty_type_id,user_id,scope_class_id,starts_on) values ($1,$2,$3,$4,$5,'2026-11-20')`,
+		tenantID, year, homeroom, guru, classC)
+	_, err = pool.Exec(ctx, `update classes set homeroom_teacher_id = $1 where id in ($2, $3)`, guru, classA, classC)
+	require.NoError(t, err)
+	_, err = pool.Exec(ctx, "alter table duty_assignments enable trigger trg_duty_assignments_single_active_homeroom")
+	require.NoError(t, err)
+
+	// Run the migration's healing steps again (everything before the guard).
+	up, err := migrations.FS.ReadFile("0130_single_active_homeroom.up.sql")
+	require.NoError(t, err)
+	heal, _, found := strings.Cut(string(up), "create function guard_single_active_homeroom")
+	require.True(t, found)
+	_, err = pool.Exec(ctx, heal)
+	require.NoError(t, err)
+
+	isActive := func(id uuid.UUID) bool {
+		t.Helper()
+		var active bool
+		require.NoError(t, pool.QueryRow(ctx, `select is_active from duty_assignments where id = $1`, id).Scan(&active))
+		return active
+	}
+	classHomeroom := func(classID uuid.UUID) uuid.NullUUID {
+		t.Helper()
+		var id uuid.NullUUID
+		require.NoError(t, pool.QueryRow(ctx, `select homeroom_teacher_id from classes where id = $1`, classID).Scan(&id))
+		return id
+	}
+	require.True(t, isActive(newer), "the teacher keeps the newest class")
+	require.False(t, isActive(older))
+	require.Equal(t, uuid.NullUUID{UUID: guru, Valid: true}, classHomeroom(classC))
+	require.False(t, classHomeroom(classA).Valid, "the class whose holder was ended has no homeroom teacher")
 }

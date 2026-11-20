@@ -304,6 +304,15 @@ Duty assignment diturunkan dari tiga sumber independen
 | role Spatie `Security`   | `security`   | sekolah |
 | `management_staff`       | `leadership` | sekolah |
 
+Target hanya mengizinkan satu wali kelas aktif per kelas dan satu kelas
+binaan per guru dalam satu tahun ajaran (migrasi 0130). Karena itu, sebelum
+menulis wali kelas sebuah kelas, ETL mengakhiri pemegang lain kelas itu dan
+kelas lain milik guru yang sama, sehingga re-run setelah SION mengganti wali
+kelas tetap konvergen. Kelas sumber dengan lebih dari satu baris
+`class_administrators`, atau guru yang menjadi wali di beberapa kelas,
+dicatat sebagai gap: ETL memakai ID sumber terkecil dan sisanya tidak
+dimigrasikan.
+
 `mapping.MapDuty` (pencocokan kata kunci nama duty bebas teks) sudah
 **dihapus**: tidak relevan lagi karena skema sumber tidak punya nama duty
 bebas teks -- setiap duty sekarang diturunkan dari struktur sumber yang

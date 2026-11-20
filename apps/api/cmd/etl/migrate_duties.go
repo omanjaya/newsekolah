@@ -28,8 +28,12 @@ func (st *Store) migrateDutyAssignments(
 	users map[int64]userMigrationResult, classes map[int64]classMigrationResult, dutyIDs map[string]uuid.UUID,
 	stat *TableStat,
 ) error {
-	for _, ca := range classAdmins {
-		stat.Read++
+	stat.Read += len(classAdmins)
+	homeroomHolders, homeroomGaps := pickHomeroomHolders(classAdmins)
+	for _, gap := range homeroomGaps {
+		stat.RecordGap(gap)
+	}
+	for _, ca := range homeroomHolders {
 		user, ok := users[ca.UserID]
 		if !ok {
 			stat.RecordFailure(fmt.Sprintf("%d", ca.UserID), "user not migrated (see identity table failures)")
@@ -41,7 +45,16 @@ func (st *Store) migrateDutyAssignments(
 			continue
 		}
 		classID := class.targetClassID
-		if err := st.upsertDutyAssignment(ctx, tenantID, academicYearID, dutyIDs[mapping.DutyHomeroom], user.targetUserID, &classID, startsOn, stat, ca.UserID); err != nil {
+		homeroomDutyID := dutyIDs[mapping.DutyHomeroom]
+		// The target allows one active homeroom holder per class and one
+		// homeroom class per teacher (migration 0130). On a re-run after
+		// the source changed a class's homeroom teacher, the previous
+		// holder must hand over first, or the upsert below is refused.
+		if err := st.endOtherHomeroomHolders(ctx, academicYearID, homeroomDutyID, classID, user.targetUserID, startsOn); err != nil {
+			stat.RecordFailure(fmt.Sprintf("%d", ca.UserID), fmt.Sprintf("end previous homeroom holder: %v", err))
+			continue
+		}
+		if err := st.upsertDutyAssignment(ctx, tenantID, academicYearID, homeroomDutyID, user.targetUserID, &classID, startsOn, stat, ca.UserID); err != nil {
 			continue
 		}
 		if err := st.execRow(ctx, `update classes set homeroom_teacher_id = $1 where id = $2`, user.targetUserID, classID); err != nil {
@@ -99,6 +112,72 @@ func (st *Store) migrateDutyAssignments(
 	return nil
 }
 
+// pickHomeroomHolders keeps one source homeroom teacher per class and one
+// class per teacher, the most the target schema allows, in a stable order
+// so every run picks the same rows. A class with several administrators,
+// or a teacher administering several classes, keeps the lowest source ID
+// and the rest is reported as a gap: the target has nowhere to put it.
+func pickHomeroomHolders(classAdmins []SionClassAdministrator) ([]SionClassAdministrator, []string) {
+	sorted := append([]SionClassAdministrator(nil), classAdmins...)
+	sort.Slice(sorted, func(i, j int) bool {
+		if sorted[i].ClassID != sorted[j].ClassID {
+			return sorted[i].ClassID < sorted[j].ClassID
+		}
+		return sorted[i].UserID < sorted[j].UserID
+	})
+	var (
+		picked    []SionClassAdministrator
+		gaps      []string
+		classHeld = map[int64]int64{}
+		userHeld  = map[int64]int64{}
+	)
+	for _, ca := range sorted {
+		if holder, ok := classHeld[ca.ClassID]; ok {
+			if holder != ca.UserID {
+				gaps = append(gaps, fmt.Sprintf("class_administrators: class %d has several administrators; user %d kept as homeroom teacher, user %d not migrated", ca.ClassID, holder, ca.UserID))
+			}
+			continue
+		}
+		if class, ok := userHeld[ca.UserID]; ok {
+			gaps = append(gaps, fmt.Sprintf("class_administrators: user %d administers several classes; kept as homeroom teacher of class %d, not of class %d", ca.UserID, class, ca.ClassID))
+			continue
+		}
+		classHeld[ca.ClassID], userHeld[ca.UserID] = ca.UserID, ca.ClassID
+		picked = append(picked, ca)
+	}
+	return picked, gaps
+}
+
+// endOtherHomeroomHolders ends every active homeroom assignment that would
+// conflict with userID holding classID: another teacher's on classID, and
+// userID's own on any other class (whose classes.homeroom_teacher_id is
+// cleared when it still names userID). Both run in one savepoint.
+func (st *Store) endOtherHomeroomHolders(ctx context.Context, academicYearID, dutyTypeID, classID, userID uuid.UUID, endsOn pgtype.Date) error {
+	return st.withRowSavepoint(ctx, func() error {
+		if _, err := st.tx.Exec(ctx,
+			`update duty_assignments set is_active = false, ends_on = coalesce(ends_on, $5)
+			 where academic_year_id = $1 and duty_type_id = $2 and scope_class_id = $3
+			   and is_active and user_id <> $4`,
+			academicYearID, dutyTypeID, classID, userID, endsOn,
+		); err != nil {
+			return err
+		}
+		_, err := st.tx.Exec(ctx,
+			`with ended as (
+			   update duty_assignments set is_active = false, ends_on = coalesce(ends_on, $5)
+			   where academic_year_id = $1 and duty_type_id = $2 and user_id = $4
+			     and is_active and scope_class_id is not null and scope_class_id <> $3
+			   returning scope_class_id
+			 )
+			 update classes set homeroom_teacher_id = null
+			 from ended
+			 where classes.id = ended.scope_class_id and classes.homeroom_teacher_id = $4`,
+			academicYearID, dutyTypeID, classID, userID, endsOn,
+		)
+		return err
+	})
+}
+
 // upsertDutyAssignment is shared by every duty source above.
 // duty_assignments' natural key includes two nullable scope columns, and
 // Postgres unique constraints treat two NULLs as distinct, so `on conflict`
@@ -124,7 +203,7 @@ func (st *Store) upsertDutyAssignment(
 		return err
 	}
 	if found {
-		if err := st.execRow(ctx, `update duty_assignments set is_active = true where id = $1`, existingID); err != nil {
+		if err := st.execRow(ctx, `update duty_assignments set is_active = true, ends_on = null where id = $1`, existingID); err != nil {
 			stat.RecordFailure(fmt.Sprintf("%d", sourceUserID), fmt.Sprintf("update duty assignment: %v", err))
 			return err
 		}
