@@ -60,6 +60,28 @@ func TestSimulatedLateArrivalLandsOnSimulatedDay(t *testing.T) {
 	require.NoError(t, pg.AdminPool.QueryRow(ctx, `select local_date from workflow_instances where id = $1`, detail.Instance.ID).Scan(&localDate))
 	require.Equal(t, simulated.Format("2006-01-02"), localDate.Format("2006-01-02"),
 		"local_date must record the simulated tenant-local day the late arrival belongs to")
+
+	// Every stage event follows the same simulated clock: the stepper
+	// printed the real date under a simulated arrival while the event
+	// insert dropped OccurredAt and fell back to the column's now().
+	reviewedAt := simulated.Add(5 * time.Minute)
+	_, err = svc.ReviewLateArrival(clock.WithTime(ctx, reviewedAt), service.ReviewLateArrivalInput{
+		TenantID: w.tenantID, InstanceID: detail.Instance.ID, ReviewerUserID: w.dutyTeacherID, Reason: "Bangun kesiangan",
+	})
+	require.NoError(t, err)
+	rows, err := pg.AdminPool.Query(ctx, `select occurred_at from workflow_events where instance_id = $1 order by occurred_at`, detail.Instance.ID)
+	require.NoError(t, err)
+	defer rows.Close()
+	var occurred []time.Time
+	for rows.Next() {
+		var at time.Time
+		require.NoError(t, rows.Scan(&at))
+		occurred = append(occurred, at)
+	}
+	require.NoError(t, rows.Err())
+	require.Len(t, occurred, 2, "the open and the review each record one event")
+	require.True(t, occurred[0].Equal(simulated), "the open event must carry the simulated instant, got %s", occurred[0])
+	require.True(t, occurred[1].Equal(reviewedAt), "the review event must carry the simulated instant, got %s", occurred[1])
 }
 
 // runExitPermitToGate drives an exit permit from creation through both

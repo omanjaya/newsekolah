@@ -470,6 +470,9 @@ type Querier interface {
 	CreateWebhookDelivery(ctx context.Context, arg CreateWebhookDeliveryParams) (IntegrationWebhookDelivery, error)
 	CreateWebhookEndpoint(ctx context.Context, arg CreateWebhookEndpointParams) (IntegrationWebhookEndpoint, error)
 	CreateWorkflowDefinition(ctx context.Context, arg CreateWorkflowDefinitionParams) (WorkflowDefinition, error)
+	// occurred_at comes from the service clock so a simulated time
+	// (clock.WithTime) reaches the stage history; a null keeps the column
+	// default for callers without a time.
 	CreateWorkflowEvent(ctx context.Context, arg CreateWorkflowEventParams) (WorkflowEvent, error)
 	// local_date is the tenant-local calendar day the caller computed at
 	// creation time (service.tenantNow), stored explicitly so

@@ -301,6 +301,7 @@ func (r *Repository) CreateEvent(ctx context.Context, evt domain.Event) (domain.
 		TenantID: evt.TenantID, InstanceID: evt.InstanceID, StageKey: pdatabase.Text(evt.StageKey),
 		FromStatus: string(evt.FromStatus), ToStatus: string(evt.ToStatus), ActorUserID: pdatabase.NullUUID(evt.ActorUserID),
 		Verification: string(evt.Verification), ScanTokenID: pdatabase.NullUUID(evt.ScanTokenID), Note: pdatabase.Text(evt.Note),
+		OccurredAt: pdatabase.Timestamptz(evt.OccurredAt),
 	})
 	if err != nil {
 		return domain.Event{}, fmt.Errorf("create event: %w", err)
