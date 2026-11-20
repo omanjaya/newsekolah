@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision/domain"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
@@ -99,14 +98,16 @@ func teacherReportColumns(criteria []domain.Criterion) []reportdoc.Column {
 }
 
 // teacherReportRow builds one observation's row, in the same column order
-// teacherReportColumns declares.
-func teacherReportRow(criteria []domain.Criterion, obs domain.Observation) []any {
+// teacherReportColumns declares. The date is the observation's calendar
+// day in loc (the school's time zone): observed_at is a UTC instant, and a
+// 07.15 WITA visit is still the previous day in UTC.
+func teacherReportRow(criteria []domain.Criterion, obs domain.Observation, loc *time.Location) []any {
 	byKey := make(map[string]int, len(obs.Scores))
 	for _, score := range obs.Scores {
 		byKey[score.CriterionKey] = score.Score
 	}
 	row := make([]any, 0, len(criteria)+5)
-	row = append(row, obs.ObservedAt)
+	row = append(row, localDate(obs.ObservedAt, loc))
 	for _, c := range criteria {
 		row = append(row, byKey[c.Key])
 	}
@@ -149,15 +150,19 @@ func (s *Service) ExportTeacherReport(ctx context.Context, tenantID, cycleID, te
 	// other lookup: outside one, row level security hides the users row
 	// and the export of any report with an observation failed.
 	var supervisorName string
+	var now time.Time
 	if err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		supervisorName, err = s.lastObserverName(ctx, tenantID, report.Observations)
+		// The tenant-local "now": both the observation dates and the
+		// signature date are the school's calendar days, not UTC's.
+		now = s.tenantNow(ctx, tenantID)
 		return err
 	}); err != nil {
 		return nil, err
 	}
 
-	doc := buildTeacherReportDocument(report, supervisorName, clock.Now(ctx, s.clock), locale)
+	doc := buildTeacherReportDocument(report, supervisorName, now, locale)
 	if s.letterhead != nil {
 		if lh, _, err := s.letterhead.Letterhead(ctx, tenantID); err == nil {
 			// The report's own two-signer block (supervisor, principal)
@@ -176,12 +181,13 @@ func (s *Service) ExportTeacherReport(ctx context.Context, tenantID, cycleID, te
 // instrument criterion, in the instrument's own order) and a two-signer
 // signature block for the supervisor who conducted the observations and
 // the principal. Kept separate from the database reads above so it can be
-// unit tested without a fixture.
+// unit tested without a fixture. now carries the school's time zone, which
+// the observation dates are read in too.
 func buildTeacherReportDocument(report TeacherCycleReport, supervisorName string, now time.Time, locale string) reportdoc.Document {
 	criteria := report.Cycle.Instrument.Criteria
 	rows := make([][]any, len(report.Observations))
 	for i, obs := range report.Observations {
-		rows[i] = teacherReportRow(criteria, obs)
+		rows[i] = teacherReportRow(criteria, obs, now.Location())
 	}
 
 	return reportdoc.Document{
@@ -216,4 +222,15 @@ func renderReport(doc reportdoc.Document, opts reportdoc.Options) ([]byte, error
 		return reportdoc.RenderPDF(narrowed)
 	}
 	return reportdoc.RenderXLSX(narrowed)
+}
+
+// localDate is t's calendar day in loc, as a midnight-UTC date value: a
+// ColumnDate cell renders the same day in the PDF and in Excel, whatever
+// zone the reader opens the file in.
+func localDate(t time.Time, loc *time.Location) time.Time {
+	if loc == nil {
+		loc = time.UTC
+	}
+	l := t.In(loc)
+	return time.Date(l.Year(), l.Month(), l.Day(), 0, 0, 0, 0, time.UTC)
 }

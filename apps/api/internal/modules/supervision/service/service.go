@@ -58,6 +58,8 @@ type ScheduleRef struct {
 	ClassID       uuid.UUID
 	SubjectID     uuid.UUID
 	TeacherUserID uuid.UUID
+	// DayOfWeek is the lesson's ISO weekday, 1 = Monday .. 7 = Sunday.
+	DayOfWeek int16
 }
 
 // ScheduleReader is the scheduling module reached through a wiring
@@ -83,6 +85,7 @@ type Service struct {
 	flags      FlagChecker
 	letterhead reportdoc.LetterheadSource
 	clock      clock.Clock
+	events     EventPublisher
 }
 
 // New wires a Service. letterhead may be nil (a tenant's kop laporan

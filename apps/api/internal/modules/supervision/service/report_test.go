@@ -1,11 +1,13 @@
 package service
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"github.com/xuri/excelize/v2"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
@@ -72,4 +74,51 @@ func TestBuildTeacherReportDocument(t *testing.T) {
 		Format: reportdoc.FormatXLSX, Columns: []reportdoc.ColumnChoice{{Key: "not_a_real_column"}},
 	})
 	require.ErrorIs(t, err, reportdoc.ErrUnknownColumn)
+}
+
+// TestTeacherReportDatesInSchoolZone: an observation at 07.15 WITA is
+// stored as 23.15 UTC the day before, and both exports printed that UTC
+// day (19/11 for a visit on 20/11). The row now carries the school's
+// calendar day, and the XLSX cell holds it as written.
+func TestTeacherReportDatesInSchoolZone(t *testing.T) {
+	wita, err := time.LoadLocation("Asia/Makassar")
+	require.NoError(t, err)
+	report := sampleTeacherCycleReport()
+	report.Observations = report.Observations[:1]
+	report.Observations[0].ObservedAt = time.Date(2026, 11, 19, 23, 15, 0, 0, time.UTC)
+	// 00.30 WITA on 21 November is still 20 November in UTC.
+	now := time.Date(2026, 11, 20, 16, 30, 0, 0, time.UTC).In(wita)
+
+	doc := buildTeacherReportDocument(report, "Pak Budi", now, reportdoc.LocaleID)
+
+	date, ok := doc.Sections[0].Rows[0][0].(time.Time)
+	require.True(t, ok)
+	require.Equal(t, "20/11/2026", date.Format("02/01/2006"))
+	require.Equal(t, "21 November 2026", doc.Signature.Date)
+
+	xlsx, err := renderReport(doc, reportdoc.Options{Format: reportdoc.FormatXLSX})
+	require.NoError(t, err)
+	f, err := excelize.OpenReader(bytes.NewReader(xlsx))
+	require.NoError(t, err)
+	defer func() { _ = f.Close() }()
+	rows, err := f.GetRows(f.GetSheetName(0), excelize.Options{RawCellValue: false})
+	require.NoError(t, err)
+	found := false
+	for _, row := range rows {
+		for _, cell := range row {
+			if cell == "20/11/2026" {
+				found = true
+			}
+			require.NotEqual(t, "19/11/2026", cell)
+		}
+	}
+	require.True(t, found, "the xlsx shows the school's day: %v", rows)
+}
+
+func TestLocalDate(t *testing.T) {
+	wita, err := time.LoadLocation("Asia/Makassar")
+	require.NoError(t, err)
+	got := localDate(time.Date(2026, 11, 19, 23, 15, 0, 0, time.UTC), wita)
+	require.Equal(t, time.Date(2026, 11, 20, 0, 0, 0, 0, time.UTC), got)
+	require.Equal(t, time.Date(2026, 11, 19, 0, 0, 0, 0, time.UTC), localDate(time.Date(2026, 11, 19, 23, 15, 0, 0, time.UTC), nil))
 }

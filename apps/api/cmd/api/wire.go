@@ -326,6 +326,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Discipline: wiring.MentoringDiscipline{Svc: disciplineModule.Service, Flags: backgroundFlags},
 		Grading:    wiring.MentoringGrading{Svc: gradingModule.Service},
 		Flags:      wiring.PlatformFlags{Svc: platformModule.Service},
+		Perms:      identityModule.Service,
 		Sealer:     sealer, Clock: clock.Real{},
 	})
 	supervisionModule := supervision.Register(supervision.Dependencies{
@@ -334,6 +335,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Flags:      wiring.PlatformFlags{Svc: platformModule.Service},
 		Letterhead: wiring.ReportHeaderReports{Svc: schoolModule.Service},
 		Perms:      identityModule.Service,
+		Bus:        eventBus,
 		Clock:      clock.Real{},
 	})
 	visitorsModule := visitors.Register(visitors.Dependencies{
@@ -395,7 +397,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	bg := &background{jobs: riverClient, runWorkers: cfg.WorkerInline, logger: logger}
 
 	activitiesModule := activities.Register(activities.Dependencies{
-		Pool: pool, Years: schoolModule.Service, Clock: clock.Real{},
+		Pool: pool, Years: schoolModule.Service, Perms: identityModule.Service, Clock: clock.Real{},
 	})
 	doc, err := api.GetSpec()
 	if err != nil {

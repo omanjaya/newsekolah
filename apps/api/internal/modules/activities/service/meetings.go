@@ -9,16 +9,16 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/activities/domain"
 )
 
-func (s *Service) CreateMeeting(ctx context.Context, tenantID, clubID uuid.UUID, meetingDate time.Time, notes string) (domain.Meeting, error) {
+// CreateMeeting schedules a club meeting; a coach schedules only for the
+// clubs they coach.
+func (s *Service) CreateMeeting(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, clubID uuid.UUID, meetingDate time.Time, notes string) (domain.Meeting, error) {
 	if meetingDate.IsZero() {
 		return domain.Meeting{}, domain.ErrInvalidInput
 	}
 	var out domain.Meeting
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		if _, ok, err := s.repo.GetExtracurricular(ctx, tenantID, clubID); err != nil {
+		if _, err := s.reachableClub(ctx, tenantID, viewer, clubID); err != nil {
 			return err
-		} else if !ok {
-			return domain.ErrClubNotFound
 		}
 		var err error
 		out, err = s.repo.CreateMeeting(ctx, domain.Meeting{TenantID: tenantID, ExtracurricularID: clubID, MeetingDate: meetingDate, Notes: notes})
@@ -27,14 +27,33 @@ func (s *Service) CreateMeeting(ctx context.Context, tenantID, clubID uuid.UUID,
 	return out, err
 }
 
-func (s *Service) ListMeetings(ctx context.Context, tenantID, clubID uuid.UUID) ([]domain.Meeting, error) {
+func (s *Service) ListMeetings(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, clubID uuid.UUID) ([]domain.Meeting, error) {
 	var out []domain.Meeting
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if _, err := s.reachableClub(ctx, tenantID, viewer, clubID); err != nil {
+			return err
+		}
 		var err error
 		out, err = s.repo.ListMeetingsForClub(ctx, tenantID, clubID)
 		return err
 	})
 	return out, err
+}
+
+// reachableMeeting loads a meeting of a club the viewer may open. Inside a
+// tenant transaction.
+func (s *Service) reachableMeeting(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, meetingID uuid.UUID) (domain.Meeting, error) {
+	meeting, ok, err := s.repo.GetMeeting(ctx, tenantID, meetingID)
+	if err != nil {
+		return domain.Meeting{}, err
+	}
+	if !ok {
+		return domain.Meeting{}, domain.ErrMeetingNotFound
+	}
+	if _, err := s.reachableClub(ctx, tenantID, viewer, meeting.ExtracurricularID); err != nil {
+		return domain.Meeting{}, err
+	}
+	return meeting, nil
 }
 
 // MeetingRoster is a meeting's active members alongside any attendance
@@ -44,15 +63,12 @@ type MeetingRoster struct {
 	Entries []domain.AttendanceEntry
 }
 
-func (s *Service) MeetingRosterFor(ctx context.Context, tenantID, meetingID uuid.UUID) (MeetingRoster, error) {
+func (s *Service) MeetingRosterFor(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, meetingID uuid.UUID) (MeetingRoster, error) {
 	var out MeetingRoster
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		meeting, ok, err := s.repo.GetMeeting(ctx, tenantID, meetingID)
+		meeting, err := s.reachableMeeting(ctx, tenantID, viewer, meetingID)
 		if err != nil {
 			return err
-		}
-		if !ok {
-			return domain.ErrMeetingNotFound
 		}
 		out.Meeting = meeting
 		out.Entries, err = s.repo.ListAttendanceForMeeting(ctx, tenantID, meetingID)
@@ -64,19 +80,16 @@ func (s *Service) MeetingRosterFor(ctx context.Context, tenantID, meetingID uuid
 // RecordAttendance sets one student's status for a meeting, only for a
 // student who currently holds (or held) a membership in the club --
 // attendance for a stranger to the club is a data-entry mistake, not a
-// legitimate record.
-func (s *Service) RecordAttendance(ctx context.Context, tenantID uuid.UUID, meetingID, studentID uuid.UUID, status domain.AttendanceStatus, notes string, recordedBy uuid.UUID) (domain.AttendanceEntry, error) {
+// legitimate record. A coach records only for the clubs they coach.
+func (s *Service) RecordAttendance(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, meetingID, studentID uuid.UUID, status domain.AttendanceStatus, notes string) (domain.AttendanceEntry, error) {
 	if !status.Valid() {
 		return domain.AttendanceEntry{}, domain.ErrInvalidInput
 	}
 	var out domain.AttendanceEntry
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		meeting, ok, err := s.repo.GetMeeting(ctx, tenantID, meetingID)
+		meeting, err := s.reachableMeeting(ctx, tenantID, viewer, meetingID)
 		if err != nil {
 			return err
-		}
-		if !ok {
-			return domain.ErrMeetingNotFound
 		}
 		memberIDs, err := s.repo.ListActiveMemberStudentIDs(ctx, tenantID, meeting.ExtracurricularID)
 		if err != nil {
@@ -98,7 +111,7 @@ func (s *Service) RecordAttendance(ctx context.Context, tenantID uuid.UUID, meet
 		}
 		out, err = s.repo.UpsertAttendance(ctx, domain.AttendanceEntry{
 			TenantID: tenantID, MeetingID: meetingID, StudentUserID: studentID, StatusCode: status, Notes: notes,
-			RecordedBy: uuid.NullUUID{UUID: recordedBy, Valid: true},
+			RecordedBy: uuid.NullUUID{UUID: viewer.UserID, Valid: true},
 		})
 		return err
 	})
@@ -107,9 +120,12 @@ func (s *Service) RecordAttendance(ctx context.Context, tenantID uuid.UUID, meet
 
 // AttendanceReport lists every recorded status across every meeting of a
 // club, for the per-club attendance report.
-func (s *Service) AttendanceReport(ctx context.Context, tenantID, clubID uuid.UUID) ([]domain.AttendanceEntry, error) {
+func (s *Service) AttendanceReport(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, clubID uuid.UUID) ([]domain.AttendanceEntry, error) {
 	var out []domain.AttendanceEntry
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if _, err := s.reachableClub(ctx, tenantID, viewer, clubID); err != nil {
+			return err
+		}
 		var err error
 		out, err = s.repo.ListAttendanceForClub(ctx, tenantID, clubID)
 		return err

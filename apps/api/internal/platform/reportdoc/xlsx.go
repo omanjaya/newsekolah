@@ -425,7 +425,13 @@ func setTypedCell(f *excelize.File, sheet, cell string, kind ColumnKind, v any) 
 	}
 	if kind == ColumnDate {
 		if t, ok := v.(time.Time); ok {
-			return f.SetCellValue(sheet, cell, t)
+			// Excel has no time zones: excelize turns the absolute
+			// instant into a serial, which for a non-UTC time.Time is
+			// the UTC wall clock. Write the value's own wall clock, the
+			// same one the PDF prints, so a date read in the school's
+			// zone stays on its day.
+			wall := time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), time.UTC)
+			return f.SetCellValue(sheet, cell, wall)
 		}
 	}
 	return f.SetCellValue(sheet, cell, v)

@@ -12,5 +12,8 @@ var (
 	ErrSupervisionScoreMismatch        = NewError(http.StatusBadRequest, "SUPERVISION_SCORE_COUNT_MISMATCH")
 	ErrSupervisionScoreOutOfRange      = NewError(http.StatusBadRequest, "SUPERVISION_SCORE_OUT_OF_RANGE")
 	ErrSupervisionLessonNotResolved    = NewError(http.StatusBadRequest, "SUPERVISION_LESSON_NOT_RESOLVED")
+	ErrSupervisionLessonDayMismatch    = NewError(http.StatusUnprocessableEntity, "SUPERVISION_LESSON_DAY_MISMATCH")
+	ErrSupervisionScheduledExists      = NewError(http.StatusConflict, "SUPERVISION_SCHEDULED_EXISTS")
+	ErrSupervisionCriterionKeyTaken    = NewError(http.StatusBadRequest, "SUPERVISION_CRITERION_KEY_DUPLICATE")
 	ErrSupervisionModuleDisabled       = NewError(http.StatusForbidden, "SUPERVISION_MODULE_DISABLED")
 )

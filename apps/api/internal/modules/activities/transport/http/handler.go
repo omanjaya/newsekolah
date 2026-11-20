@@ -11,12 +11,46 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/activities/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/activities/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
 
-type ActivitiesHandler struct{ service *service.Service }
+// PermissionChecker resolves the caller's effective permissions, so a club
+// route open to both the activities reader (view_activities) and a coach
+// (record_extracurricular_attendance) can tell them apart.
+type PermissionChecker interface {
+	EffectivePermissions(ctx context.Context, tenantID, userID uuid.UUID) (authz.Set, error)
+}
 
-func New(svc *service.Service) *ActivitiesHandler { return &ActivitiesHandler{service: svc} }
+type ActivitiesHandler struct {
+	service *service.Service
+	perms   PermissionChecker
+}
+
+// New wires the handler. perms may be nil, which limits every caller to the
+// clubs they coach: the safe side for routes the spec opens to
+// record_extracurricular_attendance.
+func New(svc *service.Service, perms PermissionChecker) *ActivitiesHandler {
+	return &ActivitiesHandler{service: svc, perms: perms}
+}
+
+// viewer resolves how far the caller reaches: every club with
+// view_activities or manage_extracurriculars (held by the user and, for an
+// API key, granted to the key too), otherwise only the clubs they coach.
+func (h *ActivitiesHandler) viewer(ctx context.Context) (domain.Viewer, error) {
+	v := domain.Viewer{UserID: userID(ctx)}
+	if h.perms == nil {
+		return v, nil
+	}
+	set, err := h.perms.EffectivePermissions(ctx, tenantID(ctx), v.UserID)
+	if err != nil {
+		return domain.Viewer{}, err
+	}
+	key := authz.IdentityFromContext(ctx).KeyPermissions
+	has := func(code string) bool { return set.Has(code) && (key == nil || key.Has(code)) }
+	v.AllClubs = has(authz.PermViewActivities) || has(authz.PermManageExtracurriculars)
+	return v, nil
+}
 
 func tenantID(ctx context.Context) uuid.UUID { id, _ := httpx.TenantIDFromContext(ctx); return id }
 func userID(ctx context.Context) uuid.UUID   { id, _ := httpx.UserIDFromContext(ctx); return id }
@@ -36,6 +70,8 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrActivityNotFound:     httpx.ErrActivityNotFound,
 	domain.ErrAchievementNotFound:  httpx.ErrAchievementNotFound,
 	domain.ErrInvalidParticipant:   httpx.ErrInvalidParticipant,
+	domain.ErrParticipantExists:    httpx.ErrParticipantExists,
+	domain.ErrNotClubCoach:         httpx.ErrNotClubCoach,
 	domain.ErrInvalidInput:         httpx.ErrValidation,
 	domain.ErrNoActiveAcademicYear: httpx.ErrValidation,
 }

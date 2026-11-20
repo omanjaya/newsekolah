@@ -14,8 +14,10 @@ import (
 // through adapters over those modules, never by mentoring querying their
 // tables directly. An id the tenant has no student for (no such user, or
 // a staff member or administrator) is domain.ErrStudentNotFound (a 404),
-// not a server error or a snapshot of someone who is not a student.
-func (s *Service) StudentSnapshot(ctx context.Context, tenantID, studentUserID uuid.UUID) (domain.StudentSnapshot, error) {
+// not a server error or a snapshot of someone who is not a student. A guru
+// wali (no school-wide read) only reaches the students of a group they
+// mentor this year; anyone else's is domain.ErrGroupForbidden.
+func (s *Service) StudentSnapshot(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, studentUserID uuid.UUID) (domain.StudentSnapshot, error) {
 	var out domain.StudentSnapshot
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		if err := s.requireEnabled(ctx, tenantID); err != nil {
@@ -27,6 +29,9 @@ func (s *Service) StudentSnapshot(ctx context.Context, tenantID, studentUserID u
 		}
 		info, err := s.repo.StudentInfo(ctx, tenantID, yearID, studentUserID)
 		if err != nil {
+			return err
+		}
+		if err := s.requireMentorOf(ctx, tenantID, yearID, viewer, studentUserID); err != nil {
 			return err
 		}
 		out = domain.StudentSnapshot{StudentUserID: studentUserID, StudentName: info.Name, ClassName: info.ClassName}
@@ -56,4 +61,27 @@ func (s *Service) StudentSnapshot(ctx context.Context, tenantID, studentUserID u
 		return nil
 	})
 	return out, err
+}
+
+// requireMentorOf lets a school-wide reader through and otherwise demands
+// that the student sits in a group the viewer mentors this year.
+func (s *Service) requireMentorOf(ctx context.Context, tenantID, yearID uuid.UUID, viewer domain.Viewer, studentUserID uuid.UUID) error {
+	if viewer.ReadAll || viewer.WriteAll {
+		return nil
+	}
+	member, found, err := s.repo.FindMembershipForStudent(ctx, tenantID, yearID, studentUserID)
+	if err != nil {
+		return err
+	}
+	if !found {
+		return domain.ErrGroupForbidden
+	}
+	group, ok, err := s.repo.GetGroup(ctx, tenantID, member.GroupID)
+	if err != nil {
+		return err
+	}
+	if !ok || !viewer.CanRead(group) {
+		return domain.ErrGroupForbidden
+	}
+	return nil
 }

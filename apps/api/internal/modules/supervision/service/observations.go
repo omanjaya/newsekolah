@@ -42,10 +42,20 @@ func (s *Service) ScheduleObservation(ctx context.Context, tenantID uuid.UUID, i
 		if err := scheduled.Validate(); err != nil {
 			return err
 		}
+		if err := scheduled.MatchesLessonDay(lesson.DayOfWeek); err != nil {
+			return err
+		}
 		out, err = s.repo.CreateScheduledObservation(ctx, scheduled)
 		return err
 	})
-	return out, err
+	if err != nil {
+		return out, err
+	}
+	s.publish(ctx, Event{
+		Name: EventObservationScheduled, TenantID: tenantID, SubjectUserID: out.TeacherUserID, ActorUserID: in.ObserverUserID,
+		Payload: map[string]any{"scheduled_id": out.ID.String(), "lesson_date": out.LessonDate.Format(time.DateOnly), "href": "/supervision/my-report"},
+	})
+	return out, nil
 }
 
 func (s *Service) ListScheduledForCycle(ctx context.Context, tenantID, cycleID uuid.UUID) ([]domain.ScheduledObservation, error) {
@@ -124,7 +134,14 @@ func (s *Service) CompleteObservation(ctx context.Context, tenantID, observerUse
 		out, err = s.repo.CreateObservation(ctx, observation)
 		return err
 	})
-	return out, err
+	if err != nil {
+		return out, err
+	}
+	s.publish(ctx, Event{
+		Name: EventObservationCompleted, TenantID: tenantID, SubjectUserID: out.TeacherUserID, ActorUserID: observerUserID,
+		Payload: map[string]any{"observation_id": out.ID.String(), "href": "/supervision/observations/" + out.ID.String()},
+	})
+	return out, nil
 }
 
 // RecordTeacherResponse lets the observed teacher add their response and
@@ -149,7 +166,14 @@ func (s *Service) RecordTeacherResponse(ctx context.Context, tenantID, id, teach
 		out, err = s.repo.UpdateObservation(ctx, current)
 		return err
 	})
-	return out, err
+	if err != nil {
+		return out, err
+	}
+	s.publish(ctx, Event{
+		Name: EventResponseRecorded, TenantID: tenantID, SubjectUserID: out.ObserverUserID, ActorUserID: teacherUserID,
+		Payload: map[string]any{"observation_id": out.ID.String(), "href": "/supervision/observations/" + out.ID.String()},
+	})
+	return out, nil
 }
 
 // GetObservation returns the completed record for a reader the fixed rule

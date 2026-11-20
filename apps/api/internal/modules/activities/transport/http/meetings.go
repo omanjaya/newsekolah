@@ -8,7 +8,11 @@ import (
 )
 
 func (h *ActivitiesHandler) ListMeetings(ctx context.Context, request api.ListMeetingsRequestObject) (api.ListMeetingsResponseObject, error) {
-	meetings, err := h.service.ListMeetings(ctx, tenantID(ctx), request.ClubId)
+	viewer, err := h.viewer(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	meetings, err := h.service.ListMeetings(ctx, tenantID(ctx), viewer, request.ClubId)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -21,7 +25,11 @@ func (h *ActivitiesHandler) ListMeetings(ctx context.Context, request api.ListMe
 
 func (h *ActivitiesHandler) CreateMeeting(ctx context.Context, request api.CreateMeetingRequestObject) (api.CreateMeetingResponseObject, error) {
 	b := request.Body
-	meeting, err := h.service.CreateMeeting(ctx, tenantID(ctx), request.ClubId, b.MeetingDate.Time, strOr(b.Notes))
+	viewer, err := h.viewer(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	meeting, err := h.service.CreateMeeting(ctx, tenantID(ctx), viewer, request.ClubId, b.MeetingDate.Time, strOr(b.Notes))
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -29,7 +37,11 @@ func (h *ActivitiesHandler) CreateMeeting(ctx context.Context, request api.Creat
 }
 
 func (h *ActivitiesHandler) GetMeetingRoster(ctx context.Context, request api.GetMeetingRosterRequestObject) (api.GetMeetingRosterResponseObject, error) {
-	roster, err := h.service.MeetingRosterFor(ctx, tenantID(ctx), request.MeetingId)
+	viewer, err := h.viewer(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	roster, err := h.service.MeetingRosterFor(ctx, tenantID(ctx), viewer, request.MeetingId)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -38,7 +50,11 @@ func (h *ActivitiesHandler) GetMeetingRoster(ctx context.Context, request api.Ge
 
 func (h *ActivitiesHandler) RecordExtracurricularAttendance(ctx context.Context, request api.RecordExtracurricularAttendanceRequestObject) (api.RecordExtracurricularAttendanceResponseObject, error) {
 	b := request.Body
-	entry, err := h.service.RecordAttendance(ctx, tenantID(ctx), request.MeetingId, b.StudentUserId, domain.AttendanceStatus(b.StatusCode), strOr(b.Notes), userID(ctx))
+	viewer, err := h.viewer(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	entry, err := h.service.RecordAttendance(ctx, tenantID(ctx), viewer, request.MeetingId, b.StudentUserId, domain.AttendanceStatus(b.StatusCode), strOr(b.Notes))
 	if err != nil {
 		return nil, mapError(err)
 	}

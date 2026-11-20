@@ -23,6 +23,9 @@ var (
 	ErrScoreCountMismatch   = errors.New("scores must cover every criterion exactly once")
 	ErrScoreOutOfRange      = errors.New("score outside the instrument's scale")
 	ErrLessonNotResolved    = errors.New("scheduled lesson could not be resolved")
+	ErrLessonDayMismatch    = errors.New("lesson date falls on a different weekday than the lesson")
+	ErrScheduledExists      = errors.New("this lesson is already scheduled for observation on that date")
+	ErrCriterionKeyTaken    = errors.New("two criteria share one key")
 	ErrNoActiveAcademicYear = errors.New("no active academic year")
 	ErrInvalidInput         = errors.New("invalid input")
 	ErrModuleDisabled       = errors.New("supervision module is disabled for this tenant")
@@ -60,7 +63,7 @@ func (i Instrument) Validate() error {
 			return ErrInstrumentInvalid
 		}
 		if seen[key] {
-			return ErrInstrumentInvalid
+			return ErrCriterionKeyTaken
 		}
 		seen[key] = true
 	}
@@ -155,6 +158,26 @@ type ScheduledObservation struct {
 
 // Observed reports whether this visit's observation has been filled in.
 func (s ScheduledObservation) Observed() bool { return s.ObservationID.Valid }
+
+// MatchesLessonDay checks the visit date against the lesson's ISO weekday
+// (1 = Monday .. 7 = Sunday, as scheduling stores it): a Monday lesson is
+// only ever observed on a Monday.
+func (s ScheduledObservation) MatchesLessonDay(lessonDayOfWeek int16) error {
+	if IsoWeekday(s.LessonDate) != lessonDayOfWeek {
+		return ErrLessonDayMismatch
+	}
+	return nil
+}
+
+// IsoWeekday maps a date to 1 = Monday .. 7 = Sunday, the weekday numbering
+// scheduling uses for a weekly lesson.
+func IsoWeekday(t time.Time) int16 {
+	w := int16(t.Weekday()) //nolint:gosec // Weekday is 0..6
+	if w == 0 {
+		return 7
+	}
+	return w
+}
 
 func (s ScheduledObservation) Validate() error {
 	if s.CycleID == uuid.Nil || s.ScheduleID == uuid.Nil || s.LessonDate.IsZero() {

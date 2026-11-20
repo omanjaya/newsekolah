@@ -52,6 +52,7 @@ type Repository interface {
 	UpdateActivity(ctx context.Context, a domain.Activity) (domain.Activity, error)
 	DeleteActivity(ctx context.Context, tenantID, id uuid.UUID) error
 	ListActivities(ctx context.Context, tenantID, yearID uuid.UUID, from, to *time.Time) ([]domain.Activity, error)
+	ListActivitiesForStudent(ctx context.Context, tenantID, yearID, studentID uuid.UUID, from time.Time) ([]domain.Activity, error)
 	AddParticipant(ctx context.Context, tenantID, activityID uuid.UUID, p domain.Participant) (domain.Participant, error)
 	RemoveParticipant(ctx context.Context, tenantID, id uuid.UUID) error
 	ListParticipants(ctx context.Context, tenantID, activityID uuid.UUID) ([]domain.Participant, error)

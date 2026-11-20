@@ -7,6 +7,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/activities/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/activities/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 func toActivityInput(b api.ActivityEventWrite) service.ActivityInput {
@@ -81,4 +82,32 @@ func (h *ActivitiesHandler) RemoveActivityParticipant(ctx context.Context, reque
 		return nil, mapError(err)
 	}
 	return api.RemoveActivityParticipant204Response{}, nil
+}
+
+// ListMyActivityEvents is the signed-in student's own upcoming and ongoing
+// activities, measured against today in the school's time zone.
+func (h *ActivitiesHandler) ListMyActivityEvents(ctx context.Context, _ api.ListMyActivityEventsRequestObject) (api.ListMyActivityEventsResponseObject, error) {
+	events, err := h.service.ListMyActivities(ctx, tenantID(ctx), userID(ctx), tenantLocation(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.ActivityEvent, len(events))
+	for i, a := range events {
+		data[i] = toAPIActivity(a)
+	}
+	return api.ListMyActivityEvents200JSONResponse{Data: data}, nil
+}
+
+// tenantLocation is the request tenant's configured time zone, UTC when it
+// is unset or unknown.
+func tenantLocation(ctx context.Context) *time.Location {
+	t, ok := tenant.FromContext(ctx)
+	if !ok || t.Timezone == "" {
+		return time.UTC
+	}
+	loc, err := time.LoadLocation(t.Timezone)
+	if err != nil {
+		return time.UTC
+	}
+	return loc
 }

@@ -22,7 +22,11 @@ func toInput(b api.ExtracurricularWrite) service.ExtracurricularInput {
 
 func (h *ActivitiesHandler) ListExtracurriculars(ctx context.Context, request api.ListExtracurricularsRequestObject) (api.ListExtracurricularsResponseObject, error) {
 	includeInactive := request.Params.IncludeInactive != nil && *request.Params.IncludeInactive
-	clubs, err := h.service.ListExtracurriculars(ctx, tenantID(ctx), includeInactive)
+	viewer, err := h.viewer(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	clubs, err := h.service.ListExtracurriculars(ctx, tenantID(ctx), viewer, includeInactive)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -42,7 +46,11 @@ func (h *ActivitiesHandler) CreateExtracurricular(ctx context.Context, request a
 }
 
 func (h *ActivitiesHandler) GetExtracurricular(ctx context.Context, request api.GetExtracurricularRequestObject) (api.GetExtracurricularResponseObject, error) {
-	club, err := h.service.GetExtracurricular(ctx, tenantID(ctx), request.ClubId)
+	viewer, err := h.viewer(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	club, err := h.service.GetExtracurricular(ctx, tenantID(ctx), viewer, request.ClubId)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -82,7 +90,11 @@ func (h *ActivitiesHandler) UpdateMembershipPolicy(ctx context.Context, request 
 
 func (h *ActivitiesHandler) ListClubMembers(ctx context.Context, request api.ListClubMembersRequestObject) (api.ListClubMembersResponseObject, error) {
 	includeLeft := request.Params.IncludeLeft != nil && *request.Params.IncludeLeft
-	members, err := h.service.ListMembers(ctx, tenantID(ctx), request.ClubId, includeLeft)
+	viewer, err := h.viewer(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	members, err := h.service.ListMembers(ctx, tenantID(ctx), viewer, request.ClubId, includeLeft)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -118,8 +130,26 @@ func (h *ActivitiesHandler) ListMyClubs(ctx context.Context, _ api.ListMyClubsRe
 	return api.ListMyClubs200JSONResponse{Data: data}, nil
 }
 
+// ListStudentClubMemberships is one student's membership history for the
+// student profile; view_activities already reads every club roster.
+func (h *ActivitiesHandler) ListStudentClubMemberships(ctx context.Context, request api.ListStudentClubMembershipsRequestObject) (api.ListStudentClubMembershipsResponseObject, error) {
+	memberships, err := h.service.ListMyClubs(ctx, tenantID(ctx), request.StudentId)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.StudentMembership, len(memberships))
+	for i, m := range memberships {
+		data[i] = toAPIStudentMembership(m)
+	}
+	return api.ListStudentClubMemberships200JSONResponse{Data: data}, nil
+}
+
 func (h *ActivitiesHandler) GetClubMembershipReport(ctx context.Context, request api.GetClubMembershipReportRequestObject) (api.GetClubMembershipReportResponseObject, error) {
-	members, err := h.service.MembershipReport(ctx, tenantID(ctx), request.ClubId, request.Params.From.Time, request.Params.To.Time)
+	viewer, err := h.viewer(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	members, err := h.service.MembershipReport(ctx, tenantID(ctx), viewer, request.ClubId, request.Params.From.Time, request.Params.To.Time)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -127,7 +157,11 @@ func (h *ActivitiesHandler) GetClubMembershipReport(ctx context.Context, request
 }
 
 func (h *ActivitiesHandler) GetClubAttendanceReport(ctx context.Context, request api.GetClubAttendanceReportRequestObject) (api.GetClubAttendanceReportResponseObject, error) {
-	entries, err := h.service.AttendanceReport(ctx, tenantID(ctx), request.ClubId)
+	viewer, err := h.viewer(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	entries, err := h.service.AttendanceReport(ctx, tenantID(ctx), viewer, request.ClubId)
 	if err != nil {
 		return nil, mapError(err)
 	}

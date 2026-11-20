@@ -58,3 +58,26 @@ where sa.tenant_id = $1 and sa.academic_year_id = $2 and sa.deleted_at is null
     select 1 from enrollments e where e.tenant_id = sa.tenant_id and e.academic_year_id = sa.academic_year_id
       and e.student_user_id = sa.student_user_id and e.class_id = sqlc.narg(class_id)::uuid and e.status = 'active'))
 order by sa.achieved_on desc;
+
+-- name: ListActivitiesForStudent :many
+-- A student's own activities: those listing the student by name, the
+-- student's active class this year, or that class's grade level, ending
+-- on or after from_date. Cross-module read of enrollments/classes
+-- (academic), as ListAchievements already does for its class filter.
+select a.* from school_activities a
+where a.tenant_id = $1 and a.academic_year_id = $2 and a.deleted_at is null
+  and a.end_date >= sqlc.arg(from_date)::date
+  and exists (
+    select 1 from activity_participants p
+    where p.tenant_id = a.tenant_id and p.activity_id = a.id and (
+      p.student_user_id = sqlc.arg(student_id)::uuid
+      or p.class_id in (
+        select e.class_id from enrollments e
+        where e.tenant_id = a.tenant_id and e.academic_year_id = a.academic_year_id
+          and e.student_user_id = sqlc.arg(student_id)::uuid and e.status = 'active')
+      or p.grade_level_id in (
+        select c.grade_level_id from enrollments e
+        join classes c on c.id = e.class_id
+        where e.tenant_id = a.tenant_id and e.academic_year_id = a.academic_year_id
+          and e.student_user_id = sqlc.arg(student_id)::uuid and e.status = 'active')))
+order by a.start_date;

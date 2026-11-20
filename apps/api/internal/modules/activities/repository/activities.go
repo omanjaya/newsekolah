@@ -103,13 +103,29 @@ func (r *Repository) ListActivities(ctx context.Context, tenantID, yearID uuid.U
 	return out, nil
 }
 
+// ListActivitiesForStudent lists the activities a student takes part in
+// (by name, class or grade level) that end on or after from.
+func (r *Repository) ListActivitiesForStudent(ctx context.Context, tenantID, yearID, studentID uuid.UUID, from time.Time) ([]domain.Activity, error) {
+	rows, err := r.queries(ctx).ListActivitiesForStudent(ctx, db.ListActivitiesForStudentParams{
+		TenantID: tenantID, AcademicYearID: yearID, FromDate: pdatabase.Date(from), StudentID: studentID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list activities for student: %w", err)
+	}
+	out := make([]domain.Activity, len(rows))
+	for i, row := range rows {
+		out[i] = toActivity(row)
+	}
+	return out, nil
+}
+
 func (r *Repository) AddParticipant(ctx context.Context, tenantID, activityID uuid.UUID, p domain.Participant) (domain.Participant, error) {
 	row, err := r.queries(ctx).AddParticipant(ctx, db.AddParticipantParams{
 		TenantID: tenantID, ActivityID: activityID, ClassID: pdatabase.NullUUID(p.ClassID),
 		GradeLevelID: pdatabase.NullUUID(p.GradeLevelID), StudentUserID: pdatabase.NullUUID(p.StudentID),
 	})
 	if isUnique(err) {
-		return domain.Participant{}, domain.ErrInvalidParticipant
+		return domain.Participant{}, domain.ErrParticipantExists
 	}
 	if err != nil {
 		return domain.Participant{}, fmt.Errorf("add participant: %w", err)

@@ -52,6 +52,18 @@ func RoleDefaults() []RoleDefault {
 			// every teacher's results. Backfilled for existing tenants by
 			// 0128_teacher_own_supervision.up.sql.
 			PermViewOwnSupervision, PermRespondSupervised,
+			// Guru wali: manage_mentoring opens "Mentoring saya", the
+			// group, its students' snapshots, meeting notes and term
+			// summaries, scoped by the mentoring service to the groups the
+			// teacher mentors (domain.Viewer). Never view_mentoring, which
+			// reads every group. Extracurricular coach (pembina):
+			// record_extracurricular_attendance opens the clubs they coach
+			// to schedule meetings and take attendance, scoped by the
+			// activities service to the club's coach_user_id. Never
+			// view_activities, which reads every club and achievement.
+			// Backfilled for existing tenants by
+			// 0129_teacher_mentor_coach.up.sql.
+			PermManageMentoring, PermRecordExtracurricularAttendance,
 		}},
 		{RoleSlugStaff, "Pegawai", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewLibrary, PermViewOwnLibraryLoans, PermViewAcademicData, PermIssueScanTokens,

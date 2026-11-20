@@ -8,6 +8,7 @@ var (
 	ErrMentorMemberAlreadyInGroup = NewError(http.StatusConflict, "MENTOR_MEMBER_ALREADY_IN_GROUP")
 	ErrMentorNoteNotFound         = NewError(http.StatusNotFound, "MENTOR_NOTE_NOT_FOUND")
 	ErrMentorNoteForbidden        = NewError(http.StatusForbidden, "MENTOR_NOTE_FORBIDDEN")
+	ErrMentorGroupForbidden       = NewError(http.StatusForbidden, "MENTOR_GROUP_FORBIDDEN")
 	ErrMentorSummaryNotFound      = NewError(http.StatusNotFound, "MENTOR_SUMMARY_NOT_FOUND")
 	ErrMentoringModuleDisabled    = NewError(http.StatusForbidden, "MENTORING_MODULE_DISABLED")
 )

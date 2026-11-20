@@ -85,7 +85,9 @@ type Section struct {
 	// section's effective Columns (Columns above, or Document.Columns
 	// when nil) and typed to match that column's Kind: string for
 	// ColumnText, a numeric Go type for ColumnNumber/ColumnPercent (a
-	// percent is a fraction, e.g. 0.5 for 50%), time.Time for ColumnDate.
+	// percent is a fraction, e.g. 0.5 for 50%), time.Time for ColumnDate
+	// (rendered by its wall clock in its own location, in the PDF and the
+	// XLSX alike).
 	// nil renders as a blank cell.
 	Rows [][]any
 	// Footer holds zero or more extra rows rendered below Rows with a

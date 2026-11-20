@@ -113,7 +113,7 @@ func TestSimulatedFutureDutyHonoredWithinSimulatedWindow(t *testing.T) {
 	group, err := mod.Service.CreateGroup(ctx, fx.tenantID, service.GroupInput{MentorUserID: fx.mentorID, Name: "Grup A"})
 	require.NoError(t, err)
 
-	note, err := mod.Service.CreateMeetingNote(ctx, fx.tenantID, fx.mentorID, service.MeetingNoteInput{
+	note, err := mod.Service.CreateMeetingNote(ctx, fx.tenantID, domain.Viewer{UserID: fx.mentorID}, service.MeetingNoteInput{
 		GroupID: group.ID, MetAt: time.Now(), Kind: domain.MeetingIndividual, AttendeeUserIDs: []uuid.UUID{fx.studentID},
 		Topic: "Topik", Content: "Isi catatan", AgreedActions: "Tindak lanjut",
 	})
@@ -155,10 +155,10 @@ func TestStudentSnapshotOfUnknownStudentIsNotFound(t *testing.T) {
 	fx := seedMentoringFixture(t, pg.AdminPool)
 	mod := newTestMentoringModule(t, pg.AppPool)
 
-	snapshot, err := mod.Service.StudentSnapshot(ctx, fx.tenantID, fx.studentID)
+	snapshot, err := mod.Service.StudentSnapshot(ctx, fx.tenantID, schoolWide, fx.studentID)
 	require.NoError(t, err)
 	require.Equal(t, "Siswa Test", snapshot.StudentName)
 
-	_, err = mod.Service.StudentSnapshot(ctx, fx.tenantID, uuid.New())
+	_, err = mod.Service.StudentSnapshot(ctx, fx.tenantID, schoolWide, uuid.New())
 	require.ErrorIs(t, err, domain.ErrStudentNotFound)
 }

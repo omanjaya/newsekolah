@@ -27,6 +27,8 @@ var (
 	ErrActivityNotFound     = errors.New("activity not found")
 	ErrAchievementNotFound  = errors.New("achievement not found")
 	ErrInvalidParticipant   = errors.New("participant must reference exactly one of class, grade level or student")
+	ErrParticipantExists    = errors.New("participant already added to this activity")
+	ErrNotClubCoach         = errors.New("extracurricular is coached by someone else")
 	ErrInvalidInput         = errors.New("invalid input")
 	ErrNoActiveAcademicYear = errors.New("no active academic year")
 )
@@ -81,6 +83,27 @@ type Extracurricular struct {
 	IsActive       bool
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+}
+
+// IsCoachedBy reports whether userID is the club's coach (pembina).
+func (e Extracurricular) IsCoachedBy(userID uuid.UUID) bool {
+	return e.CoachUserID.Valid && e.CoachUserID.UUID == userID
+}
+
+// Viewer is who reaches a club. AllClubs is the school-wide activities
+// reader (view_activities), who also records attendance for any club when
+// the route lets them record at all; without it the caller is a coach
+// (record_extracurricular_attendance only, the teacher role) and reaches
+// only the clubs they coach.
+type Viewer struct {
+	UserID   uuid.UUID
+	AllClubs bool
+}
+
+// CanReach reports whether the viewer may open the club, its roster and
+// meetings, and record its attendance.
+func (v Viewer) CanReach(e Extracurricular) bool {
+	return v.AllClubs || e.IsCoachedBy(v.UserID)
 }
 
 // HasRoom reports whether one more active member fits under the club's

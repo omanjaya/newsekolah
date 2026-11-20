@@ -29,23 +29,22 @@ func (in MeetingNoteInput) toDomain() domain.MeetingNote {
 
 // CreateMeetingNote records one mentoring session. The content is sealed
 // with the platform sealer exactly as discipline seals counseling notes,
-// because a meeting note may concern a child's difficulties.
-func (s *Service) CreateMeetingNote(ctx context.Context, tenantID, mentorUserID uuid.UUID, in MeetingNoteInput) (domain.MeetingNote, error) {
+// because a meeting note may concern a child's difficulties. Only the
+// group's own mentor (or a group manager) records a note for it.
+func (s *Service) CreateMeetingNote(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, in MeetingNoteInput) (domain.MeetingNote, error) {
 	note := in.toDomain()
 	if err := note.Validate(); err != nil {
 		return domain.MeetingNote{}, err
 	}
+	mentorUserID := viewer.UserID
 	var out domain.MeetingNote
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		if err := s.requireEnabled(ctx, tenantID); err != nil {
 			return err
 		}
-		group, ok, err := s.repo.GetGroup(ctx, tenantID, note.GroupID)
+		group, err := s.writableGroup(ctx, tenantID, viewer, note.GroupID)
 		if err != nil {
 			return err
-		}
-		if !ok {
-			return domain.ErrGroupNotFound
 		}
 		content, err := s.seal(note.Content)
 		if err != nil {
@@ -137,11 +136,30 @@ func (s *Service) GetMeetingNote(ctx context.Context, tenantID, id, readerUserID
 // ListMeetingNotesForGroup returns every note the reader may open; notes
 // outside the reader's role are skipped rather than returned with an
 // empty body, since a list view has no use for a note nobody can read.
-func (s *Service) ListMeetingNotesForGroup(ctx context.Context, tenantID, groupID, readerUserID uuid.UUID) ([]domain.MeetingNote, error) {
+// The group itself must be one the viewer may open, or the viewer must
+// hold a counselor or leadership duty (who read notes across groups).
+func (s *Service) ListMeetingNotesForGroup(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, groupID uuid.UUID) ([]domain.MeetingNote, error) {
+	readerUserID := viewer.UserID
 	var out []domain.MeetingNote
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		if err := s.requireEnabled(ctx, tenantID); err != nil {
 			return err
+		}
+		group, ok, err := s.repo.GetGroup(ctx, tenantID, groupID)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return domain.ErrGroupNotFound
+		}
+		if !viewer.CanRead(group) {
+			role, err := s.noteReaderRole(ctx, tenantID, group.AcademicYearID, readerUserID, uuid.Nil)
+			if err != nil {
+				return err
+			}
+			if !role.IsCounselor && !role.IsLeadership {
+				return domain.ErrGroupForbidden
+			}
 		}
 		rows, err := s.repo.ListMeetingNotesForGroup(ctx, tenantID, groupID)
 		if err != nil {

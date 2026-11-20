@@ -28,6 +28,10 @@ const (
 	AnnouncementPublished      = "announcement.published"
 	LibraryReservationReady    = "library.reservation_ready"
 	LibraryLoanDueReminder     = "library.loan_due_reminder"
+	// Supervision (service/events.go publishes these by the same names).
+	SupervisionObservationScheduled = "supervision.observation_scheduled"
+	SupervisionObservationCompleted = "supervision.observation_completed"
+	SupervisionResponseRecorded     = "supervision.response_recorded"
 )
 
 // Envelope is the generic shape every domain event above is published as.

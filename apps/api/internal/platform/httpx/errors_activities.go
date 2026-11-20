@@ -17,4 +17,6 @@ var (
 	ErrActivityNotFound    = NewError(http.StatusNotFound, "ACTIVITY_NOT_FOUND")
 	ErrAchievementNotFound = NewError(http.StatusNotFound, "ACHIEVEMENT_NOT_FOUND")
 	ErrInvalidParticipant  = NewError(http.StatusBadRequest, "INVALID_PARTICIPANT")
+	ErrParticipantExists   = NewError(http.StatusConflict, "PARTICIPANT_ALREADY_EXISTS")
+	ErrNotClubCoach        = NewError(http.StatusForbidden, "EXTRACURRICULAR_COACH_ONLY")
 )

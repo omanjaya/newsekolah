@@ -224,6 +224,52 @@ func (s *Service) open(enc EncryptedMeetingNote) (domain.MeetingNote, error) {
 	return n, nil
 }
 
+// readableGroup loads a group the viewer may read: its own mentor or a
+// school-wide reader. Inside a tenant transaction.
+func (s *Service) readableGroup(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, groupID uuid.UUID) (domain.MentorGroup, error) {
+	group, ok, err := s.repo.GetGroup(ctx, tenantID, groupID)
+	if err != nil {
+		return domain.MentorGroup{}, err
+	}
+	if !ok {
+		return domain.MentorGroup{}, domain.ErrGroupNotFound
+	}
+	if !viewer.CanRead(group) {
+		return domain.MentorGroup{}, domain.ErrGroupForbidden
+	}
+	return group, nil
+}
+
+// writableGroup loads a group the viewer may write notes and summaries
+// for: its own mentor or a group manager. Inside a tenant transaction.
+func (s *Service) writableGroup(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, groupID uuid.UUID) (domain.MentorGroup, error) {
+	group, ok, err := s.repo.GetGroup(ctx, tenantID, groupID)
+	if err != nil {
+		return domain.MentorGroup{}, err
+	}
+	if !ok {
+		return domain.MentorGroup{}, domain.ErrGroupNotFound
+	}
+	if !viewer.CanWrite(group) {
+		return domain.MentorGroup{}, domain.ErrGroupForbidden
+	}
+	return group, nil
+}
+
+// requireGroupMember fails when the student is not in the group this
+// academic year, so a summary or snapshot cannot be reached through a
+// group the student does not belong to.
+func (s *Service) requireGroupMember(ctx context.Context, tenantID uuid.UUID, group domain.MentorGroup, studentUserID uuid.UUID) error {
+	member, found, err := s.repo.FindMembershipForStudent(ctx, tenantID, group.AcademicYearID, studentUserID)
+	if err != nil {
+		return err
+	}
+	if !found || member.GroupID != group.ID {
+		return domain.ErrMemberNotFound
+	}
+	return nil
+}
+
 func (s *Service) noteReaderRole(ctx context.Context, tenantID, yearID, userID, authorID uuid.UUID) (domain.MeetingNoteReader, error) {
 	role := domain.MeetingNoteReader{IsAuthor: userID == authorID}
 	today := s.tenantNow(ctx, tenantID)

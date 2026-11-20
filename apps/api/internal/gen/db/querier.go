@@ -1035,6 +1035,11 @@ type Querier interface {
 	ListActiveUserIDsForTenant(ctx context.Context, tenantID uuid.UUID) ([]uuid.UUID, error)
 	ListActiveWebhookEndpointsForEvent(ctx context.Context, arg ListActiveWebhookEndpointsForEventParams) ([]IntegrationWebhookEndpoint, error)
 	ListActivities(ctx context.Context, arg ListActivitiesParams) ([]SchoolActivity, error)
+	// A student's own activities: those listing the student by name, the
+	// student's active class this year, or that class's grade level, ending
+	// on or after from_date. Cross-module read of enrollments/classes
+	// (academic), as ListAchievements already does for its class filter.
+	ListActivitiesForStudent(ctx context.Context, arg ListActivitiesForStudentParams) ([]SchoolActivity, error)
 	ListAllGradeRanges(ctx context.Context, arg ListAllGradeRangesParams) ([]ReportGradeRange, error)
 	ListAnnouncementsForAdmin(ctx context.Context, arg ListAnnouncementsForAdminParams) ([]Announcement, error)
 	ListAttendanceDailySummaryForClassDate(ctx context.Context, arg ListAttendanceDailySummaryForClassDateParams) ([]AttendanceDailySummary, error)

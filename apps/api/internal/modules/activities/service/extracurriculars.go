@@ -10,33 +10,55 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/activities/domain"
 )
 
-func (s *Service) ListExtracurriculars(ctx context.Context, tenantID uuid.UUID, includeInactive bool) ([]domain.Extracurricular, error) {
+// ListExtracurriculars lists this year's clubs: every club for a
+// school-wide reader, only the clubs they coach for a coach.
+func (s *Service) ListExtracurriculars(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, includeInactive bool) ([]domain.Extracurricular, error) {
 	var out []domain.Extracurricular
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeYear(ctx, tenantID)
 		if err != nil {
 			return err
 		}
-		out, err = s.repo.ListExtracurriculars(ctx, tenantID, yearID, includeInactive)
+		all, err := s.repo.ListExtracurriculars(ctx, tenantID, yearID, includeInactive)
+		if err != nil {
+			return err
+		}
+		out = make([]domain.Extracurricular, 0, len(all))
+		for _, club := range all {
+			if viewer.CanReach(club) {
+				out = append(out, club)
+			}
+		}
+		return nil
+	})
+	return out, err
+}
+
+func (s *Service) GetExtracurricular(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, id uuid.UUID) (domain.Extracurricular, error) {
+	var out domain.Extracurricular
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.reachableClub(ctx, tenantID, viewer, id)
 		return err
 	})
 	return out, err
 }
 
-func (s *Service) GetExtracurricular(ctx context.Context, tenantID, id uuid.UUID) (domain.Extracurricular, error) {
-	var out domain.Extracurricular
-	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		club, ok, err := s.repo.GetExtracurricular(ctx, tenantID, id)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			return domain.ErrClubNotFound
-		}
-		out = club
-		return nil
-	})
-	return out, err
+// reachableClub loads a club the viewer may open: a school-wide reader
+// any, a coach only their own (domain.ErrNotClubCoach otherwise). Inside a
+// tenant transaction.
+func (s *Service) reachableClub(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, id uuid.UUID) (domain.Extracurricular, error) {
+	club, ok, err := s.repo.GetExtracurricular(ctx, tenantID, id)
+	if err != nil {
+		return domain.Extracurricular{}, err
+	}
+	if !ok {
+		return domain.Extracurricular{}, domain.ErrClubNotFound
+	}
+	if !viewer.CanReach(club) {
+		return domain.Extracurricular{}, domain.ErrNotClubCoach
+	}
+	return club, nil
 }
 
 // ExtracurricularInput is the create/update form for a club.
@@ -205,9 +227,12 @@ func (s *Service) LeaveClub(ctx context.Context, tenantID, membershipID uuid.UUI
 
 // ListMembers lists a club's roster; includeLeft also returns past stints,
 // used by the membership-during-a-term report.
-func (s *Service) ListMembers(ctx context.Context, tenantID, clubID uuid.UUID, includeLeft bool) ([]domain.Membership, error) {
+func (s *Service) ListMembers(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, clubID uuid.UUID, includeLeft bool) ([]domain.Membership, error) {
 	var out []domain.Membership
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if _, err := s.reachableClub(ctx, tenantID, viewer, clubID); err != nil {
+			return err
+		}
 		var err error
 		out, err = s.repo.ListMembershipsForClub(ctx, tenantID, clubID, includeLeft)
 		return err
@@ -215,7 +240,9 @@ func (s *Service) ListMembers(ctx context.Context, tenantID, clubID uuid.UUID, i
 	return out, err
 }
 
-// ListMyClubs is a student's own membership history across every club.
+// ListMyClubs is a student's membership history across every club: the
+// student's own (/v1/me/clubs) or, for staff with view_activities, any
+// student's (the student profile).
 func (s *Service) ListMyClubs(ctx context.Context, tenantID, studentID uuid.UUID) ([]StudentMembership, error) {
 	var out []StudentMembership
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -229,8 +256,8 @@ func (s *Service) ListMyClubs(ctx context.Context, tenantID, studentID uuid.UUID
 // MembershipReport lists every membership stint of a club that overlapped
 // [from, to], answering "who was a member during this term" -- not the
 // same question as "who is a member right now".
-func (s *Service) MembershipReport(ctx context.Context, tenantID, clubID uuid.UUID, from, to time.Time) ([]domain.Membership, error) {
-	all, err := s.ListMembers(ctx, tenantID, clubID, true)
+func (s *Service) MembershipReport(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, clubID uuid.UUID, from, to time.Time) ([]domain.Membership, error) {
+	all, err := s.ListMembers(ctx, tenantID, viewer, clubID, true)
 	if err != nil {
 		return nil, err
 	}

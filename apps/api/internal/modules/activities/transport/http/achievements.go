@@ -52,3 +52,16 @@ func (h *ActivitiesHandler) DeleteAchievement(ctx context.Context, request api.D
 	}
 	return api.DeleteAchievement204Response{}, nil
 }
+
+// ListMyAchievements is the signed-in student's own achievements this year.
+func (h *ActivitiesHandler) ListMyAchievements(ctx context.Context, _ api.ListMyAchievementsRequestObject) (api.ListMyAchievementsResponseObject, error) {
+	list, err := h.service.ListMyAchievements(ctx, tenantID(ctx), userID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.Achievement, len(list))
+	for i, a := range list {
+		data[i] = toAPIAchievement(a)
+	}
+	return api.ListMyAchievements200JSONResponse{Data: data}, nil
+}

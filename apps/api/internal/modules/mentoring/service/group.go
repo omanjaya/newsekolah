@@ -79,18 +79,14 @@ func (s *Service) DeleteGroup(ctx context.Context, tenantID, id uuid.UUID) error
 	})
 }
 
-func (s *Service) GetGroup(ctx context.Context, tenantID, id uuid.UUID) (domain.MentorGroup, error) {
+// GetGroup returns a group the viewer may read: a guru wali only reaches
+// the groups they mentor (domain.ErrGroupForbidden otherwise).
+func (s *Service) GetGroup(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, id uuid.UUID) (domain.MentorGroup, error) {
 	var out domain.MentorGroup
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		group, ok, err := s.repo.GetGroup(ctx, tenantID, id)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			return domain.ErrGroupNotFound
-		}
-		out = group
-		return nil
+		var err error
+		out, err = s.readableGroup(ctx, tenantID, viewer, id)
+		return err
 	})
 	return out, err
 }
@@ -173,9 +169,12 @@ func (s *Service) RemoveStudent(ctx context.Context, tenantID, groupID, studentU
 	})
 }
 
-func (s *Service) ListMembers(ctx context.Context, tenantID, groupID uuid.UUID) ([]domain.GroupMember, error) {
+func (s *Service) ListMembers(ctx context.Context, tenantID uuid.UUID, viewer domain.Viewer, groupID uuid.UUID) ([]domain.GroupMember, error) {
 	var out []domain.GroupMember
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if _, err := s.readableGroup(ctx, tenantID, viewer, groupID); err != nil {
+			return err
+		}
 		var err error
 		out, err = s.repo.ListGroupMembers(ctx, tenantID, groupID)
 		return err

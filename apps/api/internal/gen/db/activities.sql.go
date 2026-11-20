@@ -338,6 +338,75 @@ func (q *Queries) ListActivities(ctx context.Context, arg ListActivitiesParams) 
 	return items, nil
 }
 
+const listActivitiesForStudent = `-- name: ListActivitiesForStudent :many
+select a.id, a.tenant_id, a.academic_year_id, a.name, a.description, a.location, a.start_date, a.end_date, a.organiser_user_id, a.created_at, a.updated_at, a.deleted_at from school_activities a
+where a.tenant_id = $1 and a.academic_year_id = $2 and a.deleted_at is null
+  and a.end_date >= $3::date
+  and exists (
+    select 1 from activity_participants p
+    where p.tenant_id = a.tenant_id and p.activity_id = a.id and (
+      p.student_user_id = $4::uuid
+      or p.class_id in (
+        select e.class_id from enrollments e
+        where e.tenant_id = a.tenant_id and e.academic_year_id = a.academic_year_id
+          and e.student_user_id = $4::uuid and e.status = 'active')
+      or p.grade_level_id in (
+        select c.grade_level_id from enrollments e
+        join classes c on c.id = e.class_id
+        where e.tenant_id = a.tenant_id and e.academic_year_id = a.academic_year_id
+          and e.student_user_id = $4::uuid and e.status = 'active')))
+order by a.start_date
+`
+
+type ListActivitiesForStudentParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	FromDate       pgtype.Date `json:"from_date"`
+	StudentID      uuid.UUID   `json:"student_id"`
+}
+
+// A student's own activities: those listing the student by name, the
+// student's active class this year, or that class's grade level, ending
+// on or after from_date. Cross-module read of enrollments/classes
+// (academic), as ListAchievements already does for its class filter.
+func (q *Queries) ListActivitiesForStudent(ctx context.Context, arg ListActivitiesForStudentParams) ([]SchoolActivity, error) {
+	rows, err := q.db.Query(ctx, listActivitiesForStudent,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.FromDate,
+		arg.StudentID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SchoolActivity{}
+	for rows.Next() {
+		var i SchoolActivity
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.AcademicYearID,
+			&i.Name,
+			&i.Description,
+			&i.Location,
+			&i.StartDate,
+			&i.EndDate,
+			&i.OrganiserUserID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listParticipants = `-- name: ListParticipants :many
 select id, tenant_id, activity_id, class_id, grade_level_id, student_user_id, created_at from activity_participants where tenant_id = $1 and activity_id = $2 order by created_at
 `
