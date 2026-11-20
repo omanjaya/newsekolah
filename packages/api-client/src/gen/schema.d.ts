@@ -18203,6 +18203,13 @@ export interface operations {
                     "application/json": components["schemas"]["ReportScore"];
                 };
             };
+            /** @description The override was cleared and the student has no grades, so no report score remains */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];

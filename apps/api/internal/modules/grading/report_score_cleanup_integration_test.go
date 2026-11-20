@@ -196,3 +196,36 @@ func TestChangingAComponentWeightRecomputesTheReportScore(t *testing.T) {
 	require.NoError(t, err)
 	require.InDelta(t, 80, reportScoreRows(t, pg.AdminPool, fx)[fx.studentID], 0.001)
 }
+
+// TestClearingAnOverrideRestoresTheAutomaticScore: a student with grades
+// gets their weighted average back once the teacher clears an override.
+func TestClearingAnOverrideRestoresTheAutomaticScore(t *testing.T) {
+	pg := dbtest.Start(t)
+	fx := seedFixture(t, pg.AdminPool)
+	ctx := context.Background()
+
+	schoolModule := school.Register(pg.AppPool, tenant.ModeSingle, nil)
+	svc := Register(Dependencies{Pool: pg.AppPool, Years: schoolModule.Service, Clock: clock.Real{}}).Service
+	term := uuid.NullUUID{UUID: fx.termID, Valid: true}
+
+	tg, err := svc.CreateComponent(ctx, fx.tenantID, fx.teacherID, true, service.ComponentInput{
+		ClassID: fx.classID, SubjectID: fx.subjectID, TermID: term, Code: "TG1", Kind: domain.KindFormative, Weight: 1,
+	})
+	require.NoError(t, err)
+	score := 82.0
+	_, err = svc.SaveScores(ctx, fx.tenantID, tg.ID, fx.teacherID, true, []service.ScoreEntry{{StudentUserID: fx.studentID, Score: &score}})
+	require.NoError(t, err)
+
+	manual := 70.0
+	result, err := svc.SetManualScore(ctx, fx.tenantID, fx.teacherID, true, fx.classID, fx.subjectID, fx.studentID, term, &manual)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.InDelta(t, 70, result.FinalScore, 0.001)
+
+	result, err = svc.SetManualScore(ctx, fx.tenantID, fx.teacherID, true, fx.classID, fx.subjectID, fx.studentID, term, nil)
+	require.NoError(t, err)
+	require.NotNil(t, result, "a student with grades keeps a report score")
+	require.Nil(t, result.ManualScore)
+	require.InDelta(t, 82, result.FinalScore, 0.001)
+	require.InDelta(t, 82, reportScoreRows(t, pg.AdminPool, fx)[fx.studentID], 0.001)
+}

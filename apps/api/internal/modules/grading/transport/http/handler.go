@@ -293,7 +293,10 @@ func (h *GradingHandler) SetManualReportScore(ctx context.Context, request api.S
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return api.SetManualReportScore200JSONResponse(toAPIReportScore(score)), nil
+	if score == nil {
+		return api.SetManualReportScore204Response{}, nil
+	}
+	return api.SetManualReportScore200JSONResponse(toAPIReportScore(*score)), nil
 }
 
 func (h *GradingHandler) SetGradePublication(ctx context.Context, request api.SetGradePublicationRequestObject) (api.SetGradePublicationResponseObject, error) {

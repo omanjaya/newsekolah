@@ -137,8 +137,9 @@ func seedSecondClass(t *testing.T, pool *pgxpool.Pool, fx fixture) (classID, stu
 // so a manual override for a student with none used to fail with
 // pgx.ErrNoRows surfaced as ASSESSMENT_COMPONENT_NOT_FOUND. SetManualScore
 // must now insert the row (with the automatic baseline it would otherwise
-// have) instead of failing, and clearing the override afterwards must
-// restore that same baseline.
+// have) instead of failing. Clearing the override afterwards leaves the
+// student with no report score at all, as if it had never been set: the
+// baseline row must not be exported to e-Rapor (grades-R1).
 func TestSetManualScoreOnStudentWithNoGrades(t *testing.T) {
 	pg := dbtest.Start(t)
 	fx := seedFixture(t, pg.AdminPool)
@@ -164,8 +165,12 @@ func TestSetManualScoreOnStudentWithNoGrades(t *testing.T) {
 		uuid.NullUUID{UUID: fx.termID, Valid: true}, nil,
 	)
 	require.NoError(t, err, "clearing the override on the now-existing row must succeed")
-	require.Nil(t, result.ManualScore)
-	require.InDelta(t, 0, result.FinalScore, 0.001, "clearing the override restores the automatic baseline")
+	require.Nil(t, result, "a student with no grades and no override has no report score")
+	var rows int
+	require.NoError(t, pg.AdminPool.QueryRow(ctx,
+		`select count(*) from report_scores where tenant_id = $1 and term_id = $2 and class_id = $3 and subject_id = $4 and student_user_id = $5`,
+		fx.tenantID, fx.termID, fx.classID, fx.subjectID, fx.studentID).Scan(&rows))
+	require.Zero(t, rows, "the e-Rapor export reads report_scores, so the baseline row must not stay behind")
 }
 
 // auditLogsFor loads every audit_logs row for one tenant/entity, newest

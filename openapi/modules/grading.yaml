@@ -207,6 +207,8 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ReportScore" }
+        "204":
+          description: The override was cleared and the student has no grades, so no report score remains
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
