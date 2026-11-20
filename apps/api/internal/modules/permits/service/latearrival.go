@@ -389,7 +389,9 @@ func (s *Service) CurrentLateArrival(ctx context.Context, tenantID, studentUserI
 		found  bool
 	)
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		inst, ok, err := s.repo.GetInProgressInstance(ctx, tenantID, domain.KindLateArrival, studentUserID, s.tenantNow(ctx, tenantID))
+		// A late arrival is day bound: only today's flow is current.
+		today := s.tenantNow(ctx, tenantID)
+		inst, ok, err := s.repo.GetInProgressInstance(ctx, tenantID, domain.KindLateArrival, studentUserID, &today)
 		if err != nil || !ok {
 			return err
 		}
