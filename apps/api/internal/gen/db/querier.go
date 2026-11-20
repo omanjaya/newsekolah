@@ -1336,6 +1336,11 @@ type Querier interface {
 	// schedule exists; has_schedule tells the two sets apart.
 	ListStaffAttendanceCandidates(ctx context.Context, tenantID uuid.UUID) ([]ListStaffAttendanceCandidatesRow, error)
 	ListStaffAttendanceCorrectionsByRecord(ctx context.Context, arg ListStaffAttendanceCorrectionsByRecordParams) ([]StaffAttendanceCorrection, error)
+	// Everyone a monthly recap covers: the roster above plus anyone with a
+	// record in [from_date, to_date) -- a check-in, manual entry or import made
+	// before that person was given a work schedule is still a real record the
+	// recap must not drop.
+	ListStaffAttendanceRecapEmployees(ctx context.Context, arg ListStaffAttendanceRecapEmployeesParams) ([]ListStaffAttendanceRecapEmployeesRow, error)
 	ListStaffAttendanceRecordsByDate(ctx context.Context, arg ListStaffAttendanceRecordsByDateParams) ([]StaffAttendanceRecord, error)
 	ListStaffAttendanceRecordsByEmployeeRange(ctx context.Context, arg ListStaffAttendanceRecordsByEmployeeRangeParams) ([]StaffAttendanceRecord, error)
 	// The module's own roster: every user who has at least one schedule day

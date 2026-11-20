@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -41,6 +42,20 @@ func (r *Repository) ListScheduleDays(ctx context.Context, tenantID, employeeUse
 
 func (r *Repository) ListRosterEmployees(ctx context.Context, tenantID uuid.UUID) ([]service.EmployeeRef, error) {
 	rows, err := r.queries(ctx).ListStaffAttendanceRosterEmployees(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.EmployeeRef, len(rows))
+	for i, row := range rows {
+		out[i] = service.EmployeeRef{ID: row.ID, Name: row.Name}
+	}
+	return out, nil
+}
+
+func (r *Repository) ListRecapEmployees(ctx context.Context, tenantID uuid.UUID, from, to time.Time) ([]service.EmployeeRef, error) {
+	rows, err := r.queries(ctx).ListStaffAttendanceRecapEmployees(ctx, db.ListStaffAttendanceRecapEmployeesParams{
+		TenantID: tenantID, FromDate: pdatabase.Date(from), ToDate: pdatabase.Date(to),
+	})
 	if err != nil {
 		return nil, err
 	}

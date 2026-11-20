@@ -792,6 +792,59 @@ func (q *Queries) ListStaffAttendanceCandidates(ctx context.Context, tenantID uu
 	return items, nil
 }
 
+const listStaffAttendanceRecapEmployees = `-- name: ListStaffAttendanceRecapEmployees :many
+select u.id, u.name
+from users u
+where u.tenant_id = $1
+  and (
+    exists (
+      select 1 from staff_attendance_schedules s
+      where s.tenant_id = u.tenant_id and s.employee_user_id = u.id
+    )
+    or exists (
+      select 1 from staff_attendance_records r
+      where r.tenant_id = u.tenant_id and r.employee_user_id = u.id
+        and r.date >= $2 and r.date < $3
+    )
+  )
+order by u.name
+`
+
+type ListStaffAttendanceRecapEmployeesParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	FromDate pgtype.Date `json:"from_date"`
+	ToDate   pgtype.Date `json:"to_date"`
+}
+
+type ListStaffAttendanceRecapEmployeesRow struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+// Everyone a monthly recap covers: the roster above plus anyone with a
+// record in [from_date, to_date) -- a check-in, manual entry or import made
+// before that person was given a work schedule is still a real record the
+// recap must not drop.
+func (q *Queries) ListStaffAttendanceRecapEmployees(ctx context.Context, arg ListStaffAttendanceRecapEmployeesParams) ([]ListStaffAttendanceRecapEmployeesRow, error) {
+	rows, err := q.db.Query(ctx, listStaffAttendanceRecapEmployees, arg.TenantID, arg.FromDate, arg.ToDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListStaffAttendanceRecapEmployeesRow{}
+	for rows.Next() {
+		var i ListStaffAttendanceRecapEmployeesRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listStaffAttendanceRosterEmployees = `-- name: ListStaffAttendanceRosterEmployees :many
 select distinct u.id, u.name
 from staff_attendance_schedules s

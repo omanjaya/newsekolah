@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -213,6 +214,7 @@ func (s *Service) GetTodayBoard(ctx context.Context, tenantID uuid.UUID, date *t
 		for _, emp := range roster {
 			onRoster[emp.ID] = struct{}{}
 		}
+		var unscheduled []RecordView
 		for _, rec := range records {
 			if _, ok := onRoster[rec.EmployeeUserID]; ok {
 				continue
@@ -221,8 +223,12 @@ func (s *Service) GetTodayBoard(ctx context.Context, tenantID uuid.UUID, date *t
 			if err != nil {
 				return err
 			}
-			out = append(out, toRecordView(rec, name))
+			unscheduled = append(unscheduled, toRecordView(rec, name))
 		}
+		sort.SliceStable(unscheduled, func(i, j int) bool {
+			return unscheduled[i].EmployeeName < unscheduled[j].EmployeeName
+		})
+		out = append(out, unscheduled...)
 		return nil
 	})
 	return out, err

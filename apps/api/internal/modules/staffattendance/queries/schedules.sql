@@ -27,6 +27,27 @@ join users u on u.id = s.employee_user_id
 where s.tenant_id = $1
 order by u.name;
 
+-- name: ListStaffAttendanceRecapEmployees :many
+-- Everyone a monthly recap covers: the roster above plus anyone with a
+-- record in [from_date, to_date) -- a check-in, manual entry or import made
+-- before that person was given a work schedule is still a real record the
+-- recap must not drop.
+select u.id, u.name
+from users u
+where u.tenant_id = sqlc.arg(tenant_id)
+  and (
+    exists (
+      select 1 from staff_attendance_schedules s
+      where s.tenant_id = u.tenant_id and s.employee_user_id = u.id
+    )
+    or exists (
+      select 1 from staff_attendance_records r
+      where r.tenant_id = u.tenant_id and r.employee_user_id = u.id
+        and r.date >= sqlc.arg(from_date) and r.date < sqlc.arg(to_date)
+    )
+  )
+order by u.name;
+
 -- name: ListStaffAttendanceCandidates :many
 -- Everyone the schedule editor, manual entry, recap and import pickers may
 -- choose: active users with a teacher or staff profile, the same

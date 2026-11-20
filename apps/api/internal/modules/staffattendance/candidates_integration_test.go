@@ -125,3 +125,73 @@ func TestScanRefusesDepartureRightAfterArrival(t *testing.T) {
 	require.Equal(t, arrival.RecordID, departure.RecordID)
 	require.NotNil(t, departure.DepartureAt)
 }
+
+// TestAllEmployeesRecapIncludesUnscheduledRecords: a manual entry for
+// someone with no work schedule yet shows on the day board, so the
+// all-employees monthly recap (and its export) must cover them too, in
+// name order alongside the roster.
+func TestAllEmployeesRecapIncludesUnscheduledRecords(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	q := db.New(pg.AdminPool)
+	school, err := q.CreateTenant(ctx, db.CreateTenantParams{
+		Slug: "staff-recap-" + uuid.NewString(), Name: "Recap", EducationLevel: "sma",
+		Timezone: "Asia/Makassar", Locale: "id", Status: "active", Plan: "default",
+	})
+	require.NoError(t, err)
+	newStaff := func(name string) uuid.UUID {
+		user, err := q.CreateUser(ctx, db.CreateUserParams{
+			TenantID: school.ID, Username: "u-" + uuid.NewString(), PasswordHash: "x", Name: name, Status: "active", Locale: "id",
+		})
+		require.NoError(t, err)
+		require.NoError(t, q.CreateUserProfile(ctx, db.CreateUserProfileParams{UserID: user.ID, TenantID: school.ID, Kind: "staff"}))
+		return user.ID
+	}
+	scheduled := newStaff("Bu Rina")
+	unscheduledLate := newStaff("Pak Zaenal")
+	unscheduledEarly := newStaff("Pak Agus")
+	idle := newStaff("Pak Idle")
+
+	ctx = tenant.WithTenant(ctx, tenant.Tenant{ID: school.ID, Timezone: school.Timezone})
+	mod := Register(Dependencies{Pool: pg.AppPool, Years: stubYears{}, Calendar: stubCalendar{}, Leave: stubLeave{}})
+
+	week := []service.ScheduleDayInput{{Weekday: 5, IsWorkingDay: true, StartMinute: 7 * 60, EndMinute: 15 * 60}}
+	_, err = mod.Service.ReplaceWeeklySchedule(ctx, school.ID, scheduled, scheduled, week)
+	require.NoError(t, err)
+
+	loc, err := time.LoadLocation(school.Timezone)
+	require.NoError(t, err)
+	day := time.Date(2026, 11, 20, 0, 0, 0, 0, time.UTC)
+	arrival := time.Date(2026, 11, 20, 7, 10, 0, 0, loc)
+	for _, emp := range []uuid.UUID{unscheduledLate, unscheduledEarly} {
+		_, err = mod.Service.RecordManual(ctx, school.ID, scheduled, service.EntryInput{
+			EmployeeUserID: emp, Date: day, ArrivalAt: &arrival,
+		})
+		require.NoError(t, err)
+	}
+
+	board, err := mod.Service.GetTodayBoard(ctx, school.ID, &day)
+	require.NoError(t, err)
+	names := make([]string, len(board))
+	for i, row := range board {
+		names[i] = row.EmployeeName
+	}
+	require.Equal(t, []string{"Bu Rina", "Pak Agus", "Pak Zaenal"}, names,
+		"roster first, then unscheduled records by name")
+
+	recaps, err := mod.Service.GetAllEmployeesMonthlyRecap(ctx, school.ID, "2026-11")
+	require.NoError(t, err)
+	ids := make([]uuid.UUID, len(recaps))
+	for i, r := range recaps {
+		ids[i] = r.EmployeeUserID
+	}
+	require.Equal(t, []uuid.UUID{scheduled, unscheduledEarly, unscheduledLate}, ids,
+		"the recap covers the roster and every employee with a record that month, by name")
+	require.NotContains(t, ids, idle)
+
+	// A month with no record for them leaves the unscheduled employees out.
+	recaps, err = mod.Service.GetAllEmployeesMonthlyRecap(ctx, school.ID, "2026-10")
+	require.NoError(t, err)
+	require.Len(t, recaps, 1)
+	require.Equal(t, scheduled, recaps[0].EmployeeUserID)
+}
