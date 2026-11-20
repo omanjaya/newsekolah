@@ -72,13 +72,16 @@ func (s *Service) CheckIn(ctx context.Context, tenantID, guardUserID uuid.UUID, 
 			return err
 		}
 
+		// The badge's document record points at the visit, so the row
+		// exists first and the badge is stored on it afterwards, in the
+		// same transaction: the board, the visit detail and the badge
+		// download all read it back from the row.
 		badge, err := s.issueBadge(ctx, tenantID, guardUserID, created)
 		if err != nil {
 			return fmt.Errorf("issue visitor badge: %w", err)
 		}
-		created.BadgeNumber, created.BadgeAssetID = badge.Number, badge.AssetID
-		out = created
-		return nil
+		out, err = s.repo.SetVisitBadge(ctx, tenantID, created.ID, badge.Number, badge.AssetID)
+		return err
 	})
 	if err != nil {
 		return domain.Visit{}, err

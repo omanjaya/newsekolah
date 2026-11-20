@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   checkOutMutate: vi.fn(),
+  badgeUrlMutate: vi.fn(),
   board: vi.fn(),
   canManage: true,
   appPage: vi.fn<(props: { primaryActionCompact?: { label: string } }) => void>(),
@@ -50,6 +51,7 @@ vi.mock("../api", () => ({
   useVisitorBoardQuery: mocks.board,
   useExpectedGuestsQuery: () => ({ data: { data: [] }, isLoading: false }),
   useCheckOutVisitMutation: () => ({ mutate: mocks.checkOutMutate, isPending: false }),
+  useVisitBadgeUrlMutation: () => ({ mutate: mocks.badgeUrlMutate, isPending: false }),
 }));
 
 import { GateBoardView } from "./gate-board-view";
@@ -84,10 +86,31 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   mocks.checkOutMutate.mockReset();
+  mocks.badgeUrlMutate.mockReset();
   window.history.replaceState(null, "", "/");
 });
 
 describe("GateBoardView", () => {
+  it("prints a visitor's badge by opening its PDF in a new tab", async () => {
+    const user = userEvent.setup();
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    mocks.badgeUrlMutate.mockImplementation(
+      (_id: string, options: { onSuccess: (result: { url: string }) => void }) => {
+        options.onSuccess({ url: "https://files.test/badge.pdf" });
+      },
+    );
+    render(<GateBoardView />);
+
+    await user.click(screen.getByRole("button", { name: "printBadgeFor:Bu Ayu" }));
+    expect(mocks.badgeUrlMutate).toHaveBeenCalledWith("v1", expect.any(Object));
+    expect(open).toHaveBeenCalledWith(
+      "https://files.test/badge.pdf",
+      "_blank",
+      "noopener,noreferrer",
+    );
+    open.mockRestore();
+  });
+
   it("asks for confirmation naming the visitor before signing them out", async () => {
     const user = userEvent.setup();
     render(<GateBoardView />);

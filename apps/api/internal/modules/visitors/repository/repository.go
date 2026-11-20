@@ -101,6 +101,16 @@ func (r *Repository) CreateVisit(ctx context.Context, v domain.Visit) (domain.Vi
 	return toVisit(row), nil
 }
 
+func (r *Repository) SetVisitBadge(ctx context.Context, tenantID, id uuid.UUID, number string, assetID uuid.NullUUID) (domain.Visit, error) {
+	row, err := r.queries(ctx).SetVisitBadge(ctx, db.SetVisitBadgeParams{
+		TenantID: tenantID, ID: id, BadgeNumber: number, BadgeAssetID: pdatabase.NullUUID(assetID),
+	})
+	if err != nil {
+		return domain.Visit{}, fmt.Errorf("set visit badge: %w", err)
+	}
+	return toVisit(row), nil
+}
+
 func (r *Repository) GetVisit(ctx context.Context, tenantID, id uuid.UUID) (domain.Visit, bool, error) {
 	row, err := r.queries(ctx).GetVisit(ctx, db.GetVisitParams{TenantID: tenantID, ID: id})
 	if errors.Is(err, pgx.ErrNoRows) {

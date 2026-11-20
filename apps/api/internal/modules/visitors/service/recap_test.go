@@ -36,6 +36,9 @@ func TestBuildRecapDocument(t *testing.T) {
 	require.Len(t, doc.Columns, 2)
 	require.Len(t, doc.Sections, 2, "overall figures, then incidents by severity")
 	require.Len(t, doc.Sections[0].Rows, 3)
+	require.Equal(t, []any{"Masih di sekolah", 3}, doc.Sections[0].Rows[1], "labels match the recap screen")
+	require.Equal(t, []any{"Rata-rata lama kunjungan (menit)", 28}, doc.Sections[0].Rows[2],
+		"the average is whole minutes, rounded like the screen, not 27.5")
 	require.Len(t, doc.Sections[1].Rows, 4, "every severity level appears even when its count is zero")
 	require.Equal(t, "Rendah", doc.Sections[1].Rows[0][0], "severity shows its Indonesian label, not the raw code")
 	require.Equal(t, reportdoc.PageLabel(reportdoc.LocaleID), doc.PageLabelFormat)

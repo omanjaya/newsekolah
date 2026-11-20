@@ -24,6 +24,7 @@
     "checkOut": "Sign out",
     "checkOutShort": "Sign out",
     "checkOutFor": "Sign out {name}",
+    "printBadgeFor": "Print visitor badge for {name}",
     "signedOut": "{name} has been signed out",
     "checkOutDialog": {
       "title": "Sign this visitor out?",

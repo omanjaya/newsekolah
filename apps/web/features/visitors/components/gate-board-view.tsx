@@ -36,6 +36,7 @@ import {
   type Visit,
   useCheckOutVisitMutation,
   useExpectedGuestsQuery,
+  useVisitBadgeUrlMutation,
   useVisitorBoardQuery,
 } from "../api";
 import { matchesSearch, sortBoardEntries } from "../lib/board";
@@ -86,6 +87,7 @@ export function GateBoardView(): ReactElement {
   const board = useVisitorBoardQuery();
   const expected = useExpectedGuestsQuery(todayInZone(timeZone));
   const checkOut = useCheckOutVisitMutation();
+  const badgeUrl = useVisitBadgeUrlMutation();
   const canManage = useCan("manage_visitors");
   const [status, setStatus] = useUrlState<BoardFilter>("status", FILTERS, "all");
   const [search, setSearch] = useState("");
@@ -94,6 +96,19 @@ export function GateBoardView(): ReactElement {
   const onSiteTitleId = useId();
   const startCheckIn = () => {
     setCheckingIn(true);
+  };
+  // The badge PDF opens in a new tab, where the browser prints it.
+  const printBadge = (visit: Visit) => {
+    badgeUrl.mutate(visit.id, {
+      onSuccess: (result) => {
+        window.open(result.url, "_blank", "noopener,noreferrer");
+      },
+      onError: (error) => {
+        toast.error(
+          error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+        );
+      },
+    });
   };
   useQuickAction("add-visitor", startCheckIn, canManage);
 
@@ -139,6 +154,8 @@ export function GateBoardView(): ReactElement {
         timeZone={timeZone}
         canManage={canManage}
         onCheckOut={setCheckingOut}
+        onPrintBadge={printBadge}
+        printingBadgeId={badgeUrl.isPending ? badgeUrl.variables : undefined}
       />
     );
   }

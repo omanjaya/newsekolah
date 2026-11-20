@@ -24,6 +24,7 @@
     "checkOut": "Catat keluar",
     "checkOutShort": "Keluar",
     "checkOutFor": "Catat keluar {name}",
+    "printBadgeFor": "Cetak kartu tamu {name}",
     "signedOut": "{name} sudah dicatat keluar",
     "checkOutDialog": {
       "title": "Catat tamu keluar?",
