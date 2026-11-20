@@ -51,7 +51,10 @@
     "draftFoundTitle": "A saved draft was found",
     "draftFoundBody": "The draft was last saved at {time}.",
     "draftRestore": "Restore draft",
-    "draftDismiss": "Dismiss"
+    "draftDismiss": "Dismiss",
+    "existsTitle": "This lesson already has a journal",
+    "existsBody": "Saving a new journal will not replace it. Open that journal to change it.",
+    "openExisting": "Open that journal"
   },
   "recent": {
     "title": "To write",

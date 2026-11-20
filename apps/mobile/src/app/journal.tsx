@@ -133,6 +133,9 @@ function JournalForm({
     // (useUpsertJournal's meta.successMessage / the translated error toast).
     upsert.mutate(
       {
+        // Editing names the journal; without an id the API only creates,
+        // and refuses a second journal for a lesson that already has one.
+        ...(journal ? { id: journal.id } : {}),
         academic_year_id: yearId,
         class_id: classId,
         subject_id: subjectId,
