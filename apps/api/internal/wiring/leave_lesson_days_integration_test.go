@@ -78,8 +78,8 @@ func TestIssuedLeaveCountsOnlyTheClassLessonDays(t *testing.T) {
 	period := insertID(`insert into periods (tenant_id,template_id,name,sequence,starts_at,ends_at) values ($1,$2,'P1',1,'07:00','08:00')`, tenantUUID, template)
 	// X-B is timetabled on Tuesday and Friday only.
 	for _, weekday := range []int{2, 5} {
-		exec(`insert into schedules (tenant_id,academic_year_id,class_id,subject_id,teacher_user_id,day_of_week,start_period_id,end_period_id,start_seq,end_seq,source)
-			values ($1,$2,$3,$4,$5,$6,$7,$7,1,1,'admin')`, tenantUUID, yearID, classXB, subject, homeroomTeacher, weekday, period)
+		exec(`insert into schedules (tenant_id,academic_year_id,class_id,subject_id,teacher_user_id,day_of_week,start_period_id,end_period_id,start_seq,end_seq,source,effective_from)
+			values ($1,$2,$3,$4,$5,$6,$7,$7,1,1,'admin','2026-07-01')`, tenantUUID, yearID, classXB, subject, homeroomTeacher, weekday, period)
 	}
 	homeroomDuty := insertID(`insert into duty_types (tenant_id,slug,name,scope_kind) values ($1,'homeroom','Wali Kelas','class')`, tenantUUID)
 	exec(`insert into duty_assignments (tenant_id,academic_year_id,duty_type_id,user_id,scope_class_id,starts_on) values ($1,$2,$3,$4,$5,'2026-07-01')`, tenantUUID, yearID, homeroomDuty, homeroomTeacher, classXB)

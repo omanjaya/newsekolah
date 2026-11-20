@@ -114,8 +114,8 @@ func TestClassCalendarKeepsOnlyTheClassTimetabledWeekdays(t *testing.T) {
 	teacher := insertID(`insert into users (tenant_id,username,password_hash,name,status,locale) values ($1,'guru-timetable','x','Guru','active','id')`, tenantID)
 	// X-B has lessons on Tuesday and Friday; X-C has no timetable yet.
 	for _, weekday := range []int{2, 5} {
-		exec(`insert into schedules (tenant_id,academic_year_id,class_id,subject_id,teacher_user_id,day_of_week,start_period_id,end_period_id,start_seq,end_seq,source)
-			values ($1,$2,$3,$4,$5,$6,$7,$7,1,1,'admin')`, tenantID, yearID, classXB, subject, teacher, weekday, period)
+		exec(`insert into schedules (tenant_id,academic_year_id,class_id,subject_id,teacher_user_id,day_of_week,start_period_id,end_period_id,start_seq,end_seq,source,effective_from)
+			values ($1,$2,$3,$4,$5,$6,$7,$7,1,1,'admin','2026-07-01')`, tenantID, yearID, classXB, subject, teacher, weekday, period)
 	}
 
 	academicModule := academic.Register(pg.AppPool, clock.Real{})

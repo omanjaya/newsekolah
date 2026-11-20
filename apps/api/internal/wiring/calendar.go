@@ -33,11 +33,12 @@ type ClassCalendar struct {
 	Schedules ClassTimetable
 }
 
-// ClassTimetable counts a class's scheduled lessons per ISO weekday
-// (scheduling.ScheduleReader satisfies it).
+// ClassTimetable counts a class's lessons in effect on a date, so a
+// timetable changed mid-year (effective dating, migration 0147) is read as
+// it stood on each day (scheduling.ScheduleReader satisfies it).
 type ClassTimetable interface {
-	CountSchedulesForClassDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, dayOfWeek int16) (int64, error)
-	CountSchedulesByClassDay(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID) ([]scheduling.ClassDayCount, error)
+	CountSchedulesForClassOn(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) (int64, error)
+	CountSchedulesByClassDates(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID, dates []time.Time) ([]scheduling.ClassDateCount, error)
 }
 
 // IsTeachingDay reports whether classID has lessons on date and, when it
@@ -60,7 +61,7 @@ func (c ClassCalendar) IsTeachingDay(ctx context.Context, tenantID, academicYear
 	if c.Schedules == nil {
 		return true, "", nil
 	}
-	count, err := c.Schedules.CountSchedulesForClassDay(ctx, tenantID, academicYearID, classID, isoWeekday(date))
+	count, err := c.Schedules.CountSchedulesForClassOn(ctx, tenantID, academicYearID, classID, date)
 	return count > 0, "", err
 }
 
@@ -92,41 +93,59 @@ func (c ClassCalendar) TeachingDays(ctx context.Context, tenantID, academicYearI
 	return c.keepTimetabledDays(ctx, tenantID, academicYearID, out)
 }
 
-// keepTimetabledDays drops, from each class's school days, the weekdays its
-// timetable has no lesson on, reading every class's timetable in one query.
+// keepTimetabledDays drops, from each class's school days, the dates its
+// timetable has no lesson in effect on, reading every class's timetable for
+// every date in one query.
 func (c ClassCalendar) keepTimetabledDays(ctx context.Context, tenantID, academicYearID uuid.UUID, byClass map[uuid.UUID][]time.Time) (map[uuid.UUID][]time.Time, error) {
 	if c.Schedules == nil || len(byClass) == 0 {
 		return byClass, nil
 	}
 	classIDs := make([]uuid.UUID, 0, len(byClass))
-	for classID := range byClass {
+	seen := map[string]bool{}
+	var dates []time.Time
+	for classID, days := range byClass {
 		classIDs = append(classIDs, classID)
+		for _, d := range days {
+			if key := dateKey(d); !seen[key] {
+				seen[key] = true
+				dates = append(dates, d)
+			}
+		}
 	}
-	counts, err := c.Schedules.CountSchedulesByClassDay(ctx, tenantID, academicYearID, classIDs)
+	if len(dates) == 0 {
+		return byClass, nil
+	}
+	counts, err := c.Schedules.CountSchedulesByClassDates(ctx, tenantID, academicYearID, classIDs, dates)
 	if err != nil {
 		return nil, err
 	}
-	timetabled := make(map[uuid.UUID]map[int16]bool, len(classIDs))
+	timetabled := make(map[uuid.UUID]map[string]bool, len(classIDs))
 	for _, row := range counts {
 		if row.Count == 0 {
 			continue
 		}
 		if timetabled[row.ClassID] == nil {
-			timetabled[row.ClassID] = map[int16]bool{}
+			timetabled[row.ClassID] = map[string]bool{}
 		}
-		timetabled[row.ClassID][row.DayOfWeek] = true
+		timetabled[row.ClassID][dateKey(row.Date)] = true
 	}
 	out := make(map[uuid.UUID][]time.Time, len(byClass))
 	for classID, days := range byClass {
 		kept := make([]time.Time, 0, len(days))
 		for _, d := range days {
-			if timetabled[classID][isoWeekday(d)] {
+			if timetabled[classID][dateKey(d)] {
 				kept = append(kept, d)
 			}
 		}
 		out[classID] = kept
 	}
 	return out, nil
+}
+
+// dateKey names a calendar date by its own year, month and day, so a date
+// read back from Postgres (midnight UTC) matches the same day passed in.
+func dateKey(d time.Time) string {
+	return d.Format(time.DateOnly)
 }
 
 // isoWeekday is date's ISO weekday (Monday 1 .. Sunday 7), the numbering
