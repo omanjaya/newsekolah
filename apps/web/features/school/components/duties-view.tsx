@@ -18,13 +18,15 @@ import {
   FormError,
   List,
   RowActionsMenu,
+  type RowActionsMenuItem,
   Select,
   SkeletonList,
   Switch,
   useDebouncedCallback,
+  useSingleFlight,
   useToast,
 } from "@newsekolah/ui";
-import { CalendarX2, Plus, RotateCcw, ShieldCheck, Trash2 } from "lucide-react";
+import { Ban, CalendarX2, Plus, RotateCcw, ShieldCheck, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -64,7 +66,11 @@ export function DutiesView(): ReactElement {
   const [adding, setAdding] = useState(false);
   const [showEnded, setShowEnded] = useState(false);
   const [ending, setEnding] = useState<DutyAssignment | null>(null);
+  // An ended row is removed; an active row that has not started yet is
+  // cancelled, which is the same DELETE: it never granted anything.
   const [removing, setRemoving] = useState<DutyAssignment | null>(null);
+  const cancelling = removing?.is_active ?? false;
+  const today = todayInZone(me?.tenant.timezone);
   const allRows = assignments.data?.data ?? [];
   const activeRows = allRows.filter((a) => a.is_active);
   const rows = showEnded ? allRows : activeRows;
@@ -75,6 +81,64 @@ export function DutiesView(): ReactElement {
     toast.error(
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
     );
+  }
+
+  /**
+   * A row that has not started yet is cancelled (deleted: it never granted
+   * anything), an active one is ended on a date, and an ended one can be
+   * reactivated or removed.
+   */
+  function rowActions(a: DutyAssignment, notStarted: boolean): RowActionsMenuItem[] {
+    if (notStarted) {
+      return [
+        {
+          label: t("cancelAssignment"),
+          icon: <Ban />,
+          tone: "danger",
+          onClick: () => {
+            setRemoving(a);
+          },
+        },
+      ];
+    }
+    if (a.is_active) {
+      return [
+        {
+          label: t("endAction"),
+          icon: <CalendarX2 />,
+          tone: "danger",
+          onClick: () => {
+            setEnding(a);
+          },
+        },
+      ];
+    }
+    return [
+      {
+        label: t("reactivate"),
+        icon: <RotateCcw />,
+        disabled: update.isPending && update.variables.id === a.id,
+        onClick: () => {
+          update.mutate(
+            { id: a.id, body: { is_active: true } },
+            {
+              onSuccess: () => {
+                toast.success(t("reactivated"));
+              },
+              onError: fail,
+            },
+          );
+        },
+      },
+      {
+        label: t("remove"),
+        icon: <Trash2 />,
+        tone: "danger",
+        onClick: () => {
+          setRemoving(a);
+        },
+      },
+    ];
   }
 
   return (
@@ -115,6 +179,8 @@ export function DutiesView(): ReactElement {
           <List framed>
             {rows.map((a) => {
               const name = holderMap.get(a.user_id)?.name ?? "-";
+              // starts_on and today are both "YYYY-MM-DD" in the school's zone.
+              const notStarted = a.is_active && a.starts_on > today;
               return (
                 <li
                   key={a.id}
@@ -130,7 +196,7 @@ export function DutiesView(): ReactElement {
                           <span>{classMap.get(a.scope_class_id)?.name ?? "-"}</span>
                         )}
                         <span>
-                          {t("since", {
+                          {t(notStarted ? "startsLater" : "since", {
                             date: formatDate(a.starts_on, {
                               locale,
                               timeZone: me?.tenant.timezone,
@@ -155,45 +221,7 @@ export function DutiesView(): ReactElement {
                         duty, like the other school lists' row actions. */}
                     <RowActionsMenu
                       ariaLabel={t("rowActions", { name, duty: a.duty_name })}
-                      items={
-                        a.is_active
-                          ? [
-                              {
-                                label: t("endAction"),
-                                icon: <CalendarX2 />,
-                                tone: "danger",
-                                onClick: () => {
-                                  setEnding(a);
-                                },
-                              },
-                            ]
-                          : [
-                              {
-                                label: t("reactivate"),
-                                icon: <RotateCcw />,
-                                disabled: update.isPending && update.variables.id === a.id,
-                                onClick: () => {
-                                  update.mutate(
-                                    { id: a.id, body: { is_active: true } },
-                                    {
-                                      onSuccess: () => {
-                                        toast.success(t("reactivated"));
-                                      },
-                                      onError: fail,
-                                    },
-                                  );
-                                },
-                              },
-                              {
-                                label: t("remove"),
-                                icon: <Trash2 />,
-                                tone: "danger",
-                                onClick: () => {
-                                  setRemoving(a);
-                                },
-                              },
-                            ]
-                      }
+                      items={rowActions(a, notStarted)}
                     />
                   </div>
                 </li>
@@ -225,16 +253,20 @@ export function DutiesView(): ReactElement {
         onOpenChange={(open) => {
           if (!open) setRemoving(null);
         }}
-        title={t("remove")}
-        description={removing ? t("removeBody", { duty: removing.duty_name }) : ""}
-        confirmLabel={t("remove")}
+        title={t(cancelling ? "cancelAssignment" : "remove")}
+        description={
+          removing
+            ? t(cancelling ? "cancelAssignmentBody" : "removeBody", { duty: removing.duty_name })
+            : ""
+        }
+        confirmLabel={t(cancelling ? "cancelAssignmentConfirm" : "remove")}
         tone="danger"
         confirming={end.isPending}
         onConfirm={async () => {
           if (!removing) return;
           try {
             await end.mutateAsync(removing.id);
-            toast.success(t("removed"));
+            toast.success(t(cancelling ? "cancelledAssignment" : "removed"));
           } catch (error) {
             fail(error);
           } finally {
@@ -284,7 +316,9 @@ function AssignForm({
     return base;
   }, [staffOptionsQuery.data, userId, userLabel]);
 
-  async function submit() {
+  // A double click on Simpan used to send two POSTs before isPending
+  // re-rendered the button, saving the assignment twice.
+  const submit = useSingleFlight(async () => {
     setError(null);
     if (!typeId || !userId || (type?.scope_kind === "class" && !classId)) {
       setError(t("requiredError"));
@@ -303,7 +337,7 @@ function AssignForm({
     } catch (err) {
       setError(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
     }
-  }
+  });
 
   return (
     <form
