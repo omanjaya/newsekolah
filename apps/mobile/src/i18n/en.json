@@ -30,6 +30,7 @@
   "home.open_session": "Open",
   "home.submitted": "Saved",
   "home.pending": "Not filled",
+  "home.handed_over": "Covered by a substitute",
   "home.my_attendance": "My attendance",
   "home.view_calendar": "View calendar",
   "home.exit_permits": "Exit permits",

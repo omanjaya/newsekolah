@@ -51,6 +51,11 @@ const SCHEDULE_HREF = "/schedule";
 const JOURNAL_HREF = "/journal";
 const VIEW_ACADEMIC_DATA = "view_academic_data";
 
+/** A lesson an accepted substitute fills instead: never this teacher's to-do. */
+function isHandedOver(session: Session): boolean {
+  return Boolean(session.handed_over_to_user_id);
+}
+
 /**
  * Formats a period's wall-clock start or end, and a lesson's span, the way
  * the schedule and attendance write them ("08.40", "07.00 – 08.40"), so the
@@ -128,23 +133,26 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
   };
 
   if (sessions.isSuccess && periods.isSuccess) {
-    const pending = todaySessions.filter((session) => !session.submitted_at);
-    // A day without sessions has nothing to fill in: a "0 of 0" tile would
-    // only take the place of one that says something.
-    if (todaySessions.length > 0) {
+    // A lesson handed to a substitute is theirs to fill: it is neither
+    // pending nor the hero here, only a row in the card that says so.
+    const ownSessions = todaySessions.filter((session) => !isHandedOver(session));
+    const pending = ownSessions.filter((session) => !session.submitted_at);
+    // A day without sessions of one's own has nothing to fill in: a
+    // "0 of 0" tile would only take the place of one that says something.
+    if (ownSessions.length > 0) {
       block.tiles.push({
         key: "teacher.pending",
         priority: 90,
         label: t("tiles.pendingLabel"),
         value: String(pending.length),
-        hint: t("tiles.pendingHint", { total: todaySessions.length }),
+        hint: t("tiles.pendingHint", { total: ownSessions.length }),
         href: ATTENDANCE_HREF,
         icon: ClipboardCheck,
         tone: "green",
       });
     }
 
-    const ranges: SessionRange[] = todaySessions.map((session) => ({
+    const ranges: SessionRange[] = ownSessions.map((session) => ({
       session,
       start: parseClock(periodMap.get(session.start_period_id)?.starts_at ?? "00:00"),
       end: parseClock(periodMap.get(session.end_period_id)?.ends_at ?? "00:00"),
@@ -172,7 +180,7 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
       const startsAt = startPeriod?.starts_at;
       const startLabel = clock(startsAt);
       const rangeLabel = range(startsAt, periodMap.get(session.end_period_id)?.ends_at);
-      const sessionHref = `${ATTENDANCE_HREF}/${session.id}`;
+      const sessionHref = session.id ? `${ATTENDANCE_HREF}/${session.id}` : ATTENDANCE_HREF;
 
       if (picked.state === "now") {
         // `eligible` only keeps a running session here when it is still
@@ -204,8 +212,10 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
         };
       }
     } else {
-      const allDone = todaySessions.length > 0;
-      const holiday = !allDone && holidayName;
+      const allDone = ownSessions.length > 0;
+      // Every lesson today went to a substitute: nothing is left to fill.
+      const allHandedOver = !allDone && todaySessions.length > 0;
+      const holiday = !allDone && !allHandedOver && holidayName;
       block.hero = {
         key: "teacher.idle",
         priority: HERO_PRIORITY.teacherIdle,
@@ -213,14 +223,18 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
         eyebrow: t("hero.idleEyebrow"),
         title: allDone
           ? t("hero.doneTitle")
-          : holiday
-            ? t("hero.holidayTitle", { name: holidayName })
-            : t("hero.freeTitle"),
+          : allHandedOver
+            ? t("hero.handedOverTitle")
+            : holiday
+              ? t("hero.holidayTitle", { name: holidayName })
+              : t("hero.freeTitle"),
         meta: allDone
-          ? t("hero.doneMeta", { total: todaySessions.length })
-          : holiday
-            ? t("hero.holidayMeta")
-            : t("hero.freeMeta"),
+          ? t("hero.doneMeta", { total: ownSessions.length })
+          : allHandedOver
+            ? t("hero.handedOverMeta")
+            : holiday
+              ? t("hero.holidayMeta")
+              : t("hero.freeMeta"),
         action: allDone
           ? { label: t("hero.journalAction"), href: JOURNAL_HREF }
           : { label: t("hero.scheduleAction"), href: SCHEDULE_HREF },
@@ -316,13 +330,13 @@ function TeacherTodayCard({
           ) : null}
           <List>
             {sessions.map((session) => {
-              const running = session.id === runningId;
+              const running = session.id !== undefined && session.id === runningId;
               const subject = subjectMap.get(session.subject_id)?.name;
               const startPeriod = periodMap.get(session.start_period_id);
               return (
                 <ListRow
-                  key={session.id}
-                  href={`${ATTENDANCE_HREF}/${session.id}`}
+                  key={session.schedule_id}
+                  href={session.id ? `${ATTENDANCE_HREF}/${session.id}` : ATTENDANCE_HREF}
                   leading={
                     <span
                       className={cn(
@@ -342,6 +356,10 @@ function TeacherTodayCard({
                     session.submitted_at ? (
                       <Badge tone="success" size="sm">
                         {t("card.statusSubmitted")}
+                      </Badge>
+                    ) : isHandedOver(session) ? (
+                      <Badge tone="neutral" size="sm">
+                        {t("card.statusHandedOver")}
                       </Badge>
                     ) : (
                       <Badge tone="warning" size="sm">

@@ -7,6 +7,7 @@
       "holiday": "Holiday: {name}",
       "statusSubmitted": "Saved",
       "statusPending": "Not filled in",
+      "statusHandedOver": "Handed over",
       "runningMeta": "{subject} · in progress"
     },
     "tiles": {
@@ -27,6 +28,8 @@
       "idleEyebrow": "Teaching today",
       "doneTitle": "All of today's attendance is in",
       "doneMeta": "{total} sessions taken. Your teaching journal can be completed now.",
+      "handedOverTitle": "Today's lessons are covered by a substitute",
+      "handedOverMeta": "The substitute records their attendance, so there is nothing for you to fill in.",
       "freeTitle": "No lessons to teach today",
       "freeMeta": "This week's timetable is still available.",
       "holidayTitle": "Holiday: {name}",
