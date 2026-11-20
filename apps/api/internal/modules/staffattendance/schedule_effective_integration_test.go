@@ -218,8 +218,9 @@ func TestFutureMonthRecapKeepsTheEmployeeName(t *testing.T) {
 
 // TestEnablingAnOffWeekdayIsNotRetroactive: the editor stores all seven
 // weekdays on the first save, so Saturday already has an "off" row. Turning
-// Saturday on later must date it from that save: earlier Saturdays had no
-// working schedule and are unscheduled, not absent.
+// Saturday on later must date it as a working day from that save: earlier
+// Saturdays were the employee's configured days off, so they stay holidays
+// -- neither absences nor "no schedule" (staff-attendance-R1).
 func TestEnablingAnOffWeekdayIsNotRetroactive(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx, schoolID, employee, loc := makassarStaff(t, pg, "Satpam Contoh")
@@ -246,11 +247,26 @@ func TestEnablingAnOffWeekdayIsNotRetroactive(t *testing.T) {
 	statusOn := func(day int) domain.StatusCode {
 		return recap.Days[day-1].StatusCode
 	}
-	require.Equal(t, domain.StatusUnscheduled, statusOn(7), "Saturday 7 Nov was a day off then")
-	require.Equal(t, domain.StatusUnscheduled, statusOn(14), "Saturday 14 Nov was a day off then")
+	require.Equal(t, domain.StatusHoliday, statusOn(7), "Saturday 7 Nov was a day off then")
+	require.Equal(t, domain.StatusHoliday, statusOn(14), "Saturday 14 Nov was a day off then")
 	require.Equal(t, domain.StatusAbsent, statusOn(21), "Saturday is a working day from 20 Nov")
 	require.Equal(t, domain.StatusAbsent, statusOn(28))
 	require.Equal(t, domain.StatusAbsent, statusOn(9), "Monday keeps the date of the first save")
 	require.Equal(t, domain.StatusHoliday, statusOn(8), "Sunday stays off")
 	require.Equal(t, domain.StatusUnscheduled, statusOn(1), "1 Nov is before any schedule")
+	require.Equal(t, 1, recap.StatusTotals[domain.StatusUnscheduled], "only 1 Nov has no schedule")
+
+	// Turning Saturday off and on again dates it from the latest switch,
+	// still keeping the row's first date.
+	_, err = mod.Service.ReplaceWeeklySchedule(clock.WithTime(ctx, time.Date(2026, 11, 26, 12, 0, 0, 0, loc)), schoolID, employee, employee, weekdaysSchedule(8*60, 16*60, 10))
+	require.NoError(t, err)
+	days, err := mod.Service.ReplaceWeeklySchedule(clock.WithTime(ctx, time.Date(2026, 11, 27, 12, 0, 0, 0, loc)), schoolID, employee, employee, withSaturday)
+	require.NoError(t, err)
+	saturday := days[5]
+	require.Equal(t, time.Date(2026, 11, 2, 7, 0, 0, 0, loc).UTC(), saturday.CreatedAt.UTC())
+	require.Equal(t, time.Date(2026, 11, 27, 12, 0, 0, 0, loc).UTC(), saturday.WorkingSince.UTC())
+	recap, err = mod.Service.GetMonthlyRecap(readAt, schoolID, employee, "2026-11")
+	require.NoError(t, err)
+	require.Equal(t, domain.StatusHoliday, recap.Days[20].StatusCode, "Saturday 21 Nov now reads as the day off it was before the latest switch")
+	require.Equal(t, domain.StatusAbsent, recap.Days[27].StatusCode, "Saturday 28 Nov is a working day again")
 }

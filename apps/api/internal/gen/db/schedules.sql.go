@@ -1200,7 +1200,7 @@ func (q *Queries) ListStaffAttendanceRosterEmployees(ctx context.Context, tenant
 }
 
 const listStaffAttendanceScheduleDays = `-- name: ListStaffAttendanceScheduleDays :many
-select id, tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_at, updated_at, created_by, updated_by from staff_attendance_schedules
+select id, tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_at, updated_at, created_by, updated_by, working_since from staff_attendance_schedules
 where tenant_id = $1 and employee_user_id = $2
 order by weekday
 `
@@ -1232,6 +1232,7 @@ func (q *Queries) ListStaffAttendanceScheduleDays(ctx context.Context, arg ListS
 			&i.UpdatedAt,
 			&i.CreatedBy,
 			&i.UpdatedBy,
+			&i.WorkingSince,
 		); err != nil {
 			return nil, err
 		}
@@ -1461,20 +1462,24 @@ func (q *Queries) UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) 
 const upsertStaffAttendanceScheduleDay = `-- name: UpsertStaffAttendanceScheduleDay :one
 insert into staff_attendance_schedules (
   tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_by, updated_by,
-  created_at
+  created_at, working_since
 )
-values ($1, $2, $3, $4, $5, $6, $7, $8, $8, $9)
+values (
+  $1, $2, $3, $4, $5, $6, $7, $8, $8, $9,
+  case when $4::boolean then $9::timestamptz end
+)
 on conflict (tenant_id, employee_user_id, weekday) do update set
   is_working_day = excluded.is_working_day,
   start_minute = excluded.start_minute,
   end_minute = excluded.end_minute,
   grace_minutes = excluded.grace_minutes,
   updated_by = excluded.updated_by,
-  created_at = case
-    when not staff_attendance_schedules.is_working_day and excluded.is_working_day then excluded.created_at
-    else staff_attendance_schedules.created_at
+  working_since = case
+    when not excluded.is_working_day then null
+    when staff_attendance_schedules.is_working_day then staff_attendance_schedules.working_since
+    else excluded.created_at
   end
-returning id, tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_at, updated_at, created_by, updated_by
+returning id, tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_at, updated_at, created_by, updated_by, working_since
 `
 
 type UpsertStaffAttendanceScheduleDayParams struct {
@@ -1492,10 +1497,13 @@ type UpsertStaffAttendanceScheduleDayParams struct {
 // created_at is the service clock's instant rather than now(), so a
 // simulated school day dates a first schedule the way it dates scans:
 // days before it have no schedule to be absent from. An update keeps the
-// original created_at, except when it turns a day off into a working day:
-// the editor stores all seven weekdays on the first save, so an off
-// weekday already has a row, and keeping its date would make every past
-// occurrence of that weekday an absence it never was.
+// original created_at. working_since dates when the weekday became a
+// working day: the save instant on an insert as a working day or on an
+// update that turns a day off into one, kept while it stays working, and
+// null while it is a day off. The editor stores all seven weekdays on the
+// first save, so an off weekday already has a row: its earlier days stay
+// days off (holiday) once it is turned on, never absences or "no
+// schedule" (domain.ScheduleDay.AsOf).
 func (q *Queries) UpsertStaffAttendanceScheduleDay(ctx context.Context, arg UpsertStaffAttendanceScheduleDayParams) (StaffAttendanceSchedule, error) {
 	row := q.db.QueryRow(ctx, upsertStaffAttendanceScheduleDay,
 		arg.TenantID,
@@ -1522,6 +1530,7 @@ func (q *Queries) UpsertStaffAttendanceScheduleDay(ctx context.Context, arg Upse
 		&i.UpdatedAt,
 		&i.CreatedBy,
 		&i.UpdatedBy,
+		&i.WorkingSince,
 	)
 	return i, err
 }

@@ -10,7 +10,7 @@ func toScheduleDay(row db.StaffAttendanceSchedule) domain.ScheduleDay {
 	return domain.ScheduleDay{
 		EmployeeUserID: row.EmployeeUserID, Weekday: row.Weekday, IsWorkingDay: row.IsWorkingDay,
 		StartMinute: int(row.StartMinute), EndMinute: int(row.EndMinute), GraceMinutes: int(row.GraceMinutes),
-		CreatedAt: pdatabase.TimeOrZero(row.CreatedAt),
+		CreatedAt: pdatabase.TimeOrZero(row.CreatedAt), WorkingSince: pdatabase.TimeOrZero(row.WorkingSince),
 	}
 }
 

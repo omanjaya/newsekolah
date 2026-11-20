@@ -1461,6 +1461,7 @@ type StaffAttendanceSchedule struct {
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 	CreatedBy      pgtype.UUID        `json:"created_by"`
 	UpdatedBy      pgtype.UUID        `json:"updated_by"`
+	WorkingSince   pgtype.Timestamptz `json:"working_since"`
 }
 
 type StaffProfile struct {
