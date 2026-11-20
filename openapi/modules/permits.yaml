@@ -986,7 +986,7 @@ components:
 
     WorkflowEvent:
       type: object
-      required: [id, to_status, verification, occurred_at]
+      required: [id, to_status, verification, system_note, occurred_at]
       properties:
         id: { type: string, format: uuid }
         stage_key: { type: string }
@@ -995,6 +995,13 @@ components:
         actor_user_id: { type: string, format: uuid }
         verification: { type: string }
         note: { type: string }
+        system_note:
+          type: boolean
+          description: >-
+            True when `note` is a fixed log label the server records for an
+            automatic step (such as "opened" or "letter issued") rather than
+            text written for the reader, such as a reviewer's reason. Clients
+            show only notes where this is false.
         occurred_at: { type: string, format: date-time }
 
     WorkflowInstance:

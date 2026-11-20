@@ -350,7 +350,7 @@ func (s *Service) IssueLeaveLetter(ctx context.Context, tenantID, instanceID, is
 			// and "approved" is a non-terminal status that
 			// GetInProgressWorkflowInstance treats as still open, which
 			// blocked the student's every later leave request with a 409.
-			tenantID: tenantID, instanceID: instanceID, actorUserID: issuerUserID, note: "letter issued", onLastStageStatus: domain.StatusCompleted,
+			tenantID: tenantID, instanceID: instanceID, actorUserID: issuerUserID, note: domain.NoteLetterIssued, onLastStageStatus: domain.StatusCompleted,
 		})
 		if err != nil {
 			return err

@@ -28,21 +28,6 @@ function stageState(instance: WorkflowInstance, index: number): StepperStepState
   return "upcoming";
 }
 
-/**
- * Notes the API writes on its own events, in English, for its logs
- * (apps/api/internal/modules/permits/service: workflow.go "opened",
- * leaverequest.go "letter issued", exitpermit.go "gate exit" and
- * "cancelled by student", latearrival.go "reviewed by duty teacher").
- * They are not something a person wrote, so the stepper leaves them out.
- */
-const SYSTEM_EVENT_NOTES = new Set([
-  "opened",
-  "letter issued",
-  "gate exit",
-  "cancelled by student",
-  "reviewed by duty teacher",
-]);
-
 interface StageActivity {
   /** When the stage was last acted on. */
   at: string;
@@ -58,8 +43,10 @@ function stageActivity(instance: WorkflowInstance): Map<string, StageActivity> {
   );
   for (const event of events) {
     if (!event.stage_key) continue;
-    const note = event.note?.trim();
-    const written = note && !SYSTEM_EVENT_NOTES.has(note) ? note : undefined;
+    // A system note is the API's own log label ("opened", "letter issued"),
+    // not something a person wrote, so the stepper leaves it out.
+    const note = event.system_note ? "" : (event.note?.trim() ?? "");
+    const written = note === "" ? undefined : note;
     const previous = activity.get(event.stage_key);
     activity.set(event.stage_key, { at: event.occurred_at, note: written ?? previous?.note });
   }

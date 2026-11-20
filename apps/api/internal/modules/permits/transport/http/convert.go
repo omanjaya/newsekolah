@@ -180,7 +180,7 @@ func toAPIDefinition(d domain.Definition) api.WorkflowDefinition {
 func toAPIEvent(e domain.Event) api.WorkflowEvent {
 	return api.WorkflowEvent{
 		Id: e.ID, StageKey: strPtr(e.StageKey), FromStatus: strPtr(string(e.FromStatus)), ToStatus: string(e.ToStatus),
-		ActorUserId: uuidPtr(e.ActorUserID), Verification: string(e.Verification), Note: strPtr(e.Note), OccurredAt: e.OccurredAt,
+		ActorUserId: uuidPtr(e.ActorUserID), Verification: string(e.Verification), Note: strPtr(e.Note), SystemNote: e.HasSystemNote(), OccurredAt: e.OccurredAt,
 	}
 }
 

@@ -221,7 +221,7 @@ func (s *Service) CancelExitPermit(ctx context.Context, tenantID, instanceID, ac
 	var out domain.Instance
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = s.cancelInstance(ctx, tenantID, instanceID, actorUserID, "cancelled by student")
+		out, err = s.cancelInstance(ctx, tenantID, instanceID, actorUserID, domain.NoteCancelledBySubject)
 		return err
 	})
 	return out, err
@@ -325,7 +325,7 @@ func (s *Service) GateScan(ctx context.Context, tenantID, instanceID, securityUs
 		_, err = s.repo.CreateEvent(ctx, domain.Event{
 			TenantID: tenantID, InstanceID: instanceID, StageKey: "gate", FromStatus: inst.Status, ToStatus: domain.StatusCompleted,
 			ActorUserID: uuid.NullUUID{UUID: securityUserID, Valid: true}, Verification: domain.VerificationQRScan,
-			ScanTokenID: uuid.NullUUID{UUID: token.ID, Valid: true}, Note: "gate exit", OccurredAt: now,
+			ScanTokenID: uuid.NullUUID{UUID: token.ID, Valid: true}, Note: domain.NoteGateExit, OccurredAt: now,
 		})
 		if err != nil {
 			return err

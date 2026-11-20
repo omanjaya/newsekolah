@@ -11212,6 +11212,8 @@ export interface components {
             actor_user_id?: string;
             verification: string;
             note?: string;
+            /** @description True when `note` is a fixed log label the server records for an automatic step (such as "opened" or "letter issued") rather than text written for the reader, such as a reviewer's reason. Clients show only notes where this is false. */
+            system_note: boolean;
             /** Format: date-time */
             occurred_at: string;
         };

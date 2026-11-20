@@ -194,7 +194,7 @@ func (s *Service) createInstance(ctx context.Context, in newInstanceInput) (doma
 	_, err = s.repo.CreateEvent(ctx, domain.Event{
 		TenantID: in.tenantID, InstanceID: inst.ID, StageKey: firstStage.Key,
 		FromStatus: "", ToStatus: domain.StatusInProgress, ActorUserID: uuid.NullUUID{UUID: in.createdBy, Valid: true},
-		Verification: domain.VerificationAuto, Note: "opened", OccurredAt: clock.Now(ctx, s.clock),
+		Verification: domain.VerificationAuto, Note: domain.NoteOpened, OccurredAt: clock.Now(ctx, s.clock),
 	})
 	if err != nil {
 		return domain.Instance{}, domain.Definition{}, err

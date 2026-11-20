@@ -77,6 +77,7 @@ describe("WorkflowSteps", () => {
         stage_key: "duty",
         to_status: "in_progress",
         verification: "qr_scan",
+        system_note: false,
         occurred_at: "2026-11-14T02:14:00Z",
       },
     ],
@@ -99,6 +100,7 @@ describe("WorkflowSteps", () => {
           stage_key: "duty",
           to_status: "in_progress",
           verification: "qr_scan",
+          system_note: false,
           occurred_at: "2025-09-25T02:14:00Z",
         },
       ],
@@ -149,6 +151,7 @@ describe("WorkflowSteps", () => {
               to_status: "rejected",
               verification: "manual",
               note: "Ada ulangan Matematika hari itu.",
+              system_note: false,
               occurred_at: "2026-11-14T03:00:00Z",
             },
           ],
@@ -160,7 +163,7 @@ describe("WorkflowSteps", () => {
     expect(first).not.toHaveTextContent("stageNote");
   });
 
-  it("leaves out the notes the API writes for its own log", () => {
+  it("leaves out the notes the API flags as its own log labels", () => {
     render(
       <WorkflowSteps
         instance={{
@@ -171,7 +174,8 @@ describe("WorkflowSteps", () => {
               stage_key: "duty",
               to_status: "in_progress",
               verification: "auto",
-              note: "opened",
+              note: "reviewed by the night shift",
+              system_note: true,
               occurred_at: "2026-11-14T02:14:00Z",
             },
           ],

@@ -181,7 +181,7 @@ func (s *Service) ReviewLateArrival(ctx context.Context, in ReviewLateArrivalInp
 		// class teacher) whose approver has to show their own QR.
 		inst, def, isLast, err := s.approveCurrentStage(ctx, stageTransitionInput{
 			tenantID: in.TenantID, instanceID: in.InstanceID, actorUserID: in.ReviewerUserID,
-			note: "reviewed by duty teacher", onLastStageStatus: domain.StatusCompleted,
+			note: domain.NoteReviewedByDutyTeacher, onLastStageStatus: domain.StatusCompleted,
 			verification: domain.VerificationManual,
 		})
 		if err != nil {
