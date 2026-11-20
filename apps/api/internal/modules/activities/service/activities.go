@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/activities/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // ActivityInput is the create/update form for a one-off school activity.
@@ -104,6 +105,27 @@ func (s *Service) ListActivities(ctx context.Context, tenantID uuid.UUID, from, 
 	return out, err
 }
 
+// ListMyActivities is a student's own upcoming and ongoing activities:
+// every activity this year that names the student, their class or their
+// grade level and has not ended before today in loc (the tenant's zone).
+func (s *Service) ListMyActivities(ctx context.Context, tenantID, studentID uuid.UUID, loc *time.Location) ([]domain.Activity, error) {
+	if loc == nil {
+		loc = time.UTC
+	}
+	now := clock.Now(ctx, s.clock).In(loc)
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	var out []domain.Activity
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		yearID, err := s.activeYear(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		out, err = s.repo.ListActivitiesForStudent(ctx, tenantID, yearID, studentID, today)
+		return err
+	})
+	return out, err
+}
+
 func (s *Service) AddParticipant(ctx context.Context, tenantID, activityID uuid.UUID, p domain.Participant) (domain.Participant, error) {
 	if err := p.Validate(); err != nil {
 		return domain.Participant{}, err
@@ -172,6 +194,24 @@ func (s *Service) DeleteAchievement(ctx context.Context, tenantID, id uuid.UUID)
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		return s.repo.DeleteAchievement(ctx, tenantID, id)
 	})
+}
+
+// ListMyAchievements is the caller's own achievement record this year.
+func (s *Service) ListMyAchievements(ctx context.Context, tenantID, studentID uuid.UUID) ([]domain.Achievement, error) {
+	return s.ListAchievements(ctx, tenantID, uuid.NullUUID{UUID: studentID, Valid: true}, uuid.NullUUID{})
+}
+
+// ListStudentAchievements is one student's achievement record across every
+// academic year, for the student profile; a profile is cumulative, unlike
+// the per-year lists.
+func (s *Service) ListStudentAchievements(ctx context.Context, tenantID, studentID uuid.UUID) ([]domain.Achievement, error) {
+	var out []domain.Achievement
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.ListStudentAchievementsAllYears(ctx, tenantID, studentID)
+		return err
+	})
+	return out, err
 }
 
 func (s *Service) ListAchievements(ctx context.Context, tenantID uuid.UUID, studentID, classID uuid.NullUUID) ([]domain.Achievement, error) {

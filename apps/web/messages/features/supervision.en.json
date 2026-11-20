@@ -23,7 +23,8 @@
     "criterionKeyPlaceholder": "Code",
     "criterionNamePlaceholder": "Criterion name",
     "removeCriterionNumbered": "Remove criterion {index}",
-    "addCriterion": "Add criterion"
+    "addCriterion": "Add criterion",
+    "criterionKeyDuplicate": "Another criterion uses this code."
   },
   "cycles": {
     "add": "Create cycle",
@@ -50,7 +51,8 @@
         "name": "Enter the cycle's name.",
         "instrumentName": "Enter the instrument's name.",
         "scale": "The highest score must be above the lowest.",
-        "criteria": "Every criterion needs a name and a code."
+        "criteria": "Every criterion needs a name and a code.",
+        "criteriaDuplicate": "Criterion codes must be unique. Change the repeated code."
       },
       "cancel": "Cancel",
       "submit": "Save",
@@ -125,6 +127,7 @@
       "lesson": "Lesson",
       "lessonPlaceholder": "Select a lesson slot",
       "selectTeacherFirst": "Select a teacher first.",
+      "noLessonOnDay": "This teacher has no lesson on {day}. Choose another date.",
       "lessonDate": "Observation date",
       "errors": {
         "teacher": "Select the teacher to observe.",

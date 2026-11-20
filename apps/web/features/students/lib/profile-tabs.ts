@@ -8,6 +8,7 @@ export const STUDENT_PROFILE_TABS = [
   "discipline",
   "counseling",
   "library",
+  "activities",
   "guardians",
 ] as const;
 
@@ -34,6 +35,8 @@ export const STUDENT_PROFILE_TAB_PERMISSIONS: Record<StudentProfileTab, readonly
   counseling: ["manage_counseling", "view_counseling"],
   // GET /v1/library/members/{id}
   library: ["manage_library_members"],
+  // GET /v1/activities/students/{id}/memberships and /v1/activities/achievements
+  activities: ["view_activities"],
   // GET /v1/users/{id} (father, mother, guardian)
   guardians: ["view_users"],
 };
@@ -50,6 +53,7 @@ export const STUDENT_PROFILE_PERMISSION_MODULES: Readonly<Record<string, Feature
   manage_counseling: "discipline",
   view_counseling: "discipline",
   manage_library_members: "library",
+  view_activities: "activities",
 };
 
 /**

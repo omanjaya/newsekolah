@@ -106,6 +106,24 @@ var eventMappings = map[string]eventMapping{
 			return "Pesanan buku siap diambil", fieldOr(e, "summary", "Judul yang Anda pesan sudah siap diambil di perpustakaan."), fieldOr(e, "href", "")
 		},
 	},
+	events.SupervisionObservationScheduled: {
+		domain.KindSupervisionObservationScheduled,
+		func(e events.Envelope) (string, string, string) {
+			return "Observasi kelas dijadwalkan", fieldOr(e, "summary", "Kepala sekolah menjadwalkan observasi pembelajaran Anda."), fieldOr(e, "href", "")
+		},
+	},
+	events.SupervisionObservationCompleted: {
+		domain.KindSupervisionObservationCompleted,
+		func(e events.Envelope) (string, string, string) {
+			return "Hasil observasi tersedia", fieldOr(e, "summary", "Hasil observasi pembelajaran Anda sudah dapat dibaca dan ditanggapi."), fieldOr(e, "href", "")
+		},
+	},
+	events.SupervisionResponseRecorded: {
+		domain.KindSupervisionResponseRecorded,
+		func(e events.Envelope) (string, string, string) {
+			return "Guru menanggapi hasil observasi", fieldOr(e, "summary", "Guru yang diobservasi menambahkan tanggapan dan tindak lanjut."), fieldOr(e, "href", "")
+		},
+	},
 	events.LibraryLoanDueReminder: {
 		domain.KindLibraryLoanDueReminder,
 		func(e events.Envelope) (string, string, string) {

@@ -234,6 +234,8 @@ describe("navigation registry: per-role audiences", () => {
       "view_early_warning",
       "view_own_supervision",
       "respond_to_supervision",
+      "manage_mentoring",
+      "record_extracurricular_attendance",
     );
     const keys = filterNavigationFixture(navigation, can, "teacher").map((item) => item.key);
     expect(keys).not.toContain("leave-requests");
@@ -244,6 +246,27 @@ describe("navigation registry: per-role audiences", () => {
     // Their own supervision results, never every teacher's cycles.
     expect(keys).toContain("supervision-my-report");
     expect(keys).not.toContain("supervision-cycles");
+    // Guru wali: their own groups, never the list of every group. Pembina:
+    // the clubs they coach, not events or achievements.
+    expect(keys).toContain("mentoring-my-groups");
+    expect(keys).not.toContain("mentoring-groups");
+    expect(keys).toContain("activities-clubs");
+    expect(keys).not.toContain("activities-events");
+    expect(keys).not.toContain("activities-achievements");
+    // A group's own pages and a club's page open for them; the API scopes
+    // both to the groups they mentor and the clubs they coach.
+    expect(canOpenPathFixture("/mentoring/groups/group-1", can, "teacher")).toBe(true);
+    expect(canOpenPathFixture("/mentoring/groups/group-1/students/s-1", can, "teacher")).toBe(true);
+    expect(canOpenPathFixture("/activities/clubs/club-1", can, "teacher")).toBe(true);
+    expect(canOpenPathFixture("/activities/events", can, "teacher")).toBe(false);
+  });
+
+  it("opens a student's profile for a role holding only view_activities", () => {
+    // The profile's activities tab is gated on view_activities, so that
+    // permission alone must open the page the tab lives on.
+    const can = has("view_activities");
+    expect(canOpenPathFixture("/students/x", can, "staff")).toBe(true);
+    expect(canOpenPathFixture("/students/x", has("view_dashboard"), "staff")).toBe(false);
   });
 
   it("gives a homeroom-duty teacher (wali kelas) the leave review queue", () => {

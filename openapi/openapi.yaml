@@ -1880,7 +1880,9 @@ paths:
       tags:
         - activities
       operationId: listExtracurriculars
-      x-permission: view_activities
+      x-permission:
+        - view_activities
+        - record_extracurricular_attendance
       summary: Extracurricular club catalogue for the active academic year
       parameters:
         - name: include_inactive
@@ -1938,7 +1940,9 @@ paths:
       tags:
         - activities
       operationId: getExtracurricular
-      x-permission: view_activities
+      x-permission:
+        - view_activities
+        - record_extracurricular_attendance
       summary: One club
       parameters:
         - name: clubId
@@ -2019,7 +2023,9 @@ paths:
       tags:
         - activities
       operationId: getMembershipPolicy
-      x-permission: view_activities
+      x-permission:
+        - view_activities
+        - record_extracurricular_attendance
       summary: Per-student club limit (0 means no limit)
       responses:
         "200":
@@ -2066,7 +2072,9 @@ paths:
       tags:
         - activities
       operationId: listClubMembers
-      x-permission: view_activities
+      x-permission:
+        - view_activities
+        - record_extracurricular_attendance
       summary: A club's roster
       parameters:
         - name: clubId
@@ -2210,12 +2218,126 @@ paths:
                       $ref: "#/components/schemas/StudentMembership"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /v1/me/activities:
+    get:
+      tags:
+        - activities
+      operationId: listMyActivityEvents
+      x-permission: authenticated
+      summary: The current student's own upcoming and ongoing activities
+      description: Activities this academic year that name the student, the student's active class or that class's grade
+        level, and have not ended before today in the school's time zone. Empty for anyone who is not a student.
+      responses:
+        "200":
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ActivityEvent"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/me/achievements:
+    get:
+      tags:
+        - activities
+      operationId: listMyAchievements
+      x-permission: authenticated
+      summary: The current student's own achievements this academic year
+      responses:
+        "200":
+          description: Achievements
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Achievement"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/activities/students/{studentId}/memberships:
+    get:
+      tags:
+        - activities
+      operationId: listStudentClubMemberships
+      x-permission: view_activities
+      summary: One student's club membership history, for the student profile
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Memberships
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StudentMembership"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/activities/students/{studentId}/achievements:
+    get:
+      tags:
+        - activities
+      operationId: listStudentAchievements
+      x-permission: view_activities
+      summary: One student's achievements across every academic year, for the student profile
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Achievements
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Achievement"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/activities/extracurriculars/{clubId}/meetings:
     get:
       tags:
         - activities
       operationId: listMeetings
-      x-permission: view_activities
+      x-permission:
+        - view_activities
+        - record_extracurricular_attendance
       summary: A club's scheduled meetings
       parameters:
         - name: clubId
@@ -2354,7 +2476,9 @@ paths:
       tags:
         - activities
       operationId: getClubMembershipReport
-      x-permission: view_activities
+      x-permission:
+        - view_activities
+        - record_extracurricular_attendance
       summary: Who was a member of this club during a date range
       parameters:
         - name: clubId
@@ -2400,7 +2524,9 @@ paths:
       tags:
         - activities
       operationId: getClubAttendanceReport
-      x-permission: view_activities
+      x-permission:
+        - view_activities
+        - record_extracurricular_attendance
       summary: Attendance across every meeting of this club
       parameters:
         - name: clubId
@@ -2602,6 +2728,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /v1/activities/participants/{participantId}:
     delete:
       tags:
@@ -12927,7 +13055,9 @@ paths:
       tags:
         - mentoring
       operationId: getMentorGroupSizeLimit
-      x-permission: view_mentoring
+      x-permission:
+        - view_mentoring
+        - manage_mentoring
       summary: Maximum students one mentor group may hold
       responses:
         "200":
@@ -13020,7 +13150,9 @@ paths:
       tags:
         - mentoring
       operationId: listMyMentorGroups
-      x-permission: view_mentoring
+      x-permission:
+        - view_mentoring
+        - manage_mentoring
       summary: The mentor groups the current user leads
       responses:
         "200":
@@ -13043,7 +13175,9 @@ paths:
       tags:
         - mentoring
       operationId: getMentorGroup
-      x-permission: view_mentoring
+      x-permission:
+        - view_mentoring
+        - manage_mentoring
       summary: One mentor group
       parameters:
         - name: groupId
@@ -13126,7 +13260,9 @@ paths:
       tags:
         - mentoring
       operationId: listMentorGroupMembers
-      x-permission: view_mentoring
+      x-permission:
+        - view_mentoring
+        - manage_mentoring
       summary: Students assigned to a mentor group
       parameters:
         - name: groupId
@@ -13376,7 +13512,9 @@ paths:
       tags:
         - mentoring
       operationId: getMentorStudentSnapshot
-      x-permission: view_mentoring
+      x-permission:
+        - view_mentoring
+        - manage_mentoring
       summary: One student's attendance, discipline points, and published grades
       parameters:
         - name: studentId
@@ -17431,6 +17569,10 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
   /v1/supervision/cycles/{cycleId}/teachers/{teacherId}/scheduled:
     get:
       tags:

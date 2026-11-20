@@ -12,15 +12,51 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
 
-type MentoringHandler struct{ service *service.Service }
+// PermissionChecker resolves the caller's effective permissions, so a
+// route open to both the school-wide reader (view_mentoring) and the guru
+// wali (manage_mentoring) can tell them apart.
+type PermissionChecker interface {
+	EffectivePermissions(ctx context.Context, tenantID, userID uuid.UUID) (authz.Set, error)
+}
 
-func New(svc *service.Service) *MentoringHandler { return &MentoringHandler{service: svc} }
+type MentoringHandler struct {
+	service *service.Service
+	perms   PermissionChecker
+}
+
+// New wires the handler. perms may be nil, which limits every caller to the
+// groups they mentor: the safe side for routes the spec opens to
+// manage_mentoring.
+func New(svc *service.Service, perms PermissionChecker) *MentoringHandler {
+	return &MentoringHandler{service: svc, perms: perms}
+}
 
 func tenantID(ctx context.Context) uuid.UUID { id, _ := httpx.TenantIDFromContext(ctx); return id }
 func userID(ctx context.Context) uuid.UUID   { id, _ := httpx.UserIDFromContext(ctx); return id }
+
+// viewer resolves how far the caller reaches: every group for
+// view_mentoring (read) and manage_mentor_groups (read and write), held by
+// the user and, for an API key, granted to the key too; otherwise only the
+// groups the caller mentors.
+func (h *MentoringHandler) viewer(ctx context.Context) (domain.Viewer, error) {
+	v := domain.Viewer{UserID: userID(ctx)}
+	if h.perms == nil {
+		return v, nil
+	}
+	set, err := h.perms.EffectivePermissions(ctx, tenantID(ctx), v.UserID)
+	if err != nil {
+		return domain.Viewer{}, err
+	}
+	key := authz.IdentityFromContext(ctx).KeyPermissions
+	has := func(code string) bool { return set.Has(code) && (key == nil || key.Has(code)) }
+	v.ReadAll = has(authz.PermViewMentoring)
+	v.WriteAll = has(authz.PermManageMentorGroups)
+	return v, nil
+}
 
 var errorMap = map[error]*httpx.Error{
 	domain.ErrGroupNotFound:        httpx.ErrMentorGroupNotFound,
@@ -28,6 +64,8 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrMemberAlreadyInGroup: httpx.ErrMentorMemberAlreadyInGroup,
 	domain.ErrNoteNotFound:         httpx.ErrMentorNoteNotFound,
 	domain.ErrNoteForbidden:        httpx.ErrMentorNoteForbidden,
+	domain.ErrGroupForbidden:       httpx.ErrMentorGroupForbidden,
+	domain.ErrMemberNotFound:       httpx.ErrNotFound,
 	domain.ErrSummaryNotFound:      httpx.ErrMentorSummaryNotFound,
 	domain.ErrStudentNotFound:      httpx.ErrNotFound,
 	domain.ErrModuleDisabled:       httpx.ErrMentoringModuleDisabled,
@@ -138,7 +176,11 @@ func (h *MentoringHandler) CreateMentorGroup(ctx context.Context, request api.Cr
 }
 
 func (h *MentoringHandler) GetMentorGroup(ctx context.Context, request api.GetMentorGroupRequestObject) (api.GetMentorGroupResponseObject, error) {
-	group, err := h.service.GetGroup(ctx, tenantID(ctx), request.GroupId)
+	viewer, err := h.viewer(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	group, err := h.service.GetGroup(ctx, tenantID(ctx), viewer, request.GroupId)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -164,7 +206,11 @@ func (h *MentoringHandler) DeleteMentorGroup(ctx context.Context, request api.De
 // Members.
 
 func (h *MentoringHandler) ListMentorGroupMembers(ctx context.Context, request api.ListMentorGroupMembersRequestObject) (api.ListMentorGroupMembersResponseObject, error) {
-	members, err := h.service.ListMembers(ctx, tenantID(ctx), request.GroupId)
+	viewer, err := h.viewer(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	members, err := h.service.ListMembers(ctx, tenantID(ctx), viewer, request.GroupId)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -193,7 +239,11 @@ func (h *MentoringHandler) RemoveMentorGroupMember(ctx context.Context, request 
 // Meeting notes.
 
 func (h *MentoringHandler) ListMentorMeetingNotes(ctx context.Context, request api.ListMentorMeetingNotesRequestObject) (api.ListMentorMeetingNotesResponseObject, error) {
-	notes, err := h.service.ListMeetingNotesForGroup(ctx, tenantID(ctx), request.GroupId, userID(ctx))
+	viewer, err := h.viewer(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	notes, err := h.service.ListMeetingNotesForGroup(ctx, tenantID(ctx), viewer, request.GroupId)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -210,7 +260,11 @@ func (h *MentoringHandler) CreateMentorMeetingNote(ctx context.Context, request 
 	for i, id := range b.AttendeeUserIds {
 		attendees[i] = uuid.UUID(id)
 	}
-	note, err := h.service.CreateMeetingNote(ctx, tenantID(ctx), userID(ctx), service.MeetingNoteInput{
+	viewer, err := h.viewer(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	note, err := h.service.CreateMeetingNote(ctx, tenantID(ctx), viewer, service.MeetingNoteInput{
 		GroupID: request.GroupId, MetAt: b.MetAt, Kind: domain.MeetingKind(b.Kind), AttendeeUserIDs: attendees,
 		Topic: b.Topic, Content: b.Content, AgreedActions: strOr(b.AgreedActions),
 	})
@@ -254,7 +308,11 @@ func (h *MentoringHandler) DeleteMentorMeetingNote(ctx context.Context, request 
 // Student snapshot and term summaries.
 
 func (h *MentoringHandler) GetMentorStudentSnapshot(ctx context.Context, request api.GetMentorStudentSnapshotRequestObject) (api.GetMentorStudentSnapshotResponseObject, error) {
-	snapshot, err := h.service.StudentSnapshot(ctx, tenantID(ctx), request.StudentId)
+	viewer, err := h.viewer(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	snapshot, err := h.service.StudentSnapshot(ctx, tenantID(ctx), viewer, request.StudentId)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -274,7 +332,11 @@ func (h *MentoringHandler) GetMentorStudentSnapshot(ctx context.Context, request
 }
 
 func (h *MentoringHandler) GetMentorTermSummary(ctx context.Context, request api.GetMentorTermSummaryRequestObject) (api.GetMentorTermSummaryResponseObject, error) {
-	summary, err := h.service.GetTermSummary(ctx, tenantID(ctx), request.TermId, request.StudentId)
+	viewer, err := h.viewer(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	summary, err := h.service.GetTermSummary(ctx, tenantID(ctx), viewer, request.GroupId, request.TermId, request.StudentId)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -282,7 +344,11 @@ func (h *MentoringHandler) GetMentorTermSummary(ctx context.Context, request api
 }
 
 func (h *MentoringHandler) WriteMentorTermSummary(ctx context.Context, request api.WriteMentorTermSummaryRequestObject) (api.WriteMentorTermSummaryResponseObject, error) {
-	summary, err := h.service.WriteTermSummary(ctx, tenantID(ctx), userID(ctx), service.TermSummaryInput{
+	viewer, err := h.viewer(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	summary, err := h.service.WriteTermSummary(ctx, tenantID(ctx), viewer, service.TermSummaryInput{
 		TermID: request.TermId, GroupID: request.GroupId, StudentUserID: request.StudentId, Summary: request.Body.Summary,
 	})
 	if err != nil {

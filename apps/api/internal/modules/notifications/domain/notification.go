@@ -32,6 +32,11 @@ const (
 	KindAnnouncementPublished      Kind = "announcement_published"
 	KindLibraryReservationReady    Kind = "library_reservation_ready"
 	KindLibraryLoanDueReminder     Kind = "library_loan_due_reminder"
+	// Supervision: a planned visit and its result reach the observed
+	// teacher, the teacher's response reaches the observer.
+	KindSupervisionObservationScheduled Kind = "supervision_observation_scheduled"
+	KindSupervisionObservationCompleted Kind = "supervision_observation_completed"
+	KindSupervisionResponseRecorded     Kind = "supervision_response_recorded"
 )
 
 // Channel is a delivery channel a preference can enable or disable.

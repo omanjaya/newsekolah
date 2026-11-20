@@ -97,7 +97,7 @@ Aturan tambahan:
 
 ## Profil Siswa
 
-Satu halaman untuk semua orang yang mengurus siswa. Header berisi identitas, kelas, dan NIS, dengan aksi utama di kanan. Tabnya: Ringkasan, Presensi, Nilai, Izin, Tata Tertib, Konseling (hanya BK), Perpustakaan, dan Orang Tua. Setiap tab hanya tampil bila pembaca memegang izin untuk datanya.
+Satu halaman untuk semua orang yang mengurus siswa. Header berisi identitas, kelas, dan NIS, dengan aksi utama di kanan. Tabnya: Ringkasan, Presensi, Nilai, Izin, Tata Tertib, Konseling (hanya BK), Perpustakaan, Kegiatan (ekstrakurikuler dan prestasi), dan Orang Tua. Setiap tab hanya tampil bila pembaca memegang izin untuk datanya.
 
 ## Data Sekolah
 

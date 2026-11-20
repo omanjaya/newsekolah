@@ -1,5 +1,12 @@
 import { domainIcons } from "@newsekolah/ui";
-import { CalendarClock, CalendarRange, FileChartLine, Trophy, Volleyball } from "lucide-react";
+import {
+  CalendarClock,
+  CalendarRange,
+  FileChartLine,
+  Medal,
+  Trophy,
+  Volleyball,
+} from "lucide-react";
 
 import type { NavItem } from "./navigation";
 import { NAV_GROUP } from "./navigation-groups";
@@ -55,7 +62,10 @@ export const moduleNavItems: NavItem[] = [
     module: "activities",
     // Not the homeroom's people glyph.
     icon: Volleyball,
-    permission: "view_activities",
+    // The activities reader sees every club; a coach (pembina, the
+    // teacher role's record_extracurricular_attendance) only the clubs they
+    // coach, scoped by the API.
+    anyPermission: ["view_activities", "record_extracurricular_attendance"],
     group: NAV_GROUP.students,
   },
   {
@@ -77,6 +87,17 @@ export const moduleNavItems: NavItem[] = [
     group: NAV_GROUP.students,
   },
   {
+    // A student's own clubs, activities and achievements (/v1/me/*): the
+    // staff pages above read every student's and stay closed to them.
+    key: "my-activities",
+    labelKey: "app.activities.mine.navLabel",
+    href: "/my-activities",
+    module: "activities",
+    icon: Medal,
+    profileKinds: ["student"],
+    group: NAV_GROUP.students,
+  },
+  {
     key: "billing",
     labelKey: "app.billing.navLabel",
     href: "/billing",
@@ -91,7 +112,12 @@ export const moduleNavItems: NavItem[] = [
     href: "/mentoring/groups",
     module: "mentoring",
     icon: domainIcons.mentoring,
-    permission: "view_mentoring",
+    // A group's own pages (/mentoring/groups/<id>, its students) open for
+    // its guru wali too (manage_mentoring, scoped by the API to the groups
+    // they mentor); the list of every group is offered only to the
+    // school-wide reader, and that page guards itself on view_mentoring.
+    anyPermission: ["view_mentoring", "manage_mentoring"],
+    offeredTo: { anyPermission: ["view_mentoring"] },
     group: NAV_GROUP.students,
   },
   {
@@ -100,7 +126,7 @@ export const moduleNavItems: NavItem[] = [
     href: "/mentoring/my-groups",
     module: "mentoring",
     icon: domainIcons.mentoring,
-    permission: "view_mentoring",
+    anyPermission: ["view_mentoring", "manage_mentoring"],
     group: NAV_GROUP.students,
   },
   {

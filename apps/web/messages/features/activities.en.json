@@ -17,6 +17,7 @@
     "emptyBody": "This year's extracurriculars will appear here.",
     "columns": {
       "name": "Name",
+      "coach": "Coach",
       "schedule": "Schedule",
       "capacity": "Capacity",
       "status": "Status",
@@ -39,6 +40,10 @@
       "createTitle": "Add extracurricular",
       "editTitle": "Edit clubs",
       "name": "Name",
+      "coach": "Coach",
+      "coachPlaceholder": "Choose a coaching teacher",
+      "coachHint": "The coach schedules this club's meetings and records its attendance.",
+      "coachClear": "Clear",
       "description": "Description",
       "capacity": "Member capacity",
       "location": "Location",
@@ -65,7 +70,11 @@
       "loadError": "Unable to load policy.",
       "cancel": "Cancel",
       "save": "Save"
-    }
+    },
+    "noCoach": "No coach yet",
+    "unknownCoach": "Coach name unavailable",
+    "coachEmptyTitle": "You do not coach any club yet",
+    "coachEmptyBody": "Clubs that name you as their coach will appear here."
   },
   "clubDetail": {
     "eyebrow": "Extracurricular",
@@ -76,7 +85,9 @@
     "tabsLabel": "Club sections",
     "facts": {
       "capacity": "Up to {count} members",
-      "noLimit": "No member limit"
+      "noLimit": "No member limit",
+      "coach": "Coach {name}",
+      "noCoach": "No coach yet"
     },
     "members": {
       "add": "Enroll member",
@@ -129,6 +140,7 @@
         "rowChanged": "Not saved yet",
         "unsavedChanges": "{count, plural, one {# unsaved change} other {# unsaved changes}}",
         "saveHint": "All changes saved",
+        "notRecorded": "Attendance not recorded yet",
         "save": "Save attendance",
         "recorded": "Attendance saved",
         "statuses": {
@@ -255,5 +267,23 @@
     "empty": "No students found",
     "unknown": "Student name unavailable",
     "loading": "Loading students…"
+  },
+  "record": {
+    "clubsTitle": "Clubs",
+    "clubsEmpty": "Not in any club yet.",
+    "eventsTitle": "Activities taking part in",
+    "eventsEmpty": "No upcoming activities.",
+    "achievementsTitle": "Achievements",
+    "achievementsEmpty": "No achievements this academic year yet.",
+    "achievementsEmptyAllYears": "No achievements recorded yet.",
+    "loadError": "Could not load this data.",
+    "joinedSince": "Joined {date}",
+    "memberPeriod": "Joined {from}, left {to}",
+    "dateRange": "{from} to {to}"
+  },
+  "mine": {
+    "navLabel": "My activities",
+    "title": "My activities",
+    "description": "Your clubs, school activities and achievements."
   }
 }

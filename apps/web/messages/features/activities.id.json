@@ -17,6 +17,7 @@
     "emptyBody": "Ekstrakurikuler tahun ajaran ini akan muncul di sini.",
     "columns": {
       "name": "Nama",
+      "coach": "Pembina",
       "schedule": "Jadwal",
       "capacity": "Kuota",
       "status": "Status",
@@ -39,6 +40,10 @@
       "createTitle": "Tambah ekstrakurikuler",
       "editTitle": "Ubah ekstrakurikuler",
       "name": "Nama",
+      "coach": "Pembina",
+      "coachPlaceholder": "Pilih guru pembina",
+      "coachHint": "Pembina menjadwalkan pertemuan dan mencatat presensi ekstrakurikuler ini.",
+      "coachClear": "Kosongkan",
       "description": "Deskripsi",
       "capacity": "Kuota anggota",
       "location": "Lokasi",
@@ -65,7 +70,11 @@
       "loadError": "Kebijakan gagal dimuat.",
       "cancel": "Batal",
       "save": "Simpan"
-    }
+    },
+    "noCoach": "Belum ada pembina",
+    "unknownCoach": "Nama pembina tidak tersedia",
+    "coachEmptyTitle": "Belum ada ekstrakurikuler yang Anda bina",
+    "coachEmptyBody": "Ekstrakurikuler yang menunjuk Anda sebagai pembina akan muncul di sini."
   },
   "clubDetail": {
     "eyebrow": "Ekstrakurikuler",
@@ -76,7 +85,9 @@
     "tabsLabel": "Bagian ekstrakurikuler",
     "facts": {
       "capacity": "Kuota {count} anggota",
-      "noLimit": "Tanpa batas kuota"
+      "noLimit": "Tanpa batas kuota",
+      "coach": "Pembina {name}",
+      "noCoach": "Belum ada pembina"
     },
     "members": {
       "add": "Daftarkan anggota",
@@ -129,6 +140,7 @@
         "rowChanged": "Belum disimpan",
         "unsavedChanges": "{count, plural, other {# perubahan belum disimpan}}",
         "saveHint": "Semua perubahan tersimpan",
+        "notRecorded": "Presensi belum dicatat",
         "save": "Simpan presensi",
         "recorded": "Presensi tersimpan",
         "statuses": {
@@ -255,5 +267,23 @@
     "empty": "Siswa tidak ditemukan",
     "unknown": "Nama siswa tidak tersedia",
     "loading": "Memuat siswa…"
+  },
+  "record": {
+    "clubsTitle": "Ekstrakurikuler",
+    "clubsEmpty": "Belum ikut ekstrakurikuler.",
+    "eventsTitle": "Kegiatan yang diikuti",
+    "eventsEmpty": "Tidak ada kegiatan mendatang.",
+    "achievementsTitle": "Prestasi",
+    "achievementsEmpty": "Belum ada prestasi tahun ajaran ini.",
+    "achievementsEmptyAllYears": "Belum ada prestasi tercatat.",
+    "loadError": "Data gagal dimuat.",
+    "joinedSince": "Bergabung {date}",
+    "memberPeriod": "Bergabung {from}, keluar {to}",
+    "dateRange": "{from} sampai {to}"
+  },
+  "mine": {
+    "navLabel": "Kegiatan saya",
+    "title": "Kegiatan saya",
+    "description": "Ekstrakurikuler, kegiatan sekolah, dan prestasi kamu."
   }
 }

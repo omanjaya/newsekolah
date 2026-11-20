@@ -14,5 +14,7 @@ func init() {
 	catalog["NOT_A_MEMBER"] = map[string]string{Indonesian: "Siswa bukan anggota ekstrakurikuler ini.", English: "The student is not a member of this club."}
 	catalog["ACTIVITY_NOT_FOUND"] = map[string]string{Indonesian: "Kegiatan tidak ditemukan.", English: "Activity not found."}
 	catalog["ACHIEVEMENT_NOT_FOUND"] = map[string]string{Indonesian: "Catatan prestasi tidak ditemukan.", English: "Achievement record not found."}
+	catalog["PARTICIPANT_ALREADY_EXISTS"] = map[string]string{Indonesian: "Peserta ini sudah terdaftar pada kegiatan ini.", English: "This participant is already added to this activity."}
+	catalog["EXTRACURRICULAR_COACH_ONLY"] = map[string]string{Indonesian: "Ekstrakurikuler ini dibina guru lain.", English: "This club is coached by someone else."}
 	catalog["INVALID_PARTICIPANT"] = map[string]string{Indonesian: "Peserta harus berupa satu kelas, satu jenjang, atau satu siswa.", English: "A participant must be exactly one of a class, a grade level, or a student."}
 }

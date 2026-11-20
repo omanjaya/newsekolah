@@ -3,7 +3,7 @@ paths:
     get:
       tags: [mentoring]
       operationId: getMentorGroupSizeLimit
-      x-permission: view_mentoring
+      x-permission: [view_mentoring, manage_mentoring]
       summary: Maximum students one mentor group may hold
       responses:
         "200":
@@ -75,7 +75,7 @@ paths:
     get:
       tags: [mentoring]
       operationId: listMyMentorGroups
-      x-permission: view_mentoring
+      x-permission: [view_mentoring, manage_mentoring]
       summary: The mentor groups the current user leads
       responses:
         "200":
@@ -93,7 +93,7 @@ paths:
     get:
       tags: [mentoring]
       operationId: getMentorGroup
-      x-permission: view_mentoring
+      x-permission: [view_mentoring, manage_mentoring]
       summary: One mentor group
       parameters:
         - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
@@ -145,7 +145,7 @@ paths:
     get:
       tags: [mentoring]
       operationId: listMentorGroupMembers
-      x-permission: view_mentoring
+      x-permission: [view_mentoring, manage_mentoring]
       summary: Students assigned to a mentor group
       parameters:
         - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
@@ -302,7 +302,7 @@ paths:
     get:
       tags: [mentoring]
       operationId: getMentorStudentSnapshot
-      x-permission: view_mentoring
+      x-permission: [view_mentoring, manage_mentoring]
       summary: One student's attendance, discipline points, and published grades
       parameters:
         - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }

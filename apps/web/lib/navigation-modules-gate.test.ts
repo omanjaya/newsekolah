@@ -32,7 +32,7 @@ const MODULE_ROUTE_PREFIXES: Record<FeatureModule, string[]> = {
   ],
   announcements: ["/announcements"],
   reports: ["/reports"],
-  activities: ["/activities"],
+  activities: ["/activities", "/my-activities"],
   mentoring: ["/mentoring"],
   supervision: ["/supervision"],
   staff_attendance: ["/staff-attendance", "/check-in"],

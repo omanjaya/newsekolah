@@ -55,7 +55,7 @@ func TestScheduleObservationPersistsTenantID(t *testing.T) {
 
 	repo := repository.New(pg.AppPool)
 	schedules := stubScheduleReader{ref: service.ScheduleRef{
-		ID: uuid.New(), TeacherUserID: teacher,
+		ID: uuid.New(), TeacherUserID: teacher, DayOfWeek: 1, // Monday, as 28 September 2026 is
 	}}
 	svc := service.New(pg.AppPool, repo, nil, schedules, nil, nil, nil)
 
@@ -103,7 +103,7 @@ func TestListScheduledCarriesObservation(t *testing.T) {
 		values ($1,$2,'Test cycle','{"name":"Instrumen","scale_min":1,"scale_max":4,"criteria":[{"key":"a","name":"A"}]}'::jsonb)`,
 		tenant, year)
 
-	schedules := stubScheduleReader{ref: service.ScheduleRef{ID: uuid.New(), TeacherUserID: teacher}}
+	schedules := stubScheduleReader{ref: service.ScheduleRef{ID: uuid.New(), TeacherUserID: teacher, DayOfWeek: 1}}
 	svc := service.New(pg.AppPool, repository.New(pg.AppPool), nil, schedules, nil, nil, nil)
 	schedule := func(day int) uuid.UUID {
 		t.Helper()
@@ -115,7 +115,7 @@ func TestListScheduledCarriesObservation(t *testing.T) {
 		return out.ID
 	}
 	done := schedule(28)
-	pending := schedule(29)
+	pending := schedule(35) // 5 October 2026, the next Monday
 
 	observedAt := time.Date(2026, 9, 28, 3, 0, 0, 0, time.UTC)
 	observation, err := svc.CompleteObservation(ctx, tenant, observer, service.CompleteObservationInput{

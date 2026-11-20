@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -36,9 +37,19 @@ vi.mock("../api", () => ({
 
 import { ActivityParticipants } from "./activity-participants";
 
+beforeAll(() => {
+  // Radix Select probes pointer capture and scrolls the active option into view.
+  Element.prototype.hasPointerCapture = () => false;
+  Element.prototype.releasePointerCapture = () => undefined;
+  Element.prototype.scrollIntoView = () => undefined;
+});
+
 describe("ActivityParticipants", () => {
   beforeEach(() => {
-    useClassesQuery.mockClear();
+    useClassesQuery.mockReset();
+    useClassesQuery.mockImplementation((enabled: boolean) => ({
+      data: enabled ? { data: [{ id: "class-7a", name: "7A" }] } : undefined,
+    }));
     useGradeLevelsQuery.mockClear();
     participants.current = [
       { id: "p1", scope: "student", student_user_id: "student-1" },
@@ -85,5 +96,42 @@ describe("ActivityParticipants", () => {
 
     expect(useClassesQuery).toHaveBeenLastCalledWith(true);
     expect(useGradeLevelsQuery).toHaveBeenLastCalledWith(true);
+  });
+
+  it("shows a class name as the school wrote it, not re-cased like a person", () => {
+    useClassesQuery.mockImplementation((enabled: boolean) => ({
+      data: enabled
+        ? {
+            data: [
+              { id: "class-7a", name: "XII-B" },
+              { id: "class-x", name: "X-A" },
+            ],
+          }
+        : undefined,
+    }));
+    render(<ActivityParticipants activityId="event-1" canManage={false} />);
+
+    expect(screen.getByText("XII-B")).toBeInTheDocument();
+    expect(screen.queryByText("Xii-b")).not.toBeInTheDocument();
+  });
+
+  it("leaves a class already taking part out of the class choices", async () => {
+    useClassesQuery.mockImplementation((enabled: boolean) => ({
+      data: enabled
+        ? {
+            data: [
+              { id: "class-7a", name: "7A" },
+              { id: "class-7b", name: "7B" },
+            ],
+          }
+        : undefined,
+    }));
+    render(<ActivityParticipants activityId="event-1" canManage />);
+
+    await userEvent.click(screen.getByRole("combobox", { name: "scope" }));
+    await userEvent.click(await screen.findByRole("option", { name: "class" }));
+    await userEvent.click(screen.getByRole("combobox", { name: "choose" }));
+    expect(await screen.findByRole("option", { name: "7B" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "7A" })).not.toBeInTheDocument();
   });
 });

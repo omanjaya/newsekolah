@@ -33,19 +33,31 @@ describe("studentsToMarkPresent", () => {
 });
 
 describe("computeAttendanceChanges", () => {
-  it("finds no changes when nothing differs from the snapshot", () => {
-    const initial = { s1: "H" as const, s2: "A" as const };
-    const changes = computeAttendanceChanges(initial, initial);
+  it("finds nothing pending when every row is recorded as shown", () => {
+    const saved = { s1: "H" as const, s2: "A" as const };
+    const changes = computeAttendanceChanges(saved, saved);
     expect(changes.count).toBe(0);
     expect(changes.changedStudentIds.size).toBe(0);
+    expect(changes.pendingStudentIds.size).toBe(0);
   });
 
-  it("flags only the students whose status differs from the snapshot", () => {
-    const initial = { s1: "H" as const, s2: "A" as const };
+  it("flags only the students whose status differs from the saved one", () => {
+    const saved = { s1: "H" as const, s2: "A" as const };
     const current = { s1: "H" as const, s2: "I" as const };
-    const changes = computeAttendanceChanges(current, initial);
+    const changes = computeAttendanceChanges(current, saved);
     expect(changes.count).toBe(1);
     expect(changes.changedStudentIds.has("s2")).toBe(true);
     expect(changes.changedStudentIds.has("s1")).toBe(false);
+    expect([...changes.pendingStudentIds]).toEqual(["s2"]);
+  });
+
+  it("keeps a never-recorded present row pending, without calling it changed", () => {
+    // A new meeting: nothing stored, everyone shown as present. All of it
+    // is still to be saved, so an all-present meeting can be saved.
+    const changes = computeAttendanceChanges({ s1: "H", s2: "S" }, {});
+    expect(changes.count).toBe(1);
+    expect(changes.changedStudentIds.has("s2")).toBe(true);
+    expect(changes.unrecordedStudentIds).toEqual(new Set(["s1", "s2"]));
+    expect(changes.pendingStudentIds).toEqual(new Set(["s1", "s2"]));
   });
 });

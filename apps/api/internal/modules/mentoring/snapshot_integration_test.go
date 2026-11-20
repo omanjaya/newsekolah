@@ -26,16 +26,16 @@ func TestStudentSnapshotUnknownStudentIsNotFound(t *testing.T) {
 	fx := seedMentoringFixture(t, pg.AdminPool)
 	mod := newTestMentoringModule(t, pg.AppPool)
 
-	snapshot, err := mod.Service.StudentSnapshot(ctx, fx.tenantID, fx.studentID)
+	snapshot, err := mod.Service.StudentSnapshot(ctx, fx.tenantID, schoolWide, fx.studentID)
 	require.NoError(t, err)
 	require.Equal(t, "Siswa Test", snapshot.StudentName)
 
-	_, err = mod.Service.StudentSnapshot(ctx, fx.tenantID, uuid.Nil)
+	_, err = mod.Service.StudentSnapshot(ctx, fx.tenantID, schoolWide, uuid.Nil)
 	require.ErrorIs(t, err, domain.ErrStudentNotFound)
 
 	// Another tenant's student is not this tenant's either.
 	other := seedMentoringFixture(t, pg.AdminPool)
-	_, err = mod.Service.StudentSnapshot(ctx, fx.tenantID, other.studentID)
+	_, err = mod.Service.StudentSnapshot(ctx, fx.tenantID, schoolWide, other.studentID)
 	require.ErrorIs(t, err, domain.ErrStudentNotFound)
 
 	ctx = httpx.WithTenantID(ctx, fx.tenantID)
@@ -76,7 +76,7 @@ func TestStudentSnapshotOfNonStudentIsNotFound(t *testing.T) {
 	for name, id := range map[string]uuid.UUID{
 		"staff": staff.ID, "teacher": fx.mentorID, "no profile": bare.ID,
 	} {
-		_, err := mod.Service.StudentSnapshot(ctx, fx.tenantID, id)
+		_, err := mod.Service.StudentSnapshot(ctx, fx.tenantID, schoolWide, id)
 		require.ErrorIs(t, err, domain.ErrStudentNotFound, name)
 	}
 
@@ -87,7 +87,7 @@ func TestStudentSnapshotOfNonStudentIsNotFound(t *testing.T) {
 	require.Equal(t, http.StatusNotFound, appErr.Status)
 
 	// The student of the same school still has their snapshot.
-	snapshot, err := mod.Service.StudentSnapshot(ctx, fx.tenantID, fx.studentID)
+	snapshot, err := mod.Service.StudentSnapshot(ctx, fx.tenantID, schoolWide, fx.studentID)
 	require.NoError(t, err)
 	require.Equal(t, "Siswa Test", snapshot.StudentName)
 }

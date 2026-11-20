@@ -52,6 +52,7 @@ type Repository interface {
 	UpdateActivity(ctx context.Context, a domain.Activity) (domain.Activity, error)
 	DeleteActivity(ctx context.Context, tenantID, id uuid.UUID) error
 	ListActivities(ctx context.Context, tenantID, yearID uuid.UUID, from, to *time.Time) ([]domain.Activity, error)
+	ListActivitiesForStudent(ctx context.Context, tenantID, yearID, studentID uuid.UUID, from time.Time) ([]domain.Activity, error)
 	AddParticipant(ctx context.Context, tenantID, activityID uuid.UUID, p domain.Participant) (domain.Participant, error)
 	RemoveParticipant(ctx context.Context, tenantID, id uuid.UUID) error
 	ListParticipants(ctx context.Context, tenantID, activityID uuid.UUID) ([]domain.Participant, error)
@@ -61,6 +62,7 @@ type Repository interface {
 	UpdateAchievement(ctx context.Context, a domain.Achievement) (domain.Achievement, error)
 	DeleteAchievement(ctx context.Context, tenantID, id uuid.UUID) error
 	ListAchievements(ctx context.Context, tenantID, yearID uuid.UUID, studentID, classID uuid.NullUUID) ([]domain.Achievement, error)
+	ListStudentAchievementsAllYears(ctx context.Context, tenantID, studentID uuid.UUID) ([]domain.Achievement, error)
 }
 
 // StudentMembership pairs a membership with the club's name, for the

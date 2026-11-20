@@ -15,6 +15,10 @@ import (
 type Dependencies struct {
 	Pool  *pgxpool.Pool
 	Years service.AcademicYearReader
+	// Perms tells the activities reader (view_activities) from a coach
+	// (record_extracurricular_attendance only); nil limits everyone to the
+	// clubs they coach.
+	Perms transporthttp.PermissionChecker
 	Clock clock.Clock
 }
 
@@ -25,5 +29,5 @@ type Module struct {
 
 func Register(deps Dependencies) *Module {
 	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, deps.Clock)
-	return &Module{Service: svc, Handler: transporthttp.New(svc)}
+	return &Module{Service: svc, Handler: transporthttp.New(svc, deps.Perms)}
 }

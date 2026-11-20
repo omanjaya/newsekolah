@@ -26,6 +26,7 @@ describe("visibleStudentProfileTabs", () => {
     ["view_discipline", ["discipline"]],
     ["manage_counseling", ["counseling"]],
     ["manage_library_members", ["library"]],
+    ["view_activities", ["activities"]],
     ["view_users", ["guardians"]],
   ])("%s unlocks only %j", (permission, expected) => {
     expect(visibleStudentProfileTabs(canOnly(permission), [])).toEqual(expected);
@@ -42,7 +43,7 @@ describe("visibleStudentProfileTabs", () => {
   it("drops the tabs of a module the school switched off, and only those", () => {
     const all = visibleStudentProfileTabs(
       () => true,
-      ["mentoring", "permits", "discipline", "library"],
+      ["mentoring", "permits", "discipline", "library", "activities"],
     );
     expect(all).toEqual(["overview", "attendance", "guardians"]);
   });

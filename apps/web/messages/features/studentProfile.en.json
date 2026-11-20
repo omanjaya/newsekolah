@@ -12,6 +12,7 @@
     "discipline": "Discipline",
     "counseling": "Counseling",
     "library": "Library",
+    "activities": "Activities",
     "guardians": "Parents"
   },
   "noAccessTitle": "There is no student data you can view",

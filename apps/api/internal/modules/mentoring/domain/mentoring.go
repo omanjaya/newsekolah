@@ -20,6 +20,7 @@ var (
 	ErrMemberNotFound       = errors.New("mentor group member not found")
 	ErrNoteNotFound         = errors.New("meeting note not found")
 	ErrNoteForbidden        = errors.New("meeting note not visible to this user")
+	ErrGroupForbidden       = errors.New("mentor group belongs to another mentor")
 	ErrSummaryNotFound      = errors.New("term summary not found")
 	ErrStudentNotFound      = errors.New("student not found")
 	ErrNoActiveAcademicYear = errors.New("no active academic year")
@@ -30,6 +31,29 @@ var (
 // DefaultGroupSizeLimit applies when a tenant has not set its own cap
 // (mentoring_settings has no row yet).
 const DefaultGroupSizeLimit = 15
+
+// Viewer is who reads or writes through a mentor group. A teacher holding
+// only manage_mentoring (the guru wali) reaches the groups they mentor and
+// nothing else; ReadAll is the school-wide reader (view_mentoring: the
+// principal, the admin) and WriteAll whoever manages the groups
+// (manage_mentor_groups), who may also write in any of them.
+type Viewer struct {
+	UserID   uuid.UUID
+	ReadAll  bool
+	WriteAll bool
+}
+
+// CanRead reports whether the viewer may open the group, its members and
+// its students' snapshots and term summaries.
+func (v Viewer) CanRead(g MentorGroup) bool {
+	return v.ReadAll || v.WriteAll || g.MentorUserID == v.UserID
+}
+
+// CanWrite reports whether the viewer may write meeting notes and term
+// summaries for the group: its own mentor, or a group manager.
+func (v Viewer) CanWrite(g MentorGroup) bool {
+	return v.WriteAll || g.MentorUserID == v.UserID
+}
 
 // GroupSizeLimit is the tenant-configurable cap on how many students one
 // mentor group may hold. A school with more than a handful of guru wali
@@ -160,7 +184,7 @@ type TermSummary struct {
 }
 
 func (s TermSummary) Validate() error {
-	if s.TermID == uuid.Nil || s.StudentUserID == uuid.Nil {
+	if s.TenantID == uuid.Nil || s.TermID == uuid.Nil || s.StudentUserID == uuid.Nil {
 		return ErrInvalidInput
 	}
 	if strings.TrimSpace(s.Summary) == "" {

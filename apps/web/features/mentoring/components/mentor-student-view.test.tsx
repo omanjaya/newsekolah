@@ -16,6 +16,9 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
 vi.mock("./mentor-term-summary-panel", () => ({ MentorTermSummaryPanel: () => null }));
+vi.mock("../../../lib/session/session-provider", () => ({
+  useCan: (permission: string) => permission === "view_mentoring",
+}));
 vi.mock("./student-snapshot-sections", () => ({
   SnapshotAttendanceSection: () => null,
   SnapshotDisciplineSection: () => null,

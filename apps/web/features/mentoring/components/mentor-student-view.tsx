@@ -10,6 +10,7 @@ import { RecordNotFoundPage } from "../../../components/record-not-found";
 import { isNotFoundError } from "../../../lib/api/not-found";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useMentorGroupQuery, useMentorStudentSnapshotQuery } from "../api";
+import { useMentorGroupsHref } from "../permissions";
 
 import { MentorTermSummaryPanel } from "./mentor-term-summary-panel";
 import {
@@ -37,6 +38,7 @@ export function MentorStudentView({
   const tGroup = useTranslations("app.mentoring.groupDetail");
   const snapshot = useMentorStudentSnapshotQuery(studentId);
   const group = useMentorGroupQuery(groupId);
+  const groupsHref = useMentorGroupsHref();
   const groupLabel = group.data?.name ?? t("backToGroup");
 
   // An unknown or malformed id is a missing record, not a failure to
@@ -46,7 +48,7 @@ export function MentorStudentView({
     return (
       <RecordNotFoundPage
         title={tGroup("notFoundTitle")}
-        backHref="/mentoring/groups"
+        backHref={groupsHref}
         backLabel={tGroup("backToGroups")}
       />
     );
@@ -90,7 +92,7 @@ export function MentorStudentView({
       title={name}
       description={data.class_name}
       breadcrumb={[
-        { label: tMentoring("navLabelGroups"), href: "/mentoring/groups" },
+        { label: tMentoring("navLabelGroups"), href: groupsHref },
         { label: groupLabel, href: `/mentoring/groups/${groupId}` },
         { label: name },
       ]}

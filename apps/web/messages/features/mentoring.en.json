@@ -42,6 +42,7 @@
     "label": "Member limit per group",
     "hint": "Applies to every mentor group at this school.",
     "submit": "Save",
+    "cancel": "Cancel",
     "saved": "Member limit saved"
   },
   "myGroups": {
@@ -170,8 +171,7 @@
     },
     "termSummary": {
       "title": "Term summary"
-    },
-    "notFoundTitle": "Student not found"
+    }
   },
   "termSummary": {
     "term": "Term",

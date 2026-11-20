@@ -2,6 +2,7 @@ package domain
 
 import (
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -53,8 +54,10 @@ func TestInstrumentValidate(t *testing.T) {
 
 	dup := sampleInstrument()
 	dup.Criteria = append(dup.Criteria, Criterion{Key: "materi", Name: "Duplikat"})
-	if err := dup.Validate(); err != ErrInstrumentInvalid {
-		t.Fatalf("want ErrInstrumentInvalid for duplicate criterion key, got %v", err)
+	// Its own error, so the form can say the codes must be unique instead
+	// of the generic "needs a name, a criterion and a scale".
+	if err := dup.Validate(); err != ErrCriterionKeyTaken {
+		t.Fatalf("want ErrCriterionKeyTaken for duplicate criterion key, got %v", err)
 	}
 
 	noCriteria := sampleInstrument()
@@ -146,5 +149,19 @@ func TestObservationVisibleTo(t *testing.T) {
 				t.Fatalf("VisibleTo(%+v) = %v, want %v", c.reader, got, c.want)
 			}
 		})
+	}
+}
+
+func TestScheduledObservationMatchesLessonDay(t *testing.T) {
+	friday := ScheduledObservation{LessonDate: time.Date(2026, 11, 20, 0, 0, 0, 0, time.UTC)}
+	if err := friday.MatchesLessonDay(5); err != nil {
+		t.Fatalf("a Friday lesson on a Friday: want nil, got %v", err)
+	}
+	if err := friday.MatchesLessonDay(1); err != ErrLessonDayMismatch {
+		t.Fatalf("a Monday lesson on a Friday: want ErrLessonDayMismatch, got %v", err)
+	}
+	sunday := ScheduledObservation{LessonDate: time.Date(2026, 11, 22, 0, 0, 0, 0, time.UTC)}
+	if err := sunday.MatchesLessonDay(7); err != nil {
+		t.Fatalf("Sunday is ISO weekday 7: want nil, got %v", err)
 	}
 }

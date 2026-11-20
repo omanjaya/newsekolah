@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -94,6 +95,12 @@ func (r *Repository) CreateScheduledObservation(ctx context.Context, o domain.Sc
 		TenantID: o.TenantID, CycleID: o.CycleID, ScheduleID: o.ScheduleID, LessonDate: pdatabase.Date(o.LessonDate),
 		TeacherUserID: o.TeacherUserID, ObserverUserID: o.ObserverUserID,
 	})
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		// unique (cycle_id, schedule_id, lesson_date): this lesson is
+		// already planned for that date in the cycle.
+		return domain.ScheduledObservation{}, domain.ErrScheduledExists
+	}
 	if err != nil {
 		return domain.ScheduledObservation{}, fmt.Errorf("create scheduled observation: %w", err)
 	}

@@ -41,7 +41,7 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
 import { formatDisplayName } from "../../../lib/text/format-name";
-import { useDirectoryNames } from "../../reference/directory-names";
+import { useDirectoryName, useDirectoryNames } from "../../reference/directory-names";
 import {
   type Extracurricular,
   useClubMembersQuery,
@@ -60,13 +60,22 @@ function useFormatDay(): (value: string) => string {
   return (value) => formatDate(value, { locale, timeZone: "UTC" });
 }
 
-/** The club's facts under its name: "Jumat, 15.00 – 16.30 · Kuota 30 anggota · Lapangan". */
+/**
+ * The club's facts under its name:
+ * "Pembina Bu Sari · Jumat, 15.00 – 16.30 · Kuota 30 anggota · Lapangan".
+ */
 function useClubFacts(club: Extracurricular | undefined): string[] {
   const t = useTranslations("app.activities.clubDetail");
   const tClubs = useTranslations("app.activities.clubs");
   const locale = useLocale() as Locale;
+  const coach = useDirectoryName(club?.coach_user_id);
   if (!club) return [];
   return [
+    club.coach_user_id
+      ? coach
+        ? t("facts.coach", { name: formatDisplayName(coach.name) })
+        : undefined
+      : t("facts.noCoach"),
     clubScheduleLabel(club, (key) => tClubs(`weekdays.${key}`), locale),
     club.capacity ? t("facts.capacity", { count: club.capacity }) : t("facts.noLimit"),
     club.location.trim() || undefined,

@@ -804,7 +804,10 @@
         "exit_permit_issued": "Exit permit issued",
         "exit_permit_exited": "Student left the gate",
         "late_arrival_opened": "Late arrival recorded",
-        "late_arrival_updated": "Late arrival updated"
+        "late_arrival_updated": "Late arrival updated",
+        "supervision_observation_scheduled": "Classroom observation scheduled",
+        "supervision_observation_completed": "Observation result available",
+        "supervision_response_recorded": "Response to an observation"
       },
       "seeAll": "See all",
       "searchPlaceholder": "Search notification title or body",

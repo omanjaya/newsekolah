@@ -1092,6 +1092,11 @@ type Querier interface {
 	ListActiveUserIDsForTenant(ctx context.Context, tenantID uuid.UUID) ([]uuid.UUID, error)
 	ListActiveWebhookEndpointsForEvent(ctx context.Context, arg ListActiveWebhookEndpointsForEventParams) ([]IntegrationWebhookEndpoint, error)
 	ListActivities(ctx context.Context, arg ListActivitiesParams) ([]SchoolActivity, error)
+	// A student's own activities: those listing the student by name, the
+	// student's active class this year, or that class's grade level, ending
+	// on or after from_date. Cross-module read of enrollments/classes
+	// (academic), as ListAchievements already does for its class filter.
+	ListActivitiesForStudent(ctx context.Context, arg ListActivitiesForStudentParams) ([]SchoolActivity, error)
 	ListAllGradeRanges(ctx context.Context, arg ListAllGradeRangesParams) ([]ReportGradeRange, error)
 	ListAnnouncementsForAdmin(ctx context.Context, arg ListAnnouncementsForAdminParams) ([]Announcement, error)
 	ListAttendanceDailySummaryForClassDate(ctx context.Context, arg ListAttendanceDailySummaryForClassDateParams) ([]AttendanceDailySummary, error)
@@ -1418,6 +1423,9 @@ type Querier interface {
 	ListStocktakeResults(ctx context.Context, arg ListStocktakeResultsParams) ([]LibraryStocktakeResult, error)
 	ListStocktakeScans(ctx context.Context, arg ListStocktakeScansParams) ([]LibraryStocktakeScan, error)
 	ListStocktakes(ctx context.Context, arg ListStocktakesParams) ([]LibraryStocktake, error)
+	// One student's achievements across every academic year, for the student
+	// profile's cumulative record.
+	ListStudentAchievementsAllYears(ctx context.Context, arg ListStudentAchievementsAllYearsParams) ([]StudentAchievement, error)
 	// Every non-blank NISN this tenant already has, with the user_id it
 	// belongs to. The Dapodik importer uses this single round trip to decide,
 	// for every row in the uploaded file, whether it is a new student

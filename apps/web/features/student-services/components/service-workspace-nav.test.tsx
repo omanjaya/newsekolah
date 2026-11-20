@@ -150,4 +150,18 @@ describe("student service workspace boundaries", () => {
       screen.getByRole("link", { name: "app.discipline.violations.title" }),
     ).toBeInTheDocument();
   });
+
+  it("gives a coach their clubs and a guru wali their groups, nothing school-wide", () => {
+    session.permissions = ["record_extracurricular_attendance", "manage_mentoring"];
+    session.pathname = "/activities/clubs";
+    render(<ActivitiesWorkspaceNav />);
+
+    expect(screen.getByRole("link", { name: CLUBS })).toHaveAttribute("href", "/activities/clubs");
+    expect(screen.getByRole("link", { name: "mentoringTab" })).toHaveAttribute(
+      "href",
+      "/mentoring/my-groups",
+    );
+    expect(screen.queryByRole("link", { name: "app.activities.navLabelEvents" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "app.activities.navLabelAchievements" })).toBeNull();
+  });
 });

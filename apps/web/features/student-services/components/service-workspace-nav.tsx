@@ -25,15 +25,22 @@ export function ActivitiesWorkspaceNav(): ReactElement {
   const activitiesOn = useModuleEnabled("activities");
   const mentoringOn = useModuleEnabled("mentoring");
   const canView = useCan("view_activities") && activitiesOn;
-  const canMentor = useCan("view_mentoring") && mentoringOn;
+  // A coach (pembina) reaches the clubs they coach, not events or achievements.
+  const canCoach = useCan("record_extracurricular_attendance") && activitiesOn;
+  // A guru wali (manage_mentoring) reaches the groups they mentor.
+  const canReadMentoring = useCan("view_mentoring");
+  const canMentorGroups = useCan("manage_mentoring");
+  const canMentor = (canReadMentoring || canMentorGroups) && mentoringOn;
   const inMentoring = pathname === "/mentoring" || pathname.startsWith("/mentoring/");
   return (
     <WorkspaceNav
       label={workspace("studentActivities")}
       items={[
+        ...(canView || canCoach
+          ? [{ href: "/activities/clubs", label: label(registryLabelKey("activities-clubs")) }]
+          : []),
         ...(canView
           ? [
-              { href: "/activities/clubs", label: label(registryLabelKey("activities-clubs")) },
               { href: "/activities/events", label: label(registryLabelKey("activities-events")) },
               {
                 href: "/activities/achievements",

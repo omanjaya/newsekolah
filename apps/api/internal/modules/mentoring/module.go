@@ -22,7 +22,11 @@ type Dependencies struct {
 	Grading    service.GradingReader
 	Flags      service.FlagChecker
 	Sealer     *crypto.Sealer
-	Clock      clock.Clock
+	// Perms resolves the caller's permissions, so a guru wali (only
+	// manage_mentoring) is scoped to the groups they mentor. Nil scopes
+	// everyone that way.
+	Perms transporthttp.PermissionChecker
+	Clock clock.Clock
 }
 
 type Module struct {
@@ -32,5 +36,5 @@ type Module struct {
 
 func Register(deps Dependencies) *Module {
 	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, deps.Attendance, deps.Discipline, deps.Grading, deps.Flags, deps.Sealer, deps.Clock)
-	return &Module{Service: svc, Handler: transporthttp.New(svc)}
+	return &Module{Service: svc, Handler: transporthttp.New(svc, deps.Perms)}
 }

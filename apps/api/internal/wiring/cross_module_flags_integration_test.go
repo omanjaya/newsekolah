@@ -14,6 +14,7 @@ import (
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring"
+	mentoringdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/platform"
 	platformdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
@@ -117,10 +118,10 @@ func TestMentoringSnapshotKeepsWorkingWhileGradingIsOff(t *testing.T) {
 	_, err := platformSvc.SetFlag(ctx, off.tenantID, string(platformdomain.ModuleGrading), false)
 	require.NoError(t, err)
 
-	_, err = mentoringModule.Service.StudentSnapshot(ctx, on.tenantID, onStudent)
+	_, err = mentoringModule.Service.StudentSnapshot(ctx, on.tenantID, mentoringdomain.Viewer{ReadAll: true}, onStudent)
 	require.NoError(t, err)
 
-	snapshot, err := mentoringModule.Service.StudentSnapshot(ctx, off.tenantID, offStudent)
+	snapshot, err := mentoringModule.Service.StudentSnapshot(ctx, off.tenantID, mentoringdomain.Viewer{ReadAll: true}, offStudent)
 	require.NoError(t, err, "grading off: the snapshot still loads")
 	require.Equal(t, offStudent, snapshot.StudentUserID)
 	require.Equal(t, "X-A", snapshot.ClassName)
