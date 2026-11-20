@@ -231,6 +231,18 @@ describe("DaySessions", () => {
     expect(within(row).queryByRole("button") ?? row.closest("button")).toBeDisabled();
   });
 
+  it("does not count lessons on a future date as waiting to be filled", () => {
+    todaySessions = [
+      session({ schedule_id: "a", date: "2026-09-30" }),
+      session({ schedule_id: "b", date: "2026-09-30", start_period_id: "p2", end_period_id: "p2" }),
+    ];
+    render(<DaySessions />);
+
+    expect(screen.getByTestId("attendance-day-summary")).toHaveTextContent(
+      'daySummary:{"total":2,"saved":0,"pending":0}',
+    );
+  });
+
   it("names the holiday instead of listing lessons on a holiday", () => {
     todaySessions = [];
     holidayName = "Hari Guru Nasional";

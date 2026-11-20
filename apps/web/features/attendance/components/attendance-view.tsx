@@ -264,6 +264,8 @@ export function DaySessions(): ReactElement {
   const savedCount = sortedItems.filter((s) => Boolean(s.submitted_at)).length;
   // A handed-over lesson is neither saved nor waiting on this teacher.
   const handedOverCount = dayItems.filter((item) => item.fillStatus === "handedOver").length;
+  // Nor is a lesson on a date that has not arrived: it cannot be filled yet.
+  const upcomingCount = dayItems.filter((item) => item.fillStatus === "upcoming").length;
   const holidayName = sessions.data?.holiday_name;
 
   // The teacher's own report is the area's "Laporan presensi" tab, so the
@@ -313,7 +315,7 @@ export function DaySessions(): ReactElement {
               {t("daySummary", {
                 total: sortedItems.length,
                 saved: savedCount,
-                pending: sortedItems.length - savedCount - handedOverCount,
+                pending: sortedItems.length - savedCount - handedOverCount - upcomingCount,
               })}
               {handedOverCount > 0 && ` · ${t("dayHandedOver", { count: handedOverCount })}`}
             </p>
