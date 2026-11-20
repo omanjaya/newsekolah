@@ -173,26 +173,34 @@ func WithPlatformTx(ctx context.Context, pool *pgxpool.Pool, fn func(ctx context
 // best-effort work that should commit together with their own writes when
 // it succeeds, such as publishing a domain event whose subscribers write
 // notifications.
+//
+// fn keeps using the ambient transaction itself. A side effect that hit an
+// SQL error but swallowed it (a subscriber that only logs) leaves the
+// transaction aborted; releasing the savepoint then fails, and it is
+// rolled back all the same, so the caller's transaction is usable again.
 func WithSavepoint(ctx context.Context, fn func(ctx context.Context) error) (err error) {
-	outer, ok := TxFromContext(ctx)
-	if !ok || outer == nil {
+	tx, ok := TxFromContext(ctx)
+	if !ok || tx == nil {
 		return fn(ctx)
 	}
-	sp, err := outer.Begin(ctx)
-	if err != nil {
+	name := "sp_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+	if _, err := tx.Exec(ctx, "savepoint "+name); err != nil {
 		return fmt.Errorf("begin savepoint: %w", err)
 	}
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("savepoint: recovered panic: %v", r)
 		}
-		if err != nil {
-			_ = sp.Rollback(ctx)
-			return
+		if err == nil {
+			if _, err = tx.Exec(ctx, "release savepoint "+name); err == nil {
+				return
+			}
 		}
-		err = sp.Commit(ctx)
+		if _, rollbackErr := tx.Exec(ctx, "rollback to savepoint "+name); rollbackErr != nil {
+			err = fmt.Errorf("%w (rollback to savepoint: %v)", err, rollbackErr)
+		}
 	}()
-	return fn(context.WithValue(ctx, txKey, sp))
+	return fn(ctx)
 }
 
 func withTx(ctx context.Context, pool *pgxpool.Pool, fn func(ctx context.Context, tx pgx.Tx) error) (err error) {

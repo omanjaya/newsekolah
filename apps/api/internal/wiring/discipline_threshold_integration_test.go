@@ -120,3 +120,20 @@ func TestRecordViolation_FailingSubscriberNeverFailsTheRecord(t *testing.T) {
 	require.Equal(t, 30, result.TotalPoints)
 	require.Equal(t, 1, h.count(t, `select count(*) from violation_records where tenant_id = $1 and student_user_id = $2`, h.fx.tenantID, h.student))
 }
+
+// TestRecordViolation_SubscriberSwallowingAnSQLErrorKeepsTheRecord covers
+// the subtler case: a subscriber whose query failed but which only logs it
+// (as the notification bridge does) leaves the transaction aborted. The
+// savepoint is rolled back anyway, so the record still commits.
+func TestRecordViolation_SubscriberSwallowingAnSQLErrorKeepsTheRecord(t *testing.T) {
+	h := newThresholdHarness(t)
+	h.bus.Subscribe(disciplineservice.ThresholdReached{}.EventName(), func(ctx context.Context, _ events.Event) error {
+		tx, _ := database.TxFromContext(ctx)
+		_, _ = tx.Exec(ctx, "select 1/0")
+		return nil
+	})
+
+	_, err := h.record(t)
+	require.NoError(t, err)
+	require.Equal(t, 1, h.count(t, `select count(*) from violation_records where tenant_id = $1 and student_user_id = $2`, h.fx.tenantID, h.student))
+}
