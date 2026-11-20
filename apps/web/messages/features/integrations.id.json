@@ -81,7 +81,14 @@
       "updated": "Endpoint diperbarui",
       "cancel": "Batal",
       "eventTypesHint": "{count} peristiwa dipilih.",
-      "eventTypesRequired": "Pilih minimal satu peristiwa"
+      "eventTypesRequired": "Pilih minimal satu peristiwa",
+      "secretTitle": "Endpoint webhook dibuat",
+      "secretWarning": "Rahasia penandatanganan ini hanya ditampilkan sekali. Simpan di penerima sekarang untuk memverifikasi header X-Newsekolah-Signature; server hanya menyimpan bentuk terenkripsinya.",
+      "secretLabel": "Rahasia penandatanganan",
+      "copySecret": "Salin rahasia",
+      "secretCopied": "Rahasia disalin",
+      "secretCopyFailed": "Rahasia tidak dapat disalin otomatis, salin secara manual",
+      "secretDone": "Sudah disimpan"
     },
     "moreEvents": "+{count} peristiwa",
     "rowActions": "Aksi untuk {url}"

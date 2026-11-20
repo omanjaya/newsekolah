@@ -10026,6 +10026,11 @@ export interface components {
             /** @description The plaintext key, shown exactly once. Only its hash is stored. */
             token: string;
         };
+        WebhookEndpointCreated: {
+            webhook_endpoint: components["schemas"]["WebhookEndpoint"];
+            /** @description The HMAC-SHA256 signing secret, shown exactly once. Receivers use the whole string (including the whsec_ prefix) as the HMAC key. Only its sealed ciphertext is stored. */
+            signing_secret: string;
+        };
         WebhookEndpointCreate: {
             url: string;
             description?: string;
@@ -19992,7 +19997,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WebhookEndpoint"];
+                    "application/json": components["schemas"]["WebhookEndpointCreated"];
                 };
             };
             400: components["responses"]["BadRequest"];

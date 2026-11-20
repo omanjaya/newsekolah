@@ -81,7 +81,14 @@
       "updated": "Endpoint updated",
       "cancel": "Cancel",
       "eventTypesHint": "{count, plural, one {# event} other {# events}} selected.",
-      "eventTypesRequired": "Choose at least one event"
+      "eventTypesRequired": "Choose at least one event",
+      "secretTitle": "Webhook endpoint created",
+      "secretWarning": "This signing secret is shown only once. Store it in your receiver now to verify the X-Newsekolah-Signature header; the server keeps only an encrypted copy.",
+      "secretLabel": "Signing secret",
+      "copySecret": "Copy secret",
+      "secretCopied": "Secret copied",
+      "secretCopyFailed": "The secret could not be copied automatically, copy it manually",
+      "secretDone": "I have saved it"
     },
     "moreEvents": "+{count} more",
     "rowActions": "Actions for {url}"

@@ -8492,7 +8492,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WebhookEndpoint"
+                $ref: "#/components/schemas/WebhookEndpointCreated"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -23279,6 +23279,18 @@ components:
         token:
           type: string
           description: The plaintext key, shown exactly once. Only its hash is stored.
+    WebhookEndpointCreated:
+      type: object
+      required:
+        - webhook_endpoint
+        - signing_secret
+      properties:
+        webhook_endpoint:
+          $ref: "#/components/schemas/WebhookEndpoint"
+        signing_secret:
+          type: string
+          description: The HMAC-SHA256 signing secret, shown exactly once. Receivers use the whole string (including the whsec_
+            prefix) as the HMAC key. Only its sealed ciphertext is stored.
     WebhookEndpointCreate:
       type: object
       required:

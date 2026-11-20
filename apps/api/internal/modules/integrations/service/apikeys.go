@@ -39,6 +39,11 @@ func (s *Service) CreateKey(ctx context.Context, tenantID, creatorUserID uuid.UU
 	if len(in.Permissions) == 0 {
 		return CreatedKey{}, fmt.Errorf("%w: permissions", domain.ErrInvalidInput)
 	}
+	// "No allowlist" is an empty list, never NULL: the column is NOT NULL
+	// and the web form (like most clients) leaves the field out.
+	if in.IPAllowlist == nil {
+		in.IPAllowlist = []string{}
+	}
 	if err := domain.ValidateIPAllowlist(in.IPAllowlist); err != nil {
 		return CreatedKey{}, err
 	}

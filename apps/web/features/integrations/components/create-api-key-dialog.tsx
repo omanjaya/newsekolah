@@ -2,7 +2,6 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
-  Alert,
   Button,
   Card,
   Checkbox,
@@ -13,7 +12,6 @@ import {
   useToast,
   useSubmitValidation,
 } from "@newsekolah/ui";
-import { Copy } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -22,6 +20,8 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { type APIKeyCreated, useCreateAPIKeyMutation } from "../api";
 import { usePermissionLabel } from "../lib/use-permission-label";
+
+import { ShownOnceSecretContent } from "./shown-once-secret";
 
 /**
  * The checkbox list only offers permissions the signed-in admin holds
@@ -45,7 +45,6 @@ export function CreateAPIKeyDialog({
   const [name, setName] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [created, setCreated] = useState<APIKeyCreated | null>(null);
-  const [copyFailed, setCopyFailed] = useState(false);
 
   const permissionLabel = usePermissionLabel();
   const {
@@ -63,7 +62,6 @@ export function CreateAPIKeyDialog({
     setName("");
     setSelected(new Set());
     setCreated(null);
-    setCopyFailed(false);
     resetValidation();
   }
 
@@ -87,15 +85,6 @@ export function CreateAPIKeyDialog({
     }
   }
 
-  async function copyToken(token: string) {
-    try {
-      await navigator.clipboard.writeText(token);
-      toast.success(t("tokenCopied"));
-    } catch {
-      setCopyFailed(true);
-    }
-  }
-
   return (
     <Dialog
       open={open}
@@ -105,33 +94,17 @@ export function CreateAPIKeyDialog({
       }}
     >
       {created ? (
-        <DialogContent
+        <ShownOnceSecretContent
           title={t("createdTitle")}
-          size="md"
-          footer={
-            <>
-              <Button
-                variant="secondary"
-                icon={<Copy />}
-                onClick={() => void copyToken(created.token)}
-              >
-                {t("copyToken")}
-              </Button>
-              <Button onClick={close}>{t("done")}</Button>
-            </>
-          }
-        >
-          <div className="flex flex-col gap-4">
-            <Alert tone="warning" title={t("shownOnceWarning")} />
-            <div className="flex flex-col gap-1.5">
-              <p className="text-label text-fg">{t("tokenLabel")}</p>
-              <code className="break-all rounded-md bg-surface-sunken px-3 py-2 font-mono text-body-sm tracking-wide text-fg select-all">
-                {created.token}
-              </code>
-            </div>
-            {copyFailed && <Alert tone="danger" title={t("copyFailed")} />}
-          </div>
-        </DialogContent>
+          warning={t("shownOnceWarning")}
+          label={t("tokenLabel")}
+          secret={created.token}
+          copyLabel={t("copyToken")}
+          copiedMessage={t("tokenCopied")}
+          copyFailedMessage={t("copyFailed")}
+          doneLabel={t("done")}
+          onDone={close}
+        />
       ) : (
         <DialogContent
           title={t("dialogTitle")}
