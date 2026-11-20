@@ -456,7 +456,7 @@
       "empty": "Belum ada perpanjangan untuk peminjaman ini.",
       "dueChange": "Jatuh tempo {previous} menjadi {next}"
     },
-    "renewBlockedOverdueDays": "Tidak bisa diperpanjang karena sudah terlambat {days} hari"
+    "renewBlockedOverdueDays": "Tidak bisa diperpanjang karena sudah terlambat {days} hari kalender"
   },
   "members": {
     "pagePrev": "Sebelumnya",
@@ -1552,7 +1552,7 @@
       "eyebrow": "Sesi Anda",
       "resetsIn": "Berakhir dalam {seconds} detik",
       "loansHeading": "Buku yang sedang Anda pinjam",
-      "overdue": "Terlambat {days} hari"
+      "overdue": "Terlambat {days} hari kalender"
     },
     "feedback": {
       "unknownCard": "Kartu anggota tidak dikenali",
@@ -1662,7 +1662,7 @@
     "unpaidFinesTotal": "Denda belum dibayar: {amount}",
     "hero": {
       "overdueEyebrow": "Perlu dikembalikan",
-      "overdueTitle": "{count, plural, one {1 buku} other {# buku}} terlambat {days} hari",
+      "overdueTitle": "{count, plural, one {1 buku} other {# buku}} terlambat {days} hari kalender",
       "overdueMeta": "{title}. Kembalikan ke perpustakaan secepatnya agar denda tidak bertambah.",
       "overdueChip": "Terlambat",
       "nextDueEyebrow": "Jatuh tempo berikutnya",

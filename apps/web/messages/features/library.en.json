@@ -456,7 +456,7 @@
       "empty": "No renewals for this loan yet.",
       "dueChange": "Due date {previous} became {next}"
     },
-    "renewBlockedOverdueDays": "Cannot be renewed: {days} days overdue"
+    "renewBlockedOverdueDays": "Cannot be renewed: {days, plural, one {# calendar day overdue} other {# calendar days overdue}}"
   },
   "members": {
     "pagePrev": "Previous",
@@ -1552,7 +1552,7 @@
       "eyebrow": "Your session",
       "resetsIn": "Ends in {seconds} seconds",
       "loansHeading": "Books you have out",
-      "overdue": "{days} days late"
+      "overdue": "{days, plural, one {# calendar day late} other {# calendar days late}}"
     },
     "feedback": {
       "unknownCard": "Member card not recognized",
@@ -1662,7 +1662,7 @@
     "unpaidFinesTotal": "Unpaid fines: {amount}",
     "hero": {
       "overdueEyebrow": "Please return",
-      "overdueTitle": "{count, plural, one {1 book} other {# books}} {days} days late",
+      "overdueTitle": "{count, plural, one {1 book} other {# books}} {days, plural, one {# calendar day late} other {# calendar days late}}",
       "overdueMeta": "{title}. Return it to the library soon so the fine stops growing.",
       "overdueChip": "Late",
       "nextDueEyebrow": "Next due date",
