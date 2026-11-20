@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   criterionKeyFrom,
+  criterionNameCounts,
   duplicateCriterionKeys,
   duplicateCriterionNames,
   keyFollowsName,
@@ -77,5 +78,24 @@ describe("duplicateCriterionNames", () => {
         { name: " " },
       ]),
     ).toEqual(new Set(["penguasaan kelas"]));
+  });
+
+  it("lets a stored repetition keep its copies but not gain one", () => {
+    const stored = [{ name: "Penguasaan kelas" }, { name: "Penguasaan kelas" }, { name: "Metode" }];
+    const allowed = criterionNameCounts(stored);
+    expect(allowed).toEqual(
+      new Map([
+        ["penguasaan kelas", 2],
+        ["metode", 1],
+      ]),
+    );
+    expect(duplicateCriterionNames(stored, allowed)).toEqual(new Set());
+    expect(duplicateCriterionNames(stored.slice(1), allowed)).toEqual(new Set());
+    expect(duplicateCriterionNames([...stored, { name: "Penguasaan Kelas" }], allowed)).toEqual(
+      new Set(["penguasaan kelas"]),
+    );
+    expect(duplicateCriterionNames([...stored, { name: "metode" }], allowed)).toEqual(
+      new Set(["metode"]),
+    );
   });
 });

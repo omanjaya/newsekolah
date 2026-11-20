@@ -90,6 +90,23 @@ func TestInstrumentValidateNames(t *testing.T) {
 	if err := more.ValidateNames(&dup); err != ErrCriterionNameTaken {
 		t.Fatalf("want ErrCriterionNameTaken for a new repetition, got %v", err)
 	}
+	// ...and so is a third copy of the name that already repeated.
+	third := dup
+	third.Criteria = append(append([]Criterion{}, dup.Criteria...), Criterion{Key: "materi_3", Name: "Penguasaan Materi"})
+	if err := third.ValidateNames(&dup); err != ErrCriterionNameTaken {
+		t.Fatalf("want ErrCriterionNameTaken for a third copy of a legacy repetition, got %v", err)
+	}
+	// Dropping a copy, or renaming one to a distinct name, stays allowed.
+	fewer := sampleInstrument()
+	if err := fewer.ValidateNames(&dup); err != nil {
+		t.Fatalf("removing a legacy copy was refused: %v", err)
+	}
+	renamed := dup
+	renamed.Criteria = append([]Criterion{}, dup.Criteria...)
+	renamed.Criteria[len(renamed.Criteria)-1].Name = "Penguasaan materi lanjutan"
+	if err := renamed.ValidateNames(&dup); err != nil {
+		t.Fatalf("renaming a legacy copy was refused: %v", err)
+	}
 }
 
 func TestInstrumentValidateScores(t *testing.T) {

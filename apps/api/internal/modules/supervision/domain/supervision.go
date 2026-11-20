@@ -79,37 +79,32 @@ func normalizedCriterionName(name string) string {
 	return strings.Join(strings.Fields(strings.ToLower(name)), " ")
 }
 
-// repeatedNames is the set of normalized criterion names more than one
-// criterion carries.
-func (i Instrument) repeatedNames() map[string]bool {
-	seen := make(map[string]bool, len(i.Criteria))
-	repeated := map[string]bool{}
+// nameCounts is how many criteria carry each normalized name; a blank
+// name is left out (Validate refuses it).
+func (i Instrument) nameCounts() map[string]int {
+	counts := make(map[string]int, len(i.Criteria))
 	for _, c := range i.Criteria {
-		name := normalizedCriterionName(c.Name)
-		if name == "" {
-			continue
+		if name := normalizedCriterionName(c.Name); name != "" {
+			counts[name]++
 		}
-		if seen[name] {
-			repeated[name] = true
-		}
-		seen[name] = true
 	}
-	return repeated
+	return counts
 }
 
 // ValidateNames refuses two criteria with the same name: the observation
 // form and the teacher's report show a criterion by its name only, so a
 // repeated name gives two rows nobody can tell apart. previous is the
 // stored instrument when a cycle is edited (nil on create): a name it
-// already repeated is left alone, so an instrument saved before this rule
-// can still be edited, but no new repetition is accepted.
+// already repeated may keep as many copies as it had, or fewer, so an
+// instrument saved before this rule can still be edited, but no copy is
+// added, neither of a new name nor of one that already repeated.
 func (i Instrument) ValidateNames(previous *Instrument) error {
-	var allowed map[string]bool
+	var before map[string]int
 	if previous != nil {
-		allowed = previous.repeatedNames()
+		before = previous.nameCounts()
 	}
-	for name := range i.repeatedNames() {
-		if !allowed[name] {
+	for name, count := range i.nameCounts() {
+		if count > 1 && count > before[name] {
 			return ErrCriterionNameTaken
 		}
 	}

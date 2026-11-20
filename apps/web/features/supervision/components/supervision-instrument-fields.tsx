@@ -38,14 +38,22 @@ export function SupervisionInstrumentFields({
   instrument,
   onChange,
   lockedKeys,
+  legacyNameCounts,
 }: {
   instrument: SupervisionInstrument;
   onChange: (next: SupervisionInstrument) => void;
   lockedKeys?: ReadonlySet<string>;
+  /**
+   * The stored instrument's name counts (`criterionNameCounts`) when a
+   * cycle saved before names had to be unique is edited: a name repeated
+   * no more often than it was is not marked, the same rule that decides
+   * whether Save is blocked.
+   */
+  legacyNameCounts?: ReadonlyMap<string, number>;
 }): ReactElement {
   const t = useTranslations("app.supervision.instrument");
   const duplicates = duplicateCriterionKeys(instrument.criteria);
-  const duplicateNames = duplicateCriterionNames(instrument.criteria);
+  const duplicateNames = duplicateCriterionNames(instrument.criteria, legacyNameCounts);
 
   function updateCriterion(index: number, patch: Partial<SupervisionCriterion>) {
     const criteria = instrument.criteria.map((c, i) => (i === index ? { ...c, ...patch } : c));
