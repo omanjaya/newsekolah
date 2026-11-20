@@ -231,7 +231,9 @@ func toAPIExitPermit(inst domain.Instance, def domain.Definition, p domain.ExitP
 		IssuedAt: p.IssuedAt, ExitedAt: p.ExitedAt, StudentName: p.StudentNameSnapshot, ClassName: p.ClassNameSnapshot,
 		ReturnRequired: p.ReturnRequired, ExpectedReturnAt: p.ExpectedReturnAt, ReturnedAt: p.ReturnedAt,
 	}
-	if p.ReturnedAt != nil {
+	// No verdict without a due time: a return imported from SION was never
+	// judged on time or late.
+	if p.ReturnedAt != nil && p.ExpectedReturnAt != nil {
 		late := p.ReturnedLate()
 		out.ReturnedLate = &late
 	}

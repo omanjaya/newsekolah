@@ -168,8 +168,9 @@ where ep.tenant_id = $1
   and wi.local_date = $2::date
   and ep.exited_at is not null
   and ep.return_required
+  and ep.expected_return_at is not null
   and ep.returned_at is null
-order by ep.expected_return_at nulls last, ep.exited_at
+order by ep.expected_return_at, ep.exited_at
 `
 
 type ListExitPermitsAwaitingReturnParams struct {
@@ -200,7 +201,9 @@ type ListExitPermitsAwaitingReturnRow struct {
 // The gate's "not back yet" list: permits that went through the gate on
 // the tenant-local day sqlc.arg('today') (workflow_instances.local_date,
 // the day the permit was opened, which is the exit day) and whose student
-// has not been recorded back. The earliest due return first.
+// has not been recorded back. A permit without expected_return_at exited
+// before returns were tracked (or came from SION) and is never listed.
+// The earliest due return first; matches ix_exit_permits_awaiting_return.
 func (q *Queries) ListExitPermitsAwaitingReturn(ctx context.Context, arg ListExitPermitsAwaitingReturnParams) ([]ListExitPermitsAwaitingReturnRow, error) {
 	rows, err := q.db.Query(ctx, listExitPermitsAwaitingReturn, arg.TenantID, arg.Today)
 	if err != nil {
@@ -589,7 +592,8 @@ func (q *Queries) MarkExitPermitIssued(ctx context.Context, arg MarkExitPermitIs
 const markExitPermitReturned = `-- name: MarkExitPermitReturned :one
 update exit_permits set returned_at = $3, return_security_user_id = $4
 where tenant_id = $1 and instance_id = $2
-  and exited_at is not null and return_required and returned_at is null
+  and exited_at is not null and return_required and expected_return_at is not null
+  and returned_at is null
 returning instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot, return_required, expected_return_at, returned_at, return_security_user_id
 `
 
@@ -601,8 +605,10 @@ type MarkExitPermitReturnedParams struct {
 }
 
 // Records the student back through the gate. Only a permit that exited,
-// expects a return and has none yet matches, so a second record (or a
-// concurrent one) finds no row instead of moving the time.
+// expects a tracked return (expected_return_at is null on permits that
+// exited before returns were tracked) and has none yet matches, so a
+// second record (or a concurrent one) finds no row instead of moving the
+// time.
 func (q *Queries) MarkExitPermitReturned(ctx context.Context, arg MarkExitPermitReturnedParams) (ExitPermit, error) {
 	row := q.db.QueryRow(ctx, markExitPermitReturned,
 		arg.TenantID,

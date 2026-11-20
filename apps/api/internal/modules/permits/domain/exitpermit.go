@@ -40,15 +40,18 @@ func (p ExitPermit) IsIssued() bool { return p.IssuedAt != nil }
 func (p ExitPermit) HasExited() bool { return p.ExitedAt != nil }
 
 // AwaitingReturn reports whether the student left through the gate, is
-// expected back, and has not been recorded back yet.
+// expected back by a tracked time, and has not been recorded back yet. A
+// permit that exited before returns were tracked (or was imported from
+// SION) has no ExpectedReturnAt and is never awaited: whether that student
+// came back is unknown.
 func (p ExitPermit) AwaitingReturn() bool {
-	return p.ExitedAt != nil && p.ReturnRequired && p.ReturnedAt == nil
+	return p.ExitedAt != nil && p.ReturnRequired && p.ExpectedReturnAt != nil && p.ReturnedAt == nil
 }
 
 // IsOverdue reports whether the student is still out after the time they
 // were due back.
 func (p ExitPermit) IsOverdue(now time.Time) bool {
-	return p.AwaitingReturn() && p.ExpectedReturnAt != nil && now.After(*p.ExpectedReturnAt)
+	return p.AwaitingReturn() && now.After(*p.ExpectedReturnAt)
 }
 
 // ReturnedLate reports whether the recorded return came after the time the

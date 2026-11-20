@@ -1214,7 +1214,9 @@ type Querier interface {
 	// The gate's "not back yet" list: permits that went through the gate on
 	// the tenant-local day sqlc.arg('today') (workflow_instances.local_date,
 	// the day the permit was opened, which is the exit day) and whose student
-	// has not been recorded back. The earliest due return first.
+	// has not been recorded back. A permit without expected_return_at exited
+	// before returns were tracked (or came from SION) and is never listed.
+	// The earliest due return first; matches ix_exit_permits_awaiting_return.
 	ListExitPermitsAwaitingReturn(ctx context.Context, arg ListExitPermitsAwaitingReturnParams) ([]ListExitPermitsAwaitingReturnRow, error)
 	// The permit rows of a page of a student's own exit permit instances.
 	ListExitPermitsByInstances(ctx context.Context, arg ListExitPermitsByInstancesParams) ([]ExitPermit, error)
@@ -1580,8 +1582,10 @@ type Querier interface {
 	MarkExitPermitExited(ctx context.Context, arg MarkExitPermitExitedParams) (ExitPermit, error)
 	MarkExitPermitIssued(ctx context.Context, arg MarkExitPermitIssuedParams) (ExitPermit, error)
 	// Records the student back through the gate. Only a permit that exited,
-	// expects a return and has none yet matches, so a second record (or a
-	// concurrent one) finds no row instead of moving the time.
+	// expects a tracked return (expected_return_at is null on permits that
+	// exited before returns were tracked) and has none yet matches, so a
+	// second record (or a concurrent one) finds no row instead of moving the
+	// time.
 	MarkExitPermitReturned(ctx context.Context, arg MarkExitPermitReturnedParams) (ExitPermit, error)
 	MarkLateArrivalCompleted(ctx context.Context, arg MarkLateArrivalCompletedParams) (LateArrival, error)
 	MarkLoanFinePaid(ctx context.Context, arg MarkLoanFinePaidParams) (LibraryLoan, error)

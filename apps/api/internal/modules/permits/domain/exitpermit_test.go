@@ -36,6 +36,13 @@ func TestExitPermitReturn(t *testing.T) {
 		require.False(t, p.IsOverdue(*at(600)))
 	})
 
+	t.Run("a permit that exited before returns were tracked is never awaited", func(t *testing.T) {
+		p := ExitPermit{ExitedAt: &exited, ReturnRequired: true}
+		require.False(t, p.AwaitingReturn())
+		require.False(t, p.IsOverdue(*at(600)))
+		require.False(t, p.ReturnedLate())
+	})
+
 	t.Run("nothing is awaited before the gate", func(t *testing.T) {
 		require.False(t, ExitPermit{ReturnRequired: true, ExpectedReturnAt: &due}.AwaitingReturn())
 	})

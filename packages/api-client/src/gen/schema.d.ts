@@ -11540,7 +11540,7 @@ export interface components {
             return_required: boolean;
             /**
              * Format: date-time
-             * @description When the student is due back: the end of the permit's last period on the exit day, set at the gate scan.
+             * @description When the student is due back: the end of the permit's last period on the exit day, set at the gate scan. Absent when no return is expected, and on a permit that exited before returns were tracked or was imported from SION: whether that student came back is unknown, and it is never listed as still out.
              */
             expected_return_at?: string;
             /**
@@ -11548,7 +11548,7 @@ export interface components {
              * @description When security recorded the student back through the gate.
              */
             returned_at?: string;
-            /** @description Set once returned; true when the return came after expected_return_at. */
+            /** @description Set once returned against an expected_return_at; true when the return came after it. Absent for a return imported from SION, which was never judged on time or late. */
             returned_late?: boolean;
         };
         ExitPermitAwaitingReturn: {
