@@ -1443,7 +1443,7 @@ type Querier interface {
 	ListSPCandidates(ctx context.Context, arg ListSPCandidatesParams) ([]ListSPCandidatesRow, error)
 	// Which of the given schedules already have a recorded attendance session
 	// (submitted, or holding an entry or a journal) or a substitution request:
-	// the history guard (migrations 0107 and 0143) refuses to change or delete
+	// the history guard (migrations 0107 and 0144) refuses to change or delete
 	// those, so the grid and the single-schedule policy say so before the
 	// admin fills a form. A session only opened, with nothing recorded, is a
 	// placeholder the guard clears instead.
