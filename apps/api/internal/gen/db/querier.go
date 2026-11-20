@@ -233,6 +233,9 @@ type Querier interface {
 	// cross-module read: enrollments/classes (academic), for the student list
 	// generation charges and the arrears report groups by class.
 	BillingActiveEnrollments(ctx context.Context, arg BillingActiveEnrollmentsParams) ([]BillingActiveEnrollmentsRow, error)
+	// cross-module read: tenants (platform). A generated bill's due date is a
+	// calendar day in the school's own timezone, never the server's UTC day.
+	BillingGetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error)
 	// cross-module read: users (identity) and enrollments/classes (academic),
 	// for the name and class printed on a receipt.
 	BillingStudentDisplay(ctx context.Context, arg BillingStudentDisplayParams) (BillingStudentDisplayRow, error)

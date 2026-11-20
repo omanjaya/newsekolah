@@ -227,6 +227,19 @@ func (q *Queries) BillingActiveEnrollments(ctx context.Context, arg BillingActiv
 	return items, nil
 }
 
+const billingGetTenantTimezone = `-- name: BillingGetTenantTimezone :one
+select timezone from tenants where id = $1
+`
+
+// cross-module read: tenants (platform). A generated bill's due date is a
+// calendar day in the school's own timezone, never the server's UTC day.
+func (q *Queries) BillingGetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, billingGetTenantTimezone, id)
+	var timezone string
+	err := row.Scan(&timezone)
+	return timezone, err
+}
+
 const billingStudentDisplay = `-- name: BillingStudentDisplay :one
 select u.name as student_name, coalesce(c.name, '') as class_name, coalesce(sp.guardian_name, '') as guardian_name
 from users u

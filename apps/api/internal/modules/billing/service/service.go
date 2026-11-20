@@ -58,6 +58,7 @@ type Repository interface {
 
 	ListActiveEnrollments(ctx context.Context, tenantID, yearID uuid.UUID) ([]domain.StudentEnrollment, error)
 	StudentDisplay(ctx context.Context, tenantID, studentID, yearID uuid.UUID) (StudentDisplay, error)
+	TenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
 }
 
 // StudentDisplay is the name/class/guardian trio printed on a receipt,

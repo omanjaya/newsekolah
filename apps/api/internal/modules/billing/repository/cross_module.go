@@ -34,3 +34,13 @@ func (r *Repository) StudentDisplay(ctx context.Context, tenantID, studentID, ye
 	}
 	return service.StudentDisplay{StudentName: row.StudentName, ClassName: row.ClassName, GuardianName: row.GuardianName}, nil
 }
+
+// TenantTimezone reads the tenant's IANA timezone name, for the local
+// calendar day a generated bill's due date counts from.
+func (r *Repository) TenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error) {
+	tz, err := r.queries(ctx).BillingGetTenantTimezone(ctx, tenantID)
+	if err != nil {
+		return "", fmt.Errorf("tenant timezone: %w", err)
+	}
+	return tz, nil
+}
