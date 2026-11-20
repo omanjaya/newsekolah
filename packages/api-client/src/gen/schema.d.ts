@@ -7216,7 +7216,7 @@ export interface paths {
         put?: never;
         /**
          * Clear one academic year's timetable, entirely or from a date on
-         * @description Without effective_from every schedule of the year is deleted, which fails with SCHEDULE_HAS_HISTORY when any of them has history. With it the timetable is cleared from that date on: each lesson ends on its last date before it (or goes when it has none) and every earlier week keeps its lessons and history.
+         * @description Without effective_from every schedule of the year is deleted, which fails with SCHEDULE_HAS_HISTORY when any of them has history or has already ended (it holds past weeks). With it the timetable is cleared from that date on: each lesson ends on its last date before it (or goes when it has none) and every earlier week keeps its lessons and history.
          */
         post: operations["clearSchedules"];
         delete?: never;
@@ -7255,13 +7255,13 @@ export interface paths {
         get: operations["getSchedule"];
         /**
          * Update a schedule (admin, or the owning teacher within the edit deadline)
-         * @description With effective_from in the body the change takes effect from that date: the block ends on its last lesson before it and a new version (a new id, returned) starts on its first lesson on or after it. Without it the block is corrected in place for the whole academic year, which fails with SCHEDULE_HAS_HISTORY once it has history.
+         * @description With effective_from in the body the change takes effect from that date: the block ends on its last lesson before it and a new version (a new id, returned) starts on its first lesson on or after it. Without it the block is corrected in place on every date it is in effect, which fails with SCHEDULE_HAS_HISTORY once it has history and with SCHEDULE_ENDED once its last date has passed.
          */
         put: operations["updateSchedule"];
         post?: never;
         /**
          * Delete a schedule (admin, or the owning teacher within the edit deadline)
-         * @description Without effective_from the block is deleted outright, which fails with SCHEDULE_HAS_HISTORY once it has history. With effective_from (manage_schedules only) the block is removed from that date on: earlier dates keep it, with everything recorded against it.
+         * @description Without effective_from the block is deleted outright, which fails with SCHEDULE_HAS_HISTORY once it has history and with SCHEDULE_ENDED once its last date has passed. With effective_from (manage_schedules only) the block is removed from that date on: earlier dates keep it, with everything recorded against it.
          */
         delete: operations["deleteSchedule"];
         options?: never;
@@ -12029,15 +12029,16 @@ export interface components {
         MutationPolicy: {
             can_edit: boolean;
             can_delete: boolean;
-            /** @description The schedule has recorded attendance or a substitution request; changes must carry effective_from and leave earlier dates as they were. */
+            /** @description The schedule has recorded attendance, a substitution request or a supervision visit; changes must carry effective_from and leave earlier dates as they were. */
             has_history?: boolean;
             /** @description An edit or delete must say from which date it takes effect (effective_from). */
             requires_effective_from?: boolean;
             /**
              * Format: date
-             * @description The earliest effective_from the server accepts (today, or the day after the last history date).
+             * @description The earliest effective_from the server accepts: today (tomorrow once today's lesson has begun), and never on or before the last history date nor on or before the version's first lesson.
              */
             min_effective_from?: string;
+            /** @description Why can_edit or can_delete is false, as the error code the change would meet: SCHEDULE_ENDED (the last date has passed), SCHEDULE_CHANGE_BEFORE_HISTORY (still on the timetable, but every date it has left is bound by history), SCHEDULE_HAS_HISTORY (a teacher's own lesson with history) or FORBIDDEN. */
             reason?: string;
         };
         Schedule: {
@@ -12102,7 +12103,7 @@ export interface components {
              * @description Last date the block is on the timetable (inclusive); absent while it runs to the end of the year.
              */
             effective_until?: string;
-            /** @description Some schedule in the block has recorded attendance or a substitution request: it can no longer be corrected in place, only changed or removed from a date after that history. */
+            /** @description Some schedule in the block has recorded attendance, a substitution request or a supervision visit: it can no longer be corrected in place, only changed or removed from a date after that history. */
             has_history?: boolean;
             /** @description What the caller may do with the block; present for callers with manage_schedules. */
             mutation_policy?: components["schemas"]["MutationPolicy"];
@@ -12129,7 +12130,7 @@ export interface components {
             notes?: string;
             /**
              * Format: date
-             * @description Create and bulk import: first date the lesson is on the timetable (default: the start of the academic year), moved to the next date on its weekday. Update: the date the change takes effect; omit it to correct the block in place (SCHEDULE_HAS_HISTORY once it has history). manage_schedules only.
+             * @description Create and bulk import: first date the lesson is on the timetable, moved to the next date on its weekday. Default: the school's today (or the year's start, when later), so a lesson added mid-year is not backdated over weeks already taught; a lesson that has already begun today starts the next week. A date back to the year's start is how a timetable is entered for weeks already taught. Update: the date the change takes effect; omit it to correct the block in place (SCHEDULE_HAS_HISTORY once it has history, SCHEDULE_ENDED once it has ended). manage_schedules only.
              */
             effective_from?: string;
         };
@@ -27410,7 +27411,7 @@ export interface operations {
                     academic_year_id: string;
                     /**
                      * Format: date
-                     * @description First date the timetable is empty. Not before today nor on or before a date with history.
+                     * @description First date the timetable is empty. Not before today (tomorrow for a lesson that has already begun today) nor on or before a date with history.
                      */
                     effective_from?: string;
                 };
