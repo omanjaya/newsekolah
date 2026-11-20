@@ -228,6 +228,8 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
               if (next) setMonth(next);
             }}
             today={today}
+            // A month still to come has no days to report yet.
+            max={today.slice(0, 7)}
             clearable={false}
             aria-label={t("recap.month")}
             className="sm:w-44"
