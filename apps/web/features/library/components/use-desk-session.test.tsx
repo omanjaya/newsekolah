@@ -1,4 +1,5 @@
 import { ApiError } from "@newsekolah/api-client";
+import type * as UiModule from "@newsekolah/ui";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -24,9 +25,13 @@ vi.mock("../members-api", () => ({
   useLibraryMemberQuery: () => ({ data: undefined }),
   useLibraryMemberBorrowingStatusQuery: () => ({ data: undefined }),
 }));
-vi.mock("@newsekolah/ui", () => ({
-  useScanFeedback: () => ({ playSuccess: vi.fn(), playError: vi.fn() }),
-}));
+vi.mock("@newsekolah/ui", async () => {
+  const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
+  return {
+    useSingleFlight: actual.useSingleFlight,
+    useScanFeedback: () => ({ playSuccess: vi.fn(), playError: vi.fn() }),
+  };
+});
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => `error:${code}`,
 }));
@@ -235,6 +240,47 @@ describe("useDeskSession", () => {
       state: "done",
       detail: "basket.returnedOnTime",
     });
+  });
+
+  // Both reads of a double read arrive before React re-renders, so a
+  // guard on the `scanning` state let the second through as a concurrent
+  // request that could not see the first one's saved row.
+  it("ignores a second read of a book while its return is in flight", async () => {
+    let finishReturn: (loan: unknown) => void = () => undefined;
+    returnByBarcode.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishReturn = resolve;
+        }),
+    );
+    const { result } = renderHook(() => useDeskSession());
+    act(() => {
+      result.current.setMode("return");
+    });
+
+    act(() => {
+      result.current.handleScan({ code: "2026/00031", source: "scanner", at: Date.now() });
+      result.current.handleScan({ code: "2026/00031", source: "scanner", at: Date.now() });
+    });
+    await act(async () => {
+      finishReturn({
+        title_id: "t1",
+        member_user_id: "u1",
+        due_on: "2026-11-20",
+        returned_at: "2026-11-20T08:00:00Z",
+        fine_amount: 0,
+        late_days: 0,
+      });
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(result.current.basket.return[0]?.state).toBe("done");
+    });
+    expect(returnByBarcode).toHaveBeenCalledTimes(1);
+    expect(findMember).not.toHaveBeenCalled();
+    expect(result.current.basket.return).toHaveLength(1);
+    expect(result.current.scanError).toBe("");
   });
 
   it("keeps a saved renewal when a rescan hits the renewal limit", async () => {

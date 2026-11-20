@@ -4,7 +4,7 @@ import { ApiError } from "@newsekolah/api-client";
 import { formatCurrency, formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import type { BarcodeScanEvent } from "@newsekolah/ui";
-import { useScanFeedback } from "@newsekolah/ui";
+import { useScanFeedback, useSingleFlight } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
@@ -307,27 +307,32 @@ export function useDeskSession() {
     [renewByBarcode, titleName, feedback, recordRefusal, t, locale],
   );
 
+  // One scan at a time, guarded by a ref and not by `scanning`: a scanner's
+  // double read fires both events before React re-renders, so a state
+  // guard would let the second through as a concurrent request whose
+  // refusal could not yet see the first scan's saved row.
+  const runScan = useSingleFlight(async (code: string) => {
+    setScanError("");
+    setScanning(true);
+    try {
+      // Only lending needs to know who is borrowing first; a return or a
+      // renewal is identified by the book's barcode alone.
+      if (mode === "return") await addReturnScan(code);
+      else if (mode === "renew") await addRenewScan(code);
+      else if (member) await addBorrowScan(code);
+      else await addMemberByScan(code);
+    } finally {
+      setScanning(false);
+    }
+  });
+
   const handleScan = useCallback(
     (event: BarcodeScanEvent) => {
       const code = event.code.trim();
-      if (!code || scanning) return;
-      setScanError("");
-      setScanning(true);
-      // Only lending needs to know who is borrowing first; a return or a
-      // renewal is identified by the book's barcode alone.
-      const run =
-        mode === "return"
-          ? addReturnScan(code)
-          : mode === "renew"
-            ? addRenewScan(code)
-            : member
-              ? addBorrowScan(code)
-              : addMemberByScan(code);
-      void run.finally(() => {
-        setScanning(false);
-      });
+      if (!code) return;
+      void runScan(code);
     },
-    [scanning, member, mode, addMemberByScan, addBorrowScan, addReturnScan, addRenewScan],
+    [runScan],
   );
 
   const confirmBorrow = useCallback(async () => {
