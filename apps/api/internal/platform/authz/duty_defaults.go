@@ -1,9 +1,9 @@
 package authz
 
 // DutyTypeDefault is one of the standard duty types a tenant is seeded
-// with: homeroom, counseling, leadership, security, and the "duty
-// teacher" (Guru Piket) rotation. cmd/seed used to keep this list to
-// itself; it now lives here so a real tenant's bootstrap (not just the
+// with: homeroom, counseling, leadership, security, librarian, bursar,
+// and the "duty teacher" (Guru Piket) rotation. cmd/seed used to keep this
+// list to itself; it now lives here so a real tenant's bootstrap (not just the
 // local demo tenant) creates the same duty types with the same default
 // permissions, per docs/06-database-schema.md section 3.
 type DutyTypeDefault struct {
@@ -29,5 +29,10 @@ func DutyTypeDefaults() []DutyTypeDefault {
 		{"leadership", "Wakil Kepala Sekolah", "school", []string{PermReviewLeaveRequests, PermIssueLeaveLetters, PermViewReports, PermIssueWarningLetters, PermViewDiscipline, PermIssueScanTokens}},
 		{"security", "Satpam", "school", []string{PermScanExitPermits}},
 		{"librarian", "Petugas Perpustakaan", "school", []string{PermManageLibraryCirculation}},
+		// The school treasurer: reads bills and arrears and records
+		// payments at the cash desk. The Pegawai role no longer carries
+		// these (role_defaults.go), so the admin assigns this duty to the
+		// one staff member who handles money.
+		{"bursar", "Bendahara", "school", []string{PermViewBilling, PermRecordPayments}},
 	}
 }

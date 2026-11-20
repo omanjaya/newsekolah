@@ -37,7 +37,9 @@ That creates the tenant `sma-contoh` with one account per role/duty the
 school day needs -- `admin`, `kepsek` (principal), `guru` (homeroom
 teacher of X-A and its Matematika teacher), `gurupiket` (picket duty),
 `gurubk` (counselor duty), `wakepsek` (leadership duty), `satpam`
-(security duty), `pustakawan` (librarian role and duty), and two students
+(security duty), `bendahara` (staff with the bursar duty, the only seed
+account besides `admin` that opens billing), `pustakawan` (librarian role
+and duty), and two students
 in X-A, `siswa` and `siswa2` -- all with the password `Password123!`
 (override with `SEED_PASSWORD`). It also seeds an active academic year
 and term, X-A's full-day timetable, a Matematika grading component, and

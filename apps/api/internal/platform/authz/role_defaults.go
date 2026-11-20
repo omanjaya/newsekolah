@@ -58,7 +58,11 @@ func RoleDefaults() []RoleDefault {
 			PermCreateAnnouncements, PermEditAnnouncements, PermPublishAnnouncements,
 			PermViewDiscipline, PermRecordViolations, PermViewEarlyWarning,
 			PermViewVisitors, PermManageVisitors, PermViewVisitorIncidents, PermManageVisitorIncidents, PermViewVisitorReports,
-			PermViewBilling, PermRecordPayments,
+			// No view_billing/record_payments: "Pegawai" is every
+			// non-teaching employee (security, cleaners, TU), so billing
+			// is granted through the bursar ("Bendahara") duty to the one
+			// person who runs the cash desk (duty_defaults.go). Removed
+			// from existing tenants by 0129_staff_billing_to_bursar_duty.
 		}},
 		{RoleSlugStudent, "Siswa", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewSchedules, PermViewAcademicData,

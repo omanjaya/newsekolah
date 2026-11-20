@@ -61,6 +61,9 @@ var systemUsers = []userSeed{
 	{"gurupiket", "Guru Piket Contoh", "teacher"},
 	{"wakepsek", "Wakil Kepala Sekolah Contoh", "teacher"},
 	{"satpam", "Satpam Contoh", "staff"},
+	// bendahara: the treasurer. Billing comes from the bursar duty, not
+	// the staff role (authz.DutyTypeDefaults), so satpam never sees bills.
+	{"bendahara", "Bendahara Contoh", "staff"},
 	{"pustakawan", "Pustakawan Contoh", "librarian"},
 	{"siswa", "Siswa Contoh", "student"},
 	// siswa2: a second homeroom-class student, so a leave request opened
