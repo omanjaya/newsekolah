@@ -22,7 +22,7 @@ func DutyTypeDefaults() []DutyTypeDefault {
 		// view_mentoring (counselor and leadership): domain.MeetingNote.VisibleTo
 		// lets both read a guru wali's meeting notes, so both open every
 		// mentor group read-only to reach them (backfilled by
-		// 0143_duty_view_mentoring.up.sql). Never manage_mentor_groups.
+		// 0145_duty_view_mentoring.up.sql). Never manage_mentor_groups.
 		{"counselor", "Guru BK", "school", []string{PermIssueLeaveLetters, PermViewReports, PermManageCounseling, PermIssueWarningLetters, PermViewDiscipline, PermRecordViolations, PermViewMentoring}},
 		{"picket", "Guru Piket", "school", []string{PermManageAttendance}},
 		// issue_scan_tokens: the leadership stage of a late arrival or an

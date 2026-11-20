@@ -1,4 +1,4 @@
--- Reverses 0143_duty_view_mentoring.up.sql: the counselor and leadership
+-- Reverses 0145_duty_view_mentoring.up.sql: the counselor and leadership
 -- duties lose view_mentoring again.
 delete from duty_permissions
 using duty_types
