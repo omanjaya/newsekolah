@@ -30,6 +30,8 @@ type RecordExitPermitByStaffInput struct {
 	// (Instance.CreatedBy vs. SubjectUserID) is the whole audit signal;
 	// no new column or table is needed.
 	RecordedBy uuid.UUID
+	// NoReturn: the student goes home and is not expected back today.
+	NoReturn bool
 }
 
 // RecordExitPermitByStaff is the ad-hoc counterpart to CreateExitPermit +
@@ -73,7 +75,7 @@ func (s *Service) RecordExitPermitByStaff(ctx context.Context, in RecordExitPerm
 		if err := s.requireNotOnLeaveToday(ctx, in.TenantID, in.StudentUserID); err != nil {
 			return err
 		}
-		if err := s.validatePeriodRange(ctx, in.TenantID, in.StartPeriodID, in.EndPeriodID); err != nil {
+		if _, _, err := s.validatePeriodRange(ctx, in.TenantID, in.StartPeriodID, in.EndPeriodID); err != nil {
 			return err
 		}
 		studentName, err := s.repo.GetUserName(ctx, in.TenantID, in.StudentUserID)
@@ -92,11 +94,13 @@ func (s *Service) RecordExitPermitByStaff(ctx context.Context, in RecordExitPerm
 			return err
 		}
 
-		if _, err = s.repo.CreateExitPermit(ctx, domain.ExitPermit{
+		permit, err := s.repo.CreateExitPermit(ctx, domain.ExitPermit{
 			InstanceID: inst.ID, TenantID: in.TenantID, Destination: in.Destination,
 			StartPeriodID: in.StartPeriodID, EndPeriodID: in.EndPeriodID,
 			StudentNameSnapshot: studentName, ClassNameSnapshot: enrollment.ClassName,
-		}); err != nil {
+			ReturnRequired: !in.NoReturn,
+		})
+		if err != nil {
 			return err
 		}
 
@@ -117,21 +121,13 @@ func (s *Service) RecordExitPermitByStaff(ctx context.Context, in RecordExitPerm
 		if _, err = s.repo.MarkExitPermitIssued(ctx, in.TenantID, inst.ID, now); err != nil {
 			return err
 		}
-		if _, err = s.repo.MarkExitPermitExited(ctx, in.TenantID, inst.ID, now, in.RecordedBy); err != nil {
-			return err
-		}
-
-		startPeriod, err := s.repo.GetPeriod(ctx, in.TenantID, in.StartPeriodID)
+		from, to, err := s.exitPermitWindow(ctx, in.TenantID, permit, now)
 		if err != nil {
 			return err
 		}
-		endPeriod, err := s.repo.GetPeriod(ctx, in.TenantID, in.EndPeriodID)
-		if err != nil {
+		if _, err = s.repo.MarkExitPermitExited(ctx, in.TenantID, inst.ID, now, in.RecordedBy, dueBack(permit, to)); err != nil {
 			return err
 		}
-		day := s.tenantNow(ctx, in.TenantID)
-		from := combineDateAndDuration(day, startPeriod.StartsAt)
-		to := combineDateAndDuration(day, endPeriod.EndsAt)
 		return s.sync.ForceStatus(ctx, in.TenantID, in.StudentUserID, from, to, "D", "exit permit (recorded by duty teacher)")
 	})
 	if err != nil {

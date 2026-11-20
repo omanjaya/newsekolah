@@ -14460,6 +14460,11 @@ paths:
                 end_period_id:
                   type: string
                   format: uuid
+                return_required:
+                  type: boolean
+                  default: true
+                  description: False when the student goes home and is not expected back the same day; otherwise the gate awaits their
+                    return.
       responses:
         "201":
           description: Created
@@ -14475,6 +14480,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "409":
           $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
   /v1/exit-permits/staff-record:
     post:
       tags:
@@ -14514,6 +14521,10 @@ paths:
                 end_period_id:
                   type: string
                   format: uuid
+                return_required:
+                  type: boolean
+                  default: true
+                  description: False when the student goes home and is not expected back today.
       responses:
         "201":
           description: Recorded
@@ -14554,6 +14565,34 @@ paths:
                       $ref: "#/components/schemas/ExitPermitSummary"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /v1/exit-permits/awaiting-return:
+    get:
+      tags:
+        - permits
+      operationId: listExitPermitsAwaitingReturn
+      x-permission: scan_exit_permits
+      summary: Students who left on an exit permit today and are not back yet
+      description: "The gate's list: today's permits (the school's own calendar day) whose student went through the gate, is
+        expected back, and has not been recorded back. The earliest due return comes first; overdue is set once the end
+        of the permit's last period has passed."
+      responses:
+        "200":
+          description: Permits
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ExitPermitAwaitingReturn"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/exit-permits/{instanceId}:
     get:
       tags:
@@ -14676,6 +14715,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
   /v1/exit-permits/{instanceId}/gate-scan:
     post:
       tags:
@@ -14713,6 +14754,38 @@ paths:
           $ref: "#/components/responses/Conflict"
         "410":
           $ref: "#/components/responses/TokenGone"
+  /v1/exit-permits/{instanceId}/return:
+    post:
+      tags:
+        - permits
+      operationId: recordExitPermitReturn
+      x-permission: scan_exit_permits
+      summary: Security records the student back through the gate
+      description: Stamps the return time on a permit whose student went out and is expected back. A return after the end of
+        the permit's last period is late (returned_late). 409 EXIT_PERMIT_NOT_AWAITING_RETURN when the student has not
+        gone out, is not expected back, or is already back.
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExitPermitDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /v1/late-arrivals/open:
     post:
       tags:
@@ -26837,6 +26910,7 @@ components:
         - end_period_id
         - student_name
         - class_name
+        - return_required
       properties:
         instance:
           $ref: "#/components/schemas/WorkflowInstance"
@@ -26858,6 +26932,58 @@ components:
           type: string
         class_name:
           type: string
+        return_required:
+          type: boolean
+          description: False when the student went home and is not expected back.
+        expected_return_at:
+          type: string
+          format: date-time
+          description: "When the student is due back: the end of the permit's last period on the exit day, set at the gate scan.
+            Absent when no return is expected, and on a permit that exited before returns were tracked or was imported
+            from SION: whether that student came back is unknown, and it is never listed as still out."
+        returned_at:
+          type: string
+          format: date-time
+          description: When security recorded the student back through the gate.
+        returned_late:
+          type: boolean
+          description: Set once returned against an expected_return_at; true when the return came after it. Absent for a return
+            imported from SION, which was never judged on time or late.
+    ExitPermitAwaitingReturn:
+      type: object
+      required:
+        - instance_id
+        - student_user_id
+        - destination
+        - student_name
+        - class_name
+        - exited_at
+        - overdue
+      properties:
+        instance_id:
+          type: string
+          format: uuid
+        student_user_id:
+          type: string
+          format: uuid
+        class_id:
+          type: string
+          format: uuid
+        destination:
+          type: string
+        student_name:
+          type: string
+        class_name:
+          type: string
+        exited_at:
+          type: string
+          format: date-time
+        expected_return_at:
+          type: string
+          format: date-time
+        overdue:
+          type: boolean
+          description: The student is still out after expected_return_at.
     MyExitPermit:
       description: "One of the student's own exit permits in their history: the workflow instance plus where they went and
         when they passed the gate, so a row can say so without opening the permit."
@@ -26866,10 +26992,19 @@ components:
         - type: object
           required:
             - destination
+            - return_required
           properties:
             destination:
               type: string
             exited_at:
+              type: string
+              format: date-time
+            return_required:
+              type: boolean
+            expected_return_at:
+              type: string
+              format: date-time
+            returned_at:
               type: string
               format: date-time
     LateArrivalDetail:

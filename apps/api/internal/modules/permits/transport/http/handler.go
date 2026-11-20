@@ -147,6 +147,7 @@ func (h *PermitsHandler) CreateExitPermit(ctx context.Context, request api.Creat
 	inst, _, err := h.service.CreateExitPermit(ctx, service.CreateExitPermitInput{
 		TenantID: tenant, StudentUserID: userID(ctx), Destination: request.Body.Destination,
 		StartPeriodID: request.Body.StartPeriodId, EndPeriodID: request.Body.EndPeriodId,
+		NoReturn: noReturn(request.Body.ReturnRequired),
 	})
 	if err != nil {
 		return nil, mapError(err)
@@ -205,6 +206,7 @@ func (h *PermitsHandler) RecordExitPermitByStaff(ctx context.Context, request ap
 	detail, err := h.service.RecordExitPermitByStaff(ctx, service.RecordExitPermitByStaffInput{
 		TenantID: tenant, StudentUserID: request.Body.StudentUserId, Destination: request.Body.Destination,
 		StartPeriodID: request.Body.StartPeriodId, EndPeriodID: request.Body.EndPeriodId, RecordedBy: userID(ctx),
+		NoReturn: noReturn(request.Body.ReturnRequired),
 	})
 	if err != nil {
 		return nil, mapError(err)
@@ -234,6 +236,30 @@ func (h *PermitsHandler) ScanExitPermitGate(ctx context.Context, request api.Sca
 		return nil, err
 	}
 	return api.ScanExitPermitGate200JSONResponse(detail), nil
+}
+
+// ListExitPermitsAwaitingReturn is the gate's "not back yet" list.
+func (h *PermitsHandler) ListExitPermitsAwaitingReturn(ctx context.Context, _ api.ListExitPermitsAwaitingReturnRequestObject) (api.ListExitPermitsAwaitingReturnResponseObject, error) {
+	items, err := h.service.ListExitPermitsAwaitingReturn(ctx, tenantID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	// Overdue is a business decision: the simulated clock applies.
+	now := clock.Now(ctx, h.clock)
+	data := make([]api.ExitPermitAwaitingReturn, len(items))
+	for i, it := range items {
+		data[i] = toAPIExitPermitAwaitingReturn(it, now)
+	}
+	return api.ListExitPermitsAwaitingReturn200JSONResponse{Data: data}, nil
+}
+
+// RecordExitPermitReturn is security recording the student back.
+func (h *PermitsHandler) RecordExitPermitReturn(ctx context.Context, request api.RecordExitPermitReturnRequestObject) (api.RecordExitPermitReturnResponseObject, error) {
+	detail, err := h.service.RecordExitPermitReturn(ctx, tenantID(ctx), request.InstanceId, userID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.RecordExitPermitReturn200JSONResponse(toAPIExitPermit(detail.Instance, detail.Definition, detail.Permit, detail.Events)), nil
 }
 
 // Late arrivals.

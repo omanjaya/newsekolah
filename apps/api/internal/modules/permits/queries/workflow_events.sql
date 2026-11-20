@@ -1,8 +1,11 @@
 -- name: CreateWorkflowEvent :one
+-- occurred_at comes from the service clock so a simulated time
+-- (clock.WithTime) reaches the stage history; a null keeps the column
+-- default for callers without a time.
 insert into workflow_events (
-  tenant_id, instance_id, stage_key, from_status, to_status, actor_user_id, verification, scan_token_id, note
+  tenant_id, instance_id, stage_key, from_status, to_status, actor_user_id, verification, scan_token_id, note, occurred_at
 )
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, coalesce(sqlc.narg('occurred_at')::timestamptz, now()))
 returning *;
 
 -- name: ListWorkflowEventsByInstance :many

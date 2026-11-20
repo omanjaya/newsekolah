@@ -91,6 +91,15 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
     const createResponse = student.page.waitForResponse(
       (res) => res.request().method() === "POST" && res.url().includes("/v1/exit-permits"),
     );
+    // The run uses the real clock (only a platform superadmin may set a
+    // simulated one, and none of these actors is one), and the form offers
+    // only the lessons that have not ended yet on the school's clock
+    // (upcomingLessonPeriods; the API refuses a past window with 422
+    // EXIT_PERMIT_PERIOD_PASSED). So the run takes the first two lessons
+    // the form actually offers instead of fixed ones, and skips once fewer
+    // than two are left today: with one lesson left it could end before
+    // the gate QR, and with none the form only says so (noPeriodsLeft).
+    //
     // The Select's option listbox renders through a portal, as a sibling
     // of the dialog in the DOM/accessibility tree, not a descendant of it
     // -- scoping an option locator to `dialog` (as the other locators
@@ -103,21 +112,26 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
     // needs on-screen coordinates to dispatch a pointer event at).
     // `.evaluate(el => el.click())` dispatches a real DOM click with no
     // such requirement; Radix handles it identically for selection.
-    // The `\b` word boundary matters too: getByRole's substring match
-    // normalizes whitespace, so a plain "Jam 1" would also match "Jam 10"
-    // and "Jam 11".
-    await dialog.getByLabel("Dari jam").click();
-    await student.page.getByRole("option", { name: /^Jam 1\b/ }).evaluate((el: HTMLElement) => {
+    const noneLeft = dialog.getByText(/^Jam pelajaran hari ini sudah selesai\./);
+    const startField = dialog.getByLabel("Dari jam");
+    await expect(startField.or(noneLeft).first()).toBeVisible();
+    await startField.click();
+    const options = student.page.getByRole("option");
+    await expect(options.first().or(noneLeft).first()).toBeVisible();
+    const offered = await options.count();
+    test.skip(
+      offered < 2,
+      `only ${String(offered)} lesson(s) left today on the real clock: the chain needs a lesson still running at the gate`,
+    );
+    await options.first().evaluate((el: HTMLElement) => {
       el.click();
     });
-    // Picking "Dari jam" (Jam 1) auto-fills "Sampai jam" with the same
-    // period (exit-permit-detail.tsx's CreateForm: `if (!endId)
-    // setEndId(v)`), but the API requires a real range -- end.Sequence >
-    // start.Sequence (exitpermit.go's validatePeriodRange), rejecting an
-    // equal start/end with a 400 PERIOD_RANGE_INVALID. Pick a later one
-    // explicitly.
+    // Picking "Dari jam" fills "Sampai jam" with the same lesson (a
+    // one-lesson permit is valid); the run spans the next one as well, so
+    // the window outlasts the approval chain. "Sampai jam" offers the
+    // start lesson first and every later one after it.
     await dialog.getByLabel("Sampai jam").click();
-    await student.page.getByRole("option", { name: /^Jam 2\b/ }).evaluate((el: HTMLElement) => {
+    await options.nth(1).evaluate((el: HTMLElement) => {
       el.click();
     });
     await dialog.getByRole("button", { name: "Ajukan", exact: true }).click();
@@ -188,12 +202,28 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
     await passGate(security.page, `sion:gate:${permitId}:${gateToken}`);
 
     // The student's already open card follows the gate scan live, to its
-    // exited state with the time they went through.
+    // exited state with the time they went through and the time they are
+    // due back (or were, once the permit's last lesson is over).
     await assertNoNavigation(student.page, async () => {
       await expect(student.page.getByText("Sudah keluar", { exact: true })).toBeVisible({
         timeout: 20_000,
       });
-      await expect(student.page.getByText(/^Keluar gerbang pukul \d{2}\.\d{2}$/)).toBeVisible();
+      await expect(
+        student.page.getByText(
+          /^Keluar gerbang pukul \d{2}\.\d{2} · (Kembali paling lambat|Seharusnya kembali) pukul \d{2}\.\d{2}$/,
+        ),
+      ).toBeVisible();
+    });
+
+    // The gate lists the student as not back yet; recording the return
+    // takes them off the list and turns the student's card to "Sudah kembali".
+    const outList = security.page.locator("section").filter({ hasText: "Belum kembali" });
+    await outList
+      .getByRole("button", { name: `Catat kembali: ${newcomer.name}` })
+      .click({ timeout: 20_000 });
+    await expect(security.page.getByText(`${newcomer.name} tercatat kembali`)).toBeVisible();
+    await expect(student.page.getByText("Sudah kembali", { exact: true })).toBeVisible({
+      timeout: 20_000,
     });
   } finally {
     await closeAll(

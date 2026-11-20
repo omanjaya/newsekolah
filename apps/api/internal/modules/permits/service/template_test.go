@@ -50,6 +50,12 @@ func TestBuiltinLeaveLetterCategoryText(t *testing.T) {
 		require.NoError(t, err)
 		require.Contains(t, string(out.HTML), "(2 hari sekolah)")
 	})
+
+	t.Run("a reason ending in a full stop gets a single full stop", func(t *testing.T) {
+		html := render(t, domain.LeaveRequest{Category: domain.CategoryOther, Reason: "Acara keluarga ke luar kota. ", StartsOn: day, EndsOn: day})
+		require.Contains(t, html, "dengan keterangan Lainnya: Acara keluarga ke luar kota.</p>")
+		require.NotContains(t, html, "kota..")
+	})
 }
 
 func TestValidateTemplateBody(t *testing.T) {

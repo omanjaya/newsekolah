@@ -20,6 +20,7 @@ const EXIT_PERMIT_SELF_EVENTS = [
   "exit_permit.stage_changed",
   "exit_permit.issued",
   "exit_permit.exited",
+  "exit_permit.returned",
 ] as const;
 const LEAVE_REQUEST_SELF_EVENTS = ["leave_request.reviewed", "leave_request.issued"] as const;
 
@@ -75,8 +76,13 @@ export function useExitPermit(id: string) {
 export function useCreateExitPermit() {
   const invalidate = useInvalidatePermits();
   return useMutation({
-    mutationFn: (body: { destination: string; start_period_id: string; end_period_id: string }) =>
-      getApiClient().POST("/v1/exit-permits", { body }),
+    mutationFn: (body: {
+      destination: string;
+      start_period_id: string;
+      end_period_id: string;
+      /** False when the student goes home and is not expected back today. */
+      return_required: boolean;
+    }) => getApiClient().POST("/v1/exit-permits", { body }),
     onSuccess: invalidate,
     meta: { successMessage: t("permits.created") },
   });

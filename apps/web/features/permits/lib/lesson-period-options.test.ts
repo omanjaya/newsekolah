@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   endAfterStartChange,
   endPeriodOptions,
+  lessonEnded,
   lessonPeriodOptions,
+  upcomingLessonPeriods,
 } from "./lesson-period-options";
 
 const periods = [
@@ -23,9 +25,39 @@ describe("lessonPeriodOptions", () => {
   });
 });
 
+describe("upcomingLessonPeriods", () => {
+  it("drops the lessons that have already ended", () => {
+    expect(upcomingLessonPeriods(periods, "08:10").map((p) => p.id)).toEqual(["p2", "p3"]);
+  });
+
+  it("drops a lesson at the minute it ends, as the API does", () => {
+    expect(upcomingLessonPeriods(periods, "07:45").map((p) => p.id)).toEqual(["b1", "p2", "p3"]);
+    expect(upcomingLessonPeriods(periods, "07:44").map((p) => p.id)).toEqual([
+      "p1",
+      "b1",
+      "p2",
+      "p3",
+    ]);
+  });
+
+  it("leaves nothing once the school day is over", () => {
+    expect(upcomingLessonPeriods(periods, "11:30")).toEqual([]);
+  });
+});
+
+describe("lessonEnded", () => {
+  it("is true from the minute the lesson ends", () => {
+    expect(lessonEnded({ ends_at: "08:45:00" }, "08:44")).toBe(false);
+    expect(lessonEnded({ ends_at: "08:45:00" }, "08:45")).toBe(true);
+  });
+});
+
 describe("endPeriodOptions", () => {
   const options = lessonPeriodOptions(periods, "id");
 
+  // The API accepts a one-lesson range (start and end the same), so the
+  // start stays on offer as an end: during the day's last lesson it is the
+  // only range left.
   it("offers only the start lesson and those after it", () => {
     expect(endPeriodOptions(options, "p2").map((o) => o.value)).toEqual(["p2", "p3"]);
   });

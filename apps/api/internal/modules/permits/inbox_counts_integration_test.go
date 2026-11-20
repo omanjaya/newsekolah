@@ -79,7 +79,7 @@ func TestLeaveRequestCountMatchesReviewQueue(t *testing.T) {
 // permit only for the duty holder at its current stage.
 func TestLateAndExitCountsMatchQueues(t *testing.T) {
 	pg := dbtest.Start(t)
-	ctx := context.Background()
+	ctx := schoolMorning(t, context.Background())
 	w := seedRealtimeWorld(t, ctx, pg.AdminPool, "inbox-late-exit-"+uuid.NewString())
 	svc := buildRealtimeTestService(pg.AppPool, &fakeRealtimeHub{})
 

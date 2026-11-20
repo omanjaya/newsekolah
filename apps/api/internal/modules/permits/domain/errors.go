@@ -14,7 +14,7 @@ var (
 	ErrNotWorkflowSubject    = errors.New("only the workflow's own subject may perform this action")
 	ErrAcademicYearRequired  = errors.New("tenant has no active academic year")
 	ErrEnrollmentNotFound    = errors.New("student has no active enrollment")
-	ErrPeriodRangeInvalid    = errors.New("end period must be after start period")
+	ErrPeriodRangeInvalid    = errors.New("end period must not be before start period")
 	// ErrStageVerificationMismatch is an attempt to satisfy the current
 	// stage in a way its Verification does not allow: a scan on a manual
 	// stage, a manual review on a qr_scan stage, or the picket desk's
@@ -30,6 +30,10 @@ var (
 
 	ErrExitPermitNotIssued = errors.New("exit permit has not been issued yet")
 	ErrExitPermitExited    = errors.New("exit permit already exited")
+	// ErrExitPermitNotAwaitingReturn is a return recorded for a permit
+	// whose student has not gone out, is not expected back, or is
+	// already back.
+	ErrExitPermitNotAwaitingReturn = errors.New("exit permit is not awaiting the student's return")
 
 	ErrLeaveRequestDateRangeInvalid = errors.New("leave request end date must not be before start date")
 	ErrLeaveRequestNotReviewable    = errors.New("leave request is not awaiting review")
@@ -54,6 +58,11 @@ var (
 	ErrDocumentRevoked      = errors.New("issued document has been revoked")
 
 	ErrExitPermitAlreadyToday = errors.New("student already has an exit permit for today")
+	// ErrExitPermitPeriodPassed refuses an exit permit, or its gate QR,
+	// for lesson periods that have already ended on the school's own
+	// clock: the student cannot leave during a window that is over, and
+	// the gate scan would rewrite those periods' recorded attendance.
+	ErrExitPermitPeriodPassed = errors.New("the exit permit's lesson periods have already ended")
 	// ErrStudentOnLeaveToday refuses an exit permit for a student an issued
 	// leave letter already marks absent for the day.
 	ErrStudentOnLeaveToday     = errors.New("student is on an issued leave today")

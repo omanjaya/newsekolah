@@ -480,6 +480,9 @@ type Querier interface {
 	CreateWebhookDelivery(ctx context.Context, arg CreateWebhookDeliveryParams) (IntegrationWebhookDelivery, error)
 	CreateWebhookEndpoint(ctx context.Context, arg CreateWebhookEndpointParams) (IntegrationWebhookEndpoint, error)
 	CreateWorkflowDefinition(ctx context.Context, arg CreateWorkflowDefinitionParams) (WorkflowDefinition, error)
+	// occurred_at comes from the service clock so a simulated time
+	// (clock.WithTime) reaches the stage history; a null keeps the column
+	// default for callers without a time.
 	CreateWorkflowEvent(ctx context.Context, arg CreateWorkflowEventParams) (WorkflowEvent, error)
 	// local_date is the tenant-local calendar day the caller computed at
 	// creation time (service.tenantNow), stored explicitly so
@@ -1223,6 +1226,13 @@ type Querier interface {
 	// for each (student, date) across that date's submitted sessions, the raw
 	// input to attendance/domain.ComputeDailyStatus.
 	ListEntryStatusesForStudentsDates(ctx context.Context, arg ListEntryStatusesForStudentsDatesParams) ([]ListEntryStatusesForStudentsDatesRow, error)
+	// The gate's "not back yet" list: permits that went through the gate on
+	// the tenant-local day sqlc.arg('today') (workflow_instances.local_date,
+	// the day the permit was opened, which is the exit day) and whose student
+	// has not been recorded back. A permit without expected_return_at exited
+	// before returns were tracked (or came from SION) and is never listed.
+	// The earliest due return first; matches ix_exit_permits_awaiting_return.
+	ListExitPermitsAwaitingReturn(ctx context.Context, arg ListExitPermitsAwaitingReturnParams) ([]ListExitPermitsAwaitingReturnRow, error)
 	// The permit rows of a page of a student's own exit permit instances.
 	ListExitPermitsByInstances(ctx context.Context, arg ListExitPermitsByInstancesParams) ([]ExitPermit, error)
 	// Missing feature (docs/analysis/backend-inventory.md 1.15): a queue for
@@ -1234,6 +1244,10 @@ type Querier interface {
 	// current_stage is null once every stage has passed (an approved permit
 	// waiting at the gate): the index is then past the last stage.
 	ListExitPermitsForApproval(ctx context.Context, arg ListExitPermitsForApprovalParams) ([]ListExitPermitsForApprovalRow, error)
+	// The year's dates are the school's calendar days, so they are compared
+	// with local_date (the tenant-local day the permit was opened), not with
+	// opened_at: midnight UTC would cut the first hours of a UTC+7 school's
+	// first day off the report and add the first hours after its last day.
 	ListExitPermitsForReport(ctx context.Context, arg ListExitPermitsForReportParams) ([]ListExitPermitsForReportRow, error)
 	// The guard's lookup list: everyone expected on a given day, soonest first.
 	ListExpectedGuests(ctx context.Context, arg ListExpectedGuestsParams) ([]VisitorExpectedGuest, error)
@@ -1296,6 +1310,9 @@ type Querier interface {
 	// counselor/leadership stage's is "duty:<slug>" (domain.DefaultStages) --
 	// so a homeroom teacher no longer sees requests that already moved past
 	// their stage to counselor, and vice versa.
+	//
+	// A request whose current stage the caller may never approve because they
+	// approved an earlier stage its distinct_from names is left out.
 	//
 	// sqlc.arg('today') is the tenant-local date (s.tenantNow), not
 	// current_date: the Postgres session timezone is never set per tenant.
@@ -1576,8 +1593,15 @@ type Querier interface {
 	MarkAllNotificationsRead(ctx context.Context, arg MarkAllNotificationsReadParams) error
 	MarkAnnouncementRead(ctx context.Context, arg MarkAnnouncementReadParams) error
 	MarkDigestSent(ctx context.Context, arg MarkDigestSentParams) error
+	// expected_return_at is null for a permit that needs no return.
 	MarkExitPermitExited(ctx context.Context, arg MarkExitPermitExitedParams) (ExitPermit, error)
 	MarkExitPermitIssued(ctx context.Context, arg MarkExitPermitIssuedParams) (ExitPermit, error)
+	// Records the student back through the gate. Only a permit that exited,
+	// expects a tracked return (expected_return_at is null on permits that
+	// exited before returns were tracked) and has none yet matches, so a
+	// second record (or a concurrent one) finds no row instead of moving the
+	// time.
+	MarkExitPermitReturned(ctx context.Context, arg MarkExitPermitReturnedParams) (ExitPermit, error)
 	MarkLateArrivalCompleted(ctx context.Context, arg MarkLateArrivalCompletedParams) (LateArrival, error)
 	MarkLoanFinePaid(ctx context.Context, arg MarkLoanFinePaidParams) (LibraryLoan, error)
 	MarkLoanLost(ctx context.Context, arg MarkLoanLostParams) (LibraryLoan, error)

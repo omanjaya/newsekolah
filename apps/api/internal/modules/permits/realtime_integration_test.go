@@ -137,6 +137,19 @@ func buildRealtimeTestService(pool *pgxpool.Pool, hub service.RealtimePublisher)
 	)
 }
 
+// schoolMorning is ctx with the business clock (clock.WithTime) at 07:10
+// today in Asia/Jakarta, seedRealtimeWorld's zone: inside the first period
+// it seeds (07:00-08:00). A student may only ask to leave a lesson that has
+// not ended yet (domain.ErrExitPermitPeriodPassed), so an exit-permit test
+// running on the real clock would fail every afternoon.
+func schoolMorning(t *testing.T, ctx context.Context) context.Context {
+	t.Helper()
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	require.NoError(t, err)
+	y, m, d := time.Now().In(loc).Date()
+	return clock.WithTime(ctx, time.Date(y, m, d, 7, 10, 0, 0, loc))
+}
+
 // realtimeWorld is one tenant with an active academic year, one class, one
 // enrolled student, a duty_teacher (with a teacher_profiles row, so
 // approver_rule "any_teacher" accepts them) and a counselor holding a
@@ -376,7 +389,7 @@ func exitPermitDefinitionStages() []domain.Stage {
 // (who now has a gate scan to do).
 func TestExitPermitLifecyclePublishesStageAndUserTopics(t *testing.T) {
 	pg := dbtest.Start(t)
-	ctx := context.Background()
+	ctx := schoolMorning(t, context.Background())
 	w := seedRealtimeWorld(t, ctx, pg.AdminPool, "exit-lifecycle-"+uuid.NewString())
 
 	hub := &fakeRealtimeHub{}
@@ -430,7 +443,7 @@ func TestExitPermitLifecyclePublishesStageAndUserTopics(t *testing.T) {
 // what CreateExitPermit already published.
 func TestExitPermitScanPublishesNothingOnBadToken(t *testing.T) {
 	pg := dbtest.Start(t)
-	ctx := context.Background()
+	ctx := schoolMorning(t, context.Background())
 	w := seedRealtimeWorld(t, ctx, pg.AdminPool, "exit-fail-"+uuid.NewString())
 
 	hub := &fakeRealtimeHub{}

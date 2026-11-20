@@ -86,8 +86,8 @@ func firstPeriod(periods map[int64]periodMigrationResult) (periodMigrationResult
 	return best, found
 }
 
-// migrateExitPermits migrates final-state student_permits rows (see
-// SionExitPermit's doc comment for which statuses count as final) to
+// migrateExitPermits migrates student_permits rows past the gate or over (see
+// SionExitPermit's doc comment for which statuses are fetched) to
 // workflow_instances (kind exit_permit) plus their exit_permits detail row.
 // Idempotency key: (tenant_id, subject_user_id, opened_at's date, kind) via
 // select-then-insert, since a student_permits row has no other stable
@@ -135,8 +135,11 @@ func (st *Store) migrateExitPermits(
 			defaultedPeriods++
 		}
 
+		// 'out' is a student who went through the gate and never checked
+		// back in: the exit completed, only the return is missing, which
+		// returned_at = null below keeps.
 		status := "expired"
-		if p.Status == "completed" {
+		if p.Status == "completed" || p.Status == "out" {
 			status = "completed"
 		}
 		issuedAtTime, hasIssuedAt := firstValidTime(p.WakaApprovedAt, p.BKApprovedAt, p.TeacherApprovedAt, p.PicketApprovedAt)
@@ -176,6 +179,15 @@ func (st *Store) migrateExitPermits(
 		if p.SecurityOutAt.Valid {
 			exitedAt = mapping.LocalToUTC(p.SecurityOutAt.Time, loc)
 		}
+		// SION's check-in at the gate is the return; a permit without
+		// return_required never expects one. expected_return_at stays null:
+		// SION never judged a return on time or late, and a permit without
+		// it is never listed as a student still out (an 'out' row from
+		// days ago would otherwise read as hours overdue).
+		var returnedAt any
+		if p.ReturnRequired && p.SecurityInAt.Valid {
+			returnedAt = mapping.LocalToUTC(p.SecurityInAt.Time, loc)
+		}
 		issuedAtArg := nullTimeArg(sql.NullTime{Time: issuedAtTime, Valid: hasIssuedAt})
 		openedAt := mapping.LocalToUTC(p.CreatedAt, loc)
 
@@ -204,8 +216,10 @@ func (st *Store) migrateExitPermits(
 				}
 				if _, err := st.tx.Exec(ctx,
 					`update exit_permits set destination = $1, start_period_id = $2, end_period_id = $3,
-					   issued_at = $4, exited_at = $5, security_user_id = $6 where instance_id = $7`,
+					   issued_at = $4, exited_at = $5, security_user_id = $6, return_required = $8, returned_at = $9
+					 where instance_id = $7`,
 					destination, startPeriod.targetPeriodID, endPeriod.targetPeriodID, issuedAtArg, exitedAt, securityUserID, instanceID,
+					p.ReturnRequired, returnedAt,
 				); err != nil {
 					return fmt.Errorf("update exit permit: %w", err)
 				}
@@ -226,11 +240,13 @@ func (st *Store) migrateExitPermits(
 			if _, err := st.tx.Exec(ctx,
 				`insert into exit_permits (
 				   instance_id, tenant_id, destination, start_period_id, end_period_id,
-				   issued_at, exited_at, security_user_id, student_name_snapshot, class_name_snapshot
-				 ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+				   issued_at, exited_at, security_user_id, student_name_snapshot, class_name_snapshot,
+				   return_required, returned_at
+				 ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
 				instanceID, tenantID, destination, startPeriod.targetPeriodID, endPeriod.targetPeriodID,
 				issuedAtArg, exitedAt, securityUserID,
 				mapping.Truncate(userNames[p.StudentID], 150), mapping.Truncate(className, 100),
+				p.ReturnRequired, returnedAt,
 			); err != nil {
 				return fmt.Errorf("create exit permit: %w", err)
 			}

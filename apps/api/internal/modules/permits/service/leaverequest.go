@@ -482,13 +482,15 @@ type leaveLetterExtras struct {
 // machine value for a custom template that branches on it.
 // "reason_detail" is the student's own text for an "other" request and
 // empty otherwise: every other category's reason is its fixed label
-// (domain.DefaultReasonFor), which would only repeat the category.
+// (domain.DefaultReasonFor), which would only repeat the category. Its
+// trailing full stops are trimmed because the sentence the built-in
+// template puts it in supplies its own ("ke luar kota.." otherwise).
 // "days" counts school days only: a weekend or holiday inside the range is
 // not a day of leave, and attendance records none for it.
 func leaveLetterVars(lr domain.LeaveRequest, x leaveLetterExtras) map[string]any {
 	detail := ""
 	if _, fixed := domain.DefaultReasonFor(lr.Category); !fixed {
-		detail = lr.Reason
+		detail = strings.TrimRight(strings.TrimSpace(lr.Reason), ". ")
 	}
 	return map[string]any{
 		"letter_number": x.number, "student_name": lr.StudentNameSnapshot, "class_name": lr.ClassNameSnapshot,

@@ -50,8 +50,10 @@ func TestMigration0120_UpDownUp_PreservesAndRebuildsLocalDate(t *testing.T) {
 	ctx := context.Background()
 	w := seedLocalDateWorld(t, ctx, pg.AdminPool, "migration-0120-"+uuid.NewString())
 
-	// 23:00 WITA on a known date -- a known tenant-local calendar day.
-	at := time.Date(2026, time.June, 10, 15, 0, 0, 0, time.UTC)
+	// 07:30 WITA on a known date -- a known tenant-local calendar day,
+	// inside the first seeded period (a student may only ask to leave a
+	// lesson that has not ended yet).
+	at := time.Date(2026, time.June, 9, 23, 30, 0, 0, time.UTC)
 	sync := &fakeAttendanceSync{}
 	svc := buildExitPermitServiceWithClock(pg.AppPool, sync, clock.Frozen{At: at})
 

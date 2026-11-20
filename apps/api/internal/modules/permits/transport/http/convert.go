@@ -44,6 +44,8 @@ var (
 	errStageMismatch       = httpx.NewError(http.StatusConflict, "WORKFLOW_STAGE_MISMATCH")
 	errLeaveReason         = httpx.NewError(http.StatusBadRequest, "LEAVE_REASON_REQUIRED")
 	errStudentOnLeave      = httpx.NewError(http.StatusConflict, "STUDENT_ON_LEAVE_TODAY")
+	errExitPeriodPassed    = httpx.NewError(http.StatusUnprocessableEntity, "EXIT_PERMIT_PERIOD_PASSED")
+	errExitNotAwaitReturn  = httpx.NewError(http.StatusConflict, "EXIT_PERMIT_NOT_AWAITING_RETURN")
 )
 
 var permitErrorMap = map[error]error{
@@ -86,6 +88,8 @@ var permitErrorMap = map[error]error{
 	domain.ErrReasonTooLong:                errReasonTooLong,
 	domain.ErrLeaveReasonRequired:          errLeaveReason,
 	domain.ErrStudentOnLeaveToday:          errStudentOnLeave,
+	domain.ErrExitPermitPeriodPassed:       errExitPeriodPassed,
+	domain.ErrExitPermitNotAwaitingReturn:  errExitNotAwaitReturn,
 }
 
 func mapError(err error) error {
@@ -222,10 +226,36 @@ func toAPIToken(r domain.IssueResult, now time.Time) api.IssuedScanToken {
 }
 
 func toAPIExitPermit(inst domain.Instance, def domain.Definition, p domain.ExitPermit, events []domain.Event) api.ExitPermitDetail {
-	return api.ExitPermitDetail{
+	out := api.ExitPermitDetail{
 		Instance: toAPIInstance(inst, def, events), Destination: p.Destination, StartPeriodId: p.StartPeriodID, EndPeriodId: p.EndPeriodID,
 		IssuedAt: p.IssuedAt, ExitedAt: p.ExitedAt, StudentName: p.StudentNameSnapshot, ClassName: p.ClassNameSnapshot,
+		ReturnRequired: p.ReturnRequired, ExpectedReturnAt: p.ExpectedReturnAt, ReturnedAt: p.ReturnedAt,
 	}
+	// No verdict without a due time: a return imported from SION was never
+	// judged on time or late.
+	if p.ReturnedAt != nil && p.ExpectedReturnAt != nil {
+		late := p.ReturnedLate()
+		out.ReturnedLate = &late
+	}
+	return out
+}
+
+func toAPIExitPermitAwaitingReturn(it service.ExitPermitAwaitingReturn, now time.Time) api.ExitPermitAwaitingReturn {
+	var exitedAt time.Time
+	if it.ExitedAt != nil {
+		exitedAt = *it.ExitedAt
+	}
+	return api.ExitPermitAwaitingReturn{
+		InstanceId: it.InstanceID, StudentUserId: it.SubjectUserID, ClassId: uuidPtr(it.ClassID),
+		Destination: it.Destination, StudentName: it.StudentNameSnapshot, ClassName: it.ClassNameSnapshot,
+		ExitedAt: exitedAt, ExpectedReturnAt: it.ExpectedReturnAt, Overdue: it.IsOverdue(now),
+	}
+}
+
+// noReturn reads the optional return_required request field, which
+// defaults to true: only an explicit false means the student goes home.
+func noReturn(returnRequired *bool) bool {
+	return returnRequired != nil && !*returnRequired
 }
 
 func toAPILateArrival(d service.LateArrivalDetail) api.LateArrivalDetail {
@@ -243,6 +273,7 @@ func toAPIMyExitPermit(it service.MyExitPermit) api.MyExitPermit {
 		CurrentStage: inst.CurrentStage, Stages: inst.Stages, SubjectUserId: inst.SubjectUserId,
 		ClassId: inst.ClassId, OpenedAt: inst.OpenedAt, ClosedAt: inst.ClosedAt, Events: inst.Events,
 		Destination: it.Permit.Destination, ExitedAt: it.Permit.ExitedAt,
+		ReturnRequired: it.Permit.ReturnRequired, ExpectedReturnAt: it.Permit.ExpectedReturnAt, ReturnedAt: it.Permit.ReturnedAt,
 	}
 }
 

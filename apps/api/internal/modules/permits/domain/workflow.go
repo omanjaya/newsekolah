@@ -165,6 +165,8 @@ const (
 	NoteOpened                = "opened"
 	NoteLetterIssued          = "letter issued"
 	NoteGateExit              = "gate exit"
+	NoteGateReturn            = "gate return"
+	NoteGateReturnLate        = "gate return late"
 	NoteCancelledBySubject    = "cancelled by student"
 	NoteReviewedByDutyTeacher = "reviewed by duty teacher"
 )
@@ -172,7 +174,7 @@ const (
 // SystemNotes lists every system log label, for IsSystemNote and the
 // source check that keeps new labels from reaching readers unflagged.
 var SystemNotes = []string{
-	NoteOpened, NoteLetterIssued, NoteGateExit, NoteCancelledBySubject, NoteReviewedByDutyTeacher,
+	NoteOpened, NoteLetterIssued, NoteGateExit, NoteGateReturn, NoteGateReturnLate, NoteCancelledBySubject, NoteReviewedByDutyTeacher,
 }
 
 // IsSystemNote reports whether note is one of the service's own log

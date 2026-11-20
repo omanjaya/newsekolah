@@ -60,6 +60,7 @@ import {
   useDeskApprovals,
   useExitPermitDetailLive,
   useExitPermitReviewQueueLive,
+  useExitPermitsAwaitingReturnLive,
   useLateArrivalQueueLive,
   useLeaveReviewQueueLive,
   useLeaveRequestDetailLive,
@@ -169,6 +170,7 @@ describe("useMyExitPermitsLive and useExitPermitDetailLive", () => {
       "exit_permit.stage_changed",
       "exit_permit.issued",
       "exit_permit.exited",
+      "exit_permit.returned",
     ]);
     expect(state.registrations[0]?.queryKeys).toContainEqual(["permits", "exit-permits"]);
   });
@@ -183,6 +185,32 @@ describe("useMyExitPermitsLive and useExitPermitDetailLive", () => {
       "exit-permit",
       "permit-1",
     ]);
+  });
+});
+
+describe("useExitPermitsAwaitingReturnLive", () => {
+  it("follows the security duty topic for every exit and return", () => {
+    renderHook(() => {
+      useExitPermitsAwaitingReturnLive(true);
+    });
+
+    expect(state.topicCalls).toEqual(["duty:security"]);
+    expect(state.registrations[0]?.eventTypes).toEqual([
+      "exit_permit.exited",
+      "exit_permit.returned",
+    ]);
+    expect(state.registrations[0]?.queryKeys).toContainEqual([
+      "permits",
+      "exit-permits-awaiting-return",
+    ]);
+  });
+
+  it("subscribes nothing while disabled", () => {
+    renderHook(() => {
+      useExitPermitsAwaitingReturnLive(false);
+    });
+
+    expect(state.topicCalls).toEqual([undefined]);
   });
 });
 

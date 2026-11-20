@@ -6,6 +6,7 @@ import { formatDateTime, formatTime } from "@newsekolah/i18n";
 import {
   Button,
   Card,
+  Checkbox,
   ConfirmDialog,
   DataList,
   DataListItem,
@@ -33,6 +34,7 @@ import { useEffect, useRef, useState } from "react";
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
+import { useBusinessNow } from "../../../lib/simulation/clock";
 import { usePeriodsQuery } from "../../reference/api";
 import {
   type ExitPermitDetail as ExitPermitDetailData,
@@ -43,12 +45,16 @@ import {
   useIssueGateTokenMutation,
   useScanExitPermitStageMutation,
 } from "../api";
+import { exitReturnState } from "../lib/exit-return";
 import {
   endAfterStartChange,
   endPeriodOptions,
   lessonPeriodOptions,
+  upcomingLessonPeriods,
 } from "../lib/lesson-period-options";
+import { usePermitLessonsOver, useSchoolTime } from "../lib/use-school-time";
 
+import { ExitedCard, useReturnText } from "./exit-permit-return";
 import { StageScanDialog } from "./stage-scan-dialog";
 import { WorkflowStepper, WorkflowSteps } from "./workflow-stepper";
 
@@ -65,10 +71,19 @@ export function CreateForm({
   const apiErrorMessage = useApiErrorMessage();
   const periods = usePeriodsQuery();
   const create = useCreateExitPermitMutation();
-  const options = lessonPeriodOptions(periods.data?.data ?? [], locale);
+  // Only the lessons still running or to come on the school's clock (the
+  // simulated one under the time simulation): the API refuses a window
+  // that is already over.
+  const schoolTime = useSchoolTime();
+  const options = lessonPeriodOptions(
+    upcomingLessonPeriods(periods.data?.data ?? [], schoolTime),
+    locale,
+  );
+  const dayOver = periods.isSuccess && options.length === 0;
   const [destination, setDestination] = useState("");
   const [startId, setStartId] = useState("");
   const [endId, setEndId] = useState("");
+  const [returns, setReturns] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attempted, setAttempted] = useState(false);
 
@@ -81,6 +96,7 @@ export function CreateForm({
         destination: destination.trim(),
         start_period_id: startId,
         end_period_id: endId,
+        return_required: returns,
       });
       toast.success(t("created"));
       onDone(detail.instance.id);
@@ -100,6 +116,7 @@ export function CreateForm({
       }}
     >
       {error && <FormError>{error}</FormError>}
+      {dayOver && <p className="text-body-sm text-fg-muted">{t("noPeriodsLeft")}</p>}
       <FormSection>
         <Field
           label={t("destination")}
@@ -135,6 +152,15 @@ export function CreateForm({
             placeholder={t("pick")}
           />
         </Field>
+        <Checkbox
+          containerClassName="col-span-full"
+          checked={returns}
+          onCheckedChange={(value) => {
+            setReturns(value === true);
+          }}
+          label={t("returns")}
+          description={t("returnsHint")}
+        />
       </FormSection>
       <p className="text-body-sm text-fg-muted">{t("stagesHint")}</p>
       <DialogFooter>
@@ -193,6 +219,8 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
   const gate = useIssueGateTokenMutation();
   const scan = useScanExitPermitStageMutation();
   const periodRange = usePeriodRange(data);
+  const lessonsOver = usePermitLessonsOver(data);
+  const now = useBusinessNow();
   const [scanning, setScanning] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const gateQrRef = useRef<HTMLDivElement>(null);
@@ -213,24 +241,25 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
   const opened = formatTime(inst.opened_at, { locale, timeZone: me?.tenant.timezone });
   const meta = [periodRange, t("openedAt", { time: opened })].filter(Boolean).join(" · ");
 
+  const timeZone = me?.tenant.timezone;
   if (data.exited_at) {
     return (
-      <HeroCard
-        tone="neutral"
-        eyebrow={t("hero.exitedEyebrow")}
-        title={data.destination}
-        meta={t("hero.exitedAt", {
-          time: formatTime(data.exited_at, { locale, timeZone: me?.tenant.timezone }),
-        })}
+      <ExitedCard
+        destination={data.destination}
+        exitedAt={formatTime(data.exited_at, { locale, timeZone })}
+        state={exitReturnState(data, now)}
       />
     );
   }
 
   const approved = inst.status === "approved";
-  const timeZone = me?.tenant.timezone;
+  // An approved permit whose lessons are over has no gate QR left to show:
+  // say so instead of offering a button that can only fail.
+  const gateClosed = approved && lessonsOver && !gate.data;
   const scanStage = inst.status === "in_progress" && stage?.verification === "qr_scan";
   return (
     <HeroCard
+      tone={gateClosed ? "neutral" : "accent-soft"}
       eyebrow={approved ? t("hero.approvedEyebrow") : t("hero.activeEyebrow")}
       chip={
         approved
@@ -254,7 +283,7 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
           >
             {t("hero.scanStage", { stage: stage.label })}
           </Button>
-        ) : approved && !gate.data ? (
+        ) : approved && !gate.data && !lessonsOver ? (
           <Button
             size="lg"
             className="w-full sm:w-auto"
@@ -281,6 +310,7 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
         ) : undefined
       }
     >
+      {gateClosed && <p className="text-body-sm text-fg-muted">{t("hero.lessonsOver")}</p>}
       {approved && gate.data && (
         <div ref={gateQrRef} className="mt-3 scroll-mt-4">
           <QrPanel
@@ -378,6 +408,7 @@ export function ExitPermitDetail({ id }: { id: string }): ReactElement {
   const { me } = useSession();
   const { data, isLoading, error, refetch } = useExitPermitQuery(id);
   const periodRange = usePeriodRange(data);
+  const returnText = useReturnText(data);
 
   if (isLoading) return <SkeletonDetail rows={3} />;
   if (error || !data) return <QueryError retry={refetch} error={error} />;
@@ -401,6 +432,7 @@ export function ExitPermitDetail({ id }: { id: string }): ReactElement {
             {formatDateTime(data.exited_at, { locale, timeZone })}
           </DataListItem>
         )}
+        {returnText && <DataListItem label={t("returnLabel")}>{returnText}</DataListItem>}
       </DataList>
     </div>
   );

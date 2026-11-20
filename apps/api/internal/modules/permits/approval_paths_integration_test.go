@@ -64,7 +64,7 @@ func seedLeadership(t *testing.T, ctx context.Context, pool *pgxpool.Pool, w rea
 // single use.
 func TestDeskTokenApprovesExitPermitDutyStage(t *testing.T) {
 	pg := dbtest.Start(t)
-	ctx := context.Background()
+	ctx := schoolMorning(t, context.Background())
 	w := seedRealtimeWorld(t, ctx, pg.AdminPool, "desk-exit-"+uuid.NewString())
 	svc := buildRealtimeTestService(pg.AppPool, &fakeRealtimeHub{})
 	_, err := svc.ReplaceDefinition(ctx, w.tenantID, domain.KindExitPermit, exitPermitDefinitionStages(), map[string]any{}, w.dutyTeacherID)
@@ -105,7 +105,7 @@ func TestDeskTokenApprovesExitPermitDutyStage(t *testing.T) {
 // unconsumed, so it cannot have been spent on the refusal either.
 func TestDeskTokenOnlyAdvancesAnyTeacherExitStage(t *testing.T) {
 	pg := dbtest.Start(t)
-	ctx := context.Background()
+	ctx := schoolMorning(t, context.Background())
 	w := seedRealtimeWorld(t, ctx, pg.AdminPool, "desk-scope-"+uuid.NewString())
 	svc := buildRealtimeTestService(pg.AppPool, &fakeRealtimeHub{})
 	_, err := svc.ReplaceDefinition(ctx, w.tenantID, domain.KindExitPermit, exitPermitDefinitionStages(), map[string]any{}, w.dutyTeacherID)
@@ -133,7 +133,7 @@ func TestDeskTokenOnlyAdvancesAnyTeacherExitStage(t *testing.T) {
 // approve two stages a chain requires different people for.
 func TestDeskTokenChecksDistinctFrom(t *testing.T) {
 	pg := dbtest.Start(t)
-	ctx := context.Background()
+	ctx := schoolMorning(t, context.Background())
 	w := seedRealtimeWorld(t, ctx, pg.AdminPool, "desk-distinct-"+uuid.NewString())
 	svc := buildRealtimeTestService(pg.AppPool, &fakeRealtimeHub{})
 	stages := []domain.Stage{
@@ -286,7 +286,7 @@ func TestLateArrivalQueueFollowsTheCurrentStage(t *testing.T) {
 // approver already chose the student, sends no such push.
 func TestDeskTokenTellsItsIssuer(t *testing.T) {
 	pg := dbtest.Start(t)
-	ctx := context.Background()
+	ctx := schoolMorning(t, context.Background())
 	w := seedRealtimeWorld(t, ctx, pg.AdminPool, "desk-issuer-"+uuid.NewString())
 	hub := &fakeRealtimeHub{}
 	svc := buildRealtimeTestService(pg.AppPool, hub)

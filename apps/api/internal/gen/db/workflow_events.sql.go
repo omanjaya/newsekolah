@@ -14,24 +14,28 @@ import (
 
 const createWorkflowEvent = `-- name: CreateWorkflowEvent :one
 insert into workflow_events (
-  tenant_id, instance_id, stage_key, from_status, to_status, actor_user_id, verification, scan_token_id, note
+  tenant_id, instance_id, stage_key, from_status, to_status, actor_user_id, verification, scan_token_id, note, occurred_at
 )
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, coalesce($10::timestamptz, now()))
 returning id, tenant_id, instance_id, stage_key, from_status, to_status, actor_user_id, verification, scan_token_id, note, occurred_at
 `
 
 type CreateWorkflowEventParams struct {
-	TenantID     uuid.UUID   `json:"tenant_id"`
-	InstanceID   uuid.UUID   `json:"instance_id"`
-	StageKey     pgtype.Text `json:"stage_key"`
-	FromStatus   string      `json:"from_status"`
-	ToStatus     string      `json:"to_status"`
-	ActorUserID  pgtype.UUID `json:"actor_user_id"`
-	Verification string      `json:"verification"`
-	ScanTokenID  pgtype.UUID `json:"scan_token_id"`
-	Note         pgtype.Text `json:"note"`
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	InstanceID   uuid.UUID          `json:"instance_id"`
+	StageKey     pgtype.Text        `json:"stage_key"`
+	FromStatus   string             `json:"from_status"`
+	ToStatus     string             `json:"to_status"`
+	ActorUserID  pgtype.UUID        `json:"actor_user_id"`
+	Verification string             `json:"verification"`
+	ScanTokenID  pgtype.UUID        `json:"scan_token_id"`
+	Note         pgtype.Text        `json:"note"`
+	OccurredAt   pgtype.Timestamptz `json:"occurred_at"`
 }
 
+// occurred_at comes from the service clock so a simulated time
+// (clock.WithTime) reaches the stage history; a null keeps the column
+// default for callers without a time.
 func (q *Queries) CreateWorkflowEvent(ctx context.Context, arg CreateWorkflowEventParams) (WorkflowEvent, error) {
 	row := q.db.QueryRow(ctx, createWorkflowEvent,
 		arg.TenantID,
@@ -43,6 +47,7 @@ func (q *Queries) CreateWorkflowEvent(ctx context.Context, arg CreateWorkflowEve
 		arg.Verification,
 		arg.ScanTokenID,
 		arg.Note,
+		arg.OccurredAt,
 	)
 	var i WorkflowEvent
 	err := row.Scan(

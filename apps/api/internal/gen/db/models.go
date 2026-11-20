@@ -386,17 +386,21 @@ type Enrollment struct {
 }
 
 type ExitPermit struct {
-	InstanceID          uuid.UUID          `json:"instance_id"`
-	TenantID            uuid.UUID          `json:"tenant_id"`
-	Destination         string             `json:"destination"`
-	StartPeriodID       uuid.UUID          `json:"start_period_id"`
-	EndPeriodID         uuid.UUID          `json:"end_period_id"`
-	IssuedAt            pgtype.Timestamptz `json:"issued_at"`
-	GateTokenID         pgtype.UUID        `json:"gate_token_id"`
-	ExitedAt            pgtype.Timestamptz `json:"exited_at"`
-	SecurityUserID      pgtype.UUID        `json:"security_user_id"`
-	StudentNameSnapshot string             `json:"student_name_snapshot"`
-	ClassNameSnapshot   string             `json:"class_name_snapshot"`
+	InstanceID           uuid.UUID          `json:"instance_id"`
+	TenantID             uuid.UUID          `json:"tenant_id"`
+	Destination          string             `json:"destination"`
+	StartPeriodID        uuid.UUID          `json:"start_period_id"`
+	EndPeriodID          uuid.UUID          `json:"end_period_id"`
+	IssuedAt             pgtype.Timestamptz `json:"issued_at"`
+	GateTokenID          pgtype.UUID        `json:"gate_token_id"`
+	ExitedAt             pgtype.Timestamptz `json:"exited_at"`
+	SecurityUserID       pgtype.UUID        `json:"security_user_id"`
+	StudentNameSnapshot  string             `json:"student_name_snapshot"`
+	ClassNameSnapshot    string             `json:"class_name_snapshot"`
+	ReturnRequired       bool               `json:"return_required"`
+	ExpectedReturnAt     pgtype.Timestamptz `json:"expected_return_at"`
+	ReturnedAt           pgtype.Timestamptz `json:"returned_at"`
+	ReturnSecurityUserID pgtype.UUID        `json:"return_security_user_id"`
 }
 
 type Extracurricular struct {
