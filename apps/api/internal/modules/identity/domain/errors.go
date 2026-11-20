@@ -55,8 +55,9 @@ var (
 	// same duty to the same person for the same scope in one academic
 	// year, such as a double submitted "Beri tugas".
 	ErrDutyAssignmentExists = errors.New("the user already holds this duty for this scope")
-	// ErrInvalidDutyDateRange is a missing start date or an end date before
-	// the start date.
+	// ErrDutyStartRequired is an assignment written without a start date.
+	ErrDutyStartRequired = errors.New("duty assignment needs a start date")
+	// ErrInvalidDutyDateRange is an end date before the start date.
 	ErrInvalidDutyDateRange = errors.New("duty assignment ends before it starts")
 
 	// Impersonation

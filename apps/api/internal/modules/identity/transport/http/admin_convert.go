@@ -48,6 +48,7 @@ var adminErrorMap = map[error]error{
 	domain.ErrAssigneeNotEligible:         httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "user_id", Code: "NOT_TEACHER_OR_STAFF"}),
 	domain.ErrTeacherAlreadyHomeroom:      httpx.ErrTeacherAlreadyHomeroom,
 	domain.ErrDutyAssignmentExists:        httpx.ErrDutyAssignmentExists,
+	domain.ErrDutyStartRequired:           httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "starts_on", Code: "REQUIRED"}),
 	domain.ErrInvalidDutyDateRange:        httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "ends_on", Code: "BEFORE_START"}),
 	domain.ErrCannotImpersonateSelf:       httpx.ErrImpersonationNotAllowed,
 	domain.ErrCannotImpersonateSuperAdmin: httpx.ErrImpersonationNotAllowed,
