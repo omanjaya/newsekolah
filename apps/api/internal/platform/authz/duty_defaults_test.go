@@ -33,7 +33,10 @@ func TestDutyTypeDefaultsAreWellFormed(t *testing.T) {
 
 // TestCounselorAndLeadershipReadMentorGroups: both may read a guru wali's
 // meeting notes (mentoring's MeetingNote.VisibleTo), so both duties open
-// every mentor group read-only. Neither manages the groups.
+// every mentor group read-only. view_mentoring is a full read grant, so it
+// also opens every student's snapshot (grades included), the profile's
+// overview and grades tabs and every term summary (docs/08-security.md).
+// Neither manages the groups, so neither writes notes or summaries.
 func TestCounselorAndLeadershipReadMentorGroups(t *testing.T) {
 	found := 0
 	for _, d := range DutyTypeDefaults() {

@@ -32,6 +32,25 @@ describe("visibleStudentProfileTabs", () => {
     expect(visibleStudentProfileTabs(canOnly(permission), [])).toEqual(expected);
   });
 
+  it("opens the overview and grades tabs to the counselor duty through view_mentoring", () => {
+    // The Guru BK duty defaults (apps/api/internal/platform/authz/duty_defaults.go):
+    // view_mentoring is a full read grant, so every counselor sees every
+    // student's snapshot and published grades (docs/08-security.md).
+    const tabs = visibleStudentProfileTabs(
+      canOnly(
+        "issue_leave_letters",
+        "view_reports",
+        "manage_counseling",
+        "issue_warning_letters",
+        "view_discipline",
+        "record_violations",
+        "view_mentoring",
+      ),
+      [],
+    );
+    expect(tabs).toEqual(["overview", "attendance", "grades", "discipline", "counseling"]);
+  });
+
   it("keeps counseling to the counseling permission", () => {
     const tabs = visibleStudentProfileTabs(
       canOnly("view_discipline", "view_mentoring", "view_reports", "view_users"),
