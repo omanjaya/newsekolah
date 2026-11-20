@@ -13,6 +13,7 @@ import { useCan } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { useGroupSizeLimitQuery, useMentorGroupMembersQuery, useMentorGroupQuery } from "../api";
+import { useMentorGroupsHref } from "../permissions";
 
 import { MentorGroupMembersPanel } from "./mentor-group-members-panel";
 import { MentorMeetingNotesPanel } from "./mentor-meeting-notes-panel";
@@ -33,6 +34,7 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
   );
 
   const group = useMentorGroupQuery(groupId);
+  const groupsHref = useMentorGroupsHref();
   const members = useMentorGroupMembersQuery(groupId);
   const teacherMap = useDirectoryNames([group.data?.mentor_user_id]);
 
@@ -41,7 +43,7 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
     return (
       <RecordNotFoundPage
         title={t("notFoundTitle")}
-        backHref="/mentoring/groups"
+        backHref={groupsHref}
         backLabel={t("backToGroups")}
       />
     );

@@ -42,6 +42,7 @@
     "label": "Batas jumlah anggota per kelompok",
     "hint": "Berlaku untuk semua kelompok mentoring di sekolah ini.",
     "submit": "Simpan",
+    "cancel": "Batal",
     "saved": "Batas anggota tersimpan"
   },
   "myGroups": {
@@ -170,8 +171,7 @@
     },
     "termSummary": {
       "title": "Rangkuman semester"
-    },
-    "notFoundTitle": "Siswa tidak ditemukan"
+    }
   },
   "termSummary": {
     "term": "Semester",

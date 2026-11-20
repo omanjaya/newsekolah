@@ -243,7 +243,13 @@ export function MentorGroupsView({
 
       <Dialog open={limitOpen} onOpenChange={setLimitOpen}>
         <DialogContent title={t("tabs.limit")} size="sm">
-          {limitOpen && <GroupSizeLimitPanel />}
+          {limitOpen && (
+            <GroupSizeLimitPanel
+              onDone={() => {
+                setLimitOpen(false);
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
