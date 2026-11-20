@@ -780,6 +780,7 @@ type Querier interface {
 	GetTenantTimezoneForPermits(ctx context.Context, id uuid.UUID) (string, error)
 	GetTitle(ctx context.Context, arg GetTitleParams) (LibraryTitle, error)
 	GetTitleByISBN(ctx context.Context, arg GetTitleByISBNParams) (LibraryTitle, error)
+	GetTitlesByIDs(ctx context.Context, arg GetTitlesByIDsParams) ([]LibraryTitle, error)
 	GetUserAdminByID(ctx context.Context, arg GetUserAdminByIDParams) (GetUserAdminByIDRow, error)
 	GetUserByID(ctx context.Context, arg GetUserByIDParams) (User, error)
 	GetUserByUsername(ctx context.Context, arg GetUserByUsernameParams) (User, error)

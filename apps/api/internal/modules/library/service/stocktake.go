@@ -460,18 +460,21 @@ func (s *Service) stocktakeReportNames(ctx context.Context, tenantID uuid.UUID, 
 	for _, m := range result.Misplaced {
 		copies = append(copies, m.Copy)
 	}
+	titleIDs := make([]uuid.UUID, 0, len(copies))
+	seen := make(map[uuid.UUID]bool, len(copies))
+	for _, c := range copies {
+		if !seen[c.TitleID] {
+			seen[c.TitleID] = true
+			titleIDs = append(titleIDs, c.TitleID)
+		}
+	}
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		for _, c := range copies {
-			if _, done := names.titles[c.TitleID]; done {
-				continue
-			}
-			title, found, err := s.repo.GetTitle(ctx, tenantID, c.TitleID)
-			if err != nil {
-				return err
-			}
-			if found {
-				names.titles[c.TitleID] = title.Title
-			}
+		titles, err := s.repo.GetTitlesByIDs(ctx, tenantID, titleIDs)
+		if err != nil {
+			return err
+		}
+		for _, title := range titles {
+			names.titles[title.ID] = title.Title
 		}
 		locations, err := s.repo.ListLocations(ctx, tenantID)
 		if err != nil {

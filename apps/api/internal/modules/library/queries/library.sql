@@ -38,6 +38,9 @@ returning *;
 -- name: GetTitle :one
 select * from library_titles where tenant_id = $1 and id = $2 and deleted_at is null;
 
+-- name: GetTitlesByIDs :many
+select * from library_titles where tenant_id = $1 and id = any(sqlc.arg(ids)::uuid[]) and deleted_at is null;
+
 -- name: GetTitleByISBN :one
 select * from library_titles where tenant_id = $1 and isbn = $2 and isbn <> '' and deleted_at is null limit 1;
 

@@ -136,6 +136,7 @@ type Repository interface {
 	RenameInheritedCopyCallNumbers(ctx context.Context, tenantID, titleID uuid.UUID, oldCallNumber, newCallNumber string) error
 	PublishTitleCopies(ctx context.Context, tenantID, titleID uuid.UUID) error
 	GetTitle(ctx context.Context, tenantID, id uuid.UUID) (domain.Title, bool, error)
+	GetTitlesByIDs(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]domain.Title, error)
 	GetTitleByISBN(ctx context.Context, tenantID uuid.UUID, isbn string) (domain.Title, bool, error)
 	DeleteTitle(ctx context.Context, tenantID, id uuid.UUID) (bool, error)
 	ListTitles(ctx context.Context, tenantID uuid.UUID, f TitleFilter, limit, offset int) ([]domain.Title, error)

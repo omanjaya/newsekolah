@@ -1290,6 +1290,69 @@ func (q *Queries) GetTitleByISBN(ctx context.Context, arg GetTitleByISBNParams) 
 	return i, err
 }
 
+const getTitlesByIDs = `-- name: GetTitlesByIDs :many
+select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, is_opac, control_number, responsibility, additional_authors, publish_place, edition, pages, illustration, dimensions, issn, ddc_number, call_number, subjects, literary_form, target_audience, notes, abstract, material_type_id, search_vector from library_titles where tenant_id = $1 and id = any($2::uuid[]) and deleted_at is null
+`
+
+type GetTitlesByIDsParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	Ids      []uuid.UUID `json:"ids"`
+}
+
+func (q *Queries) GetTitlesByIDs(ctx context.Context, arg GetTitlesByIDsParams) ([]LibraryTitle, error) {
+	rows, err := q.db.Query(ctx, getTitlesByIDs, arg.TenantID, arg.Ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LibraryTitle{}
+	for rows.Next() {
+		var i LibraryTitle
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.Title,
+			&i.Subtitle,
+			&i.Author,
+			&i.Publisher,
+			&i.PublishYear,
+			&i.Isbn,
+			&i.Classification,
+			&i.Language,
+			&i.CoverAssetID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.IsOpac,
+			&i.ControlNumber,
+			&i.Responsibility,
+			&i.AdditionalAuthors,
+			&i.PublishPlace,
+			&i.Edition,
+			&i.Pages,
+			&i.Illustration,
+			&i.Dimensions,
+			&i.Issn,
+			&i.DdcNumber,
+			&i.CallNumber,
+			&i.Subjects,
+			&i.LiteraryForm,
+			&i.TargetAudience,
+			&i.Notes,
+			&i.Abstract,
+			&i.MaterialTypeID,
+			&i.SearchVector,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const hasLoanHistory = `-- name: HasLoanHistory :one
 select exists(select 1 from library_loans where tenant_id = $1 and copy_id = $2)::bool
 `

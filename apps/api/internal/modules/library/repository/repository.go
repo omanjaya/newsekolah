@@ -111,6 +111,18 @@ func (r *Repository) GetTitle(ctx context.Context, tenantID, id uuid.UUID) (doma
 	return toTitle(row), true, nil
 }
 
+func (r *Repository) GetTitlesByIDs(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]domain.Title, error) {
+	rows, err := r.queries(ctx).GetTitlesByIDs(ctx, db.GetTitlesByIDsParams{TenantID: tenantID, Ids: ids})
+	if err != nil {
+		return nil, fmt.Errorf("get titles by ids: %w", err)
+	}
+	out := make([]domain.Title, len(rows))
+	for i, row := range rows {
+		out[i] = toTitle(row)
+	}
+	return out, nil
+}
+
 func (r *Repository) GetTitleByISBN(ctx context.Context, tenantID uuid.UUID, isbn string) (domain.Title, bool, error) {
 	row, err := r.queries(ctx).GetTitleByISBN(ctx, db.GetTitleByISBNParams{TenantID: tenantID, Isbn: isbn})
 	if errors.Is(err, pgx.ErrNoRows) {
