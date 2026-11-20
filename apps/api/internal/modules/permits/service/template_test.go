@@ -51,6 +51,15 @@ func TestBuiltinLeaveLetterCategoryText(t *testing.T) {
 		require.Contains(t, string(out.HTML), "(2 hari sekolah)")
 	})
 
+	t.Run("the leave dates read as long dates, like the issue date", func(t *testing.T) {
+		lr := domain.LeaveRequest{Category: domain.CategorySick, Reason: "Sakit", StartsOn: day, EndsOn: day.AddDate(0, 0, 8)}
+		vars := leaveLetterVars(lr, leaveLetterExtras{number: "1/IZIN/XI/2026"})
+		require.Equal(t, "23 November 2026", vars["starts_on"])
+		require.Equal(t, "1 Desember 2026", vars["ends_on"])
+		html := render(t, lr)
+		require.Contains(t, html, "pada tanggal 23 November 2026 sampai 1 Desember 2026")
+	})
+
 	t.Run("a reason ending in a full stop gets a single full stop", func(t *testing.T) {
 		html := render(t, domain.LeaveRequest{Category: domain.CategoryOther, Reason: "Acara keluarga ke luar kota. ", StartsOn: day, EndsOn: day})
 		require.Contains(t, html, "dengan keterangan Lainnya: Acara keluarga ke luar kota.</p>")

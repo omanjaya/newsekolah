@@ -2,6 +2,7 @@ package permits
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -111,4 +112,8 @@ func TestLeaveLetterDatesOnTheSchoolsDay(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "1 Desember 2026", renderer.last()["issued_at"])
 	require.Contains(t, issued.LeaveRequest.LetterNumber, "/XII/2026")
+	// The leave dates use the same long style as the issue date.
+	longDate := fmt.Sprintf(`^%d [A-Z][a-z]+ %d$`, starts.Day(), starts.Year())
+	require.Regexp(t, longDate, renderer.last()["starts_on"])
+	require.Regexp(t, longDate, renderer.last()["ends_on"])
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/documents"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 )
 
@@ -485,6 +486,9 @@ type leaveLetterExtras struct {
 // (domain.DefaultReasonFor), which would only repeat the category. Its
 // trailing full stops are trimmed because the sentence the built-in
 // template puts it in supplies its own ("ke luar kota.." otherwise).
+// "starts_on" and "ends_on" are long dates like "issued_at", so the letter
+// reads one date style throughout. They are SQL DATE values (midnight UTC
+// for the calendar day), so their own day is printed with no zone shift.
 // "days" counts school days only: a weekend or holiday inside the range is
 // not a day of leave, and attendance records none for it.
 func leaveLetterVars(lr domain.LeaveRequest, x leaveLetterExtras) map[string]any {
@@ -496,7 +500,7 @@ func leaveLetterVars(lr domain.LeaveRequest, x leaveLetterExtras) map[string]any
 		"letter_number": x.number, "student_name": lr.StudentNameSnapshot, "class_name": lr.ClassNameSnapshot,
 		"guardian_name": lr.GuardianNameSnapshot, "category": domain.CategoryLabel(lr.Category),
 		"category_code": string(lr.Category), "reason": lr.Reason, "reason_detail": detail,
-		"starts_on": lr.StartsOn.Format("02-01-2006"), "ends_on": lr.EndsOn.Format("02-01-2006"),
+		"starts_on": reportdoc.FormatDate(reportdoc.LocaleID, lr.StartsOn), "ends_on": reportdoc.FormatDate(reportdoc.LocaleID, lr.EndsOn),
 		"days": x.schoolDays, "issued_at": issuedOnLabel(x.issuedAt), "verification_code": x.verificationCode,
 		"nis": x.nis, "address": x.address, "homeroom_name": x.homeroomName, "issuer_name": x.issuerName,
 	}
