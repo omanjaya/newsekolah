@@ -1633,7 +1633,6 @@
         "noAccessTitle": "Tidak ada akses",
         "noAccessBody": "Peran Anda tidak terlibat dalam alur izin terencana.",
         "issuerQueueUnavailableTitle": "Surat izin diterbitkan dari notifikasi",
-        "issuerQueueUnavailableBody": "Setiap pengajuan yang sudah disetujui wali kelas dikirim ke notifikasi Anda. Buka notifikasinya untuk melihat pengajuan dan menerbitkan suratnya.",
         "issuerQueueInboxBody": "Pengajuan yang sudah disetujui wali kelas menunggu di antrean izin. Buka antreannya untuk meninjau dan menerbitkan suratnya.",
         "openNotifications": "Buka notifikasi",
         "notFoundTitle": "Pengajuan tidak ditemukan",
@@ -1720,6 +1719,8 @@
           "detail": "Lihat detail"
         },
         "days": "{count, plural, other {# hari}}",
+        "submittedAt": "Diajukan {time}",
+        "awaitingLetter": "Disetujui wali kelas, menunggu surat izin diterbitkan",
         "historyTitle": "Riwayat pengajuan",
         "letterNumberShort": "Surat {number}",
         "opened": "Diajukan",

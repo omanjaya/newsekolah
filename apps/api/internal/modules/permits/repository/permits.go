@@ -321,6 +321,7 @@ func (r *Repository) ListLeaveRequestsForReview(ctx context.Context, tenantID, r
 			}),
 			SubjectUserID: row.SubjectUserID, ClassID: pdatabase.UUIDOrNil(row.ClassID),
 			Status: domain.Status(row.Status), OpenedAt: pdatabase.TimeOrZero(row.OpenedAt), CurrentStageIndex: int(row.CurrentStageIndex),
+			AwaitingLetter: &row.AwaitingLetter,
 		}
 	}
 	return out, nil

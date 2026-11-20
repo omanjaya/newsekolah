@@ -102,6 +102,13 @@ func TestCountsEachPermissionGatesOnlyItsOwnQueue(t *testing.T) {
 		require.Equal(t, 3, got.Leave)
 		require.Equal(t, 0, got.WarningLetters)
 	})
+	t.Run("leave letters only (the counselor's issuing stage)", func(t *testing.T) {
+		r := newRig(fakePerms{set: authz.NewSet(authz.PermIssueLeaveLetters)})
+		got, err := r.svc.Counts(context.Background(), caller())
+		require.NoError(t, err)
+		require.Equal(t, 3, got.Leave)
+		require.True(t, r.leave.called)
+	})
 	t.Run("warning letters only", func(t *testing.T) {
 		r := newRig(fakePerms{set: authz.NewSet(authz.PermIssueWarningLetters)})
 		got, err := r.svc.Counts(context.Background(), caller())

@@ -107,4 +107,7 @@ type LeaveRequestItem struct {
 	Status            domain.Status
 	OpenedAt          time.Time
 	CurrentStageIndex int
+	// AwaitingLetter is set by the review queue only: the request is at its
+	// final stage, which issuing the letter completes (not a review).
+	AwaitingLetter *bool
 }

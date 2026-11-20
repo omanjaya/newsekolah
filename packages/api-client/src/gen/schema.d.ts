@@ -6388,7 +6388,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Leave requests awaiting review (optionally for one class) */
+        /**
+         * Leave requests awaiting review (optionally for one class)
+         * @description Requests at a stage the caller's own duty acts on: the homeroom review, or the counselor/leadership stage. A row whose awaiting_letter is true is at the final stage, which is completed by issuing the letter, not by review.
+         */
         get: operations["listLeaveRequestsForReview"];
         put?: never;
         post?: never;
@@ -11313,6 +11316,8 @@ export interface components {
             class_name: string;
             /** Format: date-time */
             opened_at: string;
+            /** @description Review queue only: the request is at its final stage, completed by issuing the letter (issue_leave_letters) rather than by review. */
+            awaiting_letter?: boolean;
         };
         DocumentVerification: {
             number: string;

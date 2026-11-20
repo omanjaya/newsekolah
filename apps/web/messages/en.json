@@ -1633,7 +1633,6 @@
         "noAccessTitle": "No access",
         "noAccessBody": "Your role is not part of the planned leave flow.",
         "issuerQueueUnavailableTitle": "Leave letters are issued from notifications",
-        "issuerQueueUnavailableBody": "Every request the homeroom teacher approves is sent to your notifications. Open the notification to see the request and issue its letter.",
         "issuerQueueInboxBody": "Requests the homeroom teacher approved wait in the leave queue. Open it to review them and issue their letters.",
         "openNotifications": "Open notifications",
         "notFoundTitle": "Request not found",
@@ -1720,6 +1719,8 @@
           "detail": "View details"
         },
         "days": "{count, plural, one {# day} other {# days}}",
+        "submittedAt": "Submitted {time}",
+        "awaitingLetter": "Approved by the homeroom teacher, waiting for the letter",
         "historyTitle": "Request history",
         "letterNumberShort": "Letter {number}",
         "opened": "Requested",

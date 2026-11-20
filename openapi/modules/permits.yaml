@@ -584,8 +584,12 @@ paths:
     get:
       tags: [permits]
       operationId: listLeaveRequestsForReview
-      x-permission: review_leave_requests
+      x-permission: [review_leave_requests, issue_leave_letters]
       summary: Leave requests awaiting review (optionally for one class)
+      description: >-
+        Requests at a stage the caller's own duty acts on: the homeroom review, or
+        the counselor/leadership stage. A row whose awaiting_letter is true is at
+        the final stage, which is completed by issuing the letter, not by review.
       parameters:
         - { name: class_id, in: query, schema: { type: string, format: uuid } }
       responses:
@@ -1125,6 +1129,11 @@ components:
         student_name: { type: string }
         class_name: { type: string }
         opened_at: { type: string, format: date-time }
+        awaiting_letter:
+          type: boolean
+          description: >-
+            Review queue only: the request is at its final stage, completed by
+            issuing the letter (issue_leave_letters) rather than by review.
 
     DocumentVerification:
       type: object

@@ -49,17 +49,16 @@ describe("LeaveRequestsView", () => {
     expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
   });
 
-  it("tells an issuer-only counselor where requests arrive", () => {
+  it("sends an issuer-only counselor to the inbox's leave queue, where the letter stage waits", () => {
     canSubmit = false;
     canIssue = true;
     render(<LeaveRequestsView />);
     expect(screen.getByText("issuerTitle")).toBeInTheDocument();
-    expect(screen.getByText("issuerQueueUnavailableBody")).toBeInTheDocument();
-    expect(document.querySelector("svg.lucide-bell-ring")).toBeInTheDocument();
+    expect(screen.getByText("issuerQueueInboxBody")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "submit" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "openNotifications" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "issuerOpenInbox" })).toHaveAttribute(
       "href",
-      "/notifications",
+      "/inbox?type=leave",
     );
   });
 
@@ -76,8 +75,6 @@ describe("LeaveRequestsView", () => {
     // notifications.
     expect(screen.getByText("issuerQueueInboxBody")).toBeInTheDocument();
     expect(document.querySelector("svg.lucide-inbox")).toBeInTheDocument();
-    expect(document.querySelector("svg.lucide-bell-ring")).not.toBeInTheDocument();
-    expect(screen.queryByText("issuerQueueUnavailableBody")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "openNotifications" })).toHaveAttribute(
       "href",
       "/notifications",

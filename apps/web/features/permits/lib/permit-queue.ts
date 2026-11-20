@@ -12,7 +12,7 @@ interface QueueRow {
 }
 export type PermitQueueRow = QueueRow &
   (
-    | { type: "leave" }
+    | { type: "leave"; leave: LeaveRequestSummary }
     | { type: "exit"; exit: ExitPermitSummary }
     | { type: "late"; late: LateArrivalSummary }
   );
@@ -37,6 +37,7 @@ export function mergePermitQueues({
       openedAt: item.opened_at,
       description: item.reason ?? "",
       status: item.status,
+      leave: item,
     })),
     ...exit.map((item): PermitQueueRow => ({
       type: "exit",

@@ -114,8 +114,29 @@ describe("useCounselorBlock", () => {
     const { result } = renderHook(() => useCounselorBlock(counselorWithBothPermissions, true));
 
     expect(result.current.hero?.title).toContain('"count":2');
-    expect(result.current.hero?.action?.href).toBe("/leave-requests");
+    expect(result.current.hero?.action?.href).toBe("/inbox?type=leave");
     expect(result.current.tiles.find((t) => t.key === "counselor.leave")?.value).toBe("2");
+  });
+
+  it("counts the requests waiting for the letter for a counselor who only issues letters", () => {
+    const issuerOnly = { permissions: ["issue_leave_letters"] } as unknown as Me;
+    leaveReviewQueueQuery.mockReturnValue(
+      refetchable({
+        data: {
+          data: [
+            { instance_id: "a", student_name: "Siswa A", class_name: "X-A", awaiting_letter: true },
+          ],
+        },
+      }),
+    );
+    spCandidatesQuery.mockReturnValue(refetchable({}));
+
+    const { result } = renderHook(() => useCounselorBlock(issuerOnly, true));
+
+    expect(leaveReviewQueueQuery).toHaveBeenCalledWith(true);
+    expect(result.current.hero?.key).toBe("counselor.leave");
+    expect(result.current.hero?.title).toContain('"count":1');
+    expect(result.current.tiles.find((t) => t.key === "counselor.leave")?.value).toBe("1");
   });
 
   it("does not render the leave section, only the SP section, without review_leave_requests", () => {

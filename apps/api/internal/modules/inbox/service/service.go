@@ -18,7 +18,8 @@ type PermissionReader interface {
 }
 
 // The counters mirror the queue endpoints. Leave and warning letters sit
-// behind a permission (review_leave_requests, issue_warning_letters). The
+// behind a permission (review_leave_requests or issue_leave_letters -- the
+// counselor's letter stage is a leave queue too --, issue_warning_letters). The
 // exit and late-arrival queues are open to any authenticated caller and
 // scoped inside the query (duty assignments, the opening teacher), so their
 // counters are called for everyone and return 0 when nothing is theirs.
@@ -81,7 +82,7 @@ func (s *Service) Counts(ctx context.Context, caller Caller) (Counts, error) {
 	}
 
 	var out Counts
-	if can(authz.PermReviewLeaveRequests) {
+	if can(authz.PermReviewLeaveRequests) || can(authz.PermIssueLeaveLetters) {
 		if out.Leave, err = s.leave.CountLeaveRequestsForReview(ctx, caller.TenantID, caller.UserID); err != nil {
 			return Counts{}, fmt.Errorf("count leave requests: %w", err)
 		}

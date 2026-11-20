@@ -286,6 +286,7 @@ func toAPILeaveSummary(i service.LeaveRequestItem) api.LeaveRequestSummary {
 		CurrentStageIndex: i.CurrentStageIndex, Category: api.LeaveCategory(i.Category), Reason: strPtr(i.Reason),
 		StartsOn: openapi_types.Date{Time: i.StartsOn}, EndsOn: openapi_types.Date{Time: i.EndsOn}, LetterNumber: strPtr(i.LetterNumber),
 		StudentName: i.StudentNameSnapshot, ClassName: i.ClassNameSnapshot, OpenedAt: i.OpenedAt,
+		AwaitingLetter: i.AwaitingLetter,
 	}
 }
 

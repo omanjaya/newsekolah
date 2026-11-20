@@ -39,7 +39,9 @@ import type { Me, PersonaBlock } from "../types";
 
 type StudentRisk = components["schemas"]["StudentRisk"];
 
-const LEAVE_REQUESTS_HREF = "/leave-requests";
+// The inbox's leave queue, where the requests at the counselor's stage are
+// listed and their letters issued.
+const LEAVE_REQUESTS_HREF = "/inbox?type=leave";
 const WARNING_LETTERS_HREF = "/discipline/warning-letters";
 const COUNSELING_HREF = "/discipline/counseling";
 const ANALYTICS_HREF = "/analytics";
@@ -73,8 +75,12 @@ export function useCounselorBlock(me: Me, active: boolean): PersonaBlock {
   const t = useTranslations("app.dashboardDuty");
   // Leave requests belong to permits and warning letters to discipline; a
   // school that switched either off gets neither the query nor the section.
+  // The counselor's stage is issuing the letter (issue_leave_letters), which
+  // reads the same queue as a review permission.
   const canReviewLeave =
-    me.permissions.includes("review_leave_requests") && isModuleEnabled(me, "permits");
+    (me.permissions.includes("review_leave_requests") ||
+      me.permissions.includes("issue_leave_letters")) &&
+    isModuleEnabled(me, "permits");
   const canIssueWarningLetters =
     me.permissions.includes("issue_warning_letters") && isModuleEnabled(me, "discipline");
   const leave = useLeaveReviewQueueQuery(active && canReviewLeave);
