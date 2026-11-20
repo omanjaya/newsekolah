@@ -81,5 +81,5 @@ func TestIssueGateTokenRefusesAfterThePermitWindow(t *testing.T) {
 
 	afterWindow := clock.WithTime(ctx, time.Date(base.Year(), base.Month(), base.Day(), 9, 0, 0, 0, loc))
 	_, err = svc.IssueGateToken(afterWindow, w.tenantID, instID, w.studentID)
-	require.ErrorIs(t, err, domain.ErrExitPermitPeriodPassed)
+	require.ErrorIs(t, err, domain.ErrExitPermitWindowClosed)
 }

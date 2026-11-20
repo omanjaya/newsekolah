@@ -173,6 +173,23 @@ func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scan
 		if inst.SubjectUserID != scannerUserID {
 			return domain.ErrNotWorkflowSubject
 		}
+		// A permit whose lessons are over can never reach the gate
+		// (IssueGateToken refuses it), so approving another of its
+		// stages would only spend a teacher's QR on it.
+		permit, ok, err := s.repo.GetExitPermit(ctx, tenantID, instanceID)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return domain.ErrInstanceNotFound
+		}
+		periodEndsAt, err := s.exitPermitEndsAt(ctx, inst, permit)
+		if err != nil {
+			return err
+		}
+		if !periodEndsAt.After(clock.Now(ctx, s.clock)) {
+			return domain.ErrExitPermitWindowClosed
+		}
 
 		token, err := s.ConsumeScanToken(ctx, ConsumeScanTokenInput{
 			TenantID: tenantID, RawValue: rawToken, Purpose: domain.PurposeApproveStage,
@@ -248,7 +265,7 @@ func (s *Service) CancelExitPermit(ctx context.Context, tenantID, instanceID, ac
 
 // IssueGateToken mints the gate_exit token once every approval stage has
 // passed (instance status StatusApproved), valid until the end of the
-// permit's end period on the day it is issued.
+// permit's end period on the permit's own school day (exitPermitEndsAt).
 func (s *Service) IssueGateToken(ctx context.Context, tenantID, instanceID, issuedByUserID uuid.UUID) (domain.IssueResult, error) {
 	var result domain.IssueResult
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -270,31 +287,35 @@ func (s *Service) IssueGateToken(ctx context.Context, tenantID, instanceID, issu
 			return domain.ErrInstanceNotFound
 		}
 
-		endPeriod, err := s.repo.GetPeriod(ctx, tenantID, permit.EndPeriodID)
-		if err != nil {
-			return err
-		}
-		// Tenant-local, not s.clock.Now() directly: EndsAt is a
-		// wall-clock time of day in the tenant's own timezone, and
-		// combineDateAndDuration needs a same-timezone date to combine it
-		// with (docs/analysis/backend-inventory.md 1.15).
-		now := s.tenantNow(ctx, tenantID)
-		periodEndsAt := combineDateAndDuration(now, endPeriod.EndsAt)
 		// Once the window is over there is nothing left to leave for:
 		// refuse instead of minting a short-lived token whose scan would
 		// mark the past periods D.
+		now := s.tenantNow(ctx, tenantID)
+		periodEndsAt, err := s.exitPermitEndsAt(ctx, inst, permit)
+		if err != nil {
+			return err
+		}
 		if !periodEndsAt.After(now) {
-			return domain.ErrExitPermitPeriodPassed
+			return domain.ErrExitPermitWindowClosed
 		}
 
 		result, err = s.IssueScanToken(ctx, IssueScanTokenInput{
 			TenantID: tenantID, Purpose: domain.PurposeGateExit,
 			ContextID: uuid.NullUUID{UUID: instanceID, Valid: true}, IssuedByUserID: issuedByUserID,
-			PeriodEndsAt: periodEndsAt,
+			// The time left on the business clock: under the time
+			// simulation the pass lasts as long as the simulated lessons
+			// have left, not until the real date of the simulated day.
+			UntilPeriodEnd: periodEndsAt.Sub(now),
 		})
 		if err != nil {
 			return err
 		}
+		// The pass reads as valid until the end of the permit's last
+		// period on the school's clock, ValidFor (the business-clock time
+		// left) away from the school's now. Without a simulation that is
+		// the stored expiry itself; under one the stored expiry stays on
+		// the real clock (an anti-replay control), the same length away.
+		result.ExpiresAt = now.Add(result.ValidFor)
 		_, err = s.repo.SetExitPermitGateToken(ctx, tenantID, instanceID, result.Token.ID)
 		return err
 	})
@@ -329,14 +350,6 @@ func (s *Service) GateScan(ctx context.Context, tenantID, instanceID, securityUs
 			return domain.ErrExitPermitNotIssued
 		}
 
-		token, err := s.ConsumeScanToken(ctx, ConsumeScanTokenInput{
-			TenantID: tenantID, RawValue: rawToken, Purpose: domain.PurposeGateExit,
-			ContextID: uuid.NullUUID{UUID: instanceID, Valid: true}, ConsumedByUserID: securityUserID,
-		})
-		if err != nil {
-			return err
-		}
-
 		permit, ok, err := s.repo.GetExitPermit(ctx, tenantID, instanceID)
 		if err != nil {
 			return err
@@ -348,6 +361,25 @@ func (s *Service) GateScan(ctx context.Context, tenantID, instanceID, securityUs
 		// time" or "late" against, follow the simulated business clock,
 		// not the server's real one.
 		now := clock.Now(ctx, s.clock)
+		// The gate applies IssueGateToken's business rule itself: a pass
+		// shown before the permit's lessons ended is refused once they
+		// have, on the business clock. The token's own expiry is a real
+		// clock anti-replay control and does not decide this.
+		periodEndsAt, err := s.exitPermitEndsAt(ctx, inst, permit)
+		if err != nil {
+			return err
+		}
+		if !periodEndsAt.After(now) {
+			return domain.ErrExitPermitWindowClosed
+		}
+
+		token, err := s.ConsumeScanToken(ctx, ConsumeScanTokenInput{
+			TenantID: tenantID, RawValue: rawToken, Purpose: domain.PurposeGateExit,
+			ContextID: uuid.NullUUID{UUID: instanceID, Valid: true}, ConsumedByUserID: securityUserID,
+		})
+		if err != nil {
+			return err
+		}
 		// Bug fix vs. the old app: forced attendance status only overrides
 		// sessions within the permit's own period range, not the whole day,
 		// and only from the exit on: lessons the student sat in before an
@@ -410,6 +442,20 @@ func (s *Service) exitPermitWindow(ctx context.Context, tenantID uuid.UUID, perm
 	return from, combineDateAndDuration(day, endPeriod.EndsAt), nil
 }
 
+// exitPermitEndsAt is when the permit's last period ends on the school day
+// the permit belongs to (inst.LocalDate, in the tenant's timezone). A
+// permit left over from an earlier day therefore reads as over, rather
+// than as today's lessons of the same periods.
+func (s *Service) exitPermitEndsAt(ctx context.Context, inst domain.Instance, permit domain.ExitPermit) (time.Time, error) {
+	endPeriod, err := s.repo.GetPeriod(ctx, inst.TenantID, permit.EndPeriodID)
+	if err != nil {
+		return time.Time{}, err
+	}
+	y, m, d := inst.LocalDate.Date()
+	day := time.Date(y, m, d, 0, 0, 0, 0, s.tenantLocation(ctx, inst.TenantID))
+	return combineDateAndDuration(day, endPeriod.EndsAt), nil
+}
+
 // dueBack is when a student leaving on permit must be back: the end of the
 // permit's last period, or the zero time when no return is expected.
 func dueBack(permit domain.ExitPermit, windowEnd time.Time) time.Time {
@@ -432,6 +478,12 @@ func (s *Service) RecordExitPermitReturn(ctx context.Context, tenantID, instance
 		}
 		if !ok || inst.Kind != domain.KindExitPermit {
 			return domain.ErrInstanceNotFound
+		}
+		// A return is recorded as it happens, on the exit day. Once that
+		// day is over the permit stays unrecorded: stamping it now would
+		// date the return to a later day than the student came back.
+		if inst.LocalDate.Format(time.DateOnly) != s.tenantNow(ctx, tenantID).Format(time.DateOnly) {
+			return domain.ErrExitPermitNotAwaitingReturn
 		}
 		now := clock.Now(ctx, s.clock)
 		permit, ok, err := s.repo.MarkExitPermitReturned(ctx, tenantID, instanceID, now, securityUserID)
@@ -461,14 +513,23 @@ func (s *Service) RecordExitPermitReturn(ctx context.Context, tenantID, instance
 	return s.GetExitPermit(ctx, tenantID, instanceID)
 }
 
-// ListExitPermitsAwaitingReturn is the gate's "not back yet" list: today's
-// permits (tenant-local day) whose student went out and has not been
-// recorded back, the earliest due first.
+// unrecordedReturnLookback is how many earlier days the gate's list still
+// shows a student who went out and was never recorded back: long enough
+// for staff to follow up over a weekend and the week after, short enough
+// that the list does not grow with every forgotten return of the year.
+const unrecordedReturnLookback = 7
+
+// ListExitPermitsAwaitingReturn is the gate's "not back yet" list, the
+// earliest due first: today's permits (tenant-local day) whose student went
+// out and has not been recorded back, and, marked unrecorded, those of the
+// previous unrecordedReturnLookback days whose day ended that way. Before,
+// a missing return dropped off the list the next morning without a trace.
 func (s *Service) ListExitPermitsAwaitingReturn(ctx context.Context, tenantID uuid.UUID) ([]ExitPermitAwaitingReturn, error) {
 	var out []ExitPermitAwaitingReturn
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		today := s.tenantNow(ctx, tenantID)
 		var err error
-		out, err = s.repo.ListExitPermitsAwaitingReturn(ctx, tenantID, s.tenantNow(ctx, tenantID))
+		out, err = s.repo.ListExitPermitsAwaitingReturn(ctx, tenantID, today.AddDate(0, 0, -unrecordedReturnLookback), today)
 		return err
 	})
 	return out, err

@@ -5,6 +5,8 @@
  * is late.
  */
 
+import { isoToZonedLocal } from "../../../lib/tenant-date";
+
 /** Whole minutes `at` lies past `dueIso`, 0 when it is not past it. */
 export function minutesLate(dueIso: string, at: Date | string): number {
   const due = Date.parse(dueIso);
@@ -31,14 +33,28 @@ export type ExitReturnState =
   /** Out, due back at `due`; `lateMinutes` > 0 once that has passed. */
   | { kind: "out"; due: string; lateMinutes: number }
   /**
+   * The exit day ended with no return on record (due back at `due`): the
+   * gate can no longer record it, so a minute count would only keep
+   * growing without saying anything new.
+   */
+  | { kind: "unrecorded"; due: string }
+  /**
    * Recorded back at `at`, `lateMinutes` after the due time (0: on time).
    * `lateMinutes` is null for a return with no due time to judge it by (one
    * imported from SION, which never judged returns).
    */
   | { kind: "returned"; at: string; lateMinutes: number | null };
 
-/** Where the student stands on returning, at `now` on the school's clock. */
-export function exitReturnState(permit: ExitReturnFields, now: Date): ExitReturnState {
+/**
+ * Where the student stands on returning, at `now` on the school's clock;
+ * `timeZone` is the school's, whose calendar day decides when the exit day
+ * is over.
+ */
+export function exitReturnState(
+  permit: ExitReturnFields,
+  now: Date,
+  timeZone: string | undefined,
+): ExitReturnState {
   if (!permit.exited_at || !permit.return_required) return { kind: "none" };
   const due = permit.expected_return_at;
   if (permit.returned_at) {
@@ -49,5 +65,13 @@ export function exitReturnState(permit: ExitReturnFields, now: Date): ExitReturn
     };
   }
   if (!due) return { kind: "none" };
+  if (schoolDay(now, timeZone) > schoolDay(permit.exited_at, timeZone)) {
+    return { kind: "unrecorded", due };
+  }
   return { kind: "out", due, lateMinutes: minutesLate(due, now) };
+}
+
+/** "YYYY-MM-DD" of `instant` on the school's calendar. */
+function schoolDay(instant: Date | string, timeZone: string | undefined): string {
+  return isoToZonedLocal(instant, timeZone).slice(0, 10);
 }

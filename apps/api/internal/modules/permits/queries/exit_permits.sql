@@ -44,17 +44,21 @@ where tenant_id = $1 and instance_id = $2
 returning *;
 
 -- name: ListExitPermitsAwaitingReturn :many
--- The gate's "not back yet" list: permits that went through the gate on
--- the tenant-local day sqlc.arg('today') (workflow_instances.local_date,
--- the day the permit was opened, which is the exit day) and whose student
--- has not been recorded back. A permit without expected_return_at exited
--- before returns were tracked (or came from SION) and is never listed.
--- The earliest due return first; matches ix_exit_permits_awaiting_return.
-select ep.*, wi.subject_user_id, wi.class_id
+-- The gate's "not back yet" list: permits that went through the gate on a
+-- tenant-local day from sqlc.arg('since') to sqlc.arg('today')
+-- (workflow_instances.local_date, the day the permit was opened, which is
+-- the exit day) and whose student has not been recorded back. One from
+-- before today is unrecorded: its day ended without a return on record,
+-- and it stays listed for the look-back the caller chose so staff can
+-- still follow it up. A permit without expected_return_at exited before
+-- returns were tracked (or came from SION) and is never listed. The
+-- earliest due return first; matches ix_exit_permits_awaiting_return.
+select ep.*, wi.subject_user_id, wi.class_id,
+  (wi.local_date < sqlc.arg('today')::date)::boolean as unrecorded
 from exit_permits ep
 join workflow_instances wi on wi.id = ep.instance_id
 where ep.tenant_id = $1
-  and wi.local_date = sqlc.arg('today')::date
+  and wi.local_date between sqlc.arg('since')::date and sqlc.arg('today')::date
   and ep.exited_at is not null
   and ep.return_required
   and ep.expected_return_at is not null

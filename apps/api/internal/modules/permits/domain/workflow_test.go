@@ -100,3 +100,9 @@ func TestKindValid(t *testing.T) {
 	require.True(t, KindLeaveRequest.Valid())
 	require.False(t, Kind("bogus").Valid())
 }
+
+func TestKindDayBound(t *testing.T) {
+	require.True(t, KindExitPermit.DayBound())
+	require.True(t, KindLateArrival.DayBound())
+	require.False(t, KindLeaveRequest.DayBound(), "a leave request spans the dates it asks for")
+}

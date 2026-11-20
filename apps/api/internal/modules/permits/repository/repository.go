@@ -210,8 +210,15 @@ func (r *Repository) AdvanceInstance(ctx context.Context, tenantID, id uuid.UUID
 	return toInstance(row), nil
 }
 
-func (r *Repository) GetInProgressInstance(ctx context.Context, tenantID uuid.UUID, kind domain.Kind, subjectUserID uuid.UUID) (domain.Instance, bool, error) {
-	row, err := r.queries(ctx).GetInProgressWorkflowInstance(ctx, db.GetInProgressWorkflowInstanceParams{TenantID: tenantID, Kind: string(kind), SubjectUserID: subjectUserID})
+// GetInProgressInstance is the subject's not-yet-terminal instance of kind.
+// A non-nil today counts only an instance opened on that local date or
+// later; the service decides which kinds pass one.
+func (r *Repository) GetInProgressInstance(ctx context.Context, tenantID uuid.UUID, kind domain.Kind, subjectUserID uuid.UUID, today *time.Time) (domain.Instance, bool, error) {
+	params := db.GetInProgressWorkflowInstanceParams{TenantID: tenantID, Kind: string(kind), SubjectUserID: subjectUserID}
+	if today != nil {
+		params.Today = pdatabase.Date(*today)
+	}
+	row, err := r.queries(ctx).GetInProgressWorkflowInstance(ctx, params)
 	if notFound(err) {
 		return domain.Instance{}, false, nil
 	}

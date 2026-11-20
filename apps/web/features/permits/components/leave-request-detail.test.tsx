@@ -185,6 +185,52 @@ describe("LeaveRequestDetail", () => {
     stuck = false;
   });
 
+  describe("at the counselor stage, which must not be the homeroom approver", () => {
+    function atCounselor(homeroomApprover: string) {
+      const base = leave("in_progress", 1);
+      const counselor = { ...stage("counselor"), distinct_from: ["homeroom"] };
+      return {
+        ...base,
+        instance: {
+          ...base.instance,
+          current_stage: counselor,
+          stages: [stage("homeroom"), counselor],
+          events: [
+            {
+              id: "e1",
+              stage_key: "homeroom",
+              to_status: "in_progress",
+              actor_user_id: homeroomApprover,
+              verification: "manual",
+              system_note: false,
+              occurred_at: "2026-11-17T06:00:00Z",
+            },
+          ],
+        },
+      };
+    }
+
+    // A homeroom teacher who also holds a Guru BK duty was offered
+    // "Terbitkan surat" on a request they approved; the API refused it.
+    it("tells the reader who approved the homeroom stage that another counselor issues it", () => {
+      permissions = new Set(["review_leave_requests", "issue_leave_letters"]);
+      detail = atCounselor("teacher-1");
+      render(<LeaveRequestDetail id="leave-1" layout="page" />);
+
+      expect(screen.queryByRole("button", { name: "issueLetter" })).not.toBeInTheDocument();
+      expect(screen.getByText("issueByOtherTitle")).toBeInTheDocument();
+    });
+
+    it("offers the letter to a counselor who did not approve the homeroom stage", () => {
+      permissions = new Set(["issue_leave_letters"]);
+      detail = atCounselor("homeroom-2");
+      render(<LeaveRequestDetail id="leave-1" layout="page" />);
+
+      expect(screen.getByRole("button", { name: "issueLetter" })).toBeInTheDocument();
+      expect(screen.queryByText("issueByOtherTitle")).not.toBeInTheDocument();
+    });
+  });
+
   it("keeps the inbox dialog's decision in its flow", () => {
     permissions = new Set(["review_leave_requests"]);
     detail = leave("in_progress", 0);

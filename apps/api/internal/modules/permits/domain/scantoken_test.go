@@ -8,23 +8,21 @@ import (
 )
 
 func TestTokenTTL(t *testing.T) {
-	now := time.Date(2026, 3, 10, 7, 0, 0, 0, time.UTC)
-
 	tests := []struct {
-		name         string
-		purpose      Purpose
-		periodEndsAt time.Time
-		want         time.Duration
+		name           string
+		purpose        Purpose
+		untilPeriodEnd time.Duration
+		want           time.Duration
 	}{
-		{"classroom entry is short lived", PurposeClassroomEntry, time.Time{}, shortLivedTTL},
-		{"late arrival is short lived", PurposeLateArrival, time.Time{}, shortLivedTTL},
-		{"approve stage is short lived", PurposeApproveStage, time.Time{}, shortLivedTTL},
-		{"gate exit lasts until period end", PurposeGateExit, now.Add(3 * time.Hour), 3 * time.Hour},
-		{"gate exit past period end still grants a window", PurposeGateExit, now.Add(-time.Minute), shortLivedTTL},
+		{"classroom entry is short lived", PurposeClassroomEntry, 0, shortLivedTTL},
+		{"late arrival is short lived", PurposeLateArrival, 0, shortLivedTTL},
+		{"approve stage is short lived", PurposeApproveStage, 0, shortLivedTTL},
+		{"gate exit lasts until period end", PurposeGateExit, 3 * time.Hour, 3 * time.Hour},
+		{"gate exit past period end still grants a window", PurposeGateExit, -time.Minute, shortLivedTTL},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, TokenTTL(tt.purpose, now, tt.periodEndsAt))
+			require.Equal(t, tt.want, TokenTTL(tt.purpose, tt.untilPeriodEnd))
 		})
 	}
 }

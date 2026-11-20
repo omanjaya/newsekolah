@@ -230,10 +230,55 @@ describe("ActiveExitPermitCard once the permit's lessons are over", () => {
   });
 
   // The regression: the button stayed, and the API could only answer
-  // EXIT_PERMIT_PERIOD_PASSED.
+  // EXIT_PERMIT_WINDOW_CLOSED.
   it("says the lessons are over instead of offering a gate QR the API refuses", () => {
     mocks.periods = PERMIT_PERIODS;
     mocks.now = new Date("2026-09-29T03:00:00Z");
+    mocks.detail = detail("approved");
+    render(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    expect(screen.queryByRole("button", { name: "showGateQr" })).not.toBeInTheDocument();
+    expect(screen.getByText("hero.lessonsOver")).toBeInTheDocument();
+  });
+
+  // A QR minted at 10.30 stayed on screen with "Berlaku sampai" after the
+  // last lesson ended, and the gate let the student out late.
+  it("takes down a gate QR shown before the lessons ended", () => {
+    mocks.periods = PERMIT_PERIODS;
+    mocks.detail = detail("approved");
+    mocks.gate = {
+      token: GATE_TOKEN,
+      expires_at: new Date(Date.now() + 8 * 3600_000).toISOString(),
+    };
+    mocks.now = new Date("2026-09-29T02:30:00Z");
+    const { rerender } = render(<ActiveExitPermitCard id={PERMIT_ID} />);
+    expect(screen.getByRole("img", { name: "gateQrLabel" })).toBeInTheDocument();
+
+    mocks.now = new Date("2026-09-29T03:40:00Z");
+    rerender(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    expect(screen.queryByRole("img", { name: "gateQrLabel" })).not.toBeInTheDocument();
+    expect(screen.getByText("hero.lessonsOver")).toBeInTheDocument();
+  });
+
+  it("stops asking for a stage's QR once the lessons of a pending permit are over", () => {
+    mocks.periods = PERMIT_PERIODS;
+    mocks.now = new Date("2026-09-29T03:10:00Z");
+    mocks.detail = detail("in_progress");
+    render(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    expect(
+      screen.queryByRole("button", { name: "hero.scanStage:Guru piket" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("hero.lessonsOverPending")).toBeInTheDocument();
+    // The student can still withdraw it.
+    expect(screen.getByRole("button", { name: "cancel" })).toBeInTheDocument();
+  });
+
+  it("reads a permit from an earlier school day as over, whatever the time now", () => {
+    mocks.periods = PERMIT_PERIODS;
+    // 08.00 the next day in Asia/Makassar: before p2's 11.00 end by the clock.
+    mocks.now = new Date("2026-09-30T00:00:00Z");
     mocks.detail = detail("approved");
     render(<ActiveExitPermitCard id={PERMIT_ID} />);
 
@@ -277,6 +322,16 @@ describe("ActiveExitPermitCard after the gate", () => {
     expect(screen.getByText(/hero\.wasDueBack/)).toBeInTheDocument();
   });
 
+  it("stops counting late minutes once the exit day is over", () => {
+    // 08.00 the next day in Asia/Makassar.
+    mocks.now = new Date("2026-09-30T00:00:00Z");
+    mocks.detail = exited();
+    render(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    expect(screen.getByText("hero.unrecordedChip")).toBeInTheDocument();
+    expect(screen.queryByText("lateBy")).not.toBeInTheDocument();
+  });
+
   it("says the student is back, and that the return was late", () => {
     mocks.detail = exited({ returned_at: "2026-09-29T03:20:00Z", returned_late: true });
     render(<ActiveExitPermitCard id={PERMIT_ID} />);
@@ -313,6 +368,16 @@ describe("ExitPermitDetail return line", () => {
 
     expect(screen.getByText("returnLabel")).toBeInTheDocument();
     expect(screen.getByText("returnedLate")).toBeInTheDocument();
+  });
+
+  // A week on, the line read "terlambat 11655 menit dari pukul 07.45".
+  it("says a return never recorded on the exit day is unrecorded, with no minute count", () => {
+    mocks.now = new Date("2026-10-06T02:00:00Z");
+    mocks.detail = exited();
+    render(<ExitPermitDetailView id={PERMIT_ID} />);
+
+    expect(screen.getByText("notRecordedBack")).toBeInTheDocument();
+    expect(screen.queryByText("notBackLate")).not.toBeInTheDocument();
   });
 
   it("says a student who went home is not coming back", () => {

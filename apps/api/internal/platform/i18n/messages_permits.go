@@ -5,6 +5,7 @@ func init() {
 	for code, msg := range map[string][2]string{
 		"SCAN_TOKEN_GONE":                 {"Kode QR tidak valid, sudah dipakai, atau kedaluwarsa. Minta kode baru.", "The QR code is invalid, already used, or expired. Ask for a new one."},
 		"WORKFLOW_APPROVER_NOT_ELIGIBLE":  {"Orang yang memindai tidak berwenang menyetujui tahap ini.", "The scanned approver is not eligible for this stage."},
+		"WORKFLOW_APPROVER_NOT_DISTINCT":  {"Tahap ini harus disetujui orang lain: penyetujunya sudah menyetujui tahap sebelumnya pada pengajuan ini.", "Someone else must approve this stage: this approver already approved an earlier stage of this request."},
 		"WORKFLOW_ALREADY_IN_PROGRESS":    {"Masih ada pengajuan yang sedang berjalan.", "A request of this kind is already in progress."},
 		"WORKFLOW_NOT_IN_PROGRESS":        {"Pengajuan ini sudah selesai atau dibatalkan.", "This request is no longer in progress."},
 		"WORKFLOW_NOT_SUBJECT":            {"Hanya pemilik pengajuan yang dapat melakukan aksi ini.", "Only the request owner may perform this action."},
@@ -12,8 +13,9 @@ func init() {
 		"ACADEMIC_YEAR_REQUIRED":          {"Tahun ajaran aktif belum diatur. Hubungi admin sekolah.", "No active academic year is set. Contact the school admin."},
 		"ENROLLMENT_NOT_FOUND":            {"Siswa belum terdaftar di kelas pada tahun ajaran aktif.", "The student is not enrolled in a class this academic year."},
 		"PERIOD_RANGE_INVALID":            {"Jam pelajaran akhir tidak boleh sebelum jam pelajaran awal.", "The end period must not come before the start period."},
-		"EXIT_PERMIT_NOT_AWAITING_RETURN": {"Siswa ini tidak sedang ditunggu kembali: belum keluar gerbang, tidak perlu kembali, atau sudah tercatat kembali.", "This student is not awaited back: they have not gone through the gate, need not come back, or are already recorded back."},
+		"EXIT_PERMIT_NOT_AWAITING_RETURN": {"Siswa ini tidak sedang ditunggu kembali: belum keluar gerbang, tidak perlu kembali, sudah tercatat kembali, atau hari keluarnya sudah lewat.", "This student is not awaited back: they have not gone through the gate, need not come back, are already recorded back, or their exit day is over."},
 		"EXIT_PERMIT_PERIOD_PASSED":       {"Jam pelajaran yang dipilih sudah lewat. Pilih jam yang sedang berjalan atau yang akan datang.", "The chosen lesson periods are already over. Pick a period that is running now or still to come."},
+		"EXIT_PERMIT_WINDOW_CLOSED":       {"Jam pelajaran izin keluar ini sudah selesai, jadi izin ini tidak bisa dipakai lagi.", "This exit permit's lesson periods are over, so the permit can no longer be used."},
 		"WORKFLOW_STAGE_MISMATCH":         {"Tahap yang sedang ditunggu tidak bisa disetujui dengan cara ini.", "The stage this request is waiting at cannot be approved this way."},
 		"EXIT_PERMIT_NOT_ISSUED":          {"Izin keluar belum disetujui sepenuhnya.", "The exit permit has not been fully approved yet."},
 		"LEAVE_DATE_RANGE_INVALID":        {"Tanggal selesai tidak boleh sebelum tanggal mulai.", "The end date must not be before the start date."},

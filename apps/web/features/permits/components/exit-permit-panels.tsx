@@ -27,6 +27,7 @@ import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { useBusinessNow } from "../../../lib/simulation/clock";
+import { todayInZone } from "../../../lib/tenant-date";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import {
   type ExitPermitAwaitingReturn,
@@ -36,6 +37,7 @@ import {
   useScanGateMutation,
 } from "../api";
 import { minutesLate } from "../lib/exit-return";
+import { formatShortWeekdayDate } from "../lib/permit-dates";
 
 /**
  * Security: scan the gate QR the student shows, then record the student
@@ -109,38 +111,86 @@ export function GatePanel({ modeSwitch }: { modeSwitch?: ReactNode } = {}): Reac
   );
 }
 
-/** Today's students out on a permit and not back yet, each with "Catat kembali". */
+/**
+ * Today's students out on a permit and not back yet, each with "Catat
+ * kembali"; below them, those of the past week whose exit day ended with
+ * no return on record, for staff to follow up (their return can no longer
+ * be recorded).
+ */
 function AwaitingReturnList(): ReactElement {
   const t = useTranslations("app.permits.exit.gate");
   const { data, isLoading, isError, refetch } = useExitPermitsAwaitingReturnQuery();
-  const items = data?.data ?? [];
+  const all = data?.data ?? [];
+  const items = all.filter((item) => !item.unrecorded);
+  const unrecorded = all.filter((item) => item.unrecorded);
 
   return (
-    <section className="flex flex-col gap-3" aria-labelledby="gate-out-title">
-      <SectionHeader
-        titleId="gate-out-title"
-        title={t("outTitle")}
-        description={t("outHint")}
-        count={items.length}
-      />
-      {isLoading ? (
-        <SkeletonList rows={2} leading framed />
-      ) : isError && !data ? (
-        <QueryError retry={() => refetch()} />
-      ) : items.length === 0 ? (
-        <EmptyState
-          variant="compact"
-          icon={<domainIcons.exitPermit aria-hidden="true" />}
-          title={t("outEmpty")}
+    <>
+      <section className="flex flex-col gap-3" aria-labelledby="gate-out-title">
+        <SectionHeader
+          titleId="gate-out-title"
+          title={t("outTitle")}
+          description={t("outHint")}
+          count={items.length}
         />
-      ) : (
-        <List framed>
-          {items.map((item) => (
-            <AwaitingReturnRow key={item.instance_id} item={item} />
-          ))}
-        </List>
+        {isLoading ? (
+          <SkeletonList rows={2} leading framed />
+        ) : isError && !data ? (
+          <QueryError retry={() => refetch()} />
+        ) : items.length === 0 ? (
+          <EmptyState
+            variant="compact"
+            icon={<domainIcons.exitPermit aria-hidden="true" />}
+            title={t("outEmpty")}
+          />
+        ) : (
+          <List framed>
+            {items.map((item) => (
+              <AwaitingReturnRow key={item.instance_id} item={item} />
+            ))}
+          </List>
+        )}
+      </section>
+      {unrecorded.length > 0 && (
+        <section className="flex flex-col gap-3" aria-labelledby="gate-unrecorded-title">
+          <SectionHeader
+            titleId="gate-unrecorded-title"
+            title={t("unrecordedTitle")}
+            description={t("unrecordedHint")}
+            count={unrecorded.length}
+          />
+          <List framed>
+            {unrecorded.map((item) => (
+              <UnrecordedReturnRow key={item.instance_id} item={item} />
+            ))}
+          </List>
+        </section>
       )}
-    </section>
+    </>
+  );
+}
+
+/** A past day's exit with no return on record: when, and when the student was due. */
+function UnrecordedReturnRow({ item }: { item: ExitPermitAwaitingReturn }): ReactElement {
+  const t = useTranslations("app.permits.exit.gate");
+  const locale = useLocale() as Locale;
+  const { me } = useSession();
+  const timeZone = me?.tenant.timezone;
+  return (
+    <ListRow
+      leading={<Avatar size={40} name={item.student_name} decorative />}
+      title={formatDisplayName(item.student_name)}
+      titleLines={2}
+      meta={[
+        item.class_name,
+        formatShortWeekdayDate(item.exited_at, locale, timeZone, todayInZone(timeZone)),
+        item.expected_return_at
+          ? t("dueBack", { time: formatTime(item.expected_return_at, { locale, timeZone }) })
+          : t("exitedAt", { time: formatTime(item.exited_at, { locale, timeZone }) }),
+      ]}
+      keepMetaWhole
+      trailing={<Badge tone="warning">{t("unrecordedBadge")}</Badge>}
+    />
   );
 }
 

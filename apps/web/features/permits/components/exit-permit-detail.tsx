@@ -114,19 +114,22 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
       <ExitedCard
         destination={data.destination}
         exitedAt={formatTime(data.exited_at, { locale, timeZone })}
-        state={exitReturnState(data, now)}
+        state={exitReturnState(data, now, timeZone)}
       />
     );
   }
 
   const approved = inst.status === "approved";
-  // An approved permit whose lessons are over has no gate QR left to show:
-  // say so instead of offering a button that can only fail.
-  const gateClosed = approved && lessonsOver && !gate.data;
-  const scanStage = inst.status === "in_progress" && stage?.verification === "qr_scan";
+  // Once the permit's lessons are over the API refuses its gate QR and any
+  // further stage: say so instead of offering an action that can only fail.
+  // A gate QR shown before then goes too, since the gate refuses it now
+  // (the card stays mounted while the clock moves past the last lesson).
+  const closed = lessonsOver && (approved || inst.status === "in_progress");
+  const scanStage =
+    inst.status === "in_progress" && stage?.verification === "qr_scan" && !lessonsOver;
   return (
     <HeroCard
-      tone={gateClosed ? "neutral" : "accent-soft"}
+      tone={closed ? "neutral" : "accent-soft"}
       eyebrow={approved ? t("hero.approvedEyebrow") : t("hero.activeEyebrow")}
       chip={
         approved
@@ -135,7 +138,7 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
             ? tWorkflow("waitingFor", { stage: stage.label })
             : tWorkflow(`status.${inst.status}`)
       }
-      live={!approved}
+      live={!approved && !closed}
       title={data.destination}
       meta={meta}
       action={
@@ -177,8 +180,12 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
         ) : undefined
       }
     >
-      {gateClosed && <p className="text-body-sm text-fg-muted">{t("hero.lessonsOver")}</p>}
-      {approved && gate.data && (
+      {closed && (
+        <p className="text-body-sm text-fg-muted">
+          {t(approved ? "hero.lessonsOver" : "hero.lessonsOverPending")}
+        </p>
+      )}
+      {approved && gate.data && !lessonsOver && (
         <div ref={gateQrRef} className="mt-3 scroll-mt-4">
           <QrPanel
             size="lg"
@@ -222,7 +229,7 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
       ) : (
         <Card padding="sm" className="mt-3 text-fg">
           <WorkflowSteps instance={inst} />
-          {inst.status === "in_progress" && stage?.verification === "manual" && (
+          {inst.status === "in_progress" && stage?.verification === "manual" && !closed && (
             <p className="text-body-sm text-fg-muted">{t("waitManual", { stage: stage.label })}</p>
           )}
         </Card>

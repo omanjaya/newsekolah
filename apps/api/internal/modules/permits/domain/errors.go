@@ -58,11 +58,17 @@ var (
 	ErrDocumentRevoked      = errors.New("issued document has been revoked")
 
 	ErrExitPermitAlreadyToday = errors.New("student already has an exit permit for today")
-	// ErrExitPermitPeriodPassed refuses an exit permit, or its gate QR,
-	// for lesson periods that have already ended on the school's own
-	// clock: the student cannot leave during a window that is over, and
-	// the gate scan would rewrite those periods' recorded attendance.
+	// ErrExitPermitPeriodPassed refuses a new exit permit for lesson
+	// periods that have already ended on the school's own clock: the
+	// student cannot ask to leave during a window that is over.
 	ErrExitPermitPeriodPassed = errors.New("the exit permit's lesson periods have already ended")
+	// ErrExitPermitWindowClosed refuses an existing exit permit once its
+	// last lesson period is over on the school's own clock: no further
+	// stage approval, no gate QR and no gate scan, which would rewrite
+	// those periods' recorded attendance. Its own error, not
+	// ErrExitPermitPeriodPassed, because the student scanning a stage QR
+	// and the guard at the gate picked no periods to be told to re-pick.
+	ErrExitPermitWindowClosed = errors.New("the exit permit's last lesson period is over")
 	// ErrStudentOnLeaveToday refuses an exit permit for a student an issued
 	// leave letter already marks absent for the day.
 	ErrStudentOnLeaveToday     = errors.New("student is on an issued leave today")

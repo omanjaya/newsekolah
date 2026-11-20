@@ -30,6 +30,16 @@ func (k Kind) Valid() bool {
 	}
 }
 
+// DayBound reports whether an instance of this kind belongs to the school
+// day it was opened on: an exit permit covers that day's lessons and a
+// late arrival that morning. One left open from an earlier day is stale
+// (the expiry job closes it after midnight) and must not block the
+// student today. A leave request spans the dates it asks for, so it is
+// not day bound.
+func (k Kind) DayBound() bool {
+	return k == KindExitPermit || k == KindLateArrival
+}
+
 // Status is a workflow_instances.status value.
 type Status string
 

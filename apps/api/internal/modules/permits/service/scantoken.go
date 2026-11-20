@@ -25,9 +25,10 @@ type IssueScanTokenInput struct {
 	Purpose        domain.Purpose
 	ContextID      uuid.NullUUID
 	IssuedByUserID uuid.UUID
-	// PeriodEndsAt is only consulted for PurposeGateExit (domain.TokenTTL);
-	// every other purpose ignores it.
-	PeriodEndsAt time.Time
+	// UntilPeriodEnd is only consulted for PurposeGateExit
+	// (domain.TokenTTL): how long the permit's last period still runs on
+	// the business clock. Every other purpose ignores it.
+	UntilPeriodEnd time.Duration
 }
 
 // IssueScanToken mints a token: 32 random bytes, URL-safe base64 for
@@ -48,9 +49,12 @@ func (s *Service) IssueScanToken(ctx context.Context, in IssueScanTokenInput) (d
 	// an anti-replay security control, not a business decision, so it must
 	// never follow the simulated business clock -- see
 	// docs/testing-time-simulation.md's "kept real" list. Every ConsumeScanToken/
-	// CleanupExpiredScanTokens call below applies the same rule.
+	// CleanupExpiredScanTokens call below applies the same rule. Only a gate
+	// pass's length comes from the business clock (UntilPeriodEnd), so it
+	// is never measured against the other clock's date.
 	now := s.clock.Now()
-	expiresAt := now.Add(domain.TokenTTL(in.Purpose, now, in.PeriodEndsAt))
+	ttl := domain.TokenTTL(in.Purpose, in.UntilPeriodEnd)
+	expiresAt := now.Add(ttl)
 
 	var token domain.ScanToken
 	err := s.withTx(ctx, in.TenantID, func(ctx context.Context) error {
@@ -78,7 +82,7 @@ func (s *Service) IssueScanToken(ctx context.Context, in IssueScanTokenInput) (d
 		return domain.IssueResult{}, err
 	}
 
-	return domain.IssueResult{Token: token, RawValue: rawValue, ExpiresAt: expiresAt}, nil
+	return domain.IssueResult{Token: token, RawValue: rawValue, ExpiresAt: expiresAt, ValidFor: ttl}, nil
 }
 
 // ConsumeScanTokenInput is what a scanner (a student's device, security's

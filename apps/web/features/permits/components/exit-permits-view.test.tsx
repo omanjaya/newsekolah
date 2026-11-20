@@ -162,14 +162,23 @@ describe("ExitPermitsView for staff", () => {
   });
 });
 
+/** A permit opened on the school's today (2026-11-19 in Asia/Makassar). */
+function todays(
+  id: string,
+  status: MyExitPermit["status"],
+  extra: Partial<MyExitPermit> = {},
+): MyExitPermit {
+  return permit(id, status, { opened_at: "2026-11-19T01:00:00Z", ...extra });
+}
+
 describe("ExitPermitsView for a student", () => {
   it("keeps the permit on the status card once it goes through the gate", () => {
-    mocks.items = [permit("p1", "approved")];
+    mocks.items = [todays("p1", "approved")];
     const { rerender } = render(<ExitPermitsView />);
     expect(screen.getByTestId("status-card")).toHaveTextContent("p1");
 
     // The gate scan completes the permit; the live list says so.
-    mocks.items = [permit("p1", "completed")];
+    mocks.items = [todays("p1", "completed")];
     rerender(<ExitPermitsView />);
 
     expect(screen.getByTestId("status-card")).toHaveTextContent("p1");
@@ -179,11 +188,11 @@ describe("ExitPermitsView for a student", () => {
   });
 
   it("goes back to the request prompt when the permit on the card is cancelled", () => {
-    mocks.items = [permit("p1", "in_progress")];
+    mocks.items = [todays("p1", "in_progress")];
     const { rerender } = render(<ExitPermitsView />);
     expect(screen.getByTestId("status-card")).toHaveTextContent("p1");
 
-    mocks.items = [permit("p1", "cancelled")];
+    mocks.items = [todays("p1", "cancelled")];
     rerender(<ExitPermitsView />);
 
     expect(screen.queryByTestId("status-card")).not.toBeInTheDocument();
@@ -207,7 +216,7 @@ describe("ExitPermitsView for a student", () => {
   // be back, and the late return showed nowhere.
   it("keeps a permit the student is still out on today on the status card, on a fresh visit", () => {
     mocks.items = [
-      permit("p1", "completed", {
+      todays("p1", "completed", {
         exited_at: "2026-11-19T02:15:00Z",
         expected_return_at: "2026-11-19T03:00:00Z",
       }),
@@ -218,34 +227,41 @@ describe("ExitPermitsView for a student", () => {
     expect(screen.queryByText("idleTitle")).not.toBeInTheDocument();
   });
 
-  it("lets go of the permit once the student is back, or when no return is expected", () => {
-    mocks.items = [
-      permit("p1", "completed", {
+  // The regression: once the student was back, or went home, a fresh visit
+  // offered "Ajukan izin keluar", and the API refused the request with
+  // EXIT_PERMIT_ALREADY_TODAY. Today's permit stays on the card all day.
+  it.each([
+    [
+      "back",
+      {
         exited_at: "2026-11-19T02:15:00Z",
         expected_return_at: "2026-11-19T03:00:00Z",
         returned_at: "2026-11-19T02:50:00Z",
-      }),
-      permit("p0", "completed", {
-        exited_at: "2026-11-19T00:15:00Z",
-        return_required: false,
-      }),
-    ];
+      },
+    ],
+    ["gone home", { exited_at: "2026-11-19T00:15:00Z", return_required: false }],
+  ])("keeps today's permit on the card once the student is %s", (_, extra) => {
+    mocks.items = [todays("p1", "completed", extra)];
     render(<ExitPermitsView />);
 
-    expect(screen.queryByTestId("status-card")).not.toBeInTheDocument();
-    expect(screen.getByText("idleTitle")).toBeInTheDocument();
+    expect(screen.getByTestId("status-card")).toHaveTextContent("p1");
+    expect(screen.queryByRole("button", { name: "request" })).not.toBeInTheDocument();
   });
 
-  it("does not hold a permit from an earlier day the gate never closed", () => {
+  it("lets go of a permit from an earlier day, whatever its state", () => {
     mocks.items = [
-      permit("p1", "completed", {
+      permit("p2", "completed", {
         exited_at: "2026-11-18T02:15:00Z",
         expected_return_at: "2026-11-18T03:00:00Z",
       }),
+      // Left pending or approved: the API no longer counts it either.
+      permit("p1", "approved"),
+      permit("p0", "in_progress"),
     ];
     render(<ExitPermitsView />);
 
     expect(screen.queryByTestId("status-card")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "request" })).toBeInTheDocument();
   });
 });
 
@@ -263,6 +279,21 @@ describe("ExitPermitsView history rows", () => {
     const [row] = screen.getAllByRole("listitem");
     expect(row).toHaveTextContent("exitedMeta 10.15");
     expect(row).toHaveTextContent("returnedLateMeta 11.20");
+  });
+
+  // The row read only "keluar 08.41 · Selesai" for a student never
+  // recorded back.
+  it("warns when the exit day ended with no return on record", () => {
+    mocks.items = [
+      permit("p0", "completed", {
+        exited_at: "2026-11-18T02:15:00Z",
+        expected_return_at: "2026-11-18T03:00:00Z",
+      }),
+    ];
+    render(<ExitPermitsView />);
+
+    const [row] = screen.getAllByRole("listitem");
+    expect(row).toHaveTextContent("unrecordedMeta");
   });
 
   it("names each past permit by where the student went, with the day and the gate time", () => {

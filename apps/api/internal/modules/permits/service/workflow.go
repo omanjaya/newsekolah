@@ -167,7 +167,14 @@ func (s *Service) createInstance(ctx context.Context, in newInstanceInput) (doma
 		return domain.Instance{}, domain.Definition{}, err
 	}
 
-	if _, ok, err := s.repo.GetInProgressInstance(ctx, in.tenantID, in.kind, in.subjectUserID); err != nil {
+	// A day-bound kind's instance left open from an earlier school day is
+	// stale and must not block today (domain.Kind.DayBound).
+	var today *time.Time
+	if in.kind.DayBound() {
+		now := s.tenantNow(ctx, in.tenantID)
+		today = &now
+	}
+	if _, ok, err := s.repo.GetInProgressInstance(ctx, in.tenantID, in.kind, in.subjectUserID, today); err != nil {
 		return domain.Instance{}, domain.Definition{}, err
 	} else if ok {
 		return domain.Instance{}, domain.Definition{}, domain.ErrAlreadyInProgress

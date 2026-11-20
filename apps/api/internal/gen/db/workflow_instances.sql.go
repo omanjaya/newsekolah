@@ -169,7 +169,9 @@ func (q *Queries) CreateWorkflowInstance(ctx context.Context, arg CreateWorkflow
 const expireHangingWorkflowInstances = `-- name: ExpireHangingWorkflowInstances :many
 update workflow_instances
 set status = 'expired', closed_at = now()
-where tenant_id = $1 and status = 'in_progress' and opened_at < $2
+where tenant_id = $1
+  and (status = 'in_progress' or (kind = 'exit_permit' and status = 'approved'))
+  and opened_at < $2
 returning id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at, local_date
 `
 
@@ -182,7 +184,11 @@ type ExpireHangingWorkflowInstancesParams struct {
 // any instance still in_progress past its opening day is force-closed so
 // it never blocks the next day's attendance. openedBefore is the instant
 // of local midnight for the tenant's timezone, computed by the caller so
-// this query stays timezone-agnostic.
+// this query stays timezone-agnostic. An exit permit approved but never
+// taken through the gate is closed the same way: it can no longer be
+// used (its lessons are over), the student cannot cancel it (only an
+// in_progress instance can be), and while approved it would block every
+// later exit permit.
 func (q *Queries) ExpireHangingWorkflowInstances(ctx context.Context, arg ExpireHangingWorkflowInstancesParams) ([]WorkflowInstance, error) {
 	rows, err := q.db.Query(ctx, expireHangingWorkflowInstances, arg.TenantID, arg.OpenedAt)
 	if err != nil {
@@ -273,20 +279,33 @@ func (q *Queries) GetExitPermitInstanceForSubjectToday(ctx context.Context, arg 
 const getInProgressWorkflowInstance = `-- name: GetInProgressWorkflowInstance :one
 select id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at, local_date from workflow_instances
 where tenant_id = $1 and kind = $2 and subject_user_id = $3 and status in ('in_progress', 'approved')
+  and ($4::date is null or local_date >= $4::date)
 order by opened_at desc
 limit 1
 `
 
 type GetInProgressWorkflowInstanceParams struct {
-	TenantID      uuid.UUID `json:"tenant_id"`
-	Kind          string    `json:"kind"`
-	SubjectUserID uuid.UUID `json:"subject_user_id"`
+	TenantID      uuid.UUID   `json:"tenant_id"`
+	Kind          string      `json:"kind"`
+	SubjectUserID uuid.UUID   `json:"subject_user_id"`
+	Today         pgtype.Date `json:"today"`
 }
 
 // Any not-yet-terminal instance of this kind for this subject, used to
 // reject a new submission with a clear 409 before the DB constraint would.
+// sqlc.narg('today') is the tenant-local business date for a day-bound
+// kind (domain.Kind.DayBound: exit permits, late arrivals), null for the
+// rest: an instance of such a kind left open from an earlier day is stale
+// -- the expiry job closes it after the real midnight -- and must not
+// block today, whatever clock the request runs on (the time simulation
+// included) and however long ago the job last ran.
 func (q *Queries) GetInProgressWorkflowInstance(ctx context.Context, arg GetInProgressWorkflowInstanceParams) (WorkflowInstance, error) {
-	row := q.db.QueryRow(ctx, getInProgressWorkflowInstance, arg.TenantID, arg.Kind, arg.SubjectUserID)
+	row := q.db.QueryRow(ctx, getInProgressWorkflowInstance,
+		arg.TenantID,
+		arg.Kind,
+		arg.SubjectUserID,
+		arg.Today,
+	)
 	var i WorkflowInstance
 	err := row.Scan(
 		&i.ID,

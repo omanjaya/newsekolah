@@ -1597,7 +1597,10 @@
           "overdue": "{minutes} min late",
           "recordReturn": "Record return",
           "recordReturnFor": "Record return: {name}",
-          "returnedToast": "{name} recorded back"
+          "returnedToast": "{name} recorded back",
+          "unrecordedTitle": "Not recorded back",
+          "unrecordedHint": "Students who left in the past week and were never recorded back that day. Their return can no longer be recorded; pass them on to the homeroom teacher or counselor to follow up.",
+          "unrecordedBadge": "Not recorded"
         },
         "queue": {
           "emptyTitle": "Nothing waiting right now",
@@ -1622,9 +1625,11 @@
           "notBackChip": "Not back yet",
           "dueBack": "Due back by {time}",
           "wasDueBack": "Was due back at {time}",
+          "unrecordedChip": "Not recorded back",
           "returnedEyebrow": "Back at school",
           "returnedAt": "Back at {time}",
-          "lessonsOver": "This permit's lessons are over, so its gate QR can no longer be shown. The permit expires on its own."
+          "lessonsOver": "This permit's lessons are over, so its gate QR can no longer be shown. The permit expires on its own.",
+          "lessonsOverPending": "This permit's lessons ended before every stage approved it, so it cannot go further. The permit expires on its own."
         },
         "waitManual": "Waiting for {stage} to review.",
         "gateQrLabel": "Exit permit gate QR code",
@@ -1653,6 +1658,8 @@
         "returnedLate": "Back at {time}, {minutes} min late",
         "notBack": "Not back yet, due by {time}",
         "notBackLate": "Not back yet, {minutes} min past {time}",
+        "notRecordedBack": "Not recorded back (was due at {time})",
+        "unrecordedMeta": "not recorded back",
         "returnedMeta": "back {time}",
         "returnedLateMeta": "back {time}, {minutes} min late"
       },
@@ -1762,6 +1769,8 @@
         "rejected": "Request rejected",
         "approved": "Request approved and forwarded to the next stage",
         "issueLetter": "Issue letter",
+        "issueByOtherTitle": "Another counselor issues the letter",
+        "issueByOtherBody": "You approved this request at the {stage} stage, so another counselor must issue its letter.",
         "issued": "Leave letter issued",
         "issuedTitle": "Leave letter issued",
         "issuedBody": "Attendance for the leave dates has been filled automatically.",

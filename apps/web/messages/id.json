@@ -1595,7 +1595,10 @@
           "overdue": "Terlambat {minutes} menit",
           "recordReturn": "Catat kembali",
           "recordReturnFor": "Catat kembali: {name}",
-          "returnedToast": "{name} tercatat kembali"
+          "returnedToast": "{name} tercatat kembali",
+          "unrecordedTitle": "Tidak tercatat kembali",
+          "unrecordedHint": "Siswa yang keluar dalam seminggu terakhir dan tidak pernah dicatat kembali pada hari itu. Kembalinya tidak bisa dicatat lagi; teruskan ke wali kelas atau BK untuk ditindaklanjuti.",
+          "unrecordedBadge": "Tidak tercatat"
         },
         "queue": {
           "emptyTitle": "Belum ada yang menunggu",
@@ -1620,9 +1623,11 @@
           "notBackChip": "Belum kembali",
           "dueBack": "Kembali paling lambat pukul {time}",
           "wasDueBack": "Seharusnya kembali pukul {time}",
+          "unrecordedChip": "Tidak tercatat kembali",
           "returnedEyebrow": "Sudah kembali",
           "returnedAt": "Kembali pukul {time}",
-          "lessonsOver": "Jam pelajaran izin ini sudah selesai, jadi QR gerbang tidak bisa ditampilkan lagi. Izin ini kedaluwarsa dengan sendirinya."
+          "lessonsOver": "Jam pelajaran izin ini sudah selesai, jadi QR gerbang tidak bisa ditampilkan lagi. Izin ini kedaluwarsa dengan sendirinya.",
+          "lessonsOverPending": "Jam pelajaran izin ini sudah selesai sebelum semua tahap disetujui, jadi izin ini tidak bisa dilanjutkan. Izin ini kedaluwarsa dengan sendirinya."
         },
         "waitManual": "Menunggu {stage} meninjau.",
         "gateQrLabel": "Kode QR gerbang izin keluar",
@@ -1651,6 +1656,8 @@
         "returnedLate": "Kembali pukul {time}, terlambat {minutes} menit",
         "notBack": "Belum kembali, paling lambat pukul {time}",
         "notBackLate": "Belum kembali, terlambat {minutes} menit dari pukul {time}",
+        "notRecordedBack": "Tidak tercatat kembali (seharusnya pukul {time})",
+        "unrecordedMeta": "tidak tercatat kembali",
         "returnedMeta": "kembali {time}",
         "returnedLateMeta": "kembali {time}, terlambat {minutes} menit"
       },
@@ -1760,6 +1767,8 @@
         "rejected": "Pengajuan ditolak",
         "approved": "Pengajuan disetujui dan diteruskan ke tahap berikutnya",
         "issueLetter": "Terbitkan surat",
+        "issueByOtherTitle": "Surat diterbitkan Guru BK lain",
+        "issueByOtherBody": "Anda menyetujui pengajuan ini di tahap {stage}, jadi suratnya harus diterbitkan oleh Guru BK lain.",
         "issued": "Surat izin diterbitkan",
         "issuedTitle": "Surat izin sudah terbit",
         "issuedBody": "Presensi pada tanggal izin sudah diisi otomatis.",

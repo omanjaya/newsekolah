@@ -40,22 +40,18 @@ import { GatePanel } from "./exit-permit-panels";
 import { ReviewInboxBanner } from "./review-inbox-banner";
 import { WorkflowStatusBadge } from "./workflow-stepper";
 
-/** A permit still on its way, or approved and not yet through the gate. */
-function isActive(inst: WorkflowInstance): boolean {
-  return inst.status === "in_progress" || inst.status === "approved";
-}
-
 /**
- * Through the gate on the school's today and not recorded back yet: the
- * student is still out on it, so the status card stays on it (due back at,
- * or late by) instead of the idle prompt.
+ * Today's permit: opened on the school's today and still on its way,
+ * approved, or through the gate (out, back, or gone home). The API allows
+ * one such permit a day (EXIT_PERMIT_ALREADY_TODAY), so the status card
+ * stays on it for the rest of the day instead of offering a request the
+ * API refuses. A cancelled, rejected or expired permit frees the day, and
+ * one from an earlier day is history (the API no longer counts it).
  */
-function isOutToday(item: MyExitPermit, today: string, timeZone?: string): boolean {
+function isTodaysPermit(item: WorkflowInstance, today: string, timeZone?: string): boolean {
   return (
-    item.exited_at !== undefined &&
-    item.return_required &&
-    item.returned_at === undefined &&
-    isoToZonedLocal(item.exited_at, timeZone).slice(0, 10) === today
+    (item.status === "in_progress" || item.status === "approved" || item.status === "completed") &&
+    isoToZonedLocal(item.opened_at, timeZone).slice(0, 10) === today
   );
 }
 
@@ -186,23 +182,16 @@ function MyExitPermits(): ReactElement {
   // The school's today, so a row in its current year drops the year.
   const today = todayInZone(timeZone);
   const now = useBusinessNow();
-  const active = items.find(isActive) ?? items.find((item) => isOutToday(item, today, timeZone));
-  // The permit the status card showed last. The gate scan completes it,
-  // so it is no longer active; the card stays on it so that its exited
-  // state ("Sudah keluar", with the time) answers the scan, instead of the
-  // page dropping back to the idle prompt under the student's eyes. A
-  // cancelled permit still leaves the card, and a fresh visit starts idle.
-  const [cardId, setCardId] = useState<string | null>(null);
-  if (active && active.id !== cardId) setCardId(active.id);
-  const exited = active
-    ? undefined
-    : items.find((item) => item.id === cardId && item.status === "completed");
-  const onCard = active ?? exited;
+  const onCard = items.find((item) => isTodaysPermit(item, today, timeZone));
   const history = items.filter((item) => item !== onCard);
 
-  /** "kembali 11.20" (", terlambat 20 menit") once the return is recorded. */
+  /**
+   * "kembali 11.20" (", terlambat 20 menit") once the return is recorded,
+   * or a warning when the exit day ended without one.
+   */
   function returnMeta(item: MyExitPermit): string[] {
-    const state = exitReturnState(item, now);
+    const state = exitReturnState(item, now, timeZone);
+    if (state.kind === "unrecorded") return [t("unrecordedMeta")];
     if (state.kind !== "returned") return [];
     const time = formatTime(state.at, { locale, timeZone });
     return [

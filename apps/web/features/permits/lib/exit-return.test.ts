@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { exitReturnState, minutesLate } from "./exit-return";
 
 const due = "2027-02-16T04:00:00Z"; // 11.00 in Jakarta
+const TZ = "Asia/Jakarta";
 
 describe("minutesLate", () => {
   it("counts whole minutes past the due time", () => {
@@ -23,21 +24,39 @@ describe("exitReturnState", () => {
   };
 
   it("is out and late once the due time has passed", () => {
-    expect(exitReturnState(out, new Date("2027-02-16T03:30:00Z"))).toEqual({
+    expect(exitReturnState(out, new Date("2027-02-16T03:30:00Z"), TZ)).toEqual({
       kind: "out",
       due,
       lateMinutes: 0,
     });
-    expect(exitReturnState(out, new Date("2027-02-16T04:30:00Z"))).toEqual({
+    expect(exitReturnState(out, new Date("2027-02-16T04:30:00Z"), TZ)).toEqual({
       kind: "out",
       due,
       lateMinutes: 30,
     });
   });
 
+  // The detail read "terlambat 11655 menit" a week later: once the exit
+  // day is over there is a fixed state instead of a growing count.
+  it("is unrecorded once the school's exit day is over with no return", () => {
+    // 23.59 on the exit day in Jakarta: still out, if very late.
+    expect(exitReturnState(out, new Date("2027-02-16T16:59:00Z"), TZ)).toMatchObject({
+      kind: "out",
+    });
+    // 00.00 the next day in Jakarta, and a week later.
+    expect(exitReturnState(out, new Date("2027-02-16T17:00:00Z"), TZ)).toEqual({
+      kind: "unrecorded",
+      due,
+    });
+    expect(exitReturnState(out, new Date("2027-02-23T03:00:00Z"), TZ)).toEqual({
+      kind: "unrecorded",
+      due,
+    });
+  });
+
   it("is returned, late by the minutes past the due time", () => {
     const back = { ...out, returned_at: "2027-02-16T04:20:00Z" };
-    expect(exitReturnState(back, new Date("2027-02-16T06:00:00Z"))).toEqual({
+    expect(exitReturnState(back, new Date("2027-02-16T06:00:00Z"), TZ)).toEqual({
       kind: "returned",
       at: "2027-02-16T04:20:00Z",
       lateMinutes: 20,
@@ -46,11 +65,11 @@ describe("exitReturnState", () => {
 
   it("tracks nothing for a student who went home or has not left", () => {
     const now = new Date("2027-02-16T06:00:00Z");
-    expect(exitReturnState({ ...out, return_required: false }, now)).toEqual({ kind: "none" });
-    expect(exitReturnState({ return_required: true, expected_return_at: due }, now)).toEqual({
+    expect(exitReturnState({ ...out, return_required: false }, now, TZ)).toEqual({ kind: "none" });
+    expect(exitReturnState({ return_required: true, expected_return_at: due }, now, TZ)).toEqual({
       kind: "none",
     });
-    expect(exitReturnState({ exited_at: out.exited_at, return_required: true }, now)).toEqual({
+    expect(exitReturnState({ exited_at: out.exited_at, return_required: true }, now, TZ)).toEqual({
       kind: "none",
     });
   });
@@ -61,7 +80,7 @@ describe("exitReturnState", () => {
       return_required: true,
       returned_at: "2027-02-16T05:00:00Z",
     };
-    expect(exitReturnState(imported, new Date("2027-02-16T06:00:00Z"))).toEqual({
+    expect(exitReturnState(imported, new Date("2027-02-16T06:00:00Z"), TZ)).toEqual({
       kind: "returned",
       at: "2027-02-16T05:00:00Z",
       lateMinutes: null,
