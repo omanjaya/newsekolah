@@ -50,7 +50,7 @@ export function endLessons<T extends { id: string }>(lessons: readonly T[], star
  * the student, or null to use the shared error catalog. That catalog says
  * "Siswa ini ...", which reads right for the duty teacher recording a
  * permit for someone else but not for the student (as on the web,
- * apps/web/features/permits/components/exit-permit-detail.tsx).
+ * apps/web/features/permits/lib/own-exit-refusal.ts).
  */
 export function ownExitRefusalKey(
   code: string | undefined,
