@@ -11,9 +11,9 @@ describe("resolveScanRoute", () => {
     expect(resolveScanRoute(raw)).toEqual({ action, token: "tok" });
   });
 
-  it("maps the approve QR to the exit permit stage with its instance id", () => {
+  it("maps the approve QR to a workflow-neutral stage approval with its instance id", () => {
     expect(resolveScanRoute("sion:approve:inst-1:tok")).toEqual({
-      action: "exit_stage",
+      action: "approve_stage",
       token: "tok",
       instanceId: "inst-1",
     });
@@ -28,7 +28,7 @@ describe("resolveScanRoute", () => {
   });
 
   it("accepts the scan-token purpose names as aliases", () => {
-    expect(resolveScanRoute("sion:approve_stage:inst-1:tok").action).toBe("exit_stage");
+    expect(resolveScanRoute("sion:approve_stage:inst-1:tok").action).toBe("approve_stage");
     expect(resolveScanRoute("sion:gate_exit:inst-2:tok").action).toBe("gate_exit");
   });
 
@@ -92,7 +92,7 @@ describe("resolveScanRoute with switched-off modules", () => {
     expect(SCAN_ACTION_MODULE).toEqual({
       classroom_entry: "permits",
       late_arrival: "permits",
-      exit_stage: "permits",
+      approve_stage: "permits",
       gate_exit: "permits",
       library_visit: "library",
     });

@@ -55,7 +55,16 @@ export function useScanDispatch(): (raw: string) => Promise<ScanOutcome> {
           const data = await classroomEntry.mutateAsync({ token });
           return t("results.classroom_entry", { teacher: data.teacher_name });
         }
-        case "exit_stage": {
+        case "approve_stage": {
+          // The approver panel encodes the same "approve" payload for an
+          // exit permit and a late arrival. Only the scanning student's own
+          // late arrival can be the target of a late-arrival stage, so a
+          // match on its id routes there; anything else is an exit permit.
+          const { data: current } = await currentLate.refetch();
+          if (current?.instance.id === instanceId && current.instance.status === "in_progress") {
+            await lateStage.mutateAsync({ id: instanceId, token });
+            return t("results.late_arrival_stage");
+          }
           const data = await exitStage.mutateAsync({ id: instanceId, token });
           return t("results.exit_stage", { student: formatDisplayName(data.student_name) });
         }
