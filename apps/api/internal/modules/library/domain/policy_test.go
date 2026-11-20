@@ -210,3 +210,12 @@ func TestGenerateCallNumber(t *testing.T) {
 	require.Equal(t, "", domain.GenerateCallNumber("", "", ""))
 	require.Equal(t, "813", domain.GenerateCallNumber("813", "", ""))
 }
+
+func TestLooksLikeDDC(t *testing.T) {
+	for _, s := range []string{"899", "899.221", " 813.5 ", "000"} {
+		require.True(t, domain.LooksLikeDDC(s), s)
+	}
+	for _, s := range []string{"", "89", "899.", "899,221", "Fiksi - Novel Indonesia", "8a9", "899.2a"} {
+		require.False(t, domain.LooksLikeDDC(s), s)
+	}
+}

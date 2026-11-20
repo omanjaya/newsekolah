@@ -94,6 +94,13 @@
       "publishYear": "Publish year",
       "isbn": "ISBN",
       "classification": "Classification",
+      "classificationHint": "Free text, e.g. Fiction - Indonesian novel. The call number uses the DDC number.",
+      "ddcNumber": "DDC number",
+      "ddcNumberHint": "Dewey class number, e.g. 899.221. It starts the call number on the spine label.",
+      "callNumber": "Call number",
+      "callNumberHint": "Leave empty to build it from the DDC number, author and title.",
+      "isOpac": "Show in the public catalogue",
+      "isOpacHint": "Students and teachers can find and reserve this title in the OPAC.",
       "pages": "Page count",
       "subjects": "Subjects",
       "language": "Language",
@@ -107,7 +114,8 @@
         "lookup": "Fill in from the ISBN",
         "identity": "The book",
         "publication": "Publication",
-        "classification": "Classification and summary"
+        "classification": "Classification and summary",
+        "visibility": "Public visibility"
       }
     },
     "isbnLookup": {
@@ -696,6 +704,7 @@
     "emptyFile": "The file has no data rows. Check the filled template again.",
     "parseError": "The file could not be read. Make sure it is an XLSX file matching the template.",
     "committed": "Import applied",
+    "commitRowError": "Row {row}: {message}. Fix that row and upload the file again.",
     "resultSummary": "{titles} new titles, {copies} copies added.",
     "importAnother": "Import another file",
     "mapping": {

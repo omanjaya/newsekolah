@@ -468,6 +468,25 @@ func NormalizeISBN(raw string) string {
 // three letters of the author's name upper-cased, then the first letter
 // of the title lower-cased (old app: libraryCallNumber). Returns "" when
 // there isn't enough information (no DDC and no author).
+// LooksLikeDDC reports whether s is a Dewey class number: three digits,
+// optionally followed by a decimal part ("899", "899.221").
+func LooksLikeDDC(s string) bool {
+	s = strings.TrimSpace(s)
+	if len(s) < 3 {
+		return false
+	}
+	for i, r := range s {
+		switch {
+		case i < 3 && r >= '0' && r <= '9':
+		case i == 3 && r == '.' && len(s) > 4:
+		case i > 3 && r >= '0' && r <= '9':
+		default:
+			return false
+		}
+	}
+	return true
+}
+
 func GenerateCallNumber(ddcNumber, author, title string) string {
 	parts := make([]string, 0, 3)
 	if ddcNumber != "" {

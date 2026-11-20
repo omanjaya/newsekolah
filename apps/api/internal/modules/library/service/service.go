@@ -133,6 +133,8 @@ type Repository interface {
 
 	CreateTitle(ctx context.Context, t domain.Title) (domain.Title, error)
 	UpdateTitle(ctx context.Context, t domain.Title) (domain.Title, error)
+	RenameInheritedCopyCallNumbers(ctx context.Context, tenantID, titleID uuid.UUID, oldCallNumber, newCallNumber string) error
+	PublishTitleCopies(ctx context.Context, tenantID, titleID uuid.UUID) error
 	GetTitle(ctx context.Context, tenantID, id uuid.UUID) (domain.Title, bool, error)
 	GetTitleByISBN(ctx context.Context, tenantID uuid.UUID, isbn string) (domain.Title, bool, error)
 	DeleteTitle(ctx context.Context, tenantID, id uuid.UUID) (bool, error)
@@ -145,6 +147,7 @@ type Repository interface {
 	GetCopy(ctx context.Context, tenantID, id uuid.UUID) (domain.Copy, bool, error)
 	GetCopyByBarcode(ctx context.Context, tenantID uuid.UUID, barcode string) (domain.Copy, bool, error)
 	FindCopyByCode(ctx context.Context, tenantID uuid.UUID, code string) (domain.Copy, bool, error)
+	TakenCopyCodes(ctx context.Context, tenantID uuid.UUID, barcodes, accessionNumbers []string) (takenBarcodes, takenAccessions map[string]bool, err error)
 	ListCopiesForTitle(ctx context.Context, tenantID, titleID uuid.UUID) ([]domain.Copy, error)
 	ListCopiesForStocktake(ctx context.Context, tenantID uuid.UUID) ([]domain.Copy, error)
 	ListCopiesFiltered(ctx context.Context, tenantID uuid.UUID, f CopyFilter, limit, offset int) ([]domain.Copy, error)

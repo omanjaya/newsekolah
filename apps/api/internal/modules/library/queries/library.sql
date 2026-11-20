@@ -94,6 +94,14 @@ select * from library_copies where tenant_id = $1 and id = $2;
 -- name: GetCopyByBarcode :one
 select * from library_copies where tenant_id = $1 and barcode = $2;
 
+-- name: ListTakenCopyCodes :many
+-- The barcodes and accession numbers, out of the given candidates, that
+-- copies already on file hold: an import preview checks a whole file's
+-- explicit numbers in one round trip.
+select barcode, accession_number from library_copies
+where tenant_id = $1
+  and (barcode = any(sqlc.arg(barcodes)::text[]) or accession_number = any(sqlc.arg(accession_numbers)::text[]));
+
 -- name: FindCopyByCode :one
 -- Matches barcode, accession number, or RFID tag, the same three columns
 -- the old app searched (libOpsFindItemByCode).
@@ -129,6 +137,21 @@ where c.tenant_id = $1
   )
 order by c.created_at desc
 limit $2 offset $3;
+
+-- name: RenameInheritedCopyCallNumbers :exec
+-- A title's call number changed: copies still carrying the old one (they
+-- inherited it when they were added) follow it, so spine labels printed
+-- later show the new number. A copy with its own call number keeps it.
+update library_copies set call_number = sqlc.arg(new_call_number), updated_at = now()
+where tenant_id = $1 and title_id = $2 and call_number = sqlc.arg(old_call_number);
+
+-- name: PublishTitleCopies :exec
+-- A title was made public: its copies become public with it. There is no
+-- per-copy visibility control, so without this the copies of a title that
+-- was hidden (every title imported before imports were made public) would
+-- stay out of the OPAC's availability and reservations.
+update library_copies set is_opac = true, updated_at = now()
+where tenant_id = $1 and title_id = $2 and not is_opac;
 
 -- name: UpdateCopyStatus :one
 update library_copies set status = $3, condition = coalesce(sqlc.narg(condition)::text, condition)

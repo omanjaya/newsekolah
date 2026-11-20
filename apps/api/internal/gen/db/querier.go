@@ -1369,6 +1369,10 @@ type Querier interface {
 	ListSubstitutionsOutgoingWithSchedule(ctx context.Context, arg ListSubstitutionsOutgoingWithScheduleParams) ([]ListSubstitutionsOutgoingWithScheduleRow, error)
 	ListSystemRoles(ctx context.Context, tenantID uuid.UUID) ([]ListSystemRolesRow, error)
 	ListTPMappings(ctx context.Context, arg ListTPMappingsParams) ([]ReportTpMapping, error)
+	// The barcodes and accession numbers, out of the given candidates, that
+	// copies already on file hold: an import preview checks a whole file's
+	// explicit numbers in one round trip.
+	ListTakenCopyCodes(ctx context.Context, arg ListTakenCopyCodesParams) ([]ListTakenCopyCodesRow, error)
 	// Active teachers with a teaching assignment in academic_year_id, for a
 	// schedule form's teacher dropdown. self_user_id narrows to one teacher
 	// (a caller without manage_schedules/manage_master_data sees only
@@ -1555,9 +1559,18 @@ type Querier interface {
 	PlatformUpsertFeatureFlag(ctx context.Context, arg PlatformUpsertFeatureFlagParams) (FeatureFlag, error)
 	PopularTitlesAllTime(ctx context.Context, arg PopularTitlesAllTimeParams) ([]PopularTitlesAllTimeRow, error)
 	PruneOldSessions(ctx context.Context, tenantID uuid.UUID) (int64, error)
+	// A title was made public: its copies become public with it. There is no
+	// per-copy visibility control, so without this the copies of a title that
+	// was hidden (every title imported before imports were made public) would
+	// stay out of the OPAC's availability and reservations.
+	PublishTitleCopies(ctx context.Context, arg PublishTitleCopiesParams) error
 	RecordDeliveryAttempt(ctx context.Context, arg RecordDeliveryAttemptParams) error
 	RecordStocktakeScan(ctx context.Context, arg RecordStocktakeScanParams) (LibraryStocktakeScan, error)
 	RemoveParticipant(ctx context.Context, arg RemoveParticipantParams) error
+	// A title's call number changed: copies still carrying the old one (they
+	// inherited it when they were added) follow it, so spine labels printed
+	// later show the new number. A copy with its own call number keeps it.
+	RenameInheritedCopyCallNumbers(ctx context.Context, arg RenameInheritedCopyCallNumbersParams) error
 	RenameWebAuthnCredential(ctx context.Context, arg RenameWebAuthnCredentialParams) (WebauthnCredential, error)
 	RenewLoan(ctx context.Context, arg RenewLoanParams) (LibraryLoan, error)
 	// Deletes every range of one subject-teacher scope before the caller

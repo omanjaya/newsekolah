@@ -97,7 +97,15 @@ export function ImportView(): ReactElement {
       setPreviewResult(result);
       setStep("preview");
     } catch (err) {
-      setError(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
+      if (!(err instanceof ApiError)) {
+        setError(apiErrorMessage("UNKNOWN"));
+        return;
+      }
+      // The API names the row that stopped the commit, so the librarian
+      // knows which one to fix instead of hunting through the file.
+      const row = err.details?.find((detail) => detail.field === "row_number")?.code;
+      const message = apiErrorMessage(err.code);
+      setError(row ? t("commitRowError", { row, message }) : message);
     }
   }
 
@@ -115,7 +123,15 @@ export function ImportView(): ReactElement {
       setStep("result");
       toast.success(t("committed"));
     } catch (err) {
-      setError(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
+      if (!(err instanceof ApiError)) {
+        setError(apiErrorMessage("UNKNOWN"));
+        return;
+      }
+      // The API names the row that stopped the commit, so the librarian
+      // knows which one to fix instead of hunting through the file.
+      const row = err.details?.find((detail) => detail.field === "row_number")?.code;
+      const message = apiErrorMessage(err.code);
+      setError(row ? t("commitRowError", { row, message }) : message);
     }
   }
 

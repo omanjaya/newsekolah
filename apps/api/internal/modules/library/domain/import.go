@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -258,3 +259,16 @@ func ValidateImportRow(row ImportRow, refs ImportValidationRefs) (copies int, me
 	}
 	return copies, "", true
 }
+
+// ImportRowError ties a failure while committing an import to the row
+// that caused it, so the librarian is told which row to fix instead of
+// only that the whole file was rolled back. It unwraps to the underlying
+// domain error, which keeps its own HTTP mapping.
+type ImportRowError struct {
+	Row int
+	Err error
+}
+
+func (e *ImportRowError) Error() string { return fmt.Sprintf("import row %d: %v", e.Row, e.Err) }
+
+func (e *ImportRowError) Unwrap() error { return e.Err }

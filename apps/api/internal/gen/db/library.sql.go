@@ -2291,6 +2291,46 @@ func (q *Queries) ListStocktakes(ctx context.Context, arg ListStocktakesParams) 
 	return items, nil
 }
 
+const listTakenCopyCodes = `-- name: ListTakenCopyCodes :many
+select barcode, accession_number from library_copies
+where tenant_id = $1
+  and (barcode = any($2::text[]) or accession_number = any($3::text[]))
+`
+
+type ListTakenCopyCodesParams struct {
+	TenantID         uuid.UUID `json:"tenant_id"`
+	Barcodes         []string  `json:"barcodes"`
+	AccessionNumbers []string  `json:"accession_numbers"`
+}
+
+type ListTakenCopyCodesRow struct {
+	Barcode         string `json:"barcode"`
+	AccessionNumber string `json:"accession_number"`
+}
+
+// The barcodes and accession numbers, out of the given candidates, that
+// copies already on file hold: an import preview checks a whole file's
+// explicit numbers in one round trip.
+func (q *Queries) ListTakenCopyCodes(ctx context.Context, arg ListTakenCopyCodesParams) ([]ListTakenCopyCodesRow, error) {
+	rows, err := q.db.Query(ctx, listTakenCopyCodes, arg.TenantID, arg.Barcodes, arg.AccessionNumbers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTakenCopyCodesRow{}
+	for rows.Next() {
+		var i ListTakenCopyCodesRow
+		if err := rows.Scan(&i.Barcode, &i.AccessionNumber); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTitles = `-- name: ListTitles :many
 select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, is_opac, control_number, responsibility, additional_authors, publish_place, edition, pages, illustration, dimensions, issn, ddc_number, call_number, subjects, literary_form, target_audience, notes, abstract, material_type_id, search_vector from library_titles t
 where t.tenant_id = $1 and t.deleted_at is null
@@ -2597,6 +2637,25 @@ func (q *Queries) NextBarcodeSequence(ctx context.Context, tenantID uuid.UUID) (
 	return column_1, err
 }
 
+const publishTitleCopies = `-- name: PublishTitleCopies :exec
+update library_copies set is_opac = true, updated_at = now()
+where tenant_id = $1 and title_id = $2 and not is_opac
+`
+
+type PublishTitleCopiesParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	TitleID  uuid.UUID `json:"title_id"`
+}
+
+// A title was made public: its copies become public with it. There is no
+// per-copy visibility control, so without this the copies of a title that
+// was hidden (every title imported before imports were made public) would
+// stay out of the OPAC's availability and reservations.
+func (q *Queries) PublishTitleCopies(ctx context.Context, arg PublishTitleCopiesParams) error {
+	_, err := q.db.Exec(ctx, publishTitleCopies, arg.TenantID, arg.TitleID)
+	return err
+}
+
 const recordStocktakeScan = `-- name: RecordStocktakeScan :one
 insert into library_stocktake_scans (tenant_id, stocktake_id, copy_id, raw_code, outcome, location_id, scanned_at, scanned_by_user_id)
 values ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -2641,6 +2700,31 @@ func (q *Queries) RecordStocktakeScan(ctx context.Context, arg RecordStocktakeSc
 		&i.LocationID,
 	)
 	return i, err
+}
+
+const renameInheritedCopyCallNumbers = `-- name: RenameInheritedCopyCallNumbers :exec
+update library_copies set call_number = $3, updated_at = now()
+where tenant_id = $1 and title_id = $2 and call_number = $4
+`
+
+type RenameInheritedCopyCallNumbersParams struct {
+	TenantID      uuid.UUID `json:"tenant_id"`
+	TitleID       uuid.UUID `json:"title_id"`
+	NewCallNumber string    `json:"new_call_number"`
+	OldCallNumber string    `json:"old_call_number"`
+}
+
+// A title's call number changed: copies still carrying the old one (they
+// inherited it when they were added) follow it, so spine labels printed
+// later show the new number. A copy with its own call number keeps it.
+func (q *Queries) RenameInheritedCopyCallNumbers(ctx context.Context, arg RenameInheritedCopyCallNumbersParams) error {
+	_, err := q.db.Exec(ctx, renameInheritedCopyCallNumbers,
+		arg.TenantID,
+		arg.TitleID,
+		arg.NewCallNumber,
+		arg.OldCallNumber,
+	)
+	return err
 }
 
 const renewLoan = `-- name: RenewLoan :one

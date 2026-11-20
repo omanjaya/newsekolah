@@ -351,6 +351,10 @@ paths:
         Create titles (auto call number when empty) and copies for every valid row, in one
         transaction; an existing title (deduped by normalized ISBN, then title+author) only gets
         new copies added
+      description: >-
+        A row whose barcode or accession number is already taken (normally caught by the preview)
+        rolls the whole commit back with 409; the error's details then name that row as
+        {field: "row_number", code: "<row number>"}.
       requestBody:
         required: true
         content:
@@ -365,6 +369,7 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
 
   /v1/library/copies:
     get:

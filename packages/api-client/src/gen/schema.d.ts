@@ -4967,7 +4967,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create titles (auto call number when empty) and copies for every valid row, in one transaction; an existing title (deduped by normalized ISBN, then title+author) only gets new copies added */
+        /**
+         * Create titles (auto call number when empty) and copies for every valid row, in one transaction; an existing title (deduped by normalized ISBN, then title+author) only gets new copies added
+         * @description A row whose barcode or accession number is already taken (normally caught by the preview) rolls the whole commit back with 409; the error's details then name that row as {field: "row_number", code: "<row number>"}.
+         */
         post: operations["commitLibraryImport"];
         delete?: never;
         options?: never;
@@ -22625,6 +22628,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
         };
     };
     listLibraryCopiesFiltered: {
