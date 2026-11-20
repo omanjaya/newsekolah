@@ -19,7 +19,7 @@ import { useState } from "react";
 import { formatCalendarDate } from "../../../lib/format-calendar-date";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { type ScheduleBlock, useDeleteScheduleBlockMutation } from "../api";
-import { minEffectiveFrom } from "../block-policy";
+import { maxEffectiveFrom, minEffectiveFrom } from "../block-policy";
 import { earliestEffectiveFromOf } from "../effective-error";
 import { defaultEffectiveFrom } from "../week";
 
@@ -87,12 +87,15 @@ function RetireForm({
   const apiErrorMessage = useApiErrorMessage();
   const remove = useDeleteScheduleBlockMutation();
   const [min, setMin] = useState(minEffectiveFrom(block));
+  // A block already removed from a later date ends there: no later date
+  // would change anything.
+  const max = maxEffectiveFrom(block, dates.yearEnd);
   const [date, setDate] = useState(() =>
     defaultEffectiveFrom({
       today: dates.today,
       preferred: dates.weekStart,
       yearStart: dates.yearStart,
-      yearEnd: dates.yearEnd,
+      yearEnd: max,
       min: minEffectiveFrom(block),
     }),
   );
@@ -141,7 +144,7 @@ function RetireForm({
             if (next) setDate(next);
           }}
           min={min}
-          max={dates.yearEnd}
+          max={max}
           today={dates.today}
           clearable={false}
           required

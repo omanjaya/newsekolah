@@ -191,7 +191,12 @@ describe("LessonCell", () => {
       block: block({
         has_history: true,
         effective_until: "2026-11-16",
-        mutation_policy: { can_edit: false, can_delete: false, has_history: true },
+        mutation_policy: {
+          can_edit: false,
+          can_delete: false,
+          has_history: true,
+          reason: "SCHEDULE_ENDED",
+        },
       }),
       span: 1,
       subject: "Matematika",
@@ -212,6 +217,31 @@ describe("LessonCell", () => {
     expect(onDelete).not.toHaveBeenCalled();
     // Copying an ended lesson to another slot is still allowed.
     expect(screen.getByRole("button", { name: "copyBlock" })).not.toHaveAttribute("aria-disabled");
+  });
+
+  it("says a block still running is locked because its remaining lessons all have history", () => {
+    renderCell({
+      block: block({
+        has_history: true,
+        effective_until: "2026-11-26",
+        mutation_policy: {
+          can_edit: false,
+          can_delete: false,
+          has_history: true,
+          reason: "SCHEDULE_CHANGE_BEFORE_HISTORY",
+        },
+      }),
+      span: 1,
+      subject: "Matematika",
+      detail: "Budi",
+      canManage: true,
+    });
+    expect(screen.getByRole("button", { name: "editBlock" })).toHaveAccessibleDescription(
+      "blockBoundByHistory",
+    );
+    expect(screen.getByRole("button", { name: "deleteBlock" })).toHaveAccessibleDescription(
+      "blockBoundByHistory",
+    );
   });
 
   it("says when a block starts or ends within the week shown", () => {

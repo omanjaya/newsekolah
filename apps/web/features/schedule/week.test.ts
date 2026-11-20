@@ -4,8 +4,11 @@ import {
   blockActiveOn,
   cellDate,
   defaultEffectiveFrom,
+  earlierDate,
   inWeek,
+  nearestSchoolDay,
   startOfIsoWeek,
+  stepSchoolDay,
   weekDates,
 } from "./week";
 
@@ -77,5 +80,29 @@ describe("defaultEffectiveFrom", () => {
 
   it("works without the year's dates", () => {
     expect(defaultEffectiveFrom({ today: "2026-11-20" })).toBe("2026-11-20");
+  });
+});
+
+describe("school days", () => {
+  const weekdays = [1, 2, 3, 4, 5];
+
+  it("finds today or the next school day", () => {
+    expect(nearestSchoolDay("2026-11-20", weekdays)).toBe("2026-11-20");
+    expect(nearestSchoolDay("2026-11-21", weekdays)).toBe("2026-11-23");
+    expect(nearestSchoolDay("2026-11-22", weekdays, -1)).toBe("2026-11-20");
+    expect(nearestSchoolDay("2026-11-21", [])).toBe("2026-11-21");
+  });
+
+  it("steps over the days the school is closed", () => {
+    expect(stepSchoolDay("2026-11-20", 1, weekdays)).toBe("2026-11-23");
+    expect(stepSchoolDay("2026-11-23", -1, weekdays)).toBe("2026-11-20");
+    expect(stepSchoolDay("2026-11-18", 1, weekdays)).toBe("2026-11-19");
+    expect(stepSchoolDay("2026-11-21", 1, [1, 2, 3, 4, 5, 6])).toBe("2026-11-23");
+  });
+
+  it("picks the earlier of two dates", () => {
+    expect(earlierDate("2027-06-30", "2026-12-03")).toBe("2026-12-03");
+    expect(earlierDate("2027-06-30", undefined)).toBe("2027-06-30");
+    expect(earlierDate(undefined, undefined)).toBeUndefined();
   });
 });

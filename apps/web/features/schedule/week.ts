@@ -29,6 +29,42 @@ export function inWeek(weekStart: string, iso: string): boolean {
   return iso >= weekStart && iso <= shiftIsoDate(weekStart, 6);
 }
 
+/**
+ * The school day nearest `iso` in `direction`: `iso` itself when its
+ * weekday is one of `activeDays` (ISO weekdays, the school's active days),
+ * else the first later (1) or earlier (-1) date that is. Without known
+ * school days it is `iso`.
+ */
+export function nearestSchoolDay(
+  iso: string,
+  activeDays: readonly number[],
+  direction: 1 | -1 = 1,
+): string {
+  if (activeDays.length === 0) return iso;
+  let date = iso;
+  for (let step = 0; step < 7; step += 1) {
+    if (activeDays.includes(isoWeekdayOf(date))) return date;
+    date = shiftIsoDate(date, direction);
+  }
+  return iso;
+}
+
+/** The next (1) or previous (-1) school day after `iso`, skipping days the school is closed. */
+export function stepSchoolDay(
+  iso: string,
+  direction: 1 | -1,
+  activeDays: readonly number[],
+): string {
+  return nearestSchoolDay(shiftIsoDate(iso, direction), activeDays, direction);
+}
+
+/** The earlier of two dates; an absent one loses. */
+export function earlierDate(a: string | undefined, b: string | undefined): string | undefined {
+  if (a === undefined) return b;
+  if (b === undefined) return a;
+  return a < b ? a : b;
+}
+
 /** The bounds of a block or schedule version. */
 export interface EffectiveRange {
   effective_from: string;
@@ -52,10 +88,12 @@ function later(a: string | undefined, b: string | undefined): string | undefined
 
 /**
  * The date a new lesson or a dated change starts on by default: the
- * earliest the server accepts (`min`, for a block with history) or the
- * year's start, but never before today nor before the date the person was
- * looking at (`preferred`, the cell or week they acted on), clamped into
- * the academic year. Any bound may be unknown.
+ * earliest the server accepts (`min`, the block's `min_effective_from`,
+ * which is already tomorrow once today's lesson has begun) or the year's
+ * start, but never before today nor before the date the person was
+ * looking at (`preferred`, the cell or week they acted on), and never after
+ * `yearEnd` (the year's end, or the block's own last date when it has one).
+ * Any bound may be unknown.
  */
 export function defaultEffectiveFrom({
   today,

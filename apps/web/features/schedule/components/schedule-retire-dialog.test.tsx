@@ -136,6 +136,26 @@ describe("ScheduleRetireDialog", () => {
     });
   });
 
+  it("never defaults past a planned end the block already has", async () => {
+    const user = userEvent.setup();
+    render(
+      <ScheduleRetireDialog
+        block={{ ...block, effective_until: "2026-12-03" }}
+        name="Matematika"
+        dates={{ ...dates, weekStart: "2026-12-07" }}
+        onClose={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "retireConfirm" }));
+    await waitFor(() => {
+      expect(mocks.remove).toHaveBeenCalledWith({
+        scheduleIds: ["schedule-1", "schedule-2"],
+        effectiveFrom: "2026-12-03",
+      });
+    });
+  });
+
   it("renders nothing to confirm without a block", () => {
     render(<ScheduleRetireDialog block={null} name="" dates={dates} onClose={vi.fn()} />);
     expect(screen.queryByRole("button", { name: "retireConfirm" })).not.toBeInTheDocument();
