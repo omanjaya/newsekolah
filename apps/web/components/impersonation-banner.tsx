@@ -170,11 +170,19 @@ export function ImpersonationBanner(): ReactElement | null {
   }
 
   const adminName = me.impersonated_by.name ?? "admin";
+  // The account still has to set its own password; the admin is not sent to
+  // that step (needsForcedPasswordChange), so the strip says it is pending.
+  const detail = [
+    t("banner", { name: me.name, adminName }),
+    me.must_change_password ? t("pendingPassword") : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   return (
     <ShellStrip
       icon={<UserRoundCog />}
       title={tStrip("impersonation", { adminName, name: me.name })}
-      detail={t("banner", { name: me.name, adminName })}
+      detail={detail}
       action={
         <Button size="sm" variant="secondary" loading={stop.isPending} onClick={handleStop}>
           {tStrip("impersonationStop")}

@@ -80,6 +80,32 @@ describe("RouteGuard", () => {
     expect(replace).toHaveBeenCalledWith("/change-password");
   });
 
+  // An administrator impersonating a freshly created account (every new
+  // account must change its password) was sent to /change-password, which
+  // has no impersonation strip and no way back but a full sign-out, and
+  // every reload sent them there again (round 3, library-members-time-R1).
+  it("keeps an impersonation session in the app when the account must change its password", () => {
+    replace.mockClear();
+    mockedUseSession.mockReturnValue({
+      status: "authenticated",
+      me: {
+        must_change_password: true,
+        permissions: [],
+        impersonated_by: { user_id: "admin-1", name: "Operator" },
+      } as never,
+      isReady: true,
+    });
+
+    render(
+      <RouteGuard>
+        <p>protected</p>
+      </RouteGuard>,
+    );
+
+    expect(replace).not.toHaveBeenCalledWith("/change-password");
+    expect(screen.getByText("protected")).toBeInTheDocument();
+  });
+
   it("renders children once authenticated with the required permission", () => {
     mockedUseSession.mockReturnValue({
       status: "authenticated",

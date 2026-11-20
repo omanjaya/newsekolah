@@ -220,4 +220,26 @@ describe("ImpersonationBanner", () => {
     expect(forgetAccessToken).toHaveBeenCalledTimes(1);
     expect(client.getQueryData(["notifications", "unread-count"])).toBeUndefined();
   });
+
+  // The admin is not sent to the forced password change while impersonating
+  // (lib/session/forced-password-change.ts), so the strip, which keeps its
+  // Stop button, says the account still has to set its own password.
+  it("notes a pending password change on the account and keeps the way back", () => {
+    const account = teacher as { must_change_password: boolean };
+    account.must_change_password = true;
+    try {
+      renderStrip();
+
+      expect(screen.getByRole("status")).toHaveTextContent("pendingPassword");
+      expect(screen.getByRole("button", { name: "impersonationStop" })).toBeEnabled();
+    } finally {
+      account.must_change_password = false;
+    }
+  });
+
+  it("says nothing about the password once the account has set its own", () => {
+    renderStrip();
+
+    expect(screen.getByRole("status")).not.toHaveTextContent("pendingPassword");
+  });
 });

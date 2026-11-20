@@ -142,6 +142,7 @@
       },
       "impersonation": {
         "banner": "Operated by {adminName} as {name}, session ends automatically in 30 minutes",
+        "pendingPassword": "This user has not changed their initial password yet",
         "stop": "Stop impersonating"
       },
       "roleTesting": {
