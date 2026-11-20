@@ -54,6 +54,62 @@ describe("ActivitiesRecord", () => {
     expect(screen.getByText("Juara 1", { exact: false })).toBeInTheDocument();
   });
 
+  it("wraps a long name to a second line instead of cutting it", () => {
+    render(
+      <ActivitiesRecord
+        clubs={query([
+          {
+            id: "m1",
+            extracurricular_id: "club-1",
+            student_user_id: "s1",
+            joined_on: "2026-07-20",
+            status: "active" as const,
+            club_name: "Kelompok Ilmiah Remaja dan Penelitian Lingkungan",
+          },
+        ])}
+        events={query([
+          {
+            id: "e1",
+            academic_year_id: "y1",
+            name: "Perkemahan Sabtu Minggu Gugus Depan Sekolah",
+            description: "",
+            location: "",
+            start_date: "2026-11-28",
+            end_date: "2026-11-28",
+          },
+        ])}
+        achievements={query([
+          {
+            id: "a1",
+            student_user_id: "s1",
+            competition_name: "Olimpiade Kimia Tingkat Provinsi Bali",
+            level: "province" as const,
+            placement: "Juara 2",
+            achieved_on: "2026-11-21",
+          },
+        ])}
+      />,
+    );
+    for (const name of [
+      "Kelompok Ilmiah Remaja dan Penelitian Lingkungan",
+      "Perkemahan Sabtu Minggu Gugus Depan Sekolah",
+      "Olimpiade Kimia Tingkat Provinsi Bali",
+    ]) {
+      const title = screen.getByText(name);
+      expect(title).toHaveClass("line-clamp-2");
+      expect(title).not.toHaveClass("truncate");
+    }
+    // The date is one of the achievement's facts, not a slot beside its name.
+    const facts = screen.getByText("Juara 2", { exact: false }).closest("[id]");
+    expect(facts).toHaveTextContent("21 November 2026");
+    expect(
+      screen
+        .getByText("Olimpiade Kimia Tingkat Provinsi Bali")
+        .closest("li")
+        ?.querySelector('[data-slot="list-row-trailing"]'),
+    ).toBeNull();
+  });
+
   it("says so when a list is empty, and leaves out activities when not given", () => {
     render(<ActivitiesRecord clubs={query([])} achievements={query([])} />);
     expect(screen.getByText("clubsEmpty")).toBeInTheDocument();
