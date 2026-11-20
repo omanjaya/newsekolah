@@ -483,6 +483,8 @@
     "ATTENDANCE_WINDOW_CLOSED": "The save window for this session has closed. Changes now go through an attendance correction.",
     "ATTENDANCE_CORRECTION_WINDOW_CLOSED": "The correction window for this session has closed. Contact the school admin if it still needs changing.",
     "ATTENDANCE_CORRECTION_NOT_ALLOWED": "You are not allowed to correct attendance for this class.",
+    "ATTENDANCE_SESSION_NOT_STARTED": "This lesson has not started yet, so its attendance cannot be recorded.",
+    "ATTENDANCE_JOURNAL_INCOMPLETE": "Fill in both the journal topic and activities, or leave both empty.",
     "ATTENDANCE_CORRECTION_REASON_REQUIRED": "Enter a reason for the correction before saving.",
     "ATTENDANCE_STATUS_INVALID": "This attendance status is not used by the school. Reload the page and pick the status again.",
     "ATTENDANCE_FORBIDDEN_SCHEDULE": "You do not have access to this scheduled lesson.",

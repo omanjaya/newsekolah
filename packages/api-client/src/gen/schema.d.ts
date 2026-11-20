@@ -7075,7 +7075,10 @@ export interface paths {
         /** My own journals for an academic year, or (class_id given, requires view_journals_all) every journal for a class */
         get: operations["listJournals"];
         put?: never;
-        /** Create or update the journal for a class/subject/date (unique per day) */
+        /**
+         * Create a journal for a class/subject/date (unique per day), or edit one by id
+         * @description Without `id` this only creates: a lesson that already has a journal answers 409 JOURNAL_CONFLICT instead of replacing it, unless the stored journal says exactly the same (a repeated submit), which is returned unchanged. With `id` it edits that journal, its lesson included.
+         */
         post: operations["upsertJournal"];
         delete?: never;
         options?: never;
@@ -8815,6 +8818,11 @@ export interface components {
             roster_count?: number;
             /** @description How many of the roster already have an entry recorded for this session. */
             entered_count?: number;
+            /**
+             * Format: date-time
+             * @description When the session's first period begins on its date. Attendance cannot be saved before it.
+             */
+            starts_at?: string;
         };
         AttendanceRosterItem: {
             /** Format: uuid */
@@ -8832,6 +8840,8 @@ export interface components {
             notes?: string;
             blocked?: boolean;
             blocked_reason?: string;
+            /** @description An issued leave letter or exit permit decides this student's status for the day (source says which); a save keeps that status whatever is sent. */
+            locked?: boolean;
         };
         AttendanceSessionDetail: components["schemas"]["AttendanceSessionSummary"] & {
             meeting_number: number;
@@ -8843,6 +8853,13 @@ export interface components {
             journal_reflection?: string;
             /** @description Students silently skipped by the last save because Blocker reported an unresolved workflow for them (e.g. a pending late-arrival review); neither saved nor rejected. */
             skipped_blocked_student_ids?: string[];
+            /** @description Students whose requested status the last save replaced with the one their leave letter or exit permit sets. */
+            overridden_student_ids?: string[];
+            /**
+             * @description The mode this viewer saves the session in. normal for its own teacher or accepted substitute, who may keep re-saving until the correction deadline; correction (with a reason) for anyone else.
+             * @enum {string}
+             */
+            save_mode?: "normal" | "correction";
         };
         SaveAttendanceEntriesRequest: {
             /**
@@ -11728,6 +11745,11 @@ export interface components {
             updated_at: string;
         };
         JournalWriteRequest: {
+            /**
+             * Format: uuid
+             * @description The journal being edited. Leave it out to create a new one.
+             */
+            id?: string;
             /** Format: uuid */
             academic_year_id: string;
             /** Format: uuid */
@@ -15444,6 +15466,15 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
+            /** @description The date is after today, so the lesson has not happened yet (ATTENDANCE_SESSION_NOT_STARTED) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     getAttendanceSession: {
@@ -15499,7 +15530,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
-            /** @description The save or correction window for this session has closed */
+            /** @description The save or correction window for this session has closed, or the lesson has not started yet (ATTENDANCE_SESSION_NOT_STARTED) */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -26881,6 +26912,16 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The lesson already has a different journal (JOURNAL_CONFLICT) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     exportJournals: {
@@ -27129,7 +27170,7 @@ export interface operations {
                     "application/json": components["schemas"]["StaffAttendanceRecord"];
                 };
             };
-            /** @description Both arrival and departure are already recorded for today */
+            /** @description Both arrival and departure are already recorded for today (STAFF_ATTENDANCE_ALREADY_SCANNED), or this departure comes less than five minutes after arrival (STAFF_ATTENDANCE_DEPARTURE_TOO_SOON) */
             409: {
                 headers: {
                     [name: string]: unknown;

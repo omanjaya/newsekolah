@@ -47,6 +47,10 @@ type RosterItem struct {
 	Notes          string
 	Blocked        bool
 	BlockedReason  string
+	// Locked is set when an issued leave letter or exit permit decides
+	// this student's status for the day (Source says which): the row
+	// shows that status and a save keeps it, whatever the teacher picks.
+	Locked bool
 }
 
 // SessionDetail is the full payload for opening, reading, or saving one
@@ -68,6 +72,16 @@ type SessionDetail struct {
 	// nor rejected outright, matching the old system's "siswa dengan
 	// terlambat belum selesai dilewati" rule.
 	SkippedBlockedStudentIDs []uuid.UUID
+	// OverriddenStudentIDs lists students whose requested status the last
+	// save replaced with the one their leave letter or exit permit sets.
+	OverriddenStudentIDs []uuid.UUID
+	// StartsAt is when the session's first period begins on its date.
+	StartsAt time.Time
+	// SaveMode is the mode the viewer saves this session in: normal for
+	// its own teacher or accepted substitute, who may keep re-saving it
+	// until the correction deadline; correction for anyone else (a
+	// homeroom teacher or global corrector), who must give a reason.
+	SaveMode domain.SaveMode
 }
 
 // SessionSummary is one row of ListMyAttendanceToday.
@@ -81,6 +95,9 @@ type SessionSummary struct {
 	// roster from a fully recorded one without opening it.
 	RosterCount  int
 	EnteredCount int
+	// StartsAt is when the session's first period begins on its date, so
+	// a client can tell a lesson that has not started from one to fill.
+	StartsAt time.Time
 }
 
 // CalendarDaySession is one schedule's contribution to a calendar day: the

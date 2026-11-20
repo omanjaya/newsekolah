@@ -18,4 +18,8 @@ describe("deriveSessionCardAction", () => {
     expect(deriveSessionCardAction("saved", null)).toBe("saved");
     expect(deriveSessionCardAction("locked", null)).toBe("saved");
   });
+
+  it("offers nothing for a lesson on a later day", () => {
+    expect(deriveSessionCardAction("upcoming", null)).toBe("upcoming");
+  });
 });

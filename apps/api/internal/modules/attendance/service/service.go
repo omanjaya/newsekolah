@@ -140,10 +140,8 @@ type Repository interface {
 	ListSessionsByTeacherDate(ctx context.Context, tenantID uuid.UUID, date time.Time, teacherUserID uuid.UUID) ([]domain.Session, error)
 	ListSessionsByDateRange(ctx context.Context, tenantID, academicYearID uuid.UUID, from, to time.Time) ([]domain.Session, error)
 	CountSubmittedSessionsByClassDate(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) (int64, error)
-	// CountSessionsBeforeDate and GetLatestSessionBeforeDate back
-	// buildSessionDetail's meeting_number and previous_journal_topic.
-	CountSessionsBeforeDate(ctx context.Context, tenantID, scheduleID uuid.UUID, date time.Time) (int64, error)
-	GetLatestSessionBeforeDate(ctx context.Context, tenantID, scheduleID uuid.UUID, date time.Time) (session domain.Session, found bool, err error)
+	// CountHeldMeetingsBeforeDate backs buildSessionDetail's meeting_number.
+	CountHeldMeetingsBeforeDate(ctx context.Context, tenantID, academicYearID, classID, subjectID uuid.UUID, date time.Time) (int64, error)
 
 	UpsertEntry(ctx context.Context, e domain.Entry) (domain.Entry, error)
 	ListEntriesBySession(ctx context.Context, tenantID, sessionID uuid.UUID) ([]domain.Entry, error)

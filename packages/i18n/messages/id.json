@@ -483,6 +483,8 @@
     "ATTENDANCE_WINDOW_CLOSED": "Batas waktu menyimpan presensi sesi ini sudah lewat. Perubahan sekarang hanya bisa lewat koreksi presensi.",
     "ATTENDANCE_CORRECTION_WINDOW_CLOSED": "Batas waktu koreksi presensi sesi ini sudah lewat. Hubungi admin sekolah bila masih perlu diubah.",
     "ATTENDANCE_CORRECTION_NOT_ALLOWED": "Anda tidak berwenang mengoreksi presensi kelas ini.",
+    "ATTENDANCE_SESSION_NOT_STARTED": "Pelajaran ini belum berlangsung, jadi presensinya belum bisa dicatat.",
+    "ATTENDANCE_JOURNAL_INCOMPLETE": "Lengkapi topik dan kegiatan jurnal, atau kosongkan keduanya.",
     "ATTENDANCE_CORRECTION_REASON_REQUIRED": "Isi alasan koreksi sebelum menyimpan.",
     "ATTENDANCE_STATUS_INVALID": "Status kehadiran ini tidak dipakai sekolah. Muat ulang halaman lalu pilih status lagi.",
     "ATTENDANCE_FORBIDDEN_SCHEDULE": "Anda tidak memiliki akses ke jadwal ini.",

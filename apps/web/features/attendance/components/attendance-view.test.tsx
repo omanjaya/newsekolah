@@ -178,6 +178,22 @@ describe("DaySessions", () => {
     expect(within(row).getByRole("button", { name: /Matematika · Kelas 10 A/ })).toBeEnabled();
   });
 
+  it("shows a lesson on a later day as not held yet, with nothing to open", () => {
+    // The list answered for a later day (the teacher stepped forward).
+    todaySessions = [
+      session({ schedule_id: "monday", date: "2099-01-05", start_period_id: "p1" }),
+      session({ schedule_id: "monday-2", date: "2099-01-05", start_period_id: "p2" }),
+    ];
+    render(<DaySessions />);
+
+    const row = screen.getByTestId("attendance-session-row-monday-2");
+    expect(row).toHaveTextContent("statusUpcoming");
+    expect(within(row).getByRole("button", { name: /Matematika · Kelas 10 A/ })).toBeDisabled();
+    // Even in the hero spot, the action is a disabled "not held yet".
+    expect(screen.getByRole("button", { name: "statusUpcoming" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "fillAttendance" })).not.toBeInTheDocument();
+  });
+
   it("sums the day up in one line beside the day switcher, not in the header", () => {
     todaySessions = [
       session({ schedule_id: "s1" }),

@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // parseMonthRange turns a "YYYY-MM" string into the half-open [from, to)
@@ -96,6 +97,9 @@ func (s *Service) calendarDaysForRange(
 		byDate[row.Date.Format("2006-01-02")] = row
 	}
 
+	loc := s.tenantLocation(ctx, tenantID)
+	today := clock.Now(ctx, s.clock).In(loc).Format(time.DateOnly)
+
 	days := make([]CalendarDay, 0, 31)
 	for d := from; d.Before(to); d = d.AddDate(0, 0, 1) {
 		day := CalendarDay{Date: d}
@@ -155,6 +159,15 @@ func (s *Service) calendarDaysForRange(
 			if len(day.Sessions) == 0 {
 				day.Sessions = []CalendarDaySession{{StatusCode: overrideCode, Source: overrideSource}}
 			}
+			days = append(days, day)
+			continue
+		}
+
+		// A later day has not happened yet: nothing about it is missing,
+		// so it is not INCOMPLETE (which reports and the monthly totals
+		// read as attendance still to be filled in).
+		if d.Format(time.DateOnly) > today {
+			day.StatusCode, day.Complete = domain.StatusNone, true
 			days = append(days, day)
 			continue
 		}

@@ -49,3 +49,12 @@ func ValidateJournalContent(topic, activities string) error {
 func CanWrite(teacherUserID, userID uuid.UUID) bool {
 	return teacherUserID == userID
 }
+
+// SameContent reports whether j and other record the same lesson with the
+// same text, so a repeated submit of one journal can be told apart from a
+// second, different journal for that lesson.
+func (j Journal) SameContent(other Journal) bool {
+	return j.ClassID == other.ClassID && j.SubjectID == other.SubjectID &&
+		j.LessonDate.Format("2006-01-02") == other.LessonDate.Format("2006-01-02") &&
+		j.Topic == other.Topic && j.Activities == other.Activities && j.Reflection == other.Reflection
+}

@@ -17,6 +17,7 @@ export function SessionSaveBar({
   studentTotal,
   changedFromDefaultCount,
   saving,
+  disabled = false,
   formError,
   onSave,
 }: {
@@ -28,6 +29,8 @@ export function SessionSaveBar({
   /** How many students currently hold a status other than the default ("Hadir"). */
   changedFromDefaultCount: number;
   saving: boolean;
+  /** Saving is not possible yet (the lesson has not started). */
+  disabled?: boolean;
   formError: string | null;
   onSave: () => void;
 }): ReactElement {
@@ -67,6 +70,7 @@ export function SessionSaveBar({
       }
       saveLabel={isCorrection ? t("saveCorrection") : t("save")}
       saving={saving}
+      disabled={disabled}
       onSave={onSave}
     />
   );

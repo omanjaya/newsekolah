@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -7,8 +7,12 @@ import type { RosterItem, SessionDetail } from "../api";
 import { SessionRosterRow } from "./session-roster-row";
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string, values?: Record<string, unknown>) =>
-    values ? `${key} ${JSON.stringify(values)}` : key,
+  useTranslations: () =>
+    Object.assign(
+      (key: string, values?: Record<string, unknown>) =>
+        values ? `${key} ${JSON.stringify(values)}` : key,
+      { has: (key: string) => key === "blockedReasons.late_arrival_in_progress" },
+    ),
   useLocale: () => "id",
 }));
 
@@ -67,5 +71,69 @@ describe("SessionRosterRow", () => {
     const input = renderRow({ source: "leave" }, "Surat dari dokter");
 
     expect(input).toHaveValue("Surat dari dokter");
+  });
+
+  it("locks a row a leave letter decides, says why, and offers no status to pick", () => {
+    render(
+      <ul>
+        <SessionRosterRow
+          item={{
+            student_user_id: "s1",
+            name: "Siswa Contoh",
+            current_status: "S",
+            source: "leave",
+            locked: true,
+          }}
+          changed={false}
+          statuses={statuses}
+          currentStatus="S"
+          note=""
+          violationIds={[]}
+          violationTypes={[]}
+          violationTypesLoading={false}
+          isPresent={false}
+          disabled={false}
+          onStatusChange={vi.fn()}
+          onNoteChange={vi.fn()}
+          onToggleViolation={vi.fn()}
+        />
+      </ul>,
+    );
+
+    const row = screen.getByRole("listitem");
+    expect(within(row).getByText("locked.leave")).toBeInTheDocument();
+    for (const radio of within(row).getAllByRole("radio")) expect(radio).toBeDisabled();
+    // No note field to type into: the save keeps the letter's status.
+    expect(within(row).queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  it("translates a blocked row's reason instead of printing the API's key", () => {
+    render(
+      <ul>
+        <SessionRosterRow
+          item={{
+            student_user_id: "s1",
+            name: "Siswa Contoh",
+            blocked: true,
+            blocked_reason: "late_arrival_in_progress",
+          }}
+          changed={false}
+          statuses={statuses}
+          currentStatus="H"
+          note=""
+          violationIds={[]}
+          violationTypes={[]}
+          violationTypesLoading={false}
+          isPresent
+          disabled={false}
+          onStatusChange={vi.fn()}
+          onNoteChange={vi.fn()}
+          onToggleViolation={vi.fn()}
+        />
+      </ul>,
+    );
+
+    expect(screen.getByText("blockedReasons.late_arrival_in_progress")).toBeInTheDocument();
+    expect(screen.queryByText("late_arrival_in_progress")).not.toBeInTheDocument();
   });
 });

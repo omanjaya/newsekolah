@@ -198,6 +198,53 @@ func (q *Queries) GetJournalByUnique(ctx context.Context, arg GetJournalByUnique
 	return i, err
 }
 
+const getLatestJournalForClassSubjectBeforeDate = `-- name: GetLatestJournalForClassSubjectBeforeDate :one
+select id, tenant_id, academic_year_id, teacher_user_id, written_by_user_id, class_id, subject_id, lesson_date, topic, activities, reflection, attendance_session_id, created_at, updated_at from class_journals
+where tenant_id = $1 and academic_year_id = $2 and class_id = $3 and subject_id = $4
+  and lesson_date < $5
+order by lesson_date desc, created_at desc
+limit 1
+`
+
+type GetLatestJournalForClassSubjectBeforeDateParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	ClassID        uuid.UUID   `json:"class_id"`
+	SubjectID      uuid.UUID   `json:"subject_id"`
+	LessonDate     pgtype.Date `json:"lesson_date"`
+}
+
+// The last journal written for a class and subject before date, whoever
+// wrote it and on whichever weekday: the attendance editor's "previous
+// meeting's topic".
+func (q *Queries) GetLatestJournalForClassSubjectBeforeDate(ctx context.Context, arg GetLatestJournalForClassSubjectBeforeDateParams) (ClassJournal, error) {
+	row := q.db.QueryRow(ctx, getLatestJournalForClassSubjectBeforeDate,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.ClassID,
+		arg.SubjectID,
+		arg.LessonDate,
+	)
+	var i ClassJournal
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AcademicYearID,
+		&i.TeacherUserID,
+		&i.WrittenByUserID,
+		&i.ClassID,
+		&i.SubjectID,
+		&i.LessonDate,
+		&i.Topic,
+		&i.Activities,
+		&i.Reflection,
+		&i.AttendanceSessionID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listJournalsByClass = `-- name: ListJournalsByClass :many
 select id, tenant_id, academic_year_id, teacher_user_id, written_by_user_id, class_id, subject_id, lesson_date, topic, activities, reflection, attendance_session_id, created_at, updated_at from class_journals
 where tenant_id = $1 and academic_year_id = $2 and class_id = $3
@@ -373,7 +420,8 @@ func (q *Queries) ListJournalsFiltered(ctx context.Context, arg ListJournalsFilt
 
 const updateJournal = `-- name: UpdateJournal :one
 update class_journals
-set topic = $3, activities = $4, reflection = $5, written_by_user_id = $6, attendance_session_id = $7
+set topic = $3, activities = $4, reflection = $5, written_by_user_id = $6, attendance_session_id = $7,
+  class_id = $8, subject_id = $9, lesson_date = $10
 where tenant_id = $1 and id = $2
 returning id, tenant_id, academic_year_id, teacher_user_id, written_by_user_id, class_id, subject_id, lesson_date, topic, activities, reflection, attendance_session_id, created_at, updated_at
 `
@@ -386,8 +434,13 @@ type UpdateJournalParams struct {
 	Reflection          pgtype.Text `json:"reflection"`
 	WrittenByUserID     uuid.UUID   `json:"written_by_user_id"`
 	AttendanceSessionID pgtype.UUID `json:"attendance_session_id"`
+	ClassID             uuid.UUID   `json:"class_id"`
+	SubjectID           uuid.UUID   `json:"subject_id"`
+	LessonDate          pgtype.Date `json:"lesson_date"`
 }
 
+// Edits one journal by id, its lesson (class, subject, date) included; a
+// lesson that already has another journal fails on the unique key.
 func (q *Queries) UpdateJournal(ctx context.Context, arg UpdateJournalParams) (ClassJournal, error) {
 	row := q.db.QueryRow(ctx, updateJournal,
 		arg.TenantID,
@@ -396,6 +449,76 @@ func (q *Queries) UpdateJournal(ctx context.Context, arg UpdateJournalParams) (C
 		arg.Activities,
 		arg.Reflection,
 		arg.WrittenByUserID,
+		arg.AttendanceSessionID,
+		arg.ClassID,
+		arg.SubjectID,
+		arg.LessonDate,
+	)
+	var i ClassJournal
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AcademicYearID,
+		&i.TeacherUserID,
+		&i.WrittenByUserID,
+		&i.ClassID,
+		&i.SubjectID,
+		&i.LessonDate,
+		&i.Topic,
+		&i.Activities,
+		&i.Reflection,
+		&i.AttendanceSessionID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const upsertJournal = `-- name: UpsertJournal :one
+insert into class_journals (
+  tenant_id, academic_year_id, teacher_user_id, written_by_user_id, class_id, subject_id,
+  lesson_date, topic, activities, reflection, attendance_session_id
+) values (
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+)
+on conflict (academic_year_id, teacher_user_id, class_id, subject_id, lesson_date) do update set
+  topic = excluded.topic,
+  activities = excluded.activities,
+  reflection = excluded.reflection,
+  written_by_user_id = excluded.written_by_user_id,
+  attendance_session_id = coalesce(excluded.attendance_session_id, class_journals.attendance_session_id)
+returning id, tenant_id, academic_year_id, teacher_user_id, written_by_user_id, class_id, subject_id, lesson_date, topic, activities, reflection, attendance_session_id, created_at, updated_at
+`
+
+type UpsertJournalParams struct {
+	TenantID            uuid.UUID   `json:"tenant_id"`
+	AcademicYearID      uuid.UUID   `json:"academic_year_id"`
+	TeacherUserID       uuid.UUID   `json:"teacher_user_id"`
+	WrittenByUserID     uuid.UUID   `json:"written_by_user_id"`
+	ClassID             uuid.UUID   `json:"class_id"`
+	SubjectID           uuid.UUID   `json:"subject_id"`
+	LessonDate          pgtype.Date `json:"lesson_date"`
+	Topic               string      `json:"topic"`
+	Activities          string      `json:"activities"`
+	Reflection          pgtype.Text `json:"reflection"`
+	AttendanceSessionID pgtype.UUID `json:"attendance_session_id"`
+}
+
+// The attendance editor's write: one atomic statement, so two saves of the
+// same lesson racing each other update one row instead of the second
+// insert failing on the unique key.
+func (q *Queries) UpsertJournal(ctx context.Context, arg UpsertJournalParams) (ClassJournal, error) {
+	row := q.db.QueryRow(ctx, upsertJournal,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.TeacherUserID,
+		arg.WrittenByUserID,
+		arg.ClassID,
+		arg.SubjectID,
+		arg.LessonDate,
+		arg.Topic,
+		arg.Activities,
+		arg.Reflection,
 		arg.AttendanceSessionID,
 	)
 	var i ClassJournal

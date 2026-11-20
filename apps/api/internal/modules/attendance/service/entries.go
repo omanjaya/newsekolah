@@ -67,6 +67,10 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 		if err != nil {
 			return err
 		}
+		periodStart, err := s.periodStartAt(ctx, tenantID, session)
+		if err != nil {
+			return err
+		}
 		correctionDays, configured, err := s.repo.GetCorrectionDays(ctx, tenantID)
 		if err != nil {
 			return err
@@ -77,7 +81,7 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 
 		loc := s.tenantLocation(ctx, tenantID)
 		if err := domain.ResolveSaveWindow(domain.SaveWindowInput{
-			Now: clock.Now(ctx, s.clock).In(loc), SessionDate: session.Date, PeriodEndAt: periodEnd, CorrectionDays: correctionDays,
+			Now: clock.Now(ctx, s.clock).In(loc), SessionDate: session.Date, PeriodStartAt: periodStart, PeriodEndAt: periodEnd, CorrectionDays: correctionDays,
 			IsGlobalCorrector: actor.IsGlobalCorrector, IsHomeroomOfClass: isHomeroom, IsScheduleOwner: accessOK,
 		}, mode); err != nil {
 			return err
@@ -99,6 +103,7 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 
 		wasSubmitted := session.IsSubmitted()
 		affected := make([]uuid.UUID, 0, len(in.Entries))
+		var overridden []uuid.UUID
 
 		// A student whose late-arrival workflow is still open is skipped
 		// silently -- not rejected outright -- so a batch save for the
@@ -145,6 +150,12 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 			if overrideCode, overrideSource, ok, err := s.overrider.Override(ctx, tenantID, entryIn.StudentUserID, session.Date); err != nil {
 				return err
 			} else if ok {
+				// The official letter wins, but the caller is told whose
+				// requested status was replaced rather than left to
+				// believe it was saved.
+				if overrideCode != entryIn.StatusCode {
+					overridden = append(overridden, entryIn.StudentUserID)
+				}
 				statusCode, source = overrideCode, overrideSource
 			}
 
@@ -209,6 +220,12 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 			return err
 		}
 		detail.SkippedBlockedStudentIDs = skippedBlocked
+		detail.OverriddenStudentIDs = overridden
+		if accessOK {
+			detail.SaveMode = domain.SaveModeNormal
+		} else {
+			detail.SaveMode = domain.SaveModeCorrection
+		}
 
 		if s.events != nil {
 			_ = s.events.Publish(ctx, Submitted{

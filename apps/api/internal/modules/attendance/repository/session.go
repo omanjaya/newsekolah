@@ -110,21 +110,8 @@ func (r *Repository) CountSubmittedSessionsByClassDate(ctx context.Context, tena
 	})
 }
 
-func (r *Repository) CountSessionsBeforeDate(ctx context.Context, tenantID, scheduleID uuid.UUID, date time.Time) (int64, error) {
-	return r.queries(ctx).CountAttendanceSessionsForScheduleBeforeDate(ctx, db.CountAttendanceSessionsForScheduleBeforeDateParams{
-		TenantID: tenantID, ScheduleID: scheduleID, Date: pdatabase.Date(date),
+func (r *Repository) CountHeldMeetingsBeforeDate(ctx context.Context, tenantID, academicYearID, classID, subjectID uuid.UUID, date time.Time) (int64, error) {
+	return r.queries(ctx).CountHeldAttendanceMeetingsBeforeDate(ctx, db.CountHeldAttendanceMeetingsBeforeDateParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, ClassID: classID, SubjectID: subjectID, Date: pdatabase.Date(date),
 	})
-}
-
-func (r *Repository) GetLatestSessionBeforeDate(ctx context.Context, tenantID, scheduleID uuid.UUID, date time.Time) (domain.Session, bool, error) {
-	row, err := r.queries(ctx).GetLatestAttendanceSessionBeforeDate(ctx, db.GetLatestAttendanceSessionBeforeDateParams{
-		TenantID: tenantID, ScheduleID: scheduleID, Date: pdatabase.Date(date),
-	})
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return domain.Session{}, false, nil
-		}
-		return domain.Session{}, false, err
-	}
-	return toSession(row), true, nil
 }

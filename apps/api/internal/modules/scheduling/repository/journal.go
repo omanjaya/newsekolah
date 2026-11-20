@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
@@ -17,6 +18,22 @@ import (
 
 func (r *Repository) CreateJournal(ctx context.Context, j domain.Journal) (domain.Journal, error) {
 	row, err := r.queries(ctx).CreateJournal(ctx, db.CreateJournalParams{
+		TenantID: j.TenantID, AcademicYearID: j.AcademicYearID, TeacherUserID: j.TeacherUserID,
+		WrittenByUserID: j.WrittenByUserID, ClassID: j.ClassID, SubjectID: j.SubjectID,
+		LessonDate: pdatabase.Date(j.LessonDate), Topic: j.Topic, Activities: j.Activities,
+		Reflection: pdatabase.Text(j.Reflection), AttendanceSessionID: pdatabase.NullUUID(j.AttendanceSessionID),
+	})
+	if isUniqueViolation(err) {
+		return domain.Journal{}, domain.ErrJournalDuplicate
+	}
+	if err != nil {
+		return domain.Journal{}, err
+	}
+	return toJournal(row), nil
+}
+
+func (r *Repository) UpsertJournal(ctx context.Context, j domain.Journal) (domain.Journal, error) {
+	row, err := r.queries(ctx).UpsertJournal(ctx, db.UpsertJournalParams{
 		TenantID: j.TenantID, AcademicYearID: j.AcademicYearID, TeacherUserID: j.TeacherUserID,
 		WrittenByUserID: j.WrittenByUserID, ClassID: j.ClassID, SubjectID: j.SubjectID,
 		LessonDate: pdatabase.Date(j.LessonDate), Topic: j.Topic, Activities: j.Activities,
@@ -33,11 +50,37 @@ func (r *Repository) UpdateJournal(ctx context.Context, j domain.Journal) (domai
 		TenantID: j.TenantID, ID: j.ID, Topic: j.Topic, Activities: j.Activities,
 		Reflection: pdatabase.Text(j.Reflection), WrittenByUserID: j.WrittenByUserID,
 		AttendanceSessionID: pdatabase.NullUUID(j.AttendanceSessionID),
+		ClassID:             j.ClassID, SubjectID: j.SubjectID, LessonDate: pdatabase.Date(j.LessonDate),
 	})
+	if isUniqueViolation(err) {
+		return domain.Journal{}, domain.ErrJournalDuplicate
+	}
 	if err != nil {
 		return domain.Journal{}, err
 	}
 	return toJournal(row), nil
+}
+
+func (r *Repository) GetLatestJournalForClassSubjectBeforeDate(
+	ctx context.Context, tenantID, academicYearID, classID, subjectID uuid.UUID, before time.Time,
+) (domain.Journal, bool, error) {
+	row, err := r.queries(ctx).GetLatestJournalForClassSubjectBeforeDate(ctx, db.GetLatestJournalForClassSubjectBeforeDateParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, ClassID: classID, SubjectID: subjectID,
+		LessonDate: pdatabase.Date(before),
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Journal{}, false, nil
+	}
+	if err != nil {
+		return domain.Journal{}, false, err
+	}
+	return toJournal(row), true, nil
+}
+
+// isUniqueViolation reports a Postgres unique-key violation (23505).
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }
 
 func (r *Repository) GetJournalByID(ctx context.Context, tenantID, id uuid.UUID) (domain.Journal, error) {

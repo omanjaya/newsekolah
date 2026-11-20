@@ -57,6 +57,13 @@ function StatusBadge({
 }): ReactElement {
   const t = useTranslations("app.attendance");
   const locale = useLocale() as Locale;
+  if (item.fillStatus === "upcoming") {
+    return (
+      <Badge tone="neutral" size="sm">
+        {t("statusUpcoming")}
+      </Badge>
+    );
+  }
   if (item.fillStatus === "locked") {
     return (
       <Badge tone="neutral" size="sm">
@@ -122,6 +129,7 @@ export function AttendanceSessionHero({
           size="lg"
           variant={action === "fill" ? "primary" : "secondary"}
           loading={item.submitting}
+          disabled={action === "upcoming"}
           onClick={onOpen}
           className="w-full sm:w-auto"
         >
@@ -129,7 +137,9 @@ export function AttendanceSessionHero({
             ? t("fillAttendance")
             : action === "open"
               ? t("openSubmitted")
-              : t("viewSaved")}
+              : action === "upcoming"
+                ? t("statusUpcoming")
+                : t("viewSaved")}
         </Button>
       }
       secondaryAction={action === "saved" ? <StatusBadge item={item} timeZone={timeZone} /> : null}
@@ -209,7 +219,8 @@ function SessionRow({
       title={text.title}
       meta={text.meta}
       trailing={<StatusBadge item={item} timeZone={timeZone} />}
-      disabled={item.submitting}
+      // A lesson on a later day cannot be opened: nothing to record yet.
+      disabled={item.submitting || item.fillStatus === "upcoming"}
       onClick={() => {
         onOpen(item);
       }}

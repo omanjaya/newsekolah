@@ -16,6 +16,11 @@ var (
 
 	ErrJournalRequired = errors.New("topic and activities are required to submit this session")
 
+	// ErrSessionNotStarted refuses attendance for a lesson that has not
+	// begun yet: nothing can be observed about it, and a status recorded
+	// ahead of time would flow into homeroom and the reports as real.
+	ErrSessionNotStarted = errors.New("the lesson has not started yet")
+
 	ErrNoActiveAcademicYear = errors.New("tenant has no active academic year")
 
 	ErrStudentNotInClass = errors.New("student does not belong to this session's class")

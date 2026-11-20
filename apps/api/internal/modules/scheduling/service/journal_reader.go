@@ -61,6 +61,23 @@ func (a *JournalServiceAdapter) GetJournalForLesson(ctx context.Context, tenantI
 	return toJournalRef(out), true, nil
 }
 
+// GetLatestJournalBefore returns the last journal written for a class and
+// subject before date, whoever wrote it and on whichever weekday -- the
+// attendance editor's "previous meeting's topic".
+func (a *JournalServiceAdapter) GetLatestJournalBefore(ctx context.Context, tenantID, academicYearID, classID, subjectID uuid.UUID, before time.Time) (JournalRef, bool, error) {
+	var out domain.Journal
+	var found bool
+	err := a.svc.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, found, err = a.svc.repo.GetLatestJournalForClassSubjectBeforeDate(ctx, tenantID, academicYearID, classID, subjectID, before)
+		return err
+	})
+	if err != nil || !found {
+		return JournalRef{}, false, err
+	}
+	return toJournalRef(out), true, nil
+}
+
 func toJournalRef(j domain.Journal) JournalRef {
 	return JournalRef{ID: j.ID, Topic: j.Topic, Activities: j.Activities, Reflection: j.Reflection}
 }

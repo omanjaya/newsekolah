@@ -56,7 +56,10 @@ function Editor({ session }: { session: SessionDetail }): React.JSX.Element {
   const [topic, setTopic] = useState(session.journal_topic ?? "");
   const [activities, setActivities] = useState(session.journal_activities ?? "");
   const [reason, setReason] = useState("");
-  const isCorrection = Boolean(session.submitted_at);
+  // The lesson's own teacher keeps re-saving in normal mode after the
+  // first save; the API says so in save_mode. Only someone correcting
+  // another teacher's lesson needs correction mode and a reason.
+  const isCorrection = Boolean(session.submitted_at) && session.save_mode !== "normal";
 
   const visible = session.roster.filter((r) => {
     if (search && !r.name.toLowerCase().includes(search.toLowerCase())) return false;

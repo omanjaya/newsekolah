@@ -63,11 +63,15 @@ export function MonthlyAttendanceTable({
     <>
       {report.data && (
         <div className="flex flex-wrap items-center gap-2">
-          {Object.entries(report.data.totals).map(([code, count]) => (
-            <Badge key={code} tone="neutral">
-              {t(`codes.${code}`)} {count}
-            </Badge>
-          ))}
+          {/* Days with no lesson (weekends, and days still to come) are
+              left out of the rows, so they are left out of the totals too. */}
+          {Object.entries(report.data.totals)
+            .filter(([code]) => code !== "NONE")
+            .map(([code, count]) => (
+              <Badge key={code} tone="neutral">
+                {t(`codes.${code}`)} {count}
+              </Badge>
+            ))}
         </div>
       )}
       <DataTable

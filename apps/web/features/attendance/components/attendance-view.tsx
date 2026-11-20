@@ -142,6 +142,8 @@ export function DaySessions(): ReactElement {
   const isSchoolDay = schoolDays.isLoading || activeWeekdays.has(isoWeekday(date));
 
   async function openSession(session: SessionSummary) {
+    // A lesson on a later day has not happened; the API refuses to open it.
+    if ((session.date || date) > today) return;
     const mode = viewingOther ? "correction" : "normal";
     try {
       const detail = await open.mutateAsync({

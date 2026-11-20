@@ -22,6 +22,7 @@ export function SessionJournalPanel({
   onTopicChange,
   onActivitiesChange,
   onReflectionChange,
+  requiredError,
 }: {
   previousTopic?: string;
   topic: string;
@@ -31,6 +32,8 @@ export function SessionJournalPanel({
   onTopicChange: (value: string) => void;
   onActivitiesChange: (value: string) => void;
   onReflectionChange: (value: string) => void;
+  /** Marks topic and activities required; see {@link JournalFields}. */
+  requiredError?: (value: string) => string | undefined;
 }): ReactElement {
   return (
     <Card>
@@ -44,6 +47,7 @@ export function SessionJournalPanel({
           onTopicChange={onTopicChange}
           onActivitiesChange={onActivitiesChange}
           onReflectionChange={onReflectionChange}
+          requiredError={requiredError}
         />
       </CardContent>
     </Card>

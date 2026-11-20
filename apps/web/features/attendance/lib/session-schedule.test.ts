@@ -14,6 +14,10 @@ describe("deriveFillStatus", () => {
   it("is locked when submitted on a date before today", () => {
     expect(deriveFillStatus("2026-09-20T07:12:00Z", "2026-09-20", "2026-09-24")).toBe("locked");
   });
+
+  it("is upcoming for a lesson on a later day, which cannot be filled yet", () => {
+    expect(deriveFillStatus(undefined, "2026-09-25", "2026-09-24")).toBe("upcoming");
+  });
 });
 
 describe("classifyPeriodTiming", () => {

@@ -27,6 +27,33 @@ func TestResolveSaveWindow(t *testing.T) {
 			mode: domain.SaveModeNormal,
 		},
 		{
+			name: "normal save before the lesson starts is rejected",
+			in: domain.SaveWindowInput{
+				Now: periodEnd.Add(-3 * time.Hour), SessionDate: sessionDate,
+				PeriodStartAt: periodEnd.Add(-2 * time.Hour), PeriodEndAt: periodEnd, IsScheduleOwner: true,
+			},
+			mode:    domain.SaveModeNormal,
+			wantErr: domain.ErrSessionNotStarted,
+		},
+		{
+			name: "correction before the lesson starts is rejected too",
+			in: domain.SaveWindowInput{
+				Now: sessionDate.AddDate(0, 0, -3), SessionDate: sessionDate,
+				PeriodStartAt: periodEnd.Add(-2 * time.Hour), PeriodEndAt: periodEnd,
+				CorrectionDays: 7, IsGlobalCorrector: true,
+			},
+			mode:    domain.SaveModeCorrection,
+			wantErr: domain.ErrSessionNotStarted,
+		},
+		{
+			name: "normal save once the lesson has started",
+			in: domain.SaveWindowInput{
+				Now: periodEnd.Add(-2 * time.Hour), SessionDate: sessionDate,
+				PeriodStartAt: periodEnd.Add(-2 * time.Hour), PeriodEndAt: periodEnd,
+			},
+			mode: domain.SaveModeNormal,
+		},
+		{
 			name: "normal save after period end is rejected",
 			in: domain.SaveWindowInput{
 				Now: periodEnd.Add(time.Minute), SessionDate: sessionDate, PeriodEndAt: periodEnd,

@@ -17,6 +17,14 @@ func init() {
 		Indonesian: "Fitur ini belum tersedia.",
 		English:    "This feature is not yet available.",
 	}
+	catalog["ATTENDANCE_SESSION_NOT_STARTED"] = map[string]string{
+		Indonesian: "Pelajaran ini belum berlangsung, jadi presensinya belum bisa dicatat.",
+		English:    "This lesson has not started yet, so its attendance cannot be recorded.",
+	}
+	catalog["ATTENDANCE_JOURNAL_INCOMPLETE"] = map[string]string{
+		Indonesian: "Lengkapi topik dan kegiatan jurnal, atau kosongkan keduanya.",
+		English:    "Fill in both the journal topic and activities, or leave both empty.",
+	}
 	catalog["ATTENDANCE_WINDOW_CLOSED"] = map[string]string{
 		Indonesian: "Waktu penyimpanan absensi untuk sesi ini sudah ditutup.",
 		English:    "The same-day save window for this attendance session has closed.",
