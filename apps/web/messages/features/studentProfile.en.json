@@ -50,6 +50,7 @@
     "warningLetters": "Warning letters",
     "averageGrade": "Average grade",
     "noGrades": "No published grades yet",
+    "noGradeTrend": "No previous term to compare",
     "gradeDelta": "{delta} from last period",
     "noRisk": "No sign of risk",
     "freshness": "Updated {time}"

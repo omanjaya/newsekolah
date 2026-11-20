@@ -8,6 +8,7 @@ const risk = vi.hoisted(() => ({
   current_average: 0,
   previous_average: 0,
   has_grade_trend: false,
+  scored_subjects: 0,
   has_attendance: false,
   absent_days: 0,
   considered_days: 0,
@@ -74,6 +75,8 @@ vi.mock("../../analytics/api", () => ({
             has_grade_trend: risk.has_grade_trend,
             previous_average: risk.previous_average,
             current_average: risk.current_average,
+            scored_subjects: risk.scored_subjects,
+            subjects_below_kktp: 0,
           },
         },
     isLoading: false,
@@ -96,6 +99,7 @@ describe("StudentOverviewTab risk figures", () => {
   beforeEach(() => {
     risk.computed_at = "2026-11-13T00:00:00Z";
     risk.has_grade_trend = false;
+    risk.scored_subjects = 0;
     risk.current_average = 0;
     risk.previous_average = 0;
     risk.error = undefined;
@@ -108,11 +112,33 @@ describe("StudentOverviewTab risk figures", () => {
 
   it("writes the grade average with one decimal and the Indonesian comma", () => {
     risk.has_grade_trend = true;
+    risk.scored_subjects = 4;
     risk.current_average = 78.46;
     risk.previous_average = 80;
     render(<StudentOverviewTab studentId="s-1" />);
 
     expect(screen.getByText("78,5")).toBeInTheDocument();
+  });
+
+  // grades-discipline-R3: in a first term (no previous term to compare)
+  // the card said "Belum ada nilai terbit" while the same page counted the
+  // student's published grades below KKTP.
+  it("shows a first term's published average without a trend", () => {
+    risk.has_grade_trend = false;
+    risk.scored_subjects = 1;
+    risk.current_average = 55.08;
+    render(<StudentOverviewTab studentId="s-1" />);
+
+    expect(screen.getByText("55,1")).toBeInTheDocument();
+    expect(screen.getByText("noGradeTrend")).toBeInTheDocument();
+    expect(screen.queryByText("noGrades")).not.toBeInTheDocument();
+  });
+
+  it("says there are no published grades only when no subject has a report score", () => {
+    render(<StudentOverviewTab studentId="s-1" />);
+
+    expect(screen.getByText("noGrades")).toBeInTheDocument();
+    expect(screen.queryByText("noGradeTrend")).not.toBeInTheDocument();
   });
 
   it("names the attendance figure as alpha days, so a sick day never reads as present", () => {

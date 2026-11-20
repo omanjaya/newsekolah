@@ -25,7 +25,7 @@ type firstTermGrading struct{ below map[uuid.UUID]int }
 func (g firstTermGrading) ReportTrends(_ context.Context, _ uuid.UUID, ids []uuid.UUID) (map[uuid.UUID]service.GradeTrend, error) {
 	out := make(map[uuid.UUID]service.GradeTrend, len(ids))
 	for _, id := range ids {
-		out[id] = service.GradeTrend{ScoredSubjects: 8, SubjectsBelowKKTP: g.below[id]}
+		out[id] = service.GradeTrend{ScoredSubjects: 8, SubjectsBelowKKTP: g.below[id], CurrentAverage: 62.5}
 	}
 	return out, nil
 }
@@ -90,6 +90,9 @@ func TestEarlyWarningReactsTheSameDay(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 3, detail.Signals.SubjectsBelowKKTP)
 	require.False(t, detail.Signals.HasGradeTrend, "a first term has no trend")
+	// grades-discipline-R3: the profile's average card reads this; it was
+	// dropped without a trend and the card said there were no grades.
+	require.InDelta(t, 62.5, detail.Signals.CurrentAverage, 0.001, "the active term's average shows without a trend")
 	require.Len(t, detail.Reasons, 1)
 	require.Equal(t, domain.ReasonBelowKKTPAtRisk, detail.Reasons[0].Code)
 	require.Equal(t, domain.LevelNone, detail.Level, "the default weights need more than grades alone")

@@ -248,13 +248,18 @@ func (s *Service) buildSignals(ctx context.Context, tenantID uuid.UUID, studentI
 				if !ok {
 					continue
 				}
-				// The active term's standing counts on its own, even in a
-				// first term with no previous term to compare with.
+				// The active term's standing and average count on their
+				// own, even in a first term with no previous term to
+				// compare with; the scorer reads the average only with a
+				// trend. Without a scored subject there is no average to
+				// show, whatever the reader sent.
 				current.ScoredSubjects, current.SubjectsBelowKKTP = trend.ScoredSubjects, trend.SubjectsBelowKKTP
+				if trend.ScoredSubjects > 0 || trend.Available {
+					current.CurrentAverage = trend.CurrentAverage
+				}
 				if trend.Available {
 					current.HasGradeTrend = true
 					current.PreviousAverage = trend.PreviousAverage
-					current.CurrentAverage = trend.CurrentAverage
 				}
 				signals[id] = current
 			}

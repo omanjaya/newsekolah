@@ -8994,8 +8994,11 @@ export interface components {
             active_violation_count: number;
             discipline_points: number;
             warning_letter_count: number;
+            /** @description Both the active term and the term before it have published report scores to compare */
             has_grade_trend: boolean;
+            /** @description The previous term's average report score; 0 without a trend */
             previous_average: number;
+            /** @description The active term's average published report score, set whenever scored_subjects is above 0, with or without a trend */
             current_average: number;
             /** @description Subjects with a published report score in the active term */
             scored_subjects: number;

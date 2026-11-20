@@ -142,6 +142,9 @@ function RiskStats({ studentId }: { studentId: string }): ReactElement {
   // name instead of an attendance percentage that read a sick day as present.
   const unexcused =
     signals?.has_attendance && signals.considered_days > 0 ? signals.absent_days : undefined;
+  // The active term's average stands on its own, as the below-KKTP count
+  // of the same grades does; only the change needs a previous term.
+  const hasGrades = (signals?.scored_subjects ?? 0) > 0;
   const gradeDelta =
     signals?.has_grade_trend && signals.previous_average > 0
       ? Math.round((signals.current_average - signals.previous_average) * 10) / 10
@@ -197,9 +200,11 @@ function RiskStats({ studentId }: { studentId: string }): ReactElement {
             icon={<TrendingUp />}
             tone="blue"
             label={t("averageGrade")}
-            value={signals?.has_grade_trend ? signals.current_average : "–"}
+            value={hasGrades && signals ? signals.current_average : "–"}
             formatValue={(value) => formatNumber(value, { locale, fractionDigits: 1 })}
-            hint={signals?.has_grade_trend ? undefined : t("noGrades")}
+            hint={
+              !hasGrades ? t("noGrades") : signals?.has_grade_trend ? undefined : t("noGradeTrend")
+            }
             delta={
               gradeDelta === undefined || gradeDelta === 0
                 ? undefined

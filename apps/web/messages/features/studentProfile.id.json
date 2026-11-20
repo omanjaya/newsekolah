@@ -50,6 +50,7 @@
     "warningLetters": "Surat peringatan",
     "averageGrade": "Rata-rata nilai",
     "noGrades": "Belum ada nilai terbit",
+    "noGradeTrend": "Belum ada semester lalu untuk dibandingkan",
     "gradeDelta": "{delta} dari periode lalu",
     "noRisk": "Tidak ada tanda risiko",
     "freshness": "Diperbarui {time}"

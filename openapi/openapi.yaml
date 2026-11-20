@@ -20742,10 +20742,14 @@ components:
           type: integer
         has_grade_trend:
           type: boolean
+          description: Both the active term and the term before it have published report scores to compare
         previous_average:
           type: number
+          description: The previous term's average report score; 0 without a trend
         current_average:
           type: number
+          description: The active term's average published report score, set whenever scored_subjects is above 0, with or without
+            a trend
         scored_subjects:
           type: integer
           description: Subjects with a published report score in the active term
