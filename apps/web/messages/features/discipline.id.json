@@ -152,7 +152,12 @@
     "levelPlaceholder": "Contoh: SP1",
     "addLevel": "Tambah tingkat",
     "save": "Simpan kebijakan",
-    "saved": "Kebijakan SP tersimpan"
+    "saved": "Kebijakan SP tersimpan",
+    "errors": {
+      "labelRequired": "Isi label tingkat ini",
+      "pointsRequired": "Isi ambang poin di atas 0",
+      "pointsMustIncrease": "Ambang harus lebih besar dari tingkat sebelumnya"
+    }
   },
   "warningLetters": {
     "searchPlaceholder": "Cari nama atau NIS",

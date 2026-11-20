@@ -152,7 +152,12 @@
     "levelPlaceholder": "E.g. SP1",
     "addLevel": "Add level",
     "save": "Save policy",
-    "saved": "Warning-letter policy saved"
+    "saved": "Warning-letter policy saved",
+    "errors": {
+      "labelRequired": "Enter a label for this level",
+      "pointsRequired": "Enter a threshold above 0",
+      "pointsMustIncrease": "The threshold must be higher than the previous level"
+    }
   },
   "warningLetters": {
     "searchPlaceholder": "Search by name or NIS",

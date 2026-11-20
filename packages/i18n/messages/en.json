@@ -255,6 +255,7 @@
     "UNKNOWN": "Something went wrong, please try again",
     "INTERNAL_ERROR": "A server error occurred, please try again",
     "SSO_NOT_CONFIGURED": "Sign in with Google is not enabled for this school",
+    "SP_THRESHOLDS_NOT_INCREASING": "Each warning-letter level needs more points than the level before it",
     "SSO_ACCOUNT_NOT_FOUND": "This Google account is not linked to an active account at this school",
     "SSO_INVALID_TOKEN": "Could not verify your Google account, please try again",
     "SSO_CLIENT_SECRET_REQUIRED": "A client secret is required",
