@@ -1840,7 +1840,8 @@
           "teacherLeaveHint": "Reviewing leave requests and issuing leave letters do not come with the teacher role. Grant them through a duty assignment under School data > Assignments.",
           "additionalRoles": "Additional roles",
           "additionalRolesHint": "Additional roles can only be custom roles (not system roles).",
-          "noCustomRoles": "No custom roles yet. Create one under Settings > Roles and access."
+          "noCustomRoles": "No custom roles yet. Create one under Settings > Roles and access.",
+          "kindRoleMismatch": "This primary role does not fit the {kind} type. A Student user must have Student as the primary role, and only a Student user may have it."
         },
         "import": {
           "searchPlaceholder": "Search name or username",

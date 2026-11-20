@@ -1840,7 +1840,8 @@
           "teacherLeaveHint": "Meninjau izin dan menerbitkan surat izin tidak ikut peran guru. Berikan lewat penugasan tugas di Data sekolah > Pembagian tugas.",
           "additionalRoles": "Peran tambahan",
           "additionalRolesHint": "Peran tambahan hanya bisa peran khusus (bukan peran sistem).",
-          "noCustomRoles": "Belum ada peran khusus. Buat di Pengaturan > Peran dan akses."
+          "noCustomRoles": "Belum ada peran khusus. Buat di Pengaturan > Peran dan akses.",
+          "kindRoleMismatch": "Peran utama ini tidak cocok untuk jenis {kind}. Pengguna jenis Siswa harus berperan utama Siswa, dan peran Siswa hanya untuk jenis Siswa."
         },
         "import": {
           "searchPlaceholder": "Cari nama atau nama pengguna",

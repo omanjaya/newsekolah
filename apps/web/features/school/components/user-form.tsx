@@ -29,6 +29,18 @@ import {
 
 const KINDS: ProfileKind[] = ["teacher", "staff", "student"];
 const SUPER_ADMIN_SLUG = "super_admin";
+const STUDENT_ROLE_SLUG = "student";
+
+/**
+ * Whether a system role may be the primary role of a user of this kind,
+ * the rule the API enforces (identity/domain ValidateKindRole): a student
+ * holds the student role, and only a student does. Without it a "student"
+ * could be saved with the Admin Sekolah role, log in with the full admin
+ * menu and still be offered for class placement.
+ */
+export function roleFitsKind(slug: string, kind: ProfileKind): boolean {
+  return (kind === "student") === (slug === STUDENT_ROLE_SLUG);
+}
 
 export function UserForm({
   initial,
@@ -75,6 +87,22 @@ export function UserForm({
   );
   const customRoles = allRoles.filter((r) => !r.is_system);
   const primaryRole = allRoles.find((r) => r.id === primaryRoleId);
+  const kindRoles = systemRoles.filter((r) => roleFitsKind(r.slug, kind));
+  // An older account saved before the rule existed keeps its role listed,
+  // so the form shows what it holds, with a warning instead of a silent
+  // blank select.
+  const primaryMismatch = primaryRole !== undefined && !roleFitsKind(primaryRole.slug, kind);
+  const primaryOptions =
+    primaryMismatch && primaryRole.is_system ? [...kindRoles, primaryRole] : kindRoles;
+
+  /** Switching the kind drops a primary role that no longer fits it, and a
+   * student, who has only one possible role, gets it chosen for them. */
+  function changeKind(next: ProfileKind) {
+    setKind(next);
+    const fits = systemRoles.filter((r) => roleFitsKind(r.slug, next));
+    if (primaryRole && roleFitsKind(primaryRole.slug, next)) return;
+    setPrimaryRoleId(fits.length === 1 && next === "student" ? (fits[0]?.id ?? "") : "");
+  }
 
   async function submit() {
     setError(null);
@@ -181,7 +209,7 @@ export function UserForm({
             options={KINDS.map((k) => ({ value: k, label: tKinds(k) }))}
             value={kind}
             onValueChange={(v) => {
-              setKind(v as ProfileKind);
+              changeKind(v as ProfileKind);
             }}
           />,
         )}
@@ -211,9 +239,13 @@ export function UserForm({
         {field(
           t("primaryRole"),
           <Select
+            // Remounted per kind: the option list and the value change
+            // together, and Radix would otherwise reconcile the new value
+            // against the old list and fall back to nothing chosen.
+            key={kind}
             options={[
               { value: "", label: t("primaryRolePlaceholder") },
-              ...systemRoles.map((r) => ({ value: r.id, label: r.name })),
+              ...primaryOptions.map((r) => ({ value: r.id, label: r.name })),
             ]}
             value={primaryRoleId}
             onValueChange={setPrimaryRoleId}
@@ -221,6 +253,9 @@ export function UserForm({
           { missing: !primaryRoleId },
         )}
         <p className="text-fg-muted">{t("primaryRoleHint")}</p>
+        {primaryMismatch && (
+          <Alert tone="warning" title={t("kindRoleMismatch", { kind: tKinds(kind) })} />
+        )}
         {primaryRole?.slug === "teacher" && <Alert tone="info" title={t("teacherLeaveHint")} />}
 
         <fieldset className="flex flex-col gap-2">
