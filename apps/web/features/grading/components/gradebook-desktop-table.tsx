@@ -208,6 +208,7 @@ export function GradebookDesktopTable({
                     rowIndex={rowIndex}
                     value={cellValue(component.id, student)}
                     readOnly={!canManage}
+                    decimals={scaleDecimals}
                     ariaLabel={t("scoreFor", { name: student.name, code: component.code })}
                     className="w-full text-right tabular-nums"
                     min={scaleMin}

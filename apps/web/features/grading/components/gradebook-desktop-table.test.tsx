@@ -117,6 +117,18 @@ describe("GradebookDesktopTable", () => {
     expect(within(citra).getAllByText("-")[0]).toHaveClass("text-fg-muted");
   });
 
+  it("shows a reader's score cells with the scale's decimals, like the average beside them", () => {
+    renderTable({
+      canManage: false,
+      scaleDecimals: 0,
+      liveByStudent: new Map([["s1", { average: 88, missing: 0 }]]),
+    });
+    const budiCells = within(screen.getByRole("row", { name: /Budi/ })).getAllByRole("cell");
+    // Columns: TG1, Rata-rata, Nilai rapor, stars.
+    expect(budiCells[0]).toHaveTextContent(/^88$/);
+    expect(budiCells[1]).toHaveTextContent(/^88$/);
+  });
+
   it("mutes an empty average like the empty score and report-score cells beside it", () => {
     renderTable({
       canManage: false,

@@ -22,6 +22,11 @@ export interface GradebookScoreCellProps {
    * box that only looks editable.
    */
   readOnly?: boolean;
+  /**
+   * The scale's `round_decimal`, for the read-only text, so a cell shows
+   * the precision the average and report score beside it use.
+   */
+  decimals?: number;
   ariaLabel: string;
   /** Layout classes (width, shrink, text alignment) -- moved onto the wrapper, not the input, so they still apply once the range hint needs a sizing anchor. */
   className?: string;
@@ -71,6 +76,7 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
   rowIndex,
   value,
   readOnly = false,
+  decimals,
   ariaLabel,
   className,
   min,
@@ -161,7 +167,7 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
           className,
         )}
       >
-        {Number.isFinite(score) ? formatScore(score, locale) : "-"}
+        {Number.isFinite(score) ? formatScore(score, locale, decimals) : "-"}
       </span>
     );
   }
