@@ -5,7 +5,8 @@ import { useMemo } from "react";
 
 import { useApiClient } from "../../lib/api/client";
 
-import { type LibraryLoan, useLibraryPolicyQuery, useMemberLoanHistoryQuery } from "./api";
+import { type LibraryLoan, useMemberLoanHistoryQuery } from "./api";
+import { useLibraryMemberBorrowingStatusQuery } from "./members-api";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -28,6 +29,10 @@ export interface KioskMemberSession {
   isLoading: boolean;
   activeLoans: KioskLoan[];
   activeLoanCount: number;
+  /**
+   * The member's own loan limit today, as the server enforces it (a dated
+   * loan rule, then the member type, then the policy); undefined until known.
+   */
   maxActiveLoans: number | undefined;
   /** Resolves a scanned copy barcode to one of this member's active loans, if it is one. */
   findLoanForBarcode: (barcode: string) => LibraryLoan | undefined;
@@ -44,7 +49,7 @@ export interface KioskMemberSession {
  */
 export function useKioskMemberSession(memberUserId: string | null): KioskMemberSession {
   const client = useApiClient();
-  const policy = useLibraryPolicyQuery();
+  const borrowing = useLibraryMemberBorrowingStatusQuery(memberUserId ?? "");
   const loanHistory = useMemberLoanHistoryQuery(memberUserId ?? "");
 
   const activeLoanRecords = useMemo(
@@ -109,7 +114,7 @@ export function useKioskMemberSession(memberUserId: string | null): KioskMemberS
     isLoading,
     activeLoans,
     activeLoanCount: activeLoanRecords.length,
-    maxActiveLoans: policy.data?.max_active_loans,
+    maxActiveLoans: borrowing.data?.max_loan_items,
     findLoanForBarcode: (barcode) =>
       activeLoanRecords.find((loan) => barcodeByCopyId.get(loan.copy_id) === barcode),
   };
