@@ -1290,6 +1290,9 @@ type Querier interface {
 	// so a homeroom teacher no longer sees requests that already moved past
 	// their stage to counselor, and vice versa.
 	//
+	// A request whose current stage the caller may never approve because they
+	// approved an earlier stage its distinct_from names is left out.
+	//
 	// sqlc.arg('today') is the tenant-local date (s.tenantNow), not
 	// current_date: the Postgres session timezone is never set per tenant.
 	ListLeaveRequestsForReview(ctx context.Context, arg ListLeaveRequestsForReviewParams) ([]ListLeaveRequestsForReviewRow, error)

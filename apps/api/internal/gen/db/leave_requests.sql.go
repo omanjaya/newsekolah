@@ -37,6 +37,23 @@ where lr.tenant_id = $1 and wi.status = 'in_progress'
           and (wd.stages -> wi.current_stage_index ->> 'approver_rule') = 'duty:' || dt.slug)
       )
   )
+  -- The current stage's distinct_from (service.checkDistinctFrom): a
+  -- teacher who approved an earlier stage it names, such as a homeroom
+  -- teacher who also holds the counselor duty, can never act on this one,
+  -- so it is not in their queue. The approver of a stage is its latest
+  -- event's actor, as GetWorkflowEventByStage reads it.
+  and not exists (
+    select 1
+    from jsonb_array_elements_text(
+      coalesce(wd.stages -> wi.current_stage_index -> 'distinct_from', '[]'::jsonb)
+    ) as prior(stage_key)
+    where (
+      select we.actor_user_id from workflow_events we
+      where we.tenant_id = lr.tenant_id and we.instance_id = wi.id and we.stage_key = prior.stage_key
+      order by we.occurred_at desc
+      limit 1
+    ) = $2
+  )
 `
 
 type CountLeaveRequestsForReviewParams struct {
@@ -456,6 +473,23 @@ where lr.tenant_id = $1 and wi.status = 'in_progress'
           and (wd.stages -> wi.current_stage_index ->> 'approver_rule') = 'duty:' || dt.slug)
       )
   )
+  -- The current stage's distinct_from (service.checkDistinctFrom): a
+  -- teacher who approved an earlier stage it names, such as a homeroom
+  -- teacher who also holds the counselor duty, can never act on this one,
+  -- so it is not in their queue. The approver of a stage is its latest
+  -- event's actor, as GetWorkflowEventByStage reads it.
+  and not exists (
+    select 1
+    from jsonb_array_elements_text(
+      coalesce(wd.stages -> wi.current_stage_index -> 'distinct_from', '[]'::jsonb)
+    ) as prior(stage_key)
+    where (
+      select we.actor_user_id from workflow_events we
+      where we.tenant_id = lr.tenant_id and we.instance_id = wi.id and we.stage_key = prior.stage_key
+      order by we.occurred_at desc
+      limit 1
+    ) = $2
+  )
 order by wi.opened_at
 `
 
@@ -497,6 +531,9 @@ type ListLeaveRequestsForReviewRow struct {
 // counselor/leadership stage's is "duty:<slug>" (domain.DefaultStages) --
 // so a homeroom teacher no longer sees requests that already moved past
 // their stage to counselor, and vice versa.
+//
+// A request whose current stage the caller may never approve because they
+// approved an earlier stage its distinct_from names is left out.
 //
 // sqlc.arg('today') is the tenant-local date (s.tenantNow), not
 // current_date: the Postgres session timezone is never set per tenant.
