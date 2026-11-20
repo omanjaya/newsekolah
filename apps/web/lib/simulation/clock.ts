@@ -133,6 +133,21 @@ export function suspendSimulation(): void {
   emit(effectiveClock() !== clockBefore);
 }
 
+/**
+ * The server refused the clock: the actor may no longer simulate. Drops the
+ * simulation and its saved copy, and stops this tab from offering a new
+ * one until /v1/me says otherwise. Without it an impersonated tab would
+ * keep sending the stored clock, since its identity allows the actor's own
+ * saved clock without looking at the actor's permissions.
+ */
+export function refuseSimulation(): void {
+  const clockBefore = effectiveClock();
+  active = null;
+  if (identity) identity = { ...identity, allowed: false };
+  persist(null);
+  emit(effectiveClock() !== clockBefore);
+}
+
 export function notifySimulationDayChange(): void {
   if (active?.mode === "running") emit(true);
 }

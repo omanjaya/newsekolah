@@ -6,7 +6,9 @@ import { getAccessToken, setAccessToken } from "../api/access-token";
 import {
   clearSimulation,
   getSimulationTime,
+  refuseSimulation,
   setSimulation,
+  simulationSnapshot,
   syncSimulationIdentity,
 } from "../simulation/clock";
 
@@ -88,6 +90,49 @@ describe("switchReader", () => {
 
     expect(getAccessToken()).toBe("teacher-token");
     expect(meRequests).toEqual([FROZEN]);
+  });
+
+  it("drops the clock when the server no longer lets the actor simulate", async () => {
+    // The admin's platform_superadmin was revoked mid-session: the server
+    // refuses every request carrying the clock, /v1/me included.
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const request = input as Request;
+      const clock = request.headers.get("X-Simulation-Time");
+      meRequests.push(clock);
+      return Promise.resolve(
+        clock
+          ? new Response(JSON.stringify({ error: { code: "FORBIDDEN", message: "no" } }), {
+              status: 403,
+              headers: { "Content-Type": "application/json" },
+            })
+          : new Response(JSON.stringify(person("teacher", [], "admin")), {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            }),
+      );
+    });
+    syncSimulationIdentity(person("admin", ["platform_superadmin"]));
+    setSimulation("frozen", new Date(FROZEN));
+    // An impersonated tab keeps the admin's saved clock on its own account.
+    syncSimulationIdentity(person("teacher", [], "admin"));
+    expect(simulationSnapshot().identity?.allowed).toBe(true);
+    setAccessToken("teacher-token");
+    const client = createApiClient({
+      baseUrl: "http://api.test",
+      clientHeader: "web/test",
+      getAccessToken,
+      getSimulationTime,
+      onSimulationRefused: refuseSimulation,
+    });
+
+    const me = await client.GET("/v1/me");
+    syncSimulationIdentity(me);
+    await client.GET("/v1/me");
+
+    expect(meRequests).toEqual([FROZEN, null, null]);
+    expect(simulationSnapshot().identity?.allowed).toBe(false);
+    expect(simulationSnapshot().active).toBeNull();
+    expect(getSimulationTime()).toBeNull();
   });
 
   it("sends no clock on /v1/me for an account that may not simulate", async () => {
