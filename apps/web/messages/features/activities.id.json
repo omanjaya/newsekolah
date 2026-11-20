@@ -275,6 +275,7 @@
     "eventsEmpty": "Tidak ada kegiatan mendatang.",
     "achievementsTitle": "Prestasi",
     "achievementsEmpty": "Belum ada prestasi tahun ajaran ini.",
+    "achievementsEmptyAllYears": "Belum ada prestasi tercatat.",
     "loadError": "Data gagal dimuat.",
     "joinedSince": "Bergabung {date}",
     "memberPeriod": "Bergabung {from}, keluar {to}",

@@ -1050,6 +1050,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/activities/students/{studentId}/achievements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One student's achievements across every academic year, for the student profile */
+        get: operations["listStudentAchievements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/activities/extracurriculars/{clubId}/meetings": {
         parameters: {
             query?: never;
@@ -14610,6 +14627,32 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["StudentMembership"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listStudentAchievements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Achievements */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Achievement"][];
                     };
                 };
             };

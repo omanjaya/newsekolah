@@ -214,6 +214,23 @@ func TestStudentOwnActivitiesAndDuplicateParticipant(t *testing.T) {
 	data := achievements.(api.ListMyAchievements200JSONResponse).Data
 	require.Len(t, data, 1)
 	require.Equal(t, "Lomba Pionering", data[0].CompetitionName)
+
+	// The student profile's record is cumulative: an achievement from an
+	// earlier academic year shows there, newest first, though the per-year
+	// lists leave it out. A deleted one never shows.
+	lastYear := insertID(`insert into academic_years (tenant_id,label,starts_on,ends_on) values ($1,'2024/2025','2024-07-01','2025-06-30')`, tenant)
+	insertID(`insert into student_achievements (tenant_id,academic_year_id,student_user_id,competition_name,level,placement,achieved_on) values ($1,$2,$3,'FLS2N','province','Perak','2025-03-10')`, tenant, lastYear, student)
+	insertID(`insert into student_achievements (tenant_id,academic_year_id,student_user_id,competition_name,level,placement,achieved_on,deleted_at) values ($1,$2,$3,'Dihapus','school','Juara 3','2025-02-01',now())`, tenant, lastYear, student)
+	profile, err := h.ListStudentAchievements(httpx.WithTenantID(ctx, tenant), api.ListStudentAchievementsRequestObject{StudentId: student})
+	require.NoError(t, err)
+	record := profile.(api.ListStudentAchievements200JSONResponse).Data
+	require.Len(t, record, 2)
+	require.Equal(t, "Lomba Pionering", record[0].CompetitionName)
+	require.Equal(t, "FLS2N", record[1].CompetitionName)
+	thisYear, err := h.ListMyAchievements(studentCtx, api.ListMyAchievementsRequestObject{})
+	require.NoError(t, err)
+	require.Len(t, thisYear.(api.ListMyAchievements200JSONResponse).Data, 1)
+
 	events, err := h.ListMyActivityEvents(studentCtx, api.ListMyActivityEventsRequestObject{})
 	require.NoError(t, err)
 	require.Len(t, events.(api.ListMyActivityEvents200JSONResponse).Data, 3)

@@ -444,6 +444,53 @@ func (q *Queries) ListParticipants(ctx context.Context, arg ListParticipantsPara
 	return items, nil
 }
 
+const listStudentAchievementsAllYears = `-- name: ListStudentAchievementsAllYears :many
+select sa.id, sa.tenant_id, sa.academic_year_id, sa.student_user_id, sa.competition_name, sa.level, sa.placement, sa.achieved_on, sa.notes, sa.created_by, sa.created_at, sa.updated_at, sa.deleted_at from student_achievements sa
+where sa.tenant_id = $1 and sa.student_user_id = $2 and sa.deleted_at is null
+order by sa.achieved_on desc
+`
+
+type ListStudentAchievementsAllYearsParams struct {
+	TenantID      uuid.UUID `json:"tenant_id"`
+	StudentUserID uuid.UUID `json:"student_user_id"`
+}
+
+// One student's achievements across every academic year, for the student
+// profile's cumulative record.
+func (q *Queries) ListStudentAchievementsAllYears(ctx context.Context, arg ListStudentAchievementsAllYearsParams) ([]StudentAchievement, error) {
+	rows, err := q.db.Query(ctx, listStudentAchievementsAllYears, arg.TenantID, arg.StudentUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []StudentAchievement{}
+	for rows.Next() {
+		var i StudentAchievement
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.AcademicYearID,
+			&i.StudentUserID,
+			&i.CompetitionName,
+			&i.Level,
+			&i.Placement,
+			&i.AchievedOn,
+			&i.Notes,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const removeParticipant = `-- name: RemoveParticipant :exec
 delete from activity_participants where tenant_id = $1 and id = $2
 `

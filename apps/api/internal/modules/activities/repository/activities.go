@@ -206,6 +206,22 @@ func (r *Repository) DeleteAchievement(ctx context.Context, tenantID, id uuid.UU
 	return nil
 }
 
+// ListStudentAchievementsAllYears is one student's achievements in every
+// academic year, newest first.
+func (r *Repository) ListStudentAchievementsAllYears(ctx context.Context, tenantID, studentID uuid.UUID) ([]domain.Achievement, error) {
+	rows, err := r.queries(ctx).ListStudentAchievementsAllYears(ctx, db.ListStudentAchievementsAllYearsParams{
+		TenantID: tenantID, StudentUserID: studentID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list student achievements: %w", err)
+	}
+	out := make([]domain.Achievement, len(rows))
+	for i, row := range rows {
+		out[i] = toAchievement(row)
+	}
+	return out, nil
+}
+
 func (r *Repository) ListAchievements(ctx context.Context, tenantID, yearID uuid.UUID, studentID, classID uuid.NullUUID) ([]domain.Achievement, error) {
 	rows, err := r.queries(ctx).ListAchievements(ctx, db.ListAchievementsParams{
 		TenantID: tenantID, AcademicYearID: yearID, StudentID: pdatabase.NullUUID(studentID), ClassID: pdatabase.NullUUID(classID),

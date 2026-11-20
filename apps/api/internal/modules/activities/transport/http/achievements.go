@@ -22,6 +22,20 @@ func (h *ActivitiesHandler) ListAchievements(ctx context.Context, request api.Li
 	return api.ListAchievements200JSONResponse{Data: data}, nil
 }
 
+// ListStudentAchievements is one student's achievements in every academic
+// year, for the student profile; view_activities already reads them all.
+func (h *ActivitiesHandler) ListStudentAchievements(ctx context.Context, request api.ListStudentAchievementsRequestObject) (api.ListStudentAchievementsResponseObject, error) {
+	list, err := h.service.ListStudentAchievements(ctx, tenantID(ctx), request.StudentId)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.Achievement, len(list))
+	for i, a := range list {
+		data[i] = toAPIAchievement(a)
+	}
+	return api.ListStudentAchievements200JSONResponse{Data: data}, nil
+}
+
 func (h *ActivitiesHandler) CreateAchievement(ctx context.Context, request api.CreateAchievementRequestObject) (api.CreateAchievementResponseObject, error) {
 	b := request.Body
 	achievement, err := h.service.CreateAchievement(ctx, tenantID(ctx), domain.Achievement{

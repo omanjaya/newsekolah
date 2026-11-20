@@ -280,6 +280,26 @@ paths:
                   data: { type: array, items: { $ref: "#/components/schemas/StudentMembership" } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/activities/students/{studentId}/achievements:
+    get:
+      tags: [activities]
+      operationId: listStudentAchievements
+      x-permission: view_activities
+      summary: One student's achievements across every academic year, for the student profile
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Achievements
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Achievement" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   /v1/activities/extracurriculars/{clubId}/meetings:
     get:

@@ -59,6 +59,13 @@ where sa.tenant_id = $1 and sa.academic_year_id = $2 and sa.deleted_at is null
       and e.student_user_id = sa.student_user_id and e.class_id = sqlc.narg(class_id)::uuid and e.status = 'active'))
 order by sa.achieved_on desc;
 
+-- name: ListStudentAchievementsAllYears :many
+-- One student's achievements across every academic year, for the student
+-- profile's cumulative record.
+select sa.* from student_achievements sa
+where sa.tenant_id = $1 and sa.student_user_id = $2 and sa.deleted_at is null
+order by sa.achieved_on desc;
+
 -- name: ListActivitiesForStudent :many
 -- A student's own activities: those listing the student by name, the
 -- student's active class this year, or that class's grade level, ending

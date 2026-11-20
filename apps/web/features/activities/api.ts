@@ -34,6 +34,8 @@ const keys = {
   myEvents: () => ["activities", "me", "events"] as const,
   myAchievements: () => ["activities", "me", "achievements"] as const,
   studentClubs: (studentId: string) => ["activities", "students", studentId, "clubs"] as const,
+  studentAchievements: (studentId: string) =>
+    ["activities", "students", studentId, "achievements"] as const,
   meetings: (clubId: string) => ["activities", "clubs", clubId, "meetings"] as const,
   roster: (meetingId: string) => ["activities", "meetings", meetingId, "roster"] as const,
   membershipPolicy: () => ["activities", "membership-policy"] as const,
@@ -211,6 +213,18 @@ export function useStudentClubMembershipsQuery(studentId: string) {
     queryKey: keys.studentClubs(studentId),
     queryFn: () =>
       client.GET("/v1/activities/students/{studentId}/memberships", {
+        params: { path: { studentId } },
+      }),
+  });
+}
+
+/** One student's achievements across every academic year (the profile). */
+export function useStudentAchievementsQuery(studentId: string) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.studentAchievements(studentId),
+    queryFn: () =>
+      client.GET("/v1/activities/students/{studentId}/achievements", {
         params: { path: { studentId } },
       }),
   });

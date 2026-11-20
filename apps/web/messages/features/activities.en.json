@@ -275,6 +275,7 @@
     "eventsEmpty": "No upcoming activities.",
     "achievementsTitle": "Achievements",
     "achievementsEmpty": "No achievements this academic year yet.",
+    "achievementsEmptyAllYears": "No achievements recorded yet.",
     "loadError": "Could not load this data.",
     "joinedSince": "Joined {date}",
     "memberPeriod": "Joined {from}, left {to}",

@@ -201,6 +201,19 @@ func (s *Service) ListMyAchievements(ctx context.Context, tenantID, studentID uu
 	return s.ListAchievements(ctx, tenantID, uuid.NullUUID{UUID: studentID, Valid: true}, uuid.NullUUID{})
 }
 
+// ListStudentAchievements is one student's achievement record across every
+// academic year, for the student profile; a profile is cumulative, unlike
+// the per-year lists.
+func (s *Service) ListStudentAchievements(ctx context.Context, tenantID, studentID uuid.UUID) ([]domain.Achievement, error) {
+	var out []domain.Achievement
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.ListStudentAchievementsAllYears(ctx, tenantID, studentID)
+		return err
+	})
+	return out, err
+}
+
 func (s *Service) ListAchievements(ctx context.Context, tenantID uuid.UUID, studentID, classID uuid.NullUUID) ([]domain.Achievement, error) {
 	var out []domain.Achievement
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {

@@ -20,16 +20,20 @@ export interface RecordQuery<T> {
  * One student's activities record: their clubs, the activities they take
  * part in (when given) and their achievements. Shared by the student's
  * own page (/my-activities) and the student profile's activities tab, so
- * both read the same way.
+ * both read the same way. The student's own page lists this year's
+ * achievements; the profile passes every year's (`achievementsAllYears`),
+ * and the empty text says which.
  */
 export function ActivitiesRecord({
   clubs,
   events,
   achievements,
+  achievementsAllYears = false,
 }: {
   clubs: RecordQuery<StudentMembership>;
   events?: RecordQuery<ActivityEvent>;
   achievements: RecordQuery<Achievement>;
+  achievementsAllYears?: boolean;
 }): ReactElement {
   const t = useTranslations("app.activities.record");
   const tStatus = useTranslations("app.activities.clubDetail.members.status");
@@ -101,7 +105,7 @@ export function ActivitiesRecord({
         title={t("achievementsTitle")}
         query={achievements}
         count={achievements.data?.data.length ?? 0}
-        empty={t("achievementsEmpty")}
+        empty={t(achievementsAllYears ? "achievementsEmptyAllYears" : "achievementsEmpty")}
         loadError={t("loadError")}
       >
         {(achievements.data?.data ?? []).map((achievement) => (

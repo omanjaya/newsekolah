@@ -61,6 +61,12 @@ describe("ActivitiesRecord", () => {
     expect(screen.queryByText("eventsTitle")).not.toBeInTheDocument();
   });
 
+  it("says no achievement is recorded at all when given every year's", () => {
+    render(<ActivitiesRecord clubs={query([])} achievements={query([])} achievementsAllYears />);
+    expect(screen.getByText("achievementsEmptyAllYears")).toBeInTheDocument();
+    expect(screen.queryByText("achievementsEmpty")).not.toBeInTheDocument();
+  });
+
   it("shows a load error for a list that failed", () => {
     render(
       <ActivitiesRecord
