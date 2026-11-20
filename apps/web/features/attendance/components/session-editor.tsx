@@ -160,8 +160,8 @@ export function SessionEditor({
   // teacher may look at it, and saves it only with the correction rights a
   // homeroom teacher has (the API then sends an editable_until).
   const handedOver = Boolean(session.handed_over_to_user_id);
-  const windowClosed =
-    windowEnded || closedCode !== null || (handedOver && session.editable_until === undefined);
+  const handedOverReadOnly = handedOver && session.editable_until === undefined;
+  const windowClosed = windowEnded || closedCode !== null || handedOverReadOnly;
   // A journal is optional, but once either required field is filled both are.
   const journalStarted = topic.trim() !== "" || activities.trim() !== "";
   const journalComplete = topic.trim() !== "" && activities.trim() !== "";

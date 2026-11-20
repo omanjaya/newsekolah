@@ -1319,6 +1319,7 @@
         "notStartedBodyOnDay": "Presensi bisa dicatat mulai {day} pukul {time}.",
         "handedOverTitle": "Pelajaran ini diserahkan ke guru pengganti",
         "handedOverBody": "Guru pengganti yang mengisi presensinya. Anda tetap bisa melihatnya.",
+        "handedOverCorrectionBody": "Guru pengganti yang mengisi presensinya. Anda tetap bisa mengoreksinya dengan alasan.",
         "closedTitle": "Presensi sesi ini sudah dikunci",
         "closedBody": "Batas waktu mengubahnya berakhir {time}. Admin sekolah dapat memperpanjang batas koreksi di pengaturan presensi bila masih perlu diubah.",
         "closedBodyManager": "Batas waktu mengubahnya berakhir {time}. Perpanjang batas koreksi di pengaturan presensi bila masih perlu diubah.",

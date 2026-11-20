@@ -17,7 +17,9 @@ export const ATTENDANCE_SETTINGS_HREF = "/settings/attendance";
 /**
  * Why the session cannot be saved right now, above the roster: the lesson
  * was handed to a substitute, it has not started yet, or this viewer's
- * save window has closed. A closed window names when it ended (the API's
+ * save window has closed. A handed-over lesson the viewer may still correct
+ * (the API sends an editable_until) says so instead of "view only", and its
+ * closed window still warns once the correction deadline passes. A closed window names when it ended (the API's
  * editable_until, on the school's clock); when only the server's refusal
  * is known, its own message. A lesson on a later day than today names
  * that day, since its start time alone reads as later today.
@@ -39,7 +41,10 @@ export function SessionWindowNotice({
   windowEnded: boolean;
   /** The error code a save was refused with for its window, if any. */
   closedCode: string | null;
-  /** An accepted substitute fills this lesson instead of the viewer. */
+  /**
+   * An accepted substitute fills this lesson instead of the viewer, who
+   * may only look at it unless `editableUntil` grants correction rights.
+   */
   handedOver?: boolean;
   /** The school's today, "YYYY-MM-DD", to tell a later day's lesson apart. */
   today?: string;
@@ -50,7 +55,7 @@ export function SessionWindowNotice({
   const apiErrorMessage = useApiErrorMessage();
   const canManageSettings = useCan("manage_settings");
 
-  if (handedOver) {
+  if (handedOver && editableUntil === undefined) {
     return (
       <Alert tone="info" title={t("handedOverTitle")}>
         {t("handedOverBody")}
@@ -76,6 +81,13 @@ export function SessionWindowNotice({
         {windowEnded && editableUntil
           ? t(canManageSettings ? "closedBodyManager" : "closedBody", { time })
           : apiErrorMessage(closedCode ?? "ATTENDANCE_WINDOW_CLOSED")}
+      </Alert>
+    );
+  }
+  if (handedOver) {
+    return (
+      <Alert tone="info" title={t("handedOverTitle")}>
+        {t("handedOverCorrectionBody")}
       </Alert>
     );
   }

@@ -1319,6 +1319,7 @@
         "notStartedBodyOnDay": "Attendance can be recorded from {day} at {time}.",
         "handedOverTitle": "This lesson was handed to a substitute",
         "handedOverBody": "The substitute records its attendance. You can still look at it.",
+        "handedOverCorrectionBody": "The substitute records its attendance. You can still correct it, with a reason.",
         "closedTitle": "This session's attendance is locked",
         "closedBody": "The time to change it ended {time}. A school admin can lengthen the correction window in the attendance settings if it still needs changing.",
         "closedBodyManager": "The time to change it ended {time}. Lengthen the correction window in the attendance settings if it still needs changing.",
