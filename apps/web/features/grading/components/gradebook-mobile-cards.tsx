@@ -153,13 +153,10 @@ export function GradebookMobileCards({
                   onClick={() => {
                     onManualOverride(student);
                   }}
-                  // Named for the student, not only "Nilai rapor 75,5"; the
-                  // pending dot inside it becomes its description.
-                  aria-label={
-                    student.report_score === undefined
-                      ? t("reportScoreSet", { name: student.name })
-                      : t("reportScoreOf", { name: student.name, score: reportScore })
-                  }
+                  // The visible "Nilai rapor 75,5" (or "-") first, so a voice
+                  // command that says what it sees still matches (WCAG 2.5.3),
+                  // then the student; the pending dot becomes its description.
+                  aria-label={t("reportScoreOfCard", { name: student.name, score: reportScore })}
                   aria-describedby={
                     pending ? `report-score-pending-${student.student_user_id}` : undefined
                   }

@@ -58,11 +58,11 @@ describe("GradebookMobileCards", () => {
     expect(screen.getByRole("button", { name: 'starsFor:{"name":"Budi"}' })).toBeEnabled();
   });
 
-  it("names a manager's report score button for the student", () => {
+  it("names a manager's report score button by its visible text, then the student", () => {
     renderCards({ canManage: true });
     expect(
-      screen.getByRole("button", { name: 'reportScoreSet:{"name":"Budi"}' }),
-    ).toBeInTheDocument();
+      screen.getByRole("button", { name: 'reportScoreOfCard:{"name":"Budi","score":"-"}' }),
+    ).toHaveTextContent("reportScoreColumn -");
   });
 
   it("names a manager's set report score for the student and its value, pending as a description", () => {
@@ -71,7 +71,7 @@ describe("GradebookMobileCards", () => {
       pendingStudentIds: new Set(["s1"]),
     });
     const button = screen.getByRole("button", {
-      name: 'reportScoreOf:{"name":"Budi","score":"75,5"}',
+      name: 'reportScoreOfCard:{"name":"Budi","score":"75,5"}',
     });
     expect(button).toHaveAccessibleDescription("reportScorePending");
   });

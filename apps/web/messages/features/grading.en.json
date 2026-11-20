@@ -62,6 +62,7 @@
     "reportScorePending": "Updates once saved",
     "reportScoreSet": "Set the report score for {name}",
     "reportScoreOf": "Report score for {name}: {score}",
+    "reportScoreOfCard": "Report score {score}, {name}",
     "starsColumn": "Stars",
     "scoreFor": "{code} score for {name}",
     "starsFor": "Set stars for {name}",
