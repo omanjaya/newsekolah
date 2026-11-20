@@ -265,6 +265,21 @@ describe("UsersView archive", () => {
     expect(mocks.archiveMutateAsync).not.toHaveBeenCalled();
   });
 
+  // The API always refuses to archive the signed-in account
+  // (USER_CANNOT_ARCHIVE_SELF); the viewer's own row used to offer
+  // Arsipkan anyway, open the confirm dialog and then fail with a 400.
+  it("does not offer archive on the viewer's own row", async () => {
+    showing({ ...account, id: "me" });
+    const user = userEvent.setup();
+    render(<UsersView />);
+
+    await user.click(rowMenu());
+
+    expect(await screen.findByRole("menuitem", { name: "actions.resetPassword" })).toBeVisible();
+    expect(screen.queryByRole("menuitem", { name: "actions.archive" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "actions.restore" })).not.toBeInTheDocument();
+  });
+
   it("restores an archived user straight away, the safe direction", async () => {
     showing({ ...account, status: "inactive", archived_at: "2026-11-20T00:00:00Z" } as AdminUser);
     const user = userEvent.setup();

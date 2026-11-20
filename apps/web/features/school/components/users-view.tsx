@@ -259,7 +259,8 @@ export function UsersView(): ReactElement {
                   },
                 ]
               : []),
-            ...(canArchive && manageable
+            // Not on your own row: the API refuses it (USER_CANNOT_ARCHIVE_SELF).
+            ...(canArchive && manageable && user.id !== me?.id
               ? [
                   {
                     label: restore ? t("actions.restore") : t("actions.archive"),
