@@ -156,7 +156,9 @@ export function LoanDeskView(): ReactElement {
                           session.undo(session.mode);
                         }}
                       >
-                        {t("undoLastScan")}
+                        {/* Icon only on a phone, so next to Selesai the
+                            heading keeps room to read on one or two lines. */}
+                        <span className="max-sm:sr-only">{t("undoLastScan")}</span>
                       </Button>
                     </div>
                   }

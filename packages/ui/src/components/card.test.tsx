@@ -61,6 +61,27 @@ describe("Card", () => {
     expect(screen.getByRole("link", { name: "Lihat semua" })).toBeInTheDocument();
   });
 
+  // On a phone the desk basket's two text buttons left its title 35px, one
+  // word per line, drawn under the buttons. jsdom has no layout, so this
+  // pins the rules that let a wide action wrap below a title that keeps a
+  // readable minimum instead.
+  it("wraps a wide action below the title rather than squeezing the title", () => {
+    const { container } = render(
+      <Card>
+        <CardHeader action={<button type="button">Selesai</button>}>
+          <CardTitle as="h2">Dikembalikan pada sesi ini</CardTitle>
+        </CardHeader>
+      </Card>,
+    );
+    const header = container.querySelector('[data-slot="card-header"]');
+    const title = container.querySelector('[data-slot="card-header-title"]');
+    const action = container.querySelector('[data-slot="card-header-action"]');
+    expect(header).toHaveClass("flex", "flex-wrap");
+    expect(title).toHaveClass("flex-1", "min-w-32");
+    expect(title).not.toHaveClass("min-w-0");
+    expect(action).toHaveClass("shrink-0", "ml-auto");
+  });
+
   it("lets a card that is the whole screen carry the page's h1", () => {
     render(
       <Card>
