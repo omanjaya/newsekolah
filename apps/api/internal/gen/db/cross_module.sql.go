@@ -1573,6 +1573,34 @@ func (q *Queries) SupervisionHasActiveDuty(ctx context.Context, arg SupervisionH
 	return has_duty, err
 }
 
+const supervisionLessonLabel = `-- name: SupervisionLessonLabel :one
+select c.name as class_name, sub.name as subject_name
+from schedules s
+join classes c on c.id = s.class_id
+join subjects sub on sub.id = s.subject_id
+where s.tenant_id = $1 and s.id = $2
+`
+
+type SupervisionLessonLabelParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+type SupervisionLessonLabelRow struct {
+	ClassName   string `json:"class_name"`
+	SubjectName string `json:"subject_name"`
+}
+
+// cross-module read: schedules/classes/subjects (scheduling, academic), so
+// an observation's notifications can name the lesson ("X-A, Matematika")
+// instead of a fixed sentence that cannot tell two visits apart.
+func (q *Queries) SupervisionLessonLabel(ctx context.Context, arg SupervisionLessonLabelParams) (SupervisionLessonLabelRow, error) {
+	row := q.db.QueryRow(ctx, supervisionLessonLabel, arg.TenantID, arg.ID)
+	var i SupervisionLessonLabelRow
+	err := row.Scan(&i.ClassName, &i.SubjectName)
+	return i, err
+}
+
 const supervisionTeacherName = `-- name: SupervisionTeacherName :one
 select name from users where tenant_id = $1 and id = $2
 `

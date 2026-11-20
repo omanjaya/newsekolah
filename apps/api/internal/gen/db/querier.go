@@ -1821,6 +1821,10 @@ type Querier interface {
 	// against bare current_date would evaluate the duty window in whatever
 	// timezone the connection happens to be in, matching permits' HasActiveDuty.
 	SupervisionHasActiveDuty(ctx context.Context, arg SupervisionHasActiveDutyParams) (bool, error)
+	// cross-module read: schedules/classes/subjects (scheduling, academic), so
+	// an observation's notifications can name the lesson ("X-A, Matematika")
+	// instead of a fixed sentence that cannot tell two visits apart.
+	SupervisionLessonLabel(ctx context.Context, arg SupervisionLessonLabelParams) (SupervisionLessonLabelRow, error)
 	SupervisionListCyclesForYear(ctx context.Context, arg SupervisionListCyclesForYearParams) ([]SupervisionCycle, error)
 	SupervisionListObservationsForCycle(ctx context.Context, arg SupervisionListObservationsForCycleParams) ([]SupervisionObservation, error)
 	SupervisionListObservationsForTeacherCycle(ctx context.Context, arg SupervisionListObservationsForTeacherCycleParams) ([]SupervisionObservation, error)

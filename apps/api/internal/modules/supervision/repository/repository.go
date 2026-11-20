@@ -248,6 +248,19 @@ func (r *Repository) TeacherName(ctx context.Context, tenantID, teacherUserID uu
 	return name, nil
 }
 
+// LessonLabel names the class and subject of a weekly lesson; found is
+// false when the lesson no longer exists.
+func (r *Repository) LessonLabel(ctx context.Context, tenantID, scheduleID uuid.UUID) (service.LessonLabel, bool, error) {
+	row, err := r.queries(ctx).SupervisionLessonLabel(ctx, db.SupervisionLessonLabelParams{TenantID: tenantID, ID: scheduleID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return service.LessonLabel{}, false, nil
+	}
+	if err != nil {
+		return service.LessonLabel{}, false, fmt.Errorf("lesson label: %w", err)
+	}
+	return service.LessonLabel{ClassName: row.ClassName, SubjectName: row.SubjectName}, true, nil
+}
+
 // Mapping.
 
 func toCycle(row db.SupervisionCycle) (domain.SupervisionCycle, error) {
