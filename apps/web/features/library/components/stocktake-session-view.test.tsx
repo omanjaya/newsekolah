@@ -49,7 +49,13 @@ vi.mock("../stocktake-api", () => ({
           isLoading: false,
         },
   useLibraryStocktakeProgressQuery: () => ({
-    data: { expected_count: 10, scanned_count: 3, missing_count: 7, misplaced_count: 0 },
+    data: {
+      expected_count: 10,
+      scanned_count: 3,
+      missing_count: 7,
+      unexpected_count: 2,
+      misplaced_count: 0,
+    },
     isLoading: false,
     isError: false,
     refetch: vi.fn(),
@@ -100,6 +106,36 @@ describe("StocktakeSessionView", () => {
     if (!(live instanceof HTMLElement)) throw new Error("result region missing");
     expect(await within(live).findByText("Laskar Pelangi")).toBeInTheDocument();
     expect(mocks.findCopy).toHaveBeenCalledWith("2026/00001");
+  });
+
+  // A copy on loan or lost was announced as a plain success, and the
+  // counters counted it as scanned, so they never added up.
+  it("marks a found copy that is not expected on the shelf as unexpected", async () => {
+    mocks.findCopy.mockResolvedValue({ title_id: "title-1", status: "on_loan" });
+    mocks.scan.mockImplementation(
+      (
+        _input: unknown,
+        options: { onSuccess: (response: { data: { outcome: string }[] }) => void },
+      ) => {
+        options.onSuccess({ data: [{ outcome: "found" }] });
+      },
+    );
+    const user = userEvent.setup();
+    const { container } = render(<StocktakeSessionView stocktakeId="st-1" />);
+
+    await user.type(screen.getByRole("textbox", { name: "scan.label" }), "2026/00003{Enter}");
+
+    const live = container.querySelector('[aria-live="polite"]');
+    if (!(live instanceof HTMLElement)) throw new Error("result region missing");
+    expect(await within(live).findByText("scan.unexpectedDetail")).toBeInTheDocument();
+    expect(container.querySelector('[data-tone="warning"]')).not.toBeNull();
+  });
+
+  it("shows unexpected copies apart from the scanned and remaining counts", () => {
+    render(<StocktakeSessionView stocktakeId="st-1" />);
+    const strip = screen.getByRole("group", { name: "progress.heading" });
+    expect(within(strip).getByText("result.unexpected")).toBeInTheDocument();
+    expect(within(strip).getByText("2")).toBeInTheDocument();
   });
 
   it("says a code is not in the collection without looking up a book", async () => {

@@ -37,29 +37,51 @@ export interface ParsedImportSheet {
   rows: Record<string, string>[];
 }
 
-/** Plausible Indonesian header labels for each field, used only to seed a default mapping. */
+/**
+ * Header spellings that identify each field, used only to seed a default
+ * mapping. This mirrors the aliases in the API's
+ * `domain.ImportFieldDefs` (apps/api/internal/modules/library/domain/import.go),
+ * which include every header of the library's own import template, so a
+ * file made from that template maps without any manual step.
+ */
 const FIELD_SYNONYMS: Record<ImportField, string[]> = {
-  title: ["judul"],
-  main_author: ["penulis", "penulis utama", "pengarang"],
-  publisher: ["penerbit"],
-  publish_place: ["kota terbit", "tempat terbit"],
-  publish_year: ["tahun terbit", "tahun"],
-  isbn: ["isbn"],
-  ddc_number: ["nomor ddc", "ddc", "klasifikasi"],
-  subjects: ["subjek"],
-  material_type: ["jenis bahan", "jenis koleksi"],
-  category: ["kategori"],
-  access: ["akses"],
-  location: ["lokasi", "rak"],
-  source: ["sumber", "asal perolehan"],
-  acquired_on: ["tanggal perolehan", "tanggal masuk"],
-  price: ["harga"],
-  no_induk: ["nomor induk", "no induk"],
-  barcode: ["barcode", "kode batang"],
-  copies: ["eksemplar", "jumlah eksemplar", "jumlah"],
-  call_number: ["nomor panggil"],
+  title: ["judul", "judul*", "title", "judul buku"],
+  main_author: [
+    "pengarang",
+    "penulis",
+    "penulis utama",
+    "author",
+    "nama pengarang",
+    "pengarang utama",
+  ],
+  publisher: ["penerbit", "publisher"],
+  publish_place: ["tempat terbit", "kota terbit", "place"],
+  publish_year: ["tahun", "tahun terbit", "publish year"],
+  isbn: ["isbn", "isbn/issn", "no. isbn", "nomor isbn"],
+  ddc_number: [
+    "ddc",
+    "nomor ddc",
+    "no. klas",
+    "noklas",
+    "nomor klasifikasi",
+    "klasifikasi",
+    "no kelas",
+  ],
+  subjects: ["subjek", "subject", "tajuk subjek"],
+  material_type: ["jenis bahan (kode)", "jenis bahan", "jenis koleksi", "gmd", "jenis materi"],
+  category: ["kategori (kode)", "kategori koleksi", "kategori"],
+  access: ["akses", "access"],
+  location: ["lokasi (kode)", "lokasi ruang", "lokasi", "rak"],
+  source: ["sumber (kode)", "sumber pengadaan", "sumber", "asal", "asal perolehan"],
+  acquired_on: ["tanggal pengadaan", "tanggal perolehan", "tanggal terima", "tanggal masuk"],
+  price: ["harga", "price", "harga satuan"],
+  no_induk: ["no. induk", "noinduk", "nomor induk", "no induk"],
+  barcode: ["barcode", "nomor barcode", "kode batang"],
+  copies: ["jumlah eksemplar", "jumlah", "eksemplar", "copies"],
+  call_number: ["nomor panggil", "callnumber", "no. panggil"],
 };
 
+/** Case- and punctuation-insensitive form, like the API's NormalizeHeader. */
 function normalize(text: string): string {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "");
 }

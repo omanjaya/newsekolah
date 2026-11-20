@@ -82,8 +82,13 @@ type ImportPreviewRow struct {
 	RowNumber   int
 	Status      string // "new_title" | "existing_title" | "error"
 	MessageCode domain.ImportRowMessage
-	Title       string
-	Copies      int
+	// MessageValue is the No. Induk or barcode a *_TAKEN or *_IN_FILE
+	// code is about, and MessageRow the earlier row that claimed it for
+	// *_IN_FILE; both are empty otherwise.
+	MessageValue string
+	MessageRow   int
+	Title        string
+	Copies       int
 }
 
 // ImportPreviewSummary totals an import preview's rows by outcome.
@@ -134,25 +139,47 @@ func (s *Service) PreviewImport(ctx context.Context, tenantID uuid.UUID, rawRows
 	if len(rawRows) == 0 || len(rawRows) > importMaxRows {
 		return ImportPreview{}, domain.ErrInvalidInput
 	}
+	// The preview only reads, but it reads tenant tables under row level
+	// security, so it needs the tenant transaction like every other read.
+	var preview ImportPreview
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		preview, err = s.previewImportRows(ctx, tenantID, rawRows, mapping)
+		return err
+	})
+	return preview, err
+}
+
+func (s *Service) previewImportRows(ctx context.Context, tenantID uuid.UUID, rawRows []map[string]any, mapping map[string]string) (ImportPreview, error) {
 	refs, err := s.loadImportRefs(ctx, tenantID)
 	if err != nil {
 		return ImportPreview{}, err
 	}
 
-	preview := ImportPreview{Rows: make([]ImportPreviewRow, 0, len(rawRows))}
-	for _, raw := range rawRows {
-		row := domain.ImportRowFromRaw(raw, mapping)
+	rows := make([]domain.ImportRow, len(rawRows))
+	for i, raw := range rawRows {
+		rows[i] = domain.ImportRowFromRaw(raw, mapping)
+	}
+	codes, err := s.importCopyCodeCheck(ctx, tenantID, rows)
+	if err != nil {
+		return ImportPreview{}, err
+	}
+
+	preview := ImportPreview{Rows: make([]ImportPreviewRow, 0, len(rows))}
+	for _, row := range rows {
 		copies, code, ok := domain.ValidateImportRow(row, refs.validation)
+		failed := ImportPreviewRow{RowNumber: row.RowNumber, Status: "error", MessageCode: code, Title: row.Title}
+		if ok {
+			failed, ok = codes.check(row, copies)
+		}
 		if !ok {
 			preview.Summary.Errors++
-			preview.Rows = append(preview.Rows, ImportPreviewRow{RowNumber: row.RowNumber, Status: "error", MessageCode: code, Title: row.Title})
+			preview.Rows = append(preview.Rows, failed)
 			continue
 		}
 		_, found, err := s.findDedupeTitle(ctx, tenantID, row.ISBN, row.Title, row.Author)
 		if err != nil {
-			preview.Summary.Errors++
-			preview.Rows = append(preview.Rows, ImportPreviewRow{RowNumber: row.RowNumber, Status: "error", MessageCode: domain.ImportMsgDedupeFailed, Title: row.Title})
-			continue
+			return ImportPreview{}, err
 		}
 		status, code := "new_title", domain.ImportMsgNewTitle
 		if found {
@@ -165,6 +192,86 @@ func (s *Service) PreviewImport(ctx context.Context, tenantID uuid.UUID, rawRows
 		preview.Rows = append(preview.Rows, ImportPreviewRow{RowNumber: row.RowNumber, Status: status, MessageCode: code, Title: row.Title, Copies: copies})
 	}
 	return preview, nil
+}
+
+// importCopyCodes is what an import preview knows about the explicit
+// barcodes and accession numbers in a file: which ones copies already on
+// file hold, and which ones an earlier row of the same file claimed.
+type importCopyCodes struct {
+	takenBarcodes, takenAccessions map[string]bool
+	seenBarcodes, seenAccessions   map[string]int
+	// barcodeFromAccession is true when the tenant prints the accession
+	// number as the barcode, so a row with only a No. Induk also claims
+	// that value as its barcode.
+	barcodeFromAccession bool
+}
+
+// importCopyNumbers is the barcode and accession number a row's single
+// copy would be saved with, when the row sets them. A row creating more
+// than one copy always generates both (see CommitImport).
+func (c importCopyCodes) importCopyNumbers(row domain.ImportRow, copies int) (barcode, accession string) {
+	if copies != 1 {
+		return "", ""
+	}
+	barcode, accession = strings.TrimSpace(row.Barcode), strings.TrimSpace(row.AccessionNumber)
+	if barcode == "" && c.barcodeFromAccession {
+		barcode = accession
+	}
+	return barcode, accession
+}
+
+// importCopyCodeCheck looks up, in one query, every explicit barcode and
+// accession number the file carries, so the preview can flag a row whose
+// number is already taken instead of letting the commit fail the whole
+// file (old app: the commit's unique violation was the first anyone heard
+// of it).
+func (s *Service) importCopyCodeCheck(ctx context.Context, tenantID uuid.UUID, rows []domain.ImportRow) (importCopyCodes, error) {
+	codes := importCopyCodes{
+		seenBarcodes: map[string]int{}, seenAccessions: map[string]int{},
+		barcodeFromAccession: s.librarySettings(ctx, tenantID).BarcodeSource != "sequence",
+	}
+	var barcodes, accessions []string
+	for _, row := range rows {
+		barcode, accession := codes.importCopyNumbers(row, 1)
+		if barcode != "" {
+			barcodes = append(barcodes, barcode)
+		}
+		if accession != "" {
+			accessions = append(accessions, accession)
+		}
+	}
+	var err error
+	codes.takenBarcodes, codes.takenAccessions, err = s.repo.TakenCopyCodes(ctx, tenantID, barcodes, accessions)
+	return codes, err
+}
+
+// check reports a row whose barcode or accession number is already used
+// by a copy on file or by an earlier row of the same file, as the error
+// row the preview shows, and otherwise records the row's numbers as
+// claimed.
+func (c importCopyCodes) check(row domain.ImportRow, copies int) (ImportPreviewRow, bool) {
+	barcode, accession := c.importCopyNumbers(row, copies)
+	failed := ImportPreviewRow{RowNumber: row.RowNumber, Status: "error", Title: row.Title}
+	switch {
+	case accession != "" && c.takenAccessions[accession]:
+		failed.MessageCode, failed.MessageValue = domain.ImportMsgAccessionTaken, accession
+	case barcode != "" && c.takenBarcodes[barcode]:
+		failed.MessageCode, failed.MessageValue = domain.ImportMsgBarcodeTaken, barcode
+	case accession != "" && c.seenAccessions[accession] > 0:
+		failed.MessageCode, failed.MessageValue, failed.MessageRow = domain.ImportMsgAccessionInFile, accession, c.seenAccessions[accession]
+	case barcode != "" && c.seenBarcodes[barcode] > 0:
+		failed.MessageCode, failed.MessageValue, failed.MessageRow = domain.ImportMsgBarcodeInFile, barcode, c.seenBarcodes[barcode]
+	}
+	if failed.MessageCode != "" {
+		return failed, false
+	}
+	if accession != "" {
+		c.seenAccessions[accession] = row.RowNumber
+	}
+	if barcode != "" {
+		c.seenBarcodes[barcode] = row.RowNumber
+	}
+	return ImportPreviewRow{}, true
 }
 
 // ImportCommitResult is how many titles and copies a commit created.
@@ -199,29 +306,29 @@ func (s *Service) CommitImport(ctx context.Context, tenantID uuid.UUID, rawRows 
 		if err != nil {
 			return err
 		}
-		for _, raw := range rawRows {
-			row := domain.ImportRowFromRaw(raw, mapping)
-			copies, _, ok := domain.ValidateImportRow(row, refs.validation)
-			if !ok {
-				continue
-			}
+		for _, v := range importCommitOrder(rawRows, mapping, refs.validation) {
+			row, copies := v.row, v.copies
 			title, found, err := s.findDedupeTitle(ctx, tenantID, row.ISBN, row.Title, row.Author)
 			if err != nil {
 				return err
 			}
 			if !found {
 				materialTypeID := refs.materialTypeIDs[strings.ToLower(row.MaterialTypeCode)]
+				// Imported titles are public, like a title entered by hand
+				// (the create endpoint defaults is_opac to true); leaving the
+				// Go zero value hid every imported title from the OPAC.
 				newTitle, err := prepareTitle(domain.Title{
 					TenantID: tenantID, Title: strings.TrimSpace(row.Title), Author: row.Author, Publisher: row.Publisher,
 					PublishPlace: row.PublishPlace, PublishYear: atoiOrZero(row.PublishYear), ISBN: row.ISBN, DDCNumber: row.DDC,
 					Subjects: row.Subjects, CallNumber: row.CallNumber, MaterialTypeID: uuid.NullUUID{UUID: materialTypeID, Valid: materialTypeID != uuid.Nil},
+					IsOPAC: true,
 				})
 				if err != nil {
-					return err
+					return &domain.ImportRowError{Row: row.RowNumber, Err: err}
 				}
 				title, err = s.repo.CreateTitle(ctx, newTitle)
 				if err != nil {
-					return err
+					return &domain.ImportRowError{Row: row.RowNumber, Err: err}
 				}
 				result.CreatedTitles++
 			}
@@ -229,6 +336,7 @@ func (s *Service) CommitImport(ctx context.Context, tenantID uuid.UUID, rawRows 
 			defaults := CopyDefaults{
 				CategoryID: uuid.NullUUID{UUID: refs.categoryIDs[strings.ToLower(row.CategoryCode)], Valid: refs.categoryIDs[strings.ToLower(row.CategoryCode)] != uuid.Nil},
 				Access:     domain.CopyAccess(row.Access), Price: atoiOrZero(row.Price), CallNumber: row.CallNumber,
+				IsOPAC: true,
 			}
 			if id, ok := refs.locationIDs[strings.ToLower(row.LocationCode)]; ok {
 				defaults.LocationID = uuid.NullUUID{UUID: id, Valid: true}
@@ -251,7 +359,7 @@ func (s *Service) CommitImport(ctx context.Context, tenantID uuid.UUID, rawRows 
 
 			for i := 0; i < copies; i++ {
 				if _, err := s.addCopyTx(ctx, title, defaults); err != nil {
-					return err
+					return &domain.ImportRowError{Row: row.RowNumber, Err: err}
 				}
 				result.CreatedCopies++
 			}
@@ -262,6 +370,39 @@ func (s *Service) CommitImport(ctx context.Context, tenantID uuid.UUID, rawRows 
 		return ImportCommitResult{}, err
 	}
 	return result, nil
+}
+
+// validImportRow is a row that passed validation, with the number of
+// copies it creates.
+type validImportRow struct {
+	row    domain.ImportRow
+	copies int
+}
+
+// importCommitOrder returns the valid rows in the order the commit creates
+// them: rows that type their own No. Induk or barcode first, then the rows
+// that draw theirs from the sequence, each group in file order. A typed
+// number that collides is final while a drawn one is retried with the next,
+// so in file order a drawn number could take the very number a later row
+// typed and roll back a file the preview passed; drawing last lets every
+// generated number step past the typed ones.
+func importCommitOrder(rawRows []map[string]any, mapping map[string]string, refs domain.ImportValidationRefs) []validImportRow {
+	typed := make([]validImportRow, 0, len(rawRows))
+	var drawn []validImportRow
+	for _, raw := range rawRows {
+		row := domain.ImportRowFromRaw(raw, mapping)
+		copies, _, ok := domain.ValidateImportRow(row, refs)
+		if !ok {
+			continue
+		}
+		v := validImportRow{row: row, copies: copies}
+		if copies == 1 && (strings.TrimSpace(row.AccessionNumber) != "" || strings.TrimSpace(row.Barcode) != "") {
+			typed = append(typed, v)
+		} else {
+			drawn = append(drawn, v)
+		}
+	}
+	return append(typed, drawn...)
 }
 
 func atoiOrZero(s string) int {

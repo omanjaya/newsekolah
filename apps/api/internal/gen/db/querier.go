@@ -828,6 +828,7 @@ type Querier interface {
 	GetTenantTimezoneForPermits(ctx context.Context, id uuid.UUID) (string, error)
 	GetTitle(ctx context.Context, arg GetTitleParams) (LibraryTitle, error)
 	GetTitleByISBN(ctx context.Context, arg GetTitleByISBNParams) (LibraryTitle, error)
+	GetTitlesByIDs(ctx context.Context, arg GetTitlesByIDsParams) ([]LibraryTitle, error)
 	GetUserAdminByID(ctx context.Context, arg GetUserAdminByIDParams) (GetUserAdminByIDRow, error)
 	GetUserByID(ctx context.Context, arg GetUserByIDParams) (User, error)
 	GetUserByUsername(ctx context.Context, arg GetUserByUsernameParams) (User, error)
@@ -1446,6 +1447,10 @@ type Querier interface {
 	ListSubstitutionsOutgoingWithSchedule(ctx context.Context, arg ListSubstitutionsOutgoingWithScheduleParams) ([]ListSubstitutionsOutgoingWithScheduleRow, error)
 	ListSystemRoles(ctx context.Context, tenantID uuid.UUID) ([]ListSystemRolesRow, error)
 	ListTPMappings(ctx context.Context, arg ListTPMappingsParams) ([]ReportTpMapping, error)
+	// The barcodes and accession numbers, out of the given candidates, that
+	// copies already on file hold: an import preview checks a whole file's
+	// explicit numbers in one round trip.
+	ListTakenCopyCodes(ctx context.Context, arg ListTakenCopyCodesParams) ([]ListTakenCopyCodesRow, error)
 	// Active teachers with a teaching assignment in academic_year_id, for a
 	// schedule form's teacher dropdown. self_user_id narrows to one teacher
 	// (a caller without manage_schedules/manage_master_data sees only
@@ -1541,6 +1546,9 @@ type Querier interface {
 	MarkNotificationRead(ctx context.Context, arg MarkNotificationReadParams) error
 	MarkPasswordResetUsed(ctx context.Context, arg MarkPasswordResetUsedParams) error
 	MarkReservationReady(ctx context.Context, arg MarkReservationReadyParams) (LibraryReservation, error)
+	// Whether a live member type of the tenant already has this name, compared
+	// the way ux_library_member_types_name compares it.
+	MemberTypeNameTaken(ctx context.Context, arg MemberTypeNameTakenParams) (bool, error)
 	MembersByClass(ctx context.Context, tenantID uuid.UUID) ([]MembersByClassRow, error)
 	MembersByType(ctx context.Context, tenantID uuid.UUID) ([]MembersByTypeRow, error)
 	MentoringAddGroupMember(ctx context.Context, arg MentoringAddGroupMemberParams) (MentorGroupMember, error)
@@ -1632,9 +1640,18 @@ type Querier interface {
 	PlatformUpsertFeatureFlag(ctx context.Context, arg PlatformUpsertFeatureFlagParams) (FeatureFlag, error)
 	PopularTitlesAllTime(ctx context.Context, arg PopularTitlesAllTimeParams) ([]PopularTitlesAllTimeRow, error)
 	PruneOldSessions(ctx context.Context, tenantID uuid.UUID) (int64, error)
+	// A title was made public: its copies become public with it. There is no
+	// per-copy visibility control, so without this the copies of a title that
+	// was hidden (every title imported before imports were made public) would
+	// stay out of the OPAC's availability and reservations.
+	PublishTitleCopies(ctx context.Context, arg PublishTitleCopiesParams) error
 	RecordDeliveryAttempt(ctx context.Context, arg RecordDeliveryAttemptParams) error
 	RecordStocktakeScan(ctx context.Context, arg RecordStocktakeScanParams) (LibraryStocktakeScan, error)
 	RemoveParticipant(ctx context.Context, arg RemoveParticipantParams) error
+	// A title's call number changed: copies still carrying the old one (they
+	// inherited it when they were added) follow it, so spine labels printed
+	// later show the new number. A copy with its own call number keeps it.
+	RenameInheritedCopyCallNumbers(ctx context.Context, arg RenameInheritedCopyCallNumbersParams) error
 	RenameWebAuthnCredential(ctx context.Context, arg RenameWebAuthnCredentialParams) (WebauthnCredential, error)
 	RenewLoan(ctx context.Context, arg RenewLoanParams) (LibraryLoan, error)
 	// Deletes every range of one subject-teacher scope before the caller
@@ -1843,6 +1860,8 @@ type Querier interface {
 	// a member at all -- a walk-in guest) is applied by the service layer,
 	// which is where every other report's display labels are resolved.
 	VisitsPerClass(ctx context.Context, arg VisitsPerClassParams) ([]VisitsPerClassRow, error)
+	// Days are the tenant's own calendar days (tz is its IANA zone), so a
+	// visit at 04:34 in UTC+8 lands on that local day, not the previous UTC one.
 	VisitsPerDay(ctx context.Context, arg VisitsPerDayParams) ([]VisitsPerDayRow, error)
 	VoidPayment(ctx context.Context, arg VoidPaymentParams) (Payment, error)
 	VoidViolationRecord(ctx context.Context, arg VoidViolationRecordParams) (ViolationRecord, error)

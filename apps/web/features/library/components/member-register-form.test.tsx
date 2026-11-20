@@ -1,3 +1,4 @@
+import { ApiError } from "@newsekolah/api-client";
 import type * as Ui from "@newsekolah/ui";
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -134,6 +135,60 @@ describe("MemberRegisterForm", () => {
         expect.objectContaining({ user_id: "picked-1", member_type_id: "type-student" }),
         expect.anything(),
       );
+    });
+  });
+
+  // A taken number and a user who is already a member used to come back
+  // as a 500 or as "could not generate a unique number, try again".
+  // The API now names the conflict and the form puts it on the field the
+  // librarian has to change.
+  describe("registration conflicts", () => {
+    beforeEach(() => {
+      mocks.memberTypes = [{ id: "type-student", name: "Siswa", default_for_role: "student" }];
+    });
+
+    function rejectWith(code: string) {
+      mocks.register.mockImplementation(
+        (_body: unknown, opts: { onError: (err: unknown) => void }) => {
+          opts.onError(new ApiError({ status: 409, code, message: code }));
+        },
+      );
+    }
+
+    async function fillAndSubmit(memberNo?: string) {
+      const user = userEvent.setup();
+      render(<MemberRegisterForm onDone={vi.fn()} />);
+      await user.click(screen.getByRole("combobox", { name: "userPlaceholder" }));
+      if (memberNo) await user.type(screen.getByPlaceholderText("memberNoPlaceholder"), memberNo);
+      await user.click(screen.getByRole("button", { name: "submit" }));
+      return user;
+    }
+
+    it("shows a taken member number on the member number field and clears it on edit", async () => {
+      rejectWith("LIBRARY_MEMBER_NO_COLLISION");
+      const user = await fillAndSubmit("LIB-01");
+      const input = screen.getByPlaceholderText("memberNoPlaceholder");
+      expect(input).toHaveAccessibleDescription("LIBRARY_MEMBER_NO_COLLISION");
+      expect(input).toHaveAttribute("aria-invalid", "true");
+
+      await user.type(input, "2");
+      expect(screen.queryByText("LIBRARY_MEMBER_NO_COLLISION")).not.toBeInTheDocument();
+    });
+
+    it("shows an existing member on the user field", async () => {
+      rejectWith("LIBRARY_MEMBER_ALREADY_EXISTS");
+      await fillAndSubmit();
+      expect(screen.getByText("LIBRARY_MEMBER_ALREADY_EXISTS")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("memberNoPlaceholder")).not.toHaveAttribute(
+        "aria-invalid",
+        "true",
+      );
+    });
+
+    it("keeps other failures as a form-level message", async () => {
+      rejectWith("INTERNAL_ERROR");
+      await fillAndSubmit();
+      expect(screen.getByText("INTERNAL_ERROR")).toBeInTheDocument();
     });
   });
 

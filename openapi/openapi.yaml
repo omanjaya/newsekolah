@@ -9681,6 +9681,9 @@ paths:
       operationId: createLibraryMemberType
       x-permission: manage_library_members
       summary: Create a member type
+      description: Answers 409 LIBRARY_MEMBER_TYPE_NAME_EXISTS when another live type of the school already uses the name
+        (case and surrounding spaces ignored), and 409 LIBRARY_MEMBER_TYPE_DEFAULT_ROLE_TAKEN when another type is
+        already the default for the role.
       requestBody:
         required: true
         content:
@@ -9700,6 +9703,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /v1/library/member-types/{memberTypeId}:
     put:
       tags:
@@ -9707,6 +9712,9 @@ paths:
       operationId: updateLibraryMemberType
       x-permission: manage_library_members
       summary: Update a member type
+      description: Answers 409 LIBRARY_MEMBER_TYPE_NAME_EXISTS when another live type of the school already uses the name
+        (case and surrounding spaces ignored), and 409 LIBRARY_MEMBER_TYPE_DEFAULT_ROLE_TAKEN when another type is
+        already the default for the role.
       parameters:
         - name: memberTypeId
           in: path
@@ -9735,6 +9743,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
     delete:
       tags:
         - library
@@ -11548,6 +11558,9 @@ paths:
       x-permission: manage_library_catalog
       summary: Create titles (auto call number when empty) and copies for every valid row, in one transaction; an existing
         title (deduped by normalized ISBN, then title+author) only gets new copies added
+      description: "A row whose barcode or accession number is already taken (normally caught by the preview) rolls the whole
+        commit back with 409; the error's details then name that row as {field: \"row_number\", code: \"<row
+        number>\"}."
       requestBody:
         required: true
         content:
@@ -11567,6 +11580,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /v1/library/copies:
     get:
       tags:
@@ -25024,9 +25039,17 @@ components:
         message_code:
           type: string
           description: What the row will do or why it cannot be imported, as a stable code the client translates (NEW_TITLE,
-            EXISTING_TITLE, TITLE_REQUIRED, MATERIAL_TYPE_UNKNOWN, CATEGORY_UNKNOWN, ACCESS_UNKNOWN, LOCATION_UNKNOWN,
-            SOURCE_UNKNOWN, PUBLISH_YEAR_NOT_NUMBER, PRICE_NOT_NUMBER, COPIES_INVALID, DEDUPE_FAILED). NEW_TITLE and
-            EXISTING_TITLE go with the row's copies count.
+            EXISTING_TITLE, TITLE_REQUIRED, MATERIAL_TYPE_REQUIRED, MATERIAL_TYPE_UNKNOWN, CATEGORY_REQUIRED,
+            CATEGORY_UNKNOWN, ACCESS_UNKNOWN, LOCATION_UNKNOWN, SOURCE_UNKNOWN, PUBLISH_YEAR_NOT_NUMBER,
+            PRICE_NOT_NUMBER, COPIES_INVALID, ACCESSION_TAKEN, BARCODE_TAKEN, ACCESSION_IN_FILE, BARCODE_IN_FILE).
+            NEW_TITLE and EXISTING_TITLE go with the row's copies count.
+        message_value:
+          type: string
+          description: The No. Induk or barcode an ACCESSION_TAKEN, BARCODE_TAKEN, ACCESSION_IN_FILE or BARCODE_IN_FILE code is
+            about.
+        message_row:
+          type: integer
+          description: The earlier row of the file that claimed the number, for ACCESSION_IN_FILE and BARCODE_IN_FILE.
         title:
           type: string
         copies:
@@ -25686,6 +25709,8 @@ components:
           type: integer
         scanned_count:
           type: integer
+          description: Expected copies that were found; with the missing copies it adds up to expected_count. Scanned copies that
+            were not expected are listed in unexpected only.
         missing:
           type: array
           items:
@@ -25704,14 +25729,19 @@ components:
         - expected_count
         - scanned_count
         - missing_count
+        - unexpected_count
         - misplaced_count
       properties:
         expected_count:
           type: integer
         scanned_count:
           type: integer
+          description: Expected copies found so far; scanned_count + missing_count = expected_count.
         missing_count:
           type: integer
+        unexpected_count:
+          type: integer
+          description: Scanned copies that were not expected on the shelf (on loan, lost, donated).
         misplaced_count:
           type: integer
     LibraryOverdueMember:

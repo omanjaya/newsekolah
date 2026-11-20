@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -60,7 +61,10 @@ func (s *Service) createMemberWithGeneratedNo(ctx context.Context, tenantID, use
 		return domain.Member{}, err
 	}
 	validUntil := domain.ValidUntilFromRegistration(now, memberType.ValidityMonths)
-	var lastErr error
+	// Only a member_no collision is worth another attempt with the next
+	// number. A user who is already a member, or any other failure, comes
+	// back at once so the caller sees the real reason instead of
+	// "could not generate a unique number".
 	for attempt := 0; attempt < maxMemberNoRetries; attempt++ {
 		memberNo := domain.GenerateMemberNo(policy.MemberNoFormat, now.Year(), count+1+attempt)
 		member, err := s.repo.CreateMember(ctx, domain.Member{
@@ -70,12 +74,10 @@ func (s *Service) createMemberWithGeneratedNo(ctx context.Context, tenantID, use
 		if err == nil {
 			return member, nil
 		}
-		if errors.Is(err, domain.ErrMemberAlreadyExists) {
+		if !errors.Is(err, domain.ErrMemberNoCollision) {
 			return domain.Member{}, err
 		}
-		lastErr = err
 	}
-	_ = lastErr
 	return domain.Member{}, domain.ErrMemberNoExhausted
 }
 
@@ -302,6 +304,7 @@ func (s *Service) Clearance(ctx context.Context, tenantID, userID uuid.UUID) (do
 
 func (s *Service) CreateMemberType(ctx context.Context, tenantID uuid.UUID, t domain.MemberType) (domain.MemberType, error) {
 	t.TenantID = tenantID
+	t.Name = strings.TrimSpace(t.Name)
 	if err := t.Validate(); err != nil {
 		return domain.MemberType{}, err
 	}
@@ -316,6 +319,7 @@ func (s *Service) CreateMemberType(ctx context.Context, tenantID uuid.UUID, t do
 
 func (s *Service) UpdateMemberType(ctx context.Context, tenantID uuid.UUID, t domain.MemberType) (domain.MemberType, error) {
 	t.TenantID = tenantID
+	t.Name = strings.TrimSpace(t.Name)
 	if err := t.Validate(); err != nil {
 		return domain.MemberType{}, err
 	}

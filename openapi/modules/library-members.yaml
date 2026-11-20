@@ -22,6 +22,11 @@ paths:
       operationId: createLibraryMemberType
       x-permission: manage_library_members
       summary: Create a member type
+      description: >-
+        Answers 409 LIBRARY_MEMBER_TYPE_NAME_EXISTS when another live type of the
+        school already uses the name (case and surrounding spaces ignored), and 409
+        LIBRARY_MEMBER_TYPE_DEFAULT_ROLE_TAKEN when another type is already the
+        default for the role.
       requestBody:
         required: true
         content:
@@ -36,6 +41,7 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
 
   /v1/library/member-types/{memberTypeId}:
     put:
@@ -43,6 +49,11 @@ paths:
       operationId: updateLibraryMemberType
       x-permission: manage_library_members
       summary: Update a member type
+      description: >-
+        Answers 409 LIBRARY_MEMBER_TYPE_NAME_EXISTS when another live type of the
+        school already uses the name (case and surrounding spaces ignored), and 409
+        LIBRARY_MEMBER_TYPE_DEFAULT_ROLE_TAKEN when another type is already the
+        default for the role.
       parameters:
         - { name: memberTypeId, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -60,6 +71,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
     delete:
       tags: [library]
       operationId: deleteLibraryMemberType

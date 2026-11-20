@@ -3,10 +3,13 @@ package http
 import (
 	"bytes"
 	"context"
+	"errors"
+	"strconv"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
 
 func (h *LibraryHandler) GetLibraryImportTemplateXlsx(ctx context.Context, _ api.GetLibraryImportTemplateXlsxRequestObject) (api.GetLibraryImportTemplateXlsxResponseObject, error) {
@@ -56,9 +59,23 @@ func (h *LibraryHandler) CommitLibraryImport(ctx context.Context, request api.Co
 	}
 	result, err := h.service.CommitImport(ctx, tenantID(ctx), toRawRows(request.Body.Rows), mapping)
 	if err != nil {
-		return nil, mapError(err)
+		return nil, importCommitError(err)
 	}
 	return api.CommitLibraryImport200JSONResponse{CreatedTitles: result.CreatedTitles, CreatedCopies: result.CreatedCopies}, nil
+}
+
+// importCommitError maps a failed commit like any other library error and,
+// when the failure belongs to one row, names that row in the details as
+// {field: "row_number", code: "<row number>"}, so the page can say which
+// row to fix.
+func importCommitError(err error) error {
+	mapped := mapError(err)
+	var rowErr *domain.ImportRowError
+	var appErr *httpx.Error
+	if !errors.As(err, &rowErr) || !errors.As(mapped, &appErr) || appErr.Status >= 500 {
+		return mapped
+	}
+	return appErr.WithDetails(httpx.ErrorDetail{Field: "row_number", Code: strconv.Itoa(rowErr.Row)})
 }
 
 func toAPIImportPreview(p service.ImportPreview) api.LibraryImportPreview {
@@ -67,6 +84,12 @@ func toAPIImportPreview(p service.ImportPreview) api.LibraryImportPreview {
 		rows[i] = api.LibraryImportPreviewRow{
 			RowNumber: r.RowNumber, Status: api.LibraryImportPreviewRowStatus(r.Status), MessageCode: string(r.MessageCode),
 			Title: r.Title, Copies: r.Copies,
+		}
+		if r.MessageValue != "" {
+			rows[i].MessageValue = &r.MessageValue
+		}
+		if r.MessageRow > 0 {
+			rows[i].MessageRow = &r.MessageRow
 		}
 	}
 	out := api.LibraryImportPreview{Rows: rows}

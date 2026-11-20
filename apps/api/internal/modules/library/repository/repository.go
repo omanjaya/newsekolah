@@ -111,6 +111,18 @@ func (r *Repository) GetTitle(ctx context.Context, tenantID, id uuid.UUID) (doma
 	return toTitle(row), true, nil
 }
 
+func (r *Repository) GetTitlesByIDs(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]domain.Title, error) {
+	rows, err := r.queries(ctx).GetTitlesByIDs(ctx, db.GetTitlesByIDsParams{TenantID: tenantID, Ids: ids})
+	if err != nil {
+		return nil, fmt.Errorf("get titles by ids: %w", err)
+	}
+	out := make([]domain.Title, len(rows))
+	for i, row := range rows {
+		out[i] = toTitle(row)
+	}
+	return out, nil
+}
+
 func (r *Repository) GetTitleByISBN(ctx context.Context, tenantID uuid.UUID, isbn string) (domain.Title, bool, error) {
 	row, err := r.queries(ctx).GetTitleByISBN(ctx, db.GetTitleByISBNParams{TenantID: tenantID, Isbn: isbn})
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -185,15 +197,37 @@ func (r *Repository) CountAvailableCopies(ctx context.Context, tenantID, titleID
 
 // Copies.
 
+// CreateCopy inserts one copy. Inside a caller's transaction the insert
+// runs under a savepoint: a generated accession number or barcode that
+// collides is an expected outcome the service retries with the next
+// number, so the unique violation must not abort the whole transaction
+// and fail every statement after it (the retry used to fail with "current
+// transaction is aborted").
 func (r *Repository) CreateCopy(ctx context.Context, c domain.Copy) (domain.Copy, error) {
-	row, err := r.queries(ctx).CreateCopy(ctx, db.CreateCopyParams{
+	params := db.CreateCopyParams{
 		TenantID: c.TenantID, TitleID: c.TitleID, AccessionNumber: c.AccessionNumber, Barcode: c.Barcode,
 		CopyNumber: int32(c.CopyNumber), CallNumber: c.CallNumber, //nolint:gosec // clamped by service
 		CategoryID: pdatabase.NullUUID(c.CategoryID), LocationID: pdatabase.NullUUID(c.LocationID),
 		SourceID: pdatabase.NullUUID(c.SourceID), PartnerID: pdatabase.NullUUID(c.PartnerID),
 		Price: int32(c.Price), IsOpac: c.IsOPAC, Rfid: c.RFID, Access: string(c.Access), //nolint:gosec // clamped by service
 		Condition: string(c.Condition), Status: string(c.Status), Notes: c.Notes, AcquiredOn: nullableDate(c.AcquiredOn),
-	})
+	}
+	var row db.LibraryCopy
+	var err error
+	if tx, ok := pdatabase.TxFromContext(ctx); ok {
+		savepoint, spErr := tx.Begin(ctx)
+		if spErr != nil {
+			return domain.Copy{}, fmt.Errorf("create copy savepoint: %w", spErr)
+		}
+		row, err = db.New(savepoint).CreateCopy(ctx, params)
+		if err != nil {
+			_ = savepoint.Rollback(ctx)
+		} else if spErr := savepoint.Commit(ctx); spErr != nil {
+			return domain.Copy{}, fmt.Errorf("release create copy savepoint: %w", spErr)
+		}
+	} else {
+		row, err = r.queries(ctx).CreateCopy(ctx, params)
+	}
 	switch constraintName(err) {
 	case "ux_library_copies_accession_number":
 		return domain.Copy{}, domain.ErrCopyAccessionExists
@@ -207,6 +241,22 @@ func (r *Repository) CreateCopy(ctx context.Context, c domain.Copy) (domain.Copy
 		return domain.Copy{}, fmt.Errorf("create copy: %w", err)
 	}
 	return toCopy(row), nil
+}
+
+func (r *Repository) RenameInheritedCopyCallNumbers(ctx context.Context, tenantID, titleID uuid.UUID, oldCallNumber, newCallNumber string) error {
+	if err := r.queries(ctx).RenameInheritedCopyCallNumbers(ctx, db.RenameInheritedCopyCallNumbersParams{
+		TenantID: tenantID, TitleID: titleID, OldCallNumber: oldCallNumber, NewCallNumber: newCallNumber,
+	}); err != nil {
+		return fmt.Errorf("rename inherited copy call numbers: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) PublishTitleCopies(ctx context.Context, tenantID, titleID uuid.UUID) error {
+	if err := r.queries(ctx).PublishTitleCopies(ctx, db.PublishTitleCopiesParams{TenantID: tenantID, TitleID: titleID}); err != nil {
+		return fmt.Errorf("publish title copies: %w", err)
+	}
+	return nil
 }
 
 func (r *Repository) GetCopy(ctx context.Context, tenantID, id uuid.UUID) (domain.Copy, bool, error) {
@@ -229,6 +279,26 @@ func (r *Repository) GetCopyByBarcode(ctx context.Context, tenantID uuid.UUID, b
 		return domain.Copy{}, false, fmt.Errorf("get copy by barcode: %w", err)
 	}
 	return toCopy(row), true, nil
+}
+
+// TakenCopyCodes reports which of the candidate barcodes and accession
+// numbers copies already on file hold.
+func (r *Repository) TakenCopyCodes(ctx context.Context, tenantID uuid.UUID, barcodes, accessionNumbers []string) (map[string]bool, map[string]bool, error) {
+	takenBarcodes, takenAccessions := map[string]bool{}, map[string]bool{}
+	if len(barcodes) == 0 && len(accessionNumbers) == 0 {
+		return takenBarcodes, takenAccessions, nil
+	}
+	rows, err := r.queries(ctx).ListTakenCopyCodes(ctx, db.ListTakenCopyCodesParams{
+		TenantID: tenantID, Barcodes: barcodes, AccessionNumbers: accessionNumbers,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("list taken copy codes: %w", err)
+	}
+	for _, row := range rows {
+		takenBarcodes[row.Barcode] = true
+		takenAccessions[row.AccessionNumber] = true
+	}
+	return takenBarcodes, takenAccessions, nil
 }
 
 func (r *Repository) FindCopyByCode(ctx context.Context, tenantID uuid.UUID, code string) (domain.Copy, bool, error) {

@@ -9,6 +9,7 @@ import {
   Button,
   Input,
   Select,
+  Switch,
   Textarea,
   useToast,
   useSubmitValidation,
@@ -56,6 +57,11 @@ export function TitleForm({
   );
   const [isbn, setIsbn] = useState(initial?.isbn ?? "");
   const [classification, setClassification] = useState(initial?.classification ?? "");
+  const [ddcNumber, setDdcNumber] = useState(initial?.ddc_number ?? "");
+  // Empty means "generate it": the API builds it from the DDC number, the
+  // author and the title, and rebuilds it when those change.
+  const [callNumber, setCallNumber] = useState(initial?.call_number ?? "");
+  const [isOpac, setIsOpac] = useState(initial?.is_opac ?? true);
   const [pages, setPages] = useState(initial?.pages ?? "");
   const [subjects, setSubjects] = useState(initial?.subjects ?? "");
   const [language, setLanguage] = useState(initial?.language ?? "");
@@ -94,8 +100,6 @@ export function TitleForm({
           illustration: initial?.illustration,
           dimensions: initial?.dimensions,
           issn: initial?.issn,
-          ddc_number: initial?.ddc_number,
-          call_number: initial?.call_number,
           literary_form: initial?.literary_form,
           target_audience: initial?.target_audience,
           notes: initial?.notes,
@@ -109,13 +113,15 @@ export function TitleForm({
           publish_year: publishYear ? Number(publishYear) : undefined,
           isbn: isbn.trim() || undefined,
           classification: classification.trim() || undefined,
+          ddc_number: ddcNumber.trim() || undefined,
+          call_number: callNumber.trim() || undefined,
           pages: pages.trim() || undefined,
           subjects: subjects.trim() || undefined,
           language: language.trim() || undefined,
           abstract: abstract.trim() || undefined,
           cover_asset_id: coverAssetId || undefined,
           material_type_id: materialTypeId || undefined,
-          is_opac: initial?.is_opac ?? true,
+          is_opac: isOpac,
         };
         const callbacks = {
           onSuccess: () => {
@@ -234,7 +240,26 @@ export function TitleForm({
         </Field>
       </FormSection>
       <FormSection title={t("sections.classification")}>
-        <Field label={t("classification")}>
+        <Field label={t("ddcNumber")} hint={t("ddcNumberHint")}>
+          <Input
+            value={ddcNumber}
+            onChange={(e) => {
+              setDdcNumber(e.target.value);
+            }}
+            inputMode="decimal"
+            maxLength={40}
+          />
+        </Field>
+        <Field label={t("callNumber")} hint={t("callNumberHint")}>
+          <Input
+            value={callNumber}
+            onChange={(e) => {
+              setCallNumber(e.target.value);
+            }}
+            maxLength={60}
+          />
+        </Field>
+        <Field label={t("classification")} hint={t("classificationHint")}>
           <Input
             value={classification}
             onChange={(e) => {
@@ -273,6 +298,11 @@ export function TitleForm({
             rows={3}
             maxLength={2000}
           />
+        </Field>
+      </FormSection>
+      <FormSection title={t("sections.visibility")} columns={1}>
+        <Field label={t("isOpac")} hint={t("isOpacHint")}>
+          <Switch checked={isOpac} onCheckedChange={setIsOpac} />
         </Field>
       </FormSection>
       <DialogFooter>

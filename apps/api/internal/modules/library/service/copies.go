@@ -79,7 +79,18 @@ func (s *Service) addCopyTx(ctx context.Context, title domain.Title, defaults Co
 	var created domain.Copy
 	settings := s.librarySettings(ctx, title.TenantID)
 	year := s.clock.Now().Year()
-	explicit := defaults.Barcode != "" || defaults.AccessionOverride != ""
+	// A collision on a number the caller typed is final; a collision on a
+	// number drawn here is retried with the next one. The barcode counts as
+	// typed when it copies a typed accession number. Treating the whole
+	// copy as explicit whenever either number was typed made a typed
+	// barcode fail on a generated accession number that happened to be
+	// taken, for example by an earlier hand-entered No. Induk.
+	accessionTyped := defaults.AccessionOverride != ""
+	barcodeTyped := defaults.Barcode != "" || (accessionTyped && settings.BarcodeSource != "sequence")
+	retryable := func(err error) bool {
+		return (errors.Is(err, domain.ErrCopyAccessionExists) && !accessionTyped) ||
+			(errors.Is(err, domain.ErrCopyBarcodeExists) && !barcodeTyped)
+	}
 
 	for attempt := 0; attempt < maxAccessionRetries; attempt++ {
 		c := base
@@ -108,7 +119,7 @@ func (s *Service) addCopyTx(ctx context.Context, title domain.Title, defaults Co
 		if err == nil {
 			break
 		}
-		if explicit || (!errors.Is(err, domain.ErrCopyAccessionExists) && !errors.Is(err, domain.ErrCopyBarcodeExists)) {
+		if !retryable(err) {
 			return domain.Copy{}, err
 		}
 		// A generated number collided (e.g. a concurrent create advanced

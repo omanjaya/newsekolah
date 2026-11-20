@@ -94,6 +94,13 @@
       "publishYear": "Publish year",
       "isbn": "ISBN",
       "classification": "Classification",
+      "classificationHint": "Free text, e.g. Fiction - Indonesian novel. The call number uses the DDC number.",
+      "ddcNumber": "DDC number",
+      "ddcNumberHint": "Dewey class number, e.g. 899.221. It starts the call number on the spine label.",
+      "callNumber": "Call number",
+      "callNumberHint": "Leave empty to build it from the DDC number, author and title.",
+      "isOpac": "Show in the public catalogue",
+      "isOpacHint": "Students and teachers can find and reserve this title in the OPAC.",
       "pages": "Page count",
       "subjects": "Subjects",
       "language": "Language",
@@ -107,7 +114,8 @@
         "lookup": "Fill in from the ISBN",
         "identity": "The book",
         "publication": "Publication",
-        "classification": "Classification and summary"
+        "classification": "Classification and summary",
+        "visibility": "Public visibility"
       }
     },
     "isbnLookup": {
@@ -703,6 +711,7 @@
     "emptyFile": "The file has no data rows. Check the filled template again.",
     "parseError": "The file could not be read. Make sure it is an XLSX file matching the template.",
     "committed": "Import applied",
+    "commitRowError": "Row {row}: {message} Fix that row and upload the file again.",
     "resultSummary": "{titles} new titles, {copies} copies added.",
     "importAnother": "Import another file",
     "mapping": {
@@ -755,7 +764,9 @@
         "NEW_TITLE": "New title, {copies} copies will be created.",
         "EXISTING_TITLE": "Title already exists, {copies} copies will be added.",
         "TITLE_REQUIRED": "Title is required.",
+        "MATERIAL_TYPE_REQUIRED": "Material type code is required.",
         "MATERIAL_TYPE_UNKNOWN": "Material type code not recognised.",
+        "CATEGORY_REQUIRED": "Category code is required.",
         "CATEGORY_UNKNOWN": "Category code not recognised.",
         "ACCESS_UNKNOWN": "Access value not recognised.",
         "LOCATION_UNKNOWN": "Location code not recognised.",
@@ -763,7 +774,10 @@
         "PUBLISH_YEAR_NOT_NUMBER": "Publish year must be a number.",
         "PRICE_NOT_NUMBER": "Price must be a number.",
         "COPIES_INVALID": "Number of copies must be a whole number, at least 1.",
-        "DEDUPE_FAILED": "Could not check for an existing title. Try reviewing again.",
+        "ACCESSION_TAKEN": "Accession number {value} is already used by another copy.",
+        "BARCODE_TAKEN": "Barcode {value} is already used by another copy.",
+        "ACCESSION_IN_FILE": "Accession number {value} is already used in row {row}.",
+        "BARCODE_IN_FILE": "Barcode {value} is already used in row {row}.",
         "unknown": "This row cannot be imported."
       },
       "status": {
@@ -963,9 +977,11 @@
       "recent": {
         "found": "Found",
         "rejected": "Code not recognized",
+        "unexpected": "Not expected on the shelf",
         "heading": "Earlier scans"
       },
       "foundDetail": "{barcode} counted in this stocktake",
+      "unexpectedDetail": "{barcode} is {status}, recorded as unexpected",
       "earlier": "Earlier scans"
     },
     "close": "Close session",

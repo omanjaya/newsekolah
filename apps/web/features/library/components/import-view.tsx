@@ -18,7 +18,6 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
-import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
   downloadLibraryImportTemplate,
   useLibraryImportCommitMutation,
@@ -32,6 +31,7 @@ import {
   guessImportMapping,
 } from "../import-fields";
 import { parseImportFile } from "../import-lib";
+import { useLibraryErrorMessage } from "../use-library-error-message";
 
 import { ImportMappingStep } from "./import-mapping-step";
 import { ImportPreviewTable } from "./import-preview-table";
@@ -48,7 +48,7 @@ export function ImportView(): ReactElement {
   const t = useTranslations("app.library.import");
   const shortcuts = useLibraryShortcuts(["catalogueSettings"]);
   const toast = useToast();
-  const apiErrorMessage = useApiErrorMessage();
+  const libraryErrorMessage = useLibraryErrorMessage();
   const preview = useLibraryImportPreviewMutation();
   const commit = useLibraryImportCommitMutation();
 
@@ -97,7 +97,7 @@ export function ImportView(): ReactElement {
       setPreviewResult(result);
       setStep("preview");
     } catch (err) {
-      setError(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
+      setError(libraryErrorMessage(err));
     }
   }
 
@@ -115,8 +115,21 @@ export function ImportView(): ReactElement {
       setStep("result");
       toast.success(t("committed"));
     } catch (err) {
-      setError(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
+      setError(commitErrorMessage(err));
     }
+  }
+
+  /**
+   * The commit names the row that stopped it, so the librarian knows which
+   * one to fix instead of hunting through the file.
+   */
+  function commitErrorMessage(err: unknown): string {
+    const message = libraryErrorMessage(err);
+    const row =
+      err instanceof ApiError
+        ? err.details?.find((detail) => detail.field === "row_number")?.code
+        : undefined;
+    return row ? t("commitRowError", { row, message: withFullStop(message) }) : message;
   }
 
   function resetAll() {
@@ -232,4 +245,9 @@ export function ImportView(): ReactElement {
       )}
     </AppPage>
   );
+}
+
+/** Ends a sentence with a full stop unless it already ends with one. */
+function withFullStop(sentence: string): string {
+  return /[.!?]$/.test(sentence.trim()) ? sentence.trim() : `${sentence.trim()}.`;
 }

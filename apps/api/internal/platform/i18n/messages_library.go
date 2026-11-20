@@ -41,6 +41,8 @@ func init() {
 	catalog["LIBRARY_MEMBER_NOT_CLEARABLE"] = map[string]string{Indonesian: "Anggota masih memiliki pinjaman aktif atau denda yang belum lunas.", English: "The member still has an active loan or an unpaid fine."}
 	catalog["LIBRARY_MEMBER_TYPE_NOT_FOUND"] = map[string]string{Indonesian: "Jenis anggota perpustakaan tidak ditemukan.", English: "Library member type not found."}
 	catalog["LIBRARY_MEMBER_TYPE_IN_USE"] = map[string]string{Indonesian: "Jenis anggota ini masih dipakai oleh anggota lain.", English: "This member type is still in use."}
+	catalog["LIBRARY_MEMBER_TYPE_NAME_EXISTS"] = map[string]string{Indonesian: "Nama jenis anggota sudah dipakai.", English: "This member type name is already in use."}
+	catalog["LIBRARY_MEMBER_TYPE_DEFAULT_ROLE_TAKEN"] = map[string]string{Indonesian: "Jenis anggota lain sudah menjadi bawaan untuk peran ini.", English: "Another member type is already the default for this role."}
 	catalog["LIBRARY_MEMBER_NO_EXHAUSTED"] = map[string]string{Indonesian: "Gagal membuat nomor anggota unik, coba lagi.", English: "Could not generate a unique member number, try again."}
 	catalog["LIBRARY_MEMBER_NO_COLLISION"] = map[string]string{Indonesian: "Nomor anggota sudah dipakai.", English: "This member number is already in use."}
 	catalog["LIBRARY_ALREADY_HAS_TITLE"] = map[string]string{Indonesian: "Anggota masih meminjam judul ini.", English: "The member already has this title on loan."}

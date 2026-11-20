@@ -126,6 +126,35 @@ describe("NumberInput", () => {
     expect(input).toHaveAttribute("aria-valuemax", "100");
   });
 
+  // A batch count of 0 or 999 used to be corrected to 1 or 200 by the blur
+  // a click on "Tambahkan" causes, so the form's own range check never saw
+  // it and the batch went out. With clampOnBlur off the typed number stays
+  // for the form to reject, and the field says it is out of range.
+  it("keeps an out-of-range number on blur and marks it invalid when clampOnBlur is off", async () => {
+    const onChange = vi.fn();
+    render(
+      <ControlledNumberInput min={1} max={200} step={1} clampOnBlur={false} onChange={onChange} />,
+    );
+    const input = screen.getByRole("spinbutton", { name: "Nilai" });
+
+    await userEvent.type(input, "999");
+    await userEvent.tab();
+    expect(onChange).toHaveBeenLastCalledWith(999);
+    expect(input).toHaveValue("999");
+    expect(input).toHaveAttribute("aria-invalid", "true");
+
+    await userEvent.clear(input);
+    await userEvent.type(input, "0");
+    await userEvent.tab();
+    expect(onChange).toHaveBeenLastCalledWith(0);
+    expect(input).toHaveAttribute("aria-invalid", "true");
+
+    await userEvent.clear(input);
+    await userEvent.type(input, "12");
+    await userEvent.tab();
+    expect(input).not.toHaveAttribute("aria-invalid");
+  });
+
   it("steps with the arrow keys and the stepper buttons, within bounds", async () => {
     const onChange = vi.fn();
     render(<ControlledNumberInput value={9} min={1} max={10} stepper onChange={onChange} />);

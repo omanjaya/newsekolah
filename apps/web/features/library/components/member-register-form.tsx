@@ -41,6 +41,10 @@ export function MemberRegisterForm({
   const [memberNo, setMemberNo] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
+  // A conflict the librarian fixes in one field is shown on that field,
+  // not as a form-level message.
+  const [userError, setUserError] = useState("");
+  const [memberNoError, setMemberNoError] = useState("");
   const { ref, attempted, check } = useSubmitValidation();
   const required = (value: string) => (attempted && !value ? tValidation("required") : undefined);
 
@@ -54,6 +58,8 @@ export function MemberRegisterForm({
       onSubmit={(e) => {
         e.preventDefault();
         setError("");
+        setUserError("");
+        setMemberNoError("");
         if (!check(Boolean(userId && memberTypeId))) return;
         register.mutate(
           {
@@ -67,9 +73,11 @@ export function MemberRegisterForm({
               onDone(true);
             },
             onError: (err) => {
-              setError(
-                err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"),
-              );
+              const code = err instanceof ApiError ? err.code : "UNKNOWN";
+              const message = apiErrorMessage(code);
+              if (code === "LIBRARY_MEMBER_ALREADY_EXISTS") setUserError(message);
+              else if (code === "LIBRARY_MEMBER_NO_COLLISION") setMemberNoError(message);
+              else setError(message);
             },
           },
         );
@@ -85,12 +93,15 @@ export function MemberRegisterForm({
           }}
         />
       </Field>
-      <Field label={t("user")} required error={required(userId)}>
+      <Field label={t("user")} required error={required(userId) ?? (userError || undefined)}>
         <DirectoryPicker
           key={role}
           profileKind={role}
           value={userId}
-          onValueChange={setUserId}
+          onValueChange={(id) => {
+            setUserId(id);
+            setUserError("");
+          }}
           labels={userLabels}
           showUsername
         />
@@ -104,11 +115,12 @@ export function MemberRegisterForm({
           disabled={memberType.isLoading}
         />
       </Field>
-      <Field label={t("memberNo")} optional>
+      <Field label={t("memberNo")} optional error={memberNoError || undefined}>
         <Input
           value={memberNo}
           onChange={(e) => {
             setMemberNo(e.target.value);
+            setMemberNoError("");
           }}
           placeholder={t("memberNoPlaceholder")}
           maxLength={40}

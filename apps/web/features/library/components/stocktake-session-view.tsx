@@ -25,12 +25,14 @@ import {
 } from "@newsekolah/ui";
 import {
   BookCheck,
+  CircleAlert,
   CircleCheck,
   CircleX,
   Download,
   Hourglass,
   Lock,
   MapPinned,
+  PackageX,
   ScanLine,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -59,12 +61,21 @@ import { StocktakeResults } from "./stocktake-results";
 /** How many recent scans the on-screen feed keeps: a running receipt, not a full log. */
 const SCAN_FEED_LIMIT = 6;
 
+/**
+ * Copy statuses a stocktake does not expect on the shelf (the API's
+ * ListCopiesForStocktake leaves them out), so finding one is reported as
+ * unexpected rather than as a plain success.
+ */
+const NOT_ON_SHELF_STATUSES = new Set(["on_loan", "lost", "donated"]);
+
 interface ScanFeedEntry {
   key: number;
   barcode: string;
   outcome: "found" | "rejected";
   /** The book's title, once looked up for a copy that was found. */
   title?: string;
+  /** The copy's status when it is one the stocktake did not expect on the shelf. */
+  unexpectedStatus?: string;
 }
 
 /**
@@ -77,6 +88,7 @@ interface ScanFeedEntry {
  */
 export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): ReactElement {
   const t = useTranslations("app.library.stocktake");
+  const tStatus = useTranslations("app.library.copies.status");
   const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -107,11 +119,20 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
     error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN");
 
   // Names a found copy by its book after the fact: the scan itself only
-  // says whether the code belongs to the collection.
+  // says whether the code belongs to the collection. A copy that is on
+  // loan, lost or donated is marked as unexpected on the shelf.
   const nameEntry = (key: number, code: string) => {
     void findCopy
       .mutateAsync(code)
-      .then((copy) => titleName.mutateAsync(copy.title_id))
+      .then(async (copy) => {
+        const unexpectedStatus = NOT_ON_SHELF_STATUSES.has(copy.status) ? copy.status : undefined;
+        if (unexpectedStatus) {
+          setScanFeed((feed) =>
+            feed.map((entry) => (entry.key === key ? { ...entry, unexpectedStatus } : entry)),
+          );
+        }
+        return titleName.mutateAsync(copy.title_id);
+      })
       .then((title) => {
         setScanFeed((feed) =>
           feed.map((entry) => (entry.key === key ? { ...entry, title } : entry)),
@@ -189,16 +210,24 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
   }
 
   const latest = scanFeed[0];
+  const scanDescription = (entry: ScanFeedEntry) => {
+    if (entry.outcome !== "found") return entry.barcode;
+    if (entry.unexpectedStatus) {
+      return t("scan.unexpectedDetail", {
+        barcode: entry.barcode,
+        status: tStatus(entry.unexpectedStatus),
+      });
+    }
+    return t("scan.foundDetail", { barcode: entry.barcode });
+  };
   const lastResult: ScannerResultValue | null = latest
     ? {
-        tone: latest.outcome === "found" ? "success" : "danger",
+        tone:
+          latest.outcome !== "found" ? "danger" : latest.unexpectedStatus ? "warning" : "success",
         title:
           latest.outcome === "found" ? (latest.title ?? latest.barcode) : t("scan.recent.rejected"),
-        description:
-          latest.outcome === "found"
-            ? t("scan.foundDetail", { barcode: latest.barcode })
-            : latest.barcode,
-        key: `${String(latest.key)}:${latest.title ?? ""}`,
+        description: scanDescription(latest),
+        key: `${String(latest.key)}:${latest.title ?? ""}:${latest.unexpectedStatus ?? ""}`,
       }
     : null;
 
@@ -279,6 +308,16 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
                     label={t("progress.remaining")}
                     loading={progress.isLoading}
                   />
+                  {/* Found, but not expected on the shelf (on loan, lost,
+                      donated): counted apart so scanned plus not yet
+                      scanned adds up to the expected count. */}
+                  <Stat
+                    icon={<PackageX />}
+                    category="red"
+                    value={progress.data ? num(progress.data.unexpected_count) : "-"}
+                    label={t("result.unexpected")}
+                    loading={progress.isLoading}
+                  />
                   <Stat
                     icon={<MapPinned />}
                     category="purple"
@@ -351,16 +390,17 @@ function ScanFeedList({ entries }: { entries: ScanFeedEntry[] }): ReactElement {
       <List framed dense aria-label={t("earlier")}>
         {entries.map((entry) => {
           const found = entry.outcome === "found";
+          const unexpected = found && entry.unexpectedStatus !== undefined;
           return (
             <ListRow
               key={entry.key}
               leading={
-                <IconCircle tone={found ? "success" : "danger"} size="sm">
-                  {found ? <CircleCheck /> : <CircleX />}
+                <IconCircle tone={unexpected ? "warning" : found ? "success" : "danger"} size="sm">
+                  {unexpected ? <CircleAlert /> : found ? <CircleCheck /> : <CircleX />}
                 </IconCircle>
               }
               title={found ? (entry.title ?? entry.barcode) : t("recent.rejected")}
-              meta={entry.barcode}
+              meta={unexpected ? `${entry.barcode} · ${t("recent.unexpected")}` : entry.barcode}
             />
           );
         })}

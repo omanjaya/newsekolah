@@ -76,9 +76,9 @@ func (r *Repository) SumFinesRecordedBetween(ctx context.Context, tenantID uuid.
 	return int(n), nil
 }
 
-func (r *Repository) VisitsPerDay(ctx context.Context, tenantID uuid.UUID, from, to time.Time) ([]service.DaySeriesPoint, error) {
+func (r *Repository) VisitsPerDay(ctx context.Context, tenantID uuid.UUID, from, to time.Time, tz string) ([]service.DaySeriesPoint, error) {
 	rows, err := r.queries(ctx).VisitsPerDay(ctx, db.VisitsPerDayParams{
-		TenantID: tenantID, VisitedAt: pdatabase.Timestamptz(from), VisitedAt_2: pdatabase.Timestamptz(to),
+		Tz: tz, TenantID: tenantID, FromAt: pdatabase.Timestamptz(from), ToAt: pdatabase.Timestamptz(to),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("visits per day: %w", err)

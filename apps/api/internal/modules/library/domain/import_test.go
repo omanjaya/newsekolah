@@ -97,7 +97,12 @@ func TestValidateImportRow(t *testing.T) {
 	}{
 		{"missing title", ImportRow{MaterialTypeCode: "buku", CategoryCode: "fiksi"}, ImportMsgTitleRequired},
 		{"unknown material type", ImportRow{Title: "Judul", MaterialTypeCode: "majalah", CategoryCode: "fiksi"}, ImportMsgMaterialTypeUnknown},
+		// A missing code (column absent or unmapped) is reported as
+		// required, not as an unknown code, so the librarian looks at the
+		// mapping.
+		{"missing material type", ImportRow{Title: "Judul", CategoryCode: "fiksi"}, ImportMsgMaterialTypeRequired},
 		{"unknown category", ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "referensi"}, ImportMsgCategoryUnknown},
+		{"missing category", ImportRow{Title: "Judul", MaterialTypeCode: "buku"}, ImportMsgCategoryRequired},
 		{"invalid access", ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "fiksi", Access: "dipinjamkan"}, ImportMsgAccessUnknown},
 		{"unknown location", ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "fiksi", LocationCode: "rak-z"}, ImportMsgLocationUnknown},
 		{"unknown source", ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "fiksi", SourceCode: "hibah"}, ImportMsgSourceUnknown},

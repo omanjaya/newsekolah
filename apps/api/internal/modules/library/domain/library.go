@@ -58,8 +58,14 @@ var (
 	ErrMemberTypeInUse     = errors.New("library member type is in use")
 	ErrMemberNoExhausted   = errors.New("could not generate a unique member number")
 	ErrMemberNoCollision   = errors.New("member number already in use")
-	ErrMemberHasTitle      = errors.New("member already has this title on loan")
-	ErrNoCopyForClassLoan  = errors.New("no copy available")
+	// ErrMemberTypeNameExists: another live member type of the tenant has
+	// the same name (ignoring case and surrounding spaces).
+	ErrMemberTypeNameExists = errors.New("member type name already in use")
+	// ErrMemberTypeDefaultRoleTaken: another member type is already the
+	// default for the same role.
+	ErrMemberTypeDefaultRoleTaken = errors.New("another member type is already the default for this role")
+	ErrMemberHasTitle             = errors.New("member already has this title on loan")
+	ErrNoCopyForClassLoan         = errors.New("no copy available")
 
 	ErrViolationNotFound       = errors.New("library violation not found")
 	ErrViolationAlreadySettled = errors.New("library violation is already settled")
@@ -425,10 +431,13 @@ type MisplacedCopy struct {
 // against what a scan session actually found.
 type StocktakeResult struct {
 	ExpectedCount int
-	ScannedCount  int
-	Missing       []Copy          // expected copies never scanned as found
-	Unexpected    []Copy          // scanned copies that were not part of the expected set (e.g. on loan, yet on the shelf)
-	Misplaced     []MisplacedCopy // expected copies scanned at a location other than their own
+	// ScannedCount is how many expected copies were found, so it and
+	// len(Missing) always add up to ExpectedCount; a scanned copy that was
+	// not expected is counted in Unexpected only.
+	ScannedCount int
+	Missing      []Copy          // expected copies never scanned as found
+	Unexpected   []Copy          // scanned copies that were not part of the expected set (e.g. on loan, yet on the shelf)
+	Misplaced    []MisplacedCopy // expected copies scanned at a location other than their own
 }
 
 // DiffStocktake compares the copies a stocktake session expected to find
@@ -447,16 +456,16 @@ func DiffStocktake(expected []Copy, scans []ScanRecord) StocktakeResult {
 	var misplaced []MisplacedCopy
 	scannedCount := 0
 	for _, rec := range scans {
-		if rec.Scan.Outcome != ScanFound || !rec.Scan.CopyID.Valid {
+		if rec.Scan.Outcome != ScanFound || !rec.Scan.CopyID.Valid || foundIDs[rec.Copy.ID] {
 			continue
 		}
-		scannedCount++
 		foundIDs[rec.Copy.ID] = true
 		exp, isExpected := expectedByID[rec.Copy.ID]
 		if !isExpected {
 			unexpected = append(unexpected, rec.Copy)
 			continue
 		}
+		scannedCount++
 		if rec.Scan.LocationID.Valid && exp.LocationID.Valid && rec.Scan.LocationID.UUID != exp.LocationID.UUID {
 			misplaced = append(misplaced, MisplacedCopy{Copy: exp, FoundLocationID: rec.Scan.LocationID.UUID})
 		}
@@ -486,6 +495,25 @@ var isbnStripPattern = regexp.MustCompile(`[-\s]`)
 // matching (old app: libraryNormalizeISBN).
 func NormalizeISBN(raw string) string {
 	return strings.ToUpper(isbnStripPattern.ReplaceAllString(strings.TrimSpace(raw), ""))
+}
+
+// LooksLikeDDC reports whether s is a Dewey class number: three digits,
+// optionally followed by a decimal part ("899", "899.221").
+func LooksLikeDDC(s string) bool {
+	s = strings.TrimSpace(s)
+	if len(s) < 3 {
+		return false
+	}
+	for i, r := range s {
+		switch {
+		case i < 3 && r >= '0' && r <= '9':
+		case i == 3 && r == '.' && len(s) > 4:
+		case i > 3 && r >= '0' && r <= '9':
+		default:
+			return false
+		}
+	}
+	return true
 }
 
 // GenerateCallNumber builds the default call number the old app derived

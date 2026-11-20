@@ -4238,7 +4238,10 @@ export interface paths {
         /** Library member types (max loan items/days, renewal, fine rules) */
         get: operations["listLibraryMemberTypes"];
         put?: never;
-        /** Create a member type */
+        /**
+         * Create a member type
+         * @description Answers 409 LIBRARY_MEMBER_TYPE_NAME_EXISTS when another live type of the school already uses the name (case and surrounding spaces ignored), and 409 LIBRARY_MEMBER_TYPE_DEFAULT_ROLE_TAKEN when another type is already the default for the role.
+         */
         post: operations["createLibraryMemberType"];
         delete?: never;
         options?: never;
@@ -4254,7 +4257,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update a member type */
+        /**
+         * Update a member type
+         * @description Answers 409 LIBRARY_MEMBER_TYPE_NAME_EXISTS when another live type of the school already uses the name (case and surrounding spaces ignored), and 409 LIBRARY_MEMBER_TYPE_DEFAULT_ROLE_TAKEN when another type is already the default for the role.
+         */
         put: operations["updateLibraryMemberType"];
         post?: never;
         /** Delete a member type (refused while any member still uses it) */
@@ -5018,7 +5024,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create titles (auto call number when empty) and copies for every valid row, in one transaction; an existing title (deduped by normalized ISBN, then title+author) only gets new copies added */
+        /**
+         * Create titles (auto call number when empty) and copies for every valid row, in one transaction; an existing title (deduped by normalized ISBN, then title+author) only gets new copies added
+         * @description A row whose barcode or accession number is already taken (normally caught by the preview) rolls the whole commit back with 409; the error's details then name that row as {field: "row_number", code: "<row number>"}.
+         */
         post: operations["commitLibraryImport"];
         delete?: never;
         options?: never;
@@ -11007,6 +11016,7 @@ export interface components {
         };
         LibraryStocktakeResult: {
             expected_count: number;
+            /** @description Expected copies that were found; with the missing copies it adds up to expected_count. Scanned copies that were not expected are listed in unexpected only. */
             scanned_count: number;
             missing: components["schemas"]["LibraryCopy"][];
             unexpected: components["schemas"]["LibraryCopy"][];
@@ -11014,8 +11024,11 @@ export interface components {
         };
         LibraryStocktakeProgress: {
             expected_count: number;
+            /** @description Expected copies found so far; scanned_count + missing_count = expected_count. */
             scanned_count: number;
             missing_count: number;
+            /** @description Scanned copies that were not expected on the shelf (on loan, lost, donated). */
+            unexpected_count: number;
             misplaced_count: number;
         };
         LibraryOverdueMember: {
@@ -21288,6 +21301,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
         };
     };
     updateLibraryMemberType: {
@@ -21318,6 +21332,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     deleteLibraryMemberType: {
@@ -22891,6 +22906,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
         };
     };
     listLibraryCopiesFiltered: {

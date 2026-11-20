@@ -38,13 +38,15 @@ type MonthlyReport struct {
 }
 
 // parseReportMonth turns a "YYYY-MM" string into the half-open [from, to)
-// range that month covers, defaulting to the tenant clock's current month
-// when month is empty (old app: parseLibraryReportMonth).
-func parseReportMonth(month string, now time.Time) (time.Time, time.Time, error) {
+// range that month covers on the school's calendar (loc is the tenant's
+// zone), defaulting to the current month there when month is empty (old
+// app: parseLibraryReportMonth). A UTC month started at 08:00 WITA on the
+// 1st and ran into the next month's first morning.
+func parseReportMonth(month string, now time.Time, loc *time.Location) (time.Time, time.Time, error) {
 	if month == "" {
-		month = now.Format("2006-01")
+		month = now.In(loc).Format("2006-01")
 	}
-	from, err := time.Parse("2006-01", month)
+	from, err := time.ParseInLocation("2006-01", month, loc)
 	if err != nil {
 		return time.Time{}, time.Time{}, domain.ErrInvalidInput
 	}
@@ -61,7 +63,7 @@ func (s *Service) MonthlyReport(ctx context.Context, tenantID uuid.UUID, month s
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return MonthlyReport{}, err
 	}
-	from, to, err := parseReportMonth(month, clock.Now(ctx, s.clock))
+	from, to, err := parseReportMonth(month, clock.Now(ctx, s.clock), s.tenantLocation(ctx, tenantID))
 	if err != nil {
 		return MonthlyReport{}, err
 	}
@@ -291,23 +293,23 @@ func renderMonthlyReportPDF(report MonthlyReport, letterhead *reportdoc.Letterhe
 	}
 	pdf.Ln(3)
 
+	// Every row wraps its cells inside their columns (a long title used to
+	// run over the author and count columns and off the page), and a row
+	// that does not fit starts a new page under a repeated header.
 	writeTable := func(title string, headers []string, widths []float64, rows [][]string) {
 		pdf.SetFont("Helvetica", "B", 11)
 		pdf.CellFormat(0, 7, title, "", 1, "L", false, 0, "")
-		pdf.SetFont("Helvetica", "B", 8)
-		for i, h := range headers {
-			pdf.CellFormat(widths[i], 6, h, "1", 0, "L", false, 0, "")
+		drawHeader := func() {
+			pdf.SetFont("Helvetica", "B", 8)
+			reportdoc.DrawWrappedRow(pdf, widths, headers, nil)
+			pdf.SetFont("Helvetica", "", 8)
 		}
-		pdf.Ln(-1)
-		pdf.SetFont("Helvetica", "", 8)
+		drawHeader()
 		if len(rows) == 0 {
-			pdf.CellFormat(sumWidths(widths), 6, "Tidak ada data.", "1", 1, "L", false, 0, "")
+			reportdoc.DrawWrappedRow(pdf, []float64{sumWidths(widths)}, []string{"Tidak ada data."}, drawHeader)
 		}
 		for _, row := range rows {
-			for i, cell := range row {
-				pdf.CellFormat(widths[i], 6, cell, "1", 0, "L", false, 0, "")
-			}
-			pdf.Ln(-1)
+			reportdoc.DrawWrappedRow(pdf, widths, row, drawHeader)
 		}
 		pdf.Ln(3)
 	}

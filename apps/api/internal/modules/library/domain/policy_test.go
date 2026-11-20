@@ -155,7 +155,11 @@ func TestDiffStocktakeFindsMissingAndUnexpected(t *testing.T) {
 	result := domain.DiffStocktake(expected, scans)
 
 	require.Equal(t, 2, result.ExpectedCount)
-	require.Equal(t, 2, result.ScannedCount, "rejected scans do not count as scanned")
+	// Only the expected copy that was found counts as scanned, so scanned
+	// plus missing adds up to expected; the copy on loan is unexpected.
+	// Rejected scans count nowhere.
+	require.Equal(t, 1, result.ScannedCount)
+	require.Equal(t, result.ExpectedCount, result.ScannedCount+len(result.Missing))
 	require.Len(t, result.Missing, 1)
 	require.Equal(t, missingCopy.ID, result.Missing[0].ID)
 	require.Len(t, result.Unexpected, 1)
@@ -209,4 +213,13 @@ func TestGenerateCallNumber(t *testing.T) {
 	require.Equal(t, "813 KUR n", domain.GenerateCallNumber("813", "Kurniawan", "negeri"))
 	require.Equal(t, "", domain.GenerateCallNumber("", "", ""))
 	require.Equal(t, "813", domain.GenerateCallNumber("813", "", ""))
+}
+
+func TestLooksLikeDDC(t *testing.T) {
+	for _, s := range []string{"899", "899.221", " 813.5 ", "000"} {
+		require.True(t, domain.LooksLikeDDC(s), s)
+	}
+	for _, s := range []string{"", "89", "899.", "899,221", "Fiksi - Novel Indonesia", "8a9", "899.2a"} {
+		require.False(t, domain.LooksLikeDDC(s), s)
+	}
 }

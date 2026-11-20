@@ -32,9 +32,11 @@ select coalesce(sum(fine_amount), 0)::int from library_loans
 where tenant_id = $1 and returned_at >= $2 and returned_at < $3 and fine_amount > 0;
 
 -- name: VisitsPerDay :many
-select date(visited_at) as day, count(*)::int as visit_count
+-- Days are the tenant's own calendar days (tz is its IANA zone), so a
+-- visit at 04:34 in UTC+8 lands on that local day, not the previous UTC one.
+select (visited_at at time zone sqlc.arg(tz)::text)::date as day, count(*)::int as visit_count
 from library_visits
-where tenant_id = $1 and visited_at >= $2 and visited_at < $3
+where tenant_id = sqlc.arg(tenant_id) and visited_at >= sqlc.arg(from_at) and visited_at < sqlc.arg(to_at)
 group by day
 order by day;
 

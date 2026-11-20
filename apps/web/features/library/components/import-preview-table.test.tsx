@@ -48,6 +48,15 @@ const rows: LibraryImportPreview["rows"] = [
     copies: 0,
   },
   { row_number: 5, status: "error", message_code: "SOMETHING_NEW", title: "Cantik", copies: 0 },
+  {
+    row_number: 6,
+    status: "error",
+    message_code: "BARCODE_IN_FILE",
+    message_value: "B-0100",
+    message_row: 3,
+    title: "Kembar",
+    copies: 0,
+  },
 ];
 
 describe("ImportPreviewTable", () => {
@@ -59,6 +68,9 @@ describe("ImportPreviewTable", () => {
     ).toBeGreaterThan(0);
     expect(screen.getAllByText("Kode jenis bahan tidak dikenali.").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Baris ini tidak bisa diimpor.").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("Barcode B-0100 sudah dipakai di baris 3.").length,
+    ).toBeGreaterThan(0);
     expect(screen.queryByText(/MATERIAL_TYPE_UNKNOWN|SOMETHING_NEW/)).not.toBeInTheDocument();
   });
 

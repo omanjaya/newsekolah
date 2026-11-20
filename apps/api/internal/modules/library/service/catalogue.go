@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -31,9 +32,31 @@ func prepareTitle(t domain.Title) (domain.Title, error) {
 	}
 	t.ISBN = domain.NormalizeISBN(t.ISBN)
 	if t.CallNumber == "" {
-		t.CallNumber = domain.GenerateCallNumber(t.DDCNumber, t.Author, t.Title)
+		t.CallNumber = autoCallNumber(t)
 	}
 	return t, nil
+}
+
+// autoCallNumber is the call number a title gets when nobody typed one:
+// class number, author letters, title letter. The class number is the DDC
+// number, or the free-text classification when that is itself a DDC
+// number ("899.221"), which is how titles catalogued by hand before the
+// form had a DDC field recorded it.
+func autoCallNumber(t domain.Title) string {
+	class := t.DDCNumber
+	if class == "" && domain.LooksLikeDDC(t.Classification) {
+		class = strings.TrimSpace(t.Classification)
+	}
+	return domain.GenerateCallNumber(class, t.Author, t.Title)
+}
+
+// isGeneratedCallNumber reports whether a stored title's call number is
+// one the app built rather than one a librarian typed: it equals what the
+// current rule builds, or what the rule built before it read a DDC-shaped
+// classification (a hand-catalogued "899.221" title stored "PRA b").
+func isGeneratedCallNumber(t domain.Title) bool {
+	return t.CallNumber == autoCallNumber(t) ||
+		t.CallNumber == domain.GenerateCallNumber(t.DDCNumber, t.Author, t.Title)
 }
 
 func (s *Service) CreateTitle(ctx context.Context, t domain.Title, copyCount int, copyDefaults CopyDefaults) (domain.Title, []domain.Copy, error) {
@@ -70,19 +93,48 @@ func (s *Service) CreateTitle(ctx context.Context, t domain.Title, copyCount int
 	return created, copies, nil
 }
 
+// UpdateTitle saves a title. A call number that was generated (see
+// isGeneratedCallNumber) is regenerated
+// from the new values, so correcting the DDC number fixes the call number
+// too; one the librarian typed is kept. Copies that inherited the old call
+// number follow the new one, and making a hidden title public makes its
+// copies public too.
 func (s *Service) UpdateTitle(ctx context.Context, t domain.Title) (domain.Title, error) {
 	if err := s.requireEnabled(ctx, t.TenantID); err != nil {
 		return domain.Title{}, err
 	}
-	t, err := prepareTitle(t)
-	if err != nil {
-		return domain.Title{}, err
+	if t.Title == "" {
+		return domain.Title{}, domain.ErrInvalidInput
 	}
 	var updated domain.Title
-	err = s.withTx(ctx, t.TenantID, func(ctx context.Context) error {
-		var err error
+	err := s.withTx(ctx, t.TenantID, func(ctx context.Context) error {
+		existing, found, err := s.repo.GetTitle(ctx, t.TenantID, t.ID)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return domain.ErrTitleNotFound
+		}
+		if t.CallNumber == existing.CallNumber && isGeneratedCallNumber(existing) {
+			t.CallNumber = ""
+		}
+		t, err = prepareTitle(t)
+		if err != nil {
+			return err
+		}
 		updated, err = s.repo.UpdateTitle(ctx, t)
-		return err
+		if err != nil {
+			return err
+		}
+		if !existing.IsOPAC && updated.IsOPAC {
+			if err := s.repo.PublishTitleCopies(ctx, t.TenantID, t.ID); err != nil {
+				return err
+			}
+		}
+		if existing.CallNumber != "" && updated.CallNumber != existing.CallNumber {
+			return s.repo.RenameInheritedCopyCallNumbers(ctx, t.TenantID, t.ID, existing.CallNumber, updated.CallNumber)
+		}
+		return nil
 	})
 	return updated, err
 }

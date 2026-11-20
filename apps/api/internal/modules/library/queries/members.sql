@@ -21,6 +21,14 @@ select * from library_member_types where tenant_id = $1 and id = $2 and deleted_
 -- name: GetMemberTypeByRole :one
 select * from library_member_types where tenant_id = $1 and default_for_role = $2 and deleted_at is null limit 1;
 
+-- name: MemberTypeNameTaken :one
+-- Whether a live member type of the tenant already has this name, compared
+-- the way ux_library_member_types_name compares it.
+select exists (
+  select 1 from library_member_types
+  where tenant_id = $1 and lower(btrim(name)) = lower(btrim(sqlc.arg(name)::text)) and deleted_at is null
+);
+
 -- name: ListMemberTypes :many
 select * from library_member_types where tenant_id = $1 and deleted_at is null order by name;
 

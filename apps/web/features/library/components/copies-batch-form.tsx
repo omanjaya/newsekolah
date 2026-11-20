@@ -88,9 +88,13 @@ export function CopiesBatchForm({
         required
         error={attempted && !countValid ? t("countRange") : undefined}
       >
+        {/* A typed 0 or 999 is reported, not corrected: clamping on the
+            blur that a click on the button causes turned it into 1 or 200
+            copies created without a word. */}
         <NumberInput
           min={1}
           max={200}
+          clampOnBlur={false}
           value={count === "" ? null : Number(count)}
           onChange={(next) => {
             setCount(next === null ? "" : String(next));

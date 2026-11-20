@@ -36,7 +36,13 @@ export function ImportPreviewTable({
   const rowMessage = useCallback(
     (row: PreviewRow): string => {
       const key = `rowMessage.${row.message_code}`;
-      return t.has(key) ? t(key, { copies: row.copies }) : t("rowMessage.unknown");
+      return t.has(key)
+        ? t(key, {
+            copies: row.copies,
+            value: row.message_value ?? "",
+            row: row.message_row ?? "",
+          })
+        : t("rowMessage.unknown");
     },
     [t],
   );

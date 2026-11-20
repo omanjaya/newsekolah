@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -204,8 +205,13 @@ type ImportValidationRefs struct {
 type ImportRowMessage string
 
 const (
-	ImportMsgTitleRequired        ImportRowMessage = "TITLE_REQUIRED"
+	ImportMsgTitleRequired ImportRowMessage = "TITLE_REQUIRED"
+	// ImportMsgMaterialTypeRequired and ImportMsgCategoryRequired: the
+	// code is empty, so the column is missing or unmapped, which the
+	// librarian fixes differently from a code that is not in master data.
+	ImportMsgMaterialTypeRequired ImportRowMessage = "MATERIAL_TYPE_REQUIRED"
 	ImportMsgMaterialTypeUnknown  ImportRowMessage = "MATERIAL_TYPE_UNKNOWN"
+	ImportMsgCategoryRequired     ImportRowMessage = "CATEGORY_REQUIRED"
 	ImportMsgCategoryUnknown      ImportRowMessage = "CATEGORY_UNKNOWN"
 	ImportMsgAccessUnknown        ImportRowMessage = "ACCESS_UNKNOWN"
 	ImportMsgLocationUnknown      ImportRowMessage = "LOCATION_UNKNOWN"
@@ -213,8 +219,14 @@ const (
 	ImportMsgPublishYearNotNumber ImportRowMessage = "PUBLISH_YEAR_NOT_NUMBER"
 	ImportMsgPriceNotNumber       ImportRowMessage = "PRICE_NOT_NUMBER"
 	ImportMsgCopiesInvalid        ImportRowMessage = "COPIES_INVALID"
-	// ImportMsgDedupeFailed: the lookup for an existing title failed.
-	ImportMsgDedupeFailed ImportRowMessage = "DEDUPE_FAILED"
+	// ImportMsgAccessionTaken and ImportMsgBarcodeTaken: a copy on file
+	// already holds the row's No. Induk or barcode (the row's
+	// MessageValue). ImportMsgAccessionInFile and ImportMsgBarcodeInFile:
+	// an earlier row of the same file (the row's MessageRow) claimed it.
+	ImportMsgAccessionTaken  ImportRowMessage = "ACCESSION_TAKEN"
+	ImportMsgBarcodeTaken    ImportRowMessage = "BARCODE_TAKEN"
+	ImportMsgAccessionInFile ImportRowMessage = "ACCESSION_IN_FILE"
+	ImportMsgBarcodeInFile   ImportRowMessage = "BARCODE_IN_FILE"
 	// ImportMsgNewTitle and ImportMsgExistingTitle describe a valid row;
 	// the row's copies count goes with them.
 	ImportMsgNewTitle      ImportRowMessage = "NEW_TITLE"
@@ -236,12 +248,20 @@ func ValidateImportRow(row ImportRow, refs ImportValidationRefs) (copies int, me
 	if strings.TrimSpace(row.Title) == "" {
 		return 0, ImportMsgTitleRequired, false
 	}
+	// An empty code says the column is missing or unmapped, which the
+	// librarian fixes differently from a code that is not in master data.
 	materialCode := strings.ToLower(strings.TrimSpace(row.MaterialTypeCode))
-	if materialCode == "" || !refs.MaterialTypeCodes[materialCode] {
+	if materialCode == "" {
+		return 0, ImportMsgMaterialTypeRequired, false
+	}
+	if !refs.MaterialTypeCodes[materialCode] {
 		return 0, ImportMsgMaterialTypeUnknown, false
 	}
 	categoryCode := strings.ToLower(strings.TrimSpace(row.CategoryCode))
-	if categoryCode == "" || !refs.CategoryCodes[categoryCode] {
+	if categoryCode == "" {
+		return 0, ImportMsgCategoryRequired, false
+	}
+	if !refs.CategoryCodes[categoryCode] {
 		return 0, ImportMsgCategoryUnknown, false
 	}
 	if access := strings.TrimSpace(row.Access); access != "" && !CopyAccess(access).Valid() {
@@ -273,3 +293,16 @@ func ValidateImportRow(row ImportRow, refs ImportValidationRefs) (copies int, me
 	}
 	return copies, "", true
 }
+
+// ImportRowError ties a failure while committing an import to the row
+// that caused it, so the librarian is told which row to fix instead of
+// only that the whole file was rolled back. It unwraps to the underlying
+// domain error, which keeps its own HTTP mapping.
+type ImportRowError struct {
+	Row int
+	Err error
+}
+
+func (e *ImportRowError) Error() string { return fmt.Sprintf("import row %d: %v", e.Row, e.Err) }
+
+func (e *ImportRowError) Unwrap() error { return e.Err }

@@ -23,10 +23,7 @@ func (r *Repository) CreateMemberType(ctx context.Context, t domain.MemberType) 
 		FinePerTenor: int32(t.FinePerTenor), TenorDays: int32(t.TenorDays), SuspendDays: int32(t.SuspendDays), //nolint:gosec // validated
 		ValidityMonths: int32(t.ValidityMonths), DefaultForRole: pdatabase.Text(t.DefaultForRole), //nolint:gosec // validated
 	})
-	if isUnique(err) {
-		return domain.MemberType{}, domain.ErrInvalidInput
-	}
-	if err != nil {
+	if err := mapMemberTypeWriteError(err); err != nil {
 		return domain.MemberType{}, fmt.Errorf("create member type: %w", err)
 	}
 	return toMemberType(row), nil
@@ -42,10 +39,24 @@ func (r *Repository) UpdateMemberType(ctx context.Context, t domain.MemberType) 
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.MemberType{}, domain.ErrMemberTypeNotFound
 	}
-	if err != nil {
+	if err := mapMemberTypeWriteError(err); err != nil {
 		return domain.MemberType{}, fmt.Errorf("update member type: %w", err)
 	}
 	return toMemberType(row), nil
+}
+
+// mapMemberTypeWriteError names the unique index a member type write hit:
+// a name another live type already has, or a role another type is already
+// the default for. Both used to come back as a vague validation error on
+// create and as a 500 on update.
+func mapMemberTypeWriteError(err error) error {
+	switch constraintName(err) {
+	case "ux_library_member_types_name":
+		return domain.ErrMemberTypeNameExists
+	case "ux_library_member_types_default_role":
+		return domain.ErrMemberTypeDefaultRoleTaken
+	}
+	return err
 }
 
 func (r *Repository) DeleteMemberType(ctx context.Context, tenantID, id uuid.UUID) (bool, error) {
@@ -135,15 +146,16 @@ func (r *Repository) CreateMember(ctx context.Context, m domain.Member) (domain.
 	return toMember(row), nil
 }
 
+// mapMemberInsertError tells the two unique constraints on
+// library_members apart: the primary key (tenant_id, user_id) means the
+// user is already a member, the member_no key means the number is taken.
+// *pgconn.PgError carries the constraint name as a field, so this goes
+// through constraintName rather than an interface assertion.
 func mapMemberInsertError(err error) error {
-	var pgErr interface {
-		SQLState() string
-		ConstraintName() string
-	}
-	if errors.As(err, &pgErr) && pgErr.SQLState() == "23505" {
-		if pgErr.ConstraintName() == "library_members_pkey" {
-			return domain.ErrMemberAlreadyExists
-		}
+	switch constraintName(err) {
+	case "library_members_pkey":
+		return domain.ErrMemberAlreadyExists
+	case "library_members_tenant_id_member_no_key":
 		return domain.ErrMemberNoCollision
 	}
 	return fmt.Errorf("create member: %w", err)
