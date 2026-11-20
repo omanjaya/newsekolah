@@ -24,6 +24,9 @@ const (
 	// pdfSectionHeadingMM is the height a named section's heading takes,
 	// its 7 mm line plus the 1 mm gap above the table.
 	pdfSectionHeadingMM = 8.0
+	// pdfEmptyRowHeightMM is the height of writePDFEmptyRow's single-line
+	// row; pdfSectionStartHeight reserves the same amount for it.
+	pdfEmptyRowHeightMM = pdfCellLineHeightMM + 2*pdfCellPadMM
 	// pdfContentBottomMM is how far from the page's bottom edge table
 	// rows and the signature block must stop -- deliberately not
 	// pdf.GetMargins()'s own bottom value, since RenderPDF calls
@@ -366,7 +369,7 @@ func pdfSectionStartHeight(pdf *fpdf.Fpdf, columns []Column, widths []float64, s
 		setRowFont(pdf, pdfRowStyle{bold: true})
 		height += pdfRowHeight(pdf, widths, rowTexts(columns, section.Footer[0], false))
 	case emptyLabel != "":
-		height += pdfCellLineHeightMM + 2*pdfCellPadMM
+		height += pdfEmptyRowHeightMM
 	}
 	return height
 }
@@ -380,7 +383,7 @@ func writePDFEmptyRow(pdf *fpdf.Fpdf, left float64, widths []float64, label stri
 		total += w
 	}
 	pdf.SetFont("Helvetica", "I", 9)
-	height := pdfCellLineHeightMM + 2*pdfCellPadMM
+	height := pdfEmptyRowHeightMM
 	y := pdf.GetY()
 	pdf.SetDrawColor(pdfBorder[0], pdfBorder[1], pdfBorder[2])
 	pdf.Rect(left, y, total, height, "D")
