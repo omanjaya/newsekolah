@@ -1468,6 +1468,9 @@ type Querier interface {
 	MarkNotificationRead(ctx context.Context, arg MarkNotificationReadParams) error
 	MarkPasswordResetUsed(ctx context.Context, arg MarkPasswordResetUsedParams) error
 	MarkReservationReady(ctx context.Context, arg MarkReservationReadyParams) (LibraryReservation, error)
+	// Whether a live member type of the tenant already has this name, compared
+	// the way ux_library_member_types_name compares it.
+	MemberTypeNameTaken(ctx context.Context, arg MemberTypeNameTakenParams) (bool, error)
 	MembersByClass(ctx context.Context, tenantID uuid.UUID) ([]MembersByClassRow, error)
 	MembersByType(ctx context.Context, tenantID uuid.UUID) ([]MembersByTypeRow, error)
 	MentoringAddGroupMember(ctx context.Context, arg MentoringAddGroupMemberParams) (MentorGroupMember, error)

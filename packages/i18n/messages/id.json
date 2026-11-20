@@ -433,6 +433,8 @@
     "WEBHOOK_DELIVERY_NOT_FOUND": "Riwayat pengiriman webhook tidak ditemukan.",
     "WEBHOOK_DELIVERY_NOT_FAILED": "Hanya pengiriman yang gagal yang bisa dikirim ulang.",
     "LIBRARY_MEMBER_TYPE_IN_USE": "Jenis anggota ini masih dipakai anggota lain.",
+    "LIBRARY_MEMBER_TYPE_NAME_EXISTS": "Nama jenis anggota sudah dipakai.",
+    "LIBRARY_MEMBER_TYPE_DEFAULT_ROLE_TAKEN": "Jenis anggota lain sudah menjadi bawaan untuk peran ini.",
     "LIBRARY_VIOLATION_NOT_FOUND": "Pelanggaran perpustakaan tidak ditemukan.",
     "LIBRARY_VIOLATION_ALREADY_SETTLED": "Pelanggaran ini sudah diselesaikan.",
     "LIBRARY_VISIT_NOT_FOUND": "Kunjungan perpustakaan tidak ditemukan.",

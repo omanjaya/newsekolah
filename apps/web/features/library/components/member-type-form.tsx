@@ -59,6 +59,10 @@ export function MemberTypeForm({
   const [validityMonths, setValidityMonths] = useState(String(memberType?.validity_months ?? 12));
   const [defaultForRole, setDefaultForRole] = useState(memberType?.default_for_role ?? "");
   const [error, setError] = useState("");
+  // A taken name or a role that already has a default is said on the
+  // field to change, with the dialog kept open.
+  const [nameError, setNameError] = useState("");
+  const [roleError, setRoleError] = useState("");
   const { ref: formRef, attempted, check } = useSubmitValidation();
   const tValidation = useTranslations("validation");
   const requiredError = (value: string) =>
@@ -74,6 +78,8 @@ export function MemberTypeForm({
       onSubmit={(e) => {
         e.preventDefault();
         setError("");
+        setNameError("");
+        setRoleError("");
         if (!check(Boolean(name.trim()))) return;
         const body: LibraryMemberTypeWrite = {
           name: name.trim(),
@@ -90,9 +96,11 @@ export function MemberTypeForm({
             undefined) as LibraryMemberTypeWrite["default_for_role"],
         };
         const onError = (err: unknown) => {
-          setError(
-            err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"),
-          );
+          const code = err instanceof ApiError ? err.code : "UNKNOWN";
+          const message = apiErrorMessage(code);
+          if (code === "LIBRARY_MEMBER_TYPE_NAME_EXISTS") setNameError(message);
+          else if (code === "LIBRARY_MEMBER_TYPE_DEFAULT_ROLE_TAKEN") setRoleError(message);
+          else setError(message);
         };
         if (memberType) {
           update.mutate({ memberTypeId: memberType.id, ...body }, { onSuccess: onDone, onError });
@@ -101,11 +109,12 @@ export function MemberTypeForm({
         }
       }}
     >
-      <Field label={t("name")} required error={requiredError(name)}>
+      <Field label={t("name")} required error={requiredError(name) ?? (nameError || undefined)}>
         <Input
           value={name}
           onChange={(e) => {
             setName(e.target.value);
+            setNameError("");
           }}
           maxLength={100}
         />
@@ -192,11 +201,14 @@ export function MemberTypeForm({
             }}
           />
         </Field>
-        <Field label={t("defaultForRole")}>
+        <Field label={t("defaultForRole")} error={roleError || undefined}>
           <Select
             options={ROLES.filter((r) => r !== "").map((r) => ({ value: r, label: tRole(r) }))}
             value={defaultForRole}
-            onValueChange={setDefaultForRole}
+            onValueChange={(value) => {
+              setDefaultForRole(value);
+              setRoleError("");
+            }}
             placeholder={t("defaultForRoleNone")}
           />
         </Field>

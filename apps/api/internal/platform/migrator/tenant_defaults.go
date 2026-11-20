@@ -143,6 +143,16 @@ func ensureLibraryMemberTypeDefaults(ctx context.Context, q *db.Queries, tenantI
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return fmt.Errorf("look up library member type for role %s: %w", md.DefaultForRole, err)
 		}
+		// Names are unique per tenant: a school that already has a type with
+		// the default's name (one it unmarked as the role's default) keeps
+		// it, and the role simply has no default.
+		taken, err := q.MemberTypeNameTaken(ctx, db.MemberTypeNameTakenParams{TenantID: tenantID, Name: md.Name})
+		if err != nil {
+			return fmt.Errorf("check library member type name %s: %w", md.Name, err)
+		}
+		if taken {
+			continue
+		}
 		if _, err := q.CreateMemberType(ctx, db.CreateMemberTypeParams{
 			TenantID: tenantID, Name: md.Name,
 			MaxLoanItems: int32(md.MaxLoanItems), MaxLoanDays: int32(md.MaxLoanDays), //nolint:gosec // small, fixed default values

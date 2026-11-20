@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -303,6 +304,7 @@ func (s *Service) Clearance(ctx context.Context, tenantID, userID uuid.UUID) (do
 
 func (s *Service) CreateMemberType(ctx context.Context, tenantID uuid.UUID, t domain.MemberType) (domain.MemberType, error) {
 	t.TenantID = tenantID
+	t.Name = strings.TrimSpace(t.Name)
 	if err := t.Validate(); err != nil {
 		return domain.MemberType{}, err
 	}
@@ -317,6 +319,7 @@ func (s *Service) CreateMemberType(ctx context.Context, tenantID uuid.UUID, t do
 
 func (s *Service) UpdateMemberType(ctx context.Context, tenantID uuid.UUID, t domain.MemberType) (domain.MemberType, error) {
 	t.TenantID = tenantID
+	t.Name = strings.TrimSpace(t.Name)
 	if err := t.Validate(); err != nil {
 		return domain.MemberType{}, err
 	}

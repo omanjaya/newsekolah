@@ -588,6 +588,27 @@ func (q *Queries) ListMembersForCardPrint(ctx context.Context, arg ListMembersFo
 	return items, nil
 }
 
+const memberTypeNameTaken = `-- name: MemberTypeNameTaken :one
+select exists (
+  select 1 from library_member_types
+  where tenant_id = $1 and lower(btrim(name)) = lower(btrim($2::text)) and deleted_at is null
+)
+`
+
+type MemberTypeNameTakenParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	Name     string    `json:"name"`
+}
+
+// Whether a live member type of the tenant already has this name, compared
+// the way ux_library_member_types_name compares it.
+func (q *Queries) MemberTypeNameTaken(ctx context.Context, arg MemberTypeNameTakenParams) (bool, error) {
+	row := q.db.QueryRow(ctx, memberTypeNameTaken, arg.TenantID, arg.Name)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const updateMemberProfile = `-- name: UpdateMemberProfile :one
 update library_members set member_type_id = $3, valid_until = $4, notes = $5
 where tenant_id = $1 and user_id = $2

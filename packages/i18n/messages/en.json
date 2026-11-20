@@ -433,6 +433,8 @@
     "WEBHOOK_DELIVERY_NOT_FOUND": "Webhook delivery not found.",
     "WEBHOOK_DELIVERY_NOT_FAILED": "Only a failed delivery can be retried.",
     "LIBRARY_MEMBER_TYPE_IN_USE": "This member type is still used by members.",
+    "LIBRARY_MEMBER_TYPE_NAME_EXISTS": "This member type name is already in use.",
+    "LIBRARY_MEMBER_TYPE_DEFAULT_ROLE_TAKEN": "Another member type is already the default for this role.",
     "LIBRARY_VIOLATION_NOT_FOUND": "Library violation not found.",
     "LIBRARY_VIOLATION_ALREADY_SETTLED": "This violation is already settled.",
     "LIBRARY_VISIT_NOT_FOUND": "Library visit not found.",

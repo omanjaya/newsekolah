@@ -56,8 +56,14 @@ var (
 	ErrMemberTypeInUse     = errors.New("library member type is in use")
 	ErrMemberNoExhausted   = errors.New("could not generate a unique member number")
 	ErrMemberNoCollision   = errors.New("member number already in use")
-	ErrMemberHasTitle      = errors.New("member already has this title on loan")
-	ErrNoCopyForClassLoan  = errors.New("no copy available")
+	// ErrMemberTypeNameExists: another live member type of the tenant has
+	// the same name (ignoring case and surrounding spaces).
+	ErrMemberTypeNameExists = errors.New("member type name already in use")
+	// ErrMemberTypeDefaultRoleTaken: another member type is already the
+	// default for the same role.
+	ErrMemberTypeDefaultRoleTaken = errors.New("another member type is already the default for this role")
+	ErrMemberHasTitle             = errors.New("member already has this title on loan")
+	ErrNoCopyForClassLoan         = errors.New("no copy available")
 
 	ErrViolationNotFound       = errors.New("library violation not found")
 	ErrViolationAlreadySettled = errors.New("library violation is already settled")
