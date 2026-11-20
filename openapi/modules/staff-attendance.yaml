@@ -23,6 +23,34 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+  /v1/staff-attendance/employees:
+    get:
+      tags: [staff-attendance]
+      operationId: listStaffAttendanceEmployees
+      x-permission: view_staff_attendance
+      summary: Every active teacher and staff member, for the module's employee pickers
+      description: >
+        Unlike the roster, this includes people with no work schedule yet, so
+        the schedule editor can give someone their first one. has_schedule
+        tells the two apart.
+      responses:
+        "200":
+          description: Employees
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/StaffAttendanceEmployeeOption" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: Module disabled for this tenant
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
   /v1/staff-attendance/schedules/{employeeId}:
     parameters:
       - name: employeeId
@@ -71,6 +99,7 @@ paths:
                     items: { $ref: "#/components/schemas/StaffAttendanceScheduleDay" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
   /v1/staff-attendance/today:
     get:
       tags: [staff-attendance]
@@ -109,7 +138,10 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/StaffAttendanceRecord" }
         "409":
-          description: Both arrival and departure are already recorded for today
+          description: >
+            Both arrival and departure are already recorded for today
+            (STAFF_ATTENDANCE_ALREADY_SCANNED), or this departure comes less
+            than five minutes after arrival (STAFF_ATTENDANCE_DEPARTURE_TOO_SOON)
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
@@ -334,6 +366,15 @@ components:
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
+    StaffAttendanceEmployeeOption:
+      type: object
+      required: [id, name, has_schedule]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        has_schedule:
+          type: boolean
+          description: Whether this person already has at least one work schedule day.
     StaffAttendanceScheduleDay:
       type: object
       required: [weekday, is_working_day, start_minute, end_minute, grace_minutes]

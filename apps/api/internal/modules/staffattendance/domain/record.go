@@ -38,6 +38,18 @@ type Snapshot struct {
 	Notes       string     `json:"notes"`
 }
 
+// MinDepartureGap is how long after a recorded arrival a self-service scan
+// may record departure. The check-in screen turns its arrival button into
+// the departure button in place, so a repeated tap would otherwise close
+// the day seconds after it began, and only an admin could undo that.
+const MinDepartureGap = 5 * time.Minute
+
+// DepartureTooSoon reports whether a departure scanned at at comes less
+// than MinDepartureGap after arrival.
+func DepartureTooSoon(arrival, at time.Time) bool {
+	return at.Sub(arrival) < MinDepartureGap
+}
+
 func (r Record) ToSnapshot() Snapshot {
 	return Snapshot{ArrivalAt: r.ArrivalAt, DepartureAt: r.DepartureAt, StatusCode: r.StatusCode, Notes: r.Notes}
 }

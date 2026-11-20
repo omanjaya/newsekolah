@@ -55,6 +55,8 @@ var (
 	errAlreadyScannedBoth  = httpx.NewError(http.StatusConflict, "STAFF_ATTENDANCE_ALREADY_SCANNED")
 	errCorrectionReasonReq = httpx.NewError(http.StatusBadRequest, "STAFF_ATTENDANCE_CORRECTION_REASON_REQUIRED")
 	errInvalidMonth        = httpx.NewError(http.StatusBadRequest, "STAFF_ATTENDANCE_INVALID_MONTH")
+	errDepartureTooSoon    = httpx.NewError(http.StatusConflict, "STAFF_ATTENDANCE_DEPARTURE_TOO_SOON")
+	errNotEligible         = httpx.NewError(http.StatusUnprocessableEntity, "STAFF_ATTENDANCE_EMPLOYEE_NOT_ELIGIBLE")
 )
 
 // mapError translates a staffattendance/domain sentinel error into the
@@ -76,6 +78,10 @@ func mapError(err error) error {
 		return errCorrectionReasonReq
 	case errors.Is(err, domain.ErrInvalidMonth):
 		return errInvalidMonth
+	case errors.Is(err, domain.ErrDepartureTooSoon):
+		return errDepartureTooSoon
+	case errors.Is(err, domain.ErrEmployeeNotEligible):
+		return errNotEligible
 	default:
 		var appErr *httpx.Error
 		if errors.As(err, &appErr) {

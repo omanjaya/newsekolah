@@ -7137,6 +7137,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/staff-attendance/employees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every active teacher and staff member, for the module's employee pickers
+         * @description Unlike the roster, this includes people with no work schedule yet, so the schedule editor can give someone their first one. has_schedule tells the two apart.
+         */
+        get: operations["listStaffAttendanceEmployees"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/staff-attendance/schedules/{employeeId}": {
         parameters: {
             query?: never;
@@ -11724,6 +11744,13 @@ export interface components {
             /** Format: uuid */
             id: string;
             name: string;
+        };
+        StaffAttendanceEmployeeOption: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @description Whether this person already has at least one work schedule day. */
+            has_schedule: boolean;
         };
         StaffAttendanceScheduleDay: {
             /** @description ISO weekday, 1 (Monday) to 7 (Sunday) */
@@ -26970,6 +26997,38 @@ export interface operations {
             };
         };
     };
+    listStaffAttendanceEmployees: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Employees */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StaffAttendanceEmployeeOption"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            /** @description Module disabled for this tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     getStaffAttendanceSchedule: {
         parameters: {
             query?: never;
@@ -27023,6 +27082,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     getStaffAttendanceToday: {

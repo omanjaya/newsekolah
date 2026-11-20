@@ -26,3 +26,35 @@ from staff_attendance_schedules s
 join users u on u.id = s.employee_user_id
 where s.tenant_id = $1
 order by u.name;
+
+-- name: ListStaffAttendanceCandidates :many
+-- Everyone the schedule editor, manual entry, recap and import pickers may
+-- choose: active users with a teacher or staff profile, the same
+-- eligibility identity's ListStaffOptions uses, with no row cap. The
+-- roster above cannot feed those pickers, since nobody is on it until a
+-- schedule exists; has_schedule tells the two sets apart.
+select u.id, u.name,
+  exists(
+    select 1 from staff_attendance_schedules s
+    where s.tenant_id = u.tenant_id and s.employee_user_id = u.id
+  )::boolean as has_schedule
+from users u
+where u.tenant_id = $1
+  and u.deleted_at is null
+  and u.status = 'active'
+  and exists (
+    select 1 from user_profiles up
+    where up.user_id = u.id and up.kind in ('teacher', 'staff')
+  )
+order by u.name;
+
+-- name: IsStaffAttendanceCandidate :one
+-- A work schedule may only be given to an active user with a teacher or
+-- staff profile.
+select exists(
+  select 1 from users u
+  join user_profiles up on up.user_id = u.id and up.kind in ('teacher', 'staff')
+  where u.tenant_id = $1 and u.id = $2
+    and u.deleted_at is null
+    and u.status = 'active'
+)::boolean;

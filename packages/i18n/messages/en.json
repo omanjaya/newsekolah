@@ -307,6 +307,8 @@
     "STAFF_ATTENDANCE_ALREADY_SCANNED": "Today's arrival and departure are already recorded",
     "STAFF_ATTENDANCE_CORRECTION_REASON_REQUIRED": "A correction requires a reason",
     "STAFF_ATTENDANCE_INVALID_MONTH": "Invalid month format",
+    "STAFF_ATTENDANCE_EMPLOYEE_NOT_ELIGIBLE": "A work schedule is only for an active teacher or staff member",
+    "STAFF_ATTENDANCE_DEPARTURE_TOO_SOON": "Departure can be recorded no sooner than 5 minutes after arrival",
     "EXPECTED_GUEST_NOT_FOUND": "Expected guest not found",
     "EXPECTED_GUEST_RESOLVED": "This expected-guest entry was already resolved",
     "VISIT_NOT_FOUND": "Visit not found",

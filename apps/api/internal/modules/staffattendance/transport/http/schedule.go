@@ -15,6 +15,14 @@ func (h *StaffAttendanceHandler) ListStaffAttendanceRoster(ctx context.Context, 
 	return api.ListStaffAttendanceRoster200JSONResponse{Data: toAPIEmployees(roster)}, nil
 }
 
+func (h *StaffAttendanceHandler) ListStaffAttendanceEmployees(ctx context.Context, _ api.ListStaffAttendanceEmployeesRequestObject) (api.ListStaffAttendanceEmployeesResponseObject, error) {
+	candidates, err := h.service.ListCandidates(ctx, tenantIDFromContext(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.ListStaffAttendanceEmployees200JSONResponse{Data: toAPIEmployeeOptions(candidates)}, nil
+}
+
 func (h *StaffAttendanceHandler) GetStaffAttendanceSchedule(ctx context.Context, request api.GetStaffAttendanceScheduleRequestObject) (api.GetStaffAttendanceScheduleResponseObject, error) {
 	days, err := h.service.GetWeeklySchedule(ctx, tenantIDFromContext(ctx), request.EmployeeId)
 	if err != nil {

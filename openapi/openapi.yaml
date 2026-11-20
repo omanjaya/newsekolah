@@ -16617,6 +16617,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /v1/staff-attendance/employees:
+    get:
+      tags:
+        - staff-attendance
+      operationId: listStaffAttendanceEmployees
+      x-permission: view_staff_attendance
+      summary: Every active teacher and staff member, for the module's employee pickers
+      description: >
+        Unlike the roster, this includes people with no work schedule yet, so the schedule editor can give someone their
+        first one. has_schedule tells the two apart.
+      responses:
+        "200":
+          description: Employees
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaffAttendanceEmployeeOption"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Module disabled for this tenant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /v1/staff-attendance/schedules/{employeeId}:
     parameters:
       - name: employeeId
@@ -16677,6 +16709,8 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
   /v1/staff-attendance/today:
     get:
       tags:
@@ -27378,6 +27412,21 @@ components:
           format: uuid
         name:
           type: string
+    StaffAttendanceEmployeeOption:
+      type: object
+      required:
+        - id
+        - name
+        - has_schedule
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        has_schedule:
+          type: boolean
+          description: Whether this person already has at least one work schedule day.
     StaffAttendanceScheduleDay:
       type: object
       required:

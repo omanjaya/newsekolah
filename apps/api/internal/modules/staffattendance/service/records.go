@@ -35,6 +35,9 @@ func (s *Service) Scan(ctx context.Context, tenantID, employeeUserID uuid.UUID) 
 		case arrival == nil:
 			arrival = &at
 		case departure == nil:
+			if domain.DepartureTooSoon(*arrival, at) {
+				return domain.ErrDepartureTooSoon
+			}
 			departure = &at
 		default:
 			return domain.ErrAlreadyScannedBothWays
@@ -202,6 +205,23 @@ func (s *Service) GetTodayBoard(ctx context.Context, tenantID uuid.UUID, date *t
 				EmployeeUserID: emp.ID, EmployeeName: emp.Name, Date: resolved,
 				StatusCode: result.StatusCode, Source: domain.SourceManual, HolidayName: holidayName,
 			})
+		}
+		// Someone who checked in before being given a work schedule is not
+		// on the roster yet, but their record is real: show it rather than
+		// leave the office blind to it.
+		onRoster := make(map[uuid.UUID]struct{}, len(roster))
+		for _, emp := range roster {
+			onRoster[emp.ID] = struct{}{}
+		}
+		for _, rec := range records {
+			if _, ok := onRoster[rec.EmployeeUserID]; ok {
+				continue
+			}
+			name, err := s.repo.GetEmployeeName(ctx, tenantID, rec.EmployeeUserID)
+			if err != nil {
+				return err
+			}
+			out = append(out, toRecordView(rec, name))
 		}
 		return nil
 	})

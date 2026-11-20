@@ -78,6 +78,7 @@ func TestGetAllEmployeesMonthlyRecap(t *testing.T) {
 			Name: name, Status: "active", Locale: "id",
 		})
 		require.NoError(t, err)
+		require.NoError(t, adminQ.CreateUserProfile(ctx, db.CreateUserProfileParams{UserID: user.ID, TenantID: tenant.ID, Kind: "staff"}))
 
 		days := make([]service.ScheduleDayInput, 0, 7)
 		for weekday := int16(1); weekday <= 7; weekday++ {

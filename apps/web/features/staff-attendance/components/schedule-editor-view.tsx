@@ -28,7 +28,7 @@ import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import {
-  type Employee,
+  type EmployeeOption,
   type ScheduleDay,
   useReplaceStaffAttendanceScheduleMutation,
   useStaffAttendanceScheduleQuery,
@@ -54,7 +54,7 @@ function defaultDay(weekday: number): ScheduleDay {
  * and how many minutes late still count as on time. The board can only
  * judge an employee once this is set.
  */
-export function ScheduleEditorView({ employees }: { employees: Employee[] }): ReactElement {
+export function ScheduleEditorView({ employees }: { employees: EmployeeOption[] }): ReactElement {
   const t = useTranslations("app.staffAttendance");
   const [employeeId, setEmployeeId] = useState("");
 

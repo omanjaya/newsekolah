@@ -23,6 +23,14 @@ type EmployeeRef struct {
 	Name string
 }
 
+// CandidateRef is one person the module's pickers may choose (see
+// ListStaffAttendanceCandidates): an active teacher or staff member,
+// whether or not they have a work schedule yet.
+type CandidateRef struct {
+	EmployeeRef
+	HasSchedule bool
+}
+
 // ScheduleDayInput is one weekday of an employee's weekly schedule, as the
 // schedule editor submits it.
 type ScheduleDayInput struct {

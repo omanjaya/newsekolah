@@ -928,6 +928,9 @@ type Querier interface {
 	// docs/testing-time-simulation.md), so a simulated future date can never
 	// extend a session's real-world lifetime.
 	IsSessionActive(ctx context.Context, arg IsSessionActiveParams) (pgtype.Bool, error)
+	// A work schedule may only be given to an active user with a teacher or
+	// staff profile.
+	IsStaffAttendanceCandidate(ctx context.Context, arg IsStaffAttendanceCandidateParams) (bool, error)
 	// Missing rule: classroom-entry tokens may only be consumed by a student
 	// profile (a teacher or any other staff scanning it is not "entering
 	// class late"), matching the old app's QR consumer check.
@@ -1323,6 +1326,12 @@ type Querier interface {
 	// session already opened for a class on a date, with the subject/teacher/
 	// period names a report needs, ordered by when the period runs.
 	ListSessionDetailsForClassDateAttendance(ctx context.Context, arg ListSessionDetailsForClassDateAttendanceParams) ([]ListSessionDetailsForClassDateAttendanceRow, error)
+	// Everyone the schedule editor, manual entry, recap and import pickers may
+	// choose: active users with a teacher or staff profile, the same
+	// eligibility identity's ListStaffOptions uses, with no row cap. The
+	// roster above cannot feed those pickers, since nobody is on it until a
+	// schedule exists; has_schedule tells the two sets apart.
+	ListStaffAttendanceCandidates(ctx context.Context, tenantID uuid.UUID) ([]ListStaffAttendanceCandidatesRow, error)
 	ListStaffAttendanceCorrectionsByRecord(ctx context.Context, arg ListStaffAttendanceCorrectionsByRecordParams) ([]StaffAttendanceCorrection, error)
 	ListStaffAttendanceRecordsByDate(ctx context.Context, arg ListStaffAttendanceRecordsByDateParams) ([]StaffAttendanceRecord, error)
 	ListStaffAttendanceRecordsByEmployeeRange(ctx context.Context, arg ListStaffAttendanceRecordsByEmployeeRangeParams) ([]StaffAttendanceRecord, error)

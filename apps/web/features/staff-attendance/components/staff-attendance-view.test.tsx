@@ -30,7 +30,7 @@ vi.mock("../../../lib/hooks/use-date-filter", () => ({
 vi.mock("../../attendance/components/day-stepper", () => ({ DayStepper: () => null }));
 vi.mock("../api", () => ({
   todayInZone: () => "2026-11-19",
-  useStaffAttendanceRosterQuery: () => ({ data: { data: [] } }),
+  useStaffAttendanceEmployeesQuery: () => ({ data: { data: [] } }),
 }));
 vi.mock("./today-board-view", () => ({ TodayBoardView: () => null }));
 vi.mock("./schedule-editor-view", () => ({ ScheduleEditorView: () => null }));
