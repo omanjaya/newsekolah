@@ -147,6 +147,25 @@ describe("a mentor group's trail", () => {
     expect(trailLinks()).toEqual([{ label: "Mentoring saya", href: "/mentoring/my-groups" }]);
   });
 
+  it("names the reader's own groups, not the full list, while a group fails to load", () => {
+    state.permissions = ["manage_mentoring"];
+    state.groupError = new ApiError({ status: 500, code: "INTERNAL", message: "x" });
+    renderPage(<MentorGroupDetailView groupId="g1" />);
+
+    expect(trailLinks()).toEqual([{ label: "Mentoring saya", href: "/mentoring/my-groups" }]);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Mentoring saya");
+    expect(document.title).toContain("Mentoring saya");
+  });
+
+  it("names the group while a student fails to load", () => {
+    state.permissions = ["manage_mentoring"];
+    state.pathname = "/mentoring/groups/g1/students/s1";
+    state.snapshotError = new ApiError({ status: 500, code: "INTERNAL", message: "x" });
+    renderPage(<MentorStudentView groupId="g1" studentId="s1" />);
+
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Kelompok Piket");
+  });
+
   it("leads a guru wali from a student back through their own groups", () => {
     state.permissions = ["manage_mentoring"];
     state.pathname = "/mentoring/groups/g1/students/s1";

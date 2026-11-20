@@ -65,9 +65,12 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
     );
   }
 
+  // Until the group loads, the heading names the reader's own group list,
+  // as the trail does: the path-derived label is the school-wide list,
+  // which a guru wali without view_mentoring cannot open.
   if (group.isError && !group.data) {
     return (
-      <AppPage breadcrumb={[groupsCrumb]}>
+      <AppPage title={groupsCrumb.label} breadcrumb={[groupsCrumb]}>
         <QueryError retry={() => group.refetch()} error={group.error} />
       </AppPage>
     );
@@ -75,7 +78,7 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
 
   if (group.isLoading || !group.data) {
     return (
-      <AppPage breadcrumb={[groupsCrumb]}>
+      <AppPage title={groupsCrumb.label} breadcrumb={[groupsCrumb]}>
         <SkeletonDetail rows={5} />
       </AppPage>
     );

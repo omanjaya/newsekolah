@@ -41,6 +41,10 @@ export function MentorStudentView({
   const groupsCrumb = useMentorGroupsCrumb();
   const groupLabel = group.data?.name ?? t("backToGroup");
   const groupCrumb = { label: groupLabel, href: `/mentoring/groups/${groupId}` };
+  // The heading while the student is loading or failed: the group once
+  // known, else the reader's own group list, never the path-derived
+  // school-wide list a guru wali without view_mentoring cannot open.
+  const pendingTitle = group.data?.name ?? groupsCrumb.label;
 
   // An unknown or malformed id is a missing record, not a failure to
   // retry: the group's not-found page when the group is what is missing
@@ -96,7 +100,7 @@ export function MentorStudentView({
 
   if (snapshotFailed && !group.isPending) {
     return (
-      <AppPage breadcrumb={[groupsCrumb, groupCrumb]}>
+      <AppPage title={pendingTitle} breadcrumb={[groupsCrumb, groupCrumb]}>
         <QueryError retry={() => snapshot.refetch()} error={snapshot.error} />
       </AppPage>
     );
@@ -104,7 +108,7 @@ export function MentorStudentView({
 
   if (snapshotFailed || snapshot.isLoading || !snapshot.data) {
     return (
-      <AppPage breadcrumb={[groupsCrumb, groupCrumb]}>
+      <AppPage title={pendingTitle} breadcrumb={[groupsCrumb, groupCrumb]}>
         <SkeletonDetail rows={6} />
       </AppPage>
     );
