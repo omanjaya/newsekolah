@@ -293,23 +293,23 @@ func renderMonthlyReportPDF(report MonthlyReport, letterhead *reportdoc.Letterhe
 	}
 	pdf.Ln(3)
 
+	// Every row wraps its cells inside their columns (a long title used to
+	// run over the author and count columns and off the page), and a row
+	// that does not fit starts a new page under a repeated header.
 	writeTable := func(title string, headers []string, widths []float64, rows [][]string) {
 		pdf.SetFont("Helvetica", "B", 11)
 		pdf.CellFormat(0, 7, title, "", 1, "L", false, 0, "")
-		pdf.SetFont("Helvetica", "B", 8)
-		for i, h := range headers {
-			pdf.CellFormat(widths[i], 6, h, "1", 0, "L", false, 0, "")
+		drawHeader := func() {
+			pdf.SetFont("Helvetica", "B", 8)
+			reportdoc.DrawWrappedRow(pdf, widths, headers, nil)
+			pdf.SetFont("Helvetica", "", 8)
 		}
-		pdf.Ln(-1)
-		pdf.SetFont("Helvetica", "", 8)
+		drawHeader()
 		if len(rows) == 0 {
-			pdf.CellFormat(sumWidths(widths), 6, "Tidak ada data.", "1", 1, "L", false, 0, "")
+			reportdoc.DrawWrappedRow(pdf, []float64{sumWidths(widths)}, []string{"Tidak ada data."}, drawHeader)
 		}
 		for _, row := range rows {
-			for i, cell := range row {
-				pdf.CellFormat(widths[i], 6, cell, "1", 0, "L", false, 0, "")
-			}
-			pdf.Ln(-1)
+			reportdoc.DrawWrappedRow(pdf, widths, row, drawHeader)
 		}
 		pdf.Ln(3)
 	}

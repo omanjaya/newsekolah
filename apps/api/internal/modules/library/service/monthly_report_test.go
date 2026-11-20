@@ -75,6 +75,24 @@ func TestRenderMonthlyReportPDFWithLetterheadAndSignature(t *testing.T) {
 	assert.NotEqual(t, withHeader, withoutHeader, "a configured letterhead/signature must change the rendered file")
 }
 
+// A long title wraps inside its column instead of printing over the
+// author and count, so many long rows push the table onto a second page
+// (the page tree's /Count) rather than running off the bottom edge.
+func TestRenderMonthlyReportPDFWrapsLongTitlesAndPaginates(t *testing.T) {
+	report := sampleMonthlyReport()
+	long := "Kamus Besar Bahasa Indonesia Edisi Kelima Pusat Bahasa Kementerian Pendidikan dan Kebudayaan Republik Indonesia Cetakan Ulang Tahun Dua Ribu Dua Puluh Satu"
+	report.TopTitles = nil
+	for i := 0; i < 12; i++ {
+		report.TopTitles = append(report.TopTitles, MostBorrowedTitle{
+			Title:     TitleWithAvailability{Title: domain.Title{Title: long, Author: "Tim Penyusun"}},
+			LoanCount: 4,
+		})
+	}
+	pdf, err := renderMonthlyReportPDF(report, nil, nil)
+	require.NoError(t, err)
+	assert.Contains(t, string(pdf), "/Count 2")
+}
+
 func TestRenderMonthlyReportPDFSignatureWithNoSignersUsesFallbackBlock(t *testing.T) {
 	// A Signature with a Place/Date but zero Signers (e.g. a tenant that
 	// configured "Denpasar" but no signers yet) must still fall back to
