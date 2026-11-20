@@ -43,6 +43,25 @@ func DefaultReasonFor(c Category) (label string, ok bool) {
 	return label, ok
 }
 
+// categoryLabels is the Indonesian display name of each category, as the
+// web and mobile clients show it. The letter is a server-rendered
+// Indonesian document, so it needs these names rather than the raw enum.
+var categoryLabels = map[Category]string{
+	CategoryReligiousCeremony: "Upacara keagamaan",
+	CategorySick:              "Sakit",
+	CategoryDispensation:      "Dispensasi",
+	CategoryOther:             "Lainnya",
+}
+
+// CategoryLabel returns the category's Indonesian display name, or the
+// raw value for an unrecognized one.
+func CategoryLabel(c Category) string {
+	if label, ok := categoryLabels[c]; ok {
+		return label
+	}
+	return string(c)
+}
+
 // LeaveRequest is one leave_requests row, 1:1 with a workflow_instances
 // row of kind leave_request. IssuedAt/LetterNumber/IssuedBy are set once
 // the counselor stage issues the letter (the instance moves to

@@ -21,3 +21,18 @@ func TestDefaultReasonFor(t *testing.T) {
 		}
 	}
 }
+
+func TestCategoryLabel(t *testing.T) {
+	cases := map[Category]string{
+		CategoryReligiousCeremony: "Upacara keagamaan",
+		CategorySick:              "Sakit",
+		CategoryDispensation:      "Dispensasi",
+		CategoryOther:             "Lainnya",
+		Category("unknown"):       "unknown",
+	}
+	for c, want := range cases {
+		if got := CategoryLabel(c); got != want {
+			t.Errorf("CategoryLabel(%q) = %q, want %q", c, got, want)
+		}
+	}
+}

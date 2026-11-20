@@ -386,13 +386,10 @@ func (s *Service) IssueLeaveLetter(ctx context.Context, tenantID, instanceID, is
 		}
 
 		tmpl := s.leaveLetterTemplate(ctx, tenantID)
-		rendered, err := s.renderer.Render(ctx, tmpl, map[string]any{
-			"letter_number": number, "student_name": lr.StudentNameSnapshot, "class_name": lr.ClassNameSnapshot,
-			"guardian_name": lr.GuardianNameSnapshot, "category": string(lr.Category), "reason": lr.Reason,
-			"starts_on": lr.StartsOn.Format("02-01-2006"), "ends_on": lr.EndsOn.Format("02-01-2006"),
-			"days": lr.Days(), "issued_at": now.Format("02-01-2006"), "verification_code": code,
-			"nis": nis, "address": address, "homeroom_name": homeroomName, "issuer_name": issuerName,
-		})
+		rendered, err := s.renderer.Render(ctx, tmpl, leaveLetterVars(lr, leaveLetterExtras{
+			number: number, issuedAt: now, verificationCode: code, nis: nis, address: address,
+			homeroomName: homeroomName, issuerName: issuerName,
+		}))
 		if err != nil {
 			return fmt.Errorf("render leave letter: %w", err)
 		}
@@ -447,6 +444,35 @@ func (s *Service) IssueLeaveLetter(ctx context.Context, tenantID, instanceID, is
 	return detail, nil
 }
 
+// leaveLetterExtras are the letter values that do not come from the
+// leave_requests row itself.
+type leaveLetterExtras struct {
+	number, verificationCode, nis, address, homeroomName, issuerName string
+	issuedAt                                                         time.Time
+}
+
+// leaveLetterVars is the variable map a leave letter template renders
+// with (leaveLetterTemplateVariables lists the names). "category" is the
+// Indonesian display name, never the raw enum; "category_code" keeps the
+// machine value for a custom template that branches on it.
+// "reason_detail" is the student's own text for an "other" request and
+// empty otherwise: every other category's reason is its fixed label
+// (domain.DefaultReasonFor), which would only repeat the category.
+func leaveLetterVars(lr domain.LeaveRequest, x leaveLetterExtras) map[string]any {
+	detail := ""
+	if _, fixed := domain.DefaultReasonFor(lr.Category); !fixed {
+		detail = lr.Reason
+	}
+	return map[string]any{
+		"letter_number": x.number, "student_name": lr.StudentNameSnapshot, "class_name": lr.ClassNameSnapshot,
+		"guardian_name": lr.GuardianNameSnapshot, "category": domain.CategoryLabel(lr.Category),
+		"category_code": string(lr.Category), "reason": lr.Reason, "reason_detail": detail,
+		"starts_on": lr.StartsOn.Format("02-01-2006"), "ends_on": lr.EndsOn.Format("02-01-2006"),
+		"days": lr.Days(), "issued_at": x.issuedAt.Format("02-01-2006"), "verification_code": x.verificationCode,
+		"nis": x.nis, "address": x.address, "homeroom_name": x.homeroomName, "issuer_name": x.issuerName,
+	}
+}
+
 func attendanceStatusFor(c domain.Category) string {
 	switch c {
 	case domain.CategorySick:
@@ -489,7 +515,7 @@ const builtinLeaveLetterHTML = `<html><body style="font-family: serif; font-size
 <tr><td>Alamat</td><td>: {{.address}}</td></tr>
 <tr><td>Wali</td><td>: {{.guardian_name}}</td></tr>
 </table>
-<p>diizinkan tidak mengikuti kegiatan belajar mengajar pada tanggal {{.starts_on}} sampai {{.ends_on}} ({{.days}} hari) dengan keterangan {{.category}}: {{.reason}}.</p>
+<p>diizinkan tidak mengikuti kegiatan belajar mengajar pada tanggal {{.starts_on}} sampai {{.ends_on}} ({{.days}} hari) dengan keterangan {{.category}}{{if .reason_detail}}: {{.reason_detail}}{{end}}.</p>
 <p>Surat ini diterbitkan pada {{.issued_at}} oleh {{.issuer_name}}, diketahui oleh wali kelas {{.homeroom_name}}. Kode verifikasi: <strong>{{.verification_code}}</strong></p>
 </body></html>`
 
@@ -500,7 +526,7 @@ const builtinLeaveLetterHTML = `<html><body style="font-family: serif; font-size
 // discipline/service.BuiltinWarningLetterHTML if either changes).
 var leaveLetterTemplateVariables = []string{
 	"letter_number", "student_name", "nis", "class_name", "address", "guardian_name",
-	"category", "reason", "starts_on", "ends_on", "days", "issued_at", "issuer_name", "homeroom_name", "verification_code",
+	"category", "category_code", "reason", "reason_detail", "starts_on", "ends_on", "days", "issued_at", "issuer_name", "homeroom_name", "verification_code",
 }
 
 func (s *Service) GetLeaveRequest(ctx context.Context, tenantID, instanceID uuid.UUID) (LeaveRequestDetail, error) {
