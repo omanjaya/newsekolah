@@ -143,16 +143,22 @@ func (s *Service) calendarDaysForRange(
 			continue
 		}
 
+		hasLessons, err := s.studentHasLessons(ctx, tenantID, academicYearID, classID, hasClass, d)
+		if err != nil {
+			return nil, err
+		}
+
 		// A day forced by an issued leave letter or exit permit (via
 		// Overrider) shows that official status even when it has no
 		// session at all -- ForceStatus only ever writes into sessions
 		// that already exist (see service/force.go's doc comment), so a
-		// day with no schedule, or one whose sessions were never opened,
-		// would otherwise render INCOMPLETE/NONE despite the student
-		// having an approved leave that day (docs/analysis/backend-
-		// inventory.md section 1.13's "hari override tetap muncul walau
-		// tanpa sesi").
-		if overrideCode, overrideSource, ok, err := s.overrider.Override(ctx, tenantID, studentUserID, d); err != nil {
+		// day whose sessions were never opened would otherwise render
+		// INCOMPLETE/NONE despite the student having an approved leave
+		// that day (docs/analysis/backend-inventory.md section 1.13's
+		// "hari override tetap muncul walau tanpa sesi"). A letter only
+		// covers the days with lessons in its range: a weekend or holiday
+		// inside it stays a day without school, not one more day of Izin.
+		if overrideCode, overrideSource, ok, err := s.overrideOnLessonDay(ctx, tenantID, studentUserID, d, hasLessons); err != nil {
 			return nil, err
 		} else if ok {
 			day.StatusCode, day.Complete = overrideCode, true
@@ -174,11 +180,7 @@ func (s *Service) calendarDaysForRange(
 
 		expected, submitted := 0, 0
 		if hasClass {
-			isSchoolDay, _, err := s.teachingDay(ctx, tenantID, academicYearID, classID, d)
-			if err != nil {
-				return nil, err
-			}
-			if isSchoolDay {
+			if hasLessons {
 				count, err := s.schedules.CountSchedulesForClassDay(ctx, tenantID, academicYearID, classID, domain.IsoWeekday(d))
 				if err != nil {
 					return nil, err
@@ -201,6 +203,28 @@ func (s *Service) calendarDaysForRange(
 		days = append(days, day)
 	}
 	return days, nil
+}
+
+// studentHasLessons reports whether a student of classID has lessons on
+// date: the class's teaching day (weekly pattern plus the academic
+// calendar), or, for a student with no class, the weekly pattern alone.
+func (s *Service) studentHasLessons(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, hasClass bool, date time.Time) (bool, error) {
+	if !hasClass {
+		return s.repo.IsSchoolDay(ctx, tenantID, academicYearID, domain.IsoWeekday(date))
+	}
+	teaching, _, err := s.teachingDay(ctx, tenantID, academicYearID, classID, date)
+	return teaching, err
+}
+
+// overrideOnLessonDay is the Overrider's status for student on date, but
+// only on a day with lessons: an issued leave letter or exit permit
+// decides the student's attendance at school, so a Saturday, Sunday or
+// holiday inside a letter's range is not counted as a day of leave.
+func (s *Service) overrideOnLessonDay(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time, hasLessons bool) (string, domain.EntrySource, bool, error) {
+	if !hasLessons {
+		return "", "", false, nil
+	}
+	return s.overrider.Override(ctx, tenantID, studentUserID, date)
 }
 
 // GetHomeroomAttendance returns actor's homeroom class roster with each

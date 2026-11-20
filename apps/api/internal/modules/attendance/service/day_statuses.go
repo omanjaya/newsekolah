@@ -72,10 +72,14 @@ func (s *Service) DayStatusesForStudents(ctx context.Context, tenantID uuid.UUID
 			return err
 		}
 		pending := pendingPairs(studentIDs, dates, resolved)
-		if err := s.applyOverrides(ctx, tenantID, pending, resolved); err != nil {
+		lessons, err := s.loadLessonDays(ctx, tenantID, yearID, pending)
+		if err != nil {
 			return err
 		}
-		if err := s.applyLiveStatuses(ctx, tenantID, yearID, policy, pendingPairs(studentIDs, dates, resolved), resolved); err != nil {
+		if err := s.applyOverrides(ctx, tenantID, pending, resolved, lessons); err != nil {
+			return err
+		}
+		if err := s.applyLiveStatuses(ctx, tenantID, yearID, policy, pendingPairs(studentIDs, dates, resolved), resolved, lessons); err != nil {
 			return err
 		}
 		out = make([]StudentDayStatus, 0, len(studentIDs)*len(dates))
@@ -114,9 +118,65 @@ func pendingPairs(studentIDs []uuid.UUID, dates []time.Time, resolved map[studen
 	return out
 }
 
+// lessonDays is whether each pending student has lessons on each date,
+// resolved once per class and date: the academic calendar through
+// teachingDay for a student with a class, the weekly pattern for one
+// without.
+type lessonDays struct {
+	classOf  map[uuid.UUID]uuid.UUID // student -> active class
+	weekly   map[int16]bool
+	teaching map[classDate]bool
+}
+
+func (l lessonDays) has(student uuid.UUID, date time.Time) bool {
+	if classID, ok := l.classOf[student]; ok {
+		return l.teaching[classDate{classID, dayKey(date)}]
+	}
+	return l.weekly[domain.IsoWeekday(date)]
+}
+
+func (s *Service) loadLessonDays(ctx context.Context, tenantID, yearID uuid.UUID, pending []StudentDayStatus) (lessonDays, error) {
+	l := lessonDays{teaching: map[classDate]bool{}}
+	if len(pending) == 0 {
+		return l, nil
+	}
+	students, _ := pairAxes(pending)
+	var err error
+	if l.classOf, err = s.repo.ListEnrolledClasses(ctx, tenantID, yearID, students); err != nil {
+		return l, err
+	}
+	weekdays, err := s.repo.ListSchoolDayWeekdays(ctx, tenantID, yearID)
+	if err != nil {
+		return l, err
+	}
+	l.weekly = make(map[int16]bool, len(weekdays))
+	for _, w := range weekdays {
+		l.weekly[w] = true
+	}
+	for _, p := range pending {
+		classID, ok := l.classOf[p.StudentUserID]
+		if !ok {
+			continue
+		}
+		key := classDate{classID, dayKey(p.Date)}
+		if _, done := l.teaching[key]; done {
+			continue
+		}
+		teaching, _, err := s.teachingDay(ctx, tenantID, yearID, classID, p.Date)
+		if err != nil {
+			return l, err
+		}
+		l.teaching[key] = teaching
+	}
+	return l, nil
+}
+
 // applyOverrides records the Overrider's status for every pending pair it
-// forces one for.
-func (s *Service) applyOverrides(ctx context.Context, tenantID uuid.UUID, pending []StudentDayStatus, resolved map[studentDate]string) error {
+// forces one for, on days with lessons only: a leave letter's weekend or
+// holiday is not a day of leave (calendarDaysForRange's
+// overrideOnLessonDay).
+func (s *Service) applyOverrides(ctx context.Context, tenantID uuid.UUID, pending []StudentDayStatus, resolved map[studentDate]string, lessons lessonDays) error {
+	pending = withLessons(pending, lessons)
 	if len(pending) == 0 {
 		return nil
 	}
@@ -149,31 +209,28 @@ func (s *Service) applyOverrides(ctx context.Context, tenantID uuid.UUID, pendin
 	return nil
 }
 
+// withLessons keeps the pairs whose student has lessons on the date.
+func withLessons(pairs []StudentDayStatus, lessons lessonDays) []StudentDayStatus {
+	out := make([]StudentDayStatus, 0, len(pairs))
+	for _, p := range pairs {
+		if lessons.has(p.StudentUserID, p.Date) {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
 // liveInputs is everything the live computation of a daily status reads,
 // loaded for many students and dates at once.
 type liveInputs struct {
 	classOf     map[uuid.UUID]uuid.UUID // student -> active class
-	schoolDay   map[int16]bool
 	scheduled   map[classWeekday]int
 	submittedBy map[classDate]int
 	entries     map[studentDate][]string
 }
 
-func (s *Service) loadLiveInputs(ctx context.Context, tenantID, yearID uuid.UUID, students []uuid.UUID, dates []time.Time) (liveInputs, error) {
-	var in liveInputs
-	var err error
-	if in.classOf, err = s.repo.ListEnrolledClasses(ctx, tenantID, yearID, students); err != nil {
-		return in, err
-	}
-	weekdays, err := s.repo.ListSchoolDayWeekdays(ctx, tenantID, yearID)
-	if err != nil {
-		return in, err
-	}
-	in.schoolDay = make(map[int16]bool, len(weekdays))
-	for _, w := range weekdays {
-		in.schoolDay[w] = true
-	}
-
+func (s *Service) loadLiveInputs(ctx context.Context, tenantID, yearID uuid.UUID, classOf map[uuid.UUID]uuid.UUID, students []uuid.UUID, dates []time.Time) (liveInputs, error) {
+	in := liveInputs{classOf: classOf}
 	in.scheduled = map[classWeekday]int{}
 	in.submittedBy = map[classDate]int{}
 	if classIDs := distinctClasses(in.classOf); len(classIDs) > 0 {
@@ -205,15 +262,18 @@ func (s *Service) loadLiveInputs(ctx context.Context, tenantID, yearID uuid.UUID
 }
 
 // applyLiveStatuses computes the status of every remaining pair the way
-// calendarDaysForRange does for a day nothing has summarized or overridden.
+// calendarDaysForRange does for a day nothing has summarized or
+// overridden: a day without lessons (weekend, holiday, no-school day,
+// semester break) expects none.
 func (s *Service) applyLiveStatuses(
 	ctx context.Context, tenantID, yearID uuid.UUID, policy domain.StatusPolicy, pending []StudentDayStatus, resolved map[studentDate]string,
+	lessons lessonDays,
 ) error {
 	if len(pending) == 0 {
 		return nil
 	}
 	students, dates := pairAxes(pending)
-	in, err := s.loadLiveInputs(ctx, tenantID, yearID, students, dates)
+	in, err := s.loadLiveInputs(ctx, tenantID, yearID, lessons.classOf, students, dates)
 	if err != nil {
 		return err
 	}
@@ -221,9 +281,8 @@ func (s *Service) applyLiveStatuses(
 		classID, hasClass := in.classOf[p.StudentUserID]
 		expected, submitted := 0, 0
 		if hasClass {
-			weekday := domain.IsoWeekday(p.Date)
-			if in.schoolDay[weekday] {
-				expected = in.scheduled[classWeekday{classID, weekday}]
+			if lessons.has(p.StudentUserID, p.Date) {
+				expected = in.scheduled[classWeekday{classID, domain.IsoWeekday(p.Date)}]
 			}
 			submitted = in.submittedBy[classDate{classID, dayKey(p.Date)}]
 		}
