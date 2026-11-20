@@ -535,6 +535,42 @@ describe("useStudentBlock", () => {
     expect(result.current.tiles.find((tile) => tile.key === "student.attendance")).toBeUndefined();
   });
 
+  // A new student account not yet placed in a class used to request the
+  // whole-school day view, get a 403, and show "check your connection"
+  // plus a raw FORBIDDEN card. It now asks for nothing schedule-related
+  // and says plainly that the student has no class yet.
+  it("tells a student without a class so, without requesting any timetable", () => {
+    mocks.schedules.mockReturnValue({
+      ...idleQuery,
+      isError: true,
+      error: new Error("FORBIDDEN"),
+    });
+
+    const { result } = renderHook(() => useStudentBlock(me({ current_class: undefined }), true));
+
+    expect(mocks.schedules).toHaveBeenCalledWith(
+      expect.objectContaining({ academicYearId: "y1", classId: undefined, enabled: false }),
+    );
+    expect(mocks.periods).toHaveBeenCalledWith(false);
+    expect(mocks.subjects).toHaveBeenCalledWith(false);
+    expect(mocks.teachers).toHaveBeenCalledWith([], false);
+
+    expect(result.current.failed).toBe(false);
+    expect(result.current.pending).toBe(false);
+    expect(result.current.hero).toMatchObject({
+      key: "student.unplaced",
+      tone: "neutral",
+      title: "unplacedTitle",
+      meta: "unplacedBody",
+    });
+
+    const schedule = result.current.main.find((block) => block.key === "student.schedule");
+    render(<>{schedule?.node}</>);
+    expect(screen.getByText("unplacedTitle")).toBeInTheDocument();
+    expect(screen.getByText("unplacedBody")).toBeInTheDocument();
+    expect(screen.queryByText(/FORBIDDEN/)).not.toBeInTheDocument();
+  });
+
   it("flags the block failed when a tile's read fails", () => {
     mocks.calendar.mockReturnValue({ ...idleQuery, isError: true, error: new Error("x") });
 

@@ -84,13 +84,19 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
   // Lesson times read as on the schedule and attendance ("07.00 – 08.30").
   const clock = (value: string) => clockLabel(value, locale);
 
+  // A student not placed in a class yet (a new account, a mid-year intake)
+  // has no timetable to ask for: the home says so instead of requesting
+  // the whole-school day view, which the API rightly refuses with 403.
+  const classId = me.current_class?.id;
+  const placed = Boolean(classId);
   const schedules = useSchedulesQuery({
     academicYearId: active ? (me.active_academic_year?.id ?? "") : "",
-    classId: me.current_class?.id,
+    classId,
     dayOfWeek,
+    enabled: placed,
   });
-  const periods = useAllPeriodsQuery(active);
-  const subjects = useSubjectsQuery(active);
+  const periods = useAllPeriodsQuery(active && placed);
+  const subjects = useSubjectsQuery(active && placed);
   const calendar = useMyCalendarQuery(active ? today.slice(0, 7) : "");
   // Each of these belongs to a module a school can switch off; a disabled
   // one is neither queried nor shown.
@@ -138,18 +144,20 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
 
   const teachers = useDirectoryLookup(
     lessons.map((lesson) => lesson.teacherUserId),
-    active,
+    active && placed,
   );
   const teacherMap = teachers.names;
 
   if (!active) return EMPTY_BLOCK;
 
   const scheduleReady =
-    schedules.isSuccess && periods.isSuccess && subjects.isSuccess && teachers.isSuccess;
+    placed && schedules.isSuccess && periods.isSuccess && subjects.isSuccess && teachers.isSuccess;
   const scheduleLoading =
-    schedules.isLoading || periods.isLoading || subjects.isLoading || teachers.isLoading;
-  const scheduleError =
-    schedules.error ?? periods.error ?? subjects.error ?? (teachers.isError ? true : null);
+    placed &&
+    (schedules.isLoading || periods.isLoading || subjects.isLoading || teachers.isLoading);
+  const scheduleError = placed
+    ? (schedules.error ?? periods.error ?? subjects.error ?? (teachers.isError ? true : null))
+    : null;
   const retrySchedule = () => {
     void schedules.refetch();
     void periods.refetch();
@@ -187,6 +195,15 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
         ? { label: t("heroScanAction"), href: SCAN_HREF }
         : { label: t("heroAction"), href: SCHEDULE_HREF },
       ...(scanFirst ? { secondaryAction: { label: t("heroAction"), href: SCHEDULE_HREF } } : {}),
+    };
+  } else if (!placed) {
+    hero = {
+      key: "student.unplaced",
+      priority: HERO_PRIORITY.studentIdle,
+      tone: "neutral",
+      eyebrow: t("heroIdleEyebrow"),
+      title: t("unplacedTitle"),
+      meta: t("unplacedBody"),
     };
   } else if (scheduleReady) {
     hero = {
@@ -277,7 +294,16 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
       <CardHeader action={<TextLink href={SCHEDULE_HREF}>{t("scheduleAction")}</TextLink>}>
         <CardTitle as="h2">{t("scheduleTitle")}</CardTitle>
       </CardHeader>
-      {scheduleLoading ? (
+      {!placed ? (
+        <div className="px-5 pb-5">
+          <EmptyState
+            variant="compact"
+            icon={<CalendarX2 />}
+            title={t("unplacedTitle")}
+            description={t("unplacedBody")}
+          />
+        </div>
+      ) : scheduleLoading ? (
         <div className="px-5 pb-5">
           <SkeletonList rows={4} framed={false} />
         </div>

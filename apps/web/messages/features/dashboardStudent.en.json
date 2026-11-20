@@ -24,6 +24,8 @@
   "heroDoneMeta": "Tomorrow's timetable is on the schedule page.",
   "heroFreeTitle": "No lessons today",
   "heroFreeMeta": "This week's timetable is still available.",
+  "unplacedTitle": "You have not been placed in a class yet",
+  "unplacedBody": "Your lesson timetable appears here once you are placed in a class for this academic year. Contact your homeroom teacher or the school admin.",
   "scheduleAction": "Full schedule",
   "scheduleNow": "Now",
   "loansOverdueHint": "{count} overdue",

@@ -13,8 +13,17 @@ export interface ScheduleFilter {
   academicYearId: string;
   classId?: string;
   teacherUserId?: string;
-  /** 1 (Monday) through 7 (Sunday). Set for the whole-school day view. */
+  /** 1 (Monday) through 7 (Sunday): narrows a class or teacher view to one
+   * day, or, with `allClasses`, picks the day of the whole-school view. */
   dayOfWeek?: number;
+  /**
+   * Set true for the whole-school day view (every class on `dayOfWeek`),
+   * which needs full schedule access. Without it the query runs only for a
+   * class or a teacher, so a caller whose class is missing (a student not
+   * placed in a class yet) never widens into the all-classes view and its
+   * 403 by accident.
+   */
+  allClasses?: boolean;
   /** Set false to skip the request, e.g. for a viewer without schedule access. */
   enabled?: boolean;
 }
@@ -37,12 +46,14 @@ export function useScheduleQuery(scheduleId: string, enabled = true) {
 
 export function useSchedulesQuery(filter: ScheduleFilter) {
   const client = useApiClient();
-  // A day view asks for every class at once, so a day alone is enough to
-  // run the query; the other two views still need their own subject.
+  // A class or teacher view needs its subject; only an explicit day view
+  // (allClasses) may run on a day alone.
   const enabled =
     filter.enabled !== false &&
     filter.academicYearId !== "" &&
-    Boolean(filter.classId ?? filter.teacherUserId ?? filter.dayOfWeek);
+    (Boolean(filter.classId) ||
+      Boolean(filter.teacherUserId) ||
+      (filter.allClasses === true && Boolean(filter.dayOfWeek)));
   return useQuery({
     queryKey: queryKeys.schedules({
       year: filter.academicYearId,

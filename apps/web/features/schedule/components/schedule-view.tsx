@@ -128,6 +128,7 @@ export function ScheduleView(): ReactElement {
     classId: mode === "day" ? undefined : effectiveClassId || undefined,
     teacherUserId: mode === "day" ? undefined : effectiveTeacherId || undefined,
     dayOfWeek: mode === "day" ? dayFilter : undefined,
+    allClasses: mode === "day",
   });
   const teacherMap = useDirectoryNames(
     (schedules.data?.data ?? []).map((block) => block.teacher_user_id),

@@ -24,6 +24,8 @@
   "heroDoneMeta": "Jadwal besok bisa dilihat di halaman jadwal.",
   "heroFreeTitle": "Tidak ada pelajaran hari ini",
   "heroFreeMeta": "Jadwal minggu ini tetap bisa dilihat.",
+  "unplacedTitle": "Anda belum ditempatkan di kelas",
+  "unplacedBody": "Jadwal pelajaran muncul di sini setelah Anda ditempatkan di kelas untuk tahun ajaran ini. Hubungi wali kelas atau admin sekolah.",
   "scheduleAction": "Jadwal lengkap",
   "scheduleNow": "Sekarang",
   "loansOverdueHint": "{count} terlambat dikembalikan",
