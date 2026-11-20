@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-pdf/fpdf"
@@ -202,9 +203,17 @@ func formatThousands(n int) string {
 }
 
 // formatFloat1 renders a ratio with one decimal and a comma, the old
-// app's libraryFormatFloat.
+// app's libraryFormatFloat: "0,2", the decimal separator the rest of this
+// Indonesian document reads with.
 func formatFloat1(v float64) string {
-	return fmt.Sprintf("%.1f", v)
+	return strings.Replace(fmt.Sprintf("%.1f", v), ".", ",", 1)
+}
+
+// monthlyReportPeriod is the report's month heading in Indonesian
+// ("Februari 2027"), the language of every other label on the page; Go's
+// own time formatting only knows English month names.
+func monthlyReportPeriod(month time.Time) string {
+	return reportdoc.FormatMonth(reportdoc.LocaleID, month)
 }
 
 // MonthlyReportPDF renders MonthlyReport as a single A4 page: the report's
@@ -262,7 +271,7 @@ func renderMonthlyReportPDF(report MonthlyReport, letterhead *reportdoc.Letterhe
 	pdf.SetFont("Helvetica", "B", 12)
 	pdf.CellFormat(0, 6, "Laporan Bulanan Perpustakaan", "", 1, "C", false, 0, "")
 	pdf.SetFont("Helvetica", "", 10)
-	pdf.CellFormat(0, 6, report.Month.Format("January 2006"), "", 1, "C", false, 0, "")
+	pdf.CellFormat(0, 6, monthlyReportPeriod(report.Month), "", 1, "C", false, 0, "")
 	pdf.Ln(4)
 
 	indicators := [][2]string{

@@ -121,3 +121,15 @@ func TestMonthlyReportTableHeadersFitTheirColumns(t *testing.T) {
 		}
 	}
 }
+
+// The month heading and the average were printed the English way
+// ("February 2027", "0.2") on an otherwise Indonesian page. September, the
+// sample month above, is spelt the same in both languages, so February
+// is the month that tells them apart.
+func TestMonthlyReportPrintsTheMonthAndDecimalsTheIndonesianWay(t *testing.T) {
+	assert.Equal(t, "Februari 2027", monthlyReportPeriod(time.Date(2027, 2, 1, 0, 0, 0, 0, time.UTC)))
+	assert.Equal(t, "Juni 2026", monthlyReportPeriod(time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)))
+	assert.Equal(t, "0,2", formatFloat1(0.2))
+	assert.Equal(t, "40,1", formatFloat1(40.1))
+	assert.Equal(t, "12,0", formatFloat1(12))
+}
