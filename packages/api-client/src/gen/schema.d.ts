@@ -1545,6 +1545,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/attendance/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The school's attendance policy (how long attendance stays correctable) */
+        get: operations["getAttendanceSettings"];
+        /**
+         * Change the school's attendance policy
+         * @description A longer correction window reopens every session whose new deadline is still ahead, so a school can correct attendance after the window it had set has closed.
+         */
+        put: operations["updateAttendanceSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/attendance/me/calendar": {
         parameters: {
             query?: never;
@@ -9117,6 +9138,10 @@ export interface components {
              */
             editable_until?: string;
         };
+        AttendanceSettings: {
+            /** @description How many days after a session's date its own teacher, its class's homeroom teacher and a global corrector may still change it, until 23.59 school time on the last day. 7 when the school has not set it. */
+            correction_days: number;
+        };
         AttendanceRosterItem: {
             /** Format: uuid */
             student_user_id: string;
@@ -16081,6 +16106,55 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+        };
+    };
+    getAttendanceSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updateAttendanceSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttendanceSettings"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     getMyAttendanceCalendar: {

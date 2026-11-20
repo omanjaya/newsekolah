@@ -8,6 +8,7 @@ import { useApiClient } from "../../lib/api/client";
 import { API_URL } from "../../lib/env";
 
 export type AuthSettings = components["schemas"]["AuthSettings"];
+export type AttendanceSettings = components["schemas"]["AttendanceSettings"];
 export type AuthSettingsWrite = components["schemas"]["AuthSettingsWrite"];
 export type TenantBranding = components["schemas"]["TenantBranding"];
 export type BrandingWrite = components["schemas"]["BrandingWrite"];
@@ -29,6 +30,30 @@ export function useUpdateAuthSettingsMutation() {
     mutationFn: (body: AuthSettingsWrite) => client.PUT("/v1/auth/settings", { body }),
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.authSettings(), data);
+    },
+  });
+}
+
+export function useAttendanceSettingsQuery() {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: queryKeys.attendanceSettings(),
+    queryFn: () => client.GET("/v1/attendance/settings"),
+  });
+}
+
+export function useUpdateAttendanceSettingsMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: AttendanceSettings) => client.PUT("/v1/attendance/settings", { body }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.attendanceSettings(), data);
+      // Every session's save deadline moves with the window.
+      void queryClient.invalidateQueries({
+        queryKey: ["attendance"],
+        predicate: (query) => query.queryKey[1] !== "settings",
+      });
     },
   });
 }

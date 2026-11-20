@@ -57,6 +57,7 @@ export const queryKeys = {
   attendanceToday: (date: string, teacherUserId?: string) =>
     ["attendance", "today", date, teacherUserId ?? ""] as const,
   attendanceSession: (id: string) => ["attendance", "session", id] as const,
+  attendanceSettings: () => ["attendance", "settings"] as const,
   attendanceHomeroom: (date: string, params: Record<string, string | number | undefined>) =>
     ["attendance", "homeroom", date, params] as const,
   attendanceCalendar: (month: string) => ["attendance", "calendar", month] as const,

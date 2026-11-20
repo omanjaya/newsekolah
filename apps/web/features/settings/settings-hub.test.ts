@@ -44,7 +44,8 @@ describe("buildSettingsHubSections", () => {
     expect(all).toContain("/settings/audit-logs");
     expect(all).toContain("/settings/workflows");
     expect(all).toContain("/setup");
-    expect(all).toHaveLength(16);
+    expect(all).toContain("/settings/attendance");
+    expect(all).toHaveLength(17);
   });
 
   it("gates a card on the permission of its registry entry", () => {

@@ -360,6 +360,7 @@ describe("navigation registry: per-role audiences", () => {
       "school-promotion",
       "setup",
       "settings-session",
+      "settings-attendance",
       "settings-branding",
       "settings-report-header",
       "settings-sso",

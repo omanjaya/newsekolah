@@ -34,6 +34,10 @@ var (
 
 	ErrInvalidMonth = errors.New("month must be formatted as YYYY-MM")
 
+	// ErrInvalidCorrectionDays refuses a correction window outside
+	// [MinCorrectionDays, MaxCorrectionDays].
+	ErrInvalidCorrectionDays = errors.New("correction_days is out of range")
+
 	// ErrInvalidScope is a report export's scope selection error: exactly
 	// one of class_id or grade_level_id must be given.
 	ErrInvalidScope = errors.New("exactly one of class_id or grade_level_id is required")

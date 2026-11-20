@@ -122,6 +122,42 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+  /v1/attendance/settings:
+    get:
+      tags: [attendance]
+      operationId: getAttendanceSettings
+      x-permission: manage_settings
+      summary: The school's attendance policy (how long attendance stays correctable)
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttendanceSettings" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      tags: [attendance]
+      operationId: updateAttendanceSettings
+      x-permission: manage_settings
+      summary: Change the school's attendance policy
+      description:
+        A longer correction window reopens every session whose new deadline is still ahead, so a school can
+        correct attendance after the window it had set has closed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AttendanceSettings" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttendanceSettings" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /v1/attendance/me/calendar:
     get:
       tags: [attendance]
@@ -472,6 +508,17 @@ components:
             editable_until (normal mode for its own teacher or accepted substitute, correction for anyone else).
             After it the session is locked for the viewer. Absent for a lesson on a later day with no session yet,
             or when the viewer may not save it at all.
+    AttendanceSettings:
+      type: object
+      required: [correction_days]
+      properties:
+        correction_days:
+          type: integer
+          minimum: 1
+          maximum: 90
+          description:
+            How many days after a session's date its own teacher, its class's homeroom teacher and a global corrector
+            may still change it, until 23.59 school time on the last day. 7 when the school has not set it.
     AttendanceRosterItem:
       type: object
       required: [student_user_id, name]

@@ -60,6 +60,7 @@ export const SETTINGS_HUB_SECTIONS: readonly {
     key: "workflow",
     cards: [
       { navKey: "settings-workflows", descriptionKey: "workflows" },
+      { navKey: "settings-attendance", descriptionKey: "attendance" },
       { navKey: "setup", descriptionKey: "setup", sectionTab: false },
     ],
   },

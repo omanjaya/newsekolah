@@ -24,7 +24,7 @@
     },
     "workflow": {
       "title": "Workflows",
-      "description": "Approval flows and initial setup."
+      "description": "Approval flows, attendance rules, and initial setup."
     },
     "account": {
       "title": "My account",
@@ -45,6 +45,7 @@
     "whatsapp": "Connect and configure school WhatsApp messaging.",
     "integrations": "Connect third-party apps and services.",
     "workflows": "Configure request and approval flows.",
+    "attendance": "Set how long past attendance stays correctable.",
     "setup": "Step-by-step guide to the initial school setup.",
     "notifications": "Your notification channels and quiet hours.",
     "appearance": "Light or dark theme on this device."
