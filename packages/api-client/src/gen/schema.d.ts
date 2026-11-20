@@ -5855,7 +5855,7 @@ export interface paths {
         };
         /**
          * Meeting notes for a group the reader may open (mentor, counselor, leadership)
-         * @description Lists the notes the reader may open. A note only its mentor, a counselor or leadership may read is left out of `data` and counted in `withheld_count`, so a group manager can tell "no notes yet" from "notes exist that are not yours to read".
+         * @description Lists the notes the reader may open. A note only its author, a counselor or leadership may read is left out of `data` and counted in `withheld_count`, so a group manager can tell "no notes yet" from "notes exist that are not yours to read".
          */
         get: operations["listMentorMeetingNotes"];
         put?: never;
