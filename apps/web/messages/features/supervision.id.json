@@ -24,7 +24,8 @@
     "criterionNamePlaceholder": "Nama kriteria",
     "removeCriterionNumbered": "Hapus kriteria {index}",
     "addCriterion": "Tambah kriteria",
-    "criterionKeyDuplicate": "Kode ini dipakai kriteria lain."
+    "criterionKeyDuplicate": "Kode ini dipakai kriteria lain.",
+    "criterionNameDuplicate": "Nama ini dipakai kriteria lain."
   },
   "cycles": {
     "add": "Buat siklus",
@@ -52,7 +53,8 @@
         "instrumentName": "Isi nama instrumen.",
         "scale": "Skor tertinggi harus lebih besar dari skor terendah.",
         "criteria": "Setiap kriteria perlu nama dan kode.",
-        "criteriaDuplicate": "Kode kriteria harus unik. Ubah kode yang sama."
+        "criteriaDuplicate": "Kode kriteria harus unik. Ubah kode yang sama.",
+        "criteriaNameDuplicate": "Nama kriteria harus unik. Ubah nama yang sama."
       },
       "cancel": "Batal",
       "submit": "Simpan",

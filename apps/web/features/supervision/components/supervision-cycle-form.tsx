@@ -13,7 +13,7 @@ import {
   useCreateSupervisionCycleMutation,
   useUpdateSupervisionCycleMutation,
 } from "../api";
-import { duplicateCriterionKeys } from "../lib/criterion-key";
+import { duplicateCriterionKeys, duplicateCriterionNames } from "../lib/criterion-key";
 
 import { SupervisionInstrumentFields } from "./supervision-instrument-fields";
 
@@ -49,6 +49,11 @@ export function SupervisionCycleForm({
   const [lockedKeys] = useState(
     () => new Set((initial?.instrument.criteria ?? []).map((criterion) => criterion.key)),
   );
+  // An instrument saved before names had to be unique keeps its repeated
+  // names editable, as the API allows; any new repetition blocks Save.
+  const [legacyRepeatedNames] = useState(() =>
+    duplicateCriterionNames(initial?.instrument.criteria ?? []),
+  );
   const [attempted, setAttempted] = useState(false);
 
   const pending = create.isPending || update.isPending;
@@ -62,6 +67,11 @@ export function SupervisionCycleForm({
       : []),
     ...(duplicateCriterionKeys(instrument.criteria).size > 0
       ? [t("errors.criteriaDuplicate")]
+      : []),
+    ...([...duplicateCriterionNames(instrument.criteria)].some(
+      (name) => !legacyRepeatedNames.has(name),
+    )
+      ? [t("errors.criteriaNameDuplicate")]
       : []),
   ];
 

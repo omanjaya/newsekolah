@@ -26,6 +26,7 @@ var (
 	ErrLessonDayMismatch    = errors.New("lesson date falls on a different weekday than the lesson")
 	ErrScheduledExists      = errors.New("this lesson is already scheduled for observation on that date")
 	ErrCriterionKeyTaken    = errors.New("two criteria share one key")
+	ErrCriterionNameTaken   = errors.New("two criteria share one name")
 	ErrNoActiveAcademicYear = errors.New("no active academic year")
 	ErrInvalidInput         = errors.New("invalid input")
 	ErrModuleDisabled       = errors.New("supervision module is disabled for this tenant")
@@ -66,6 +67,50 @@ func (i Instrument) Validate() error {
 			return ErrCriterionKeyTaken
 		}
 		seen[key] = true
+	}
+	return nil
+}
+
+// normalizedCriterionName is the form two criterion names are compared
+// in: case and spacing do not tell "Penguasaan kelas" from
+// "penguasaan  Kelas" on a scoring form.
+func normalizedCriterionName(name string) string {
+	return strings.Join(strings.Fields(strings.ToLower(name)), " ")
+}
+
+// repeatedNames is the set of normalized criterion names more than one
+// criterion carries.
+func (i Instrument) repeatedNames() map[string]bool {
+	seen := make(map[string]bool, len(i.Criteria))
+	repeated := map[string]bool{}
+	for _, c := range i.Criteria {
+		name := normalizedCriterionName(c.Name)
+		if name == "" {
+			continue
+		}
+		if seen[name] {
+			repeated[name] = true
+		}
+		seen[name] = true
+	}
+	return repeated
+}
+
+// ValidateNames refuses two criteria with the same name: the observation
+// form and the teacher's report show a criterion by its name only, so a
+// repeated name gives two rows nobody can tell apart. previous is the
+// stored instrument when a cycle is edited (nil on create): a name it
+// already repeated is left alone, so an instrument saved before this rule
+// can still be edited, but no new repetition is accepted.
+func (i Instrument) ValidateNames(previous *Instrument) error {
+	var allowed map[string]bool
+	if previous != nil {
+		allowed = previous.repeatedNames()
+	}
+	for name := range i.repeatedNames() {
+		if !allowed[name] {
+			return ErrCriterionNameTaken
+		}
 	}
 	return nil
 }

@@ -19,6 +19,9 @@ func (s *Service) CreateCycle(ctx context.Context, tenantID uuid.UUID, in CycleI
 	if err := cycle.Validate(); err != nil {
 		return domain.SupervisionCycle{}, err
 	}
+	if err := cycle.Instrument.ValidateNames(nil); err != nil {
+		return domain.SupervisionCycle{}, err
+	}
 	var out domain.SupervisionCycle
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		if err := s.requireEnabled(ctx, tenantID); err != nil {
@@ -48,8 +51,12 @@ func (s *Service) UpdateCycle(ctx context.Context, tenantID, id uuid.UUID, in Cy
 		if !ok {
 			return domain.ErrCycleNotFound
 		}
+		previous := current.Instrument
 		current.Name, current.Instrument = strings.TrimSpace(in.Name), in.Instrument
 		if err := current.Validate(); err != nil {
+			return err
+		}
+		if err := current.Instrument.ValidateNames(&previous); err != nil {
 			return err
 		}
 		out, err = s.repo.UpdateCycle(ctx, current)

@@ -58,3 +58,30 @@ export function duplicateCriterionKeys(criteria: readonly { key: string }[]): Se
   }
   return duplicates;
 }
+
+/**
+ * The form two criterion names are compared in: case and spacing do not
+ * tell "Penguasaan kelas" from "penguasaan  Kelas" on a scoring form. The
+ * API compares the same way (domain.Instrument.ValidateNames).
+ */
+export function normalizedCriterionName(name: string): string {
+  return name.trim().toLowerCase().split(/\s+/).join(" ");
+}
+
+/**
+ * The normalized names more than one criterion carries. A repeated name
+ * gets a distinct code from `uniqueCriterionKey`, but the observation form
+ * and the teacher's report show criteria by name only, so the two rows
+ * could not be told apart.
+ */
+export function duplicateCriterionNames(criteria: readonly { name: string }[]): Set<string> {
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+  for (const { name } of criteria) {
+    const normalized = normalizedCriterionName(name);
+    if (normalized === "") continue;
+    if (seen.has(normalized)) duplicates.add(normalized);
+    seen.add(normalized);
+  }
+  return duplicates;
+}

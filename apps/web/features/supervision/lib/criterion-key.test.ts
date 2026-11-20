@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   criterionKeyFrom,
   duplicateCriterionKeys,
+  duplicateCriterionNames,
   keyFollowsName,
   uniqueCriterionKey,
 } from "./criterion-key";
@@ -62,5 +63,19 @@ describe("duplicateCriterionKeys", () => {
         { key: "" },
       ]),
     ).toEqual(new Set(["a"]));
+  });
+});
+
+describe("duplicateCriterionNames", () => {
+  it("returns the names more than one criterion carries, ignoring case and spacing", () => {
+    expect(
+      duplicateCriterionNames([
+        { name: "Penguasaan kelas" },
+        { name: "Metode" },
+        { name: "  penguasaan   KELAS " },
+        { name: "" },
+        { name: " " },
+      ]),
+    ).toEqual(new Set(["penguasaan kelas"]));
   });
 });
