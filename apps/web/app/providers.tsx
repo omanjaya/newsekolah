@@ -29,10 +29,17 @@ const TOOLTIP_DELAY_MS = 400;
 export function AppProviders({
   locale,
   initialBranding,
+  sessionCookieSeen = true,
   children,
 }: {
   locale: string;
   initialBranding?: TenantBranding;
+  /**
+   * Whether the document request carried the refresh cookie. False lets a
+   * public page skip the session round trip (isAnonymousPublicVisit);
+   * unknown counts as seen.
+   */
+  sessionCookieSeen?: boolean;
   children: ReactNode;
 }): ReactElement {
   const router = useRouter();
@@ -83,9 +90,13 @@ export function AppProviders({
 
   return (
     <QueryProvider>
-      <ApiClientProvider locale={locale} onUnauthorized={handleUnauthorized}>
+      <ApiClientProvider
+        locale={locale}
+        onUnauthorized={handleUnauthorized}
+        sessionCookieSeen={sessionCookieSeen}
+      >
         <TenantProvider initialBranding={initialBranding}>
-          <SessionProvider>
+          <SessionProvider sessionCookieSeen={sessionCookieSeen}>
             <SimulationSync />
             <AccountBoundary />
             <UserLocaleSync />

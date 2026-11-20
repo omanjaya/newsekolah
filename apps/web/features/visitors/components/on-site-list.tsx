@@ -22,8 +22,9 @@ export function useStayLabel(): (minutes: number) => string {
 
 /**
  * The visitors on site as one list: who, from where and why, whom they
- * came to see, since when and for how long, the badge they wear (with a
- * print action), and the one-tap check out (confirmed by the caller). A
+ * came to see, since when and for how long (each on a line of its own),
+ * the badge they wear (with a print action), and the one-tap check out
+ * (confirmed by the caller). A
  * visitor still here past the school day is marked and was already sorted
  * to the top.
  */
@@ -55,6 +56,7 @@ export function OnSiteList({
     <List framed aria-label={t("onSiteTitle")}>
       {entries.map(({ visit, overdue }) => {
         const host = hosts.get(visit.host_user_id)?.name;
+        const hostLine = host ? t("host", { name: host }) : undefined;
         const about = [visit.organization, visit.purpose].filter(Boolean).join(" · ");
         const arrival = t("arrived", {
           time: formatTime(visit.arrived_at, { locale, timeZone }),
@@ -66,13 +68,34 @@ export function OnSiteList({
             data-overdue={overdue || undefined}
             leading={<Avatar name={visit.full_name} size={40} decorative />}
             title={visit.full_name}
+            // Whom they came to see, since when, and the badge each get a
+            // line of their own: sharing one, the host or the time was cut
+            // to "Menemui Kep..." beside the row's buttons, on a phone and
+            // in the board's narrow desktop column alike. The fourth line
+            // is the host's second on a phone (below).
+            metaLines={4}
             meta={
               <>
-                {/* The meta holds two lines. On a phone with a badge they go
-                    to whom and since when, and to the badge number. */}
+                {/* On a phone with a host and a badge, the organization and
+                    purpose give way to those. */}
                 {about && (
-                  <span className={cn("block truncate", visit.badge_number && "max-sm:hidden")}>
+                  <span
+                    title={about}
+                    className={cn(
+                      "block truncate",
+                      hostLine && visit.badge_number && "max-sm:hidden",
+                    )}
+                  >
                     {about}
+                  </span>
+                )}
+                {/* A phone's text column (about 184px beside the row's
+                    buttons) cuts "Menemui Wakil Kepala Sekolah Contoh" on
+                    one line, and a title cannot be read there, so the host
+                    wraps instead; from sm it keeps one line. */}
+                {hostLine && (
+                  <span title={hostLine} className="block break-words sm:truncate">
+                    {hostLine}
                   </span>
                 )}
                 <span className="flex min-w-0 items-center gap-1.5">
@@ -81,16 +104,14 @@ export function OnSiteList({
                       {t("overdue")}
                     </Badge>
                   )}
-                  {/* Arrival first: on a phone a long host name is what
-                      the ellipsis cuts, never the time they came in. */}
-                  <span className="truncate">
-                    {host ? `${arrival} · ${t("host", { name: host })}` : arrival}
+                  {/* The running stay ends the line, so it is what a
+                      narrow row cuts, never the time they came in. */}
+                  <span title={arrival} className="truncate">
+                    {arrival}
                   </span>
                 </span>
                 {/* The guard collects this card at check out, often from a
-                    phone, where the trailing badge has no room. It has a line
-                    of its own, so neither it nor the host and arrival line can
-                    squeeze the other out of the row. */}
+                    phone, where the trailing badge has no room. */}
                 {visit.badge_number && (
                   <span className="block truncate sm:hidden">
                     {t("badgeNumber", { number: visit.badge_number })}

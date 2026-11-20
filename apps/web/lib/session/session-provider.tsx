@@ -2,10 +2,13 @@
 
 import type { components } from "@newsekolah/api-client";
 import { useMe } from "@newsekolah/api-client/react";
+import { usePathname } from "next/navigation";
 import { createContext, useContext, useMemo } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { useApiClient } from "../api/client";
+
+import { isAnonymousPublicVisit } from "./access-cookie";
 
 export type Me = components["schemas"]["Me"];
 
@@ -35,10 +38,28 @@ const SessionContext = createContext<SessionContextValue | null>(null);
  * straight from the sign-in response, so this
  * flips to "authenticated" on its own with no anonymous gap; no extra
  * wiring needed at the call site.
+ *
+ * The one exception is an anonymous visit to a public page (no refresh
+ * cookie on the document request, see `isAnonymousPublicVisit`): there is
+ * no session to read, so `/v1/me` is not asked and the page reads as
+ * anonymous at once.
  */
-export function SessionProvider({ children }: { children: ReactNode }): ReactElement {
+export function SessionProvider({
+  sessionCookieSeen,
+  children,
+}: {
+  /** Whether the document request carried the refresh cookie (root layout). */
+  sessionCookieSeen: boolean;
+  children: ReactNode;
+}): ReactElement {
   const client = useApiClient();
-  const { data, isLoading } = useMe(client);
+  const pathname = usePathname();
+  // An anonymous visit to a public page has no session to read: asking
+  // would only log a 401 (see isAnonymousPublicVisit). It reads as
+  // anonymous at once, and a sign-in on the way still seeds `me`.
+  const { data, isLoading } = useMe(client, {
+    enabled: !isAnonymousPublicVisit(pathname, sessionCookieSeen),
+  });
 
   const status: SessionStatus = isLoading ? "loading" : data ? "authenticated" : "anonymous";
   const isReady = !isLoading;

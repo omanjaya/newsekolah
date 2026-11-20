@@ -7,10 +7,9 @@ import {
   ACCESS_COOKIE_MAX_AGE_SECONDS,
   ACCESS_COOKIE_NAME,
   isProtectedDocumentNavigation,
+  REFRESH_TOKEN_COOKIE_NAME,
   STALE_ACCESS_COOKIE_NAME,
 } from "./lib/session/access-cookie";
-
-const REFRESH_TOKEN_COOKIE_NAME = "refresh_token";
 
 /**
  * docs/08-security.md section 7: strict CSP with a per-request nonce,

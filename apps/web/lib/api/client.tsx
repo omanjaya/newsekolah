@@ -6,6 +6,7 @@ import { createContext, useContext, useMemo } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { API_URL } from "../env";
+import { isAnonymousPublicVisit } from "../session/access-cookie";
 import { getSimulationTime, refuseSimulation } from "../simulation/clock";
 
 import { getAccessToken, setAccessToken } from "./access-token";
@@ -31,6 +32,11 @@ export interface ApiClientProviderProps {
    * would rebuild the whole API client instance for no reason.
    */
   onUnauthorized: (session: ExpiredSession) => void;
+  /**
+   * Whether the document request carried the refresh cookie (root layout).
+   * Without it a public page sends no refresh at all (isAnonymousPublicVisit).
+   */
+  sessionCookieSeen: boolean;
   children: ReactNode;
 }
 
@@ -46,6 +52,7 @@ export interface ApiClientProviderProps {
 export function ApiClientProvider({
   locale,
   onUnauthorized,
+  sessionCookieSeen,
   children,
 }: ApiClientProviderProps): ReactElement {
   const queryClient = useQueryClient();
@@ -59,13 +66,18 @@ export function ApiClientProvider({
       getLocale: () => locale,
       getSimulationTime,
       onSimulationRefused: refuseSimulation,
+      // Read at each request, not once: a client-side navigation from the
+      // catalogue into the app restores the session there.
+      skipBootRefresh: () =>
+        typeof window !== "undefined" &&
+        isAnonymousPublicVisit(window.location.pathname, sessionCookieSeen),
       onUnauthorized: () => {
         setAccessToken(null);
         onUnauthorized({ client: created, queryClient });
       },
     });
     return created;
-  }, [locale, onUnauthorized, queryClient]);
+  }, [locale, onUnauthorized, queryClient, sessionCookieSeen]);
 
   return <ApiClientContext.Provider value={client}>{children}</ApiClientContext.Provider>;
 }

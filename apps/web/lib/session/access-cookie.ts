@@ -74,9 +74,7 @@ const EXCLUDED_PATH_PREFIXES = [
  * bounce them to `/login`.
  */
 export function isExcludedPath(pathname: string): boolean {
-  return EXCLUDED_PATH_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
+  return underPrefix(pathname, EXCLUDED_PATH_PREFIXES);
 }
 
 export interface DocumentNavigationInput {
@@ -112,4 +110,28 @@ export function isProtectedDocumentNavigation(input: DocumentNavigationInput): b
   if (input.rsc) return false;
   if (input.secFetchDest !== "document") return false;
   return !isExcludedPath(input.pathname);
+}
+
+/** The API's httpOnly refresh cookie (apps/api/internal/platform/httpx/cookie.go). */
+export const REFRESH_TOKEN_COOKIE_NAME = "refresh_token";
+
+/** The `(public)` route group: pages anyone may read without a session. */
+const PUBLIC_PATH_PREFIXES = ["/opac", "/offline", "/verify"] as const;
+
+function underPrefix(pathname: string, prefixes: readonly string[]): boolean {
+  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+/**
+ * True when the page needs no session and the document request carried
+ * no refresh cookie (`sessionCookieSeen`, read by the root layout): an
+ * anonymous visit to the catalogue or a document check. Such a page sends
+ * neither `/v1/auth/refresh` nor `/v1/me`, whose 401s would only fill the
+ * console. The sign-in pages are not public here: they read `me` to send
+ * an already signed-in tab onward. Wherever the browser and this server
+ * do not share the cookie, a signed-in reader is only offered "Masuk" in
+ * the public header, which the sign-in page then sends onward.
+ */
+export function isAnonymousPublicVisit(pathname: string, sessionCookieSeen: boolean): boolean {
+  return !sessionCookieSeen && underPrefix(pathname, PUBLIC_PATH_PREFIXES);
 }
