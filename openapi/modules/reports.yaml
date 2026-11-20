@@ -220,6 +220,32 @@ paths:
                   data: { type: array, items: { $ref: "#/components/schemas/ReportScheduleRun" } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/reports/schedules/{scheduleId}/runs/{runId}/download:
+    get:
+      tags: [reports]
+      operationId: getReportScheduleRunDownload
+      x-permission: manage_report_schedules
+      summary: A short-lived link to the file one run produced
+      description: >-
+        Lets an admin fetch the rendered export when the email did not go
+        out. 404 when the run is unknown or never stored a file (it failed
+        before upload, or is still pending).
+      parameters:
+        - { name: scheduleId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: runId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Download link
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url: { type: string, description: "Presigned link, valid for 15 minutes." }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
 
 components:
   schemas:

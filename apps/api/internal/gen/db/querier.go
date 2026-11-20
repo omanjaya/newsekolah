@@ -726,6 +726,7 @@ type Querier interface {
 	GetPublication(ctx context.Context, arg GetPublicationParams) (GradePublication, error)
 	GetPushDeviceByID(ctx context.Context, arg GetPushDeviceByIDParams) (PushDevice, error)
 	GetReportSchedule(ctx context.Context, arg GetReportScheduleParams) (ReportSchedule, error)
+	GetReportScheduleRun(ctx context.Context, arg GetReportScheduleRunParams) (ReportScheduleRun, error)
 	GetReportScheduleTenantTimezone(ctx context.Context, id uuid.UUID) (string, error)
 	GetReservation(ctx context.Context, arg GetReservationParams) (LibraryReservation, error)
 	// The ready reservation currently holding this copy, if any -- lets Borrow
@@ -1194,6 +1195,10 @@ type Querier interface {
 	// working across the school needs the class beside the name.
 	ListLateArrivalsForReview(ctx context.Context, arg ListLateArrivalsForReviewParams) ([]ListLateArrivalsForReviewRow, error)
 	ListLatestLoans(ctx context.Context, arg ListLatestLoansParams) ([]LibraryLoan, error)
+	// The newest claimed slot per schedule of a tenant, so the schedule list
+	// can show a due-but-unclaimed slot as the next run instead of jumping to
+	// the following one.
+	ListLatestReportScheduleRunDueAt(ctx context.Context, tenantID uuid.UUID) ([]ListLatestReportScheduleRunDueAtRow, error)
 	ListLeaveDocuments(ctx context.Context, arg ListLeaveDocumentsParams) ([]LeaveDocument, error)
 	ListLeaveRequestsBySubject(ctx context.Context, arg ListLeaveRequestsBySubjectParams) ([]ListLeaveRequestsBySubjectRow, error)
 	// The reviewer's queue: in-progress requests from classes where the

@@ -280,6 +280,19 @@ export function useSetReportScheduleEnabledMutation() {
   });
 }
 
+/** A short-lived link to the file one run stored (for a run whose email failed). */
+export function useReportScheduleRunDownloadMutation() {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: ({ scheduleId, runId }: { scheduleId: string; runId: string }) =>
+      client.GET("/v1/reports/schedules/{scheduleId}/runs/{runId}/download", {
+        params: { path: { scheduleId, runId } },
+      }),
+
+    meta: { errorToast: false },
+  });
+}
+
 export function useReportScheduleRunsQuery(scheduleId: string | null) {
   const client = useApiClient();
   return useQuery({

@@ -25,6 +25,8 @@ var (
 	ErrReportKindNotFound     = errors.New("unknown report kind")
 	ErrInvalidFormat          = errors.New("format must be xlsx or pdf")
 	ErrScopeConflict          = errors.New("class_id and grade_level_id are mutually exclusive")
+	ErrRunNotFound            = errors.New("report schedule run not found")
+	ErrRunFileMissing         = errors.New("report schedule run has no stored file")
 )
 
 // RecipientNotTenantUserError names the recipient address that is not the
@@ -248,6 +250,47 @@ func (s Schedule) NextRunAfter(after time.Time, loc *time.Location) time.Time {
 		candidate = candidate.Add(time.Hour)
 	}
 	return time.Time{}
+}
+
+// CatchUpWindow bounds how far back the hourly job still runs a slot it
+// missed (the worker was down or restarting across the top of the hour):
+// a slot older than this is dropped rather than sent hours late.
+const CatchUpWindow = 3 * time.Hour
+
+// CatchUpSlots returns the slot starts, in loc and oldest first, the
+// hourly job evaluates at now: the current hour and the hours of
+// CatchUpWindow before it.
+func CatchUpSlots(now time.Time, loc *time.Location) []time.Time {
+	current := SlotStart(now.In(loc)).In(loc)
+	hours := int(CatchUpWindow / time.Hour)
+	out := make([]time.Time, 0, hours+1)
+	for i := hours; i >= 0; i-- {
+		out = append(out, current.Add(-time.Duration(i)*time.Hour))
+	}
+	return out
+}
+
+// DueAtSlot reports whether the slot starting at slot (in the tenant's
+// location) belongs to this schedule: its cadence matches, and the slot
+// did not begin before the schedule was last changed (a schedule created
+// or edited at 10:17 for 10:00 is next due tomorrow, as NextRunAfter
+// says, never retroactively today).
+func (s Schedule) DueAtSlot(slot time.Time) bool {
+	return !slot.Before(s.UpdatedAt) && s.IsDueAt(slot)
+}
+
+// NextRun is the "next run" the UI shows: the oldest slot within
+// CatchUpWindow that is due and not yet claimed (lastClaimed is the
+// newest due_at with a run row, zero when none), so the list does not
+// jump to tomorrow while today's run is still waiting; otherwise the next
+// slot after now.
+func (s Schedule) NextRun(now time.Time, loc *time.Location, lastClaimed time.Time) time.Time {
+	for _, slot := range CatchUpSlots(now, loc) {
+		if s.DueAtSlot(slot) && slot.After(lastClaimed) {
+			return slot.UTC()
+		}
+	}
+	return s.NextRunAfter(now, loc)
 }
 
 // clampDayOfMonth folds a configured day (1-31) down to the last real day

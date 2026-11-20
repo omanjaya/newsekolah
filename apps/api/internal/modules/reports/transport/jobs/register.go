@@ -8,11 +8,11 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/riverqueue/river"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/service"
+	platformjobs "github.com/omanjaya/newsekolah/apps/api/internal/platform/jobs"
 )
 
 // EmailSender is the narrow slice of platform/notify.EmailSender this
@@ -53,10 +53,14 @@ func Register(workers *river.Workers, deps Dependencies) []*river.PeriodicJob {
 		logger = slog.Default()
 	}
 	river.AddWorker(workers, &RunSchedulesWorker{schedules: deps.Schedules, email: deps.Email, logger: logger})
+	// On the hour, not every hour from boot: a schedule due at 11:00 runs
+	// at 11:00, not at whatever minute the process started. RunOnStart
+	// picks up an hour that began while the worker was down; ClaimRun's
+	// (schedule_id, due_at) key keeps that from running a slot twice.
 	return []*river.PeriodicJob{
-		river.NewPeriodicJob(river.PeriodicInterval(time.Hour), func() (river.JobArgs, *river.InsertOpts) {
+		river.NewPeriodicJob(platformjobs.EveryHourOnTheHour(), func() (river.JobArgs, *river.InsertOpts) {
 			return RunSchedulesArgs{}, nil
-		}, &river.PeriodicJobOpts{ID: "reports_run_schedules"}),
+		}, &river.PeriodicJobOpts{ID: "reports_run_schedules", RunOnStart: true}),
 	}
 }
 

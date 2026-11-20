@@ -14,10 +14,12 @@ import (
 )
 
 // RunDueSchedules loops every active tenant looking for schedules due at
-// that tenant's current local hour, renders and uploads each one, and
-// returns the ones ready for an email send. A schedule already claimed
-// for this due slot (by an earlier wake-up, or a retry of this one) is
-// silently skipped rather than rendered twice.
+// that tenant's current local hour, or at an hour within
+// domain.CatchUpWindow before it that was missed (the worker was down
+// across the top of the hour), renders and uploads each one, and returns
+// the ones ready for an email send. A schedule already claimed for a due
+// slot (by an earlier wake-up, or a retry of this one) is silently
+// skipped rather than rendered twice.
 //
 // Feature flags: a tenant with reports turned off is skipped entirely, and
 // a schedule whose report kind reads a module that is turned off (say a
@@ -44,7 +46,8 @@ func (s *ScheduleService) RunDueSchedules(ctx context.Context) ([]PendingNotific
 	return pending, errors.Join(errs...)
 }
 
-// runTenant runs one tenant's schedules due at its local hour.
+// runTenant runs one tenant's schedules due at its local hour and at the
+// missed hours before it (domain.CatchUpSlots), oldest first.
 func (s *ScheduleService) runTenant(ctx context.Context, t TenantRef, now time.Time) ([]PendingNotification, []error) {
 	on, err := s.moduleOn(ctx, t.ID, ModuleKey)
 	if err != nil {
@@ -54,9 +57,21 @@ func (s *ScheduleService) runTenant(ctx context.Context, t TenantRef, now time.T
 		return nil, nil
 	}
 
-	local := now.In(s.locationFor(t))
+	var pending []PendingNotification
+	var errs []error
+	for _, slot := range domain.CatchUpSlots(now, s.locationFor(t)) {
+		results, slotErrs := s.runTenantSlot(ctx, t, slot)
+		pending = append(pending, results...)
+		errs = append(errs, slotErrs...)
+	}
+	return pending, errs
+}
+
+// runTenantSlot runs one tenant's schedules due at one slot (its start,
+// in the tenant's location).
+func (s *ScheduleService) runTenantSlot(ctx context.Context, t TenantRef, local time.Time) ([]PendingNotification, []error) {
 	var due []domain.Schedule
-	err = s.withTx(ctx, t.ID, func(ctx context.Context) error {
+	err := s.withTx(ctx, t.ID, func(ctx context.Context) error {
 		var err error
 		due, err = s.repo.ListEnabledSchedulesForTenantHour(ctx, t.ID, local.Hour())
 		return err
@@ -68,7 +83,7 @@ func (s *ScheduleService) runTenant(ctx context.Context, t TenantRef, now time.T
 	var pending []PendingNotification
 	var errs []error
 	for _, sched := range due {
-		if !sched.IsDueAt(local) {
+		if !sched.DueAtSlot(local) {
 			continue
 		}
 		sourceOn, err := s.moduleOn(ctx, t.ID, SourceModule(Kind(sched.ReportKind)))

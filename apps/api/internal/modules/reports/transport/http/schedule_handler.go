@@ -18,7 +18,9 @@ func mapScheduleError(err error) error {
 		return mapped
 	}
 	switch {
-	case errors.Is(err, domain.ErrScheduleNotFound):
+	case errors.Is(err, domain.ErrScheduleNotFound),
+		errors.Is(err, domain.ErrRunNotFound),
+		errors.Is(err, domain.ErrRunFileMissing):
 		return httpx.ErrNotFound
 	case errors.Is(err, domain.ErrReportKindNotAllowed):
 		return httpx.ErrForbidden
@@ -223,6 +225,14 @@ func (h *ReportsHandler) ListReportScheduleRuns(ctx context.Context, request api
 		data[i] = toAPIRun(r)
 	}
 	return api.ListReportScheduleRuns200JSONResponse{Data: data}, nil
+}
+
+func (h *ReportsHandler) GetReportScheduleRunDownload(ctx context.Context, request api.GetReportScheduleRunDownloadRequestObject) (api.GetReportScheduleRunDownloadResponseObject, error) {
+	link, err := h.schedules.RunDownloadURL(ctx, tenantID(ctx), request.ScheduleId, request.RunId)
+	if err != nil {
+		return nil, mapScheduleError(err)
+	}
+	return api.GetReportScheduleRunDownload200JSONResponse{Url: link}, nil
 }
 
 func toAPIRun(r domain.Run) api.ReportScheduleRun {

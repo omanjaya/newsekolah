@@ -35,6 +35,10 @@ type ScheduleRepository interface {
 	ClaimRun(ctx context.Context, tenantID, scheduleID uuid.UUID, dueAt time.Time) (domain.Run, bool, error)
 	CompleteRun(ctx context.Context, tenantID, runID uuid.UUID, outcome domain.RunOutcome, ranAt time.Time) error
 	ListRuns(ctx context.Context, tenantID, scheduleID uuid.UUID, limit int) ([]domain.Run, error)
+	GetRun(ctx context.Context, tenantID, scheduleID, runID uuid.UUID) (domain.Run, bool, error)
+	// LatestClaimedSlots maps each schedule of the tenant with at least one
+	// run to the newest due_at it has a run row for.
+	LatestClaimedSlots(ctx context.Context, tenantID uuid.UUID) (map[uuid.UUID]time.Time, error)
 
 	ListActiveTenants(ctx context.Context) ([]TenantRef, error)
 	TenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
@@ -288,9 +292,13 @@ type ScheduleView struct {
 // listed again once the module is back on).
 func (s *ScheduleService) ListSchedulesWithNextRun(ctx context.Context, tenantID uuid.UUID) ([]ScheduleView, error) {
 	var scheds []domain.Schedule
+	var claimed map[uuid.UUID]time.Time
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		scheds, err = s.repo.ListSchedules(ctx, tenantID)
+		if scheds, err = s.repo.ListSchedules(ctx, tenantID); err != nil {
+			return err
+		}
+		claimed, err = s.repo.LatestClaimedSlots(ctx, tenantID)
 		return err
 	})
 	if err != nil {
@@ -307,7 +315,7 @@ func (s *ScheduleService) ListSchedulesWithNextRun(ctx context.Context, tenantID
 		if !on {
 			continue
 		}
-		out = append(out, ScheduleView{Schedule: sched, NextRunAt: sched.NextRunAfter(now, loc)})
+		out = append(out, ScheduleView{Schedule: sched, NextRunAt: sched.NextRun(now, loc, claimed[sched.ID])})
 	}
 	return out, nil
 }
@@ -349,6 +357,40 @@ func (s *ScheduleService) ListRuns(ctx context.Context, tenantID, scheduleID uui
 	})
 	return runs, err
 }
+
+// RunDownloadURL is a short-lived link to the file a run rendered, for an
+// admin to fetch when the email did not go out. ErrRunFileMissing when the
+// run has no stored file (it failed before upload, or is still pending).
+func (s *ScheduleService) RunDownloadURL(ctx context.Context, tenantID, scheduleID, runID uuid.UUID) (string, error) {
+	if err := s.requireScheduleAvailable(ctx, tenantID, scheduleID); err != nil {
+		return "", err
+	}
+	var run domain.Run
+	var found bool
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		run, found, err = s.repo.GetRun(ctx, tenantID, scheduleID, runID)
+		return err
+	})
+	if err != nil {
+		return "", err
+	}
+	if !found {
+		return "", domain.ErrRunNotFound
+	}
+	if run.ObjectKey == "" || s.storage == nil {
+		return "", domain.ErrRunFileMissing
+	}
+	link, err := s.storage.PresignedGetURL(ctx, run.ObjectKey, runDownloadTTL)
+	if err != nil {
+		return "", fmt.Errorf("sign run download link: %w", err)
+	}
+	return link.String(), nil
+}
+
+// runDownloadTTL is how long an in-app download link stays valid: long
+// enough to start the download, short enough not to be worth sharing.
+const runDownloadTTL = 15 * time.Minute
 
 // NextRunAt is the schedule's next due instant, for the UI's "next run"
 // column; it needs the tenant's timezone, which the caller (transport)
