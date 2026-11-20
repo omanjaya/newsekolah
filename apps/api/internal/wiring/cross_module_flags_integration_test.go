@@ -59,7 +59,7 @@ func TestLateArrivalViolationIsNotRecordedWhileDisciplineIsOff(t *testing.T) {
 	disciplineModule := discipline.Register(discipline.Dependencies{
 		Pool: pg.AppPool, Years: schoolModule.Service, Clock: clock.Real{}, Config: disciplineservice.DefaultConfig(""),
 	})
-	adapter := LateArrivalDiscipline{Discipline: disciplineModule.Service, Clock: clock.Real{}, Flags: platformSvc}
+	adapter := LateArrivalDiscipline{Discipline: disciplineModule.Service, Flags: platformSvc}
 
 	record := func(fx gradeLevelFixture) (instanceID uuid.UUID, err error) {
 		student := enrolledStudent(t, pg.AdminPool, fx)
@@ -88,6 +88,37 @@ func TestLateArrivalViolationIsNotRecordedWhileDisciplineIsOff(t *testing.T) {
 	offInstance, err := record(off)
 	require.NoError(t, err, "discipline off: the late-arrival review must not fail")
 	require.Zero(t, records(offInstance), "discipline off: no violation is recorded")
+}
+
+// TestLateArrivalViolationIsDatedOnTenantLocalDay: a late arrival reviewed
+// at 07:30 in Asia/Makassar (23:30 UTC the day before) records its
+// violation on the school's own day, not on the UTC date of the instant.
+func TestLateArrivalViolationIsDatedOnTenantLocalDay(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	schoolModule := school.Register(pg.AppPool, tenant.ModeSingle, nil)
+	disciplineModule := discipline.Register(discipline.Dependencies{
+		Pool: pg.AppPool, Years: schoolModule.Service, Config: disciplineservice.DefaultConfig(""),
+		Clock: clock.Frozen{At: time.Date(2026, 11, 19, 23, 30, 0, 0, time.UTC)},
+	})
+	adapter := LateArrivalDiscipline{Discipline: disciplineModule.Service}
+
+	fx := seedGradeLevelFixture(t, pg.AdminPool)
+	_, err := pg.AdminPool.Exec(ctx, `update tenants set timezone = 'Asia/Makassar' where id = $1`, fx.tenantID)
+	require.NoError(t, err)
+	student := enrolledStudent(t, pg.AdminPool, fx)
+	var violationType uuid.UUID
+	require.NoError(t, pg.AdminPool.QueryRow(ctx,
+		`insert into violation_types (tenant_id, code, name, points) values ($1, 'TLT', 'Terlambat', 5) returning id`,
+		fx.tenantID).Scan(&violationType))
+
+	instanceID := uuid.New()
+	require.NoError(t, adapter.RecordLateArrivalViolation(ctx, fx.tenantID, student, violationType, instanceID, student, "Terlambat"))
+
+	var occurredOn time.Time
+	require.NoError(t, pg.AdminPool.QueryRow(ctx,
+		`select occurred_on from violation_records where workflow_instance_id = $1`, instanceID).Scan(&occurredOn))
+	require.Equal(t, "2026-11-20", occurredOn.Format(time.DateOnly))
 }
 
 // TestMentoringSnapshotKeepsWorkingWhileGradingIsOff covers mentoring

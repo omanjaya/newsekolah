@@ -221,7 +221,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Names:   wiring.IdentityNames{Svc: identityModule.Service},
 		Storage: sharedStorage, Config: disciplineservice.DefaultConfig(cfg.S3Bucket),
 	})
-	disc.inner = wiring.LateArrivalDiscipline{Discipline: disciplineModule.Service, Clock: clock.Real{}, Flags: backgroundFlags}
+	disc.inner = wiring.LateArrivalDiscipline{Discipline: disciplineModule.Service, Flags: backgroundFlags}
 	lateViolations.inner = wiring.DisciplineSessionViolations{Recorder: disciplineViolationsAdapter{svc: disciplineModule.Service}, Flags: backgroundFlags}
 	lateDiscipline.inner = wiring.AttendanceDiscipline{Svc: disciplineModule.Service, Flags: backgroundFlags}
 
