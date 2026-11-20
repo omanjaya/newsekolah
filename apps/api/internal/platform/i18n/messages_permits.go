@@ -11,7 +11,7 @@ func init() {
 		"WORKFLOW_DEFINITION_INVALID":     {"Definisi alur tidak valid.", "The workflow definition is invalid."},
 		"ACADEMIC_YEAR_REQUIRED":          {"Tahun ajaran aktif belum diatur. Hubungi admin sekolah.", "No active academic year is set. Contact the school admin."},
 		"ENROLLMENT_NOT_FOUND":            {"Siswa belum terdaftar di kelas pada tahun ajaran aktif.", "The student is not enrolled in a class this academic year."},
-		"PERIOD_RANGE_INVALID":            {"Jam pelajaran akhir harus setelah jam pelajaran awal.", "The end period must come after the start period."},
+		"PERIOD_RANGE_INVALID":            {"Jam pelajaran akhir tidak boleh sebelum jam pelajaran awal.", "The end period must not come before the start period."},
 		"EXIT_PERMIT_NOT_ISSUED":          {"Izin keluar belum disetujui sepenuhnya.", "The exit permit has not been fully approved yet."},
 		"LEAVE_DATE_RANGE_INVALID":        {"Tanggal selesai tidak boleh sebelum tanggal mulai.", "The end date must not be before the start date."},
 		"LEAVE_REQUEST_NOT_REVIEWABLE":    {"Pengajuan izin tidak sedang menunggu review wali kelas.", "The leave request is not awaiting homeroom review."},

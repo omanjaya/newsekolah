@@ -14,7 +14,7 @@ var (
 	ErrNotWorkflowSubject    = errors.New("only the workflow's own subject may perform this action")
 	ErrAcademicYearRequired  = errors.New("tenant has no active academic year")
 	ErrEnrollmentNotFound    = errors.New("student has no active enrollment")
-	ErrPeriodRangeInvalid    = errors.New("end period must be after start period")
+	ErrPeriodRangeInvalid    = errors.New("end period must not be before start period")
 	// ErrStageVerificationMismatch is an attempt to satisfy the current
 	// stage in a way its Verification does not allow: a scan on a manual
 	// stage, a manual review on a qr_scan stage, or the picket desk's

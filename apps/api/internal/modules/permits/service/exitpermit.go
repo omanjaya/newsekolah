@@ -117,11 +117,13 @@ func (s *Service) CreateExitPermit(ctx context.Context, in CreateExitPermitInput
 	return inst, perm, nil
 }
 
-// validatePeriodRange checks that endPeriodID's sequence is strictly
-// after startPeriodID's within the same template -- the only ordering
-// concept periods carries, since two templates need not share a day
-// layout. Bug fix vs. the old app, which compared period IDs directly.
-// It returns both periods for the caller's time checks.
+// validatePeriodRange checks that endPeriodID's sequence is not before
+// startPeriodID's within the same template -- the only ordering concept
+// periods carries, since two templates need not share a day layout. A
+// range of a single lesson (start and end the same) is allowed: it is the
+// only range left during the day's last lesson. Bug fix vs. the old app,
+// which compared period IDs directly. It returns both periods for the
+// caller's time checks.
 func (s *Service) validatePeriodRange(ctx context.Context, tenantID, startPeriodID, endPeriodID uuid.UUID) (start, end PeriodInfo, err error) {
 	start, err = s.repo.GetPeriod(ctx, tenantID, startPeriodID)
 	if err != nil {
@@ -131,7 +133,7 @@ func (s *Service) validatePeriodRange(ctx context.Context, tenantID, startPeriod
 	if err != nil {
 		return PeriodInfo{}, PeriodInfo{}, fmt.Errorf("look up end period: %w", err)
 	}
-	if start.TemplateID != end.TemplateID || end.Sequence <= start.Sequence {
+	if start.TemplateID != end.TemplateID || end.Sequence < start.Sequence {
 		return PeriodInfo{}, PeriodInfo{}, domain.ErrPeriodRangeInvalid
 	}
 	return start, end, nil
