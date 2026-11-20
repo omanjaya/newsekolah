@@ -156,7 +156,7 @@ export function MemberTypeForm({
             }}
           />
         </Field>
-        <Field label={t("fineType")}>
+        <Field label={t("fineType")} hint={t(`fineTypeHint.${fineType}`)}>
           <Select
             options={FINE_TYPES.map((v) => ({ value: v, label: t(`fineTypeOptions.${v}`) }))}
             value={fineType}
@@ -174,15 +174,18 @@ export function MemberTypeForm({
             }}
           />
         </Field>
-        <Field label={t("tenorDays")}>
-          <NumberInput
-            min={1}
-            value={tenorDays === "" ? null : Number(tenorDays)}
-            onChange={(next) => {
-              setTenorDays(next === null ? "" : String(next));
-            }}
-          />
-        </Field>
+        {/* A flat fine is charged once, so its period length means nothing. */}
+        {fineType === "per_tenor" && (
+          <Field label={t("tenorDays")}>
+            <NumberInput
+              min={1}
+              value={tenorDays === "" ? null : Number(tenorDays)}
+              onChange={(next) => {
+                setTenorDays(next === null ? "" : String(next));
+              }}
+            />
+          </Field>
+        )}
         <Field label={t("suspendDays")}>
           <NumberInput
             min={0}

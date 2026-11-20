@@ -155,11 +155,17 @@ export function OverdueMembersReportTable(): ReactElement {
         header: t("columns.fine"),
         enableSorting: false,
         meta: { align: "end" },
-        cell: ({ row }) => (
-          <span className="tabular-nums">
-            {formatCurrency(row.original.total_fine, "IDR", { locale })}
-          </span>
-        ),
+        // What returning the books today would charge, as the server
+        // projects it from the circulation policy: nothing while currency
+        // fines are off (a late return then suspends or warns instead).
+        cell: ({ row }) =>
+          row.original.total_fine > 0 ? (
+            <span className="tabular-nums">
+              {formatCurrency(row.original.total_fine, "IDR", { locale })}
+            </span>
+          ) : (
+            <span className="text-fg-muted">{t("noFine")}</span>
+          ),
       },
     ],
     [t, locale, names],

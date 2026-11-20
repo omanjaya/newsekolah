@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { formatDate } from "@newsekolah/i18n";
+import { formatCurrency, formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import type { BarcodeScanEvent } from "@newsekolah/ui";
 import { useScanFeedback } from "@newsekolah/ui";
@@ -9,6 +9,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { isoToZonedLocal } from "../../../lib/tenant-date";
 import {
   useBatchBorrowLoansMutation,
   useFindLibraryCopyByCodeMutation,
@@ -24,12 +25,14 @@ import {
   classifyBorrowCopy,
   confirmableItemsInScanOrder,
   matchDeskShortcut,
+  recordBasketResult,
   removeBasketItem,
   undoLastBasketItem,
   updateBasketItem,
 } from "../lib/desk-basket";
 import { daysBetween } from "../lib/due-date";
 import { useLibraryMemberBorrowingStatusQuery, useLibraryMemberQuery } from "../members-api";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 
 import type { DeskSelectedMember } from "./desk-member-panel";
 
@@ -61,6 +64,7 @@ export function useDeskSession() {
   const t = useTranslations("app.library.desk");
   const apiErrorMessage = useApiErrorMessage();
   const locale = useLocale() as Locale;
+  const timeZone = useTenantTimeZone();
   const feedback = useScanFeedback();
 
   const [mode, setMode] = useState<DeskMode>("borrow");
@@ -171,17 +175,27 @@ export function useDeskSession() {
       try {
         const loan = await returnByBarcode.mutateAsync({ barcode: code });
         const title = await titleName.mutateAsync(loan.title_id).catch(() => code);
+        // Days late on the school's calendar: the return instant's UTC date
+        // is still the day before until 08:00 in a UTC+8 school.
         const lateDays = loan.returned_at
-          ? daysBetween(loan.due_on, loan.returned_at.slice(0, 10))
+          ? daysBetween(loan.due_on, isoToZonedLocal(loan.returned_at, timeZone).slice(0, 10))
           : 0;
+        // The fine is the one the server charged (fine_amount); with
+        // currency fines off a late return suspends or warns instead, and
+        // claims no "Rp0" fine.
         const detail =
-          lateDays > 0
-            ? t("basket.returnedLate", { days: lateDays, amount: loan.fine_amount })
-            : t("basket.returnedOnTime");
+          lateDays <= 0
+            ? t("basket.returnedOnTime")
+            : loan.fine_amount > 0
+              ? t("basket.returnedLateFine", {
+                  days: lateDays,
+                  amount: formatCurrency(loan.fine_amount, "IDR", { locale }),
+                })
+              : t("basket.returnedLate", { days: lateDays });
         feedback.playSuccess();
         setBasket((prev) => ({
           ...prev,
-          return: addBasketItem(prev.return, {
+          return: recordBasketResult(prev.return, {
             barcode: code,
             title,
             state: "done",
@@ -195,7 +209,7 @@ export function useDeskSession() {
           error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN");
         setBasket((prev) => ({
           ...prev,
-          return: addBasketItem(prev.return, {
+          return: recordBasketResult(prev.return, {
             barcode: code,
             title: code,
             state: "failed",
@@ -204,7 +218,7 @@ export function useDeskSession() {
         }));
       }
     },
-    [returnByBarcode, titleName, feedback, apiErrorMessage, t],
+    [returnByBarcode, titleName, feedback, apiErrorMessage, t, locale, timeZone],
   );
 
   const addRenewScan = useCallback(
@@ -215,7 +229,7 @@ export function useDeskSession() {
         feedback.playSuccess();
         setBasket((prev) => ({
           ...prev,
-          renew: addBasketItem(prev.renew, {
+          renew: recordBasketResult(prev.renew, {
             barcode: code,
             title,
             state: "done",
@@ -229,7 +243,7 @@ export function useDeskSession() {
           error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN");
         setBasket((prev) => ({
           ...prev,
-          renew: addBasketItem(prev.renew, {
+          renew: recordBasketResult(prev.renew, {
             barcode: code,
             title: code,
             state: "failed",

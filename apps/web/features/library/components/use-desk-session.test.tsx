@@ -1,3 +1,4 @@
+import { ApiError } from "@newsekolah/api-client";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -26,6 +27,7 @@ vi.mock("../members-api", () => ({
 vi.mock("@newsekolah/ui", () => ({
   useScanFeedback: () => ({ playSuccess: vi.fn(), playError: vi.fn() }),
 }));
+vi.mock("../use-tenant-timezone", () => ({ useTenantTimeZone: () => "Asia/Makassar" }));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => `error:${code}`,
 }));
@@ -75,6 +77,74 @@ describe("useDeskSession", () => {
       detail: "basket.returnedOnTime",
     });
     expect(result.current.scanError).toBe("");
+  });
+
+  it("counts lateness on the school's day and shows the fine the server charged", async () => {
+    // 07:30 WITA on Friday 25 Dec is still 24 Dec in UTC.
+    returnByBarcode.mockResolvedValue({
+      title_id: "t1",
+      due_on: "2026-12-24",
+      returned_at: "2026-12-24T23:30:00Z",
+      fine_amount: 500,
+    });
+    const { result } = renderHook(() => useDeskSession());
+    act(() => {
+      result.current.setMode("return");
+    });
+
+    scan(result, "2026/00014");
+
+    await waitFor(() => {
+      expect(result.current.basket.return).toHaveLength(1);
+    });
+    const detail = result.current.basket.return[0]?.detail ?? "";
+    expect(detail).toContain("basket.returnedLateFine");
+    expect(detail).toContain('"days":1');
+    expect(detail).toMatch(/Rp\s?500/);
+  });
+
+  it("claims no fine for a late return that charged none", async () => {
+    returnByBarcode.mockResolvedValue({
+      title_id: "t1",
+      due_on: "2026-12-24",
+      returned_at: "2026-12-28T01:00:00Z",
+      fine_amount: 0,
+    });
+    const { result } = renderHook(() => useDeskSession());
+    act(() => {
+      result.current.setMode("return");
+    });
+
+    scan(result, "2026/00014");
+
+    await waitFor(() => {
+      expect(result.current.basket.return).toHaveLength(1);
+    });
+    expect(result.current.basket.return[0]?.detail).toBe('basket.returnedLate {"days":4}');
+  });
+
+  it("shows a renewal saved on a re-scan in place of the earlier refusal", async () => {
+    renewByBarcode
+      .mockRejectedValueOnce(
+        new ApiError({ status: 409, code: "LIBRARY_RENEWAL_BLOCKED_OVERDUE", message: "late" }),
+      )
+      .mockResolvedValueOnce({ title_id: "t1", due_on: "2027-01-01", member_user_id: "u1" });
+    const { result } = renderHook(() => useDeskSession());
+    act(() => {
+      result.current.setMode("renew");
+    });
+
+    scan(result, "2026/00040");
+    await waitFor(() => {
+      expect(result.current.basket.renew[0]?.state).toBe("failed");
+    });
+    scan(result, "2026/00040");
+    await waitFor(() => {
+      expect(result.current.basket.renew[0]?.state).toBe("done");
+    });
+
+    expect(result.current.basket.renew).toHaveLength(1);
+    expect(result.current.basket.renew[0]?.detail).toContain("basket.renewedUntil");
   });
 
   it("renews a book scanned with no member selected", async () => {
