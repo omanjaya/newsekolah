@@ -1,7 +1,7 @@
 "use client";
 
 import { TriangleAlert } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Button } from "./button.js";
 import { Dialog, DialogClose, DialogContent } from "./dialog.js";
@@ -28,6 +28,13 @@ export interface ConfirmDialogProps {
   /** The action is running: the confirm button spins and the dialog cannot be dismissed. */
   confirming?: boolean;
 }
+
+/**
+ * How long a synchronous `onConfirm` keeps the confirm button locked when
+ * it never reports progress through `confirming`: long enough to swallow
+ * the second click of a double click.
+ */
+const SYNC_CONFIRM_LOCK_MS = 400;
 
 /** What the dialog says: kept while it animates out. */
 interface ConfirmContent {
@@ -78,6 +85,56 @@ export function ConfirmDialog({
     if (open) setHeld(null);
   }
   const shown = open || held === null ? current : held;
+
+  // One confirmation runs one action. `confirming` only reaches the button
+  // after a re-render, so the second click of a double click would land on
+  // a still-enabled button and start the action twice (two letters issued:
+  // the second answers "already issued" and its error replaces the first
+  // one's success). The lock holds until the action settles: its promise
+  // resolves or rejects, or `confirming` goes back to false, or the dialog
+  // opens again.
+  const firing = useRef(false);
+  const sawConfirming = useRef(false);
+  useEffect(() => {
+    if (confirming) {
+      sawConfirming.current = true;
+    } else if (sawConfirming.current) {
+      sawConfirming.current = false;
+      firing.current = false;
+    }
+  }, [confirming]);
+  useEffect(() => {
+    if (open) {
+      firing.current = false;
+      sawConfirming.current = false;
+    }
+  }, [open]);
+
+  function confirm() {
+    if (confirming || firing.current) return;
+    firing.current = true;
+    setHeld(current);
+    const release = () => {
+      firing.current = false;
+    };
+    let result: void | Promise<void>;
+    try {
+      result = onConfirm();
+    } catch (error) {
+      release();
+      throw error;
+    }
+    if (result instanceof Promise) {
+      result.then(release, release);
+      return;
+    }
+    // A synchronous action that starts a mutation reports progress through
+    // `confirming` (released when it ends, above); one that does not is
+    // released after a moment.
+    window.setTimeout(() => {
+      if (!sawConfirming.current) release();
+    }, SYNC_CONFIRM_LOCK_MS);
+  }
   const { danger } = shown;
   return (
     <Dialog
@@ -114,14 +171,7 @@ export function ConfirmDialog({
                 {shown.cancelLabel ?? labels.confirmDialogCancel}
               </Button>
             </DialogClose>
-            <Button
-              variant={danger ? "danger" : "primary"}
-              loading={confirming}
-              onClick={() => {
-                setHeld(current);
-                void onConfirm();
-              }}
-            >
+            <Button variant={danger ? "danger" : "primary"} loading={confirming} onClick={confirm}>
               {shown.confirmLabel ?? labels.confirmDialogConfirm}
             </Button>
           </>

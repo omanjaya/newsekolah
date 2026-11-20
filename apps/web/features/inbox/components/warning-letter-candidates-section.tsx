@@ -69,7 +69,14 @@ export function WarningLetterCandidatesSection(): ReactElement {
           toast.success(t("issued", { level: label }));
         },
         // On failure the dialog stays open so the reader can try again.
+        // "Already issued" means the letter exists (another tab or
+        // counselor got there first): that is done, not a failure.
         onError: (error) => {
+          if (error instanceof ApiError && error.code === "WARNING_LETTER_ALREADY_ISSUED") {
+            setPendingIssue(null);
+            toast.info(t("alreadyIssued", { level: label }));
+            return;
+          }
           toast.error(
             error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
           );

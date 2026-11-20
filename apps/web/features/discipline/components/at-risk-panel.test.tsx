@@ -1,4 +1,5 @@
-import { render, screen, within } from "@testing-library/react";
+import { ApiError } from "@newsekolah/api-client";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -212,6 +213,32 @@ describe("AtRiskPanel states and issuing", () => {
 
     expect(mocks.issue).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("closes the dialog when the letter turns out to be issued already", async () => {
+    mocks.useSPCandidatesQuery.mockReturnValue({
+      data: { data: [candidate("s1", "Ayu")] },
+      isLoading: false,
+    });
+    mocks.issue.mockImplementation((_vars, options: { onError?: (e: Error) => void }) => {
+      options.onError?.(
+        new ApiError({ status: 409, code: "WARNING_LETTER_ALREADY_ISSUED", message: "exists" }),
+      );
+    });
+    const user = userEvent.setup();
+    render(<AtRiskPanel />);
+
+    const row = screen
+      .getAllByText("Ayu")
+      .map((cell) => cell.closest("tr"))
+      .find((r) => r !== null);
+    await user.click(within(row as HTMLElement).getByRole("button", { name: "issue" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "issue" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
   });
 
   it("shows a policy load failure with a retry, not the no-policy notice", async () => {

@@ -196,6 +196,7 @@
       },
       "issue": "Terbitkan {level}",
       "issued": "{level} diterbitkan",
+      "alreadyIssued": "{level} untuk siswa ini sudah diterbitkan.",
       "pointsValue": "{points} poin",
       "issueConfirm": {
         "title": "Terbitkan {level} untuk {student}?",

@@ -13,6 +13,7 @@
     "open": "Open student",
     "issue": "Issue {level}",
     "issued": "{level} issued.",
+    "alreadyIssued": "{level} for this student has already been issued.",
     "meta": "{nis} · {className} · {points} pts"
   },
   "backHome": "Back to home",

@@ -196,6 +196,7 @@
       },
       "issue": "Issue {level}",
       "issued": "{level} issued",
+      "alreadyIssued": "{level} for this student has already been issued.",
       "pointsValue": "{points} pts",
       "issueConfirm": {
         "title": "Issue {level} to {student}?",
