@@ -11,8 +11,8 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/documents"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 )
 
@@ -58,8 +58,10 @@ func (s *Service) IssueDocument(ctx context.Context, tenantID uuid.UUID, in Issu
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		// Letter numbering by month/year is a business decision (the
 		// simulated clock lets a tenant test cross-month/cross-year
-		// numbering), not bookkeeping.
-		now := clock.Now(ctx, s.clock)
+		// numbering), not bookkeeping. It reads the school's own
+		// calendar: a receipt issued at 00:30 WITA on 1 December is a
+		// December receipt dated 1 December, not the UTC 30 November.
+		now := s.tenantNow(ctx, tenantID)
 		seq, err := s.repo.NextSequenceValue(ctx, tenantID, string(in.Kind), in.AcademicYearID)
 		if err != nil {
 			return fmt.Errorf("next document number: %w", err)
@@ -81,7 +83,7 @@ func (s *Service) IssueDocument(ctx context.Context, tenantID uuid.UUID, in Issu
 			vars[k] = v
 		}
 		vars["letter_number"] = number
-		vars["issued_at"] = now.Format("02-01-2006")
+		vars["issued_at"] = issuedOnLabel(now)
 		vars["verification_code"] = code
 
 		rendered, err := s.renderer.Render(ctx, s.templateFor(ctx, tenantID, in.Kind, in.BuiltinHTML), vars)
@@ -116,6 +118,14 @@ func (s *Service) IssueDocument(ctx context.Context, tenantID uuid.UUID, in Issu
 		return nil
 	})
 	return out, err
+}
+
+// issuedOnLabel is the "issued on" date every issued document prints
+// ("Kwitansi diterbitkan pada 21 November 2026"): the long Indonesian
+// date the receipt's payment date and the public verify page use, read
+// from now in the zone the caller put it in (the tenant's own).
+func issuedOnLabel(now time.Time) string {
+	return reportdoc.FormatDate(reportdoc.LocaleID, now)
 }
 
 // RevokeDocument marks the document issued for an entity as no longer
