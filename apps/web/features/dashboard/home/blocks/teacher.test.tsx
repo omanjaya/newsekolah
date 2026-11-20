@@ -544,4 +544,29 @@ describe("useTeacherBlock", () => {
     const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
     expect(hrefs).toContain("/attendance/s1");
   });
+
+  it("names the academic calendar's holiday instead of a free day", () => {
+    sessionsQuery.mockReturnValue({
+      data: { data: [], holiday_name: "Cuti bersama Imlek" },
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      refetch: vi.fn(),
+    });
+    periodsQuery.mockReturnValue({
+      data: { data: PERIODS },
+      isSuccess: true,
+      isLoading: false,
+      isError: false,
+    });
+
+    const { result } = renderHook(() => useTeacherBlock(me, true));
+
+    expect(result.current.hero?.title).toBe("hero.holidayTitle");
+    expect(result.current.hero?.meta).toBe("hero.holidayMeta");
+    expect(result.current.tiles).toHaveLength(0);
+    render(<>{result.current.side.map((slot) => slot.node)}</>);
+    expect(screen.getByText("card.holiday")).toBeInTheDocument();
+    expect(screen.queryByText("card.empty")).not.toBeInTheDocument();
+  });
 });

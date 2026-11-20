@@ -4,6 +4,7 @@
       "title": "Teaching today",
       "action": "Open attendance",
       "empty": "No sessions today",
+      "holiday": "Holiday: {name}",
       "statusSubmitted": "Saved",
       "statusPending": "Not filled in",
       "runningMeta": "{subject} · in progress"
@@ -28,6 +29,8 @@
       "doneMeta": "{total} sessions taken. Your teaching journal can be completed now.",
       "freeTitle": "No lessons to teach today",
       "freeMeta": "This week's timetable is still available.",
+      "holidayTitle": "Holiday: {name}",
+      "holidayMeta": "The academic calendar has no lessons today, so there is no attendance to record.",
       "journalAction": "Fill in journal"
     }
   },

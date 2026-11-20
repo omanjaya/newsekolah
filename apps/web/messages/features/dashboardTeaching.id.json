@@ -4,6 +4,7 @@
       "title": "Mengajar hari ini",
       "action": "Buka presensi",
       "empty": "Tidak ada sesi hari ini",
+      "holiday": "Libur: {name}",
       "statusSubmitted": "Tersimpan",
       "statusPending": "Belum diisi",
       "runningMeta": "{subject} · sedang berlangsung"
@@ -28,6 +29,8 @@
       "doneMeta": "{total} sesi selesai dipresensi. Jurnal mengajar bisa dilengkapi sekarang.",
       "freeTitle": "Tidak ada jadwal mengajar hari ini",
       "freeMeta": "Jadwal minggu ini tetap bisa dilihat.",
+      "holidayTitle": "Libur: {name}",
+      "holidayMeta": "Tidak ada pelajaran hari ini menurut kalender akademik, jadi tidak ada presensi yang perlu diisi.",
       "journalAction": "Isi jurnal"
     }
   },
