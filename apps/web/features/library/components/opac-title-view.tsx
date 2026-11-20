@@ -26,6 +26,7 @@ import { useOpacTitleQuery, type LibraryOpacTitleDetail } from "../opac-api";
 import { OPAC_LAST_SEARCH_KEY } from "../use-opac-search-params";
 
 import { OpacCover } from "./opac-cover";
+import { OpacReserveAction } from "./opac-reserve-action";
 
 type Copy = LibraryOpacTitleDetail["copies"][number];
 
@@ -99,6 +100,9 @@ function TitleDetail({ detail }: { detail: LibraryOpacTitleDetail }): ReactEleme
   const { title, copies } = detail;
   const total = copies.length;
   const available = copies.filter((copy) => copy.status === "available").length;
+  // "All on loan" only when that is true: a copy held for a reservation or
+  // out of circulation is not on loan.
+  const allOnLoan = total > 0 && copies.every((copy) => copy.status === "on_loan");
 
   return (
     <div className="flex animate-enter flex-col gap-6">
@@ -123,7 +127,9 @@ function TitleDetail({ detail }: { detail: LibraryOpacTitleDetail }): ReactEleme
                 {t("detail.availability", { available, total })}
               </Badge>
             ) : (
-              <Badge tone="neutral">{t("detail.noneAvailable")}</Badge>
+              <Badge tone="neutral">
+                {t(allOnLoan ? "detail.noneAvailable" : "detail.noneOnShelf")}
+              </Badge>
             )}
           </div>
         </div>
@@ -145,6 +151,7 @@ function TitleDetail({ detail }: { detail: LibraryOpacTitleDetail }): ReactEleme
             ))}
           </List>
         )}
+        {total > 0 && available === 0 && <OpacReserveAction titleId={title.id} />}
       </Card>
 
       <Card>

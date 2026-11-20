@@ -12,15 +12,23 @@ interface QueryState {
 const query = vi.hoisted(() => vi.fn<() => QueryState>());
 
 vi.mock("../opac-api", () => ({ useOpacTitleQuery: query }));
+vi.mock("./opac-reserve-action", () => ({
+  OpacReserveAction: ({ titleId }: { titleId: string }) => <p>reserve:{titleId}</p>,
+}));
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => "id",
 }));
 
-function detail(title: Record<string, unknown>) {
+function detail(title: Record<string, unknown>, copies: { status: string }[] = []) {
   return {
     title: { id: "t1", title: "Tempo", classification: "Non-Fiksi - Majalah", ...title },
-    copies: [],
+    copies: copies.map((copy, index) => ({
+      barcode: `B-${String(index)}`,
+      call_number: "808",
+      access: "loanable",
+      ...copy,
+    })),
   };
 }
 
@@ -61,5 +69,37 @@ describe("OpacTitleView", () => {
     render(<OpacTitleView titleId="t1" />);
     expect(screen.getByText("detail.isbn")).toBeInTheDocument();
     expect(screen.queryByText("detail.issn")).not.toBeInTheDocument();
+  });
+
+  it("offers a reservation when no copy is on the shelf", () => {
+    query.mockReturnValue({
+      data: detail({}, [{ status: "on_loan" }, { status: "on_loan" }]),
+      isLoading: false,
+      error: null,
+    });
+    render(<OpacTitleView titleId="t1" />);
+    expect(screen.getByText("detail.noneAvailable")).toBeInTheDocument();
+    expect(screen.getByText("reserve:t1")).toBeInTheDocument();
+  });
+
+  it("does not claim every copy is on loan when one is held for a reservation", () => {
+    query.mockReturnValue({
+      data: detail({}, [{ status: "reserved" }]),
+      isLoading: false,
+      error: null,
+    });
+    render(<OpacTitleView titleId="t1" />);
+    expect(screen.getByText("detail.noneOnShelf")).toBeInTheDocument();
+    expect(screen.queryByText("detail.noneAvailable")).not.toBeInTheDocument();
+  });
+
+  it("offers no reservation while a copy is on the shelf", () => {
+    query.mockReturnValue({
+      data: detail({}, [{ status: "available" }, { status: "on_loan" }]),
+      isLoading: false,
+      error: null,
+    });
+    render(<OpacTitleView titleId="t1" />);
+    expect(screen.queryByText("reserve:t1")).not.toBeInTheDocument();
   });
 });

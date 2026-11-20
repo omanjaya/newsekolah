@@ -1426,6 +1426,17 @@
       },
       "availability": "{available, number} dari {total, number} eksemplar tersedia",
       "noneAvailable": "Semua eksemplar sedang dipinjam",
+      "noneOnShelf": "Tidak ada eksemplar yang tersedia sekarang",
+      "reserve": {
+        "hint": "Pesan judul ini. Perpustakaan menyimpan eksemplar pertama yang kembali untuk Anda dan mengabari Anda.",
+        "action": "Pesan judul ini",
+        "done": "Pesanan dibuat. Anda akan dikabari saat buku siap diambil.",
+        "waiting": "Anda sudah memesan judul ini.",
+        "queued": "Anda sudah memesan judul ini, antrean ke-{position}.",
+        "ready": "Pesanan Anda siap diambil di perpustakaan.",
+        "myLibrary": "Lihat perpustakaan saya",
+        "signIn": "Masuk untuk memesan judul ini"
+      },
       "noCopiesShort": "Belum ada eksemplar",
       "howToBorrow": "Pinjam di meja sirkulasi dengan kartu anggota perpustakaan.",
       "callNumber": "No. panggil",

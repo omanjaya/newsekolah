@@ -1426,6 +1426,17 @@
       },
       "availability": "{available, number} of {total, number} copies available",
       "noneAvailable": "All copies are on loan",
+      "noneOnShelf": "No copy is available right now",
+      "reserve": {
+        "hint": "Reserve this title. The library holds the first copy that comes back for you and lets you know.",
+        "action": "Reserve this title",
+        "done": "Reservation made. You will be told when the book is ready to collect.",
+        "waiting": "You have already reserved this title.",
+        "queued": "You have already reserved this title, number {position} in the queue.",
+        "ready": "Your reservation is ready to collect at the library.",
+        "myLibrary": "See my library",
+        "signIn": "Sign in to reserve this title"
+      },
       "noCopiesShort": "No copies yet",
       "howToBorrow": "Borrow at the circulation desk with your library card.",
       "callNumber": "Call number",
