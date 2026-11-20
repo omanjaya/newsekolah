@@ -373,7 +373,7 @@ describe("an anonymous page load", () => {
     ];
   }
 
-  it("asks for a session once, not again for the 401 of a request sent without one", async () => {
+  it("asks for a session once, not again for the 401 of a request sent right after", async () => {
     const calls: string[] = [];
     server.use(...anonymousApi(calls));
     const onUnauthorized = vi.fn();
@@ -385,12 +385,85 @@ describe("an anonymous page load", () => {
     });
 
     const error = await client.GET("/v1/me").catch((e: unknown) => e);
-    await client.GET("/v1/me").catch(() => undefined);
 
     expect(error).toBeInstanceOf(ApiError);
     expect((error as ApiError).status).toBe(401);
+    expect(calls).toEqual(["refresh", "me"]);
+    // The 401 is unresolved all the same; the app decides whether the page
+    // needs a session (the web leaves its public and sign-in pages alone).
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
+  });
+
+  it("shares the one refusal among the page load's first requests", async () => {
+    const calls: string[] = [];
+    server.use(...anonymousApi(calls));
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => null,
+      clientHeader: "web/1.0.0",
+      onUnauthorized: () => undefined,
+    });
+
+    await Promise.all([
+      client.GET("/v1/me").catch(() => undefined),
+      client.GET("/v1/me").catch(() => undefined),
+    ]);
+
     expect(calls).toEqual(["refresh", "me", "me"]);
-    expect(onUnauthorized).not.toHaveBeenCalled();
+  });
+
+  it("restores a session another tab started since, on a later 401", async () => {
+    const calls: string[] = [];
+    let signedInElsewhere = false;
+    server.use(
+      http.get(`${BASE_URL}/v1/me`, ({ request }) => {
+        calls.push("me");
+        return request.headers.get("authorization")
+          ? HttpResponse.json({ id: "u1" })
+          : HttpResponse.json(errorBody("AUTH_UNAUTHENTICATED"), { status: 401 });
+      }),
+      http.post(`${BASE_URL}/v1/auth/refresh`, () => {
+        calls.push("refresh");
+        return signedInElsewhere
+          ? HttpResponse.json({ access_token: "from-other-tab" })
+          : HttpResponse.json(errorBody("AUTH_UNAUTHENTICATED"), { status: 401 });
+      }),
+    );
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => null,
+      clientHeader: "web/1.0.0",
+      onUnauthorized: () => undefined,
+    });
+
+    await client.GET("/v1/me").catch(() => undefined);
+    // The reader signs in in another tab; the refresh cookie now works.
+    signedInElsewhere = true;
+
+    // The sign-in page's refetch on focus.
+    expect(await client.GET("/v1/me")).toEqual({ id: "u1" });
+    expect(calls).toEqual(["refresh", "me", "me", "refresh", "me"]);
+  });
+
+  it("still reports a later 401 without a token whose refresh is refused", async () => {
+    const calls: string[] = [];
+    server.use(...anonymousApi(calls));
+    const onUnauthorized = vi.fn();
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => null,
+      clientHeader: "web/1.0.0",
+      onUnauthorized,
+    });
+
+    await client.GET("/v1/me").catch(() => undefined);
+    onUnauthorized.mockClear();
+
+    const error = await client.GET("/v1/me").catch((e: unknown) => e);
+
+    expect((error as ApiError).status).toBe(401);
+    expect(calls).toEqual(["refresh", "me", "me", "refresh"]);
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
   });
 
   it("still refreshes on a 401 without a token when the refresh only failed on the server", async () => {

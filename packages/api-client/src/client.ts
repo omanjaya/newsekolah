@@ -209,6 +209,19 @@ interface RefreshOptions {
   failedToken?: string | null;
 }
 
+interface RefreshOutcome {
+  /** The new access token, or null when the refresh did not give one. */
+  accessToken: string | null;
+  /**
+   * True when the server answered 401: no refresh cookie, or one it no
+   * longer accepts. False for a success, a server failure (worth asking
+   * again later) and a refresh whose session the app ended meanwhile.
+   */
+  refused: boolean;
+}
+
+const NO_TOKEN: RefreshOutcome = { accessToken: null, refused: false };
+
 /**
  * Wraps the generated openapi-fetch client with the cross-cutting behavior
  * every request needs: auth headers, tenant scoping, idempotency, a single
@@ -222,7 +235,7 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
 
   // Single-flight: concurrent 401s share one refresh call instead of each
   // firing its own /v1/auth/refresh request.
-  let refreshInFlight: Promise<string | null> | null = null;
+  let refreshInFlight: Promise<RefreshOutcome> | null = null;
   // The most recent token this client refreshed, used when the app's own
   // getAccessToken has not caught up yet. Dropped by forgetAccessToken()
   // and by a failed refresh: the session it belongs to has ended.
@@ -232,11 +245,6 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
   // answer is dropped instead of handing the ended session's token back to
   // the app.
   let endedSessions = 0;
-  // True once the server refused a refresh (401: no refresh cookie, or one
-  // it no longer accepts) and no session has started since. A request then
-  // sent with no token is anonymous on purpose, so its 401 is the answer,
-  // not a reason to ask `/v1/auth/refresh` the same question again.
-  let refreshRefused = false;
 
   // Web only: the tabs of one origin share the refresh cookie, so their
   // refreshes take turns and hand each other the result (cross-tab.ts).
@@ -257,8 +265,6 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
 
   function forgetAccessToken(): void {
     endedSessions += 1;
-    // The next identity's session is not known to be missing.
-    refreshRefused = false;
     lastRefreshed = null;
     latestSessionToken = null;
     // The next refresh starts on its own instead of joining one whose
@@ -289,7 +295,7 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
   async function refreshAccessToken({
     notifyOnFailure = true,
     failedToken = null,
-  }: RefreshOptions = {}): Promise<string | null> {
+  }: RefreshOptions = {}): Promise<RefreshOutcome> {
     const flight = (refreshInFlight ??= (async () => {
       const startedIn = endedSessions;
       const sessionEnded = () => endedSessions !== startedIn;
@@ -312,33 +318,31 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
       });
       // The app ended the session while this was on its way: nothing about
       // it is stored, and the app is not told, since it already knows.
-      if (sessionEnded()) return null;
+      if (sessionEnded()) return NO_TOKEN;
       if (!("access_token" in data)) {
-        refreshRefused = data.refused;
         lastRefreshed = null;
         latestSessionToken = null;
         await tokenStore.clear();
         // Checked again after the await: a session that started meanwhile
         // is not the one that failed, and must not be signed out for it.
-        if (sessionEnded()) return null;
+        if (sessionEnded()) return NO_TOKEN;
         if (notifyOnFailure) {
           options.onUnauthorized?.();
         }
-        return null;
+        return { accessToken: null, refused: data.refused };
       }
       await tokenStore.setTokens({
         accessToken: data.access_token,
         refreshToken: data.refresh_token,
       });
-      if (sessionEnded()) return null;
-      refreshRefused = false;
+      if (sessionEnded()) return NO_TOKEN;
       // Remember it here too: the web app keeps the access token in a
       // module variable this package cannot see, so a client that only
       // wrote to the token store would refresh on every single request.
       lastRefreshed = data.access_token;
       latestSessionToken = data.access_token;
       options.onAccessToken?.(data.access_token);
-      return data.access_token;
+      return { accessToken: data.access_token, refused: false };
     })());
     try {
       return await flight;
@@ -358,8 +362,10 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
   // otherwise be bounced to the login screen.
   // Held as a promise rather than a boolean so the second and third request
   // of a page load wait for the same boot refresh instead of racing past it
-  // with no token and each collecting its own 401.
-  let bootRefresh: Promise<unknown> | null = null;
+  // with no token and each collecting its own 401. Settles to whether the
+  // server refused it.
+  let bootRefresh: Promise<boolean> | null = null;
+  let bootRefreshSettled = false;
 
   async function hasSomethingToRefresh(): Promise<boolean> {
     // Web keeps the refresh token in an httpOnly cookie this code cannot
@@ -371,21 +377,35 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
     return (await tokenStore.getRefreshToken()) !== null;
   }
 
-  async function ensureBootRefresh(url: string): Promise<void> {
+  /**
+   * Runs the page load's refresh, or waits for the one already running.
+   * True when this request waited for it and the server refused it: the
+   * request then goes out as an anonymous one, and asking the same
+   * question again for its 401 could only collect the same refusal. A
+   * request made once the boot refresh has settled gets false, so a later
+   * 401 (a refetch on focus, after another tab signed in) still asks.
+   */
+  async function ensureBootRefresh(url: string): Promise<boolean> {
     if (url.includes("/v1/auth/")) {
-      return;
+      return false;
     }
     // Left unset, so the next request asks again (see skipBootRefresh).
     if (bootRefresh === null && options.skipBootRefresh?.()) {
-      return;
+      return false;
     }
     bootRefresh ??= (async () => {
-      if (!(await hasSomethingToRefresh())) {
-        return;
+      try {
+        if (!(await hasSomethingToRefresh())) {
+          return false;
+        }
+        return (await refreshAccessToken({ notifyOnFailure: false })).refused;
+      } finally {
+        bootRefreshSettled = true;
       }
-      await refreshAccessToken({ notifyOnFailure: false });
     })();
-    await bootRefresh;
+    const waited = !bootRefreshSettled;
+    const refused = await bootRefresh;
+    return waited && refused;
   }
 
   async function currentToken(): Promise<string | null> {
@@ -403,6 +423,12 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
   // object identity, so no explicit cleanup is needed: the entry drops out
   // once that request is no longer reachable.
   const retrySeeds = new WeakMap<Request, Request>();
+
+  // Requests sent with no token right after the page load's refresh was
+  // refused, each with the session count (endedSessions) it was sent in.
+  // Their 401 needs no refresh of its own (see ensureBootRefresh), unless
+  // a session started since.
+  const sentAfterRefusedBoot = new WeakMap<Request, number>();
 
   /**
    * `/v1/me` is how the app learns whether the reader may simulate at all,
@@ -428,12 +454,12 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
 
   const middleware: Middleware = {
     async onRequest({ request }) {
-      if (!(await currentToken())) {
-        await ensureBootRefresh(request.url);
-      }
+      const bootRefused = !(await currentToken()) && (await ensureBootRefresh(request.url));
       const token = await currentToken();
       if (token) {
         request.headers.set("Authorization", `Bearer ${token}`);
+      } else if (bootRefused) {
+        sentAfterRefusedBoot.set(request, endedSessions);
       }
       request.headers.set("Accept-Language", options.getLocale?.() ?? "id");
       request.headers.set("X-Client", options.clientHeader);
@@ -471,16 +497,22 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
       if (isRefreshCall || (sentToken !== null && !REFRESHABLE_CODES.has(code))) {
         return response;
       }
-      // Sent with no token because the refresh before it (the page load's,
-      // on an anonymous visit) was already refused: asking again would
-      // only collect the same 401 once more. A token another tab announced
-      // since is still taken.
-      if (sentToken === null && refreshRefused && latestSessionToken === null) {
+      // Sent with no token right after the page load's refresh was refused
+      // (an anonymous visit): asking again would only collect the same 401
+      // once more. The 401 is still unresolved, so the app hears of it as
+      // it would after a second refusal. A token another tab announced
+      // since, or a session the app started since, is still taken.
+      if (
+        sentToken === null &&
+        sentAfterRefusedBoot.get(request) === endedSessions &&
+        latestSessionToken === null
+      ) {
+        options.onUnauthorized?.();
         return response;
       }
       // refreshAccessToken already clears the token store and calls
       // onUnauthorized on failure; nothing more to do here than give up.
-      const newToken = await refreshAccessToken({ failedToken: sentToken });
+      const { accessToken: newToken } = await refreshAccessToken({ failedToken: sentToken });
       if (!newToken) {
         return response;
       }
