@@ -266,7 +266,7 @@ paths:
     post:
       tags: [academic]
       operationId: createCalendarEvent
-      x-permission: manage_academic_years
+      x-permission: manage_calendar
       summary: Add a calendar event (holiday, exam, event, no_school, semester_break)
       requestBody:
         required: true
@@ -296,7 +296,7 @@ paths:
     put:
       tags: [academic]
       operationId: updateCalendarEvent
-      x-permission: manage_academic_years
+      x-permission: manage_calendar
       summary: Update a calendar event
       requestBody:
         required: true
@@ -320,7 +320,7 @@ paths:
     delete:
       tags: [academic]
       operationId: deleteCalendarEvent
-      x-permission: manage_academic_years
+      x-permission: manage_calendar
       summary: Delete a calendar event
       responses:
         "204":

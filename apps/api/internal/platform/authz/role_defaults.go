@@ -139,6 +139,13 @@ func RoleDefaults() []RoleDefault {
 			PermViewOwnLibraryLoans,
 
 			PermViewAcademicData, // class rosters ("students"), calendar, structure -- not manage_* (master data edits)
+			// manage_calendar is the one academic write the principal
+			// holds: setting the school's holiday, exam and no-school dates
+			// is the principal's decision, not master-data upkeep. It edits
+			// calendar events only, never academic years or terms
+			// (manage_academic_years). Backfilled by
+			// 0129_manage_calendar_permission.up.sql.
+			PermManageCalendar,
 			PermViewActivities,
 			PermViewEarlyWarning, // not manage_early_warning_rules (tuning thresholds is configuration, not oversight)
 			PermViewBilling,      // billing reports only -- never generate_bills/record_payments/void_payments

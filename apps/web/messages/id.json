@@ -2290,7 +2290,11 @@
         },
         "manage_academic_years": {
           "label": "Kelola tahun ajaran",
-          "description": "Atur tahun ajaran, semester, dan kalender sekolah"
+          "description": "Atur tahun ajaran dan semester"
+        },
+        "manage_calendar": {
+          "label": "Kelola kalender sekolah",
+          "description": "Tambah, ubah, dan hapus acara kalender seperti libur dan ujian"
         },
         "manage_achievements": {
           "label": "Kelola prestasi",

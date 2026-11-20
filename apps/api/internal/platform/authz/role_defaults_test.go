@@ -79,6 +79,7 @@ func TestPrincipalRoleDefault(t *testing.T) {
 			PermViewAuditLogs,
 			PermPublishAnnouncements,
 			PermViewGrades,
+			PermManageCalendar,
 		} {
 			if !containsCode(rd.Permissions, required) {
 				t.Errorf("principal role default must include %q", required)

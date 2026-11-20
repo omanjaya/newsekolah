@@ -59,7 +59,7 @@ export function CalendarView(): ReactElement {
   const format = useFormatter();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const canManage = useCan("manage_academic_years");
+  const canManage = useCan("manage_calendar");
   const { me } = useSession();
   const today = todayInZone(me?.tenant.timezone);
 

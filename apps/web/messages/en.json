@@ -2290,7 +2290,11 @@
         },
         "manage_academic_years": {
           "label": "Manage academic years",
-          "description": "Create, activate and archive academic years, terms and the school calendar"
+          "description": "Create, activate and archive academic years and terms"
+        },
+        "manage_calendar": {
+          "label": "Manage school calendar",
+          "description": "Add, edit and delete calendar events such as holidays and exams"
         },
         "manage_achievements": {
           "label": "Manage achievements",
