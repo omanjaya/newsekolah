@@ -40,7 +40,12 @@ import {
   useOpenSessionMutation,
   useTodaySessionsQuery,
 } from "../api";
-import { classifyPeriodTiming, deriveFillStatus, findNextSessionId } from "../lib/session-schedule";
+import {
+  classifyPeriodTiming,
+  countDayFillStatuses,
+  deriveFillStatus,
+  findNextSessionId,
+} from "../lib/session-schedule";
 
 import { AttendanceCalendar } from "./attendance-calendar";
 import {
@@ -269,14 +274,12 @@ export function DaySessions(): ReactElement {
     dayItems.find((item) => item.timing === "ongoing") ??
     dayItems.find((item) => item.timing === "next");
   const others = dayItems.filter((item) => item !== hero);
-  const savedCount = sortedItems.filter((s) => Boolean(s.submitted_at)).length;
-  // A handed-over lesson is neither saved nor waiting on this teacher.
-  const handedOverCount = dayItems.filter((item) => item.fillStatus === "handedOver").length;
-  // Nor is a lesson on a date that has not arrived: it cannot be filled yet.
-  const upcomingCount = dayItems.filter((item) => item.fillStatus === "upcoming").length;
-  // Nor one whose save deadline closed before anything was saved: it can
-  // no longer be filled, so it is not a task left to do.
-  const missedCount = dayItems.filter((item) => item.fillStatus === "missed").length;
+  // Each lesson counts once, by the same status its row badge shows: a
+  // handed-over lesson is neither saved nor waiting on this teacher, a
+  // lesson on a date that has not arrived cannot be filled yet, and one
+  // whose deadline closed before anything was saved is no task left to do.
+  const dayCounts = countDayFillStatuses(dayItems.map((item) => item.fillStatus));
+  const { handedOver: handedOverCount, missed: missedCount } = dayCounts;
   const holidayName = sessions.data?.holiday_name;
 
   // The teacher's own report is the area's "Laporan presensi" tab, so the
@@ -325,9 +328,8 @@ export function DaySessions(): ReactElement {
             <p className="text-body-sm text-fg-muted" data-testid="attendance-day-summary">
               {t("daySummary", {
                 total: sortedItems.length,
-                saved: savedCount,
-                pending:
-                  sortedItems.length - savedCount - handedOverCount - upcomingCount - missedCount,
+                saved: dayCounts.saved,
+                pending: dayCounts.pending,
               })}
               {missedCount > 0 && ` · ${t("dayMissed", { count: missedCount })}`}
               {handedOverCount > 0 && ` · ${t("dayHandedOver", { count: handedOverCount })}`}

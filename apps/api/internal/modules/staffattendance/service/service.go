@@ -173,10 +173,11 @@ func (s *Service) computeStatus(
 }
 
 // derivedStatus is computeStatus for a day with no stored record (today's
-// board, history, the recap). Such a day is only measured against a
-// schedule that already existed on it (domain.ScheduleDay.InEffectOn):
-// before the employee's first schedule it is StatusUnscheduled, never
-// StatusAbsent. A stored record is still judged against the current
+// board, history, the recap). Such a day is only measured against the
+// schedule as it stood on it (domain.ScheduleDay.AsOf): before the
+// employee's first schedule it is StatusUnscheduled, never StatusAbsent,
+// and before a weekday became a working day it is that weekday's day off,
+// StatusHoliday. A stored record is still judged against the current
 // schedule whatever its date, so a device import or manual backfill of
 // earlier days keeps working once the schedule exists.
 func (s *Service) derivedStatus(
@@ -201,8 +202,8 @@ func (s *Service) judgeDay(
 			break
 		}
 	}
-	if derived && schedule != nil && !schedule.InEffectOn(staffDate(ctx, date)) {
-		schedule = nil
+	if derived && schedule != nil {
+		schedule = schedule.AsOf(staffDate(ctx, date))
 	}
 
 	yearID, hasYear, err := s.activeAcademicYear(ctx, tenantID)

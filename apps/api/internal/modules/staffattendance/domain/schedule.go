@@ -45,11 +45,17 @@ type ScheduleDay struct {
 	StartMinute    int
 	EndMinute      int
 	GraceMinutes   int
-	// CreatedAt is when this weekday was first given a schedule row, or
-	// when it last turned from a day off into a working day. A schedule is
-	// not retroactive: a day before it existed has no expectation to be
-	// absent from (see InEffectOn). Zero means "always in effect".
+	// CreatedAt is when this weekday was first given a schedule row. A
+	// schedule is not retroactive: a day before it existed has no
+	// expectation to be absent from (see AsOf). Zero means "always in
+	// effect".
 	CreatedAt time.Time
+	// WorkingSince is when a working weekday last turned into one; zero on
+	// a day off. Between CreatedAt and WorkingSince the weekday was a
+	// configured day off, so its days then are holidays, not gaps in the
+	// configuration (see AsOf). Zero on a working day means "since
+	// CreatedAt".
+	WorkingSince time.Time
 }
 
 func (d ScheduleDay) Valid() bool {
@@ -65,18 +71,29 @@ func (d ScheduleDay) Valid() bool {
 	return true
 }
 
-// InEffectOn reports whether this schedule row already existed on day,
-// the local midnight of a calendar date in the school's zone: the row
-// counts from the school-local date it was created on, inclusive. Days
-// with no stored record are only judged against a schedule in effect on
-// them, so giving someone a first schedule never turns the weeks before
-// it into absences.
-func (d ScheduleDay) InEffectOn(day time.Time) bool {
-	if d.CreatedAt.IsZero() {
-		return true
+// AsOf is this schedule row as it stood on day, the local midnight of a
+// calendar date in the school's zone, for a day with no stored record:
+// nil before the row existed (the school-local date of CreatedAt,
+// inclusive), so giving someone a first schedule never turns the weeks
+// before it into absences; a day off before a working weekday's
+// WorkingSince, so turning a day off into a working day later keeps its
+// earlier occurrences days off rather than absences or "no schedule"; the
+// row itself otherwise.
+func (d ScheduleDay) AsOf(day time.Time) *ScheduleDay {
+	if !d.CreatedAt.IsZero() && day.Before(localMidnight(d.CreatedAt, day.Location())) {
+		return nil
 	}
-	y, m, dd := d.CreatedAt.In(day.Location()).Date()
-	return !day.Before(time.Date(y, m, dd, 0, 0, 0, 0, day.Location()))
+	if d.IsWorkingDay && !d.WorkingSince.IsZero() && day.Before(localMidnight(d.WorkingSince, day.Location())) {
+		off := d
+		off.IsWorkingDay = false
+		return &off
+	}
+	return &d
+}
+
+func localMidnight(at time.Time, loc *time.Location) time.Time {
+	y, m, dd := at.In(loc).Date()
+	return time.Date(y, m, dd, 0, 0, 0, 0, loc)
 }
 
 // CrossesMidnight reports whether the shift's end falls on the calendar

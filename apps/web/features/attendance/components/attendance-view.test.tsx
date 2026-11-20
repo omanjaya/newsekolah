@@ -279,6 +279,32 @@ describe("DaySessions", () => {
     );
   });
 
+  // schedule-attendance-R1: a later-day lesson that already has a
+  // submission (saved under the time simulation, or by an older build) was
+  // counted as saved and as not open yet, so pending read -1.
+  it("never counts a submitted later-day lesson twice", () => {
+    todaySessions = [
+      session({
+        schedule_id: "own",
+        date: "2026-09-30",
+        submitted_at: "2026-09-29T15:30:00Z",
+      }),
+      session({
+        schedule_id: "handed",
+        date: "2026-09-30",
+        start_period_id: "p2",
+        end_period_id: "p2",
+        submitted_at: "2026-09-29T15:30:00Z",
+        handed_over_to_user_id: "sub-1",
+      }),
+    ];
+    render(<DaySessions />);
+
+    const summary = screen.getByTestId("attendance-day-summary");
+    expect(summary).toHaveTextContent('daySummary:{"total":2,"saved":0,"pending":0}');
+    expect(summary).not.toHaveTextContent("dayHandedOver");
+  });
+
   it("badges a session by the viewer's save deadline, not by its date (R1)", () => {
     todaySessions = [
       // Saved last week and still correctable: not "locked".

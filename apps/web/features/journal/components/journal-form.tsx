@@ -25,7 +25,12 @@ import { todayInZone } from "../../../lib/tenant-date";
 import { useTeachingAssignmentsForTeacherQuery } from "../../academic/api-offerings";
 import { useClassesQuery, useSubjectsQuery } from "../../reference/api";
 import { useJournalsQuery, useUpsertJournalMutation, type Journal } from "../api";
-import { clearJournalDraft, loadJournalDraft, saveJournalDraft } from "../lib/journal-draft";
+import {
+  clearJournalDraft,
+  loadJournalDraft,
+  saveJournalDraft,
+  type JournalDraftScope,
+} from "../lib/journal-draft";
 
 import { JournalFields } from "./journal-fields";
 
@@ -150,14 +155,36 @@ export function JournalForm({
         )
       : undefined;
 
+  // Where this form's draft lives: the lesson plus the journal it edits, so
+  // a new entry's draft and the edits to a saved journal of the same lesson
+  // never meet (restoring the one over the other would overwrite saved text).
+  const editingId = editing?.id ?? null;
+  const draftScope = useMemo<JournalDraftScope>(
+    () => ({
+      classId: effectiveClassId,
+      subjectId: effectiveSubjectId,
+      lessonDate,
+      journalId: editingId,
+    }),
+    [effectiveClassId, effectiveSubjectId, lessonDate, editingId],
+  );
+
+  /** Drops the new-entry draft of a lesson that turned out to have a journal already. */
+  function clearNewEntryDraft() {
+    clearJournalDraft(draftOwner, { ...draftScope, journalId: null });
+  }
+
   function openExisting(journal: Journal) {
+    clearJournalDraft(draftOwner, {
+      classId: journal.class_id,
+      subjectId: journal.subject_id,
+      lessonDate: journal.lesson_date,
+      journalId: null,
+    });
     setEditing(journal);
     setTopic(journal.topic);
     setActivities(journal.activities);
     setReflection(journal.reflection ?? "");
-    // The text typed for the refused duplicate was mirrored under this
-    // lesson's draft key; offered later, it would replace the journal.
-    clearJournalDraft(draftOwner, journal.class_id, journal.subject_id, journal.lesson_date);
     setDraftOffer(null);
     onOpenExisting?.(journal);
   }
@@ -184,33 +211,34 @@ export function JournalForm({
   const checkedKey = useRef<string | null>(null);
   useEffect(() => {
     if (effectiveClassId === "" || effectiveSubjectId === "" || lessonDate === "") return;
-    const key = `${draftOwner ?? ""}|${effectiveClassId}:${effectiveSubjectId}:${lessonDate}`;
+    const key = `${draftOwner ?? ""}|${JSON.stringify(draftScope)}`;
     if (checkedKey.current === key) return;
     checkedKey.current = key;
-    const draft = loadJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate);
+    const draft = loadJournalDraft(draftOwner, draftScope);
     setDraftOffer(draft ? { savedAt: draft.savedAt } : null);
-  }, [draftOwner, effectiveClassId, effectiveSubjectId, lessonDate]);
+  }, [draftOwner, draftScope, effectiveClassId, effectiveSubjectId, lessonDate]);
 
   // Mirrors every edit to localStorage so a dropped connection or an
   // accidental tab close does not throw away a quick entry in progress. A
   // journal being edited is mirrored only once it differs from what is
-  // saved, so opening one leaves no "draft" of its own text behind.
+  // saved, so opening one leaves no "draft" of its own text behind. A new
+  // entry for a lesson that already has a journal can never be saved, so
+  // its text is not kept either.
   useEffect(() => {
     if (effectiveClassId === "" || effectiveSubjectId === "" || lessonDate === "") return;
+    if (existing !== undefined) return;
     if (topic.trim() === "" && activities.trim() === "" && reflection.trim() === "") return;
     const unchanged =
       topic === editing?.topic &&
       activities === editing.activities &&
       reflection === (editing.reflection ?? "");
     if (unchanged) return;
-    saveJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate, {
-      topic,
-      activities,
-      reflection,
-    });
+    saveJournalDraft(draftOwner, draftScope, { topic, activities, reflection });
   }, [
     draftOwner,
+    draftScope,
     editing,
+    existing,
     effectiveClassId,
     effectiveSubjectId,
     lessonDate,
@@ -220,7 +248,7 @@ export function JournalForm({
   ]);
 
   function restoreDraft() {
-    const draft = loadJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate);
+    const draft = loadJournalDraft(draftOwner, draftScope);
     if (!draft) return;
     setTopic(draft.topic);
     setActivities(draft.activities);
@@ -229,12 +257,13 @@ export function JournalForm({
   }
 
   function dismissDraft() {
-    clearJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate);
+    clearJournalDraft(draftOwner, draftScope);
     setDraftOffer(null);
   }
 
   function submit() {
     if (existing) {
+      clearNewEntryDraft();
       toast.error(apiErrorMessage("JOURNAL_CONFLICT"));
       return;
     }
@@ -253,14 +282,16 @@ export function JournalForm({
       },
       {
         onSuccess: () => {
-          clearJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate);
+          clearJournalDraft(draftOwner, draftScope);
           toast.success(t("saved"));
           onDone();
         },
         onError: (error) => {
           // Someone saved this lesson's journal meanwhile: the same-day
-          // check above picks it up and offers to open it.
+          // check above picks it up and offers to open it, and the refused
+          // entry's draft goes, so it is never offered over that journal.
           if (error instanceof ApiError && error.code === "JOURNAL_CONFLICT") {
+            if (editing === undefined) clearNewEntryDraft();
             void sameDay.refetch();
           }
           toast.error(
