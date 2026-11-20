@@ -178,6 +178,12 @@ func withTx(ctx context.Context, pool *pgxpool.Pool, fn func(ctx context.Context
 		return fmt.Errorf("begin transaction: %w", err)
 	}
 	defer func() {
+		// A panic leaves err nil; committing then would persist a
+		// half-finished unit of work behind the 500 the recoverer returns.
+		if p := recover(); p != nil {
+			_ = tx.Rollback(ctx)
+			panic(p)
+		}
 		if err != nil {
 			_ = tx.Rollback(ctx)
 			return
