@@ -37,18 +37,22 @@ import { JournalFields } from "./journal-fields";
  * class/subject/date without locking them the way an existing `initial`
  * entry does -- used when this opens from a specific lesson on the "recent
  * lessons" panel, so the teacher lands with almost nothing left to pick.
+ * `onOpenExisting` tells the dialog the form now edits that journal, so
+ * its title can say so.
  */
 export function JournalForm({
   initial,
   prefillClassId,
   prefillSubjectId,
   prefillDate,
+  onOpenExisting,
   onDone,
 }: {
   initial?: Journal;
   prefillClassId?: string;
   prefillSubjectId?: string;
   prefillDate?: string;
+  onOpenExisting?: (journal: Journal) => void;
   onDone: () => void;
 }): ReactElement {
   const t = useTranslations("app.journal.form");
@@ -71,10 +75,13 @@ export function JournalForm({
   const [subjectId, setSubjectId] = useState(initial?.subject_id ?? prefillSubjectId ?? "");
   // A journal is almost always written the day the lesson happened.
   const [selectedDate, setSelectedDate] = useState<{ revision: number; date: string } | null>(null);
+  // A journal being edited is for its own lesson, whatever the pickers
+  // offered before it was opened: its class, subject and date are locked.
   const lessonDate =
-    selectedDate?.revision === revision
+    editing?.lesson_date ??
+    (selectedDate?.revision === revision
       ? selectedDate.date
-      : (initial?.lesson_date ?? prefillDate ?? todayInZone(me?.tenant.timezone));
+      : (prefillDate ?? todayInZone(me?.tenant.timezone)));
   const setLessonDate = (date: string) => {
     setSelectedDate({ revision, date });
   };
@@ -110,7 +117,8 @@ export function JournalForm({
 
   // With a single choice there is nothing to pick, so it is filled in.
   const effectiveClassId =
-    classId || (classOptions.length === 1 ? (classOptions[0]?.value ?? "") : "");
+    editing?.class_id ??
+    (classId || (classOptions.length === 1 ? (classOptions[0]?.value ?? "") : ""));
   const subjectOptions = useMemo(() => {
     const all = subjects.data?.data ?? [];
     const taught = new Set(
@@ -122,11 +130,12 @@ export function JournalForm({
   }, [subjects.data, pairs, scoped, effectiveClassId]);
 
   const effectiveSubjectId =
-    subjectId && (locked || subjectOptions.some((o) => o.value === subjectId))
+    editing?.subject_id ??
+    (subjectId && (locked || subjectOptions.some((o) => o.value === subjectId))
       ? subjectId
       : subjectOptions.length === 1
         ? (subjectOptions[0]?.value ?? "")
-        : "";
+        : "");
 
   // A new entry checks whether its lesson already has a journal, so the
   // teacher finds out before typing it all, not after a refused save.
@@ -146,6 +155,11 @@ export function JournalForm({
     setTopic(journal.topic);
     setActivities(journal.activities);
     setReflection(journal.reflection ?? "");
+    // The text typed for the refused duplicate was mirrored under this
+    // lesson's draft key; offered later, it would replace the journal.
+    clearJournalDraft(draftOwner, journal.class_id, journal.subject_id, journal.lesson_date);
+    setDraftOffer(null);
+    onOpenExisting?.(journal);
   }
 
   const canSubmit =
@@ -178,16 +192,32 @@ export function JournalForm({
   }, [draftOwner, effectiveClassId, effectiveSubjectId, lessonDate]);
 
   // Mirrors every edit to localStorage so a dropped connection or an
-  // accidental tab close does not throw away a quick entry in progress.
+  // accidental tab close does not throw away a quick entry in progress. A
+  // journal being edited is mirrored only once it differs from what is
+  // saved, so opening one leaves no "draft" of its own text behind.
   useEffect(() => {
     if (effectiveClassId === "" || effectiveSubjectId === "" || lessonDate === "") return;
     if (topic.trim() === "" && activities.trim() === "" && reflection.trim() === "") return;
+    const unchanged =
+      topic === editing?.topic &&
+      activities === editing.activities &&
+      reflection === (editing.reflection ?? "");
+    if (unchanged) return;
     saveJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate, {
       topic,
       activities,
       reflection,
     });
-  }, [draftOwner, effectiveClassId, effectiveSubjectId, lessonDate, topic, activities, reflection]);
+  }, [
+    draftOwner,
+    editing,
+    effectiveClassId,
+    effectiveSubjectId,
+    lessonDate,
+    topic,
+    activities,
+    reflection,
+  ]);
 
   function restoreDraft() {
     const draft = loadJournalDraft(draftOwner, effectiveClassId, effectiveSubjectId, lessonDate);

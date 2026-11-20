@@ -49,7 +49,20 @@ vi.mock("../../reference/api", () => ({
   useLookup: () => new Map(),
 }));
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
-vi.mock("./journal-form", () => ({ JournalForm: () => null }));
+// The form stands in as the one way it talks back to the dialog: opening
+// the lesson's existing journal instead of writing a second one.
+vi.mock("./journal-form", () => ({
+  JournalForm: ({ onOpenExisting }: { onOpenExisting?: (journal: { id: string }) => void }) => (
+    <button
+      type="button"
+      onClick={() => {
+        onOpenExisting?.({ id: "j1" });
+      }}
+    >
+      openExistingStub
+    </button>
+  ),
+}));
 vi.mock("./journal-today-panel", () => ({
   JournalTodayPanel: () => null,
   useJournalTodayData: todayData,
@@ -179,4 +192,16 @@ it("shows a failed history load as an error with a retry, not as an empty journa
   render(<JournalView />);
 
   expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+});
+
+it("titles the dialog as an edit once the form opens the lesson's existing journal", async () => {
+  query.mockReturnValue({ data: { total: 0, data: [] }, isLoading: false });
+  const user = userEvent.setup();
+  render(<JournalView />);
+
+  await user.click(screen.getByRole("button", { name: "new" }));
+  expect(screen.getByRole("dialog", { name: "new" })).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "openExistingStub" }));
+  expect(screen.getByRole("dialog", { name: "edit" })).toBeInTheDocument();
 });
