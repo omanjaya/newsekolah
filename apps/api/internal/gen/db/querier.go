@@ -1405,7 +1405,10 @@ type Querier interface {
 	ListUserRoleSlugs(ctx context.Context, userID uuid.UUID) ([]string, error)
 	ListUsersAdmin(ctx context.Context, arg ListUsersAdminParams) ([]ListUsersAdminRow, error)
 	// Drives the hourly digest periodic job: every user whose configured
-	// digest hour is the current tenant-local hour.
+	// digest hour is the current tenant-local hour and who was not already
+	// handled in it (hour_start is the start of that local hour). The job runs
+	// on the hour and again on every worker start, so the same hour can be
+	// evaluated more than once.
 	ListUsersDueForDigest(ctx context.Context, arg ListUsersDueForDigestParams) ([]NotificationSetting, error)
 	ListViolationAttachments(ctx context.Context, arg ListViolationAttachmentsParams) ([]ViolationAttachment, error)
 	// The admin list: optional class (via active enrollment), date range and

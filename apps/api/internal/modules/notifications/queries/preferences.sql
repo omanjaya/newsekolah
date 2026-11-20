@@ -22,9 +22,13 @@ returning *;
 
 -- name: ListUsersDueForDigest :many
 -- Drives the hourly digest periodic job: every user whose configured
--- digest hour is the current tenant-local hour.
+-- digest hour is the current tenant-local hour and who was not already
+-- handled in it (hour_start is the start of that local hour). The job runs
+-- on the hour and again on every worker start, so the same hour can be
+-- evaluated more than once.
 select * from notification_settings
-where tenant_id = $1 and digest_enabled and digest_hour = $2;
+where tenant_id = @tenant_id and digest_enabled and digest_hour = @digest_hour
+  and (last_digest_at is null or last_digest_at < @hour_start::timestamptz);
 
 -- name: MarkDigestSent :exec
 update notification_settings set last_digest_at = $3 where tenant_id = $1 and user_id = $2;

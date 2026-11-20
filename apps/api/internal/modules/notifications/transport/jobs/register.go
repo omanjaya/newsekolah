@@ -58,7 +58,9 @@ func PeriodicJobs() []*river.PeriodicJob {
 	return []*river.PeriodicJob{
 		// On the hour (a user's digest hour starts at hh:00, not at the
 		// boot minute), and once on start for an hour that began while
-		// the worker was down; a user already sent this hour is skipped.
+		// the worker was down. A user already handled in the current local
+		// hour is skipped (ListUsersDueForDigest compares last_digest_at
+		// with the start of that hour), so a restart sends no second digest.
 		river.NewPeriodicJob(platformjobs.EveryHourOnTheHour(), func() (river.JobArgs, *river.InsertOpts) {
 			return service.RunDigestArgs{}, nil
 		}, &river.PeriodicJobOpts{ID: "notifications_run_digest", RunOnStart: true}),

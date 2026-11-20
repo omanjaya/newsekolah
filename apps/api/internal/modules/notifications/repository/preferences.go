@@ -100,9 +100,10 @@ func (r *Repository) UpsertSettings(ctx context.Context, tenantID, userID uuid.U
 	return toSettings(row), nil
 }
 
-func (r *Repository) ListUsersDueForDigest(ctx context.Context, tenantID uuid.UUID, tenantLocalHour int) ([]service.Settings, error) {
+func (r *Repository) ListUsersDueForDigest(ctx context.Context, tenantID uuid.UUID, tenantLocalHour int, hourStart time.Time) ([]service.Settings, error) {
 	rows, err := r.queries(ctx).ListUsersDueForDigest(ctx, db.ListUsersDueForDigestParams{
 		TenantID: tenantID, DigestHour: int16(tenantLocalHour), //nolint:gosec // hour is always 0-23
+		HourStart: pdatabase.Timestamptz(hourStart),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list users due for digest: %w", err)
