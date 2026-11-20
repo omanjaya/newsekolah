@@ -182,14 +182,10 @@ func timeToDay(t time.Time) time.Time {
 // unknown.
 func (s *Service) tenantLocation(ctx context.Context, tenantID uuid.UUID) *time.Location {
 	tz, err := s.repo.GetTenantTimezone(ctx, tenantID)
-	if err != nil || tz == "" {
-		return time.UTC
-	}
-	loc, err := time.LoadLocation(tz)
 	if err != nil {
 		return time.UTC
 	}
-	return loc
+	return clock.Location(tz)
 }
 
 // schoolToday is the school's calendar day at instant now (in practice

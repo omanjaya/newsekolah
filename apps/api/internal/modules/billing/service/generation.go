@@ -140,18 +140,13 @@ func (s *Service) dueDate(ctx context.Context, tenantID uuid.UUID) (time.Time, e
 	if err != nil {
 		return time.Time{}, err
 	}
-	loc := time.UTC
-	if l, lerr := time.LoadLocation(tz); tz != "" && lerr == nil {
-		loc = l
-	}
-	return localDueDate(clock.Now(ctx, s.clock), loc), nil
+	return localDueDate(clock.Now(ctx, s.clock), clock.Location(tz)), nil
 }
 
-// localDueDate is the date billDueDays after now's calendar day in loc,
-// at midnight UTC the way a DATE column value is carried.
+// localDueDate is the date billDueDays after now's calendar day in loc
+// (clock.LocalDate), at midnight UTC the way a DATE column value is carried.
 func localDueDate(now time.Time, loc *time.Location) time.Time {
-	y, m, d := now.In(loc).Date()
-	return time.Date(y, m, d+billDueDays, 0, 0, 0, 0, time.UTC)
+	return clock.LocalDate(now, loc).AddDate(0, 0, billDueDays)
 }
 
 func candidatesToBills(plan []domain.BillCandidate, tenantID, yearID uuid.UUID, dueDate time.Time, generatedBy uuid.NullUUID) []domain.Bill {
