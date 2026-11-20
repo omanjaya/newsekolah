@@ -89,10 +89,15 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
   // the whole-school day view, which the API rightly refuses with 403.
   const classId = me.current_class?.id;
   const placed = Boolean(classId);
+  // Today's lessons: the timetable is effective-dated, so the week asked
+  // for is today's own (which also re-keys the query when the day turns).
+  // Read from the zone here rather than reusing `today`: sharing that value
+  // with the memoized lesson list made the React compiler skip this hook.
   const schedules = useSchedulesQuery({
     academicYearId: active ? (me.active_academic_year?.id ?? "") : "",
     classId,
     dayOfWeek,
+    asOf: todayInZone(timeZone),
     enabled: placed,
   });
   const periods = useAllPeriodsQuery(active && placed);

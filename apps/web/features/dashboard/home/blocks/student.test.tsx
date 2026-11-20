@@ -151,6 +151,17 @@ describe("useStudentBlock", () => {
     expect(mocks.library).toHaveBeenCalledWith(false);
   });
 
+  it("asks for today's timetable as of the school's today", () => {
+    vi.useFakeTimers();
+    // 2026-09-25T18:30:00Z is already 26 September in Asia/Jakarta (UTC+7).
+    vi.setSystemTime(new Date("2026-09-25T18:30:00Z"));
+    renderHook(() => useStudentBlock(me(), true));
+
+    expect(mocks.schedules).toHaveBeenCalledWith(
+      expect.objectContaining({ classId: "c1", dayOfWeek: 6, asOf: "2026-09-26" }),
+    );
+  });
+
   it("picks the next lesson at 08:30 given lessons at 07:00-08:20 and 08:40-10:00", () => {
     vi.useFakeTimers();
     // 2026-09-26T01:30:00Z is 08:30 in Asia/Jakarta (UTC+7).

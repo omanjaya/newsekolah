@@ -47,7 +47,7 @@ export function CompleteObservationView({
   );
 
   const scheduled = scheduledList.data?.data.find((s) => s.id === scheduledId);
-  const lesson = useLessonContext(scheduled?.teacher_user_id ?? "", scheduled?.schedule_id ?? "");
+  const lesson = useLessonContext(scheduled?.schedule_id ?? "");
 
   const backHref = cycleHref(cycleId);
   const breadcrumb = trail.within(cycleId, cycle.data?.name, { label: t("breadcrumb") });

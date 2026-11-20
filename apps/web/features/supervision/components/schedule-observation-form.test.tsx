@@ -98,6 +98,14 @@ describe("ScheduleObservationForm lesson choice", () => {
     render(<ScheduleObservationForm cycleId="cycle-1" onDone={vi.fn()} />);
     await user.click(screen.getByRole("combobox", { name: "teacherPlaceholder" }));
 
+    // The lessons are those of the visit date's week (the timetable is
+    // effective-dated).
+    expect(mocks.schedules).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        teacherUserId: "picked-1",
+        asOf: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) as unknown,
+      }),
+    );
     await user.click(screen.getByRole("combobox", { name: "lesson" }));
     expect(await screen.findByRole("option", { name: "5" })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: "1" })).not.toBeInTheDocument();

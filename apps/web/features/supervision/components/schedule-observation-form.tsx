@@ -22,8 +22,9 @@ import { isoWeekdayOf } from "../lib/lesson-weekday";
 /**
  * Schedules an observation against one of a teacher's own lesson blocks:
  * the teacher, the date of the visit, and which of their lessons that day
- * (only the blocks on the date's weekday are offered: a Monday lesson is
- * never observed on a Friday, and the API refuses the pairing too).
+ * (only the blocks on the date's weekday, in effect on that date, are
+ * offered: a Monday lesson is never observed on a Friday, nor after it was
+ * changed or removed from the timetable, and the API refuses both).
  */
 export function ScheduleObservationForm({
   cycleId,
@@ -40,7 +41,6 @@ export function ScheduleObservationForm({
 
   const teacherLabels = useDirectoryPickerLabels(t("teacherPlaceholder"));
   const [teacherId, setTeacherId] = useState("");
-  const blocks = useSchedulesQuery({ academicYearId: year.id, teacherUserId: teacherId });
   const classes = useClassesQuery();
   const classMap = useLookup(classes.data?.data);
   const subjects = useSubjectsQuery();
@@ -50,6 +50,13 @@ export function ScheduleObservationForm({
   const { me } = useSession();
   const today = todayInZone(me?.tenant.timezone);
   const [lessonDate, setLessonDate] = useState(today);
+  // The week of the visit's date, so each weekday lists the lessons in
+  // effect then (the timetable is effective-dated).
+  const blocks = useSchedulesQuery({
+    academicYearId: year.id,
+    teacherUserId: teacherId,
+    asOf: lessonDate || today,
+  });
   const [attempted, setAttempted] = useState(false);
   const schedule = useScheduleObservationMutation(cycleId);
 
