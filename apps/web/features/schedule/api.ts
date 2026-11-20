@@ -164,6 +164,9 @@ export function useReplaceScheduleBlockMutation() {
       });
     },
     onSuccess: invalidate,
+    // The form shows the refusal itself (a clash, or a date too early with
+    // the earliest one offered), so no second message as a toast.
+    meta: { errorToast: false },
   });
 }
 

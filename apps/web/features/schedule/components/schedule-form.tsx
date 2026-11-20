@@ -194,8 +194,11 @@ export function ScheduleForm({
     try {
       if (editing) {
         const saved = await replace.mutateAsync({ scheduleIds: editing.schedule_ids, body });
+        // A dated change makes a new version; a change to the notes alone
+        // is saved on the same one, whatever date was given.
+        const newVersion = asksDate && saved.id !== editing.schedule_ids[0];
         toast.success(
-          asksDate ? t("updatedFrom", { date: showDate(saved.effective_from) }) : t("updated"),
+          newVersion ? t("updatedFrom", { date: showDate(saved.effective_from) }) : t("updated"),
         );
       } else {
         const saved = await create.mutateAsync(body);
