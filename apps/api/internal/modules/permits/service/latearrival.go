@@ -312,6 +312,41 @@ func (s *Service) LateArrivalScan(ctx context.Context, tenantID, instanceID, stu
 	return detail, nil
 }
 
+// ListMyLateArrivals is the student's own late-arrival history, newest
+// first: open and finished flows alike, including one the duty teacher
+// recorded by hand, which is completed when it is created and so never
+// shows up in GetCurrentLateArrival.
+func (s *Service) ListMyLateArrivals(ctx context.Context, tenantID, studentUserID uuid.UUID, limit, offset int) ([]LateArrivalReviewItem, error) {
+	items, err := s.listInstancesWithDefinitions(ctx, tenantID, domain.KindLateArrival, studentUserID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]LateArrivalReviewItem, 0, len(items))
+	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		for _, it := range items {
+			late, ok, err := s.repo.GetLateArrival(ctx, tenantID, it.Instance.ID)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				continue
+			}
+			inst := it.Instance
+			stage, _ := it.Definition.StageAt(min(inst.CurrentStageIndex, len(it.Definition.Stages)-1))
+			out = append(out, LateArrivalReviewItem{
+				LateArrival: late, SubjectUserID: inst.SubjectUserID, ClassID: inst.ClassID,
+				AcademicYearID: inst.AcademicYearID, CurrentStageIndex: inst.CurrentStageIndex,
+				CurrentStage: stage, Status: inst.Status, OpenedAt: inst.OpenedAt,
+			})
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list my late arrivals: %w", err)
+	}
+	return out, nil
+}
+
 func (s *Service) GetLateArrival(ctx context.Context, tenantID, instanceID uuid.UUID) (LateArrivalDetail, error) {
 	var detail LateArrivalDetail
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {

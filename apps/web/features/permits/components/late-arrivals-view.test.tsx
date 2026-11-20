@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   byId: {},
   byIdCalls: [] as string[],
   scanDialog: vi.fn(),
+  mine: {},
 }));
 
 vi.mock("next-intl", () => ({
@@ -27,6 +28,7 @@ vi.mock("../lib/use-can-submit-permit", () => ({ useCanSubmitPermit: () => true 
 vi.mock("./workflow-stepper", () => ({
   WorkflowStepper: () => null,
   WorkflowSteps: () => <div data-testid="steps" />,
+  WorkflowStatusBadge: ({ status }: { status: string }) => <span>{`status:${status}`}</span>,
 }));
 vi.mock("./stage-scan-dialog", () => ({
   StageScanDialog: (props: unknown) => {
@@ -44,6 +46,7 @@ vi.mock("../api", () => ({
   useOpenLateArrivalMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useReviewLateArrivalMutation: () => ({ mutate: vi.fn(), isPending: false }),
   useScanLateArrivalStageMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useMyLateArrivalsQuery: () => mocks.mine,
 }));
 
 import { LateArrivalsView } from "./late-arrivals-view";
@@ -78,6 +81,59 @@ beforeEach(() => {
   mocks.byId = { data: undefined, isLoading: true, isError: false, refetch: vi.fn() };
   mocks.byIdCalls = [];
   mocks.scanDialog.mockReset();
+  mocks.mine = { isLoading: false, isError: false, data: { data: [] }, refetch: vi.fn() };
+});
+
+function summary(id: string, n: number, status: string) {
+  return {
+    instance_id: id,
+    student_user_id: "me",
+    status,
+    current_stage_index: 2,
+    current_stage: leadership,
+    reason: "Macet",
+    occurrence_number: n,
+    required_action: "none",
+    opened_at: "2026-11-19T00:10:00Z",
+  };
+}
+
+describe("LateArrivalsView history", () => {
+  it("lists finished and hand-recorded late arrivals, each opening its own page", () => {
+    mocks.mine = {
+      isLoading: false,
+      isError: false,
+      data: { data: [summary("late-2", 2, "completed"), summary("late-1", 1, "completed")] },
+      refetch: vi.fn(),
+    };
+    render(<LateArrivalsView />);
+
+    expect(screen.getByText("scanTitle")).toBeInTheDocument();
+    expect(screen.getByText("historyTitle")).toBeInTheDocument();
+    const links = screen.getAllByRole("link");
+    expect(links.map((link) => link.getAttribute("href"))).toEqual([
+      "/late-arrivals/late-2",
+      "/late-arrivals/late-1",
+    ]);
+  });
+
+  it("leaves the flow on the card out of the history", () => {
+    mocks.current = {
+      isLoading: false,
+      isError: false,
+      data: detail("in_progress"),
+      refetch: vi.fn(),
+    };
+    mocks.mine = {
+      isLoading: false,
+      isError: false,
+      data: { data: [summary("late-1", 1, "in_progress")] },
+      refetch: vi.fn(),
+    };
+    render(<LateArrivalsView />);
+
+    expect(screen.queryByText("historyTitle")).not.toBeInTheDocument();
+  });
 });
 
 describe("LateArrivalsView for a student", () => {

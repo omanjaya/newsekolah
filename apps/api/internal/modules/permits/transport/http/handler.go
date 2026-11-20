@@ -296,6 +296,25 @@ func (h *PermitsHandler) ListLateArrivalsForReview(ctx context.Context, _ api.Li
 	return api.ListLateArrivalsForReview200JSONResponse{Data: data}, nil
 }
 
+func (h *PermitsHandler) ListMyLateArrivals(ctx context.Context, request api.ListMyLateArrivalsRequestObject) (api.ListMyLateArrivalsResponseObject, error) {
+	limit, offset := 25, 0
+	if request.Params.Limit != nil {
+		limit = *request.Params.Limit
+	}
+	if request.Params.Offset != nil {
+		offset = *request.Params.Offset
+	}
+	items, err := h.service.ListMyLateArrivals(ctx, tenantID(ctx), userID(ctx), limit, offset)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.LateArrivalSummary, len(items))
+	for i, it := range items {
+		data[i] = toAPILateArrivalSummary(it)
+	}
+	return api.ListMyLateArrivals200JSONResponse{Data: data}, nil
+}
+
 func (h *PermitsHandler) GetLateArrival(ctx context.Context, request api.GetLateArrivalRequestObject) (api.GetLateArrivalResponseObject, error) {
 	tenant := tenantID(ctx)
 	if err := h.service.RequireCanViewLateArrival(ctx, tenant, request.InstanceId, userID(ctx)); err != nil {

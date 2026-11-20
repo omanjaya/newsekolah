@@ -1445,6 +1445,7 @@
           "expired": "Kedaluwarsa"
         },
         "waitingFor": "Menunggu: {stage}",
+        "stageNote": "Catatan: {note}",
         "verification": {
           "qr_scan": "Pindai QR",
           "manual": "Ditinjau langsung",
@@ -1568,6 +1569,9 @@
         "idleTitle": "Tidak ada izin keluar berjalan",
         "idleBody": "Perlu keluar sekolah di jam pelajaran? Ajukan izin, temui guru di setiap tahap, lalu pindai QR persetujuan yang ia tampilkan. QR gerbang muncul setelah tahap terakhir.",
         "historyTitle": "Riwayat izin keluar",
+        "notFoundTitle": "Izin keluar tidak ditemukan",
+        "notFoundBody": "Izin keluar ini tidak ada atau tidak bisa Anda buka.",
+        "notFoundBack": "Buka izin keluar",
         "modeLabel": "Tugas di halaman ini",
         "cancelConfirm": {
           "title": "Batalkan izin keluar?",
@@ -1623,7 +1627,16 @@
         "completedBody": "Semua tahap disetujui. Silakan masuk kelas.",
         "finished": "Keterlambatan selesai. Silakan masuk kelas.",
         "completedBodySendHome": "Semua tahap disetujui. Ikuti arahan guru piket untuk pulang.",
-        "finishedSendHome": "Keterlambatan selesai. Ikuti arahan guru piket untuk pulang."
+        "finishedSendHome": "Keterlambatan selesai. Ikuti arahan guru piket untuk pulang.",
+        "historyTitle": "Riwayat keterlambatan",
+        "historyEmpty": "Belum ada keterlambatan tercatat.",
+        "historyRow": "Keterlambatan ke-{n}",
+        "detailTitle": "Detail keterlambatan",
+        "student": "Siswa",
+        "recordedAt": "Tercatat",
+        "notFoundTitle": "Keterlambatan tidak ditemukan",
+        "notFoundBody": "Catatan keterlambatan ini tidak ada atau tidak bisa Anda buka.",
+        "notFoundBack": "Buka keterlambatan"
       },
       "leave": {
         "eyebrow": "Kesiswaan",

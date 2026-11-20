@@ -15,6 +15,12 @@ export interface StepperStep {
   actor?: ReactNode;
   /** When it happened, already formatted in the school's time zone: "25 Sep 09.14". */
   time?: ReactNode;
+  /**
+   * What the person who acted wrote, such as a reviewer's reason for a
+   * rejection: shown under the step, so the reader sees why. Left out by
+   * the compact variant.
+   */
+  note?: ReactNode;
   state?: StepperStepState;
 }
 
@@ -234,6 +240,11 @@ export function Stepper({
                       {part}
                     </span>
                   ))}
+                </span>
+              )}
+              {!compact && step.note && (
+                <span className="mt-1 rounded-md bg-surface-sunken px-2 py-1 text-left text-body-sm break-words whitespace-pre-line text-fg">
+                  {step.note}
                 </span>
               )}
             </div>

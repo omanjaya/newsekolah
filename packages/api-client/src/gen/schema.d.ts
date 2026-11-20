@@ -6268,6 +6268,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/late-arrivals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Late arrivals of the current student, newest first
+         * @description Every late arrival of the caller, finished or not, including one the duty teacher recorded by hand (which is complete from the start and never appears in /current).
+         */
+        get: operations["listMyLateArrivals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/late-arrivals/current": {
         parameters: {
             query?: never;
@@ -25239,6 +25259,32 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    listMyLateArrivals: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Late arrivals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LateArrivalSummary"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
         };
     };
     getCurrentLateArrival: {

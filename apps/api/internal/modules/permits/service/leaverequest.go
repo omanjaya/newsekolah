@@ -304,7 +304,7 @@ func (s *Service) ReviewLeaveRequest(ctx context.Context, tenantID, instanceID, 
 	if err != nil {
 		return LeaveRequestDetail{}, err
 	}
-	s.publish(ctx, LeaveRequestReviewed{TenantID: tenantID, InstanceID: instanceID, StudentUserID: detail.Instance.SubjectUserID, Approved: approve, ReviewerID: reviewerUserID})
+	s.publish(ctx, LeaveRequestReviewed{TenantID: tenantID, InstanceID: instanceID, StudentUserID: detail.Instance.SubjectUserID, Approved: approve, ReviewerID: reviewerUserID, Note: strings.TrimSpace(note)})
 	// The requester waits on the outcome either way (plan section 2,
 	// opportunity #3's "requester's user topic").
 	s.publishToUserTopic(ctx, tenantID, detail.Instance.SubjectUserID, "leave_request.reviewed", instanceEventPayload{InstanceID: instanceID})

@@ -135,6 +135,52 @@ describe("WorkflowSteps", () => {
     expect(second).toHaveTextContent("Surat diterbitkan");
   });
 
+  it("shows the reviewer's reason on the stage that rejected the request", () => {
+    render(
+      <WorkflowSteps
+        instance={{
+          ...instance,
+          status: "rejected",
+          events: [
+            ...(instance.events ?? []),
+            {
+              id: "e2",
+              stage_key: "bk",
+              to_status: "rejected",
+              verification: "manual",
+              note: "Ada ulangan Matematika hari itu.",
+              occurred_at: "2026-11-14T03:00:00Z",
+            },
+          ],
+        }}
+      />,
+    );
+    const [first, second] = screen.getAllByRole("listitem");
+    expect(second).toHaveTextContent("stageNote");
+    expect(first).not.toHaveTextContent("stageNote");
+  });
+
+  it("leaves out the notes the API writes for its own log", () => {
+    render(
+      <WorkflowSteps
+        instance={{
+          ...instance,
+          events: [
+            {
+              id: "e1",
+              stage_key: "duty",
+              to_status: "in_progress",
+              verification: "auto",
+              note: "opened",
+              occurred_at: "2026-11-14T02:14:00Z",
+            },
+          ],
+        }}
+      />,
+    );
+    expect(screen.queryByText(/stageNote/)).not.toBeInTheDocument();
+  });
+
   it("says how the request ended at the stage where it stopped", () => {
     render(<WorkflowSteps instance={{ ...instance, status: "rejected" }} />);
     const [, second] = screen.getAllByRole("listitem");

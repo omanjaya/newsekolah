@@ -1445,6 +1445,7 @@
           "expired": "Expired"
         },
         "waitingFor": "Waiting for: {stage}",
+        "stageNote": "Note: {note}",
         "verification": {
           "qr_scan": "QR scan",
           "manual": "Manual review",
@@ -1568,6 +1569,9 @@
         "idleTitle": "No exit permit in progress",
         "idleBody": "Need to leave school during lessons? Request a permit, see the teacher at each stage, then scan the approval QR they show. The gate QR appears after the last stage.",
         "historyTitle": "Exit permit history",
+        "notFoundTitle": "Exit permit not found",
+        "notFoundBody": "This exit permit does not exist or you cannot open it.",
+        "notFoundBack": "Open exit permits",
         "modeLabel": "Task on this page",
         "cancelConfirm": {
           "title": "Cancel this exit permit?",
@@ -1623,7 +1627,16 @@
         "completedBody": "Every stage is approved. You may go to class.",
         "finished": "Late arrival complete. You may go to class.",
         "completedBodySendHome": "Every stage is approved. Follow the duty teacher's directions for going home.",
-        "finishedSendHome": "Late arrival complete. Follow the duty teacher's directions for going home."
+        "finishedSendHome": "Late arrival complete. Follow the duty teacher's directions for going home.",
+        "historyTitle": "Late arrival history",
+        "historyEmpty": "No late arrivals recorded yet.",
+        "historyRow": "Late arrival no. {n}",
+        "detailTitle": "Late arrival details",
+        "student": "Student",
+        "recordedAt": "Recorded",
+        "notFoundTitle": "Late arrival not found",
+        "notFoundBody": "This late arrival does not exist or you cannot open it.",
+        "notFoundBack": "Open late arrivals"
       },
       "leave": {
         "eyebrow": "Student affairs",
