@@ -102,8 +102,12 @@ type ExitPermitReviewItem struct {
 // LeaveRequestItem is a leave request joined with its workflow state.
 type LeaveRequestItem struct {
 	domain.LeaveRequest
-	SubjectUserID     uuid.UUID
-	ClassID           uuid.NullUUID
+	SubjectUserID  uuid.UUID
+	ClassID        uuid.NullUUID
+	AcademicYearID uuid.UUID
+	// SchoolDays is how many days of the range the class has lessons on
+	// (countSchoolDays), the leave's real length.
+	SchoolDays        int
 	Status            domain.Status
 	OpenedAt          time.Time
 	CurrentStageIndex int

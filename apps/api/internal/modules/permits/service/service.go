@@ -201,6 +201,9 @@ type Service struct {
 	// modules reads other modules' flags (see module_flags.go); nil leaves
 	// every module on.
 	modules ModuleFlags
+	// calendar counts a leave's school days (see school_days.go); nil
+	// counts calendar days.
+	calendar ClassCalendar
 }
 
 // SetFlags attaches the feature-flag reader the background jobs consult.

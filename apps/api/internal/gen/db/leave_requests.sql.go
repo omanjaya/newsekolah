@@ -355,7 +355,7 @@ func (q *Queries) ListLeaveDocuments(ctx context.Context, arg ListLeaveDocuments
 }
 
 const listLeaveRequestsBySubject = `-- name: ListLeaveRequestsBySubject :many
-select lr.instance_id, lr.tenant_id, lr.category, lr.reason, lr.starts_on, lr.ends_on, lr.letter_number, lr.issued_at, lr.issued_by, lr.student_name_snapshot, lr.class_name_snapshot, lr.guardian_name_snapshot, wi.status, wi.opened_at, wi.current_stage_index
+select lr.instance_id, lr.tenant_id, lr.category, lr.reason, lr.starts_on, lr.ends_on, lr.letter_number, lr.issued_at, lr.issued_by, lr.student_name_snapshot, lr.class_name_snapshot, lr.guardian_name_snapshot, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.academic_year_id
 from leave_requests lr
 join workflow_instances wi on wi.id = lr.instance_id
 where lr.tenant_id = $1 and wi.subject_user_id = $2
@@ -386,6 +386,8 @@ type ListLeaveRequestsBySubjectRow struct {
 	Status               string             `json:"status"`
 	OpenedAt             pgtype.Timestamptz `json:"opened_at"`
 	CurrentStageIndex    int32              `json:"current_stage_index"`
+	ClassID              pgtype.UUID        `json:"class_id"`
+	AcademicYearID       uuid.UUID          `json:"academic_year_id"`
 }
 
 func (q *Queries) ListLeaveRequestsBySubject(ctx context.Context, arg ListLeaveRequestsBySubjectParams) ([]ListLeaveRequestsBySubjectRow, error) {
@@ -418,6 +420,8 @@ func (q *Queries) ListLeaveRequestsBySubject(ctx context.Context, arg ListLeaveR
 			&i.Status,
 			&i.OpenedAt,
 			&i.CurrentStageIndex,
+			&i.ClassID,
+			&i.AcademicYearID,
 		); err != nil {
 			return nil, err
 		}
@@ -430,7 +434,7 @@ func (q *Queries) ListLeaveRequestsBySubject(ctx context.Context, arg ListLeaveR
 }
 
 const listLeaveRequestsForReview = `-- name: ListLeaveRequestsForReview :many
-select lr.instance_id, lr.tenant_id, lr.category, lr.reason, lr.starts_on, lr.ends_on, lr.letter_number, lr.issued_at, lr.issued_by, lr.student_name_snapshot, lr.class_name_snapshot, lr.guardian_name_snapshot, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id,
+select lr.instance_id, lr.tenant_id, lr.category, lr.reason, lr.starts_on, lr.ends_on, lr.letter_number, lr.issued_at, lr.issued_by, lr.student_name_snapshot, lr.class_name_snapshot, lr.guardian_name_snapshot, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id, wi.academic_year_id,
   (wi.current_stage_index = jsonb_array_length(wd.stages) - 1)::boolean as awaiting_letter
 from leave_requests lr
 join workflow_instances wi on wi.id = lr.instance_id
@@ -484,6 +488,7 @@ type ListLeaveRequestsForReviewRow struct {
 	CurrentStageIndex    int32              `json:"current_stage_index"`
 	ClassID              pgtype.UUID        `json:"class_id"`
 	SubjectUserID        uuid.UUID          `json:"subject_user_id"`
+	AcademicYearID       uuid.UUID          `json:"academic_year_id"`
 	AwaitingLetter       bool               `json:"awaiting_letter"`
 }
 
@@ -532,6 +537,7 @@ func (q *Queries) ListLeaveRequestsForReview(ctx context.Context, arg ListLeaveR
 			&i.CurrentStageIndex,
 			&i.ClassID,
 			&i.SubjectUserID,
+			&i.AcademicYearID,
 			&i.AwaitingLetter,
 		); err != nil {
 			return nil, err

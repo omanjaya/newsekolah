@@ -30,6 +30,9 @@ type LeaveRequestDetail struct {
 	Events       []domain.Event
 	HasEvidence  bool
 	HasLetter    bool
+	// SchoolDays is how many days of the range the class has lessons on
+	// (countSchoolDays): what the letter states and attendance records.
+	SchoolDays int
 }
 
 type SubmitLeaveRequestInput struct {
@@ -111,7 +114,11 @@ func (s *Service) SubmitLeaveRequest(ctx context.Context, in SubmitLeaveRequestI
 		if err != nil {
 			return err
 		}
-		detail = LeaveRequestDetail{Instance: inst, LeaveRequest: lr, Definition: def}
+		days, err := s.leaveSchoolDays(ctx, in.TenantID, inst, lr)
+		if err != nil {
+			return err
+		}
+		detail = LeaveRequestDetail{Instance: inst, LeaveRequest: lr, Definition: def, SchoolDays: days}
 		return nil
 	})
 	if err != nil {
@@ -298,7 +305,11 @@ func (s *Service) ReviewLeaveRequest(ctx context.Context, tenantID, instanceID, 
 		if err != nil {
 			return err
 		}
-		detail = LeaveRequestDetail{Instance: updated, LeaveRequest: lr, Definition: def}
+		days, err := s.leaveSchoolDays(ctx, tenantID, updated, lr)
+		if err != nil {
+			return err
+		}
+		detail = LeaveRequestDetail{Instance: updated, LeaveRequest: lr, Definition: def, SchoolDays: days}
 		return nil
 	})
 	if err != nil {
@@ -391,10 +402,15 @@ func (s *Service) IssueLeaveLetter(ctx context.Context, tenantID, instanceID, is
 			return err
 		}
 
+		schoolDays, err := s.leaveSchoolDays(ctx, tenantID, inst, lr)
+		if err != nil {
+			return err
+		}
+
 		tmpl := s.leaveLetterTemplate(ctx, tenantID)
 		rendered, err := s.renderer.Render(ctx, tmpl, leaveLetterVars(lr, leaveLetterExtras{
 			number: number, issuedAt: now, verificationCode: code, nis: nis, address: address,
-			homeroomName: homeroomName, issuerName: issuerName,
+			homeroomName: homeroomName, issuerName: issuerName, schoolDays: schoolDays,
 		}))
 		if err != nil {
 			return fmt.Errorf("render leave letter: %w", err)
@@ -439,7 +455,7 @@ func (s *Service) IssueLeaveLetter(ctx context.Context, tenantID, instanceID, is
 				return fmt.Errorf("sync attendance: %w", err)
 			}
 		}
-		detail = LeaveRequestDetail{Instance: updated, LeaveRequest: lr, Definition: def, HasLetter: assetID.Valid}
+		detail = LeaveRequestDetail{Instance: updated, LeaveRequest: lr, Definition: def, HasLetter: assetID.Valid, SchoolDays: schoolDays}
 		return nil
 	})
 	if err != nil {
@@ -455,6 +471,9 @@ func (s *Service) IssueLeaveLetter(ctx context.Context, tenantID, instanceID, is
 type leaveLetterExtras struct {
 	number, verificationCode, nis, address, homeroomName, issuerName string
 	issuedAt                                                         time.Time
+	// schoolDays is the leave's length in days with lessons
+	// (countSchoolDays), the "days" the letter states.
+	schoolDays int
 }
 
 // leaveLetterVars is the variable map a leave letter template renders
@@ -464,6 +483,8 @@ type leaveLetterExtras struct {
 // "reason_detail" is the student's own text for an "other" request and
 // empty otherwise: every other category's reason is its fixed label
 // (domain.DefaultReasonFor), which would only repeat the category.
+// "days" counts school days only: a weekend or holiday inside the range is
+// not a day of leave, and attendance records none for it.
 func leaveLetterVars(lr domain.LeaveRequest, x leaveLetterExtras) map[string]any {
 	detail := ""
 	if _, fixed := domain.DefaultReasonFor(lr.Category); !fixed {
@@ -474,7 +495,7 @@ func leaveLetterVars(lr domain.LeaveRequest, x leaveLetterExtras) map[string]any
 		"guardian_name": lr.GuardianNameSnapshot, "category": domain.CategoryLabel(lr.Category),
 		"category_code": string(lr.Category), "reason": lr.Reason, "reason_detail": detail,
 		"starts_on": lr.StartsOn.Format("02-01-2006"), "ends_on": lr.EndsOn.Format("02-01-2006"),
-		"days": lr.Days(), "issued_at": x.issuedAt.Format("02-01-2006"), "verification_code": x.verificationCode,
+		"days": x.schoolDays, "issued_at": x.issuedAt.Format("02-01-2006"), "verification_code": x.verificationCode,
 		"nis": x.nis, "address": x.address, "homeroom_name": x.homeroomName, "issuer_name": x.issuerName,
 	}
 }
@@ -521,7 +542,7 @@ const builtinLeaveLetterHTML = `<html><body style="font-family: serif; font-size
 <tr><td>Alamat</td><td>: {{.address}}</td></tr>
 <tr><td>Wali</td><td>: {{.guardian_name}}</td></tr>
 </table>
-<p>diizinkan tidak mengikuti kegiatan belajar mengajar pada tanggal {{.starts_on}} sampai {{.ends_on}} ({{.days}} hari) dengan keterangan {{.category}}{{if .reason_detail}}: {{.reason_detail}}{{end}}.</p>
+<p>diizinkan tidak mengikuti kegiatan belajar mengajar pada tanggal {{.starts_on}} sampai {{.ends_on}} ({{.days}} hari sekolah) dengan keterangan {{.category}}{{if .reason_detail}}: {{.reason_detail}}{{end}}.</p>
 <p>Surat ini diterbitkan pada {{.issued_at}} oleh {{.issuer_name}}, diketahui oleh wali kelas {{.homeroom_name}}. Kode verifikasi: <strong>{{.verification_code}}</strong></p>
 </body></html>`
 
@@ -568,7 +589,13 @@ func (s *Service) GetLeaveRequest(ctx context.Context, tenantID, instanceID uuid
 		if err != nil {
 			return err
 		}
-		detail = LeaveRequestDetail{Instance: inst, LeaveRequest: lr, Definition: def, Events: events, HasEvidence: hasEvidence, HasLetter: hasLetter}
+		days, err := s.leaveSchoolDays(ctx, tenantID, inst, lr)
+		if err != nil {
+			return err
+		}
+		detail = LeaveRequestDetail{
+			Instance: inst, LeaveRequest: lr, Definition: def, Events: events, HasEvidence: hasEvidence, HasLetter: hasLetter, SchoolDays: days,
+		}
 		return nil
 	})
 	return detail, err
@@ -579,7 +606,10 @@ func (s *Service) ListMyLeaveRequests(ctx context.Context, tenantID, studentUser
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		out, err = s.repo.ListLeaveRequestsBySubject(ctx, tenantID, studentUserID, clampPage(limit), offset)
-		return err
+		if err != nil {
+			return err
+		}
+		return s.withSchoolDays(ctx, tenantID, out)
 	})
 	return out, err
 }
@@ -592,7 +622,10 @@ func (s *Service) ListLeaveRequestsForReview(ctx context.Context, tenantID, revi
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		out, err = s.repo.ListLeaveRequestsForReview(ctx, tenantID, reviewerUserID, classID, s.tenantNow(ctx, tenantID))
-		return err
+		if err != nil {
+			return err
+		}
+		return s.withSchoolDays(ctx, tenantID, out)
 	})
 	return out, err
 }

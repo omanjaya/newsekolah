@@ -15,7 +15,7 @@ where tenant_id = $1 and instance_id = $2
 returning *;
 
 -- name: ListLeaveRequestsBySubject :many
-select lr.*, wi.status, wi.opened_at, wi.current_stage_index
+select lr.*, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.academic_year_id
 from leave_requests lr
 join workflow_instances wi on wi.id = lr.instance_id
 where lr.tenant_id = $1 and wi.subject_user_id = $2
@@ -36,7 +36,7 @@ limit $3 offset $4;
 --
 -- sqlc.arg('today') is the tenant-local date (s.tenantNow), not
 -- current_date: the Postgres session timezone is never set per tenant.
-select lr.*, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id,
+select lr.*, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id, wi.academic_year_id,
   (wi.current_stage_index = jsonb_array_length(wd.stages) - 1)::boolean as awaiting_letter
 from leave_requests lr
 join workflow_instances wi on wi.id = lr.instance_id

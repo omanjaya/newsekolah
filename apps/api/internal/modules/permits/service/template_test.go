@@ -41,6 +41,15 @@ func TestBuiltinLeaveLetterCategoryText(t *testing.T) {
 		html := render(t, domain.LeaveRequest{Category: domain.CategoryOther, Reason: "Acara keluarga", StartsOn: day, EndsOn: day})
 		require.Contains(t, html, "dengan keterangan Lainnya: Acara keluarga.")
 	})
+
+	t.Run("the length is the school days, not the calendar span", func(t *testing.T) {
+		lr := domain.LeaveRequest{Category: domain.CategorySick, Reason: "Sakit", StartsOn: day, EndsOn: day.AddDate(0, 0, 4)}
+		out, err := documents.NewHTMLPDFRenderer().Render(context.Background(),
+			documents.Template{Engine: documents.EngineHTML, Body: builtinLeaveLetterHTML},
+			leaveLetterVars(lr, leaveLetterExtras{number: "1/IZIN/XI/2026", schoolDays: 2}))
+		require.NoError(t, err)
+		require.Contains(t, string(out.HTML), "(2 hari sekolah)")
+	})
 }
 
 func TestValidateTemplateBody(t *testing.T) {

@@ -183,6 +183,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		ModuleFlags: backgroundFlags,
 		Clock:       clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
 	})
+	permitsModule.Service.SetCalendar(classCalendar)
 	lateViolations := &lateBoundViolations{}
 	lateDiscipline := &lateBoundDisciplineReader{}
 	attendanceModule := attendance.Register(attendance.Dependencies{
