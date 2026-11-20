@@ -42,8 +42,8 @@ export interface NumberInputProps extends Omit<
   defaultValue?: number | null;
   /**
    * Called on every keystroke that changes the number, and once more on
-   * blur if rounding or clamping what was typed changed it. A field only
-   * tabbed through never calls it. Never NaN.
+   * blur if rounding (or, with `clampOnBlur`, clamping) what was typed
+   * changed it. A field only tabbed through never calls it. Never NaN.
    */
   onChange?: (value: number | null) => void;
   /** Lower bound for typing and stepping. Set it below 0 to allow negatives on a phone keypad. */
@@ -51,6 +51,15 @@ export interface NumberInputProps extends Omit<
   max?: number;
   /** Arrow keys and stepper buttons move by this much. Default 1. */
   step?: number;
+  /**
+   * Whether blur pulls a typed number back inside `min`/`max`. Default
+   * true. Set it to false where a silently corrected amount would commit
+   * something the person did not ask for (typing 999 into a 1 to 200 batch
+   * count must not create 200 records): the typed number is kept, the
+   * field marks itself invalid while it is out of range, and the form's
+   * own range check reports it. Stepping still stays inside the range.
+   */
+  clampOnBlur?: boolean;
   /**
    * Fraction digits a typed number is rounded to. Defaults to the step's
    * own (step 0.5 keeps 1, step 1 keeps none). A value that already has
@@ -87,7 +96,9 @@ interface Draft {
 /**
  * A number field that never hands the caller NaN: typing keeps only what a
  * number can hold, the value is `number | null`, and once someone has typed
- * into it, blur rounds it to `precision` and clamps it to `min`/`max`.
+ * into it, blur rounds it to `precision` and clamps it to `min`/`max`
+ * (unless `clampOnBlur` is off, when an out-of-range number stays and the
+ * field shows it as invalid).
  * Arrow up/down step it. Separators follow the locale ("1.500.000,5" in
  * Indonesian), and a lone "." or "," with few enough digits after it is a
  * decimal point either way, since a phone's keypad offers whichever its
@@ -101,6 +112,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     min,
     max,
     step = 1,
+    clampOnBlur = true,
     precision: precisionProp,
     stepper,
     prefix,
@@ -171,7 +183,9 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
     }
   }
 
-  const showInvalid = field.invalid;
+  const outOfRange =
+    value !== null && ((min !== undefined && value < min) || (max !== undefined && value > max));
+  const showInvalid = field.invalid || (!clampOnBlur && outOfRange);
   const atMin = value !== null && min !== undefined && value <= min;
   const atMax = value !== null && max !== undefined && value >= max;
   const stepperButton = (direction: 1 | -1) => (
@@ -271,7 +285,7 @@ export const NumberInput = forwardRef<HTMLInputElement, NumberInputProps>(functi
           const edited = draft?.edited ?? false;
           setDraft(null);
           if (edited && value !== null) {
-            const next = normalize(value);
+            const next = clampOnBlur ? normalize(value) : roundTo(value, precision);
             if (next !== value) setValue(next);
           }
           onBlur?.(event);
