@@ -25,6 +25,7 @@ vi.mock("../visits-api", () => ({
   useRecordLibraryVisitMutation: () => ({ mutate: mocks.recordVisit, isPending: false }),
   useLibraryReadInPlaceQuery: () => ({ data: { data: [] }, isLoading: false }),
   useStartLibraryReadInPlaceMutation: () => ({ mutate: mocks.startReading, isPending: false }),
+  useEndLibraryReadInPlaceMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 vi.mock("../violations-api", () => ({
   useCreateLibraryViolationMutation: () => ({ mutate: mocks.createViolation, isPending: false }),
