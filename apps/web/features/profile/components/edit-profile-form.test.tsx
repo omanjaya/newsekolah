@@ -4,6 +4,21 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { EditProfileForm } from "./edit-profile-form";
 
 const mutateAsync = vi.fn();
+interface MeStub {
+  name: string;
+  username: string;
+  email: string;
+  locale?: "id" | "en";
+}
+const me = vi.hoisted(() => {
+  const current: MeStub = {
+    name: "Budi",
+    username: "budi",
+    email: "budi@contoh.sch.id",
+    locale: "en",
+  };
+  return { current };
+});
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -14,9 +29,7 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => () => "error",
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
-  useSession: () => ({
-    me: { name: "Budi", username: "budi", email: "budi@contoh.sch.id", locale: "en" },
-  }),
+  useSession: () => ({ me: me.current }),
 }));
 vi.mock("../api", () => ({
   useUpdateProfileMutation: () => ({ mutateAsync, isPending: false }),
@@ -33,6 +46,7 @@ vi.mock("./profile-save-bar", () => ({
 afterEach(() => {
   cleanup();
   mutateAsync.mockReset();
+  me.current = { ...me.current, locale: "en" };
 });
 
 describe("EditProfileForm language preference", () => {
@@ -55,5 +69,11 @@ describe("EditProfileForm language preference", () => {
     const body = mutateAsync.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(body.name).toBe("Budi Santoso");
     expect(body).not.toHaveProperty("locale");
+  });
+
+  it("shows the school's language when the user never chose one", () => {
+    me.current = { name: "Budi", username: "budi", email: "budi@contoh.sch.id" };
+    render(<EditProfileForm />);
+    expect(screen.getByRole("combobox")).toHaveTextContent("localeSchool");
   });
 });

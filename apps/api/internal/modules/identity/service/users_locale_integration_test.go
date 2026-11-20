@@ -66,3 +66,55 @@ func TestUpdateMyProfile_EmptyLocaleKeepsStoredValue(t *testing.T) {
 	require.NoError(t, pg.AdminPool.QueryRow(ctx, `select locale from users where id = $1`, userID).Scan(&locale))
 	require.Equal(t, "en", locale)
 }
+
+// TestCreateUser_HasNoLocalePreference: a new account never chose a
+// language, so it stores none and Me omits it -- the school's language
+// applies until the user picks one on the profile page.
+func TestCreateUser_HasNoLocalePreference(t *testing.T) {
+	pg, _, _ := setupIdentityTest(t)
+	svc := service.New(pg.AppPool, repository.New(pg.AppPool), fixedYear{}, nil, nil, clock.Real{}, service.Config{}, auth.NewRefreshToken, service.Extras{})
+	ctx := context.Background()
+	tenantID := insertTestTenant(t, pg.AdminPool, "locale-new-"+uuid.NewString()[:8])
+	_, err := pg.AdminPool.Exec(ctx, `insert into roles (tenant_id, slug, name, is_system) values ($1, 'teacher', 'Guru', true)`, tenantID)
+	require.NoError(t, err)
+
+	view, err := svc.CreateUser(ctx, tenantID, uuid.Nil, service.CreateUserInput{
+		UserWriteInput: service.UserWriteInput{
+			Name: "New Teacher", Email: "locale-new@example.test", ProfileKind: domain.ProfileTeacher,
+			Roles: []domain.RoleGrant{{Slug: "teacher", IsPrimary: true}},
+		},
+	})
+	require.NoError(t, err)
+	require.Empty(t, view.Locale)
+
+	var stored *string
+	require.NoError(t, pg.AdminPool.QueryRow(ctx, `select locale from users where id = $1`, view.ID).Scan(&stored))
+	require.Nil(t, stored)
+
+	me, err := svc.Me(ctx, tenantID, view.ID, uuid.NullUUID{})
+	require.NoError(t, err)
+	require.Empty(t, me.Locale)
+}
+
+// TestUpdateMyProfile_EmptyLocaleClearsPreference: choosing "follow the
+// school's language" stores no preference again.
+func TestUpdateMyProfile_EmptyLocaleClearsPreference(t *testing.T) {
+	pg, _, _ := setupIdentityTest(t)
+	svc := service.New(pg.AppPool, repository.New(pg.AppPool), fixedYear{}, nil, nil, clock.Real{}, service.Config{}, auth.NewRefreshToken, service.Extras{})
+	ctx := context.Background()
+	tenantID := insertTestTenant(t, pg.AdminPool, "locale-clear-"+uuid.NewString()[:8])
+	userID := insertTestUser(t, pg.AdminPool, tenantID, "locale-clear")
+	_, err := pg.AdminPool.Exec(ctx, `update users set locale = 'en' where id = $1`, userID)
+	require.NoError(t, err)
+
+	cleared := ""
+	me, err := svc.UpdateMyProfile(ctx, tenantID, userID, service.UpdateMyProfileInput{
+		Name: "Self Renamed", Email: "locale-clear@example.test", Locale: &cleared,
+	})
+	require.NoError(t, err)
+	require.Empty(t, me.Locale)
+
+	var stored *string
+	require.NoError(t, pg.AdminPool.QueryRow(ctx, `select locale from users where id = $1`, userID).Scan(&stored))
+	require.Nil(t, stored)
+}

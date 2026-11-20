@@ -51,11 +51,13 @@ type StudentClassRepository interface {
 // excludes tenant branding, which belongs to the school module. The
 // transport layer for GET /v1/me composes the two.
 type MeResult struct {
-	UserID             uuid.UUID
-	Username           string
-	Email              string
-	Name               string
-	AvatarURL          string
+	UserID    uuid.UUID
+	Username  string
+	Email     string
+	Name      string
+	AvatarURL string
+	// Locale is the user's own language preference, "" when they never
+	// chose one and the school's language applies.
 	Locale             string
 	ProfileKind        domain.ProfileKind
 	Detail             UserProfileFields

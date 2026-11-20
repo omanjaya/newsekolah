@@ -365,7 +365,7 @@ func (s *Service) evaluateImportRow(
 	result.kind = row.ProfileKind
 	result.write = NewUserRecord{
 		TenantID: tenantID, Username: username, Email: email, Phone: row.Phone, PasswordHash: hash,
-		Name: row.Name, Locale: "id", MustChangePassword: true,
+		Name: row.Name, MustChangePassword: true,
 	}
 	result.Action = domain.ImportActionCreate
 	return result

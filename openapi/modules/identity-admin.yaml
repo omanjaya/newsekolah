@@ -314,7 +314,13 @@ paths:
                 name: { type: string, minLength: 1, maxLength: 150 }
                 email: { type: string, format: email }
                 phone: { type: string, maxLength: 30 }
-                locale: { type: string, enum: [id, en] }
+                locale:
+                  type: string
+                  enum: [id, en, ""]
+                  description: >-
+                    The caller's language preference. Omit to keep the
+                    stored one; an empty string clears it so the tenant's
+                    language applies again.
                 detail: { $ref: "#/components/schemas/UserProfileFields" }
       responses:
         "200":

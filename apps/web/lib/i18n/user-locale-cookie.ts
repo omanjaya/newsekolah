@@ -6,7 +6,8 @@ import type { Locale } from "@newsekolah/i18n";
  * the root and route layouts render before any client code can read
  * `/v1/me`. Not a credential and not sensitive (two possible values), so it
  * is a plain, script-readable cookie; `UserLocaleSync` writes it once the
- * session is known and an explicit sign-out removes it.
+ * session is known, removes it when the user has no preference (so the
+ * school's language applies), and an explicit sign-out removes it too.
  */
 export const USER_LOCALE_COOKIE = "user_locale";
 

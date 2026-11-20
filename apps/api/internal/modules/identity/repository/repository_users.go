@@ -51,7 +51,7 @@ func (r *Repository) ListUsersAdmin(ctx context.Context, tenantID uuid.UUID, f s
 		out[i] = service.UserAdminRow{
 			ID: row.ID, Username: row.Username, Email: pdatabase.TextOrEmpty(row.Email), Phone: pdatabase.TextOrEmpty(row.Phone),
 			Name: row.Name, Status: domain.UserStatus(row.Status), ProfileKind: domain.ProfileKind(pdatabase.TextOrEmpty(row.ProfileKind)),
-			Locale: row.Locale, MustChangePassword: row.MustChangePassword, LastLoginAt: pdatabase.TimeOrZero(row.LastLoginAt),
+			Locale: row.Locale.String, MustChangePassword: row.MustChangePassword, LastLoginAt: pdatabase.TimeOrZero(row.LastLoginAt),
 			CreatedAt: pdatabase.TimeOrZero(row.CreatedAt), AvatarAssetID: pdatabase.UUIDOrNil(row.AvatarAssetID),
 		}
 	}
@@ -81,7 +81,7 @@ func (r *Repository) GetUserAdminByID(ctx context.Context, tenantID, userID uuid
 	return service.UserAdminRow{
 		ID: row.ID, Username: row.Username, Email: pdatabase.TextOrEmpty(row.Email), Phone: pdatabase.TextOrEmpty(row.Phone),
 		Name: row.Name, Status: domain.UserStatus(row.Status), ProfileKind: domain.ProfileKind(pdatabase.TextOrEmpty(row.ProfileKind)),
-		Locale: row.Locale, MustChangePassword: row.MustChangePassword, LastLoginAt: pdatabase.TimeOrZero(row.LastLoginAt),
+		Locale: row.Locale.String, MustChangePassword: row.MustChangePassword, LastLoginAt: pdatabase.TimeOrZero(row.LastLoginAt),
 		CreatedAt: pdatabase.TimeOrZero(row.CreatedAt), AvatarAssetID: pdatabase.UUIDOrNil(row.AvatarAssetID),
 	}, nil
 }

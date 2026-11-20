@@ -467,6 +467,7 @@
         "phoneLabel": "Telepon",
         "phonePlaceholder": "Isi nomor baru",
         "localeLabel": "Bahasa pilihan",
+        "localeSchool": "Ikuti bahasa sekolah",
         "localeId": "Bahasa Indonesia",
         "localeEn": "Bahasa Inggris",
         "requiredError": "Nama lengkap wajib diisi.",

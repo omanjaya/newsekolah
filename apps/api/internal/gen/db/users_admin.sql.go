@@ -165,7 +165,7 @@ type GetUserAdminByIDRow struct {
 	Status             string             `json:"status"`
 	MustChangePassword bool               `json:"must_change_password"`
 	LastLoginAt        pgtype.Timestamptz `json:"last_login_at"`
-	Locale             string             `json:"locale"`
+	Locale             pgtype.Text        `json:"locale"`
 	AvatarAssetID      pgtype.UUID        `json:"avatar_asset_id"`
 	CreatedAt          pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
@@ -326,7 +326,7 @@ type ListUsersAdminRow struct {
 	Status             string             `json:"status"`
 	MustChangePassword bool               `json:"must_change_password"`
 	LastLoginAt        pgtype.Timestamptz `json:"last_login_at"`
-	Locale             string             `json:"locale"`
+	Locale             pgtype.Text        `json:"locale"`
 	AvatarAssetID      pgtype.UUID        `json:"avatar_asset_id"`
 	CreatedAt          pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
@@ -426,27 +426,28 @@ func (q *Queries) SetUserStatus(ctx context.Context, arg SetUserStatusParams) er
 
 const updateUserBasic = `-- name: UpdateUserBasic :exec
 update users
-set name = $3, email = $4, phone = $5, locale = $6
-where tenant_id = $1 and id = $2 and deleted_at is null
+set name = $1, email = $2, phone = $3, locale = nullif($4::text, '')
+where tenant_id = $5 and id = $6 and deleted_at is null
 `
 
 type UpdateUserBasicParams struct {
-	TenantID uuid.UUID   `json:"tenant_id"`
-	ID       uuid.UUID   `json:"id"`
 	Name     string      `json:"name"`
 	Email    pgtype.Text `json:"email"`
 	Phone    pgtype.Text `json:"phone"`
 	Locale   string      `json:"locale"`
+	TenantID uuid.UUID   `json:"tenant_id"`
+	ID       uuid.UUID   `json:"id"`
 }
 
+// An empty locale stores NULL: no preference, the school's language applies.
 func (q *Queries) UpdateUserBasic(ctx context.Context, arg UpdateUserBasicParams) error {
 	_, err := q.db.Exec(ctx, updateUserBasic,
-		arg.TenantID,
-		arg.ID,
 		arg.Name,
 		arg.Email,
 		arg.Phone,
 		arg.Locale,
+		arg.TenantID,
+		arg.ID,
 	)
 	return err
 }

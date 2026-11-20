@@ -426,6 +426,7 @@ type Querier interface {
 	CreateTenantPolicy(ctx context.Context, arg CreateTenantPolicyParams) (TenantPolicy, error)
 	CreateTenantPolicyForPermits(ctx context.Context, arg CreateTenantPolicyForPermitsParams) (TenantPolicy, error)
 	CreateTitle(ctx context.Context, arg CreateTitleParams) (LibraryTitle, error)
+	// An empty locale stores NULL: no preference, the school's language applies.
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserProfile(ctx context.Context, arg CreateUserProfileParams) error
 	CreateViolation(ctx context.Context, arg CreateViolationParams) (LibraryViolation, error)
@@ -1691,6 +1692,7 @@ type Querier interface {
 	UpdateMemberProfile(ctx context.Context, arg UpdateMemberProfileParams) (LibraryMember, error)
 	UpdateMemberStatus(ctx context.Context, arg UpdateMemberStatusParams) (LibraryMember, error)
 	UpdateMemberType(ctx context.Context, arg UpdateMemberTypeParams) (LibraryMemberType, error)
+	// An empty locale stores NULL: no preference, the school's language applies.
 	UpdateOwnProfile(ctx context.Context, arg UpdateOwnProfileParams) error
 	UpdatePartner(ctx context.Context, arg UpdatePartnerParams) (LibraryPartner, error)
 	UpdateReportSchedule(ctx context.Context, arg UpdateReportScheduleParams) (ReportSchedule, error)
@@ -1698,6 +1700,7 @@ type Querier interface {
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)
 	UpdateTenantProfile(ctx context.Context, arg UpdateTenantProfileParams) (Tenant, error)
 	UpdateTitle(ctx context.Context, arg UpdateTitleParams) (LibraryTitle, error)
+	// An empty locale stores NULL: no preference, the school's language applies.
 	UpdateUserBasic(ctx context.Context, arg UpdateUserBasicParams) error
 	UpdateUserLastLogin(ctx context.Context, arg UpdateUserLastLoginParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error

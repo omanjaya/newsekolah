@@ -14,7 +14,10 @@ import (
 
 const createUser = `-- name: CreateUser :one
 insert into users (tenant_id, username, email, phone, password_hash, name, status, must_change_password, locale)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+values (
+  $1, $2, $3, $4, $5, $6, $7, $8,
+  nullif($9::text, '')
+)
 returning id, tenant_id, username, email, phone, password_hash, name, status, must_change_password, last_login_at, locale, avatar_asset_id, created_at, updated_at, deleted_at
 `
 
@@ -30,6 +33,7 @@ type CreateUserParams struct {
 	Locale             string      `json:"locale"`
 }
 
+// An empty locale stores NULL: no preference, the school's language applies.
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, createUser,
 		arg.TenantID,

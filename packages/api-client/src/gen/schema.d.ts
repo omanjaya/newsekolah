@@ -9926,7 +9926,7 @@ export interface components {
             /** Format: uri */
             avatar_url?: string;
             /**
-             * @description The user's own language preference (users.locale), set on the profile page. Clients render in it ahead of the tenant's default language. Always sent by the server.
+             * @description The user's own language preference (users.locale), set on the profile page. Clients render in it ahead of the tenant's default language. Omitted when the user never chose one, so the tenant's language applies.
              * @enum {string}
              */
             locale?: "id" | "en";
@@ -18489,8 +18489,11 @@ export interface operations {
                     /** Format: email */
                     email?: string;
                     phone?: string;
-                    /** @enum {string} */
-                    locale?: "id" | "en";
+                    /**
+                     * @description The caller's language preference. Omit to keep the stored one; an empty string clears it so the tenant's language applies again.
+                     * @enum {string}
+                     */
+                    locale?: "id" | "en" | "";
                     detail?: components["schemas"]["UserProfileFields"];
                 };
             };

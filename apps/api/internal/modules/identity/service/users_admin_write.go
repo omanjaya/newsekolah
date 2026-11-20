@@ -41,18 +41,13 @@ func (s *Service) CreateUser(ctx context.Context, tenantID, actorID uuid.UUID, i
 			return err
 		}
 
-		locale := in.Locale
-		if locale == "" {
-			locale = "id"
-		}
-
 		// Every freshly created account must change its password at first
 		// login, whether the admin chose one or it was randomly generated
 		// (the latter is never returned to anyone -- reset-password is the
 		// only way to hand this user a usable credential).
 		user, err := s.repo.CreateUserRecord(ctx, NewUserRecord{
 			TenantID: tenantID, Username: username, Email: in.Email, Phone: in.Phone,
-			PasswordHash: hash, Name: in.Name, Locale: locale, MustChangePassword: true,
+			PasswordHash: hash, Name: in.Name, Locale: in.Locale, MustChangePassword: true,
 		})
 		if err != nil {
 			return fmt.Errorf("create user: %w", err)
@@ -105,8 +100,9 @@ func (s *Service) UpdateUser(ctx context.Context, tenantID, actorID, userID uuid
 			}
 		}
 
-		// An absent locale keeps the stored preference: the admin user form
-		// does not edit it, and users_locale_check rejects an empty value.
+		// An absent locale keeps the stored preference (which may be none):
+		// the admin user form does not edit it, so an edit never sets or
+		// clears the user's own choice.
 		locale := in.Locale
 		if locale == "" {
 			locale = before.Locale

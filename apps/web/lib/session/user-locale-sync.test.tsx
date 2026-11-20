@@ -1,7 +1,11 @@
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { clearUserLocaleCookie, readUserLocaleCookie } from "../i18n/user-locale-cookie";
+import {
+  clearUserLocaleCookie,
+  readUserLocaleCookie,
+  writeUserLocaleCookie,
+} from "../i18n/user-locale-cookie";
 
 import { UserLocaleSync } from "./user-locale-sync";
 
@@ -21,7 +25,7 @@ afterEach(() => {
 
 describe("UserLocaleSync", () => {
   it("stores the user's preference and re-renders the page in it", () => {
-    session.mockReturnValue({ me: { locale: "en" } });
+    session.mockReturnValue({ me: { locale: "en", tenant: { locale: "id" } } });
     uiLocale.mockReturnValue("id");
     const { rerender } = render(<UserLocaleSync />);
 
@@ -34,7 +38,7 @@ describe("UserLocaleSync", () => {
   });
 
   it("only stores the preference when the page is already in it", () => {
-    session.mockReturnValue({ me: { locale: "id" } });
+    session.mockReturnValue({ me: { locale: "id", tenant: { locale: "id" } } });
     uiLocale.mockReturnValue("id");
     render(<UserLocaleSync />);
 
@@ -45,6 +49,25 @@ describe("UserLocaleSync", () => {
   it("does nothing while signed out", () => {
     session.mockReturnValue({ me: undefined });
     uiLocale.mockReturnValue("id");
+    render(<UserLocaleSync />);
+
+    expect(readUserLocaleCookie()).toBeUndefined();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("clears a stale preference and re-renders in the school's language", () => {
+    writeUserLocaleCookie("en");
+    session.mockReturnValue({ me: { tenant: { locale: "id" } } });
+    uiLocale.mockReturnValue("en");
+    render(<UserLocaleSync />);
+
+    expect(readUserLocaleCookie()).toBeUndefined();
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves an English-language school in English when the user has no preference", () => {
+    session.mockReturnValue({ me: { tenant: { locale: "en" } } });
+    uiLocale.mockReturnValue("en");
     render(<UserLocaleSync />);
 
     expect(readUserLocaleCookie()).toBeUndefined();
