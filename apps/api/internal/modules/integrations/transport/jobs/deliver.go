@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -72,7 +73,8 @@ func (w *DeliverWebhookWorker) Work(ctx context.Context, job *river.Job[service.
 		return nil
 	}
 	if !endpoint.Enabled() {
-		terminalErr := fmt.Errorf("webhook endpoint %s is disabled", endpoint.ID)
+		terminalErr := domain.NewDeliveryError(domain.FailureEndpointDisabled,
+			fmt.Errorf("webhook endpoint %s is disabled", endpoint.ID))
 		return w.svc.RecordAttempt(ctx, args.TenantID, endpoint.ID, delivery.ID, job.Attempt, nil, terminalErr, true, w.clock.Now())
 	}
 
@@ -108,16 +110,27 @@ func (w *DeliverWebhookWorker) send(ctx context.Context, endpoint domain.Webhook
 
 	resp, err := w.client.Do(req)
 	if err != nil {
-		if errors.Is(err, errRedirectRefused) {
-			return nil, errRedirectRefused
-		}
-		return nil, fmt.Errorf("send webhook request: %w", err)
+		return nil, domain.NewDeliveryError(classifySendError(err), fmt.Errorf("send webhook request: %w", err))
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	code := resp.StatusCode
 	if code < 200 || code >= 300 {
-		return &code, fmt.Errorf("receiver responded %d", code)
+		return &code, domain.NewDeliveryError(domain.FailureHTTPStatus, fmt.Errorf("receiver responded %d", code))
 	}
 	return &code, nil
+}
+
+// classifySendError names why a request got no answer: a refused
+// redirect, a timeout (the client's own deadline or a network one), or
+// anything else that kept the receiver unreachable.
+func classifySendError(err error) domain.DeliveryFailure {
+	if errors.Is(err, errRedirectRefused) {
+		return domain.FailureRedirectRefused
+	}
+	var netErr net.Error
+	if errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &netErr) && netErr.Timeout()) {
+		return domain.FailureTimeout
+	}
+	return domain.FailureUnreachable
 }

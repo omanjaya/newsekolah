@@ -244,11 +244,11 @@ func (r *Repository) ListDeliveries(ctx context.Context, tenantID uuid.UUID, end
 	return out, nil
 }
 
-func (r *Repository) UpdateDeliveryAttempt(ctx context.Context, tenantID, id uuid.UUID, status domain.DeliveryStatus, attemptCount int, statusCode *int, lastError string, deliveredAt, nextAttemptAt *time.Time) error {
+func (r *Repository) UpdateDeliveryAttempt(ctx context.Context, tenantID, id uuid.UUID, status domain.DeliveryStatus, attemptCount int, statusCode *int, failure domain.AttemptFailure, deliveredAt, nextAttemptAt *time.Time) error {
 	if err := r.queries(ctx).UpdateWebhookDeliveryAttempt(ctx, db.UpdateWebhookDeliveryAttemptParams{
 		TenantID: tenantID, ID: id, Status: string(status),
 		AttemptCount:   int32(attemptCount), //nolint:gosec // bounded by domain.MaxDeliveryAttempts
-		LastStatusCode: int4Ptr(statusCode), LastError: lastError,
+		LastStatusCode: int4Ptr(statusCode), LastError: failure.Detail, FailureReason: string(failure.Reason),
 		DeliveredAt: timestamptzPtr(deliveredAt), NextAttemptAt: timestamptzPtr(nextAttemptAt),
 	}); err != nil {
 		return fmt.Errorf("update webhook delivery attempt: %w", err)
@@ -265,7 +265,7 @@ func toDelivery(row db.IntegrationWebhookDelivery) domain.Delivery {
 	return domain.Delivery{
 		ID: row.ID, TenantID: row.TenantID, EndpointID: row.EndpointID, EventType: row.EventType,
 		EventID: row.EventID, Payload: row.Payload, Status: domain.DeliveryStatus(row.Status),
-		AttemptCount: int(row.AttemptCount), LastStatusCode: statusCode, LastError: row.LastError,
+		AttemptCount: int(row.AttemptCount), LastStatusCode: statusCode, FailureReason: domain.DeliveryFailure(row.FailureReason), LastError: row.LastError,
 		DeliveredAt: database.TimePtr(row.DeliveredAt), NextAttemptAt: database.TimePtr(row.NextAttemptAt),
 		CreatedAt: database.TimeOrZero(row.CreatedAt),
 	}

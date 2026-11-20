@@ -567,6 +567,7 @@ type IntegrationWebhookDelivery struct {
 	DeliveredAt    pgtype.Timestamptz `json:"delivered_at"`
 	NextAttemptAt  pgtype.Timestamptz `json:"next_attempt_at"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	FailureReason  string             `json:"failure_reason"`
 }
 
 type IntegrationWebhookEndpoint struct {

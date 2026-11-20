@@ -147,6 +147,14 @@
       "reason": "Alasan",
       "actions": "Aksi"
     },
+    "reason": {
+      "http_status": "Penerima membalas HTTP {code}",
+      "timeout": "Penerima tidak menjawab tepat waktu",
+      "unreachable": "Gagal terhubung ke penerima",
+      "redirect_refused": "Penerima mengalihkan ke alamat lain; pengalihan tidak diikuti",
+      "endpoint_disabled": "Endpoint dinonaktifkan, tidak ada yang dikirim",
+      "unknown": "Pengiriman gagal"
+    },
     "pagePrev": "Sebelumnya",
     "pageNext": "Berikutnya"
   },

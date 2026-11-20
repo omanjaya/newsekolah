@@ -7,7 +7,12 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
+  useTranslations: () =>
+    Object.assign(
+      (key: string, values?: { code?: unknown }) =>
+        values && "code" in values ? `${key}:${String(values.code)}` : key,
+      { has: () => false },
+    ),
   useLocale: () => "id",
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
@@ -78,6 +83,46 @@ describe("WebhookDeliveriesPanel filters", () => {
     // The table's own error state, with its retry (UiLabels.tableRetry).
     expect(screen.getAllByRole("button", { name: "Coba lagi" }).length).toBeGreaterThan(0);
     expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+  });
+
+  // admin-settings-R4: the reason column showed the worker's English Go
+  // error ("receiver responded 405"); it now names the reason code.
+  it("names a failure by its reason code, never the server's error text", () => {
+    mocks.useWebhookDeliveriesQuery.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: "d1",
+            endpoint_id: "endpoint-a",
+            event_type: "announcement.published",
+            status: "pending",
+            attempt_count: 1,
+            last_status_code: 405,
+            failure_reason: "http_status",
+            last_error: "receiver responded 405",
+            created_at: "2026-11-20T03:00:00Z",
+          },
+          {
+            id: "d2",
+            endpoint_id: "endpoint-a",
+            event_type: "announcement.published",
+            status: "failed",
+            attempt_count: 8,
+            failure_reason: "unreachable",
+            last_error: 'send webhook request: Post "https://a.example.com/hook": dial tcp',
+            created_at: "2026-11-19T03:00:00Z",
+          },
+        ],
+        page: { next_cursor: null },
+      },
+      isLoading: false,
+    });
+    render(<WebhookDeliveriesPanel endpointId="" onEndpointChange={vi.fn()} />);
+
+    expect(screen.getAllByText("reason.http_status:405").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("reason.unreachable:").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/receiver responded/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/dial tcp/)).not.toBeInTheDocument();
   });
 
   // The log has an endpoint filter but no search box.

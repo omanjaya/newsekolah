@@ -202,9 +202,14 @@ func (h *IntegrationsHandler) ListIntegrationEventTypes(_ context.Context, _ api
 }
 
 func toWebhookDelivery(d domain.Delivery) api.WebhookDelivery {
-	return api.WebhookDelivery{
+	out := api.WebhookDelivery{
 		Id: d.ID, EndpointId: d.EndpointID, EventType: d.EventType, Status: api.WebhookDeliveryStatus(d.Status),
 		AttemptCount: d.AttemptCount, LastStatusCode: d.LastStatusCode, LastError: d.LastError,
 		DeliveredAt: d.DeliveredAt, NextAttemptAt: d.NextAttemptAt, CreatedAt: d.CreatedAt,
 	}
+	if d.FailureReason != domain.FailureNone {
+		reason := api.WebhookDeliveryFailureReason(d.FailureReason)
+		out.FailureReason = &reason
+	}
+	return out
 }

@@ -55,7 +55,7 @@ type WebhookRepository interface {
 	CreateDelivery(ctx context.Context, d domain.Delivery) (domain.Delivery, error)
 	GetDelivery(ctx context.Context, tenantID, id uuid.UUID) (domain.Delivery, error)
 	ListDeliveries(ctx context.Context, tenantID uuid.UUID, endpointID uuid.NullUUID, cursor Cursor, limit int) ([]domain.Delivery, error)
-	UpdateDeliveryAttempt(ctx context.Context, tenantID, id uuid.UUID, status domain.DeliveryStatus, attemptCount int, statusCode *int, lastError string, deliveredAt, nextAttemptAt *time.Time) error
+	UpdateDeliveryAttempt(ctx context.Context, tenantID, id uuid.UUID, status domain.DeliveryStatus, attemptCount int, statusCode *int, failure domain.AttemptFailure, deliveredAt, nextAttemptAt *time.Time) error
 }
 
 // PermissionsProvider resolves the effective permission set a user (the

@@ -129,10 +129,15 @@ export function WebhookDeliveriesPanel({
       {
         id: "reason",
         header: t("columns.reason"),
+        // The reason code, translated; last_error is the server's English
+        // diagnosis and never shown here.
         cell: ({ row }) => {
-          const { last_error: lastError, last_status_code: statusCode } = row.original;
-          const reason = lastError !== "" ? lastError : statusCode ? `HTTP ${statusCode}` : "-";
-          return <span className="text-fg-muted">{reason}</span>;
+          const { failure_reason: reason, last_status_code: statusCode } = row.original;
+          return (
+            <span className="text-fg-muted">
+              {reason ? t(`reason.${reason}`, { code: statusCode ?? "" }) : "-"}
+            </span>
+          );
         },
       },
       {

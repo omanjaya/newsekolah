@@ -147,6 +147,14 @@
       "reason": "Reason",
       "actions": "Actions"
     },
+    "reason": {
+      "http_status": "The receiver responded with HTTP {code}",
+      "timeout": "The receiver did not answer in time",
+      "unreachable": "Could not connect to the receiver",
+      "redirect_refused": "The receiver redirected elsewhere; redirects are not followed",
+      "endpoint_disabled": "The endpoint is disabled, nothing was sent",
+      "unknown": "Delivery failed"
+    },
     "pagePrev": "Previous",
     "pageNext": "Next"
   },

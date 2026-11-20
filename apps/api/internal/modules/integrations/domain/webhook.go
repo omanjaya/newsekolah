@@ -83,10 +83,13 @@ type Delivery struct {
 	Status         DeliveryStatus
 	AttemptCount   int
 	LastStatusCode *int
-	LastError      string
-	DeliveredAt    *time.Time
-	NextAttemptAt  *time.Time
-	CreatedAt      time.Time
+	// FailureReason is why the last attempt failed, for people;
+	// LastError is the error text behind it, for the server's logs.
+	FailureReason DeliveryFailure
+	LastError     string
+	DeliveredAt   *time.Time
+	NextAttemptAt *time.Time
+	CreatedAt     time.Time
 }
 
 // Retryable reports whether a manual retry action may act on this
