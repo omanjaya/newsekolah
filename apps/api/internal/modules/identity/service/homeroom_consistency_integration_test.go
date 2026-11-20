@@ -133,7 +133,7 @@ func TestHomeroomDutyStaysConsistentWithTheClass(t *testing.T) {
 	require.Equal(t, held(wakasek), classHomeroom(classA))
 }
 
-// Migration 0130 heals a teacher left as homeroom of several classes by
+// Migration 0132 heals a teacher left as homeroom of several classes by
 // older code: the newest class is kept, the others are ended and lose
 // their homeroom teacher, so the class list and the duty list agree.
 func TestSingleHomeroomMigrationHealsATeacherWithTwoClasses(t *testing.T) {
@@ -168,7 +168,7 @@ func TestSingleHomeroomMigrationHealsATeacherWithTwoClasses(t *testing.T) {
 	require.NoError(t, err)
 
 	// Run the migration's healing steps again (everything before the guard).
-	up, err := migrations.FS.ReadFile("0130_single_active_homeroom.up.sql")
+	up, err := migrations.FS.ReadFile("0132_single_active_homeroom.up.sql")
 	require.NoError(t, err)
 	heal, _, found := strings.Cut(string(up), "create function guard_single_active_homeroom")
 	require.True(t, found)

@@ -1,4 +1,4 @@
--- Reverses 0129_teacher_mentor_coach.up.sql: the teacher system role's
+-- Reverses 0136_teacher_mentor_coach.up.sql: the teacher system role's
 -- manage_mentoring and record_extracurricular_attendance grants. The
 -- permission codes themselves stay in the catalog: they predate it.
 delete from role_permissions

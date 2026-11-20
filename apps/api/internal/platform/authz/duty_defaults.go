@@ -27,7 +27,7 @@ func DutyTypeDefaults() []DutyTypeDefault {
 		// principal, whose role leaves that permission out on purpose
 		// (role_defaults.go).
 		// view_counseling: reads the counseling notes a counselor shares with
-		// leadership (backfilled by 0130_view_counseling_permission.up.sql).
+		// leadership (backfilled by 0134_view_counseling_permission.up.sql).
 		{"leadership", "Wakil Kepala Sekolah", "school", []string{PermReviewLeaveRequests, PermIssueLeaveLetters, PermViewReports, PermIssueWarningLetters, PermViewDiscipline, PermIssueScanTokens, PermViewCounseling}},
 		{"security", "Satpam", "school", []string{PermScanExitPermits}},
 		{"librarian", "Petugas Perpustakaan", "school", []string{PermManageLibraryCirculation}},

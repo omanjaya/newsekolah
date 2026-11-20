@@ -62,7 +62,7 @@ func RoleDefaults() []RoleDefault {
 			// activities service to the club's coach_user_id. Never
 			// view_activities, which reads every club and achievement.
 			// Backfilled for existing tenants by
-			// 0129_teacher_mentor_coach.up.sql.
+			// 0136_teacher_mentor_coach.up.sql.
 			PermManageMentoring, PermRecordExtracurricularAttendance,
 		}},
 		{RoleSlugStaff, "Pegawai", []string{
@@ -74,7 +74,7 @@ func RoleDefaults() []RoleDefault {
 			// non-teaching employee (security, cleaners, TU), so billing
 			// is granted through the bursar ("Bendahara") duty to the one
 			// person who runs the cash desk (duty_defaults.go). Removed
-			// from existing tenants by 0129_staff_billing_to_bursar_duty.
+			// from existing tenants by 0137_staff_billing_to_bursar_duty.
 		}},
 		{RoleSlugStudent, "Siswa", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewSchedules, PermViewAcademicData,
@@ -160,7 +160,7 @@ func RoleDefaults() []RoleDefault {
 			// is the principal's decision, not master-data upkeep. It edits
 			// calendar events only, never academic years or terms
 			// (manage_academic_years). Backfilled by
-			// 0129_manage_calendar_permission.up.sql.
+			// 0131_manage_calendar_permission.up.sql.
 			PermManageCalendar,
 			PermViewActivities,
 			PermViewEarlyWarning, // not manage_early_warning_rules (tuning thresholds is configuration, not oversight)

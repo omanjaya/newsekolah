@@ -47,7 +47,7 @@ func (st *Store) migrateDutyAssignments(
 		classID := class.targetClassID
 		homeroomDutyID := dutyIDs[mapping.DutyHomeroom]
 		// The target allows one active homeroom holder per class and one
-		// homeroom class per teacher (migration 0130). On a re-run after
+		// homeroom class per teacher (migration 0132). On a re-run after
 		// the source changed a class's homeroom teacher, the previous
 		// holder must hand over first, or the upsert below is refused.
 		if err := st.endOtherHomeroomHolders(ctx, academicYearID, homeroomDutyID, classID, user.targetUserID, startsOn); err != nil {

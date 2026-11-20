@@ -305,7 +305,7 @@ Duty assignment diturunkan dari tiga sumber independen
 | `management_staff`       | `leadership` | sekolah |
 
 Target hanya mengizinkan satu wali kelas aktif per kelas dan satu kelas
-binaan per guru dalam satu tahun ajaran (migrasi 0130). Karena itu, sebelum
+binaan per guru dalam satu tahun ajaran (migrasi 0132). Karena itu, sebelum
 menulis wali kelas sebuah kelas, ETL mengakhiri pemegang lain kelas itu dan
 kelas lain milik guru yang sama, sehingga re-run setelah SION mengganti wali
 kelas tetap konvergen. Kelas sumber dengan lebih dari satu baris

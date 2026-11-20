@@ -13,7 +13,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/migrations"
 )
 
-// TestStaffBillingMigration runs 0129_staff_billing_to_bursar_duty.up.sql
+// TestStaffBillingMigration runs 0137_staff_billing_to_bursar_duty.up.sql
 // against a tenant whose staff role still carries the old billing grants:
 // the system staff role loses them, a custom role keeps them, and the
 // tenant gets a bursar duty holding exactly view_billing and
@@ -44,7 +44,7 @@ func TestStaffBillingMigration(t *testing.T) {
 		}
 	}
 
-	up, err := migrations.FS.ReadFile("0129_staff_billing_to_bursar_duty.up.sql")
+	up, err := migrations.FS.ReadFile("0137_staff_billing_to_bursar_duty.up.sql")
 	require.NoError(t, err)
 	_, err = pg.AdminPool.Exec(ctx, string(up))
 	require.NoError(t, err)
