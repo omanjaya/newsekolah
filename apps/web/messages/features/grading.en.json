@@ -245,7 +245,8 @@
     "skippedRow": "{student} - {subject}",
     "reason": {
       "missing_nisn": "Missing NISN",
-      "no_published_score": "Score not published"
+      "subject_not_published": "Subject grades not published",
+      "no_score": "Student has no report score yet"
     },
     "download": "Download e-Rapor file",
     "downloadError": "Could not download the e-Rapor file.",

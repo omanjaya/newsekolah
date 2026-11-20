@@ -22136,7 +22136,8 @@ components:
       type: string
       enum:
         - missing_nisn
-        - no_published_score
+        - subject_not_published
+        - no_score
     EraporSkip:
       type: object
       required:

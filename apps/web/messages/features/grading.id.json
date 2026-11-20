@@ -245,7 +245,8 @@
     "skippedRow": "{student} - {subject}",
     "reason": {
       "missing_nisn": "NISN belum diisi",
-      "no_published_score": "Nilai belum diterbitkan"
+      "subject_not_published": "Nilai mapel belum diterbitkan",
+      "no_score": "Siswa belum punya nilai rapor"
     },
     "download": "Unduh berkas e-Rapor",
     "downloadError": "Gagal mengunduh berkas e-Rapor.",

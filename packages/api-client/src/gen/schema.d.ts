@@ -9531,7 +9531,7 @@ export interface components {
             predicate: string;
         };
         /** @enum {string} */
-        EraporSkipReason: "missing_nisn" | "no_published_score";
+        EraporSkipReason: "missing_nisn" | "subject_not_published" | "no_score";
         EraporSkip: {
             student_name: string;
             subject_name: string;
