@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/xuri/excelize/v2"
@@ -152,8 +151,10 @@ func (s *Service) ImportPreview(ctx context.Context, tenantID, yearID uuid.UUID,
 // applies every row that resolves to assign or move. Per the old app's
 // behaviour, an invalid file is rejected outright -- nothing is written --
 // unless partial is true, in which case error rows are skipped and every
-// other row is still applied.
-func (s *Service) ImportCommit(ctx context.Context, tenantID, yearID uuid.UUID, file []byte, joinedOn time.Time, moveExisting, partial bool) ([]ImportRowResult, error) {
+// other row is still applied. Every enrollment it writes joins (and every
+// moved one leaves) on the school's own calendar day (tenantToday), not
+// the UTC date of the instant.
+func (s *Service) ImportCommit(ctx context.Context, tenantID, yearID uuid.UUID, file []byte, moveExisting, partial bool) ([]ImportRowResult, error) {
 	rows, err := parseImportRows(file)
 	if err != nil {
 		return nil, err
@@ -166,6 +167,7 @@ func (s *Service) ImportCommit(ctx context.Context, tenantID, yearID uuid.UUID, 
 		}
 
 		results = s.evaluateAll(ctx, tenantID, yearID, rows, moveExisting)
+		joinedOn := s.tenantToday(ctx, tenantID)
 		if !partial {
 			for _, r := range results {
 				if r.Action == ImportRowError {
