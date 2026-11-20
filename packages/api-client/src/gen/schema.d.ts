@@ -1241,6 +1241,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/analytics/recompute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rescore every student of the school now, so absences, violations and grades recorded today show without waiting for the scheduled run. */
+        post: operations["recomputeEarlyWarning"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/analytics/admin-dashboard": {
         parameters: {
             query?: never;
@@ -8663,6 +8680,10 @@ export interface components {
             has_grade_trend: boolean;
             previous_average: number;
             current_average: number;
+            /** @description Subjects with a published report score in the active term */
+            scored_subjects: number;
+            /** @description Of scored_subjects, those below the subject's KKTP */
+            subjects_below_kktp: number;
         };
         StudentRisk: {
             /** Format: uuid */
@@ -8697,6 +8718,8 @@ export interface components {
             warning_letter_at_risk_count: number;
             grade_drop_watch_points: number;
             grade_drop_at_risk_points: number;
+            below_kktp_watch_count: number;
+            below_kktp_at_risk_count: number;
             attendance_weight: number;
             discipline_weight: number;
             warning_weight: number;
@@ -15048,6 +15071,34 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    recomputeEarlyWarning: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rescored */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Students rescored */
+                        scored: number;
+                        /** Format: date-time */
+                        computed_at: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
         };
     };
     getAdminDashboard: {

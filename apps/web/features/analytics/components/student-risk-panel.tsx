@@ -156,6 +156,18 @@ export function StudentRiskPanel({ studentId }: { studentId: string }): ReactEle
               )}
             </SignalRow>
           )}
+          {gradingOn && (
+            <SignalRow label={t("signals.belowKktp")}>
+              {data.signals.scored_subjects > 0 ? (
+                <SignalFigure
+                  value={data.signals.subjects_below_kktp}
+                  unit={t("signals.belowKktpUnit", { scored: data.signals.scored_subjects })}
+                />
+              ) : (
+                <p className="text-body-sm text-fg-muted">{t("signals.noData")}</p>
+              )}
+            </SignalRow>
+          )}
         </dl>
       </Card>
     </div>

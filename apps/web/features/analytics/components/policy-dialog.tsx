@@ -108,6 +108,7 @@ function PolicyForm({
           body.discipline_at_risk_points <= body.discipline_watch_points ||
           body.warning_letter_at_risk_count <= body.warning_letter_watch_count ||
           body.grade_drop_at_risk_points <= body.grade_drop_watch_points ||
+          body.below_kktp_at_risk_count <= body.below_kktp_watch_count ||
           body.at_risk_score <= body.watch_score
         ) {
           setError(t("thresholdError"));

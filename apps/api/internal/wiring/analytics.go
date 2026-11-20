@@ -116,8 +116,9 @@ type AnalyticsGrading struct {
 // average against the term immediately before it. Available is false when
 // either term has no published report score to average (e.g. the student's
 // first term, or a term whose grades are not yet published): analytics must
-// not invent a trend when the data does not support one. While the tenant
-// has grading turned off nobody has a trend.
+// not invent a trend when the data does not support one. The active term's
+// subjects below KKTP are reported either way. While the tenant has grading
+// turned off nobody has a trend.
 func (g AnalyticsGrading) ReportTrends(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID) (map[uuid.UUID]analyticsservice.GradeTrend, error) {
 	if on, err := moduleEnabled(ctx, g.Flags, tenantID, platformdomain.ModuleGrading); err != nil || !on {
 		return map[uuid.UUID]analyticsservice.GradeTrend{}, err
@@ -128,7 +129,10 @@ func (g AnalyticsGrading) ReportTrends(ctx context.Context, tenantID uuid.UUID, 
 	}
 	out := make(map[uuid.UUID]analyticsservice.GradeTrend, len(trends))
 	for id, t := range trends {
-		out[id] = analyticsservice.GradeTrend{Available: t.Available, PreviousAverage: t.PreviousAverage, CurrentAverage: t.CurrentAverage}
+		out[id] = analyticsservice.GradeTrend{
+			Available: t.Available, PreviousAverage: t.PreviousAverage, CurrentAverage: t.CurrentAverage,
+			ScoredSubjects: t.ScoredSubjects, SubjectsBelowKKTP: t.SubjectsBelowKKTP,
+		}
 	}
 	return out, nil
 }

@@ -68,6 +68,7 @@ func (s *Service) withoutDisabledSources(ctx context.Context, tenantID uuid.UUID
 		}
 		if gradingOff {
 			signals.HasGradeTrend, signals.PreviousAverage, signals.CurrentAverage = false, 0, 0
+			signals.ScoredSubjects, signals.SubjectsBelowKKTP = 0, 0
 		}
 		scored := domain.Score(signals, policy)
 		result.Signals, result.Level, result.Score, result.Reasons = signals, scored.Level, scored.Score, scored.Reasons

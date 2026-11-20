@@ -90,6 +90,15 @@ func (h *AnalyticsHandler) UpdateEarlyWarningPolicy(ctx context.Context, request
 	return api.UpdateEarlyWarningPolicy200JSONResponse(toAPIPolicy(policy)), nil
 }
 
+// RecomputeEarlyWarning rescores the caller's school now.
+func (h *AnalyticsHandler) RecomputeEarlyWarning(ctx context.Context, _ api.RecomputeEarlyWarningRequestObject) (api.RecomputeEarlyWarningResponseObject, error) {
+	scored, computedAt, err := h.service.RecomputeNow(ctx, tenantID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.RecomputeEarlyWarning200JSONResponse{Scored: scored, ComputedAt: computedAt}, nil
+}
+
 func toAPIStudentRisk(r service.StoredResult) api.StudentRisk {
 	item := api.StudentRisk{
 		StudentUserId: r.StudentUserID, Level: api.RiskLevel(r.Level), Score: r.Score, ComputedAt: r.ComputedAt,
@@ -108,6 +117,7 @@ func toAPIStudentRiskDetail(r service.StoredResult) api.StudentRiskDetail {
 			ActiveViolationCount: r.Signals.ActiveViolationCount, DisciplinePoints: r.Signals.DisciplinePoints,
 			WarningLetterCount: r.Signals.WarningLetterCount, HasGradeTrend: r.Signals.HasGradeTrend,
 			PreviousAverage: float32(r.Signals.PreviousAverage), CurrentAverage: float32(r.Signals.CurrentAverage),
+			ScoredSubjects: r.Signals.ScoredSubjects, SubjectsBelowKktp: r.Signals.SubjectsBelowKKTP,
 		},
 		Reasons: make([]api.RiskReason, len(r.Reasons)),
 	}
@@ -127,6 +137,7 @@ func toAPIPolicy(p domain.Policy) api.EarlyWarningPolicy {
 		DisciplineWatchPoints: p.DisciplineWatchPoints, DisciplineAtRiskPoints: p.DisciplineAtRiskPoints,
 		WarningLetterWatchCount: p.WarningLetterWatchCount, WarningLetterAtRiskCount: p.WarningLetterAtRiskCount,
 		GradeDropWatchPoints: float32(p.GradeDropWatchPoints), GradeDropAtRiskPoints: float32(p.GradeDropAtRiskPoints),
+		BelowKktpWatchCount: p.BelowKKTPWatchCount, BelowKktpAtRiskCount: p.BelowKKTPAtRiskCount,
 		AttendanceWeight: p.AttendanceWeight, DisciplineWeight: p.DisciplineWeight, WarningWeight: p.WarningWeight, GradeWeight: p.GradeWeight,
 		WatchScore: p.WatchScore, AtRiskScore: p.AtRiskScore,
 	}
@@ -139,6 +150,7 @@ func fromAPIPolicy(p api.EarlyWarningPolicyWrite) domain.Policy {
 		DisciplineWatchPoints: p.DisciplineWatchPoints, DisciplineAtRiskPoints: p.DisciplineAtRiskPoints,
 		WarningLetterWatchCount: p.WarningLetterWatchCount, WarningLetterAtRiskCount: p.WarningLetterAtRiskCount,
 		GradeDropWatchPoints: float64(p.GradeDropWatchPoints), GradeDropAtRiskPoints: float64(p.GradeDropAtRiskPoints),
+		BelowKKTPWatchCount: p.BelowKktpWatchCount, BelowKKTPAtRiskCount: p.BelowKktpAtRiskCount,
 		AttendanceWeight: p.AttendanceWeight, DisciplineWeight: p.DisciplineWeight, WarningWeight: p.WarningWeight, GradeWeight: p.GradeWeight,
 		WatchScore: p.WatchScore, AtRiskScore: p.AtRiskScore,
 	}

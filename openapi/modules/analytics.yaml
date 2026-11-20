@@ -73,6 +73,29 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
+  /v1/analytics/recompute:
+    post:
+      tags: [analytics]
+      operationId: recomputeEarlyWarning
+      x-permission: manage_early_warning_rules
+      summary: >-
+        Rescore every student of the school now, so absences, violations and
+        grades recorded today show without waiting for the scheduled run.
+      responses:
+        "200":
+          description: Rescored
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [scored, computed_at]
+                properties:
+                  scored: { type: integer, description: Students rescored }
+                  computed_at: { type: string, format: date-time }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
   /v1/analytics/admin-dashboard:
     get:
       tags: [analytics]
@@ -162,6 +185,8 @@ components:
           has_grade_trend,
           previous_average,
           current_average,
+          scored_subjects,
+          subjects_below_kktp,
         ]
       properties:
         has_attendance: { type: boolean }
@@ -173,6 +198,13 @@ components:
         has_grade_trend: { type: boolean }
         previous_average: { type: number }
         current_average: { type: number }
+        scored_subjects:
+          {
+            type: integer,
+            description: "Subjects with a published report score in the active term",
+          }
+        subjects_below_kktp:
+          { type: integer, description: "Of scored_subjects, those below the subject's KKTP" }
     StudentRisk:
       type: object
       required: [student_user_id, class_id, level, score, computed_at]
@@ -207,6 +239,8 @@ components:
           warning_letter_at_risk_count,
           grade_drop_watch_points,
           grade_drop_at_risk_points,
+          below_kktp_watch_count,
+          below_kktp_at_risk_count,
           attendance_weight,
           discipline_weight,
           warning_weight,
@@ -225,6 +259,8 @@ components:
         warning_letter_at_risk_count: { type: integer, minimum: 1 }
         grade_drop_watch_points: { type: number, minimum: 0 }
         grade_drop_at_risk_points: { type: number, minimum: 0 }
+        below_kktp_watch_count: { type: integer, minimum: 1 }
+        below_kktp_at_risk_count: { type: integer, minimum: 1 }
         attendance_weight: { type: integer, minimum: 1 }
         discipline_weight: { type: integer, minimum: 1 }
         warning_weight: { type: integer, minimum: 1 }

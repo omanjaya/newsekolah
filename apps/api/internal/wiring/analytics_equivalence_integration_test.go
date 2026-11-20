@@ -194,23 +194,49 @@ func (l *legacySignals) reportTrend(ctx context.Context, tenantID, studentID uui
 	if err != nil {
 		return analyticsservice.GradeTrend{}, err
 	}
+	standing := legacySubjectStanding(current)
 	currentAvg, ok := legacyAverageReportScore(current.Subjects)
 	if !ok {
-		return analyticsservice.GradeTrend{}, nil
+		return standing, nil
 	}
 	previousTerm, found, err := g.PreviousTerm(ctx, tenantID, current.Term.ID)
 	if err != nil || !found {
-		return analyticsservice.GradeTrend{}, err
+		return standing, err
 	}
 	previous, err := g.MyGrades(ctx, tenantID, studentID, uuid.NullUUID{UUID: previousTerm.ID, Valid: true})
 	if err != nil {
-		return analyticsservice.GradeTrend{}, err
+		return standing, err
 	}
 	previousAvg, ok := legacyAverageReportScore(previous.Subjects)
 	if !ok {
-		return analyticsservice.GradeTrend{}, nil
+		return standing, nil
 	}
-	return analyticsservice.GradeTrend{Available: true, PreviousAverage: previousAvg, CurrentAverage: currentAvg}, nil
+	standing.Available, standing.PreviousAverage, standing.CurrentAverage = true, previousAvg, currentAvg
+	return standing, nil
+}
+
+// legacySubjectStanding counts, as the student's own grades page does, the
+// subjects with a report score and those below the subject's KKTP (the
+// first graded component that sets one, else the school default).
+func legacySubjectStanding(grades gradingservice.MyGrades) analyticsservice.GradeTrend {
+	var out analyticsservice.GradeTrend
+	for _, subject := range grades.Subjects {
+		if subject.ReportScore == nil {
+			continue
+		}
+		kktp := grades.Scale.DefaultKKTP
+		for _, component := range subject.Components {
+			if component.KKTP != nil {
+				kktp = *component.KKTP
+				break
+			}
+		}
+		out.ScoredSubjects++
+		if *subject.ReportScore < kktp {
+			out.SubjectsBelowKKTP++
+		}
+	}
+	return out
 }
 
 func (l *legacySignals) build(ctx context.Context, tenantID, studentID uuid.UUID, policy analyticsdomain.Policy, now time.Time) analyticsdomain.Signals {
@@ -225,10 +251,13 @@ func (l *legacySignals) build(ctx context.Context, tenantID, studentID uuid.UUID
 		signals.DisciplinePoints = summary.TotalPoints
 		signals.WarningLetterCount = summary.WarningLetterCount
 	}
-	if trend, err := l.reportTrend(ctx, tenantID, studentID); err == nil && trend.Available {
-		signals.HasGradeTrend = true
-		signals.PreviousAverage = trend.PreviousAverage
-		signals.CurrentAverage = trend.CurrentAverage
+	if trend, err := l.reportTrend(ctx, tenantID, studentID); err == nil {
+		signals.ScoredSubjects, signals.SubjectsBelowKKTP = trend.ScoredSubjects, trend.SubjectsBelowKKTP
+		if trend.Available {
+			signals.HasGradeTrend = true
+			signals.PreviousAverage = trend.PreviousAverage
+			signals.CurrentAverage = trend.CurrentAverage
+		}
 	}
 	return signals
 }
@@ -346,7 +375,7 @@ func TestAnalyticsRecomputeMatchesPerStudentReads(t *testing.T) {
 		legacyByStudent[r.StudentUserID] = r
 	}
 	levels := map[analyticsdomain.Level]int{}
-	withAttendance, withAbsences, withDiscipline, withTrend := 0, 0, 0, 0
+	withAttendance, withAbsences, withDiscipline, withTrend, withBelowKKTP := 0, 0, 0, 0, 0
 	for _, got := range batchRows {
 		want, ok := legacyByStudent[got.StudentUserID]
 		require.True(t, ok)
@@ -371,12 +400,16 @@ func TestAnalyticsRecomputeMatchesPerStudentReads(t *testing.T) {
 		if got.Signals.HasGradeTrend {
 			withTrend++
 		}
+		if got.Signals.SubjectsBelowKKTP > 0 {
+			withBelowKKTP++
+		}
 	}
 	t.Logf("levels=%v attendance=%d discipline=%d gradeTrend=%d", levels, withAttendance, withDiscipline, withTrend)
 	require.Greater(t, withAttendance, 0)
 	require.Greater(t, withAbsences, 0, "alfa days must reach the stored attendance signal")
 	require.Greater(t, withDiscipline, 0)
 	require.Greater(t, withTrend, 0)
+	require.Greater(t, withBelowKKTP, 0, "subjects below KKTP must reach the stored grade signal")
 	require.Greater(t, levels[analyticsdomain.LevelWatch]+levels[analyticsdomain.LevelAtRisk], 0, "the fixture must produce students at risk")
 }
 
@@ -473,6 +506,8 @@ func TestDisciplineAndGradingBatchesMatchPerStudentReads(t *testing.T) {
 		require.Equal(t, want.Available, got.Available, "student %s", id)
 		require.Equal(t, want.PreviousAverage, got.PreviousAverage, "student %s", id)
 		require.Equal(t, want.CurrentAverage, got.CurrentAverage, "student %s", id)
+		require.Equal(t, want.ScoredSubjects, got.ScoredSubjects, "student %s", id)
+		require.Equal(t, want.SubjectsBelowKKTP, got.SubjectsBelowKKTP, "student %s", id)
 		if got.Available {
 			available++
 		}

@@ -103,10 +103,17 @@ type GradingReader interface {
 // Available is false when there is no previous term to compare against
 // (e.g. the student's first term at the school): the caller must not
 // invent a trend in that case.
+//
+// ScoredSubjects and SubjectsBelowKKTP describe the active term alone and
+// are filled whether or not a trend is Available: how many subjects have a
+// published report score, and how many of those are below their KKTP.
 type GradeTrend struct {
 	Available       bool
 	PreviousAverage float64
 	CurrentAverage  float64
+
+	ScoredSubjects    int
+	SubjectsBelowKKTP int
 }
 
 // IdentityReader is a wiring adapter over the identity module's own
@@ -272,7 +279,10 @@ func (s *Service) loadPolicy(ctx context.Context, tenantID uuid.UUID) (domain.Po
 		}
 		return def, nil
 	}
-	var policy domain.Policy
+	// Decoded over the defaults, so a version saved before a threshold
+	// existed (e.g. below_kktp_*) scores with that threshold's default
+	// instead of a zero that every student would cross.
+	policy := domain.DefaultPolicy()
 	if err := json.Unmarshal(raw, &policy); err != nil {
 		return domain.Policy{}, err
 	}
@@ -280,8 +290,11 @@ func (s *Service) loadPolicy(ctx context.Context, tenantID uuid.UUID) (domain.Po
 	return policy, nil
 }
 
-// UpdatePolicy appends a new version of the tenant's scoring policy; the
-// next recompute run picks it up.
+// UpdatePolicy appends a new version of the tenant's scoring policy and
+// rescores the tenant at once, so the list reflects the new thresholds as
+// soon as it is saved instead of after the next scheduled run. The rescore
+// is best effort: the policy is saved either way, and a failed rescore is
+// caught up by the scheduled run.
 func (s *Service) UpdatePolicy(ctx context.Context, tenantID, actorUserID uuid.UUID, next domain.Policy) (domain.Policy, error) {
 	if err := next.Validate(); err != nil {
 		return domain.Policy{}, err
@@ -298,5 +311,9 @@ func (s *Service) UpdatePolicy(ctx context.Context, tenantID, actorUserID uuid.U
 		}
 		return s.repo.CreatePolicy(ctx, tenantID, next.Version, encoded, s.clock.Now(), uuid.NullUUID{UUID: actorUserID, Valid: true})
 	})
-	return next, err
+	if err != nil {
+		return next, err
+	}
+	_, _ = s.Recompute(ctx, tenantID) //nolint:errcheck // best effort, see the doc comment
+	return next, nil
 }

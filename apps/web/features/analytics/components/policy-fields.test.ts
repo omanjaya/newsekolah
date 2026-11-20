@@ -45,6 +45,7 @@ describe("visiblePolicyGroups", () => {
       "window",
       "attendance",
       "gradeDrop",
+      "belowKktp",
       "weights",
       "totalScore",
     ]);

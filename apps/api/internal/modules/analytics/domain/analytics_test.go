@@ -197,6 +197,56 @@ func TestPolicy_Validate(t *testing.T) {
 	}
 }
 
+// Report scores below KKTP count from a student's first term: no previous
+// term is needed, unlike the drop.
+func TestScore_BelowKKTP_CountsWithoutPreviousTerm(t *testing.T) {
+	p := domain.DefaultPolicy()
+
+	none := domain.Score(domain.Signals{ScoredSubjects: 8, SubjectsBelowKKTP: 0}, p)
+	require.Empty(t, none.Reasons)
+
+	watch := domain.Score(domain.Signals{ScoredSubjects: 8, SubjectsBelowKKTP: 1}, p)
+	require.Equal(t, p.GradeWeight/2, watch.Score)
+	require.Len(t, watch.Reasons, 1)
+	require.Equal(t, domain.ReasonBelowKKTPWatch, watch.Reasons[0].Code)
+	require.Equal(t, map[string]any{"below_kktp": 1, "scored_subjects": 8}, watch.Reasons[0].Params)
+
+	atRisk := domain.Score(domain.Signals{ScoredSubjects: 8, SubjectsBelowKKTP: 3}, p)
+	require.Equal(t, p.GradeWeight, atRisk.Score)
+	require.Equal(t, domain.ReasonBelowKKTPAtRisk, atRisk.Reasons[0].Code)
+
+	unscored := domain.Score(domain.Signals{ScoredSubjects: 0}, p)
+	require.Empty(t, unscored.Reasons, "no published grades is no signal, not a clean one")
+}
+
+// A drop and failing subjects are one grade signal: the stronger counts
+// once, never both.
+func TestScore_GradeSignal_CountsOnce(t *testing.T) {
+	p := domain.DefaultPolicy()
+	s := domain.Signals{
+		HasGradeTrend: true, PreviousAverage: 90, CurrentAverage: 65, // drop 25: at risk
+		ScoredSubjects: 8, SubjectsBelowKKTP: 1, // watch
+	}
+	got := domain.Score(s, p)
+	require.Equal(t, p.GradeWeight, got.Score)
+	require.Len(t, got.Reasons, 1)
+	require.Equal(t, domain.ReasonGradeDropAtRisk, got.Reasons[0].Code)
+
+	s.SubjectsBelowKKTP = 4 // at risk too: the tie goes to below KKTP
+	got = domain.Score(s, p)
+	require.Equal(t, p.GradeWeight, got.Score)
+	require.Equal(t, domain.ReasonBelowKKTPAtRisk, got.Reasons[0].Code)
+}
+
+func TestPolicy_Validate_BelowKKTPThresholds(t *testing.T) {
+	p := domain.DefaultPolicy()
+	p.BelowKKTPAtRiskCount = p.BelowKKTPWatchCount
+	require.ErrorIs(t, p.Validate(), domain.ErrInvalidPolicy)
+	p = domain.DefaultPolicy()
+	p.BelowKKTPWatchCount = 0
+	require.ErrorIs(t, p.Validate(), domain.ErrInvalidPolicy)
+}
+
 func TestLevel_Valid(t *testing.T) {
 	require.True(t, domain.LevelNone.Valid())
 	require.True(t, domain.LevelWatch.Valid())

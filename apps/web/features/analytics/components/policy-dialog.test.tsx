@@ -57,7 +57,7 @@ import { PolicyDialog } from "./policy-dialog";
 describe("PolicyDialog", () => {
   it("groups each signal's watch and at-risk thresholds under the signal's name", () => {
     render(<PolicyDialog open onOpenChange={vi.fn()} />);
-    expect(screen.getAllByRole("group")).toHaveLength(6);
+    expect(screen.getAllByRole("group")).toHaveLength(7);
 
     const attendance = screen.getByRole("group", { name: "groups.attendance" });
     expect(within(attendance).getAllByRole("spinbutton")).toHaveLength(2);
@@ -71,7 +71,7 @@ describe("PolicyDialog", () => {
     expect(screen.getByRole("heading", { level: 3, name: "groups.attendance" })).toHaveClass(
       "text-heading",
     );
-    expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(6);
+    expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(7);
 
     // The school-day window stands alone, outside every group.
     const window = screen.getByLabelText(/fields\.window_days/);

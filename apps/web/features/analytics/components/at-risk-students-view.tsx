@@ -12,9 +12,11 @@ import {
   FilteredEmptyState,
   SkeletonCards,
   SkeletonList,
+  useSingleFlight,
+  useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Settings2, ShieldAlert } from "lucide-react";
+import { RefreshCw, Settings2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -24,10 +26,16 @@ import { useMemo, useState } from "react";
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useClassesQuery, useLookup } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
-import { type RiskLevel, type StudentRisk, useAtRiskStudentsQuery } from "../api";
+import {
+  type RiskLevel,
+  type StudentRisk,
+  useAtRiskStudentsQuery,
+  useRecomputeEarlyWarningMutation,
+} from "../api";
 import { studentRiskHref } from "../href";
 
 import { PolicyDialog } from "./policy-dialog";
@@ -53,6 +61,18 @@ export function AtRiskStudentsView(): ReactElement {
   const t = useTranslations("app.analytics.list");
   const canManage = useCan("manage_early_warning_rules");
   const [policyOpen, setPolicyOpen] = useState(false);
+  const toast = useToast();
+  const apiErrorMessage = useApiErrorMessage();
+  const recompute = useRecomputeEarlyWarningMutation();
+  // Rescoring a school takes a moment; a second tap while it runs does nothing.
+  const recomputeNow = useSingleFlight(async () => {
+    try {
+      const result = await recompute.mutateAsync();
+      toast.success(t("recomputed", { count: result.scored }));
+    } catch (err) {
+      toast.error(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
+    }
+  });
   const locale = useLocale() as Locale;
   const { me } = useSession();
   const router = useRouter();
@@ -172,6 +192,14 @@ export function AtRiskStudentsView(): ReactElement {
 
   const policyAction = canManage
     ? [
+        {
+          label: t("recompute"),
+          icon: <RefreshCw />,
+          disabled: recompute.isPending,
+          onSelect: () => {
+            void recomputeNow();
+          },
+        },
         {
           label: t("policy"),
           icon: <Settings2 />,

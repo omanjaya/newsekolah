@@ -49,8 +49,9 @@ type recomputeScope struct {
 
 // Recompute scores every actively enrolled student in tenantID's active
 // academic year and stores the result, for the River job (transport/jobs)
-// to call on a schedule and for a manual re-run in a support flow. It
-// returns how many students were scored.
+// to call on a schedule, for UpdatePolicy right after a save, and for an
+// overseer's on-demand "recompute now". It returns how many students were
+// scored.
 //
 // The roster and policy are read in one short transaction; the students
 // are then scored recomputeBatchSize at a time, each batch in its own
@@ -58,7 +59,10 @@ type recomputeScope struct {
 // between batches leaves every finished batch current and the rest as the
 // previous run left them.
 func (s *Service) Recompute(ctx context.Context, tenantID uuid.UUID) (int, error) {
-	now := s.clock.Now()
+	return s.recomputeAt(ctx, tenantID, s.clock.Now())
+}
+
+func (s *Service) recomputeAt(ctx context.Context, tenantID uuid.UUID, now time.Time) (int, error) {
 
 	var scope recomputeScope
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -97,6 +101,14 @@ func (s *Service) Recompute(ctx context.Context, tenantID uuid.UUID) (int, error
 		scored += len(batch)
 	}
 	return scored, nil
+}
+
+// RecomputeNow is Recompute for an overseer's "recompute now", also
+// returning the time the results are stamped with.
+func (s *Service) RecomputeNow(ctx context.Context, tenantID uuid.UUID) (int, time.Time, error) {
+	now := s.clock.Now()
+	scored, err := s.recomputeAt(ctx, tenantID, now)
+	return scored, now, err
 }
 
 // scoreBatch reads the signals of every student in batch at once, scores
@@ -160,12 +172,19 @@ func (s *Service) buildSignals(ctx context.Context, tenantID uuid.UUID, studentI
 	if s.grading != nil {
 		if trends, err := s.grading.ReportTrends(ctx, tenantID, studentIDs); err == nil {
 			for id, trend := range trends {
-				if current, ok := signals[id]; ok && trend.Available {
+				current, ok := signals[id]
+				if !ok {
+					continue
+				}
+				// The active term's standing counts on its own, even in a
+				// first term with no previous term to compare with.
+				current.ScoredSubjects, current.SubjectsBelowKKTP = trend.ScoredSubjects, trend.SubjectsBelowKKTP
+				if trend.Available {
 					current.HasGradeTrend = true
 					current.PreviousAverage = trend.PreviousAverage
 					current.CurrentAverage = trend.CurrentAverage
-					signals[id] = current
 				}
+				signals[id] = current
 			}
 		}
 	}

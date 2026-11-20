@@ -52,6 +52,21 @@ export function useEarlyWarningPolicyQuery() {
   });
 }
 
+/**
+ * Rescores the whole school now (an overseer's "Hitung ulang"), so today's
+ * absences, violations and grades show without waiting for the scheduled
+ * run; every analytics read is refetched afterwards.
+ */
+export function useRecomputeEarlyWarningMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => client.POST("/v1/analytics/recompute"),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["analytics"] }),
+    meta: { errorToast: false },
+  });
+}
+
 export function useUpdateEarlyWarningPolicyMutation() {
   const client = useApiClient();
   const queryClient = useQueryClient();

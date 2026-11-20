@@ -1284,7 +1284,10 @@ type Querier interface {
 	// final report score of every subject the student has at least one grade in
 	// and whose grades their active-enrollment class may already see
 	// (published), for many students at once. Ordered by student then subject,
-	// the order the single-student view accumulates in.
+	// the order the single-student view accumulates in. subject_kktp is the
+	// subject's own KKTP as the student's grades view reads it: the first of
+	// the student's graded components (by sequence) that sets one; null means
+	// the school's default KKTP applies.
 	ListPublishedReportScoresForStudents(ctx context.Context, arg ListPublishedReportScoresForStudentsParams) ([]ListPublishedReportScoresForStudentsRow, error)
 	ListPublishedSubjectsForClass(ctx context.Context, arg ListPublishedSubjectsForClassParams) ([]uuid.UUID, error)
 	ListPushDevicesForUser(ctx context.Context, arg ListPushDevicesForUserParams) ([]PushDevice, error)

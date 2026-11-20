@@ -240,7 +240,13 @@ func (q *Queries) ListGradeRanges(ctx context.Context, arg ListGradeRangesParams
 }
 
 const listPublishedReportScoresForStudents = `-- name: ListPublishedReportScoresForStudents :many
-select rs.student_user_id, rs.subject_id, rs.final_score
+select rs.student_user_id, rs.subject_id, rs.final_score,
+  (select c.kktp from grades g
+   join assessment_components c on c.id = g.component_id
+   where g.tenant_id = rs.tenant_id and g.student_user_id = rs.student_user_id
+     and c.term_id = rs.term_id and c.subject_id = rs.subject_id and c.kktp is not null
+   order by c.sequence, c.created_at
+   limit 1)::numeric as subject_kktp
 from report_scores rs
 join enrollments e on e.tenant_id = rs.tenant_id and e.academic_year_id = $3
   and e.student_user_id = rs.student_user_id and e.status = 'active'
@@ -267,13 +273,17 @@ type ListPublishedReportScoresForStudentsRow struct {
 	StudentUserID uuid.UUID      `json:"student_user_id"`
 	SubjectID     uuid.UUID      `json:"subject_id"`
 	FinalScore    pgtype.Numeric `json:"final_score"`
+	SubjectKktp   pgtype.Numeric `json:"subject_kktp"`
 }
 
 // Batch form of what a student's own grades view sums for one term: the
 // final report score of every subject the student has at least one grade in
 // and whose grades their active-enrollment class may already see
 // (published), for many students at once. Ordered by student then subject,
-// the order the single-student view accumulates in.
+// the order the single-student view accumulates in. subject_kktp is the
+// subject's own KKTP as the student's grades view reads it: the first of
+// the student's graded components (by sequence) that sets one; null means
+// the school's default KKTP applies.
 func (q *Queries) ListPublishedReportScoresForStudents(ctx context.Context, arg ListPublishedReportScoresForStudentsParams) ([]ListPublishedReportScoresForStudentsRow, error) {
 	rows, err := q.db.Query(ctx, listPublishedReportScoresForStudents,
 		arg.TenantID,
@@ -288,7 +298,12 @@ func (q *Queries) ListPublishedReportScoresForStudents(ctx context.Context, arg 
 	items := []ListPublishedReportScoresForStudentsRow{}
 	for rows.Next() {
 		var i ListPublishedReportScoresForStudentsRow
-		if err := rows.Scan(&i.StudentUserID, &i.SubjectID, &i.FinalScore); err != nil {
+		if err := rows.Scan(
+			&i.StudentUserID,
+			&i.SubjectID,
+			&i.FinalScore,
+			&i.SubjectKktp,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

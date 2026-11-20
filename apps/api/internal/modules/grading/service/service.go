@@ -141,6 +141,9 @@ type PublishedReportScore struct {
 	StudentUserID uuid.UUID
 	SubjectID     uuid.UUID
 	FinalScore    float64
+	// SubjectKKTP is the subject's own KKTP for the student's class (the
+	// first component that sets one), nil when the school default applies.
+	SubjectKKTP *float64
 }
 
 type ReportScore struct {

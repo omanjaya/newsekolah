@@ -48,6 +48,11 @@ const (
 	ReasonWarningLetterRisk  ReasonCode = "warning_letter_at_risk"
 	ReasonGradeDropWatch     ReasonCode = "grade_drop_watch"
 	ReasonGradeDropAtRisk    ReasonCode = "grade_drop_at_risk"
+	// ReasonBelowKKTP*: published report scores below the subject's KKTP
+	// in the active term, which counts from a student's very first term,
+	// unlike a drop that needs a previous term to compare with.
+	ReasonBelowKKTPWatch  ReasonCode = "grades_below_kktp_watch"
+	ReasonBelowKKTPAtRisk ReasonCode = "grades_below_kktp_at_risk"
 )
 
 // Reason is one fact that contributed to the score: a stable code plus the
@@ -76,6 +81,12 @@ type Signals struct {
 	HasGradeTrend   bool
 	PreviousAverage float64
 	CurrentAverage  float64
+
+	// ScoredSubjects is how many subjects have a published report score in
+	// the active term (0: no grade signal yet), SubjectsBelowKKTP how many
+	// of those are below the subject's KKTP.
+	ScoredSubjects    int
+	SubjectsBelowKKTP int
 }
 
 // Policy is the tenant-tunable configuration of the scorer: how many
@@ -101,6 +112,9 @@ type Policy struct {
 
 	GradeDropWatchPoints  float64 `json:"grade_drop_watch_points"`
 	GradeDropAtRiskPoints float64 `json:"grade_drop_at_risk_points"`
+
+	BelowKKTPWatchCount  int `json:"below_kktp_watch_count"`
+	BelowKKTPAtRiskCount int `json:"below_kktp_at_risk_count"`
 
 	AttendanceWeight int `json:"attendance_weight"`
 	DisciplineWeight int `json:"discipline_weight"`
@@ -133,6 +147,9 @@ func DefaultPolicy() Policy {
 
 		GradeDropWatchPoints:  10,
 		GradeDropAtRiskPoints: 20,
+
+		BelowKKTPWatchCount:  1,
+		BelowKKTPAtRiskCount: 3,
 
 		AttendanceWeight: 40,
 		DisciplineWeight: 30,
@@ -175,6 +192,8 @@ func (p Policy) validateThresholds() error {
 	case p.WarningLetterWatchCount <= 0 || p.WarningLetterAtRiskCount <= p.WarningLetterWatchCount:
 		return ErrInvalidPolicy
 	case p.GradeDropWatchPoints <= 0 || p.GradeDropAtRiskPoints <= p.GradeDropWatchPoints:
+		return ErrInvalidPolicy
+	case p.BelowKKTPWatchCount <= 0 || p.BelowKKTPAtRiskCount <= p.BelowKKTPWatchCount:
 		return ErrInvalidPolicy
 	}
 	return nil
@@ -237,23 +256,48 @@ func Score(s Signals, p Policy) Result {
 		}
 	}
 
-	if s.HasGradeTrend {
-		drop := s.PreviousAverage - s.CurrentAverage
-		params := map[string]any{"previous_average": s.PreviousAverage, "current_average": s.CurrentAverage}
-		switch {
-		case drop >= p.GradeDropAtRiskPoints:
-			total += p.GradeWeight
-			reasons = append(reasons, Reason{Code: ReasonGradeDropAtRisk, Weight: p.GradeWeight, Params: params})
-		case drop >= p.GradeDropWatchPoints:
-			w := p.GradeWeight / 2
-			total += w
-			reasons = append(reasons, Reason{Code: ReasonGradeDropWatch, Weight: w, Params: params})
-		}
+	if reason, ok := gradeReason(s, p); ok {
+		total += reason.Weight
+		reasons = append(reasons, reason)
 	}
 
 	sort.SliceStable(reasons, func(i, j int) bool { return reasons[i].Weight > reasons[j].Weight })
 
 	return Result{Level: levelFor(total, p), Score: total, Reasons: reasons}
+}
+
+// gradeReason is the grade signal's contribution: a drop against the
+// previous term, or report scores below KKTP in the active term. Both are
+// one signal ("nilai") under GradeWeight, so a student failing subjects
+// and dropping is not counted twice: the stronger of the two wins, and a
+// tie goes to the below-KKTP reason, which needs no previous term.
+func gradeReason(s Signals, p Policy) (Reason, bool) {
+	var best Reason
+	found := false
+	if s.HasGradeTrend {
+		drop := s.PreviousAverage - s.CurrentAverage
+		params := map[string]any{"previous_average": s.PreviousAverage, "current_average": s.CurrentAverage}
+		switch {
+		case drop >= p.GradeDropAtRiskPoints:
+			best, found = Reason{Code: ReasonGradeDropAtRisk, Weight: p.GradeWeight, Params: params}, true
+		case drop >= p.GradeDropWatchPoints:
+			best, found = Reason{Code: ReasonGradeDropWatch, Weight: p.GradeWeight / 2, Params: params}, true
+		}
+	}
+	if s.ScoredSubjects > 0 {
+		params := map[string]any{"below_kktp": s.SubjectsBelowKKTP, "scored_subjects": s.ScoredSubjects}
+		var below Reason
+		switch {
+		case s.SubjectsBelowKKTP >= p.BelowKKTPAtRiskCount:
+			below = Reason{Code: ReasonBelowKKTPAtRisk, Weight: p.GradeWeight, Params: params}
+		case s.SubjectsBelowKKTP >= p.BelowKKTPWatchCount:
+			below = Reason{Code: ReasonBelowKKTPWatch, Weight: p.GradeWeight / 2, Params: params}
+		}
+		if below.Code != "" && (!found || below.Weight >= best.Weight) {
+			best, found = below, true
+		}
+	}
+	return best, found
 }
 
 func levelFor(score int, p Policy) Level {
