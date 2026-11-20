@@ -95,6 +95,7 @@
     "description": "Set signal thresholds and weights. At-risk thresholds must exceed watch thresholds. The list is recalculated as soon as the policy is saved, then every hour.",
     "thresholdError": "At-risk thresholds must exceed watch thresholds.",
     "saved": "Policy saved and the list recalculated.",
+    "savedRecomputeLater": "Policy saved; the list is recalculated on the next scheduled run.",
     "save": "Save",
     "cancel": "Cancel",
     "groups": {

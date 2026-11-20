@@ -100,8 +100,9 @@ func TestEarlyWarningReactsTheSameDay(t *testing.T) {
 	policy, err := svc.Policy(ctx, tn.ID)
 	require.NoError(t, err)
 	policy.WatchScore, policy.AtRiskScore = 10, 35
-	_, err = svc.UpdatePolicy(ctx, tn.ID, adminID, policy)
+	_, recomputed, err := svc.UpdatePolicy(ctx, tn.ID, adminID, policy)
 	require.NoError(t, err)
+	require.True(t, recomputed)
 
 	detail, err = svc.GetStudentRisk(ctx, tn.ID, adminID, failing.ID, true)
 	require.NoError(t, err)
@@ -113,4 +114,23 @@ func TestEarlyWarningReactsTheSameDay(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, domain.LevelNone, clean.Level)
 	require.Empty(t, clean.Reasons)
+
+	// One rescore of a school at a time: while another holds the school's
+	// recompute lock, "recompute now" is refused and a policy save is
+	// stored but reports that the list was not rescored.
+	release, acquired, err := database.TryAdvisoryLock(ctx, pg.AppPool, service.RecomputeLockKey(tn.ID))
+	require.NoError(t, err)
+	require.True(t, acquired)
+	_, _, err = svc.RecomputeNow(ctx, tn.ID)
+	require.ErrorIs(t, err, service.ErrRecomputeInProgress)
+	policy, err = svc.Policy(ctx, tn.ID)
+	require.NoError(t, err)
+	saved, recomputed, err := svc.UpdatePolicy(ctx, tn.ID, adminID, policy)
+	require.NoError(t, err)
+	require.False(t, recomputed)
+	require.Equal(t, policy.Version+1, saved.Version)
+	release()
+
+	_, _, err = svc.RecomputeNow(ctx, tn.ID)
+	require.NoError(t, err, "the lock is free again once released")
 }

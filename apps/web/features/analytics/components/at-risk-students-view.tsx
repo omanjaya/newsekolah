@@ -60,6 +60,10 @@ const LEVELS: RiskLevel[] = ["at_risk", "watch", "none"];
 export function AtRiskStudentsView(): ReactElement {
   const t = useTranslations("app.analytics.list");
   const canManage = useCan("manage_early_warning_rules");
+  // Rescoring changes no configuration, only the derived list, so anyone
+  // who can read the list may refresh it; the server runs one rescore of a
+  // school at a time and answers 409 while one is running.
+  const canRecompute = useCan("view_early_warning");
   const [policyOpen, setPolicyOpen] = useState(false);
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -190,31 +194,36 @@ export function AtRiskStudentsView(): ReactElement {
     [t, studentMap],
   );
 
-  const policyAction = canManage
-    ? [
-        {
-          label: t("recompute"),
-          icon: <RefreshCw />,
-          disabled: recompute.isPending,
-          onSelect: () => {
-            void recomputeNow();
-          },
-        },
-        {
-          label: t("policy"),
-          icon: <Settings2 />,
-          onSelect: () => {
-            setPolicyOpen(true);
-          },
-        },
-      ]
-    : undefined;
+  const recomputeAction = {
+    label: t("recompute"),
+    icon: <RefreshCw />,
+    disabled: recompute.isPending,
+    onSelect: () => {
+      void recomputeNow();
+    },
+  };
+  const policyAction = {
+    label: t("policy"),
+    icon: <Settings2 />,
+    onSelect: () => {
+      setPolicyOpen(true);
+    },
+  };
+  // A reader the list turned away (not assigned, or an error) gets no
+  // "recalculate": there is no list on screen for it to refresh.
+  const actionsFor = (withRecompute: boolean) => {
+    const actions = [
+      ...(withRecompute && canRecompute ? [recomputeAction] : []),
+      ...(canManage ? [policyAction] : []),
+    ];
+    return actions.length > 0 ? actions : undefined;
+  };
   // No title, eyebrow or description of its own: the area's header (h1
   // "Konseling BK", or "Peringatan dini" for a reader with only this page)
   // stays put between its tabs. How the list is ordered is said above it.
   const page = {
     variant: "fit" as const,
-    secondaryActions: policyAction,
+    secondaryActions: actionsFor(!error),
   };
 
   if (isLoading) {

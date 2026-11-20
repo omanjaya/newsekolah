@@ -404,6 +404,7 @@
     "ANALYTICS_NO_ACTIVE_ACADEMIC_YEAR": "Belum ada tahun ajaran aktif, jadi peringatan dini belum bisa dihitung.",
     "ANALYTICS_RESULT_NOT_FOUND": "Hasil peringatan dini tidak ditemukan. Muat ulang halaman.",
     "ANALYTICS_INVALID_POLICY": "Aturan peringatan dini tidak valid. Periksa ambang dan bobotnya.",
+    "ANALYTICS_RECOMPUTE_IN_PROGRESS": "Daftar sedang dihitung ulang. Tunggu sebentar, lalu muat ulang halaman.",
     "VIOLATION_TYPE_NOT_FOUND": "Jenis pelanggaran tidak ditemukan.",
     "VIOLATION_TYPE_CODE_EXISTS": "Kode pelanggaran ini sudah dipakai. Pakai kode lain.",
     "VIOLATION_RECORD_NOT_FOUND": "Catatan pelanggaran tidak ditemukan.",

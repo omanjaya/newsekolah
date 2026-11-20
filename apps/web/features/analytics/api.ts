@@ -53,9 +53,11 @@ export function useEarlyWarningPolicyQuery() {
 }
 
 /**
- * Rescores the whole school now (an overseer's "Hitung ulang"), so today's
- * absences, violations and grades show without waiting for the scheduled
- * run; every analytics read is refetched afterwards.
+ * Rescores the whole school now ("Hitung ulang sekarang", for anyone who
+ * can read the list), so today's absences, violations and grades show
+ * without waiting for the scheduled run; every analytics read is refetched
+ * afterwards. 409 ANALYTICS_RECOMPUTE_IN_PROGRESS while another rescore of
+ * the school is running.
  */
 export function useRecomputeEarlyWarningMutation() {
   const client = useApiClient();

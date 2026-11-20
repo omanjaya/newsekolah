@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/analytics/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
 // recomputeBatchSize is how many students one recompute transaction scores
@@ -29,7 +30,10 @@ func (s *Service) RecomputeAllTenants(ctx context.Context) error {
 	}
 	var errs []error
 	for _, tenantID := range tenants {
-		if _, err := s.Recompute(ctx, tenantID); err != nil && !errors.Is(err, ErrNoActiveAcademicYear) {
+		// A tenant someone is rescoring right now (a policy save or an
+		// overseer's "recompute now") is already being brought up to date.
+		_, err := s.Recompute(ctx, tenantID)
+		if err != nil && !errors.Is(err, ErrNoActiveAcademicYear) && !errors.Is(err, ErrRecomputeInProgress) {
 			errs = append(errs, fmt.Errorf("recompute tenant %s: %w", tenantID, err))
 		}
 	}
@@ -50,8 +54,12 @@ type recomputeScope struct {
 // Recompute scores every actively enrolled student in tenantID's active
 // academic year and stores the result, for the River job (transport/jobs)
 // to call on a schedule, for UpdatePolicy right after a save, and for an
-// overseer's on-demand "recompute now". It returns how many students were
-// scored.
+// on-demand "recompute now". It returns how many students were scored.
+//
+// One rescore of a tenant runs at a time, whichever of those started it,
+// across every API process: a second one while the first is running
+// returns ErrRecomputeInProgress at once instead of scoring the whole
+// school again alongside it.
 //
 // The roster and policy are read in one short transaction; the students
 // are then scored recomputeBatchSize at a time, each batch in its own
@@ -59,7 +67,26 @@ type recomputeScope struct {
 // between batches leaves every finished batch current and the rest as the
 // previous run left them.
 func (s *Service) Recompute(ctx context.Context, tenantID uuid.UUID) (int, error) {
-	return s.recomputeAt(ctx, tenantID, s.clock.Now())
+	return s.lockedRecompute(ctx, tenantID, s.clock.Now())
+}
+
+// lockedRecompute is recomputeAt under the tenant's recompute lock.
+func (s *Service) lockedRecompute(ctx context.Context, tenantID uuid.UUID, now time.Time) (int, error) {
+	release, acquired, err := database.TryAdvisoryLock(ctx, s.pool, RecomputeLockKey(tenantID))
+	if err != nil {
+		return 0, err
+	}
+	if !acquired {
+		return 0, ErrRecomputeInProgress
+	}
+	defer release()
+	return s.recomputeAt(ctx, tenantID, now)
+}
+
+// RecomputeLockKey names the advisory lock that keeps one rescore per
+// tenant at a time.
+func RecomputeLockKey(tenantID uuid.UUID) string {
+	return "analytics_recompute:" + tenantID.String()
 }
 
 func (s *Service) recomputeAt(ctx context.Context, tenantID uuid.UUID, now time.Time) (int, error) {
@@ -107,7 +134,7 @@ func (s *Service) recomputeAt(ctx context.Context, tenantID uuid.UUID, now time.
 // returning the time the results are stamped with.
 func (s *Service) RecomputeNow(ctx context.Context, tenantID uuid.UUID) (int, time.Time, error) {
 	now := s.clock.Now()
-	scored, err := s.recomputeAt(ctx, tenantID, now)
+	scored, err := s.lockedRecompute(ctx, tenantID, now)
 	return scored, now, err
 }
 

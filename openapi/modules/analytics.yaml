@@ -65,10 +65,14 @@ paths:
             schema: { $ref: "#/components/schemas/EarlyWarningPolicyWrite" }
       responses:
         "200":
-          description: Policy
+          description: >-
+            The saved policy. Saving also rescores the school at once;
+            recomputed says whether that rescore finished. When it did not
+            (it failed, ran too long, or another rescore was already running)
+            the next scheduled run applies the new policy.
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/EarlyWarningPolicy" }
+              schema: { $ref: "#/components/schemas/EarlyWarningPolicySaved" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -77,10 +81,15 @@ paths:
     post:
       tags: [analytics]
       operationId: recomputeEarlyWarning
-      x-permission: manage_early_warning_rules
+      x-permission: view_early_warning
       summary: >-
         Rescore every student of the school now, so absences, violations and
         grades recorded today show without waiting for the scheduled run.
+        It changes no configuration, only the derived list, so anyone who
+        can read the list may refresh it. One rescore of a school runs at a
+        time: while one is running (from this endpoint, a policy save or the
+        scheduled run) the call is refused with 409
+        ANALYTICS_RECOMPUTE_IN_PROGRESS.
       responses:
         "200":
           description: Rescored
@@ -267,6 +276,15 @@ components:
         grade_weight: { type: integer, minimum: 1 }
         watch_score: { type: integer, minimum: 1 }
         at_risk_score: { type: integer, minimum: 1 }
+    EarlyWarningPolicySaved:
+      allOf:
+        - $ref: "#/components/schemas/EarlyWarningPolicy"
+        - type: object
+          required: [recomputed]
+          properties:
+            recomputed:
+              type: boolean
+              description: Whether the school was rescored with the new policy right after the save.
     EarlyWarningPolicyWrite:
       allOf:
         - $ref: "#/components/schemas/EarlyWarningPolicy"

@@ -34,9 +34,10 @@ func Register(workers *river.Workers, svc *service.Service) error {
 // recomputeInterval is how often every tenant is rescored. Hourly, so an
 // absence, violation or published grade recorded during the school day
 // shows on the list the same day; a day-long interval counted from process
-// start left the list hours stale in the middle of the school day. An
-// overseer can still rescore at once (POST /v1/analytics/recompute), and
-// saving the policy rescores too.
+// start left the list hours stale in the middle of the school day. A reader
+// of the list can still rescore at once (POST /v1/analytics/recompute), and
+// saving the policy rescores too; a tenant already being rescored by one of
+// those when this runs is skipped (service.ErrRecomputeInProgress).
 const recomputeInterval = time.Hour
 
 // PeriodicJobs schedules the recurring recompute.

@@ -115,8 +115,10 @@ function PolicyForm({
           return;
         }
         update.mutate(body, {
-          onSuccess: () => {
-            toast.success(t("saved"));
+          onSuccess: (saved) => {
+            // "Recalculated" only when the save's rescore finished; else
+            // the next scheduled run applies the new policy.
+            toast.success(saved.recomputed ? t("saved") : t("savedRecomputeLater"));
             onDone();
           },
           onError: (err) => {

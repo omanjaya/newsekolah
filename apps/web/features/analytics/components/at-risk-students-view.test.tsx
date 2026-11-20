@@ -15,7 +15,7 @@ const push = vi.hoisted(() => vi.fn());
 const { recompute, toast, can } = vi.hoisted(() => ({
   recompute: { mutateAsync: vi.fn(), isPending: false },
   toast: { success: vi.fn(), error: vi.fn() },
-  can: { manage: false },
+  can: { manage: false, view: true },
 }));
 
 vi.mock("next-intl", () => ({
@@ -31,7 +31,7 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
-  useCan: () => can.manage,
+  useCan: (permission: string) => (permission === "view_early_warning" ? can.view : can.manage),
   useSession: () => ({ me: { tenant: { timezone: "Asia/Jakarta" } } }),
 }));
 vi.mock("../../reference/api", () => ({
@@ -148,13 +148,46 @@ describe("AtRiskStudentsView recalculation", () => {
     toast.error.mockReset();
   });
 
-  it("is not offered to a reader who cannot manage the policy", () => {
+  it("is offered to a reader of the list who cannot manage the policy", () => {
     can.manage = false;
+    render(<AtRiskStudentsView />);
+    expect(screen.getByRole("button", { name: "recompute" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "policy" })).not.toBeInTheDocument();
+  });
+
+  it("is not offered without view_early_warning", () => {
+    can.view = false;
+    render(<AtRiskStudentsView />);
+    expect(screen.queryByRole("button", { name: "recompute" })).not.toBeInTheDocument();
+    can.view = true;
+  });
+
+  it("is not offered when the list turned the reader away", () => {
+    query = {
+      data: undefined,
+      isLoading: false,
+      error: new ApiError({
+        status: 403,
+        code: "ANALYTICS_NOT_HOMEROOM_TEACHER",
+        message: "forbidden",
+      }),
+    };
     render(<AtRiskStudentsView />);
     expect(screen.queryByRole("button", { name: "recompute" })).not.toBeInTheDocument();
   });
 
-  it("lets an overseer recalculate now, once per tap, and says how many were rescored", async () => {
+  it("says so when a rescore is already running", async () => {
+    recompute.mutateAsync.mockRejectedValue(
+      new ApiError({ status: 409, code: "ANALYTICS_RECOMPUTE_IN_PROGRESS", message: "conflict" }),
+    );
+    render(<AtRiskStudentsView />);
+    fireEvent.click(screen.getByRole("button", { name: "recompute" }));
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("ANALYTICS_RECOMPUTE_IN_PROGRESS");
+    });
+  });
+
+  it("lets a reader recalculate now, once per tap, and says how many were rescored", async () => {
     can.manage = true;
     let settle: (value: { scored: number }) => void = () => undefined;
     recompute.mutateAsync.mockImplementation(

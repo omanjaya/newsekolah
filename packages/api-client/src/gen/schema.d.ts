@@ -1250,7 +1250,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Rescore every student of the school now, so absences, violations and grades recorded today show without waiting for the scheduled run. */
+        /** Rescore every student of the school now, so absences, violations and grades recorded today show without waiting for the scheduled run. It changes no configuration, only the derived list, so anyone who can read the list may refresh it. One rescore of a school runs at a time: while one is running (from this endpoint, a policy save or the scheduled run) the call is refused with 409 ANALYTICS_RECOMPUTE_IN_PROGRESS. */
         post: operations["recomputeEarlyWarning"];
         delete?: never;
         options?: never;
@@ -8727,6 +8727,10 @@ export interface components {
             watch_score: number;
             at_risk_score: number;
         };
+        EarlyWarningPolicySaved: components["schemas"]["EarlyWarningPolicy"] & {
+            /** @description Whether the school was rescored with the new policy right after the save. */
+            recomputed: boolean;
+        };
         EarlyWarningPolicyWrite: components["schemas"]["EarlyWarningPolicy"];
         /** @enum {string} */
         AnnouncementStatus: "draft" | "scheduled" | "published" | "archived";
@@ -15059,13 +15063,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Policy */
+            /** @description The saved policy. Saving also rescores the school at once; recomputed says whether that rescore finished. When it did not (it failed, ran too long, or another rescore was already running) the next scheduled run applies the new policy. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EarlyWarningPolicy"];
+                    "application/json": components["schemas"]["EarlyWarningPolicySaved"];
                 };
             };
             400: components["responses"]["BadRequest"];

@@ -95,6 +95,7 @@
     "description": "Atur ambang dan bobot sinyal. Ambang berisiko harus lebih besar dari ambang siaga. Daftar dihitung ulang begitu kebijakan disimpan, lalu setiap jam.",
     "thresholdError": "Ambang berisiko harus lebih besar dari ambang siaga.",
     "saved": "Kebijakan tersimpan dan daftar sudah dihitung ulang.",
+    "savedRecomputeLater": "Kebijakan tersimpan; daftar dihitung ulang pada jadwal berikutnya.",
     "save": "Simpan",
     "cancel": "Batal",
     "groups": {
