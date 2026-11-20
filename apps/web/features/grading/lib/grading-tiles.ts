@@ -29,6 +29,8 @@ export interface GradebookSummaryInput {
   tuntasRate: number;
   ungradedCount: number;
   locale?: string;
+  /** The scale's `round_decimal` for the class average. */
+  decimals?: number;
 }
 
 /**
@@ -47,6 +49,7 @@ export function buildGradebookSummary({
   tuntasRate,
   ungradedCount,
   locale,
+  decimals,
 }: GradebookSummaryInput): GradebookSummaryItem[] {
   const hasSlots = componentCount > 0;
   return [
@@ -61,7 +64,7 @@ export function buildGradebookSummary({
       key: "average",
       icon: BarChart3,
       tone: "purple",
-      value: classAverage === undefined ? "-" : formatScore(classAverage, locale),
+      value: classAverage === undefined ? "-" : formatScore(classAverage, locale, decimals),
       labelKey: "summary.average",
     },
     {

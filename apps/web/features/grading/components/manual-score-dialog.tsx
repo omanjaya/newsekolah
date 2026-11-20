@@ -28,6 +28,8 @@ export interface ManualScoreDialogProps {
   studentName: string;
   computedAverage?: number;
   currentManualScore?: number;
+  /** The scale's `round_decimal` for the computed average. */
+  decimals?: number;
 }
 
 /**
@@ -45,6 +47,7 @@ export function ManualScoreDialog({
   studentName,
   computedAverage,
   currentManualScore,
+  decimals,
 }: ManualScoreDialogProps): ReactElement {
   const t = useTranslations("app.grading.manualScoreDialog");
   const locale = useLocale();
@@ -86,7 +89,7 @@ export function ManualScoreDialog({
         >
           {computedAverage !== undefined && (
             <p className="text-body-sm text-fg-muted">
-              {t("computedAverage", { score: formatScore(computedAverage, locale) })}
+              {t("computedAverage", { score: formatScore(computedAverage, locale, decimals) })}
             </p>
           )}
           <Field label={t("score")} hint={t("hint")}>

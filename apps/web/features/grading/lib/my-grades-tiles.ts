@@ -68,6 +68,7 @@ export function buildMyGradesTiles(
   subjects: MySubjectGrade[],
   defaultKktp: number,
   locale?: string,
+  decimals?: number,
 ): MyGradesTile[] {
   const average = myGradesOverallAverage(subjects);
   return [
@@ -75,7 +76,7 @@ export function buildMyGradesTiles(
       key: "average",
       icon: BarChart3,
       tone: "blue",
-      value: average === undefined ? "-" : formatScore(average, locale),
+      value: average === undefined ? "-" : formatScore(average, locale, decimals),
       labelKey: "statAverage",
     },
     {

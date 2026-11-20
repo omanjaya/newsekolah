@@ -78,6 +78,7 @@
     "retry": "Retry",
     "missingCount": "{count, plural, one {# missing} other {# missing}}",
     "scoreRangeHint": "Score {min}-{max}",
+    "scoreFormatHint": "Enter a number, e.g. 78.5",
     "invalidCount": "{count, plural, one {# score invalid} other {# scores invalid}}",
     "invalidFocus": "Show",
     "draftFoundTitle": "There is an unsaved score draft",
@@ -103,6 +104,9 @@
     "editTitle": "Edit component",
     "addTitle": "Add component",
     "code": "Code",
+    "description": "Description",
+    "descriptionPlaceholder": "E.g. Chapter 3 quiz: fractions",
+    "descriptionHint": "Shown as the component title in the student's My grades.",
     "kind": "Kind",
     "weight": "Weight",
     "sequence": "Order",
@@ -113,7 +117,8 @@
     "save": "Save",
     "saved": "Component saved.",
     "deleteTitle": "Delete component",
-    "deleteBody": "Component {code} and every score already entered in this column will be deleted.",
+    "deleteBody": "Component {code} will be removed from this grade sheet.",
+    "deleteBlocked": "This column still holds scores. Clear every score and save first to delete the component.",
     "deleted": "Component deleted."
   },
   "starDialog": {
@@ -131,6 +136,15 @@
     "save": "Save",
     "added": "{count, plural, one {# star added} other {# stars added}}",
     "subtracted": "{count, plural, one {# star taken} other {# stars taken}}"
+  },
+  "starLedger": {
+    "title": "Star history",
+    "empty": "No stars given or taken yet.",
+    "error": "The star history could not be loaded.",
+    "retry": "Try again",
+    "given": "{count, plural, one {+# star} other {+# stars}} by {teacher}",
+    "taken": "{count, plural, one {-# star} other {-# stars}} by {teacher}",
+    "unknownTeacher": "Unknown teacher"
   },
   "manualScoreDialog": {
     "title": "Report score for {name}",

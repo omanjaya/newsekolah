@@ -13,6 +13,7 @@ import { type ScoreEntry, useSaveComponentScoresMutation } from "../api";
 import type { Edits } from "../components/gradebook-types";
 
 import { clearGradebookDraft } from "./gradebook-draft";
+import { parseScoreInput } from "./gradebook-scores";
 
 export interface UseGradebookSave {
   savingComponentId: string | null;
@@ -43,14 +44,21 @@ export function useGradebookSave(
   const [savingComponentId, setSavingComponentId] = useState<string | null>(null);
   const [savingAll, setSavingAll] = useState(false);
 
-  /** Returns whether it actually sent anything (an empty or all-blank column sends nothing). */
+  /**
+   * Returns whether it actually sent anything (a column with no edits sends
+   * nothing). A cleared cell is sent as `score: null`, which deletes that
+   * student's score, so a wrong score can be removed and the emptied
+   * column's component deleted. An unparseable value is never sent (the
+   * save bar is disabled while one is pending).
+   */
   async function saveComponentColumn(componentId: string): Promise<boolean> {
     const columnEdits = edits[componentId];
     if (!columnEdits) return false;
-    const entries: ScoreEntry[] = Object.entries(columnEdits)
-      .filter(([, value]) => value.trim() !== "")
-      .map(([student_user_id, value]) => ({ student_user_id, score: Number(value) }))
-      .filter((entry) => Number.isFinite(entry.score));
+    const entries: ScoreEntry[] = [];
+    for (const [student_user_id, value] of Object.entries(columnEdits)) {
+      const score = parseScoreInput(value);
+      if (score !== "invalid") entries.push({ student_user_id, score });
+    }
     if (entries.length === 0) return false;
     await saveScores.mutateAsync({ componentId, entries });
     const savedStudentIds = new Set(entries.map((entry) => entry.student_user_id));

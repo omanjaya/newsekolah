@@ -21,7 +21,7 @@ describe("buildGradebookSummary", () => {
       "ungraded",
       "filled",
     ]);
-    expect(items.map((item) => item.value)).toEqual(["32", "84,6", "60%", "5", "75%"]);
+    expect(items.map((item) => item.value)).toEqual(["32", "84,57", "60%", "5", "75%"]);
   });
 
   it("shows a dash for an average that has not been computed yet", () => {
@@ -31,7 +31,12 @@ describe("buildGradebookSummary", () => {
 
   it("formats the average in the reader's locale", () => {
     const items = buildGradebookSummary({ ...base, locale: "en" });
-    expect(items.find((item) => item.key === "average")?.value).toBe("84.6");
+    expect(items.find((item) => item.key === "average")?.value).toBe("84.57");
+  });
+
+  it("shows the average with the scale's own precision", () => {
+    const items = buildGradebookSummary({ ...base, decimals: 1 });
+    expect(items.find((item) => item.key === "average")?.value).toBe("84,6");
   });
 
   it("does not claim a sheet without components is filled or tuntas", () => {

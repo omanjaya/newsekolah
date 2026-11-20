@@ -19,6 +19,8 @@ export interface GradebookMobileComponentEntryProps {
   scaleMin: number;
   scaleMax: number;
   rangeHint: string;
+  /** Shown under a cell whose text is not a number at all. */
+  formatHint: string;
   missingByComponent: Map<string, number>;
   activeComponentId: string;
   onActiveComponentChange: (componentId: string) => void;
@@ -55,6 +57,7 @@ export function GradebookMobileComponentEntry({
   scaleMin,
   scaleMax,
   rangeHint,
+  formatHint,
   missingByComponent,
   activeComponentId,
   onActiveComponentChange,
@@ -138,6 +141,7 @@ export function GradebookMobileComponentEntry({
                   min={scaleMin}
                   max={scaleMax}
                   rangeHint={rangeHint}
+                  formatHint={formatHint}
                   changed={changed}
                   onCommit={onCommit}
                   onRegisterRef={onRegisterRef}

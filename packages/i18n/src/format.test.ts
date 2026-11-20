@@ -67,6 +67,17 @@ describe("formatNumber", () => {
     expect(formatNumber(78.46, { locale: "en", fractionDigits: 1 })).toBe("78.5");
     expect(formatNumber(80, { locale: "id", fractionDigits: 1 })).toBe("80,0");
   });
+
+  it("keeps up to the maximum decimals without padding past the minimum", () => {
+    const score = { locale: "id", minFractionDigits: 1, maxFractionDigits: 2 } as const;
+    expect(formatNumber(77.55, score)).toBe("77,55");
+    expect(formatNumber(91.25, { ...score, locale: "en" })).toBe("91.25");
+    expect(formatNumber(88, score)).toBe("88,0");
+    expect(formatNumber(75.234, score)).toBe("75,23");
+    expect(formatNumber(88, { locale: "id", minFractionDigits: 1, maxFractionDigits: 0 })).toBe(
+      "88",
+    );
+  });
 });
 
 // A school's dates have no time of day. Read at midnight in one zone and

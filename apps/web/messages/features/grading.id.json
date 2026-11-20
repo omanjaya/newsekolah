@@ -78,6 +78,7 @@
     "retry": "Coba lagi",
     "missingCount": "{count, plural, other {# kosong}}",
     "scoreRangeHint": "Nilai {min}-{max}",
+    "scoreFormatHint": "Isi angka, mis. 78,5",
     "invalidCount": "{count, plural, other {# nilai tidak valid}}",
     "invalidFocus": "Lihat",
     "draftFoundTitle": "Ada draf nilai yang belum tersimpan",
@@ -103,6 +104,9 @@
     "editTitle": "Ubah komponen",
     "addTitle": "Tambah komponen",
     "code": "Kode",
+    "description": "Deskripsi",
+    "descriptionPlaceholder": "Mis. Kuis bab 3: pecahan",
+    "descriptionHint": "Tampil sebagai judul komponen di Nilai saya siswa.",
     "kind": "Jenis",
     "weight": "Bobot",
     "sequence": "Urutan",
@@ -113,7 +117,8 @@
     "save": "Simpan",
     "saved": "Komponen tersimpan.",
     "deleteTitle": "Hapus komponen",
-    "deleteBody": "Komponen {code} dan seluruh nilai yang sudah diisi di kolom ini akan dihapus.",
+    "deleteBody": "Komponen {code} akan dihapus dari lembar nilai ini.",
+    "deleteBlocked": "Kolom ini masih berisi nilai. Kosongkan semua nilainya dan simpan dulu untuk bisa menghapus komponen.",
     "deleted": "Komponen dihapus."
   },
   "starDialog": {
@@ -131,6 +136,15 @@
     "save": "Simpan",
     "added": "{count, plural, other {# bintang ditambahkan}}",
     "subtracted": "{count, plural, other {# bintang diambil}}"
+  },
+  "starLedger": {
+    "title": "Riwayat bintang",
+    "empty": "Belum ada bintang yang diberi atau diambil.",
+    "error": "Riwayat bintang tidak dapat dimuat.",
+    "retry": "Coba lagi",
+    "given": "{count, plural, other {+# bintang}} oleh {teacher}",
+    "taken": "{count, plural, other {-# bintang}} oleh {teacher}",
+    "unknownTeacher": "Guru tidak dikenal"
   },
   "manualScoreDialog": {
     "title": "Nilai rapor {name}",

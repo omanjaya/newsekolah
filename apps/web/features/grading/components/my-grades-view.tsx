@@ -113,7 +113,12 @@ export function MyGradesView(): ReactElement {
     );
   }
 
-  const figures = buildMyGradesTiles(data.subjects, data.scale.default_kktp, locale);
+  const figures = buildMyGradesTiles(
+    data.subjects,
+    data.scale.default_kktp,
+    locale,
+    data.scale.round_decimal,
+  );
 
   return (
     <AppPage description={data.term_name} actions={termSelect}>
@@ -160,6 +165,7 @@ export function MyGradesView(): ReactElement {
                 subjectName={subjectMap.get(subject.subject_id)?.name ?? t("unknownSubject")}
                 defaultKktp={data.scale.default_kktp}
                 scaleMax={data.scale.max}
+                decimals={data.scale.round_decimal}
               />
             ))}
           </div>
@@ -230,11 +236,14 @@ function SubjectCard({
   subjectName,
   defaultKktp,
   scaleMax,
+  decimals,
 }: {
   subject: MySubjectGrade;
   subjectName: string;
   defaultKktp: number;
   scaleMax: number;
+  /** The scale's `round_decimal`, so a score reads as it does on the e-Rapor. */
+  decimals: number;
 }): ReactElement {
   const t = useTranslations("app.grading.myGrades");
   const tKind = useTranslations("app.grading.kind");
@@ -249,7 +258,8 @@ function SubjectCard({
   const showAverage =
     subject.average !== undefined &&
     subject.report_score !== undefined &&
-    formatScore(subject.average, locale) !== formatScore(subject.report_score, locale);
+    formatScore(subject.average, locale, decimals) !==
+      formatScore(subject.report_score, locale, decimals);
 
   return (
     <Card data-testid={`my-grades-subject-card-${subject.subject_id}`}>
@@ -273,7 +283,9 @@ function SubjectCard({
 
       {score !== undefined && (
         <CardContent className="flex flex-col gap-2 pt-0">
-          <span className="text-display text-fg tabular-nums">{formatScore(score, locale)}</span>
+          <span className="text-display text-fg tabular-nums">
+            {formatScore(score, locale, decimals)}
+          </span>
           <Progress
             variant="meter"
             value={score}
@@ -283,7 +295,7 @@ function SubjectCard({
             valueLabel={
               tuntas
                 ? t("aboveKktp")
-                : t("belowKktpBy", { points: formatScore(kktp - score, locale) })
+                : t("belowKktpBy", { points: formatScore(kktp - score, locale, decimals) })
             }
             // The KKTP drawn on the scale; the label above already names it.
             markers={[{ value: kktp }]}
@@ -316,7 +328,7 @@ function SubjectCard({
                     </Badge>
                   )}
                   <span className="text-label text-fg tabular-nums">
-                    {formatScore(component.score, locale)}
+                    {formatScore(component.score, locale, decimals)}
                   </span>
                 </span>
               }
@@ -327,7 +339,7 @@ function SubjectCard({
 
       {showAverage && subject.average !== undefined && (
         <CardFooter className="border-t border-line pt-3 text-body-sm text-fg-muted">
-          {t("average", { score: formatScore(subject.average, locale) })}
+          {t("average", { score: formatScore(subject.average, locale, decimals) })}
         </CardFooter>
       )}
     </Card>

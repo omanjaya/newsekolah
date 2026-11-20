@@ -22,6 +22,7 @@ import {
   countMissingForComponent,
   isScoreOutOfRange,
   mergeStudentScores,
+  withCellEdit,
 } from "../lib/gradebook-scores";
 import type { StarBalances } from "../lib/star-balances";
 import { useGradebookSave } from "../lib/use-gradebook-save";
@@ -224,15 +225,22 @@ export function GradebookTable({
   );
   const hasInvalidEdits = invalidCells.length > 0;
   const rangeHint = t("scoreRangeHint", { min: sheet.scale.min, max: sheet.scale.max });
+  const formatHint = t("scoreFormatHint");
 
   // Stable identities (functional state updates, no closed-over deps) so
   // `GradebookScoreCell`'s memo actually bails out for cells the teacher
-  // did not just touch.
+  // did not just touch. Saved scores are read through a ref for the same
+  // reason: an edit that reads as the saved score (typed back, or a cell
+  // cleared that was empty) is dropped instead of left pending.
+  const savedRef = useRef(sheet.students);
+  useEffect(() => {
+    savedRef.current = sheet.students;
+  }, [sheet.students]);
   const commitCell = useCallback((componentId: string, studentId: string, value: string) => {
-    setEdits((prev) => ({
-      ...prev,
-      [componentId]: { ...prev[componentId], [studentId]: value },
-    }));
+    const saved = savedRef.current.find((s) => s.student_user_id === studentId);
+    setEdits((prev) =>
+      withCellEdit(prev, componentId, studentId, value, saved?.scores[componentId]),
+    );
   }, []);
   const registerInputRef = useCallback((refKey: string, el: HTMLInputElement | null) => {
     if (el) inputRefs.current.set(refKey, el);
@@ -261,17 +269,20 @@ export function GradebookTable({
       const studentIndex = students.findIndex((s) => s.student_user_id === studentId);
       if (componentIndex === -1 || studentIndex === -1) return;
       setEdits((prev) => {
-        const next: Edits = { ...prev };
+        let next: Edits = prev;
         rows.forEach((rowValues, rOffset) => {
           const student = students[studentIndex + rOffset];
           if (!student) return;
           rowValues.forEach((rawValue, cOffset) => {
             const component = components[componentIndex + cOffset];
             if (!component) return;
-            next[component.id] = {
-              ...next[component.id],
-              [student.student_user_id]: rawValue.trim(),
-            };
+            next = withCellEdit(
+              next,
+              component.id,
+              student.student_user_id,
+              rawValue.trim(),
+              student.scores[component.id],
+            );
           });
         });
         return next;
@@ -355,7 +366,9 @@ export function GradebookTable({
           starBalances={starBalances}
           scaleMin={sheet.scale.min}
           scaleMax={sheet.scale.max}
+          scaleDecimals={sheet.scale.round_decimal}
           rangeHint={rangeHint}
+          formatHint={formatHint}
           liveByStudent={liveByStudent}
           missingByComponent={missingByComponent}
           invalidComponentIds={invalidComponentIds}
@@ -395,6 +408,7 @@ export function GradebookTable({
               scaleMin={sheet.scale.min}
               scaleMax={sheet.scale.max}
               rangeHint={rangeHint}
+              formatHint={formatHint}
               missingByComponent={missingByComponent}
               activeComponentId={activeComponentId}
               onActiveComponentChange={setRawActiveComponentId}
@@ -414,7 +428,9 @@ export function GradebookTable({
               starBalances={starBalances}
               scaleMin={sheet.scale.min}
               scaleMax={sheet.scale.max}
+              scaleDecimals={sheet.scale.round_decimal}
               rangeHint={rangeHint}
+              formatHint={formatHint}
               liveByStudent={liveByStudent}
               pendingStudentIds={pendingStudentIds}
               onManualOverride={onManualOverride}

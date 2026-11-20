@@ -252,6 +252,7 @@ export function GradebookSheet({
             classAverage={gradebookClassAverage(sheet.students)}
             tuntasRate={gradebookTuntasRate(sheet.students, sheet.scale.default_kktp)}
             ungradedCount={gradebookUngradedCount(sheet.students)}
+            decimals={sheet.scale.round_decimal}
           />
         </div>
       )}
@@ -340,6 +341,10 @@ export function GradebookSheet({
           termId={sheet.term_id}
           nextSequence={sheet.components.length + 1}
           target={componentDialog}
+          hasScores={
+            componentDialog !== "new" &&
+            sheet.students.some((student) => student.scores[componentDialog.id] !== undefined)
+          }
         />
       )}
 
@@ -354,6 +359,7 @@ export function GradebookSheet({
           studentId={manualTarget.student_user_id}
           studentName={manualTarget.name}
           computedAverage={manualTarget.average}
+          decimals={sheet.scale.round_decimal}
         />
       )}
 

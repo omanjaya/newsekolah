@@ -11,6 +11,7 @@ import {
   Input,
   NumberInput,
   Select,
+  useSingleFlight,
   useToast,
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
@@ -44,12 +45,19 @@ export interface ComponentDialogProps {
   nextSequence: number;
   /** "new" adds a component; an existing component opens it for edit or delete. */
   target: AssessmentComponent | "new";
+  /**
+   * The edited component's column still holds a score. The API refuses to
+   * delete such a component (ASSESSMENT_COMPONENT_HAS_GRADES), so Delete is
+   * disabled with a hint to clear the column first.
+   */
+  hasScores?: boolean;
 }
 
 /**
  * Create, edit, or delete one assessment component (a gradebook column).
- * Delete is confirmed separately since it also removes every score already
- * entered for that column. The caller mounts this only while a dialog
+ * Delete is confirmed separately and only offered once the column holds no
+ * score: the API never deletes a component together with its grades. The
+ * caller mounts this only while a dialog
  * target is set, so each open starts from a fresh component instance and
  * its form state never needs resetting from an effect.
  */
@@ -60,6 +68,7 @@ export function ComponentDialog({
   termId,
   nextSequence,
   target,
+  hasScores = false,
 }: ComponentDialogProps): ReactElement {
   const t = useTranslations("app.grading.componentDialog");
   const tKind = useTranslations("app.grading.kind");
@@ -71,6 +80,7 @@ export function ComponentDialog({
   const editing = target === "new" ? null : target;
 
   const [code, setCode] = useState(editing?.code ?? "");
+  const [description, setDescription] = useState(editing?.description ?? "");
   const [kind, setKind] = useState<AssessmentComponentKind>(editing?.kind ?? "formative");
   const [weight, setWeight] = useState(String(editing?.weight ?? 1));
   const [kktp, setKktp] = useState(editing?.kktp !== undefined ? String(editing.kktp) : "");
@@ -83,7 +93,10 @@ export function ComponentDialog({
     );
   }
 
-  async function save() {
+  // Guarded so a double click on Simpan sends one request: the button's
+  // `loading` only takes effect after a re-render, and a second create
+  // would come back as a confusing "code already used" error.
+  const save = useSingleFlight(async () => {
     const weightValue = Number(weight);
     const sequenceValue = Number(sequence);
     if (!code.trim() || !Number.isFinite(weightValue) || weightValue <= 0) return;
@@ -92,6 +105,9 @@ export function ComponentDialog({
       subject_id: subjectId,
       ...(termId ? { term_id: termId } : {}),
       code: code.trim(),
+      // Always sent, so an untouched edit keeps the stored text and an
+      // emptied field clears it on purpose.
+      description: description.trim(),
       kind,
       weight: weightValue,
       sequence: Number.isFinite(sequenceValue) ? sequenceValue : nextSequence,
@@ -108,9 +124,9 @@ export function ComponentDialog({
     } catch (error) {
       fail(error);
     }
-  }
+  });
 
-  async function confirmDelete() {
+  const confirmDelete = useSingleFlight(async () => {
     if (!editing) return;
     try {
       await remove.mutateAsync(editing.id);
@@ -120,7 +136,7 @@ export function ComponentDialog({
     } catch (error) {
       fail(error);
     }
-  }
+  });
 
   return (
     <>
@@ -141,6 +157,16 @@ export function ComponentDialog({
                   setCode(e.target.value);
                 }}
                 required
+              />
+            </Field>
+            <Field label={t("description")} hint={t("descriptionHint")}>
+              <Input
+                value={description}
+                maxLength={500}
+                placeholder={t("descriptionPlaceholder")}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                }}
               />
             </Field>
             <Field label={t("kind")}>
@@ -186,12 +212,16 @@ export function ComponentDialog({
                 }}
               />
             </Field>
+            {editing && hasScores && (
+              <p className="text-body-sm text-fg-muted">{t("deleteBlocked")}</p>
+            )}
             <DialogFooter className="sm:justify-between">
               {editing ? (
                 <Button
                   type="button"
                   variant="ghost"
                   className="text-danger"
+                  disabled={hasScores}
                   onClick={() => {
                     setConfirmingDelete(true);
                   }}

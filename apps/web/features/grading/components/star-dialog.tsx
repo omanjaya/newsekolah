@@ -10,6 +10,7 @@ import {
   NumberInput,
   SegmentedControl,
   Textarea,
+  useSingleFlight,
   useToast,
   useSubmitValidation,
 } from "@newsekolah/ui";
@@ -21,6 +22,8 @@ import { useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useGiveStarMutation } from "../api";
 import { fromText, toText } from "../lib/number-text";
+
+import { StarLedgerList } from "./star-ledger-list";
 
 export interface StarDialogProps {
   onOpenChange: (open: boolean) => void;
@@ -37,7 +40,8 @@ export interface StarDialogProps {
  * The balance shown here is the class roster's cached balance, refreshed
  * by useGiveStarMutation's invalidation once the entry is saved; while
  * that roster is loading or failed to load, the dialog says the balance
- * is unknown rather than printing 0. The
+ * is unknown rather than printing 0. Under the form, the student's star
+ * history (`StarLedgerList`) shows who gave or took stars and why. The
  * caller mounts this only while a student is targeted, so each open
  * starts from a fresh instance with the form reset.
  */
@@ -61,7 +65,9 @@ export function StarDialog({
   const validAmount = Number.isInteger(parsedAmount) && parsedAmount >= 1 && parsedAmount <= 999;
   const { ref: formRef, attempted, check } = useSubmitValidation();
 
-  async function submit() {
+  // A double click must not award the stars twice: the button's `loading`
+  // only takes effect after a re-render, too late for a second click.
+  const submit = useSingleFlight(async () => {
     if (!check(validAmount)) return;
     try {
       await giveStar.mutateAsync({
@@ -82,7 +88,7 @@ export function StarDialog({
         error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
       );
     }
-  }
+  });
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
@@ -141,6 +147,7 @@ export function StarDialog({
               }}
             />
           </Field>
+          <StarLedgerList studentId={studentId} />
           <DialogFooter>
             <Button
               type="button"

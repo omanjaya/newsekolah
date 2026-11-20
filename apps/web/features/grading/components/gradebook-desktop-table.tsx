@@ -35,8 +35,12 @@ export interface GradebookDesktopTableProps {
   starBalances: StarBalances;
   scaleMin: number;
   scaleMax: number;
+  /** The scale's `round_decimal`: how many decimals an average or report score shows. */
+  scaleDecimals: number;
   /** "Nilai {min}-{max}", precomputed once and reused on every out-of-range cell's inline hint. */
   rangeHint: string;
+  /** Shown under a cell whose text is not a number at all. */
+  formatHint: string;
   liveByStudent: Map<string, { average: number | undefined; missing: number }>;
   missingByComponent: Map<string, number>;
   invalidComponentIds: Set<string>;
@@ -85,7 +89,9 @@ export function GradebookDesktopTable({
   starBalances,
   scaleMin,
   scaleMax,
+  scaleDecimals,
   rangeHint,
+  formatHint,
   liveByStudent,
   missingByComponent,
   invalidComponentIds,
@@ -207,6 +213,7 @@ export function GradebookDesktopTable({
                     min={scaleMin}
                     max={scaleMax}
                     rangeHint={rangeHint}
+                    formatHint={formatHint}
                     changed={edits[component.id]?.[student.student_user_id] !== undefined}
                     onCommit={onCommit}
                     onRegisterRef={onRegisterRef}
@@ -223,7 +230,9 @@ export function GradebookDesktopTable({
                   live?.average !== undefined ? "text-fg" : "text-fg-muted",
                 )}
               >
-                {live?.average !== undefined ? formatScore(live.average, locale) : "-"}
+                {live?.average !== undefined
+                  ? formatScore(live.average, locale, scaleDecimals)
+                  : "-"}
               </TableCell>
               <TableCell className="border-l border-line text-right tabular-nums">
                 {student.report_score === undefined ? (
@@ -254,11 +263,11 @@ export function GradebookDesktopTable({
                     title={pending ? t("reportScorePending") : undefined}
                     className="text-fg underline decoration-dotted underline-offset-2"
                   >
-                    {formatScore(student.report_score, locale)}
+                    {formatScore(student.report_score, locale, scaleDecimals)}
                   </Button>
                 ) : (
                   <span className="text-label text-fg">
-                    {formatScore(student.report_score, locale)}
+                    {formatScore(student.report_score, locale, scaleDecimals)}
                   </span>
                 )}
                 {pending && (

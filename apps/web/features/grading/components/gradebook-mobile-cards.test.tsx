@@ -37,7 +37,9 @@ function renderCards(overrides: Partial<GradebookMobileCardsProps> = {}) {
     starBalances: new Map([["s1", 2]]),
     scaleMin: 0,
     scaleMax: 100,
+    scaleDecimals: 2,
     rangeHint: "",
+    formatHint: "",
     liveByStudent: new Map(),
     pendingStudentIds: new Set(),
     onManualOverride: vi.fn(),
@@ -52,13 +54,13 @@ function renderCards(overrides: Partial<GradebookMobileCardsProps> = {}) {
 describe("GradebookMobileCards", () => {
   it("gives a manager a score input and a star button", () => {
     renderCards();
-    expect(screen.getByRole("spinbutton", { name: /scoreFor/ })).toHaveValue(72.5);
+    expect(screen.getByRole("textbox", { name: /scoreFor/ })).toHaveValue("72.5");
     expect(screen.getByRole("button", { name: 'starsFor:{"name":"Budi"}' })).toBeEnabled();
   });
 
   it("gives a reader the score and star balance as text, with no disabled controls", () => {
     renderCards({ canManage: false });
-    expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.getByText("72,5")).toBeInTheDocument();
     expect(screen.getByText('starsBalance:{"name":"Budi","balance":"2"}')).toBeInTheDocument();
@@ -84,7 +86,9 @@ describe("GradebookMobileCards", () => {
         starBalances={new Map()}
         scaleMin={0}
         scaleMax={100}
+        scaleDecimals={2}
         rangeHint=""
+        formatHint=""
         liveByStudent={new Map()}
         pendingStudentIds={new Set()}
         onManualOverride={vi.fn()}

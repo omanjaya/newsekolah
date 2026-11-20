@@ -187,6 +187,12 @@ export interface NumberFormatOptions {
    * Intl's default of three).
    */
   fractionDigits?: number;
+  /**
+   * A range instead of an exact count, e.g. 1 and 2 for a score kept to
+   * two decimals ("88,0", "77,55"). Ignored when `fractionDigits` is set.
+   */
+  minFractionDigits?: number;
+  maxFractionDigits?: number;
 }
 
 /**
@@ -195,13 +201,18 @@ export interface NumberFormatOptions {
  * point, wrong in the Indonesian UI.
  */
 export function formatNumber(value: number, options: NumberFormatOptions): string {
-  const { fractionDigits } = options;
-  return new Intl.NumberFormat(
-    INTL_LOCALE[options.locale],
-    fractionDigits === undefined
-      ? undefined
-      : { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits },
-  ).format(value);
+  const { fractionDigits, minFractionDigits, maxFractionDigits } = options;
+  let digits: Intl.NumberFormatOptions | undefined;
+  if (fractionDigits !== undefined) {
+    digits = { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits };
+  } else if (minFractionDigits !== undefined || maxFractionDigits !== undefined) {
+    const max = maxFractionDigits ?? Math.max(minFractionDigits ?? 0, 3);
+    digits = {
+      minimumFractionDigits: Math.min(minFractionDigits ?? 0, max),
+      maximumFractionDigits: max,
+    };
+  }
+  return new Intl.NumberFormat(INTL_LOCALE[options.locale], digits).format(value);
 }
 
 /**

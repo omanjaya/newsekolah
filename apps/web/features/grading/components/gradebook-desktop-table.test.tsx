@@ -44,7 +44,9 @@ function renderTable(overrides: Partial<GradebookDesktopTableProps> = {}) {
     starBalances: new Map(),
     scaleMin: 0,
     scaleMax: 100,
+    scaleDecimals: 2,
     rangeHint: "",
+    formatHint: "",
     liveByStudent: new Map(),
     missingByComponent: new Map([["c1", 1]]),
     invalidComponentIds: new Set(),
@@ -106,7 +108,7 @@ describe("GradebookDesktopTable", () => {
 
   it("shows a reader the scores as plain text, not inputs that only look editable", () => {
     renderTable({ canManage: false });
-    expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     const budi = screen.getByRole("row", { name: /Budi/ });
     const citra = screen.getByRole("row", { name: /Citra/ });
     // In the reader's locale, like the average beside it; a missing score
@@ -135,7 +137,7 @@ describe("GradebookDesktopTable", () => {
 
   it("keeps editable score inputs for a manager", () => {
     renderTable();
-    expect(screen.getAllByRole("spinbutton")).toHaveLength(2);
+    expect(screen.getAllByRole("textbox")).toHaveLength(2);
   });
 
   it("shows a reader the star balance as text named as a balance, not a disabled action", () => {
