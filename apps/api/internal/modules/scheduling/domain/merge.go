@@ -29,8 +29,8 @@ type Block struct {
 	EffectiveUntil *time.Time
 	// HasHistory is true when any schedule in the block has a recorded
 	// attendance session or a substitution request (migrations 0107, 0144
-	// and 0147): it can no longer be rewritten in place, only changed or
-	// removed from a date after that history.
+	// and 0147) or a supervision visit: it can no longer be rewritten in
+	// place, only changed or removed from a date after that history.
 	HasHistory bool
 }
 

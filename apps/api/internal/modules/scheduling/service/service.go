@@ -96,8 +96,8 @@ type Repository interface {
 	ListSchedulesForTeacherOn(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID, date time.Time) ([]domain.Schedule, error)
 	CountSchedulesForClassOn(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) (int64, error)
 	// ListScheduleHistory returns which of ids have history (a recorded
-	// attendance session or a substitution request) and the last date it
-	// binds.
+	// attendance session, a substitution request or a supervision visit)
+	// and the last date it binds.
 	ListScheduleHistory(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]domain.History, error)
 	CountSchedulesByClassDates(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID, dates []time.Time) ([]ClassDateCount, error)
 
