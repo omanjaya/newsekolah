@@ -117,9 +117,10 @@ func (s *Service) OverdueMembers(ctx context.Context, tenantID uuid.UUID) ([]Ove
 			return nil
 		}
 		// One holiday calendar spans every overdue loan (earliest due date
-		// through today) and each member type is looked up once, so the
-		// report costs a fixed handful of queries plus one per member
-		// rather than several per loan.
+		// through today), the members are loaded in one batch and each
+		// member type is looked up once, so the report costs a fixed
+		// handful of queries plus one per member type rather than several
+		// per loan or member.
 		earliestDue := overdue[0].DueOn
 		for _, loan := range overdue[1:] {
 			if loan.DueOn.Before(earliestDue) {
@@ -131,17 +132,19 @@ func (s *Service) OverdueMembers(ctx context.Context, tenantID uuid.UUID) ([]Ove
 			return err
 		}
 		byMember := make(map[uuid.UUID]*OverdueMemberSummary)
-		rules := make(map[uuid.UUID]domain.MemberType)
-		types := make(map[uuid.UUID]domain.MemberType)
 		order := make([]uuid.UUID, 0)
 		for _, loan := range overdue {
-			summary, ok := byMember[loan.MemberUserID]
-			if !ok {
-				summary = &OverdueMemberSummary{MemberUserID: loan.MemberUserID}
-				byMember[loan.MemberUserID] = summary
-				rules[loan.MemberUserID] = s.memberLateRule(ctx, tenantID, loan.MemberUserID, policy, types)
+			if _, ok := byMember[loan.MemberUserID]; !ok {
+				byMember[loan.MemberUserID] = &OverdueMemberSummary{MemberUserID: loan.MemberUserID}
 				order = append(order, loan.MemberUserID)
 			}
+		}
+		rules, err := s.membersLateRules(ctx, tenantID, order, policy)
+		if err != nil {
+			return err
+		}
+		for _, loan := range overdue {
+			summary := byMember[loan.MemberUserID]
 			summary.LoanCount++
 			if _, outcome := lateOutcomeWith(wdr, loan, policy, today, rules[loan.MemberUserID]); outcome.Penalty == domain.PenaltyFine {
 				summary.TotalFine += outcome.FineAmount
@@ -157,6 +160,28 @@ func (s *Service) OverdueMembers(ctx context.Context, tenantID uuid.UUID) ([]Ove
 		return nil, err
 	}
 	return out, nil
+}
+
+// membersLateRules is memberLateRule for many members at once: one batch
+// query for the members and one lookup per distinct member type. A member
+// that no longer exists gets the policy's per-day fine, as memberLateRule
+// gives it.
+func (s *Service) membersLateRules(ctx context.Context, tenantID uuid.UUID, memberUserIDs []uuid.UUID, policy domain.Policy) (map[uuid.UUID]domain.MemberType, error) {
+	members, err := s.repo.GetMembersByIDs(ctx, tenantID, memberUserIDs)
+	if err != nil {
+		return nil, err
+	}
+	types := make(map[uuid.UUID]domain.MemberType)
+	rules := make(map[uuid.UUID]domain.MemberType, len(memberUserIDs))
+	for _, member := range members {
+		rules[member.UserID] = s.memberTypeLateRule(ctx, tenantID, member, policy, types)
+	}
+	for _, id := range memberUserIDs {
+		if _, ok := rules[id]; !ok {
+			rules[id] = domain.PolicyLateRule(policy)
+		}
+	}
+	return rules, nil
 }
 
 // MostBorrowedTitle is one row of the most-borrowed-titles report.

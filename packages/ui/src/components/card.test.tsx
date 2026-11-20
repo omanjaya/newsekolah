@@ -21,6 +21,8 @@ describe("Card", () => {
     expect(card).toHaveClass("rounded-lg", "border-border", "bg-surface", "shadow-1");
     expect(card).not.toHaveClass("p-5");
     expect(screen.getByTestId("header")).toHaveClass("p-5");
+    // Marked like a header with an action, so one selector finds every header.
+    expect(screen.getByTestId("header")).toHaveAttribute("data-slot", "card-header");
     expect(screen.getByTestId("content")).toHaveClass("p-5", "pt-0");
     // Set apart by space, not a rule: the content's 20px inset and 4px more.
     expect(screen.getByTestId("footer")).toHaveClass("p-5", "pt-1");
@@ -59,6 +61,27 @@ describe("Card", () => {
     );
     expect(screen.getByRole("heading", { level: 2, name: "Hari ini" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Lihat semua" })).toBeInTheDocument();
+  });
+
+  // On a phone the desk basket's two text buttons left its title 35px, one
+  // word per line, drawn under the buttons. jsdom has no layout, so this
+  // pins the rules that let a wide action wrap below a title that keeps a
+  // readable minimum instead.
+  it("wraps a wide action below the title rather than squeezing the title", () => {
+    const { container } = render(
+      <Card>
+        <CardHeader action={<button type="button">Selesai</button>}>
+          <CardTitle as="h2">Dikembalikan pada sesi ini</CardTitle>
+        </CardHeader>
+      </Card>,
+    );
+    const header = container.querySelector('[data-slot="card-header"]');
+    const title = container.querySelector('[data-slot="card-header-title"]');
+    const action = container.querySelector('[data-slot="card-header-action"]');
+    expect(header).toHaveClass("flex", "flex-wrap");
+    expect(title).toHaveClass("flex-1", "min-w-32");
+    expect(title).not.toHaveClass("min-w-0");
+    expect(action).toHaveClass("shrink-0", "ml-auto");
   });
 
   it("lets a card that is the whole screen carry the page's h1", () => {

@@ -172,4 +172,54 @@ describe("CatalogueView filters", () => {
     );
     expect(new URLSearchParams(window.location.search).get("page")).toBe("2");
   });
+
+  // The column read "-" for every title that only had a DDC number, while
+  // the class filter beside it matched on that number.
+  it("shows each title's DDC number in the classification column", () => {
+    mocks.useLibraryTitlesQuery.mockReturnValue({
+      data: {
+        data: [
+          {
+            id: "t1",
+            title: "Bumi Manusia",
+            author: "Pramoedya",
+            ddc_number: "899.2213",
+            classification: "",
+            available_copies: 1,
+            total_copies: 1,
+          },
+          {
+            id: "t2",
+            title: "Matematika X",
+            author: "Kemendikbud",
+            ddc_number: "510",
+            classification: "Matematika SMA",
+            available_copies: 1,
+            total_copies: 1,
+          },
+          {
+            id: "t3",
+            title: "Tanpa Kelas",
+            author: "Anon",
+            classification: "",
+            available_copies: 1,
+            total_copies: 1,
+          },
+        ],
+      },
+      isLoading: false,
+    });
+    render(<CatalogueView />);
+
+    const table = screen.getByRole("table");
+    const rowOf = (title: string) => {
+      const row = within(table).getByText(title).closest("tr");
+      if (!row) throw new Error(`no row for ${title}`);
+      return row;
+    };
+    expect(rowOf("Bumi Manusia")).toHaveTextContent("899.2213");
+    expect(rowOf("Matematika X")).toHaveTextContent("510");
+    expect(rowOf("Matematika X")).toHaveTextContent("Matematika SMA");
+    expect(rowOf("Tanpa Kelas")).toHaveTextContent("-");
+  });
 });

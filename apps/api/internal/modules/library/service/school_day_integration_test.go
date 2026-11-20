@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/repository"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
@@ -221,12 +222,14 @@ func TestOverdueMembersReportProjectsTheReturnFine(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx := context.Background()
 	w := seedWitaWorld(t, ctx, pg.AdminPool, 1)
-	svc := newCirculationService(pg.AppPool)
+	repo := &memberLookupCountingRepo{Repository: repository.New(pg.AppPool)}
+	svc := service.New(pg.AppPool, repo, nil, nil, clock.Real{})
 
 	w.borrow(t, at(t, ctx, "2026-12-14T01:00:00Z"), svc, w.barcodes[0]) // due Thu 24 Dec
 	// 07:30 WITA on Monday 28 Dec: Fri 25 and Mon 28 are working days late,
 	// the weekend is not; in UTC it is still Sunday 27 Dec.
 	monday := at(t, ctx, "2026-12-27T23:30:00Z")
+	repo.getMember = 0
 
 	report, err := svc.OverdueMembers(monday, w.tenantID)
 	require.NoError(t, err)
@@ -244,11 +247,24 @@ func TestOverdueMembersReportProjectsTheReturnFine(t *testing.T) {
 	report, err = svc.OverdueMembers(monday, w.tenantID)
 	require.NoError(t, err)
 	require.Equal(t, 500, report[0].TotalFine, "a constant fine is charged once per late return")
+	require.Zero(t, repo.getMember, "the report loads its members in one batch, not one query per member")
 
 	returned, err := svc.Return(monday, w.tenantID, service.ReturnInput{Barcode: w.barcodes[0], CheckedInBy: w.memberID})
 	require.NoError(t, err)
 	require.Equal(t, report[0].TotalFine, returned.FineAmount, "the report projected what the return charged")
 	require.Equal(t, 2, returned.LateDays, "the return reports the working days it charged, not calendar days")
+}
+
+// memberLookupCountingRepo counts single-member lookups, so a report that
+// should load its members in one batch can be checked for an N+1.
+type memberLookupCountingRepo struct {
+	service.Repository
+	getMember int
+}
+
+func (r *memberLookupCountingRepo) GetMember(ctx context.Context, tenantID, userID uuid.UUID) (domain.Member, bool, error) {
+	r.getMember++
+	return r.Repository.GetMember(ctx, tenantID, userID)
 }
 
 // TestOverdueListCountsTheSchoolDay lists overdue loans at 07:30 WITA the

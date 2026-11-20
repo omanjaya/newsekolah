@@ -223,6 +223,32 @@ describe("LoanDeskView", () => {
     expect(endSession).toHaveBeenCalled();
   });
 
+  // On a 390px phone Selesai plus the labelled undo button left the basket
+  // heading 35px wide, one word per line under the buttons. The undo shows
+  // its icon only below sm and keeps its name for screen readers.
+  it("keeps the idle basket's heading readable beside Selesai on a phone", () => {
+    deskSession.mockReturnValue(
+      baseSession({
+        mode: "renew",
+        basket: {
+          borrow: [],
+          return: [],
+          renew: [{ barcode: "2026/00011", title: "Matematika", state: "done" }],
+        },
+      }),
+    );
+    render(<LoanDeskView />);
+
+    const undo = screen.getByRole("button", { name: "undoLastScan" });
+    expect(screen.getByText("undoLastScan")).toHaveClass("max-sm:sr-only");
+    const header = undo.closest('[data-slot="card-header"]');
+    expect(header).toHaveClass("flex-wrap");
+    expect(header).toContainElement(screen.getByRole("button", { name: "member.endSession" }));
+    expect(header?.querySelector('[data-slot="card-header-title"]')).toContainElement(
+      screen.getByRole("heading", { name: "basket.heading.renew" }),
+    );
+  });
+
   it("warns about an unpaid fine and shows the quota in use before lending", () => {
     deskSession.mockReturnValue(
       baseSession({

@@ -47,6 +47,7 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useFindLibraryCopyByCodeMutation, useLibraryTitleNameMutation } from "../desk-api";
 import {
+  type LibraryStocktake,
   type LibraryStocktakeResult,
   downloadLibraryStocktakeReportXlsx,
   useCloseStocktakeMutation,
@@ -173,10 +174,10 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
     );
   };
 
-  async function handleDownloadReport() {
+  async function handleDownloadReport(stocktake: LibraryStocktake) {
     setDownloading(true);
     try {
-      await downloadLibraryStocktakeReportXlsx(stocktakeId);
+      await downloadLibraryStocktakeReportXlsx(stocktake);
     } catch (error) {
       toast.error(errorMessage(error));
     } finally {
@@ -208,6 +209,7 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
       </AppPage>
     );
   }
+  const stocktake = session.data;
 
   const latest = scanFeed[0];
   const scanDescription = (entry: ScanFeedEntry) => {
@@ -239,7 +241,7 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
             icon: <Download />,
             disabled: downloading,
             onSelect: () => {
-              void handleDownloadReport();
+              void handleDownloadReport(stocktake);
             },
           },
         ]

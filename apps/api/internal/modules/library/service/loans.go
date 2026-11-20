@@ -392,6 +392,13 @@ func (s *Service) memberLateRule(ctx context.Context, tenantID, memberUserID uui
 	if err != nil || !found {
 		return domain.PolicyLateRule(policy)
 	}
+	return s.memberTypeLateRule(ctx, tenantID, member, policy, types)
+}
+
+// memberTypeLateRule is memberLateRule for an already loaded member, so a
+// report that loads its members in one batch query does not look each one
+// up again.
+func (s *Service) memberTypeLateRule(ctx context.Context, tenantID uuid.UUID, member domain.Member, policy domain.Policy, types map[uuid.UUID]domain.MemberType) domain.MemberType {
 	if mt, cached := types[member.MemberTypeID]; cached {
 		return mt
 	}

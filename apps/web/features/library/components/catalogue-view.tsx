@@ -150,7 +150,21 @@ export function CatalogueView(): ReactElement {
         accessorKey: "classification",
         header: t("columns.classification"),
         enableSorting: false,
-        cell: ({ row }) => row.original.classification || "-",
+        // The DDC number first: it is what the class filter beside the
+        // table matches and what the call number starts with. A free-text
+        // classification follows as a muted second line.
+        cell: ({ row }) => {
+          const { ddc_number: ddc, classification } = row.original;
+          if (!ddc) return classification || "-";
+          return (
+            <span className="flex flex-col">
+              <span className="tabular-nums">{ddc}</span>
+              {classification && (
+                <span className="text-body-sm text-fg-muted">{classification}</span>
+              )}
+            </span>
+          );
+        },
       },
       {
         id: "copies",

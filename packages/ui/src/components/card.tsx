@@ -137,16 +137,32 @@ export function CardHeader({ className, action, children, ...props }: CardHeader
   const padding = inset ? "" : "p-5 [&:has(+[data-card-flush])]:pb-1";
   if (action === undefined || action === null || action === false) {
     return (
-      <div className={cn("flex flex-col gap-1", padding, className)} {...props}>
+      <div
+        data-slot="card-header"
+        className={cn("flex flex-col gap-1", padding, className)}
+        {...props}
+      >
         {children}
       </div>
     );
   }
+  // The title keeps at least 8rem: an action too wide to leave it that much
+  // (two text buttons on a phone) wraps onto its own line, right-aligned,
+  // instead of squeezing the title to one word per line and drawing it
+  // under the buttons.
   return (
-    <div className={cn("flex items-start gap-3", padding, className)} {...props}>
-      <div className="flex min-w-0 flex-1 flex-col gap-1">{children}</div>
+    <div
+      data-slot="card-header"
+      className={cn("flex flex-wrap items-start gap-3", padding, className)}
+      {...props}
+    >
+      <div data-slot="card-header-title" className="flex min-w-32 flex-1 flex-col gap-1">
+        {children}
+      </div>
       {/* As tall as the heading role's line, so a 32 or 44px control centres on the title and overflows the padding, not the layout. */}
-      <div className="flex h-5.5 shrink-0 items-center">{action}</div>
+      <div data-slot="card-header-action" className="ml-auto flex h-5.5 shrink-0 items-center">
+        {action}
+      </div>
     </div>
   );
 }
