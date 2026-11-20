@@ -20,6 +20,7 @@ import type { ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { downloadFromUrl } from "../../../lib/navigation/download-from-url";
 import { useSession } from "../../../lib/session/session-provider";
 import {
   type ReportScheduleRun,
@@ -62,8 +63,10 @@ export function ScheduleRunHistoryDialog({
     download.mutate(
       { scheduleId: run.schedule_id, runId: run.id },
       {
+        // The link is an attachment, so the page stays; a new window
+        // opened here would be outside the click and popup-blocked.
         onSuccess: (result) => {
-          window.open(result.url, "_blank", "noopener,noreferrer");
+          downloadFromUrl(result.url);
         },
         onError: (error) => {
           toast.error(
@@ -117,6 +120,8 @@ export function ScheduleRunHistoryDialog({
                     <IconButton
                       icon={<Download />}
                       aria-label={t("download")}
+                      loading={download.isPending && download.variables.runId === run.id}
+                      disabled={download.isPending}
                       onClick={() => {
                         downloadRun(run);
                       }}

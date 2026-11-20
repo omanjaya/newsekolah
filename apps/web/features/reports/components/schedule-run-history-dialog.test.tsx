@@ -5,6 +5,8 @@ import { ScheduleRunHistoryDialog } from "./schedule-run-history-dialog";
 
 const runsQuery = vi.fn<() => unknown>();
 const downloadMutate = vi.fn();
+const downloadFromUrl = vi.fn();
+const downloadState = vi.hoisted(() => ({ isPending: false }));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, values?: Record<string, unknown>) =>
@@ -22,12 +24,23 @@ vi.mock("../../../components/query-error", () => ({
 }));
 vi.mock("../api", () => ({
   useReportScheduleRunsQuery: () => runsQuery(),
-  useReportScheduleRunDownloadMutation: () => ({ mutate: downloadMutate, isPending: false }),
+  useReportScheduleRunDownloadMutation: () => ({
+    mutate: downloadMutate,
+    isPending: downloadState.isPending,
+    variables: downloadState.isPending ? { scheduleId: "s1", runId: "r1" } : undefined,
+  }),
+}));
+vi.mock("../../../lib/navigation/download-from-url", () => ({
+  downloadFromUrl: (url: string) => {
+    downloadFromUrl(url);
+  },
 }));
 
 afterEach(() => {
   cleanup();
   downloadMutate.mockReset();
+  downloadFromUrl.mockReset();
+  downloadState.isPending = false;
 });
 
 function runs(data: unknown[]) {
@@ -102,7 +115,6 @@ describe("ScheduleRunHistoryDialog", () => {
   });
 
   it("offers the stored file of a run whose email failed", () => {
-    const open = vi.spyOn(window, "open").mockReturnValue(null);
     downloadMutate.mockImplementation(
       (_vars, { onSuccess }: { onSuccess: (r: { url: string }) => void }) => {
         onSuccess({ url: "https://storage.test/report.xlsx" });
@@ -140,12 +152,30 @@ describe("ScheduleRunHistoryDialog", () => {
       { scheduleId: "s1", runId: "r1" },
       expect.anything(),
     );
-    expect(open).toHaveBeenCalledWith(
-      "https://storage.test/report.xlsx",
-      "_blank",
-      "noopener,noreferrer",
+    // Same tab, not a popup: the link downloads as an attachment.
+    expect(downloadFromUrl).toHaveBeenCalledWith("https://storage.test/report.xlsx");
+  });
+
+  it("disables the download while a link is being fetched", () => {
+    downloadState.isPending = true;
+    runsQuery.mockReturnValue(
+      runs([
+        {
+          id: "r1",
+          schedule_id: "s1",
+          due_at: "2026-11-20T03:00:00Z",
+          ran_at: "2026-11-20T03:00:12Z",
+          status: "failed",
+          failure_code: "send_failed",
+          object_key: "reports/schedules/t/s1/1.xlsx",
+          error_message: "smtp: 550",
+        },
+      ]),
     );
-    open.mockRestore();
+    render(<ScheduleRunHistoryDialog scheduleId="s1" onClose={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "download" }));
+    expect(downloadMutate).not.toHaveBeenCalled();
   });
 
   it("shows a load error with a retry instead of the empty history", () => {

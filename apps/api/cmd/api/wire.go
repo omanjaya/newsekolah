@@ -38,6 +38,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/platform"
 	platformdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports"
+	reportsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance"
@@ -252,6 +253,12 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 
 	// Built before the jobs block below so its periodic due-schedule scan
 	// can be registered alongside every other module's.
+	// Scheduled reports also sign attachment links, which the permits-owned
+	// interface lacks; a nil client stays a nil interface (S3 off).
+	var scheduleStorage reportsservice.ScheduleStorage
+	if sharedStorageClient != nil {
+		scheduleStorage = sharedStorageClient
+	}
 	reportsModule := reports.Register(reports.Dependencies{
 		Pool:       pool,
 		Attendance: wiring.AttendanceReports{Svc: attendanceModule.Service},
@@ -269,7 +276,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		},
 		Perms:   identityModule.Service,
 		Emails:  identityModule.Service,
-		Storage: sharedStorage,
+		Storage: scheduleStorage,
 		Clock:   clock.Real{},
 		// attendance.daily's reportdoc export: grade-level class
 		// resolution and the tenant's kop laporan. The same source now

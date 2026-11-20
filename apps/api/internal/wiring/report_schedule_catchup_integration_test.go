@@ -3,6 +3,7 @@ package wiring
 import (
 	"context"
 	"errors"
+	"net/url"
 	"testing"
 	"time"
 
@@ -82,6 +83,12 @@ func TestReportScheduleCatchesUpMissedSlot(t *testing.T) {
 	link, err := svc.RunDownloadURL(ctx, fx.tenantID, missed, runs[0].ID)
 	require.NoError(t, err)
 	require.Contains(t, link, "reports/schedules/")
+	// Served as an attachment, so the browser downloads it in place.
+	parsed, err := url.Parse(link)
+	require.NoError(t, err)
+	require.Equal(t, reportsservice.XLSXContentType, parsed.Query().Get("response-content-type"))
+	require.Equal(t, `attachment; filename="laporan-2030-01-02.xlsx"`,
+		parsed.Query().Get("response-content-disposition"))
 	_, err = svc.RunDownloadURL(ctx, fx.tenantID, missed, uuid.New())
 	require.ErrorIs(t, err, domain.ErrRunNotFound)
 }

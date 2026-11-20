@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -74,10 +76,12 @@ type RecipientChecker interface {
 
 // ScheduleStorage is the narrow slice of platform/storage.Client the
 // schedule feature needs: write the rendered workbook, then hand back a
-// link a recipient can use without an account.
+// link a recipient can use without an account, or one that downloads the
+// file as an attachment for the in-app run history.
 type ScheduleStorage interface {
 	PutObject(ctx context.Context, objectKey string, content []byte, contentType string) error
 	PresignedGetURL(ctx context.Context, objectKey string, ttl time.Duration) (*url.URL, error)
+	PresignedGetURLAsAttachment(ctx context.Context, objectKey string, ttl time.Duration, contentType, filename string) (*url.URL, error)
 }
 
 // ScheduleInput is what a caller supplies to create or update a schedule;
@@ -380,8 +384,10 @@ func (s *ScheduleService) ListRuns(ctx context.Context, tenantID, scheduleID uui
 }
 
 // RunDownloadURL is a short-lived link to the file a run rendered, for an
-// admin to fetch when the email did not go out. ErrRunFileMissing when the
-// run has no stored file (it failed before upload, or is still pending).
+// admin to fetch when the email did not go out. The link serves the file
+// as an attachment, so the browser downloads it and the app stays on the
+// page that opened it. ErrRunFileMissing when the run has no stored file
+// (it failed before upload, or is still pending).
 func (s *ScheduleService) RunDownloadURL(ctx context.Context, tenantID, scheduleID, runID uuid.UUID) (string, error) {
 	if err := s.requireScheduleAvailable(ctx, tenantID, scheduleID); err != nil {
 		return "", err
@@ -402,11 +408,26 @@ func (s *ScheduleService) RunDownloadURL(ctx context.Context, tenantID, schedule
 	if run.ObjectKey == "" || s.storage == nil {
 		return "", domain.ErrRunFileMissing
 	}
-	link, err := s.storage.PresignedGetURL(ctx, run.ObjectKey, runDownloadTTL)
+	contentType, filename := runFileAttachment(run, s.tenantLocation(ctx, tenantID))
+	link, err := s.storage.PresignedGetURLAsAttachment(ctx, run.ObjectKey, runDownloadTTL, contentType, filename)
 	if err != nil {
 		return "", fmt.Errorf("sign run download link: %w", err)
 	}
 	return link.String(), nil
+}
+
+// runFileAttachment names a run's stored file for download: the format
+// comes from the object key's extension (runOne writes "<slot>.<format>"),
+// the date is the slot's tenant-local day, e.g. "laporan-2026-11-20.xlsx".
+func runFileAttachment(run domain.Run, loc *time.Location) (contentType, filename string) {
+	format := domain.Format(strings.TrimPrefix(path.Ext(run.ObjectKey), "."))
+	contentType = XLSXContentType
+	if format == domain.FormatPDF {
+		contentType = PDFContentType
+	} else {
+		format = domain.FormatXLSX
+	}
+	return contentType, fmt.Sprintf("laporan-%s.%s", run.DueAt.In(loc).Format("2006-01-02"), format)
 }
 
 // runDownloadTTL is how long an in-app download link stays valid: long
