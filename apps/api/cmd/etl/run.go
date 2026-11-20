@@ -402,7 +402,7 @@ func runMigrationSteps(
 	}
 	if d.exitPermitsNotFinal > 0 {
 		exitPermitStat.RecordGap(fmt.Sprintf(
-			"student_permits: %d row(s) not migrated -- still mid-flow (status approved/out), %d of those also excluded as permit_type 'late'",
+			"student_permits: %d row(s) not migrated -- still mid-flow (status approved), %d of those also excluded as permit_type 'late'",
 			d.exitPermitsNotFinal, d.exitPermitsLateType,
 		))
 	}

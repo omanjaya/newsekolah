@@ -205,7 +205,7 @@ function MyExitPermits(): ReactElement {
     if (state.kind !== "returned") return [];
     const time = formatTime(state.at, { locale, timeZone });
     return [
-      state.lateMinutes > 0
+      state.lateMinutes
         ? t("returnedLateMeta", { time, minutes: state.lateMinutes })
         : t("returnedMeta", { time }),
     ];

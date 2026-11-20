@@ -511,15 +511,24 @@ masih mid-flow tak berguna dibawa: statusnya akan berubah lagi di sistem
 lama sebelum cutover, dan kalaupun tidak, tak ada cara memverifikasi
 approver/timestamp tiap stage-nya dari sini.
 
-- `student_permits.status`: `completed` dan `expired` dianggap final;
-  `approved` (disetujui tapi belum keluar gerbang) dan `out` (sudah keluar,
-  belum kembali) masih mid-flow, dilewati. `permit_type = 'late'`
+- `student_permits.status`: `completed` dan `expired` dianggap final.
+  `out` (sudah keluar gerbang, tak pernah check-in kembali) juga
+  dimigrasikan sebagai `completed`: rantai persetujuannya sudah selesai,
+  hanya kepulangannya yang tak tercatat, jadi `returned_at` dibiarkan
+  kosong dan riwayat "tidak kembali" dari sistem lama tetap ada.
+  `approved` (disetujui tapi belum keluar gerbang) masih mid-flow,
+  dilewati. `permit_type = 'late'`
   (check-in terlambat lewat tabel yang sama) dilewati juga -- itu alur
   `late_arrival`, di luar cakupan pass ini.
 - `student_permits.return_required` -> `exit_permits.return_required`, dan
   `security_in_at` (check-in satpam) -> `exit_permits.returned_at` bila
   siswa memang wajib kembali. `expected_return_at` dibiarkan kosong: data
-  lama tidak dinilai terlambat atau tidak.
+  lama tidak dinilai terlambat atau tidak (halaman izin menampilkan
+  "Kembali pukul ..." tanpa label tepat waktu/terlambat), dan izin tanpa
+  `expected_return_at` tidak pernah masuk daftar "belum kembali" di
+  gerbang maupun bisa dicatat kembali. Akibatnya siswa yang masih di luar
+  saat cutover (status `out` hari itu) dicatat kembalinya secara manual di
+  luar sistem; jalankan cutover di luar jam sekolah.
 - `permits`: kombinasi `class_admin_approve = 0` (ditolak wali kelas, tahap
   pertama) atau `bk_approve = 1 and class_admin_approve = 1` (kedua tahap
   disetujui) dianggap final; kombinasi lain (masih `NULL` di salah satu

@@ -47,13 +47,21 @@ export function ExitedCard({
     );
   }
   if (state.kind === "returned") {
-    const late = state.lateMinutes > 0;
+    const lateMinutes = state.lateMinutes ?? 0;
+    const late = lateMinutes > 0;
     const back = formatTime(state.at, { locale, timeZone });
+    // No verdict chip without a due time to judge the return by.
+    const chip =
+      state.lateMinutes === null
+        ? undefined
+        : late
+          ? t("lateBy", { minutes: lateMinutes })
+          : t("onTime");
     return (
       <HeroCard
         tone={late ? "warning" : "neutral"}
         eyebrow={t("hero.returnedEyebrow")}
-        chip={late ? t("lateBy", { minutes: state.lateMinutes }) : t("onTime")}
+        chip={chip}
         title={destination}
         meta={[exited, t("hero.returnedAt", { time: back })].join(" · ")}
       />
@@ -64,7 +72,10 @@ export function ExitedCard({
   );
 }
 
-/** The return line of a permit's detail, or null before the gate. */
+/**
+ * The return line of a permit's detail, or null before the gate and for a
+ * permit that exited before returns were tracked (nothing is known).
+ */
 export function useReturnText(data: ExitPermitDetail | undefined): string | null {
   const t = useTranslations("app.permits.exit");
   const locale = useLocale() as Locale;
@@ -76,6 +87,7 @@ export function useReturnText(data: ExitPermitDetail | undefined): string | null
   const timeZone = me?.tenant.timezone;
   if (state.kind === "returned") {
     const at = formatTime(state.at, { locale, timeZone });
+    if (state.lateMinutes === null) return t("hero.returnedAt", { time: at });
     return state.lateMinutes > 0
       ? t("returnedLate", { time: at, minutes: state.lateMinutes })
       : t("returnedOnTime", { time: at });

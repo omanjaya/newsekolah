@@ -7,11 +7,13 @@ import (
 
 // SionExitPermit is one live-schema student_permits row: a student's
 // request to leave the school grounds (and, unless return_required is
-// false, return) during the day. Only rows this ETL treats as final --
-// status 'completed' or 'expired', see migrate_permits.go -- are fetched;
-// 'approved' (never exited yet) and 'out' (exited, not yet returned) are
-// still mid-flow and deliberately left out, per the rule documented in
-// docs/13-etl-sion.md. permit_type 'late' rows are excluded here too: they
+// false, return) during the day. Rows whose student has been through the
+// gate or whose permit is over are fetched -- status 'completed',
+// 'expired' and 'out' (exited, never checked back in: its approval chain
+// is done, only the return is missing), see migrate_permits.go; 'approved'
+// (never exited yet) is still mid-flow and deliberately left out, per the
+// rule documented in docs/13-etl-sion.md. permit_type 'late' rows are
+// excluded here too: they
 // describe a late-arrival check-in through the same generic table, and
 // late_arrival is out of scope for this pass.
 type SionExitPermit struct {
@@ -55,7 +57,7 @@ func (s *Source) FetchExitPermits(yearID int64, semesterStart, semesterEnd time.
 		   from group_members gm join groups g on g.id = gm.group_id
 		   where g.year_id = ?
 		 ) cls on cls.user_id = sp.user_id
-		 where sp.status in ('completed', 'expired') and sp.permit_type <> 'late'
+		 where sp.status in ('completed', 'expired', 'out') and sp.permit_type <> 'late'
 		   and sp.created_at >= ? and sp.created_at < ?
 		 order by sp.id`,
 		yearID, semesterStart, semesterEnd,
@@ -82,8 +84,8 @@ func (s *Source) FetchExitPermits(yearID int64, semesterStart, semesterEnd time.
 }
 
 // CountExitPermitsNotFinal reports how many student_permits rows in the
-// migrated semester's date range are not in a final state (status
-// 'approved' or 'out') or are permit_type 'late', for the report's gap
+// migrated semester's date range are not migrated: still mid-flow (status
+// 'approved') or permit_type 'late', for the report's gap
 // line -- see FetchExitPermits' doc comment.
 func (s *Source) CountExitPermitsNotFinal(_ int64, semesterStart, semesterEnd time.Time) (notFinal, lateType int, err error) {
 	// coalesce(..., 0): MySQL's sum() over zero matching rows (e.g. a
@@ -96,8 +98,8 @@ func (s *Source) CountExitPermitsNotFinal(_ int64, semesterStart, semesterEnd ti
 	// not something that should abort the whole run.
 	err = s.db.QueryRow(
 		`select
-		   coalesce(sum(status not in ('completed', 'expired')), 0),
-		   coalesce(sum(status in ('completed', 'expired') and permit_type = 'late'), 0)
+		   coalesce(sum(status not in ('completed', 'expired', 'out')), 0),
+		   coalesce(sum(status in ('completed', 'expired', 'out') and permit_type = 'late'), 0)
 		 from student_permits
 		 where created_at >= ? and created_at < ?`,
 		semesterStart, semesterEnd,

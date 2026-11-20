@@ -54,4 +54,17 @@ describe("exitReturnState", () => {
       kind: "none",
     });
   });
+
+  it("shows a return with no due time without judging it", () => {
+    const imported = {
+      exited_at: out.exited_at,
+      return_required: true,
+      returned_at: "2027-02-16T05:00:00Z",
+    };
+    expect(exitReturnState(imported, new Date("2027-02-16T06:00:00Z"))).toEqual({
+      kind: "returned",
+      at: "2027-02-16T05:00:00Z",
+      lateMinutes: null,
+    });
+  });
 });

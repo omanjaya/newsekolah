@@ -86,8 +86,8 @@ func firstPeriod(periods map[int64]periodMigrationResult) (periodMigrationResult
 	return best, found
 }
 
-// migrateExitPermits migrates final-state student_permits rows (see
-// SionExitPermit's doc comment for which statuses count as final) to
+// migrateExitPermits migrates student_permits rows past the gate or over (see
+// SionExitPermit's doc comment for which statuses are fetched) to
 // workflow_instances (kind exit_permit) plus their exit_permits detail row.
 // Idempotency key: (tenant_id, subject_user_id, opened_at's date, kind) via
 // select-then-insert, since a student_permits row has no other stable
@@ -135,8 +135,11 @@ func (st *Store) migrateExitPermits(
 			defaultedPeriods++
 		}
 
+		// 'out' is a student who went through the gate and never checked
+		// back in: the exit completed, only the return is missing, which
+		// returned_at = null below keeps.
 		status := "expired"
-		if p.Status == "completed" {
+		if p.Status == "completed" || p.Status == "out" {
 			status = "completed"
 		}
 		issuedAtTime, hasIssuedAt := firstValidTime(p.WakaApprovedAt, p.BKApprovedAt, p.TeacherApprovedAt, p.PicketApprovedAt)
@@ -177,7 +180,10 @@ func (st *Store) migrateExitPermits(
 			exitedAt = mapping.LocalToUTC(p.SecurityOutAt.Time, loc)
 		}
 		// SION's check-in at the gate is the return; a permit without
-		// return_required never expects one.
+		// return_required never expects one. expected_return_at stays null:
+		// SION never judged a return on time or late, and a permit without
+		// it is never listed as a student still out (an 'out' row from
+		// days ago would otherwise read as hours overdue).
 		var returnedAt any
 		if p.ReturnRequired && p.SecurityInAt.Valid {
 			returnedAt = mapping.LocalToUTC(p.SecurityInAt.Time, loc)

@@ -22,25 +22,32 @@ export interface ExitReturnFields {
 }
 
 export type ExitReturnState =
-  /** Not through the gate yet, no return expected, or a permit from before returns were tracked. */
+  /**
+   * Not through the gate yet, no return expected, or a permit that exited
+   * before returns were tracked (no due time, no recorded return): whether
+   * that student came back is unknown.
+   */
   | { kind: "none" }
   /** Out, due back at `due`; `lateMinutes` > 0 once that has passed. */
   | { kind: "out"; due: string; lateMinutes: number }
-  /** Recorded back at `at`, `lateMinutes` after the due time (0: on time). */
-  | { kind: "returned"; at: string; lateMinutes: number };
+  /**
+   * Recorded back at `at`, `lateMinutes` after the due time (0: on time).
+   * `lateMinutes` is null for a return with no due time to judge it by (one
+   * imported from SION, which never judged returns).
+   */
+  | { kind: "returned"; at: string; lateMinutes: number | null };
 
 /** Where the student stands on returning, at `now` on the school's clock. */
 export function exitReturnState(permit: ExitReturnFields, now: Date): ExitReturnState {
-  if (!permit.exited_at || !permit.return_required || !permit.expected_return_at) {
-    return { kind: "none" };
-  }
+  if (!permit.exited_at || !permit.return_required) return { kind: "none" };
   const due = permit.expected_return_at;
   if (permit.returned_at) {
     return {
       kind: "returned",
       at: permit.returned_at,
-      lateMinutes: minutesLate(due, permit.returned_at),
+      lateMinutes: due ? minutesLate(due, permit.returned_at) : null,
     };
   }
+  if (!due) return { kind: "none" };
   return { kind: "out", due, lateMinutes: minutesLate(due, now) };
 }
