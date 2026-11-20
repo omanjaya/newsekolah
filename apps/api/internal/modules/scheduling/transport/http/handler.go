@@ -237,6 +237,10 @@ func ptrNullUUID(id *uuid.UUID) uuid.NullUUID {
 
 func toAPIMutationPolicy(p service.MutationPolicy) *api.MutationPolicy {
 	out := &api.MutationPolicy{CanEdit: p.CanEdit, CanDelete: p.CanDelete}
+	if p.HasHistory {
+		hasHistory := true
+		out.HasHistory = &hasHistory
+	}
 	if p.Reason != "" {
 		reason := p.Reason
 		out.Reason = &reason
@@ -271,7 +275,12 @@ func toAPISchedule(s domain.Schedule, policy *service.MutationPolicy) api.Schedu
 }
 
 func toAPIBlock(b domain.Block) api.ScheduleBlock {
+	var hasHistory *bool
+	if b.HasHistory {
+		hasHistory = &b.HasHistory
+	}
 	return api.ScheduleBlock{
+		HasHistory:    hasHistory,
 		ScheduleIds:   b.ScheduleIDs,
 		ClassId:       b.ClassID,
 		SubjectId:     b.SubjectID,

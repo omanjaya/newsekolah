@@ -54,8 +54,9 @@ type Querier interface {
 	AcademicDeleteTeachingAssignmentsForTeacherInYear(ctx context.Context, arg AcademicDeleteTeachingAssignmentsForTeacherInYearParams) error
 	AcademicDeleteTerm(ctx context.Context, arg AcademicDeleteTermParams) error
 	AcademicDeleteTrack(ctx context.Context, arg AcademicDeleteTrackParams) error
-	AcademicEndHomeroomAssignment(ctx context.Context, arg AcademicEndHomeroomAssignmentParams) error
-	AcademicFindActiveHomeroomAssignment(ctx context.Context, arg AcademicFindActiveHomeroomAssignmentParams) (AcademicFindActiveHomeroomAssignmentRow, error)
+	// Ends every active homeroom assignment of the class, not just one, so a
+	// class left with two holders by older code heals on the next edit.
+	AcademicEndActiveHomeroomAssignments(ctx context.Context, arg AcademicEndActiveHomeroomAssignmentsParams) error
 	// Cross-module writes onto duty_types/duty_assignments (owned by the
 	// identity module): the class record's homeroom_teacher_id and the
 	// "homeroom" duty assignment for that class must always agree, so setting
@@ -157,6 +158,9 @@ type Querier interface {
 	AcademicSoftDeleteSubject(ctx context.Context, arg AcademicSoftDeleteSubjectParams) error
 	AcademicSubjectOfferedInYear(ctx context.Context, arg AcademicSubjectOfferedInYearParams) (bool, error)
 	AcademicTeacherHasAssignment(ctx context.Context, arg AcademicTeacherHasAssignmentParams) (bool, error)
+	// Whether the teacher already holds the homeroom duty for another class
+	// this year: a teacher is homeroom of one class at a time.
+	AcademicTeacherIsHomeroomOfOtherClass(ctx context.Context, arg AcademicTeacherIsHomeroomOfOtherClassParams) (bool, error)
 	AcademicUpdateCalendarEvent(ctx context.Context, arg AcademicUpdateCalendarEventParams) (AcademicCalendarEvent, error)
 	AcademicUpdateClass(ctx context.Context, arg AcademicUpdateClassParams) (Class, error)
 	AcademicUpdateGradeLevel(ctx context.Context, arg AcademicUpdateGradeLevelParams) (GradeLevel, error)
@@ -532,6 +536,11 @@ type Querier interface {
 	DisciplineStudentSnapshot(ctx context.Context, arg DisciplineStudentSnapshotParams) (DisciplineStudentSnapshotRow, error)
 	DisciplineUserName(ctx context.Context, arg DisciplineUserNameParams) (string, error)
 	EmailExists(ctx context.Context, arg EmailExistsParams) (bool, error)
+	// Ends every active assignment of one class-scoped duty for the class
+	// (except keep_id, the row being created or reactivated), so a class never
+	// keeps two homeroom holders: not limited to one row, so duplicates left
+	// by older code heal on the next change.
+	EndActiveAssignmentsForClass(ctx context.Context, arg EndActiveAssignmentsForClassParams) error
 	EndMembership(ctx context.Context, arg EndMembershipParams) (ExtracurricularMembership, error)
 	EnsureNotificationsPartition(ctx context.Context, targetMonth pgtype.Date) error
 	// Bug fix vs. the old app (docs/02-system-design.md section 6.2 step 4):
@@ -550,13 +559,15 @@ type Querier interface {
 	// the row names who teaches it whoever opens it first. Never overwrites a
 	// substitute already recorded.
 	FillAttendanceSessionSubstitute(ctx context.Context, arg FillAttendanceSessionSubstituteParams) (AttendanceSession, error)
-	// The identity-side mirror of academic's AcademicFindActiveHomeroomAssignment:
-	// lets CreateDutyAssignment end the class's previous active homeroom duty
-	// before creating a new one, so at most one stays active at a time.
-	FindActiveHomeroomAssignmentForClass(ctx context.Context, arg FindActiveHomeroomAssignmentForClassParams) (uuid.UUID, error)
+	// The class's current holder of one class-scoped duty, newest first, so
+	// classes.homeroom_teacher_id can be re-derived after a holder is ended.
+	FindActiveHolderForClass(ctx context.Context, arg FindActiveHolderForClassParams) (uuid.UUID, error)
 	// Matches barcode, accession number, or RFID tag, the same three columns
 	// the old app searched (libOpsFindItemByCode).
 	FindCopyByCode(ctx context.Context, arg FindCopyByCodeParams) (LibraryCopy, error)
+	// Another class the user already holds this class-scoped duty for in the
+	// year: a teacher is homeroom of one class at a time.
+	FindOtherActiveClassForHolder(ctx context.Context, arg FindOtherActiveClassForHolderParams) (pgtype.UUID, error)
 	// Import/lookup dedupe: an ISBN match first, falling back to an exact
 	// title+author match (old app: normalize ISBN, then LOWER(title)= and
 	// LOWER(main_author)=).
@@ -668,6 +679,8 @@ type Querier interface {
 	// or the simulated/real "today" -- see internal/platform/clock), so the
 	// global-corrector scope check follows the same date a superadmin is
 	// simulating instead of always the database server's today.
+	// A teacher holds one homeroom at a time (identity and academic refuse a
+	// second); the newest wins if older data still has two.
 	GetHomeroomClassForAttendance(ctx context.Context, arg GetHomeroomClassForAttendanceParams) (pgtype.UUID, error)
 	// permits.AttendanceBlocker: a student mid-flow cannot be marked present
 	// for today's attendance until this resolves, per
@@ -1324,6 +1337,11 @@ type Querier interface {
 	// itself is a points range (min_points/max_points) the service derives
 	// from the policy, since only Go holds the level ladder.
 	ListSPCandidates(ctx context.Context, arg ListSPCandidatesParams) ([]ListSPCandidatesRow, error)
+	// Which of the given schedules already have an attendance session or a
+	// substitution request: the history guard (migration 0107) refuses to
+	// change or delete those, so the grid and the single-schedule policy say
+	// so before the admin fills a form.
+	ListScheduleIDsWithHistory(ctx context.Context, arg ListScheduleIDsWithHistoryParams) ([]uuid.UUID, error)
 	ListSchedulesByAcademicYear(ctx context.Context, arg ListSchedulesByAcademicYearParams) ([]Schedule, error)
 	ListSchedulesByClass(ctx context.Context, arg ListSchedulesByClassParams) ([]Schedule, error)
 	ListSchedulesByDay(ctx context.Context, arg ListSchedulesByDayParams) ([]Schedule, error)

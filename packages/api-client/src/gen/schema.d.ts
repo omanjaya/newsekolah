@@ -11578,6 +11578,8 @@ export interface components {
         MutationPolicy: {
             can_edit: boolean;
             can_delete: boolean;
+            /** @description The schedule has an attendance session or a substitution request, so it can no longer be edited or deleted (the history is kept). */
+            has_history?: boolean;
             reason?: string;
         };
         Schedule: {
@@ -11622,6 +11624,8 @@ export interface components {
             start_seq: number;
             end_seq: number;
             source: components["schemas"]["ScheduleSource"];
+            /** @description Some schedule in the block has an attendance session or a substitution request, so the block can no longer be edited or deleted. */
+            has_history?: boolean;
         };
         ScheduleWriteRequest: {
             /** Format: uuid */

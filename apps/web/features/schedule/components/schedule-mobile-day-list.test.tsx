@@ -8,6 +8,7 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("./lesson-substitution-action", () => ({ LessonSubstitutionAction: () => null }));
 
+import { lockableBlockActions } from "./lockable-block-actions";
 import { ScheduleMobileDayList } from "./schedule-mobile-day-list";
 
 const periods = [
@@ -73,5 +74,40 @@ describe("ScheduleMobileDayList", () => {
     } as ScheduleBlock);
 
     expect(screen.getByText("Matematika").closest("li")).toHaveTextContent("Guru Contoh · Jam 3");
+  });
+});
+
+describe("lockableBlockActions", () => {
+  const lesson = {
+    schedule_ids: ["c"],
+    class_id: "class-1",
+    subject_id: "s1",
+    teacher_user_id: "t1",
+    day_of_week: 1,
+    start_seq: 1,
+    end_seq: 1,
+    source: "admin",
+  } as ScheduleBlock;
+
+  it("offers edit and delete on a lesson without history", () => {
+    const items = lockableBlockActions(lesson, (key) => key, {
+      onEdit: vi.fn(),
+      onDelete: vi.fn(),
+    });
+    expect(items.map((item) => [item.label, item.disabled])).toEqual([
+      ["editBlock", false],
+      ["deleteBlock", false],
+    ]);
+  });
+
+  it("disables both, saying why, on a lesson with attendance history", () => {
+    const items = lockableBlockActions({ ...lesson, has_history: true }, (key) => key, {
+      onEdit: vi.fn(),
+      onDelete: vi.fn(),
+    });
+    expect(items.map((item) => [item.label, item.disabled])).toEqual([
+      ["editBlockLocked", true],
+      ["deleteBlockLocked", true],
+    ]);
   });
 });

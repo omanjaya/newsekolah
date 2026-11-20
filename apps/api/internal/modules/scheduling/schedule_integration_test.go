@@ -115,6 +115,18 @@ func TestScheduleBlockMutationsPreserveHistory(t *testing.T) {
 	require.ErrorIs(t, svc.DeleteScheduleBlock(ctx, tenant, c.ID, []uuid.UUID{c.ID, d.ID}, actor), domain.ErrScheduleHasHistory)
 	require.Equal(t, 3, count("schedules"))
 	require.Equal(t, 1, count("attendance_sessions"))
+	// The grid and the single-schedule policy announce the freeze up front
+	// instead of offering Edit and Delete only to fail on save.
+	blocks, err := svc.ListByClass(ctx, tenant, year, class, nil)
+	require.NoError(t, err)
+	for _, block := range blocks {
+		require.Equal(t, block.DayOfWeek == 2, block.HasHistory, "day %d", block.DayOfWeek)
+	}
+	policy := svc.MutationPolicyFor(ctx, tenant, d, actor)
+	require.True(t, policy.HasHistory)
+	require.False(t, policy.CanEdit)
+	require.False(t, policy.CanDelete)
+	require.True(t, svc.MutationPolicyFor(ctx, tenant, a, actor).CanEdit, "a block without history stays editable")
 	changed := input
 	changed.DayOfWeek = 3
 	changed.StartPeriodID = p2

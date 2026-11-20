@@ -206,32 +206,32 @@ func (s *Service) GetSchedule(ctx context.Context, tenantID, id uuid.UUID) (doma
 // the whole week's, which is what ListSchedules used to return before
 // class_id and day_of_week were made to combine.
 func (s *Service) ListByClass(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, dayOfWeek *int16) ([]domain.Block, error) {
-	var schedules []domain.Schedule
+	var blocks []domain.Block
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
-		schedules, err = s.repo.ListSchedulesByClass(ctx, tenantID, academicYearID, classID)
+		schedules, err := s.repo.ListSchedulesByClass(ctx, tenantID, academicYearID, classID)
+		if err != nil {
+			return err
+		}
+		blocks, err = s.markHistory(ctx, tenantID, domain.MergeContiguous(filterByDay(schedules, dayOfWeek)))
 		return err
 	})
-	if err != nil {
-		return nil, err
-	}
-	return domain.MergeContiguous(filterByDay(schedules, dayOfWeek)), nil
+	return blocks, err
 }
 
 // ListByTeacher returns a teacher's own schedules merged into contiguous
 // blocks, narrowed to dayOfWeek when it is non-nil -- see ListByClass's
 // doc comment for why.
 func (s *Service) ListByTeacher(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID, dayOfWeek *int16) ([]domain.Block, error) {
-	var schedules []domain.Schedule
+	var blocks []domain.Block
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
-		schedules, err = s.repo.ListSchedulesByTeacher(ctx, tenantID, academicYearID, teacherID)
+		schedules, err := s.repo.ListSchedulesByTeacher(ctx, tenantID, academicYearID, teacherID)
+		if err != nil {
+			return err
+		}
+		blocks, err = s.markHistory(ctx, tenantID, domain.MergeContiguous(filterByDay(schedules, dayOfWeek)))
 		return err
 	})
-	if err != nil {
-		return nil, err
-	}
-	return domain.MergeContiguous(filterByDay(schedules, dayOfWeek)), nil
+	return blocks, err
 }
 
 // filterByDay narrows schedules to dayOfWeek, when given; nil leaves the
@@ -254,16 +254,42 @@ func filterByDay(schedules []domain.Schedule, dayOfWeek *int16) []domain.Schedul
 // ListByDay returns one day's schedules across every class, merged into
 // contiguous blocks (the "per day" grid view).
 func (s *Service) ListByDay(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16) ([]domain.Block, error) {
-	var schedules []domain.Schedule
+	var blocks []domain.Block
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
-		schedules, err = s.repo.ListSchedulesByDay(ctx, tenantID, academicYearID, dayOfWeek)
+		schedules, err := s.repo.ListSchedulesByDay(ctx, tenantID, academicYearID, dayOfWeek)
+		if err != nil {
+			return err
+		}
+		blocks, err = s.markHistory(ctx, tenantID, domain.MergeContiguous(schedules))
 		return err
 	})
+	return blocks, err
+}
+
+// markHistory sets HasHistory on every block holding a schedule with an
+// attendance session or substitution request, in one query for the grid.
+func (s *Service) markHistory(ctx context.Context, tenantID uuid.UUID, blocks []domain.Block) ([]domain.Block, error) {
+	var ids []uuid.UUID
+	for _, b := range blocks {
+		ids = append(ids, b.ScheduleIDs...)
+	}
+	withHistory, err := s.repo.ScheduleIDsWithHistory(ctx, tenantID, ids)
 	if err != nil {
 		return nil, err
 	}
-	return domain.MergeContiguous(schedules), nil
+	frozen := make(map[uuid.UUID]bool, len(withHistory))
+	for _, id := range withHistory {
+		frozen[id] = true
+	}
+	for i := range blocks {
+		for _, id := range blocks[i].ScheduleIDs {
+			if frozen[id] {
+				blocks[i].HasHistory = true
+				break
+			}
+		}
+	}
+	return blocks, nil
 }
 
 // MutationPolicy tells a caller (for one schedule) whether they may edit
@@ -273,10 +299,22 @@ func (s *Service) ListByDay(ctx context.Context, tenantID, academicYearID uuid.U
 type MutationPolicy struct {
 	CanEdit   bool
 	CanDelete bool
-	Reason    string
+	// HasHistory is true when the schedule has an attendance session or a
+	// substitution request: the history guard then refuses every edit and
+	// delete, whoever asks, so the actions are not offered at all.
+	HasHistory bool
+	Reason     string
 }
 
 func (s *Service) MutationPolicyFor(ctx context.Context, tenantID uuid.UUID, sched domain.Schedule, actor Actor) MutationPolicy {
+	var withHistory []uuid.UUID
+	if err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		withHistory, err = s.repo.ScheduleIDsWithHistory(ctx, tenantID, []uuid.UUID{sched.ID})
+		return err
+	}); err != nil || len(withHistory) > 0 {
+		return MutationPolicy{HasHistory: err == nil, Reason: domain.ErrScheduleHasHistory.Error()}
+	}
 	if actor.CanManage {
 		return MutationPolicy{CanEdit: true, CanDelete: true}
 	}
