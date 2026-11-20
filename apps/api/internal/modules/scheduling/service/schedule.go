@@ -544,13 +544,7 @@ func mapConstraintError(err error) error {
 
 // now is the single injection point for the clock; tests may override it.
 func (s *Service) now(ctx context.Context) time.Time {
-	now := clock.Now(ctx, s.clock)
-	if school, ok := tenant.FromContext(ctx); ok {
-		if loc, err := time.LoadLocation(school.Timezone); err == nil {
-			return now.In(loc)
-		}
-	}
-	return now
+	return clock.Now(ctx, s.clock).In(tenant.LocationFromContext(ctx))
 }
 
 // UpdateScheduleBlock collapses a displayed contiguous block to one span while

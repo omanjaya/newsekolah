@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/analytics/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // The attendance signal answers "how many of this student's last N school
@@ -45,8 +46,7 @@ const (
 // localToday is the calendar date of now in loc, as a UTC-midnight date:
 // the last day the attendance window may include.
 func localToday(now time.Time, loc *time.Location) time.Time {
-	year, month, day := now.In(loc).Date()
-	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+	return clock.LocalDate(now, loc)
 }
 
 // tenantToday is localToday in the tenant's configured timezone, falling
@@ -57,13 +57,7 @@ func (s *Service) tenantToday(ctx context.Context, tenantID uuid.UUID, now time.
 	if err != nil {
 		return time.Time{}, err
 	}
-	loc := time.UTC
-	if name != "" {
-		if loaded, err := time.LoadLocation(name); err == nil {
-			loc = loaded
-		}
-	}
-	return localToday(now, loc), nil
+	return localToday(now, clock.Location(name)), nil
 }
 
 // attendanceLookbackDates lists the calendar dates to read statuses for,

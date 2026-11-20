@@ -56,6 +56,23 @@ func FromContext(ctx context.Context) (Tenant, bool) {
 	return t, ok
 }
 
+// Location is the tenant's own timezone (clock.Location: UTC when unset
+// or unknown), the zone every "today"/month/day decision for its school
+// is made in.
+func (t Tenant) Location() *time.Location {
+	return clock.Location(t.Timezone)
+}
+
+// LocationFromContext is the request tenant's timezone, or UTC when the
+// context carries no tenant (a background job, a test calling a service
+// directly).
+func LocationFromContext(ctx context.Context) *time.Location {
+	if t, ok := FromContext(ctx); ok {
+		return t.Location()
+	}
+	return time.UTC
+}
+
 // publicOperationPaths lists routes where a mobile client may supply
 // X-Tenant before it has a token, per docs/03 section: tenant resolution
 // falls back to the header only for these public endpoints.
