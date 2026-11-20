@@ -29,7 +29,10 @@ func (n AnnouncementNotifier) AnnouncementPublished(ctx context.Context, tenantI
 	if runes := []rune(body); len(runes) > 160 {
 		body = strings.TrimSpace(string(runes[:160])) + "..."
 	}
-	href := "/announcements/" + a.ID.String()
+	// The reader's feed, opened on this announcement. The web has no page
+	// per announcement; /announcements/{id}, which older notifications
+	// still carry, redirects to the same place.
+	href := "/announcements?focus=" + a.ID.String()
 	if err := n.Svc.Notify(ctx, tenantID, notificationsservice.Notification{
 		UserIDs: recipientIDs, Kind: notificationsdomain.KindAnnouncementPublished,
 		Title: a.Title, Body: body, Href: href,

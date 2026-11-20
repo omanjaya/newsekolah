@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -168,8 +169,13 @@ func (s *Service) publishLocked(ctx context.Context, tenantID, id uuid.UUID) (do
 		return domain.Announcement{}, err
 	}
 	published.RecipientCount = len(recipients)
-	if err := s.notifier.AnnouncementPublished(ctx, tenantID, recipients, published); err != nil {
-		return domain.Announcement{}, err
+	// The feed shows an announcement only from its starts_at. Notifying
+	// before then sent everyone to a notice they could not see yet, so a
+	// future start leaves the notification to NotifyDue.
+	if !startsLater(published, clock.Now(ctx, s.clock)) {
+		if err := s.notify(ctx, tenantID, recipients, published); err != nil {
+			return domain.Announcement{}, err
+		}
 	}
 	// A scheduled publish runs in the worker with no request: the entry then
 	// has no actor, which the audit log shows as the system.
@@ -177,6 +183,93 @@ func (s *Service) publishLocked(ctx context.Context, tenantID, id uuid.UUID) (do
 		return domain.Announcement{}, err
 	}
 	return published, nil
+}
+
+// startsLater reports whether a's publish window opens after now.
+func startsLater(a domain.Announcement, now time.Time) bool {
+	return a.StartsAt != nil && a.StartsAt.After(now)
+}
+
+// notify sends a's notification to recipients and records that it went
+// out, in the caller's transaction, so the inbox rows and notified_at
+// commit together.
+func (s *Service) notify(ctx context.Context, tenantID uuid.UUID, recipients []uuid.UUID, a domain.Announcement) error {
+	if err := s.notifier.AnnouncementPublished(ctx, tenantID, recipients, a); err != nil {
+		return err
+	}
+	return s.repo.MarkNotified(ctx, tenantID, a.ID)
+}
+
+// NotifyDue is the second half of the periodic job: every published
+// announcement whose recipients were not notified at publish time (its
+// starts_at was still ahead) is notified once starts_at has passed, each in
+// its own tenant transaction. The audience is resolved again, so it reaches
+// whoever it addresses when it becomes visible. One whose window already
+// closed (the job was down past ends_at) is marked notified without
+// sending: it is no longer in anyone's feed. Like PublishDue, it runs on
+// the real clock (docs/testing-time-simulation.md) and skips tenants with
+// the module turned off.
+func (s *Service) NotifyDue(ctx context.Context) (notified int, errs []error) {
+	tenantIDs, err := s.repo.ListActiveTenantIDs(ctx)
+	if err != nil {
+		return 0, []error{err}
+	}
+	for _, tenantID := range tenantIDs {
+		on, err := s.enabled(ctx, tenantID)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if !on {
+			continue
+		}
+		var pending []domain.Announcement
+		if err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+			var err error
+			pending, err = s.repo.ListPendingNotifications(ctx)
+			return err
+		}); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		for _, a := range pending {
+			sent := false
+			err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+				var err error
+				sent, err = s.notifyPending(ctx, tenantID, a)
+				return err
+			})
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			if sent {
+				notified++
+			}
+		}
+	}
+	return notified, errs
+}
+
+func (s *Service) notifyPending(ctx context.Context, tenantID uuid.UUID, a domain.Announcement) (bool, error) {
+	if a.EndsAt != nil && a.EndsAt.Before(s.clock.Now()) {
+		return false, s.repo.MarkNotified(ctx, tenantID, a.ID)
+	}
+	recipients, err := s.resolveAudience(ctx, tenantID, a.Audience)
+	if err != nil {
+		return false, err
+	}
+	if len(recipients) == 0 {
+		return false, s.repo.MarkNotified(ctx, tenantID, a.ID)
+	}
+	if err := s.repo.SetRecipientCount(ctx, tenantID, a.ID, len(recipients)); err != nil {
+		return false, err
+	}
+	a.RecipientCount = len(recipients)
+	if err := s.notify(ctx, tenantID, recipients, a); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // Schedule parks a draft until its starts_at, when PublishDue picks it up.

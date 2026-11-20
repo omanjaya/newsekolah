@@ -30,6 +30,8 @@ type Repository interface {
 	Delete(ctx context.Context, tenantID, id uuid.UUID) error
 	ListForAdmin(ctx context.Context, tenantID uuid.UUID, status string, cursor Cursor, limit int) ([]domain.Announcement, error)
 	ListDueScheduled(ctx context.Context) ([]domain.Announcement, error)
+	ListPendingNotifications(ctx context.Context) ([]domain.Announcement, error)
+	MarkNotified(ctx context.Context, tenantID, id uuid.UUID) error
 	ListActiveTenantIDs(ctx context.Context) ([]uuid.UUID, error)
 	ListActiveForTenant(ctx context.Context, tenantID uuid.UUID, asOf time.Time) ([]domain.Announcement, error)
 

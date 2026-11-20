@@ -15,7 +15,7 @@ import (
 const createAnnouncement = `-- name: CreateAnnouncement :one
 insert into announcements (tenant_id, sender_user_id, title, body_html, body_text, audience, is_pinned, status, starts_at, ends_at)
 values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-returning id, tenant_id, sender_user_id, title, body_html, body_text, audience, is_pinned, status, starts_at, ends_at, published_at, recipient_count, created_at, updated_at, deleted_at
+returning id, tenant_id, sender_user_id, title, body_html, body_text, audience, is_pinned, status, starts_at, ends_at, published_at, recipient_count, created_at, updated_at, deleted_at, notified_at
 `
 
 type CreateAnnouncementParams struct {
@@ -62,6 +62,7 @@ func (q *Queries) CreateAnnouncement(ctx context.Context, arg CreateAnnouncement
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.NotifiedAt,
 	)
 	return i, err
 }
@@ -81,7 +82,7 @@ func (q *Queries) DeleteAnnouncement(ctx context.Context, arg DeleteAnnouncement
 }
 
 const getAnnouncementByID = `-- name: GetAnnouncementByID :one
-select id, tenant_id, sender_user_id, title, body_html, body_text, audience, is_pinned, status, starts_at, ends_at, published_at, recipient_count, created_at, updated_at, deleted_at from announcements where tenant_id = $1 and id = $2 and deleted_at is null
+select id, tenant_id, sender_user_id, title, body_html, body_text, audience, is_pinned, status, starts_at, ends_at, published_at, recipient_count, created_at, updated_at, deleted_at, notified_at from announcements where tenant_id = $1 and id = $2 and deleted_at is null
 `
 
 type GetAnnouncementByIDParams struct {
@@ -109,12 +110,13 @@ func (q *Queries) GetAnnouncementByID(ctx context.Context, arg GetAnnouncementBy
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.NotifiedAt,
 	)
 	return i, err
 }
 
 const listActiveAnnouncementsForUser = `-- name: ListActiveAnnouncementsForUser :many
-select id, tenant_id, sender_user_id, title, body_html, body_text, audience, is_pinned, status, starts_at, ends_at, published_at, recipient_count, created_at, updated_at, deleted_at
+select id, tenant_id, sender_user_id, title, body_html, body_text, audience, is_pinned, status, starts_at, ends_at, published_at, recipient_count, created_at, updated_at, deleted_at, notified_at
 from announcements
 where tenant_id = $1
   and deleted_at is null
@@ -163,6 +165,7 @@ func (q *Queries) ListActiveAnnouncementsForUser(ctx context.Context, arg ListAc
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.NotifiedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -202,7 +205,7 @@ func (q *Queries) ListActiveTenantIDsForAnnouncements(ctx context.Context) ([]uu
 }
 
 const listAnnouncementsForAdmin = `-- name: ListAnnouncementsForAdmin :many
-select id, tenant_id, sender_user_id, title, body_html, body_text, audience, is_pinned, status, starts_at, ends_at, published_at, recipient_count, created_at, updated_at, deleted_at
+select id, tenant_id, sender_user_id, title, body_html, body_text, audience, is_pinned, status, starts_at, ends_at, published_at, recipient_count, created_at, updated_at, deleted_at, notified_at
 from announcements
 where tenant_id = $1::uuid
   and deleted_at is null
@@ -258,6 +261,7 @@ func (q *Queries) ListAnnouncementsForAdmin(ctx context.Context, arg ListAnnounc
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.NotifiedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -270,7 +274,7 @@ func (q *Queries) ListAnnouncementsForAdmin(ctx context.Context, arg ListAnnounc
 }
 
 const listDueScheduledAnnouncements = `-- name: ListDueScheduledAnnouncements :many
-select id, tenant_id, sender_user_id, title, body_html, body_text, audience, is_pinned, status, starts_at, ends_at, published_at, recipient_count, created_at, updated_at, deleted_at from announcements
+select id, tenant_id, sender_user_id, title, body_html, body_text, audience, is_pinned, status, starts_at, ends_at, published_at, recipient_count, created_at, updated_at, deleted_at, notified_at from announcements
 where status = 'scheduled' and deleted_at is null and starts_at <= now()
 `
 
@@ -301,6 +305,7 @@ func (q *Queries) ListDueScheduledAnnouncements(ctx context.Context) ([]Announce
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.NotifiedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -310,6 +315,67 @@ func (q *Queries) ListDueScheduledAnnouncements(ctx context.Context) ([]Announce
 		return nil, err
 	}
 	return items, nil
+}
+
+const listPendingAnnouncementNotifications = `-- name: ListPendingAnnouncementNotifications :many
+select id, tenant_id, sender_user_id, title, body_html, body_text, audience, is_pinned, status, starts_at, ends_at, published_at, recipient_count, created_at, updated_at, deleted_at, notified_at from announcements
+where status = 'published' and deleted_at is null and notified_at is null
+  and (starts_at is null or starts_at <= now())
+`
+
+// Drives the same job: published announcements whose recipients were not
+// notified at publish time because starts_at was still ahead, once
+// starts_at has passed.
+func (q *Queries) ListPendingAnnouncementNotifications(ctx context.Context) ([]Announcement, error) {
+	rows, err := q.db.Query(ctx, listPendingAnnouncementNotifications)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Announcement{}
+	for rows.Next() {
+		var i Announcement
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.SenderUserID,
+			&i.Title,
+			&i.BodyHtml,
+			&i.BodyText,
+			&i.Audience,
+			&i.IsPinned,
+			&i.Status,
+			&i.StartsAt,
+			&i.EndsAt,
+			&i.PublishedAt,
+			&i.RecipientCount,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.NotifiedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const markAnnouncementNotified = `-- name: MarkAnnouncementNotified :exec
+update announcements set notified_at = now() where tenant_id = $1 and id = $2
+`
+
+type MarkAnnouncementNotifiedParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) MarkAnnouncementNotified(ctx context.Context, arg MarkAnnouncementNotifiedParams) error {
+	_, err := q.db.Exec(ctx, markAnnouncementNotified, arg.TenantID, arg.ID)
+	return err
 }
 
 const setAnnouncementRecipientCount = `-- name: SetAnnouncementRecipientCount :exec
@@ -331,7 +397,7 @@ const updateAnnouncement = `-- name: UpdateAnnouncement :one
 update announcements
 set title = $3, body_html = $4, body_text = $5, audience = $6, is_pinned = $7, starts_at = $8, ends_at = $9
 where tenant_id = $1 and id = $2 and deleted_at is null and status in ('draft', 'scheduled')
-returning id, tenant_id, sender_user_id, title, body_html, body_text, audience, is_pinned, status, starts_at, ends_at, published_at, recipient_count, created_at, updated_at, deleted_at
+returning id, tenant_id, sender_user_id, title, body_html, body_text, audience, is_pinned, status, starts_at, ends_at, published_at, recipient_count, created_at, updated_at, deleted_at, notified_at
 `
 
 type UpdateAnnouncementParams struct {
@@ -376,6 +442,7 @@ func (q *Queries) UpdateAnnouncement(ctx context.Context, arg UpdateAnnouncement
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.NotifiedAt,
 	)
 	return i, err
 }
@@ -384,7 +451,7 @@ const updateAnnouncementStatus = `-- name: UpdateAnnouncementStatus :one
 update announcements
 set status = $3, published_at = case when $3 = 'published' then now() else published_at end
 where tenant_id = $1 and id = $2 and deleted_at is null
-returning id, tenant_id, sender_user_id, title, body_html, body_text, audience, is_pinned, status, starts_at, ends_at, published_at, recipient_count, created_at, updated_at, deleted_at
+returning id, tenant_id, sender_user_id, title, body_html, body_text, audience, is_pinned, status, starts_at, ends_at, published_at, recipient_count, created_at, updated_at, deleted_at, notified_at
 `
 
 type UpdateAnnouncementStatusParams struct {
@@ -413,6 +480,7 @@ func (q *Queries) UpdateAnnouncementStatus(ctx context.Context, arg UpdateAnnoun
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.NotifiedAt,
 	)
 	return i, err
 }

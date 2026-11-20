@@ -97,6 +97,7 @@ type Announcement struct {
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
+	NotifiedAt     pgtype.Timestamptz `json:"notified_at"`
 }
 
 type AnnouncementRead struct {

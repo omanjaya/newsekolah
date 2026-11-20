@@ -1392,7 +1392,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Publish now, fanning out a notification to the resolved audience */
+        /**
+         * Publish now, fanning out a notification to the resolved audience
+         * @description The notification goes out at once when the announcement is already visible. When its
+         *     starts_at is still ahead, it is published (readers see it from starts_at) and its audience
+         *     is notified by the periodic job once starts_at has passed.
+         */
         post: operations["publishAnnouncement"];
         delete?: never;
         options?: never;

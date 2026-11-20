@@ -1352,6 +1352,10 @@ type Querier interface {
 	ListParticipants(ctx context.Context, arg ListParticipantsParams) ([]ActivityParticipant, error)
 	ListPartners(ctx context.Context, tenantID uuid.UUID) ([]LibraryPartner, error)
 	ListPaymentsForBill(ctx context.Context, arg ListPaymentsForBillParams) ([]Payment, error)
+	// Drives the same job: published announcements whose recipients were not
+	// notified at publish time because starts_at was still ahead, once
+	// starts_at has passed.
+	ListPendingAnnouncementNotifications(ctx context.Context) ([]Announcement, error)
 	ListPeriodsRefByTemplate(ctx context.Context, arg ListPeriodsRefByTemplateParams) ([]Period, error)
 	ListPermissionCodesForDutyTypes(ctx context.Context, dutyTypeIds []uuid.UUID) ([]ListPermissionCodesForDutyTypesRow, error)
 	ListPermissionCodesForRoles(ctx context.Context, roleIds []uuid.UUID) ([]string, error)
@@ -1567,6 +1571,7 @@ type Querier interface {
 	// for a useful fuzzy search (a one-character member number such as "7").
 	LookupLibraryMembers(ctx context.Context, arg LookupLibraryMembersParams) ([]LookupLibraryMembersRow, error)
 	MarkAllNotificationsRead(ctx context.Context, arg MarkAllNotificationsReadParams) error
+	MarkAnnouncementNotified(ctx context.Context, arg MarkAnnouncementNotifiedParams) error
 	MarkAnnouncementRead(ctx context.Context, arg MarkAnnouncementReadParams) error
 	MarkDigestSent(ctx context.Context, arg MarkDigestSentParams) error
 	MarkExitPermitExited(ctx context.Context, arg MarkExitPermitExitedParams) (ExitPermit, error)

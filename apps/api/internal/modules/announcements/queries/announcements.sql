@@ -43,6 +43,17 @@ limit sqlc.arg(page_limit)::int;
 select * from announcements
 where status = 'scheduled' and deleted_at is null and starts_at <= now();
 
+-- name: ListPendingAnnouncementNotifications :many
+-- Drives the same job: published announcements whose recipients were not
+-- notified at publish time because starts_at was still ahead, once
+-- starts_at has passed.
+select * from announcements
+where status = 'published' and deleted_at is null and notified_at is null
+  and (starts_at is null or starts_at <= now());
+
+-- name: MarkAnnouncementNotified :exec
+update announcements set notified_at = now() where tenant_id = $1 and id = $2;
+
 -- name: ListActiveAnnouncementsForUser :many
 -- GET /v1/me/announcements: published, inside the active window, pinned
 -- first then most recent. Recipient filtering (does this user's audience
