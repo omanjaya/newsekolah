@@ -21,7 +21,7 @@ var bookkeepingFields = map[string]bool{
 	"CreatedByUserID": true,
 }
 
-// normalizePayload gives every audit payload the same shape the audit
+// normalizePayload gives every struct audit payload the same shape the audit
 // page reads: snake_case top-level keys. A call site that passes a domain
 // struct without json tags would otherwise store its Go field names
 // (AmountMinor, DayOfMonth) next to entries whose keys are amount_minor

@@ -41,6 +41,11 @@ func TestMarshalOrNilSnakeCasesUntaggedStructs(t *testing.T) {
 		"day_of_month":     nil,
 		"ip_allowlist":     []any{"10.0.0.1"},
 	}, got, "Go field names become snake_case and bookkeeping fields are dropped")
+
+	raw, err = marshalOrNil(&untaggedFeeType{Name: "SPP"})
+	require.NoError(t, err)
+	require.Contains(t, string(raw), `"amount_minor":0`, "a pointer to a struct is normalised too")
+	require.NotContains(t, string(raw), "TenantID")
 }
 
 func TestMarshalOrNilKeepsShapedPayloads(t *testing.T) {
@@ -51,6 +56,8 @@ func TestMarshalOrNilKeepsShapedPayloads(t *testing.T) {
 			EventTypes []string `json:"event_types"`
 		}{URL: "https://example.com", EventTypes: []string{"a"}},
 		[]string{"view_billing"},
+		map[string]any{"ID": "x", "SomeKey": 1},
+		json.RawMessage(`{"TenantID":"kept","AmountMinor":1}`),
 	} {
 		want, err := json.Marshal(payload)
 		require.NoError(t, err)

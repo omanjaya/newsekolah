@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -130,6 +131,12 @@ func marshalOrNil(v any) ([]byte, error) {
 	raw, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
+	}
+	// Only a struct can carry untagged Go field names. Maps, slices and
+	// json.RawMessage are already shaped by their call site, and their
+	// keys may be data (setting names, user names), so they pass through.
+	if reflect.Indirect(reflect.ValueOf(v)).Kind() != reflect.Struct {
+		return raw, nil
 	}
 	return normalizePayload(raw)
 }
