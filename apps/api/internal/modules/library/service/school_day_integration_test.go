@@ -270,3 +270,16 @@ func TestOverdueListCountsTheSchoolDay(t *testing.T) {
 	require.Len(t, nextMorning, 1)
 	require.Equal(t, loan.ID, nextMorning[0].ID)
 }
+
+// TestStocktakeStartsOnTheSchoolDay starts a stocktake at 07:30 WITA on
+// Monday (23:30Z on Sunday): it is dated the school's Monday.
+func TestStocktakeStartsOnTheSchoolDay(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	w := seedWitaWorld(t, ctx, pg.AdminPool, 1)
+	svc := newCirculationService(pg.AppPool)
+
+	st, err := svc.StartStocktake(at(t, ctx, "2026-12-13T23:30:00Z"), w.tenantID, "Stok opname", w.memberID, "")
+	require.NoError(t, err)
+	require.Equal(t, "2026-12-14", st.StartedOn.Format(time.DateOnly))
+}
