@@ -3,6 +3,7 @@ package service_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -22,10 +23,12 @@ import (
 type fakeBadgeIssuer struct {
 	admin *pgxpool.Pool
 	n     int
+	vars  map[string]any
 }
 
 func (f *fakeBadgeIssuer) IssueVisitorBadge(ctx context.Context, tenantID uuid.UUID, in service.BadgeDocument) (service.IssuedBadge, error) {
 	f.n++
+	f.vars = in.Vars
 	asset, err := db.New(f.admin).CreateAsset(ctx, db.CreateAssetParams{
 		TenantID: tenantID, Bucket: "test", ObjectKey: "badges/" + in.VisitID.String() + ".pdf", Mime: "application/pdf",
 		SizeBytes: 1, Sha256: "x", Kind: "document", Visibility: "private",
@@ -70,4 +73,22 @@ func TestCheckInStoresTheBadge(t *testing.T) {
 	url, err := svc.BadgeURL(ctx, tenantID, visit.ID)
 	require.NoError(t, err, "the badge PDF can be downloaded after check-in")
 	require.Equal(t, "https://files.test/"+visit.BadgeAssetID.UUID.String(), url)
+}
+
+// TestCheckInBadgePrintsSchoolTime pins the badge that printed "Masuk:
+// 20-11-2026 02:02" for a guest who arrived at 09.02 WIB: the arrival time
+// is printed in the school's own timezone, not the server's.
+func TestCheckInBadgePrintsSchoolTime(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	tenantID, hostUserID, guardUserID := seedVisitorsWorld(t, ctx, pg.AdminPool, "visitor-badge-tz-"+uuid.NewString())
+	docs := &fakeBadgeIssuer{admin: pg.AdminPool}
+	arrived := time.Date(2026, 11, 20, 2, 2, 0, 0, time.UTC) // 09.02 in Asia/Jakarta
+	svc := service.New(pg.AppPool, repository.New(pg.AppPool), stubYearsVisitors{}, docs, nil, nil, nil, nil, clock.Frozen{At: arrived})
+
+	_, err := svc.CheckIn(ctx, tenantID, guardUserID, service.CheckInInput{
+		FullName: "Budi Santoso", HostUserID: hostUserID, Purpose: "Rapat", IDType: domain.IDTypeNone,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "20 November 2026 09.02", docs.vars["arrived_at"])
 }
