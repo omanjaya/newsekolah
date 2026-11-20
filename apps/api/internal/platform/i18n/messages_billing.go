@@ -9,4 +9,5 @@ func init() {
 	catalog["PAYMENT_NOT_FOUND"] = map[string]string{Indonesian: "Pembayaran tidak ditemukan.", English: "Payment not found."}
 	catalog["PAYMENT_ALREADY_VOIDED"] = map[string]string{Indonesian: "Pembayaran ini sudah dibatalkan.", English: "This payment was already voided."}
 	catalog["PAYMENT_EXCEEDS_OUTSTANDING"] = map[string]string{Indonesian: "Jumlah pembayaran melebihi sisa tagihan.", English: "The payment amount exceeds the bill's outstanding balance."}
+	catalog["RECEIPT_REVOKED"] = map[string]string{Indonesian: "Kuitansi ini tidak berlaku lagi karena pembayarannya sudah dibatalkan.", English: "This receipt is no longer valid because its payment was voided."}
 }

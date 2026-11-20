@@ -81,4 +81,12 @@ func init() {
 		Indonesian: "Jenis pelanggaran kehadiran ini sudah tidak aktif.",
 		English:    "This attendance violation type is inactive.",
 	}
+	catalog["ATTENDANCE_INVALID_SCOPE"] = map[string]string{
+		Indonesian: "Pilih satu kelas atau satu tingkat untuk diekspor.",
+		English:    "Pick one class or one grade level to export.",
+	}
+	catalog["ATTENDANCE_REPORT_UNKNOWN_COLUMN"] = map[string]string{
+		Indonesian: "Ada kolom laporan yang tidak dikenali. Muat ulang halaman lalu pilih kolom lagi.",
+		English:    "A report column is not recognized. Reload the page and pick the columns again.",
+	}
 }

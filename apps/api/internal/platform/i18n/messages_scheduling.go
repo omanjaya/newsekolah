@@ -63,4 +63,8 @@ func init() {
 		Indonesian: "Jurnal untuk guru, kelas, mata pelajaran, dan tanggal ini sudah ada.",
 		English:    "A journal already exists for this teacher, class, subject, and date.",
 	}
+	catalog["JOURNAL_REPORT_UNKNOWN_COLUMN"] = map[string]string{
+		Indonesian: "Ada kolom laporan yang tidak dikenali. Muat ulang halaman lalu pilih kolom lagi.",
+		English:    "A report column is not recognized. Reload the page and pick the columns again.",
+	}
 }

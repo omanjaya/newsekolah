@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/i18n"
 )
 
 // repoRoot is the monorepo root as seen from this package's directory
@@ -300,4 +302,24 @@ func messageObject(t *testing.T, file string, path []string) map[string]any {
 		node = next
 	}
 	return node
+}
+
+// TestEveryErrorCodeHasAServerMessage keeps the API's own message catalog
+// (platform/i18n) in step with the codes it declares: a code with no
+// entry goes out with the INTERNAL_ERROR text ("Terjadi kesalahan pada
+// server."), which tells a client that shows the message field that a
+// revoked receipt or an expired gate token was a server fault.
+func TestEveryErrorCodeHasAServerMessage(t *testing.T) {
+	var missing []string
+	for _, code := range declaredErrorCodes(t) {
+		for _, locale := range []string{i18n.Indonesian, i18n.English} {
+			if !i18n.Has(code, locale) {
+				missing = append(missing, code+" ("+locale+")")
+			}
+		}
+	}
+	if len(missing) > 0 {
+		t.Errorf("error codes with no server message (add them to platform/i18n/messages_*.go):\n  %s",
+			strings.Join(missing, "\n  "))
+	}
 }

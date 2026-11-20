@@ -43,6 +43,10 @@ var identityAdminCatalog = map[string]map[string]string{
 		Indonesian: "Orang ini sudah memegang tugas yang sama untuk cakupan yang sama dan masih aktif.",
 		English:    "This person already holds the same duty for the same scope, and it is still active.",
 	},
+	"DUTY_TYPE_ALREADY_EXISTS": {
+		Indonesian: "Jenis tugas dengan nama serupa sudah ada, termasuk yang pernah dihapus.",
+		English:    "A duty type with a similar name already exists, including deleted ones.",
+	},
 	"DUTY_TYPE_IN_USE": {
 		Indonesian: "Jenis tugas masih dipakai oleh satu atau lebih penugasan.",
 		English:    "The duty type still has one or more assignments.",
@@ -70,6 +74,10 @@ var identityAdminCatalog = map[string]map[string]string{
 	"UPLOAD_NOT_CONFIGURED": {
 		Indonesian: "Penyimpanan berkas belum dikonfigurasi di server ini.",
 		English:    "File storage is not configured on this server.",
+	},
+	"IMPORT_ROLE_UPDATE_FORBIDDEN": {
+		Indonesian: "Memperbarui peran lewat impor memerlukan hak kelola izin.",
+		English:    "Updating roles through an import requires the manage permissions right.",
 	},
 	"IMPORT_FILE_INVALID": {
 		Indonesian: "Berkas impor tidak dapat dibaca atau formatnya tidak sesuai templat.",

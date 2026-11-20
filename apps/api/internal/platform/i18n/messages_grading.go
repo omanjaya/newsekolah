@@ -18,4 +18,6 @@ func init() {
 	catalog["TP_RANGES_OVERLAP"] = map[string]string{Indonesian: "Rentang R dan T tumpang tindih; satu nilai tidak boleh masuk keduanya.", English: "The R and T ranges overlap; a score cannot fall in both."}
 	catalog["TP_MAPPING_NOT_FOUND"] = map[string]string{Indonesian: "Pemetaan tujuan pembelajaran tidak ditemukan.", English: "Learning objective mapping not found."}
 	catalog["GRADING_MODULE_DISABLED"] = map[string]string{Indonesian: "Modul penilaian belum diaktifkan untuk sekolah Anda.", English: "The grading module is not enabled for your school."}
+	catalog["GRADEBOOK_INVALID_SCOPE"] = map[string]string{Indonesian: "Pilih satu kelas atau satu tingkat untuk diekspor.", English: "Pick one class or one grade level to export."}
+	catalog["GRADEBOOK_REPORT_UNKNOWN_COLUMN"] = map[string]string{Indonesian: "Ada kolom laporan yang tidak dikenali. Muat ulang halaman lalu pilih kolom lagi.", English: "A report column is not recognized. Reload the page and pick the columns again."}
 }
