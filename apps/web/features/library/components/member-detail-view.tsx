@@ -318,7 +318,12 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
         </TabsContent>
 
         <TabsContent value="reservations">
-          <MemberReservations reservations={holds} />
+          <MemberReservations
+            reservations={holds}
+            locale={locale}
+            timeZone={timeZone}
+            today={today}
+          />
         </TabsContent>
       </Tabs>
 

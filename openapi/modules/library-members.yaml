@@ -750,7 +750,10 @@ paths:
             schema: { $ref: "#/components/schemas/LibraryVisitWrite" }
       responses:
         "201":
-          description: Recorded (or the same visit within the 30-minute dedupe window)
+          description: >
+            Recorded, or the member's visit already recorded within the last 30
+            minutes (`already_recorded` true). A folded visit keeps its first
+            purpose; a purpose sent now only fills in one left empty.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/LibraryVisit" }
@@ -839,6 +842,9 @@ paths:
       operationId: startLibraryReadInPlace
       x-permission: manage_library_circulation
       summary: Log a copy being read at a library table rather than checked out
+      description: >
+        A copy is at one table at a time: a session on the copy that is still
+        open ends when this one starts.
       parameters:
         - { name: copyId, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -856,6 +862,27 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/LibraryReadInPlace" }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/library/read-in-place/{readInPlaceId}/end:
+    post:
+      tags: [library]
+      operationId: endLibraryReadInPlace
+      x-permission: manage_library_circulation
+      summary: End a read-in-place session
+      description: >
+        Sets the session's end time to now. Ending a session that has
+        already ended returns it unchanged.
+      parameters:
+        - { name: readInPlaceId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Ended
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryReadInPlace" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -1274,6 +1301,12 @@ components:
         group_size: { type: integer }
         source: { $ref: "#/components/schemas/LibraryVisitSource" }
         visited_at: { type: string, format: date-time }
+        already_recorded:
+          type: boolean
+          description: >
+            Set on a record or kiosk-scan response: true when this member's
+            visit was already recorded within the last 30 minutes, so the
+            returned visit is that earlier one and no new visit was added.
     LibraryVisitWrite:
       type: object
       required: [kind]
@@ -1305,6 +1338,9 @@ components:
         copy_id: { type: string, format: uuid }
         member_user_id: { type: string, format: uuid }
         visitor_name: { type: string }
+        member_name:
+          type: string
+          description: The member reader's display name, when the reader is a member.
         started_at: { type: string, format: date-time }
         ended_at: { type: string, format: date-time }
 

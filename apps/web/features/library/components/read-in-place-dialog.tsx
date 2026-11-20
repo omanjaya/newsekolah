@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { formatDateTime } from "@newsekolah/i18n";
+import { formatDate, formatDateTime, formatTime } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
   SectionHeader,
@@ -26,9 +26,19 @@ import {
   useDirectoryPickerLabels,
 } from "../../reference/components/directory-picker";
 import { useTenantTimeZone } from "../use-tenant-timezone";
-import { useLibraryReadInPlaceQuery, useStartLibraryReadInPlaceMutation } from "../visits-api";
+import {
+  type LibraryReadInPlace,
+  useEndLibraryReadInPlaceMutation,
+  useLibraryReadInPlaceQuery,
+  useStartLibraryReadInPlaceMutation,
+} from "../visits-api";
 
-/** Per-copy log of "read at a library table" sessions, plus starting a new one. */
+/**
+ * Per-copy log of "read at a library table" sessions, plus starting a new
+ * one. Each entry names its reader (the member, else the visitor name), an
+ * open session can be ended here, and an ended one says when. Starting the
+ * next session ends the one still open, since a copy is at one table.
+ */
 export function ReadInPlaceDialog({
   copyId,
   onOpenChange,
@@ -43,6 +53,7 @@ export function ReadInPlaceDialog({
   const apiErrorMessage = useApiErrorMessage();
   const log = useLibraryReadInPlaceQuery(copyId ?? "");
   const start = useStartLibraryReadInPlaceMutation(copyId ?? "");
+  const end = useEndLibraryReadInPlaceMutation(copyId ?? "");
   const memberLabels = useDirectoryPickerLabels(t("memberPlaceholder"));
 
   const [memberUserId, setMemberUserId] = useState("");
@@ -51,6 +62,22 @@ export function ReadInPlaceDialog({
   function reset() {
     setMemberUserId("");
     setVisitorName("");
+  }
+
+  function readerOf(entry: LibraryReadInPlace): string {
+    return entry.member_name ?? entry.visitor_name ?? t("unnamedReader");
+  }
+
+  /** The end time, with its date only when the session ran past its own day. */
+  function endedLabel(entry: LibraryReadInPlace & { ended_at: string }): string {
+    const sameDay =
+      formatDate(entry.ended_at, { locale, timeZone }) ===
+      formatDate(entry.started_at, { locale, timeZone });
+    return t("endedAt", {
+      time: sameDay
+        ? formatTime(entry.ended_at, { locale, timeZone })
+        : formatDateTime(entry.ended_at, { locale, timeZone }),
+    });
   }
 
   return (
@@ -125,13 +152,44 @@ export function ReadInPlaceDialog({
                 {log.data?.data.map((entry) => (
                   <ListRow
                     key={entry.id}
-                    title={formatDateTime(entry.started_at, { locale, timeZone })}
-                    meta={entry.visitor_name}
+                    title={readerOf(entry)}
+                    meta={formatDateTime(entry.started_at, { locale, timeZone })}
                     trailing={
-                      entry.ended_at ? undefined : (
+                      entry.ended_at ? (
+                        <span className="text-body-sm text-fg-muted">
+                          {endedLabel({ ...entry, ended_at: entry.ended_at })}
+                        </span>
+                      ) : (
                         <Badge tone="info" dot>
                           {t("ongoing")}
                         </Badge>
+                      )
+                    }
+                    action={
+                      entry.ended_at ? undefined : (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          // Every open row has an "End" button: the name says whose.
+                          aria-label={t("endFor", { reader: readerOf(entry) })}
+                          loading={end.isPending && end.variables === entry.id}
+                          onClick={() => {
+                            end.mutate(entry.id, {
+                              onSuccess: () => {
+                                toast.success(t("ended"));
+                              },
+                              onError: (err) => {
+                                toast.error(
+                                  err instanceof ApiError
+                                    ? apiErrorMessage(err.code)
+                                    : apiErrorMessage("UNKNOWN"),
+                                );
+                              },
+                            });
+                          }}
+                        >
+                          {t("end")}
+                        </Button>
                       )
                     }
                   />

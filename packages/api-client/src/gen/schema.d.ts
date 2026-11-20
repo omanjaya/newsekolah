@@ -4801,8 +4801,31 @@ export interface paths {
         /** One copy's read-in-place log */
         get: operations["listLibraryReadInPlace"];
         put?: never;
-        /** Log a copy being read at a library table rather than checked out */
+        /**
+         * Log a copy being read at a library table rather than checked out
+         * @description A copy is at one table at a time: a session on the copy that is still open ends when this one starts.
+         */
         post: operations["startLibraryReadInPlace"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/read-in-place/{readInPlaceId}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * End a read-in-place session
+         * @description Sets the session's end time to now. Ending a session that has already ended returns it unchanged.
+         */
+        post: operations["endLibraryReadInPlace"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10712,6 +10735,8 @@ export interface components {
             source: components["schemas"]["LibraryVisitSource"];
             /** Format: date-time */
             visited_at: string;
+            /** @description Set on a record or kiosk-scan response: true when this member's visit was already recorded within the last 30 minutes, so the returned visit is that earlier one and no new visit was added. */
+            already_recorded?: boolean;
         };
         LibraryVisitWrite: {
             /** Format: uuid */
@@ -10740,6 +10765,8 @@ export interface components {
             /** Format: uuid */
             member_user_id?: string;
             visitor_name?: string;
+            /** @description The member reader's display name, when the reader is a member. */
+            member_name?: string;
             /** Format: date-time */
             started_at: string;
             /** Format: date-time */
@@ -22365,7 +22392,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Recorded (or the same visit within the 30-minute dedupe window) */
+            /** @description Recorded, or the member's visit already recorded within the last 30 minutes (`already_recorded` true). A folded visit keeps its first purpose; a purpose sent now only fills in one left empty. */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -22508,6 +22535,31 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    endLibraryReadInPlace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                readInPlaceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ended */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryReadInPlace"];
+                };
+            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

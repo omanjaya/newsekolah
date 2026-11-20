@@ -19,7 +19,8 @@
     "gate_exit": "{student} ({className}) diizinkan keluar.",
     "late_arrival_open": "Keterlambatan dibuka dan menunggu proses berikutnya.",
     "late_arrival_stage": "Tahap keterlambatan dikonfirmasi.",
-    "library_visit": "Kunjungan perpustakaan tercatat."
+    "library_visit": "Kunjungan perpustakaan tercatat.",
+    "library_visit_already": "Kunjungan Anda sudah tercatat kurang dari 30 menit lalu, jadi tidak dicatat dua kali."
   },
   "failures": {
     "expired": "Kode sudah kedaluwarsa atau sudah dipakai. Minta kode QR yang baru.",

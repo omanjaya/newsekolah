@@ -454,6 +454,7 @@
     "LIBRARY_VIOLATION_NOT_FOUND": "Library violation not found.",
     "LIBRARY_VIOLATION_ALREADY_SETTLED": "This violation is already settled.",
     "LIBRARY_VISIT_NOT_FOUND": "Library visit not found.",
+    "LIBRARY_READ_IN_PLACE_NOT_FOUND": "Read-in-place session not found.",
     "LIBRARY_VISIT_TOKEN_GONE": "This QR code was already used or has expired. Scan the new code on the library screen.",
     "LIBRARY_COVER_TOO_LARGE": "The cover image is larger than 3 MB. Pick a smaller image.",
     "LIBRARY_COVER_INVALID_TYPE": "Unsupported cover file type. Use JPEG, PNG or WebP.",

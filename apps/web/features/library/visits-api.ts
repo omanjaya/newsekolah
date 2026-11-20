@@ -101,3 +101,22 @@ export function useStartLibraryReadInPlaceMutation(copyId: string) {
     meta: { errorToast: false },
   });
 }
+
+/** Ends one read-in-place session now; the copy's log refreshes. */
+export function useEndLibraryReadInPlaceMutation(copyId: string) {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (readInPlaceId: string) =>
+      client.POST("/v1/library/read-in-place/{readInPlaceId}/end", {
+        params: { path: { readInPlaceId } },
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["library", "copies", copyId, "read-in-place"],
+      });
+    },
+
+    meta: { errorToast: false },
+  });
+}

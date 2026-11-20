@@ -911,7 +911,10 @@
       "purpose": "Purpose",
       "purposePlaceholder": "For example reading or homework",
       "cancel": "Cancel",
-      "submit": "Save"
+      "submit": "Save",
+      "recorded": "Visit recorded",
+      "alreadyRecorded": "This member's visit was already recorded at {time}, less than 30 minutes ago, so it was not recorded twice.",
+      "purposeKept": "The recorded purpose stays: {purpose}"
     }
   },
   "visitKiosk": {
@@ -942,7 +945,12 @@
     "started": "Read-in-place session logged",
     "logHeading": "Read-in-place history",
     "emptyLog": "No history yet for this copy.",
-    "ongoing": "ongoing"
+    "ongoing": "ongoing",
+    "end": "End",
+    "endFor": "End {reader}'s reading session",
+    "ended": "Read-in-place session ended",
+    "endedAt": "ended {time}",
+    "unnamedReader": "Unnamed reader"
   },
   "stocktake": {
     "searchPlaceholder": "Search stocktake name",
@@ -1473,6 +1481,8 @@
         "waiting": "You have already reserved this title.",
         "queued": "You have already reserved this title, number {position} in the queue.",
         "ready": "Your reservation is ready to collect at the library.",
+        "readyBy": "Your reservation is ready to collect at the library by {date} at {time}.",
+        "pickupPassed": "The pickup deadline for your reservation, {date} at {time}, has passed.",
         "myLibrary": "See my library",
         "signIn": "Sign in to reserve this title"
       },
@@ -1564,7 +1574,7 @@
     "max_renewals": "Maximum renewals",
     "renewal_days": "Renewal duration (days)",
     "fine_per_day": "Fine per day",
-    "reservation_hold_days": "Reservation hold (days)",
+    "reservation_hold_days": "Reservation hold (open days)",
     "booking_max": "Maximum reservations",
     "due_reminder_days": "Reminder before due date (days)",
     "saturday_closed": "Closed on Saturday",
@@ -1630,6 +1640,8 @@
       "selectedTitle": "Selected: {title}",
       "submit": "Reserve",
       "reserved": "Hold placed",
+      "pickupBy": "Pick up by {date}, {time}",
+      "pickupPassed": "The pickup deadline, {date}, {time}, has passed",
       "bookingDisabled": "Self-service holds are switched off. Ask the librarian to place a hold."
     },
     "dueOn": "Due {date}",

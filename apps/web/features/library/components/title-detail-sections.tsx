@@ -16,14 +16,15 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import { businessNow } from "../../../lib/simulation/clock";
 import { todayInZone } from "../../../lib/tenant-date";
 import { useDirectoryNames } from "../../reference/directory-names";
-import type { LibraryTitle } from "../api";
+import type { LibraryReservation, LibraryTitle } from "../api";
 import { formatShortDate } from "../lib/short-date";
-import { RESERVATION_STATUS_TONE, toneOf } from "../lib/status-tones";
 import { useTenantTimeZone } from "../use-tenant-timezone";
 
 import { OpacCover } from "./opac-cover";
+import { ReservationStatusBadge, usePickupDeadlineText } from "./reservation-status";
 
 /** The book at a glance: cover, author, publication and how many copies are in now. */
 export function TitleIdentity({ title }: { title: LibraryTitle }): ReactElement {
@@ -72,7 +73,10 @@ export function TitleIdentity({ title }: { title: LibraryTitle }): ReactElement 
   );
 }
 
-/** Who waits for this title, in order, with each hold's state. */
+/**
+ * Who waits for this title, in order, with each hold's state and, for a
+ * ready hold, until when it is kept: the same words the member's page uses.
+ */
 export function ReservationQueue({
   isLoading,
   error,
@@ -82,19 +86,17 @@ export function ReservationQueue({
   isLoading: boolean;
   error: unknown;
   onRetry: () => void;
-  reservations: {
-    id: string;
-    member_user_id: string;
-    status: string;
-    position?: number;
-    requested_at: string;
-  }[];
+  reservations: Pick<
+    LibraryReservation,
+    "id" | "member_user_id" | "status" | "position" | "requested_at" | "expires_at"
+  >[];
 }): ReactElement {
   const t = useTranslations("app.library.titleDetail");
-  const tReserve = useTranslations("app.library.me.reserve");
   const locale = useLocale() as Locale;
   const timeZone = useTenantTimeZone();
   const today = todayInZone(timeZone);
+  const deadlineText = usePickupDeadlineText({ locale, timeZone, today });
+  const now = businessNow();
   const names = useDirectoryNames(reservations.map((r) => r.member_user_id));
   if (error) return <QueryError retry={onRetry} error={error} />;
   if (isLoading) return <SkeletonDetail />;
@@ -115,17 +117,14 @@ export function ReservationQueue({
         <ListRow
           key={reservation.id}
           title={names.get(reservation.member_user_id)?.name ?? t("unknownMember")}
-          meta={t("requestedOn", {
-            date: formatShortDate(reservation.requested_at, locale, { timeZone, today }),
-          })}
+          meta={[
+            t("requestedOn", {
+              date: formatShortDate(reservation.requested_at, locale, { timeZone, today }),
+            }),
+            deadlineText(reservation, now),
+          ]}
           href={`/library/members/${encodeURIComponent(reservation.member_user_id)}`}
-          trailing={
-            <Badge tone={toneOf(RESERVATION_STATUS_TONE, reservation.status)}>
-              {reservation.status === "waiting" && reservation.position
-                ? tReserve("queuePosition", { position: reservation.position })
-                : tReserve(`status.${reservation.status}`)}
-            </Badge>
-          }
+          trailing={<ReservationStatusBadge reservation={reservation} now={now} />}
         />
       ))}
     </List>

@@ -12,6 +12,10 @@ vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { tenant: { timezone: "Asia/Makassar" } } }),
 }));
 vi.mock("../../../lib/tenant-date", () => ({ todayInZone: () => "2026-11-19" }));
+// Thu 19 Nov 2026 16:00 WITA.
+vi.mock("../../../lib/simulation/clock", () => ({
+  businessNow: () => new Date("2026-11-19T08:00:00Z"),
+}));
 vi.mock("../../reference/directory-names", async () => {
   const { directoryNamesStub } = await import("../../../test/directory-names-stub");
   return directoryNamesStub([{ id: "m1", name: "Ani" }]);
@@ -20,9 +24,17 @@ vi.mock("../../reference/directory-names", async () => {
 const hold = (id: string, requestedAt: string) => ({
   id,
   member_user_id: "m1",
-  status: "waiting",
+  status: "waiting" as const,
   position: 1,
   requested_at: requestedAt,
+});
+
+const readyHold = (id: string, expiresAt: string) => ({
+  id,
+  member_user_id: "m1",
+  status: "ready" as const,
+  requested_at: "2026-11-10T01:00:00Z",
+  expires_at: expiresAt,
 });
 
 describe("ReservationQueue", () => {
@@ -42,5 +54,32 @@ describe("ReservationQueue", () => {
 
     expect(screen.getByText("requestedOn 19 Nov")).toBeInTheDocument();
     expect(screen.getByText("requestedOn 6 Okt 2025")).toBeInTheDocument();
+  });
+
+  // The title's queue said a bare "Siap diambil" while the member's page
+  // named the deadline, and kept saying it after the deadline had passed.
+  it("names a ready hold's pickup deadline, and reads a lapsed one as expired", () => {
+    const { container } = render(
+      <ReservationQueue
+        isLoading={false}
+        error={null}
+        onRetry={vi.fn()}
+        reservations={[
+          readyHold("r3", "2026-11-23T15:59:59Z"),
+          readyHold("r4", "2026-11-18T15:59:59Z"),
+        ]}
+      />,
+    );
+
+    const [kept, lapsed] = container.querySelectorAll("li");
+    if (!kept || !lapsed) throw new Error("expected two rows");
+    expect(kept).toHaveTextContent("pickupBy 23 Nov");
+    expect(kept.querySelector('[data-slot="list-row-trailing"]')).toHaveTextContent(
+      /^status\.ready$/,
+    );
+    expect(lapsed).toHaveTextContent("pickupPassed 18 Nov");
+    expect(lapsed.querySelector('[data-slot="list-row-trailing"]')).toHaveTextContent(
+      /^status\.expired$/,
+    );
   });
 });

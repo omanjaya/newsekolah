@@ -131,6 +131,17 @@ func (w WorkingDayRule) AddWorkingDays(from time.Time, n int) time.Time {
 	return d
 }
 
+// HoldExpiresAt is when a reservation hold that became ready at readyAt
+// lapses: the last second of the holdDays-th day the library is open after
+// readyAt's own day, on the school's calendar (loc). Counting calendar days
+// from the ready instant let a hold readied on a Friday afternoon lapse
+// over a closed weekend, leaving the member a few hours to collect it.
+func (w WorkingDayRule) HoldExpiresAt(readyAt time.Time, loc *time.Location, holdDays int) time.Time {
+	local := readyAt.In(loc)
+	lastDay := w.AddWorkingDays(time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, loc), holdDays)
+	return time.Date(lastDay.Year(), lastDay.Month(), lastDay.Day()+1, 0, 0, 0, 0, loc).Add(-time.Second)
+}
+
 // WorkingDaysLate counts the working days strictly between dueOn and
 // returnedOn (exclusive of dueOn, inclusive of returnedOn), the old app's
 // late_days computation (library_common.go:268-281). Zero when returnedOn

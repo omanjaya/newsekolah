@@ -482,7 +482,8 @@ func (s *Service) recordLateOutcome(ctx context.Context, tenantID uuid.UUID, loa
 
 // releaseCopyAfterReturn puts a returned copy back into circulation: if a
 // member is waiting for the title it goes straight to them (status
-// reserved, held for the policy's hold window, notified), otherwise it
+// reserved, held until the end of the policy's hold_days-th open library
+// day, notified), otherwise it
 // becomes available again. Returns the reservation marked ready, if any
 // (ok=false when the copy simply went back to available) -- callers
 // publish the live "library.reservation_ready" hub push themselves, after
@@ -520,11 +521,20 @@ func (s *Service) releaseCopyAfterReturn(ctx context.Context, tenantID, copyID, 
 		return domain.Reservation{}, false, err
 	}
 	now := clock.Now(ctx, s.clock)
-	ready, _, err := s.repo.MarkReservationReady(ctx, tenantID, next.ID, copyID, now, now.AddDate(0, 0, policy.ReservationHoldDays))
+	loc := s.tenantLocation(ctx, tenantID)
+	wdr, err := s.workingDayRule(ctx, tenantID, policy, domain.SchoolDay(now, loc), policy.ReservationHoldDays+14)
 	if err != nil {
 		return domain.Reservation{}, false, err
 	}
-	if err := s.publish(ctx, ReservationReadyEvent{TenantID: tenantID, ReservationID: ready.ID, TitleID: titleID, MemberUserID: ready.MemberUserID}); err != nil {
+	expiresAt := wdr.HoldExpiresAt(now, loc, policy.ReservationHoldDays)
+	ready, _, err := s.repo.MarkReservationReady(ctx, tenantID, next.ID, copyID, now, expiresAt)
+	if err != nil {
+		return domain.Reservation{}, false, err
+	}
+	if err := s.publish(ctx, ReservationReadyEvent{
+		TenantID: tenantID, ReservationID: ready.ID, TitleID: titleID, MemberUserID: ready.MemberUserID,
+		ExpiresAt: expiresAt.In(loc),
+	}); err != nil {
 		return domain.Reservation{}, false, err
 	}
 	return ready, true, nil
@@ -537,6 +547,9 @@ type ReservationReadyEvent struct {
 	ReservationID uuid.UUID
 	TitleID       uuid.UUID
 	MemberUserID  uuid.UUID
+	// ExpiresAt is the pickup deadline in the school's time zone, so the
+	// notification can name the last day to collect the book.
+	ExpiresAt time.Time
 }
 
 // EventName is distinct from platform/events.LibraryReservationReady so the

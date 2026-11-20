@@ -56,9 +56,9 @@ func (r *Repository) CountCopiesAddedInPeriod(ctx context.Context, tenantID uuid
 	return int(n), nil
 }
 
-func (r *Repository) CountLateReturnsBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error) {
+func (r *Repository) CountLateReturnsBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time, tz string) (int, error) {
 	n, err := r.queries(ctx).CountLateReturnsBetween(ctx, db.CountLateReturnsBetweenParams{
-		TenantID: tenantID, ReturnedAt: pdatabase.Timestamptz(from), ReturnedAt_2: pdatabase.Timestamptz(to),
+		TenantID: tenantID, FromAt: pdatabase.Timestamptz(from), ToAt: pdatabase.Timestamptz(to), Tz: tz,
 	})
 	if err != nil {
 		return 0, fmt.Errorf("count late returns between: %w", err)

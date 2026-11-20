@@ -17,12 +17,14 @@ import { BookCheck, Bookmark, Scale } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { businessNow } from "../../../lib/simulation/clock";
 import type { LibraryLoan, LibraryReservation } from "../api";
 import { formatShortDate, formatShortDateRange } from "../lib/short-date";
-import { LOAN_STATUS_TONE, RESERVATION_STATUS_TONE, toneOf } from "../lib/status-tones";
+import { LOAN_STATUS_TONE, toneOf } from "../lib/status-tones";
 import type { LibraryViolation } from "../violations-api";
 
 import { LibraryTitleName } from "./library-title-name";
+import { ReservationStatusBadge, usePickupDeadlineText } from "./reservation-status";
 
 /** Closed loans, newest first as the API returns them: title, the loan's span and how it ended. */
 export function MemberPastLoans({
@@ -125,14 +127,25 @@ export function MemberFines({
   );
 }
 
-/** The member's holds: which title, and where they stand in its queue. */
+/**
+ * The member's holds: which title, where they stand in its queue, and for
+ * a ready hold until when it is kept. The deadline rides in the meta line,
+ * which wraps; the trailing slot keeps only the badge, as it cannot shrink.
+ */
 export function MemberReservations({
   reservations,
+  locale,
+  timeZone,
+  today,
 }: {
   reservations: LibraryReservation[];
+  locale: Locale;
+  timeZone: string | undefined;
+  today?: string;
 }): ReactElement {
   const t = useTranslations("app.library.memberDetail");
-  const tReserve = useTranslations("app.library.me.reserve");
+  const now = businessNow();
+  const deadlineText = usePickupDeadlineText({ locale, timeZone, today });
   if (reservations.length === 0) {
     return (
       <Card>
@@ -148,13 +161,8 @@ export function MemberReservations({
           leading={<domainIcons.library className="size-5 text-fg-muted" aria-hidden="true" />}
           title={<LibraryTitleName titleId={reservation.title_id} />}
           href={`/library/catalogue/${reservation.title_id}`}
-          trailing={
-            <Badge tone={toneOf(RESERVATION_STATUS_TONE, reservation.status)}>
-              {reservation.status === "waiting" && reservation.position
-                ? tReserve("queuePosition", { position: reservation.position })
-                : tReserve(`status.${reservation.status}`)}
-            </Badge>
-          }
+          meta={deadlineText(reservation, now)}
+          trailing={<ReservationStatusBadge reservation={reservation} now={now} />}
         />
       ))}
     </List>

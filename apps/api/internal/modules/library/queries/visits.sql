@@ -34,3 +34,24 @@ returning *;
 
 -- name: ListReadInPlaceForCopy :many
 select * from library_read_in_place where tenant_id = $1 and copy_id = $2 order by started_at desc;
+
+-- name: SetVisitPurpose :one
+-- Fills in the purpose of a visit recorded without one, when the same
+-- member's visit is recorded again inside the dedupe window with a purpose.
+update library_visits set purpose = $3
+where tenant_id = $1 and id = $2 and purpose = ''
+returning *;
+
+-- name: EndOpenReadInPlaceForCopy :exec
+-- A copy is at one table at a time: starting a new session closes any
+-- session on the copy still open.
+update library_read_in_place set ended_at = $3
+where tenant_id = $1 and copy_id = $2 and ended_at is null;
+
+-- name: EndReadInPlace :one
+update library_read_in_place set ended_at = $3
+where tenant_id = $1 and id = $2 and ended_at is null
+returning *;
+
+-- name: GetReadInPlace :one
+select * from library_read_in_place where tenant_id = $1 and id = $2;

@@ -1,8 +1,8 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
+import type { Locale } from "@newsekolah/i18n";
 import {
-  Badge,
   Button,
   Card,
   EmptyState,
@@ -18,8 +18,9 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { businessNow } from "../../../lib/simulation/clock";
 import type { LibraryTitle } from "../api";
-import { RESERVATION_STATUS_TONE, toneOf } from "../lib/status-tones";
+import { shownReservationStatus } from "../lib/reservation-pickup";
 import {
   type LibraryMyProfile,
   useCancelMyLibraryReservationMutation,
@@ -27,19 +28,28 @@ import {
 } from "../me-api";
 
 import { MyLibraryTitlePicker } from "./my-library-title-picker";
+import { ReservationStatus } from "./reservation-status";
 
 const CANCELLABLE = new Set(["waiting", "ready"]);
 
 /**
  * A member's own holds, each cancellable while it waits, and the form to
  * place a new one. Titled above its card like the page's other sections.
+ * A ready hold says until when it can be collected; once that has passed
+ * it reads expired and can no longer be cancelled.
  */
 export function MyLibraryReservations({
   reservations,
   bookingEnabled,
+  locale,
+  timeZone,
+  today,
 }: {
   reservations: LibraryMyProfile["reservations"];
   bookingEnabled: boolean;
+  locale: Locale;
+  timeZone: string | undefined;
+  today?: string;
 }): ReactElement {
   const t = useTranslations("app.library.me.reserve");
   const tMe = useTranslations("app.library.me");
@@ -49,6 +59,7 @@ export function MyLibraryReservations({
   const [selected, setSelected] = useState<LibraryTitle | null>(null);
   const reserve = useReserveMyLibraryTitleMutation();
   const cancel = useCancelMyLibraryReservationMutation();
+  const now = businessNow();
 
   return (
     <section className="flex flex-col gap-3">
@@ -67,14 +78,17 @@ export function MyLibraryReservations({
                 key={reservation.id}
                 title={reservation.title_name ?? tMe("titleUnavailable")}
                 meta={
-                  <Badge tone={toneOf(RESERVATION_STATUS_TONE, reservation.status)} size="sm">
-                    {reservation.status === "waiting" && reservation.position
-                      ? t("queuePosition", { position: reservation.position })
-                      : t(`status.${reservation.status}`)}
-                  </Badge>
+                  <ReservationStatus
+                    reservation={reservation}
+                    now={now}
+                    locale={locale}
+                    timeZone={timeZone}
+                    today={today}
+                    size="sm"
+                  />
                 }
                 action={
-                  CANCELLABLE.has(reservation.status) ? (
+                  CANCELLABLE.has(shownReservationStatus(reservation, now)) ? (
                     <Button
                       size="sm"
                       variant="ghost"

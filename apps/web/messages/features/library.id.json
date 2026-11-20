@@ -911,7 +911,10 @@
       "purpose": "Keperluan",
       "purposePlaceholder": "Misalnya membaca atau mengerjakan tugas",
       "cancel": "Batal",
-      "submit": "Simpan"
+      "submit": "Simpan",
+      "recorded": "Kunjungan dicatat",
+      "alreadyRecorded": "Kunjungan anggota ini sudah tercatat pukul {time}, kurang dari 30 menit lalu, jadi tidak dicatat dua kali.",
+      "purposeKept": "Keperluan yang tercatat tetap: {purpose}"
     }
   },
   "visitKiosk": {
@@ -942,7 +945,12 @@
     "started": "Sesi baca di tempat dicatat",
     "logHeading": "Riwayat baca di tempat",
     "emptyLog": "Belum ada riwayat untuk eksemplar ini.",
-    "ongoing": "sedang berlangsung"
+    "ongoing": "sedang berlangsung",
+    "end": "Selesai",
+    "endFor": "Selesai, akhiri sesi baca {reader}",
+    "ended": "Sesi baca di tempat diakhiri",
+    "endedAt": "selesai {time}",
+    "unnamedReader": "Pembaca tanpa nama"
   },
   "stocktake": {
     "searchPlaceholder": "Cari nama stok opname",
@@ -1473,6 +1481,8 @@
         "waiting": "Anda sudah memesan judul ini.",
         "queued": "Anda sudah memesan judul ini, antrean ke-{position}.",
         "ready": "Pesanan Anda siap diambil di perpustakaan.",
+        "readyBy": "Pesanan Anda siap diambil di perpustakaan paling lambat {date} pukul {time}.",
+        "pickupPassed": "Batas ambil pesanan Anda {date} pukul {time} sudah lewat.",
         "myLibrary": "Lihat perpustakaan saya",
         "signIn": "Masuk untuk memesan judul ini"
       },
@@ -1564,7 +1574,7 @@
     "max_renewals": "Maksimum perpanjangan",
     "renewal_days": "Lama perpanjangan (hari)",
     "fine_per_day": "Denda per hari",
-    "reservation_hold_days": "Masa simpan reservasi (hari)",
+    "reservation_hold_days": "Masa simpan reservasi (hari buka)",
     "booking_max": "Maksimum reservasi",
     "due_reminder_days": "Pengingat sebelum jatuh tempo (hari)",
     "saturday_closed": "Tutup pada Sabtu",
@@ -1630,6 +1640,8 @@
       "selectedTitle": "Dipilih: {title}",
       "submit": "Pesan",
       "reserved": "Pesanan dibuat",
+      "pickupBy": "Ambil paling lambat {date} pukul {time}",
+      "pickupPassed": "Batas ambil {date} pukul {time} sudah lewat",
       "bookingDisabled": "Pemesanan mandiri sedang dinonaktifkan. Hubungi pustakawan untuk memesan judul."
     },
     "dueOn": "Kembali {date}",

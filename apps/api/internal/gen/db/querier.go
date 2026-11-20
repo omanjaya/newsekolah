@@ -322,6 +322,10 @@ type Querier interface {
 	CountInProgressWorkflowInstances(ctx context.Context, arg CountInProgressWorkflowInstancesParams) (int64, error)
 	CountIncidentsBySeverityInRange(ctx context.Context, arg CountIncidentsBySeverityInRangeParams) ([]CountIncidentsBySeverityInRangeRow, error)
 	CountJournalsFiltered(ctx context.Context, arg CountJournalsFilteredParams) (int64, error)
+	// A return is late when the school's calendar day it happened on (tz is
+	// the tenant's IANA zone) is after the due date: a book due on the 20th
+	// and returned at 07:00 WITA on the 21st is late, although that instant
+	// is still the 20th in UTC.
 	CountLateReturnsBetween(ctx context.Context, arg CountLateReturnsBetweenParams) (int32, error)
 	// Size of ListLeaveRequestsForReview's queue (no class filter). Keep the
 	// where clause identical to that query.
@@ -575,6 +579,10 @@ type Querier interface {
 	// by older code heal on the next change.
 	EndActiveAssignmentsForClass(ctx context.Context, arg EndActiveAssignmentsForClassParams) error
 	EndMembership(ctx context.Context, arg EndMembershipParams) (ExtracurricularMembership, error)
+	// A copy is at one table at a time: starting a new session closes any
+	// session on the copy still open.
+	EndOpenReadInPlaceForCopy(ctx context.Context, arg EndOpenReadInPlaceForCopyParams) error
+	EndReadInPlace(ctx context.Context, arg EndReadInPlaceParams) (LibraryReadInPlace, error)
 	EnsureNotificationsPartition(ctx context.Context, targetMonth pgtype.Date) error
 	// Bug fix vs. the old app (docs/02-system-design.md section 6.2 step 4):
 	// any instance still in_progress past its opening day is force-closed so
@@ -777,6 +785,7 @@ type Querier interface {
 	GetPreviousEntryForStudent(ctx context.Context, arg GetPreviousEntryForStudentParams) (string, error)
 	GetPublication(ctx context.Context, arg GetPublicationParams) (GradePublication, error)
 	GetPushDeviceByID(ctx context.Context, arg GetPushDeviceByIDParams) (PushDevice, error)
+	GetReadInPlace(ctx context.Context, arg GetReadInPlaceParams) (LibraryReadInPlace, error)
 	GetReportSchedule(ctx context.Context, arg GetReportScheduleParams) (ReportSchedule, error)
 	GetReportScheduleRun(ctx context.Context, arg GetReportScheduleRunParams) (ReportScheduleRun, error)
 	GetReportScheduleTenantTimezone(ctx context.Context, id uuid.UUID) (string, error)
@@ -1723,6 +1732,9 @@ type Querier interface {
 	// Stores the badge issued right after the visit row exists (the badge's
 	// document record points at the visit id, so the row is inserted first).
 	SetVisitBadge(ctx context.Context, arg SetVisitBadgeParams) (VisitorVisit, error)
+	// Fills in the purpose of a visit recorded without one, when the same
+	// member's visit is recorded again inside the dedupe window with a purpose.
+	SetVisitPurpose(ctx context.Context, arg SetVisitPurposeParams) (LibraryVisit, error)
 	SettleViolation(ctx context.Context, arg SettleViolationParams) (LibraryViolation, error)
 	// One round trip for the onboarding checklist: how much of the school's
 	// master data exists. Every count is scoped to the active academic year

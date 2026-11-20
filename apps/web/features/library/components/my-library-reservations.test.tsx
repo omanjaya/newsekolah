@@ -2,7 +2,14 @@ import type * as UiModule from "@newsekolah/ui";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { MyLibraryReservations } from "./my-library-reservations";
+import { MyLibraryReservations as Reservations } from "./my-library-reservations";
+
+// The page passes the school's calendar; the rows here only need the props.
+function MyLibraryReservations(
+  props: Omit<Parameters<typeof Reservations>[0], "locale" | "timeZone" | "today">,
+) {
+  return <Reservations {...props} locale="id" timeZone="Asia/Makassar" today="2026-11-20" />;
+}
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
@@ -24,6 +31,11 @@ vi.mock("../me-api", () => ({
 
 vi.mock("./my-library-title-picker", () => ({
   MyLibraryTitlePicker: () => null,
+}));
+
+// Fri 20 Nov 2026 16:00 WITA.
+vi.mock("../../../lib/simulation/clock", () => ({
+  businessNow: () => new Date("2026-11-20T08:00:00Z"),
 }));
 
 describe("MyLibraryReservations", () => {
@@ -93,5 +105,56 @@ describe("MyLibraryReservations", () => {
 
     expect(screen.getByText("titleUnavailable")).toBeInTheDocument();
     expect(screen.queryByText("title-2")).not.toBeInTheDocument();
+  });
+
+  it("says until when a ready hold can be collected, and keeps it cancellable", () => {
+    render(
+      <MyLibraryReservations
+        reservations={[
+          {
+            id: "res-3",
+            title_id: "title-3",
+            member_user_id: "member-1",
+            status: "ready",
+            requested_at: "2026-11-01T00:00:00Z",
+            ready_at: "2026-11-20T07:40:00Z",
+            expires_at: "2026-11-24T15:59:59Z",
+            title_name: "Laskar Pelangi",
+          },
+        ]}
+        bookingEnabled
+      />,
+    );
+
+    expect(screen.getByText("status.ready")).toBeInTheDocument();
+    expect(screen.getByText("pickupBy")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "cancel" })).toBeInTheDocument();
+  });
+
+  // The expiry job releases a lapsed hold on its next run; until then the
+  // row must not still invite the member to collect it.
+  it("shows a hold past its pickup deadline as expired, not ready, and offers no cancel", () => {
+    render(
+      <MyLibraryReservations
+        reservations={[
+          {
+            id: "res-4",
+            title_id: "title-4",
+            member_user_id: "member-1",
+            status: "ready",
+            requested_at: "2026-11-01T00:00:00Z",
+            ready_at: "2026-11-16T01:00:00Z",
+            expires_at: "2026-11-18T15:59:59Z",
+            title_name: "Sapiens",
+          },
+        ]}
+        bookingEnabled
+      />,
+    );
+
+    expect(screen.getByText("status.expired")).toBeInTheDocument();
+    expect(screen.queryByText("status.ready")).not.toBeInTheDocument();
+    expect(screen.getByText("pickupPassed")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "cancel" })).not.toBeInTheDocument();
   });
 });

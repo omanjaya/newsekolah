@@ -264,7 +264,9 @@ type Repository interface {
 	CountActiveMembersTotal(ctx context.Context, tenantID uuid.UUID) (int, error)
 	CountVisitsBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
 	CountCopiesAddedInPeriod(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
-	CountLateReturnsBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
+	// CountLateReturnsBetween compares each return's calendar day in tz
+	// (the tenant's IANA zone) with its due date.
+	CountLateReturnsBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time, tz string) (int, error)
 	SumFinesRecordedBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
 	// VisitsPerDay groups by the tenant's calendar day; tz is its IANA zone.
 	VisitsPerDay(ctx context.Context, tenantID uuid.UUID, from, to time.Time, tz string) ([]DaySeriesPoint, error)
@@ -324,8 +326,17 @@ type Repository interface {
 	GetLastVisitForMember(ctx context.Context, tenantID, memberID uuid.UUID) (domain.Visit, bool, error)
 	ListVisitsForRange(ctx context.Context, tenantID uuid.UUID, fromDay, toDay time.Time, loc *time.Location, limit, offset int) ([]domain.Visit, error)
 	TodayVisitSummary(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (VisitSummary, error)
+	// SetVisitPurpose fills in the purpose of a visit recorded without
+	// one; found is false when the visit already has a purpose.
+	SetVisitPurpose(ctx context.Context, tenantID, visitID uuid.UUID, purpose string) (domain.Visit, bool, error)
 	CreateReadInPlace(ctx context.Context, p domain.ReadInPlace) (domain.ReadInPlace, error)
 	ListReadInPlaceForCopy(ctx context.Context, tenantID, copyID uuid.UUID) ([]domain.ReadInPlace, error)
+	GetReadInPlace(ctx context.Context, tenantID, id uuid.UUID) (domain.ReadInPlace, bool, error)
+	// EndOpenReadInPlaceForCopy closes every session on copyID still open.
+	EndOpenReadInPlaceForCopy(ctx context.Context, tenantID, copyID uuid.UUID, endedAt time.Time) error
+	// EndReadInPlace closes one open session; found is false when no open
+	// session has that id.
+	EndReadInPlace(ctx context.Context, tenantID, id uuid.UUID, endedAt time.Time) (domain.ReadInPlace, bool, error)
 
 	HolidayDates(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (map[string]bool, error)
 	// LookupMembers and LookupCopies list exact code matches first; with
