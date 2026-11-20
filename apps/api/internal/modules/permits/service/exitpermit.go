@@ -60,6 +60,9 @@ func (s *Service) CreateExitPermit(ctx context.Context, in CreateExitPermitInput
 		} else if ok {
 			return domain.ErrExitPermitAlreadyToday
 		}
+		if err := s.requireNotOnLeaveToday(ctx, in.TenantID, in.StudentUserID); err != nil {
+			return err
+		}
 
 		if err := s.validatePeriodRange(ctx, in.TenantID, in.StartPeriodID, in.EndPeriodID); err != nil {
 			return err
@@ -405,4 +408,19 @@ func (s *Service) ExitPermitYearlyReportRows(ctx context.Context, tenantID uuid.
 		return err
 	})
 	return out, err
+}
+
+// requireNotOnLeaveToday refuses an exit permit for a student an issued
+// leave letter already marks absent for the tenant's own today: the
+// student is officially not at school, and the permit's gate scan would
+// otherwise overwrite the letter's S/I/D attendance with D.
+func (s *Service) requireNotOnLeaveToday(ctx context.Context, tenantID, studentUserID uuid.UUID) error {
+	_, onLeave, err := s.repo.GetIssuedLeaveCoveringDate(ctx, tenantID, studentUserID, s.tenantNow(ctx, tenantID))
+	if err != nil {
+		return err
+	}
+	if onLeave {
+		return domain.ErrStudentOnLeaveToday
+	}
+	return nil
 }
