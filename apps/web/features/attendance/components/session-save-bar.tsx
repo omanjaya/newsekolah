@@ -7,7 +7,7 @@ import type { ReactElement } from "react";
 /**
  * The sticky bottom action bar: a plain-language summary ("N siswa · M
  * diubah dari hadir") on the left, the reason field when a correction is
- * required, and save/retry. Built on `packages/ui`'s `StickySaveBar` (also
+ * required, and save, with a retry only when asking again could succeed. Built on `packages/ui`'s `StickySaveBar` (also
  * used by the gradebook's own save bar).
  */
 export function SessionSaveBar({
@@ -19,6 +19,7 @@ export function SessionSaveBar({
   saving,
   disabled = false,
   formError,
+  canRetry = true,
   onSave,
 }: {
   isCorrection: boolean;
@@ -32,6 +33,12 @@ export function SessionSaveBar({
   /** Saving is not possible yet (the lesson has not started). */
   disabled?: boolean;
   formError: string | null;
+  /**
+   * The failed save could succeed if asked again (a network or server
+   * failure). A refusal such as a closed save window answers the same
+   * every time, so it gets no retry.
+   */
+  canRetry?: boolean;
   onSave: () => void;
 }): ReactElement {
   const t = useTranslations("app.attendance.session");
@@ -62,9 +69,11 @@ export function SessionSaveBar({
         formError && (
           <span role="alert" className="flex items-center gap-2 text-body-sm text-danger">
             {formError}
-            <Button variant="link" size="sm" onClick={onSave}>
-              {t("retry")}
-            </Button>
+            {canRetry && (
+              <Button variant="link" size="sm" onClick={onSave}>
+                {t("retry")}
+              </Button>
+            )}
           </span>
         )
       }

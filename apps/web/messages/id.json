@@ -1275,6 +1275,8 @@
         "journalIncomplete": "Lengkapi topik dan kegiatan jurnal, atau kosongkan keduanya.",
         "notStartedTitle": "Pelajaran belum dimulai",
         "notStartedBody": "Presensi bisa dicatat mulai pukul {time}.",
+        "closedTitle": "Presensi sesi ini sudah dikunci",
+        "closedBody": "Batas waktu mengubahnya berakhir {time}. Hubungi admin sekolah bila masih perlu diubah.",
         "overriddenByLeave": "Status {names} tetap mengikuti surat izin, bukan pilihan Anda.",
         "blockedReasons": { "late_arrival_in_progress": "Terlambat, menunggu izin masuk selesai" },
         "locked": {

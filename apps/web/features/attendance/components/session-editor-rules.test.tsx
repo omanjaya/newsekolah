@@ -1,3 +1,4 @@
+import { ApiError } from "@newsekolah/api-client";
 import type * as UiModule from "@newsekolah/ui";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
@@ -242,5 +243,67 @@ describe("SessionEditor -- a half-filled journal", () => {
     await waitFor(() => {
       expect(topic).toHaveFocus();
     });
+  });
+});
+
+describe("SessionEditor -- a session whose save window has closed", () => {
+  it("says up front that the session is locked and does not offer a save", () => {
+    syncSimulationIdentity(superadmin());
+    setSimulation("frozen", new Date("2027-01-12T02:00:00Z")); // 09.00 in Asia/Jakarta
+    render(
+      <SessionEditor
+        session={session({ save_mode: "normal", editable_until: "2027-01-11T16:59:59Z" })}
+        openedInCorrection={false}
+      />,
+    );
+
+    expect(screen.getByText("closedTitle")).toBeInTheDocument();
+    // The deadline is the end of the day on the school's clock.
+    expect(screen.getByText(/closedBody.*11 Januari 2027.*23\.59/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "save" })).toBeDisabled();
+    clickSave();
+    expect(saveMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("stays editable while the window is open", () => {
+    syncSimulationIdentity(superadmin());
+    setSimulation("frozen", new Date("2027-01-11T10:00:00Z"));
+    render(
+      <SessionEditor
+        session={session({ save_mode: "normal", editable_until: "2027-01-11T16:59:59Z" })}
+        openedInCorrection={false}
+      />,
+    );
+
+    expect(screen.queryByText("closedTitle")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "save" })).toBeEnabled();
+  });
+
+  it("locks the editor when the server refuses the save for its window, with no retry", async () => {
+    saveMutateAsync.mockRejectedValue(
+      new ApiError({ status: 409, code: "ATTENDANCE_WINDOW_CLOSED", message: "closed" }),
+    );
+    render(<SessionEditor session={session()} openedInCorrection={false} />);
+
+    clickSave();
+
+    expect(await screen.findByText("closedTitle")).toBeInTheDocument();
+    expect(screen.getByText("ATTENDANCE_WINDOW_CLOSED")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "retry" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "save" })).toBeDisabled();
+  });
+
+  it("offers a retry only for a failure that could pass on a second try", async () => {
+    saveMutateAsync.mockRejectedValueOnce(
+      new ApiError({ status: 403, code: "ATTENDANCE_NO_ACCESS", message: "no" }),
+    );
+    render(<SessionEditor session={session()} openedInCorrection={false} />);
+    clickSave();
+    expect(await screen.findByRole("alert")).toHaveTextContent("ATTENDANCE_NO_ACCESS");
+    expect(screen.queryByRole("button", { name: "retry" })).not.toBeInTheDocument();
+
+    saveMutateAsync.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    clickSave();
+    expect(await screen.findByRole("button", { name: "retry" })).toBeInTheDocument();
   });
 });
