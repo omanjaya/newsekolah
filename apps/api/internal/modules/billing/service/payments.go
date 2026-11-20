@@ -9,6 +9,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/billing/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // PaymentInput is what the payment desk submits for one bill.
@@ -103,11 +104,7 @@ func (s *Service) issueReceipt(ctx context.Context, tenantID, yearID, issuerID u
 	}
 	issued, err := s.docs.IssueReceipt(ctx, tenantID, ReceiptDocument{
 		PaymentID: payment.ID, AcademicYearID: yearID, IssuerUserID: issuerID,
-		Vars: map[string]any{
-			"student_name": display.StudentName, "class_name": display.ClassName, "guardian_name": display.GuardianName,
-			"fee_type_name": bill.FeeTypeName, "period": bill.Period, "amount": payment.AmountMinor,
-			"method": string(payment.Method), "paid_on": payment.PaidOn.Format("02-01-2006"), "reference": payment.Reference,
-		},
+		Vars: receiptVars(display, bill, payment),
 	})
 	if err != nil {
 		return err
@@ -119,9 +116,48 @@ func (s *Service) issueReceipt(ctx context.Context, tenantID, yearID, issuerID u
 	return nil
 }
 
+// receiptVars is what the receipt template prints, already formatted for
+// a reader: the amount as "Rp 75.000", a monthly period as its month
+// ("November 2026"; a one-off period as the label the admin typed), the
+// method and date in Indonesian. The receipt is an Indonesian document,
+// so it is formatted for the "id" locale whatever the issuer's UI
+// language.
+func receiptVars(display StudentDisplay, bill domain.Bill, payment domain.Payment) map[string]any {
+	return map[string]any{
+		"student_name": display.StudentName, "class_name": display.ClassName, "guardian_name": display.GuardianName,
+		"fee_type_name": bill.FeeTypeName, "period": receiptPeriod(bill.Period),
+		"amount": receiptAmount(bill.Currency, payment.AmountMinor), "amount_minor": payment.AmountMinor,
+		"method": payment.Method.ReceiptLabel(), "paid_on": reportdoc.FormatDate(reportdoc.LocaleID, payment.PaidOn),
+		"reference": payment.Reference,
+	}
+}
+
+// receiptAmount prints a whole-unit amount with Indonesian digit
+// grouping, prefixed "Rp" for rupiah and the currency code otherwise
+// (see the domain package doc: one minor unit is one rupiah).
+func receiptAmount(currency string, amountMinor int64) string {
+	prefix := currency
+	if currency == "" || currency == "IDR" {
+		prefix = "Rp"
+	}
+	return prefix + " " + reportdoc.FormatInteger(reportdoc.LocaleID, amountMinor)
+}
+
+// receiptPeriod prints a monthly period key ("2026-11") as its month and
+// any other period (a one-off fee's own label) unchanged, the same rule
+// the web's formatBillPeriod follows.
+func receiptPeriod(period string) string {
+	if t, err := time.Parse("2006-01", period); err == nil {
+		return reportdoc.FormatMonth(reportdoc.LocaleID, t)
+	}
+	return period
+}
+
 // VoidPayment reverses a payment without deleting it: the row keeps who
 // voided it, when, and why, and the bill's paid amount and status are
-// recomputed to no longer count it.
+// recomputed to no longer count it. The payment's receipt is revoked in
+// the same transaction, so its verification code stops reporting a
+// cancelled payment as genuine.
 func (s *Service) VoidPayment(ctx context.Context, tenantID, paymentID, actorUserID uuid.UUID, reason string) (domain.Payment, error) {
 	if err := s.guard(ctx, tenantID); err != nil {
 		return domain.Payment{}, err
@@ -149,6 +185,11 @@ func (s *Service) VoidPayment(ctx context.Context, tenantID, paymentID, actorUse
 		if err := audit.Record(ctx, tenantID, "payment.void", "payment", paymentID, current, out); err != nil {
 			return err
 		}
+		if s.docs != nil {
+			if err := s.docs.RevokeReceipt(ctx, tenantID, paymentID); err != nil {
+				return err
+			}
+		}
 		bill, ok, err := s.repo.GetBill(ctx, tenantID, current.BillID)
 		if err != nil {
 			return err
@@ -161,7 +202,10 @@ func (s *Service) VoidPayment(ctx context.Context, tenantID, paymentID, actorUse
 	return out, err
 }
 
-// ReceiptURL presigns the stored receipt PDF for a payment.
+// ReceiptURL presigns the stored receipt PDF for a payment. A voided
+// payment's receipt is refused with ErrReceiptRevoked: the stored PDF
+// carries no cancellation mark, so handing it out again would pass it
+// off as valid to anyone who does not scan its verification code.
 func (s *Service) ReceiptURL(ctx context.Context, tenantID, paymentID uuid.UUID) (string, error) {
 	if err := s.guard(ctx, tenantID); err != nil {
 		return "", err
@@ -181,6 +225,9 @@ func (s *Service) ReceiptURL(ctx context.Context, tenantID, paymentID uuid.UUID)
 	if err != nil {
 		return "", err
 	}
+	if payment.IsVoided() {
+		return "", domain.ErrReceiptRevoked
+	}
 	if !payment.ReceiptAssetID.Valid || s.docs == nil {
 		return "", domain.ErrPaymentNotFound
 	}
@@ -198,11 +245,13 @@ const BuiltinReceiptHTML = `<html><body style="font-family: sans-serif; font-siz
 <tr><td>Nama Siswa</td><td>: {{.student_name}}</td></tr>
 <tr><td>Kelas</td><td>: {{.class_name}}</td></tr>
 <tr><td>Wali</td><td>: {{.guardian_name}}</td></tr>
+<tr><td>Tanggal bayar</td><td>: {{.paid_on}}</td></tr>
+<tr><td>Metode</td><td>: {{.method}}</td></tr>
+{{if .reference}}<tr><td>Referensi</td><td>: {{.reference}}</td></tr>{{end}}
 </table>
 <table border="1" cellpadding="4" cellspacing="0" style="margin-top: 16px; width: 100%;">
-<tr><th>Jenis Biaya</th><th>Periode</th><th>Jumlah</th></tr>
-<tr><td>{{.fee_type_name}}</td><td>{{.period}}</td><td>{{.amount}}</td></tr>
+<tr><th>Jenis Biaya</th><th>Periode</th><th style="text-align:right;">Jumlah</th></tr>
+<tr><td>{{.fee_type_name}}</td><td>{{.period}}</td><td style="text-align:right;">{{.amount}}</td></tr>
 </table>
-<p>Metode: {{.method}}. Tanggal: {{.paid_on}}. Referensi: {{.reference}}</p>
 <p>Kwitansi diterbitkan pada {{.issued_at}}. Kode verifikasi: <strong>{{.verification_code}}</strong></p>
 </body></html>`

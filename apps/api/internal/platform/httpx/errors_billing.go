@@ -10,5 +10,6 @@ var (
 	ErrBillAlreadyPaid           = NewError(http.StatusConflict, "BILL_ALREADY_PAID")
 	ErrPaymentNotFound           = NewError(http.StatusNotFound, "PAYMENT_NOT_FOUND")
 	ErrPaymentAlreadyVoided      = NewError(http.StatusConflict, "PAYMENT_ALREADY_VOIDED")
+	ErrReceiptRevoked            = NewError(http.StatusConflict, "RECEIPT_REVOKED")
 	ErrPaymentExceedsOutstanding = NewError(http.StatusConflict, "PAYMENT_EXCEEDS_OUTSTANDING")
 )

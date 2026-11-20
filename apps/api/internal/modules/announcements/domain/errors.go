@@ -8,5 +8,6 @@ var (
 	ErrAudienceEmpty      = errors.New("announcement audience resolved to no recipients")
 	ErrInvalidAudience    = errors.New("announcement audience is invalid")
 	ErrInvalidInput       = errors.New("announcement input is invalid")
+	ErrEndsBeforeStart    = errors.New("announcement ends_at must be after starts_at")
 	ErrScheduleNeedsStart = errors.New("a scheduled announcement needs a future starts_at")
 )

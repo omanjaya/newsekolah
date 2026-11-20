@@ -55,7 +55,11 @@ describe("ReportExportDialog", () => {
       format: "xlsx",
       title: "Test Report",
       showLetterhead: true,
-      columns: [{ key: "no" }, { key: "name" }, { key: "status" }],
+      columns: [
+        { key: "no", label: "No" },
+        { key: "name", label: "Name" },
+        { key: "status", label: "Status" },
+      ],
     });
   });
 
@@ -104,7 +108,7 @@ describe("ReportExportDialog", () => {
     expect(call.columns.map((c) => c.key)).toEqual(["name", "no", "status"]);
   });
 
-  it("sends a label override only for a renamed column", async () => {
+  it("sends the label shown for every column, so the file matches the dialog", async () => {
     const onExport = vi.fn().mockResolvedValue(undefined);
     renderDialog(onExport);
 
@@ -115,7 +119,9 @@ describe("ReportExportDialog", () => {
 
     const call = onExport.mock.calls[0]?.[0] as ReportExportOptions;
     expect(call.columns).toContainEqual({ key: "name", label: "Nama Siswa" });
-    expect(call.columns.find((c) => c.key === "no")).toEqual({ key: "no" });
+    // An untouched column sends its default too: the server's own label
+    // for it may be worded differently.
+    expect(call.columns.find((c) => c.key === "no")).toEqual({ key: "no", label: "No" });
   });
 
   it("switches format to pdf and back through the segmented control", async () => {
@@ -197,8 +203,8 @@ describe("ReportExportDialog", () => {
 
     const call = secondExport.mock.calls[0]?.[0] as ReportExportOptions;
     expect(call.columns).toEqual([
-      { key: "no" },
-      { key: "name" },
+      { key: "no", label: "No." },
+      { key: "name", label: "Student name" },
       { key: "status", label: "Keterangan" },
     ]);
   });
@@ -243,7 +249,10 @@ describe("ReportExportDialog", () => {
       format: "pdf",
       title: "Test Report",
       showLetterhead: false,
-      columns: [{ key: "name" }, { key: "no" }],
+      columns: [
+        { key: "name", label: "Nama siswa" },
+        { key: "no", label: "No" },
+      ],
     });
     // The choice moves to the current store, and the old entry goes.
     expect(window.localStorage.getItem("newsekolah:report-export:test.report")).toBeNull();

@@ -327,6 +327,7 @@
     "BILL_ALREADY_PAID": "This bill is already fully paid",
     "PAYMENT_NOT_FOUND": "Payment not found",
     "PAYMENT_ALREADY_VOIDED": "This payment was already voided",
+    "RECEIPT_REVOKED": "This receipt is no longer valid because its payment was voided",
     "PAYMENT_EXCEEDS_OUTSTANDING": "The payment amount exceeds the bill's outstanding balance",
     "MENTOR_GROUP_NOT_FOUND": "Mentor group not found",
     "MENTOR_GROUP_FULL": "This group has reached its member limit",

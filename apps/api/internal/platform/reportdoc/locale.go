@@ -2,6 +2,7 @@ package reportdoc
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -37,6 +38,37 @@ func FormatDate(locale string, t time.Time) string {
 		return fmt.Sprintf("%d %s %d", t.Day(), indonesianMonths[t.Month()-1], t.Year())
 	}
 	return t.Format("January 2, 2006")
+}
+
+// FormatMonth renders t's month and year: "November 2026" for "id", the
+// English month name otherwise.
+func FormatMonth(locale string, t time.Time) string {
+	if locale == LocaleID {
+		return fmt.Sprintf("%s %d", indonesianMonths[t.Month()-1], t.Year())
+	}
+	return t.Format("January 2006")
+}
+
+// FormatInteger groups n's digits in threes: "75.000" for "id" (the
+// Indonesian thousands separator is a dot), "75,000" otherwise.
+func FormatInteger(locale string, n int64) string {
+	sep := byte(',')
+	if locale == LocaleID {
+		sep = '.'
+	}
+	digits := strconv.FormatInt(n, 10)
+	sign := ""
+	if n < 0 {
+		sign, digits = "-", digits[1:]
+	}
+	out := make([]byte, 0, len(digits)+len(digits)/3)
+	for i := 0; i < len(digits); i++ {
+		if i > 0 && (len(digits)-i)%3 == 0 {
+			out = append(out, sep)
+		}
+		out = append(out, digits[i])
+	}
+	return sign + string(out)
 }
 
 // PageLabel returns the default Document.PageLabelFormat for locale:

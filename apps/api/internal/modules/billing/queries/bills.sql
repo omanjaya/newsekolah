@@ -1,9 +1,14 @@
--- name: ListBillKeysForPeriod :many
--- Existing (fee_type_id, student_user_id) pairs already billed for one
--- period, used to keep a second generation run from even attempting a
--- duplicate insert (the unique index on bills is the backstop).
-select fee_type_id, student_user_id from bills
-where tenant_id = $1 and period = $2 and fee_type_id = any(sqlc.arg(fee_type_ids)::uuid[]);
+-- name: ListBillKeysForPeriods :many
+-- Existing (fee_type_id, student_user_id, period) keys already billed
+-- for any of the given periods, used to keep a second generation run
+-- from even attempting a duplicate insert (the unique index on bills is
+-- the backstop) and to count them as already billed. Several periods
+-- because a one-off fee type bills under its own period code, not the
+-- requested month.
+select fee_type_id, student_user_id, period from bills
+where tenant_id = $1
+  and period = any(sqlc.arg(periods)::text[])
+  and fee_type_id = any(sqlc.arg(fee_type_ids)::uuid[]);
 
 -- name: CreateBill :one
 -- Inserted one at a time inside the generation transaction (see

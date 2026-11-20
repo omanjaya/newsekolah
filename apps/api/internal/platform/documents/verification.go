@@ -6,6 +6,8 @@ import (
 	"crypto/sha256"
 	"encoding/base32"
 	"fmt"
+	"strings"
+	"unicode"
 )
 
 // codeAlphabetLen matches base32's output length for 16 random bytes
@@ -37,8 +39,24 @@ func NewVerificationCode(signingKey []byte) (code string, hash []byte, err error
 // (tenant_id, verification_code_hash), an indexed equality lookup rather
 // than a fetch-then-compare, so there is no code to compare in variable
 // time in the first place.
+//
+// The code is normalised first (NormalizeVerificationCode), so a code
+// typed off paper in lowercase or with spaces finds the same document.
 func HashVerificationCode(signingKey []byte, code string) []byte {
 	mac := hmac.New(sha256.New, signingKey)
-	mac.Write([]byte(code))
+	mac.Write([]byte(NormalizeVerificationCode(code)))
 	return mac.Sum(nil)
+}
+
+// NormalizeVerificationCode upper-cases code and drops whitespace and
+// hyphens. Generated codes are upper-case standard base32 (A-Z, 2-7), so
+// this never changes a code as printed; it only forgives how a person
+// types one.
+func NormalizeVerificationCode(code string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) || r == '-' {
+			return -1
+		}
+		return unicode.ToUpper(r)
+	}, code)
 }

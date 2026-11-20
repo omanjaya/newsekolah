@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/google/uuid"
@@ -95,10 +96,13 @@ func severityLabel(sev domain.Severity) string {
 // buildRecapDocument assembles the reportdoc.Document title renders as a
 // two-section report: overall figures, then incidents by severity.
 func buildRecapDocument(title, locale string, r Recap) reportdoc.Document {
+	// Labels and rounding match the recap screen (visitors.id.json
+	// totalVisits/stillOnCampus/avgStay; the screen rounds the average to
+	// whole minutes), so the file says what the page said.
 	summaryRows := [][]any{
 		{"Total kunjungan", r.TotalVisits},
-		{"Masih di kampus", r.StillOnCampus},
-		{"Rata-rata durasi (menit)", r.AvgStayMinutes},
+		{"Masih di sekolah", r.StillOnCampus},
+		{"Rata-rata lama kunjungan (menit)", int(math.Round(r.AvgStayMinutes))},
 	}
 	incidentRows := make([][]any, len(severityOrder))
 	for i, sev := range severityOrder {

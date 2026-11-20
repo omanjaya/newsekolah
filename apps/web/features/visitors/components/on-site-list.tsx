@@ -1,8 +1,8 @@
 "use client";
 
 import { formatTime, type Locale } from "@newsekolah/i18n";
-import { Avatar, Badge, Button, List, ListRow } from "@newsekolah/ui";
-import { LogOut } from "lucide-react";
+import { Avatar, Badge, Button, IconButton, List, ListRow } from "@newsekolah/ui";
+import { LogOut, Printer } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -22,26 +22,34 @@ export function useStayLabel(): (minutes: number) => string {
 
 /**
  * The visitors on site as one list: who, from where and why, whom they
- * came to see, since when and for how long, and the one-tap check out
- * (confirmed by the caller). A visitor still here past the school day is
- * marked and was already sorted to the top.
+ * came to see, since when and for how long, the badge they wear (with a
+ * print action), and the one-tap check out (confirmed by the caller). A
+ * visitor still here past the school day is marked and was already sorted
+ * to the top.
  */
 export function OnSiteList({
   entries,
   timeZone,
   canManage,
   onCheckOut,
+  onPrintBadge,
+  printingBadgeId,
 }: {
   entries: BoardEntry[];
   timeZone?: string;
   canManage: boolean;
   onCheckOut: (visit: Visit) => void;
+  /** Opens the visit's printable badge; the action shows only for an issued badge. */
+  onPrintBadge?: (visit: Visit) => void;
+  /** The visit whose badge link is being fetched, shown as busy. */
+  printingBadgeId?: string;
 }): ReactElement {
   const t = useTranslations("app.visitors.board");
   const locale = useLocale() as Locale;
   const now = useBusinessNow();
   const stayLabel = useStayLabel();
   const hosts = useDirectoryNames(entries.map((entry) => entry.visit.host_user_id));
+  const canPrint = (visit: Visit) => onPrintBadge !== undefined && visit.badge_number !== "";
 
   return (
     <List framed aria-label={t("onSiteTitle")}>
@@ -89,18 +97,33 @@ export function OnSiteList({
               ) : undefined
             }
             action={
-              canManage ? (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={<LogOut />}
-                  aria-label={t("checkOutFor", { name: visit.full_name })}
-                  onClick={() => {
-                    onCheckOut(visit);
-                  }}
-                >
-                  {t("checkOutShort")}
-                </Button>
+              canPrint(visit) || canManage ? (
+                <span className="flex items-center gap-1">
+                  {canPrint(visit) && (
+                    <IconButton
+                      size="sm"
+                      icon={<Printer />}
+                      aria-label={t("printBadgeFor", { name: visit.full_name })}
+                      loading={printingBadgeId === visit.id}
+                      onClick={() => {
+                        onPrintBadge?.(visit);
+                      }}
+                    />
+                  )}
+                  {canManage && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<LogOut />}
+                      aria-label={t("checkOutFor", { name: visit.full_name })}
+                      onClick={() => {
+                        onCheckOut(visit);
+                      }}
+                    >
+                      {t("checkOutShort")}
+                    </Button>
+                  )}
+                </span>
               ) : undefined
             }
           />

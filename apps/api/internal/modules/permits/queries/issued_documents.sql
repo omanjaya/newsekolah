@@ -10,3 +10,12 @@ select * from issued_documents where tenant_id = $1 and verification_code_hash =
 
 -- name: GetIssuedDocumentByEntity :one
 select * from issued_documents where tenant_id = $1 and entity_type = $2 and entity_id = $3 and kind = $4;
+
+-- name: RevokeIssuedDocumentByEntity :many
+-- Marks the document issued for an entity as no longer valid, so the
+-- public verify page reports it revoked. Idempotent: an already revoked
+-- row keeps its original revoked_at.
+update issued_documents
+set revoked_at = coalesce(revoked_at, now())
+where tenant_id = $1 and entity_type = $2 and entity_id = $3 and kind = $4
+returning *;

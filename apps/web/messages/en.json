@@ -897,6 +897,7 @@
         "startsAt": "Visible from",
         "startsAtHint": "Leave empty to show right after publishing. Fill it and choose Schedule to publish automatically.",
         "endsAt": "Visible until",
+        "endsBeforeStart": "Visible until must be after the start",
         "pinned": "Pin to top",
         "cancel": "Cancel",
         "saveDraft": "Save draft",
@@ -1796,8 +1797,11 @@
       "kind": "Kind",
       "kinds": {
         "leave_letter": "Leave letter",
-        "warning_letter": "Warning letter"
+        "warning_letter": "Warning letter",
+        "receipt": "Payment receipt",
+        "visitor_badge": "Visitor badge"
       },
+      "kindOther": "Document",
       "issuedAt": "Issued",
       "student": "Student",
       "validity": "Valid",

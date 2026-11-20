@@ -131,13 +131,44 @@ export function formatShortDateTime(
 }
 
 /** "9 September 2026 pukul 14.05" (id) / "September 9, 2026 at 2:05 PM" (en). */
-export function formatDateTime(value: Date | string | number, options: FormatOptions): string {
-  return new Intl.DateTimeFormat(INTL_LOCALE[options.locale], {
+export function formatDateTime(
+  value: Date | string | number,
+  options: FormatOptions & {
+    /**
+     * Name the zone after the time ("pukul 10.02 WITA"), for a page read
+     * by someone who may be in another zone than the school (a public
+     * verification page). Off by default: inside the app every time is
+     * already the school's.
+     */
+    withZone?: boolean;
+  },
+): string {
+  const date = toDate(value);
+  const text = new Intl.DateTimeFormat(INTL_LOCALE[options.locale], {
     dateStyle: "long",
     timeStyle: "short",
     hourCycle: options.locale === "id" ? "h23" : undefined,
     timeZone: options.timeZone,
-  }).format(toDate(value));
+  }).format(date);
+  if (!options.withZone) return text;
+  const zone = formatTimeZoneName(date, options);
+  return zone ? `${text} ${zone}` : text;
+}
+
+/**
+ * The short name of the zone a moment is read in: "WIB", "WITA" or "WIT"
+ * in Indonesian, "GMT+7" style in English. Empty when the runtime has no
+ * name for it.
+ */
+export function formatTimeZoneName(value: Date | string | number, options: FormatOptions): string {
+  return (
+    new Intl.DateTimeFormat(INTL_LOCALE[options.locale], {
+      timeZone: options.timeZone,
+      timeZoneName: "short",
+    })
+      .formatToParts(toDate(value))
+      .find((part) => part.type === "timeZoneName")?.value ?? ""
+  );
 }
 
 const RELATIVE_UNITS: { unit: Intl.RelativeTimeFormatUnit; seconds: number }[] = [

@@ -7,6 +7,7 @@ import (
 	_ "image/gif" // registers image.DecodeConfig support for GIF logos
 	_ "image/jpeg"
 	_ "image/png"
+	"math"
 	"net/http"
 	"regexp"
 	"strings"
@@ -84,7 +85,7 @@ type xlsxStyles struct {
 // so typed cells (numbers, dates, percents) render with Excel's native
 // numeric formatting rather than as plain text.
 type dataStyles struct {
-	text, number, date, percent int
+	text, number, integer, date, percent int
 }
 
 func newXLSXStyles(f *excelize.File) (xlsxStyles, error) {
@@ -179,6 +180,12 @@ func newDataStyles(f *excelize.File) (dataStyles, error) {
 	if err != nil {
 		return dataStyles{}, fmt.Errorf("reportdoc: number style: %w", err)
 	}
+	// Whole numbers get a format without the optional decimals: Excel
+	// prints "#,##0.##" for 4 as "4." with a dangling separator.
+	integer, err := f.NewStyle(&excelize.Style{Border: thinBorder(), CustomNumFmt: strPtr("#,##0"), Alignment: &excelize.Alignment{Vertical: "center", Horizontal: "right"}})
+	if err != nil {
+		return dataStyles{}, fmt.Errorf("reportdoc: integer style: %w", err)
+	}
 	date, err := f.NewStyle(&excelize.Style{Border: thinBorder(), CustomNumFmt: strPtr("dd/mm/yyyy"), Alignment: &excelize.Alignment{Vertical: "center", Horizontal: "center"}})
 	if err != nil {
 		return dataStyles{}, fmt.Errorf("reportdoc: date style: %w", err)
@@ -187,7 +194,28 @@ func newDataStyles(f *excelize.File) (dataStyles, error) {
 	if err != nil {
 		return dataStyles{}, fmt.Errorf("reportdoc: percent style: %w", err)
 	}
-	return dataStyles{text: text, number: number, date: date, percent: percent}, nil
+	return dataStyles{text: text, number: number, integer: integer, date: date, percent: percent}, nil
+}
+
+// forValue is forKind, except a whole number in a number column takes
+// the integer format.
+func (d dataStyles) forValue(kind ColumnKind, v any) int {
+	if kind == ColumnNumber && isWholeNumber(v) {
+		return d.integer
+	}
+	return d.forKind(kind)
+}
+
+func isWholeNumber(v any) bool {
+	switch n := v.(type) {
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return true
+	case float64:
+		return n == math.Trunc(n)
+	case float32:
+		return float64(n) == math.Trunc(float64(n))
+	}
+	return false
 }
 
 func (d dataStyles) forKind(kind ColumnKind) int {
@@ -410,7 +438,7 @@ func writeTypedRow(f *excelize.File, sheet string, row int, cols []Column, value
 		}
 		style := overrideStyle
 		if style == 0 {
-			style = styles.data.forKind(c.Kind)
+			style = styles.data.forValue(c.Kind, v)
 		}
 		if err := f.SetCellStyle(sheet, cell, cell, style); err != nil {
 			return err

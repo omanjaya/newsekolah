@@ -5,6 +5,13 @@ insert into visitor_visits (
 ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 returning *;
 
+-- name: SetVisitBadge :one
+-- Stores the badge issued right after the visit row exists (the badge's
+-- document record points at the visit id, so the row is inserted first).
+update visitor_visits set badge_number = $3, badge_asset_id = $4
+where tenant_id = $1 and id = $2
+returning *;
+
 -- name: GetVisit :one
 select * from visitor_visits where tenant_id = $1 and id = $2;
 

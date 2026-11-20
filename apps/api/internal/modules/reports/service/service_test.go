@@ -229,7 +229,7 @@ func TestRunDocumentLocalizesLabelsAndValues(t *testing.T) {
 	assert.Equal(t, "Nama", nameHeader)
 	expectedHeader, err := f.GetCellValue(sheets[0], "D7")
 	require.NoError(t, err)
-	assert.Equal(t, "Jumlah Sesi Diharapkan", expectedHeader)
+	assert.Equal(t, "Sesi Wajib", expectedHeader, "the file and the download dialog (reports.id.json) use one wording")
 
 	// Class X-1's student has status code "H" with a tenant label
 	// "Hadir" and complete=true -> "Ya".

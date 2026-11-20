@@ -21,6 +21,7 @@ export {
   formatShortDate,
   formatShortDateTime,
   formatTime,
+  formatTimeZoneName,
   type FormatOptions,
   type NumberFormatOptions,
 } from "./format.js";

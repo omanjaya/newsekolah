@@ -32,6 +32,7 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrBillAlreadyPaid:           httpx.ErrBillAlreadyPaid,
 	domain.ErrPaymentNotFound:           httpx.ErrPaymentNotFound,
 	domain.ErrPaymentAlreadyVoided:      httpx.ErrPaymentAlreadyVoided,
+	domain.ErrReceiptRevoked:            httpx.ErrReceiptRevoked,
 	domain.ErrPaymentExceedsOutstanding: httpx.ErrPaymentExceedsOutstanding,
 }
 

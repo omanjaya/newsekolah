@@ -37,7 +37,7 @@ export function VerifyView({ code }: { code: string }): ReactElement {
   const t = useTranslations("app.verify");
   const locale = useLocale() as Locale;
   const client = useApiClient();
-  const { displayName } = useTenant();
+  const { displayName, branding } = useTenant();
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: [...queryKeys.workflowDefinitions(), "verify", code],
     queryFn: () => client.GET("/v1/documents/verify/{code}", { params: { path: { code } } }),
@@ -107,7 +107,7 @@ export function VerifyView({ code }: { code: string }): ReactElement {
                 : t("validBody", { school: displayName })
             }
           >
-            <DocumentFacts doc={data} code={code} locale={locale} />
+            <DocumentFacts doc={data} code={code} locale={locale} timeZone={branding?.timezone} />
           </Verdict>
         )}
       </Card>
@@ -159,14 +159,29 @@ function Verdict({
   );
 }
 
+/** Every kind the API issues a verifiable document for has a label. */
+const KNOWN_KINDS = ["leave_letter", "warning_letter", "receipt", "visitor_badge"] as const;
+type KnownKind = (typeof KNOWN_KINDS)[number];
+
+function isKnownKind(kind: string): kind is KnownKind {
+  return (KNOWN_KINDS as readonly string[]).includes(kind);
+}
+
+/**
+ * The document's facts. Times read in the school's zone and name it
+ * ("pukul 10.02 WITA"): whoever scans the code may be in another zone,
+ * and the time must match the one printed on the document.
+ */
 function DocumentFacts({
   doc,
   code,
   locale,
+  timeZone,
 }: {
   doc: Verification;
   code: string;
   locale: Locale;
+  timeZone: string | undefined;
 }): ReactElement {
   const t = useTranslations("app.verify");
   return (
@@ -175,7 +190,7 @@ function DocumentFacts({
         <span className="font-semibold tabular-nums">{doc.number}</span>
       </DataListItem>
       <DataListItem label={t("kind")}>
-        {t.has(`kinds.${doc.kind}`) ? t(`kinds.${doc.kind}`) : doc.kind}
+        {isKnownKind(doc.kind) ? t(`kinds.${doc.kind}`) : t("kindOther")}
       </DataListItem>
       {doc.student_name && (
         <DataListItem label={t("student")}>
@@ -183,10 +198,13 @@ function DocumentFacts({
           {doc.class_name ? ` (${doc.class_name})` : ""}
         </DataListItem>
       )}
-      <DataListItem label={t("issuedAt")}>{formatDateTime(doc.issued_at, { locale })}</DataListItem>
+      <DataListItem label={t("issuedAt")}>
+        {formatDateTime(doc.issued_at, { locale, timeZone, withZone: Boolean(timeZone) })}
+      </DataListItem>
       {doc.valid_from && doc.valid_until && (
         <DataListItem label={t("validity")}>
-          {formatDate(doc.valid_from, { locale })} – {formatDate(doc.valid_until, { locale })}
+          {formatDate(doc.valid_from, { locale, timeZone })} –{" "}
+          {formatDate(doc.valid_until, { locale, timeZone })}
         </DataListItem>
       )}
       <DataListItem label={t("code")}>

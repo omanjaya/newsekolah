@@ -126,3 +126,58 @@ func (q *Queries) GetIssuedDocumentByVerificationHash(ctx context.Context, arg G
 	)
 	return i, err
 }
+
+const revokeIssuedDocumentByEntity = `-- name: RevokeIssuedDocumentByEntity :many
+update issued_documents
+set revoked_at = coalesce(revoked_at, now())
+where tenant_id = $1 and entity_type = $2 and entity_id = $3 and kind = $4
+returning id, tenant_id, kind, entity_type, entity_id, number, asset_id, sha256, verification_code_hash, issued_by, issued_at, revoked_at
+`
+
+type RevokeIssuedDocumentByEntityParams struct {
+	TenantID   uuid.UUID `json:"tenant_id"`
+	EntityType string    `json:"entity_type"`
+	EntityID   uuid.UUID `json:"entity_id"`
+	Kind       string    `json:"kind"`
+}
+
+// Marks the document issued for an entity as no longer valid, so the
+// public verify page reports it revoked. Idempotent: an already revoked
+// row keeps its original revoked_at.
+func (q *Queries) RevokeIssuedDocumentByEntity(ctx context.Context, arg RevokeIssuedDocumentByEntityParams) ([]IssuedDocument, error) {
+	rows, err := q.db.Query(ctx, revokeIssuedDocumentByEntity,
+		arg.TenantID,
+		arg.EntityType,
+		arg.EntityID,
+		arg.Kind,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []IssuedDocument{}
+	for rows.Next() {
+		var i IssuedDocument
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.Kind,
+			&i.EntityType,
+			&i.EntityID,
+			&i.Number,
+			&i.AssetID,
+			&i.Sha256,
+			&i.VerificationCodeHash,
+			&i.IssuedBy,
+			&i.IssuedAt,
+			&i.RevokedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

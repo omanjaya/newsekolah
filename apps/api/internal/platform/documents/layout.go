@@ -2,483 +2,429 @@ package documents
 
 import (
 	"bytes"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/go-pdf/fpdf"
 	"golang.org/x/net/html"
-	"golang.org/x/net/html/atom"
 )
 
-// Page geometry and type sizes, in millimetres and points.
+// This file turns rendered template HTML into the small set of layout
+// blocks htmlToPDF draws: paragraphs (with alignment, weight and size)
+// and tables (rows of cells laid out as columns). It understands only
+// what document templates use -- block tags, <br>, <table>/<tr>/<td>/<th>,
+// <strong>/<b>, and the text-align, font-weight, font-size (pt) and
+// padding-top (px) inline styles -- and ignores everything else, so it
+// stays a letter layout, not a browser.
+
+// Text alignment, as fpdf's alignStr expects it.
 const (
-	pageMarginMM   = 20.0
-	bodyFontSize   = 12.0
-	lineHeightMM   = 6.0
-	paragraphGapMM = 2.0
-	// cellPadMM pads a borderless cell; a bordered table uses its
-	// cellpadding attribute instead.
-	cellPadMM = 1.0
-	// pxToMM converts the CSS pixels templates use (96 per inch).
-	pxToMM = 25.4 / 96
-	// maxSpaceMM caps a margin or padding taken from a template, so a
-	// typo cannot push the rest of a letter off the page.
-	maxSpaceMM = 40.0
+	alignLeft   = "L"
+	alignCenter = "C"
+	alignRight  = "R"
 )
 
-var headingSizes = map[atom.Atom]float64{
-	atom.H1: 18, atom.H2: 15, atom.H3: 13, atom.H4: 12, atom.H5: 12, atom.H6: 12,
+// layoutParagraph is one block of text. Text may hold "\n" for a <br>.
+type layoutParagraph struct {
+	Text  string
+	Align string
+	Bold  bool
+	Size  float64 // font size in points; 0 is the body size
 }
 
-var whitespace = regexp.MustCompile(`\s+`)
-
-// run is a piece of inline text in one style.
-type run struct {
-	text string
-	bold bool
+type layoutCell struct {
+	Text   string
+	Align  string
+	Bold   bool
+	Header bool
 }
 
-// blockStyle is what a block element passes down to the text inside it.
-type blockStyle struct {
-	align string // "L", "C" or "R"
-	size  float64
-	bold  bool
+type layoutRow struct {
+	Cells []layoutCell
+	// PadTop is extra space above the row in millimetres, from a cell's
+	// padding-top (signature blocks leave room to sign that way).
+	PadTop float64
 }
 
-// layout walks a parsed HTML tree and draws it with fpdf. It understands
-// the small vocabulary document templates use: paragraphs and headings
-// (with text-align and margin-top), line breaks, lists, bold runs, and
-// tables laid out as real columns (border, cellpadding, width:100%,
-// text-align and padding-top on cells), which is what letter tables and
-// signature blocks need.
-type layout struct {
-	pdf     *fpdf.Fpdf
-	tr      func(string) string
-	pending []run
-	style   blockStyle
+type layoutTable struct {
+	Border    bool
+	FullWidth bool
+	Rows      []layoutRow
 }
 
-func newLayout(pdf *fpdf.Fpdf) *layout {
-	return &layout{
-		pdf:   pdf,
-		tr:    pdf.UnicodeTranslatorFromDescriptor(""),
-		style: blockStyle{align: "L", size: bodyFontSize},
-	}
+// layoutBlock is either a paragraph or a table.
+type layoutBlock struct {
+	Paragraph *layoutParagraph
+	Table     *layoutTable
 }
 
-func (l *layout) render(renderedHTML []byte) error {
-	doc, err := html.Parse(bytes.NewReader(renderedHTML))
-	if err != nil {
-		return fmt.Errorf("parse rendered html: %w", err)
-	}
-	l.children(doc)
-	l.flush()
-	return nil
+// blockTags start and end a paragraph of their own.
+var blockTags = map[string]bool{
+	"p": true, "div": true, "li": true, "ul": true, "ol": true, "body": true, "html": true,
+	"h1": true, "h2": true, "h3": true, "h4": true, "h5": true, "h6": true,
+	"section": true, "article": true, "header": true, "footer": true, "blockquote": true,
 }
 
-func (l *layout) children(n *html.Node) {
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		l.node(c)
-	}
+// headingSizes are the point sizes headings print at.
+var headingSizes = map[string]float64{"h1": 18, "h2": 15, "h3": 13, "h4": 12, "h5": 12, "h6": 12}
+
+// skippedTags hold no printable text.
+var skippedTags = map[string]bool{"head": true, "style": true, "script": true, "title": true}
+
+// voidTags have no end tag, so they are never pushed on the element stack.
+var voidTags = map[string]bool{"br": true, "img": true, "hr": true, "meta": true, "link": true, "input": true, "col": true}
+
+type element struct {
+	tag    string
+	align  string  // own text-align, "" when unset
+	bold   bool    // own weight
+	size   float64 // own font size, 0 when unset
+	padTop float64
 }
 
-func (l *layout) node(n *html.Node) {
-	switch n.Type {
-	case html.TextNode:
-		l.pending = append(l.pending, run{text: n.Data, bold: l.style.bold})
-		return
-	case html.ElementNode:
-	default:
-		l.children(n)
-		return
-	}
+type layoutBuilder struct {
+	stack  []element
+	blocks []layoutBlock
+	skip   int
 
-	switch n.DataAtom {
-	case atom.Head, atom.Style, atom.Script, atom.Title:
-		return
-	case atom.Br:
-		l.flush()
-	case atom.Table:
-		l.flush()
-		l.space(styleLength(n, "margin-top"))
-		l.table(n)
-		l.pdf.Ln(paragraphGapMM)
-	case atom.P, atom.Div, atom.Li, atom.Ul, atom.Ol, atom.Blockquote, atom.Section,
-		atom.H1, atom.H2, atom.H3, atom.H4, atom.H5, atom.H6:
-		l.block(n)
-	case atom.Strong, atom.B, atom.Th:
-		saved := l.style
-		l.style.bold = true
-		l.children(n)
-		l.style = saved
-	default:
-		l.children(n)
-	}
+	para      strings.Builder
+	paraBold  bool // every printable rune so far was bold
+	paraAny   bool
+	paraAlign string
+	paraSize  float64
+
+	tables []*layoutTable
+	row    *layoutRow
+	cell   *layoutCell
+	cellSB strings.Builder
 }
 
-// block lays out a block element: whatever inline text came before it is
-// its own paragraph, and so is the text inside it.
-func (l *layout) block(n *html.Node) {
-	l.flush()
-	saved := l.style
-	l.space(styleLength(n, "margin-top"))
-	if align, ok := textAlign(n); ok {
-		l.style.align = align
-	}
-	if size, ok := headingSizes[n.DataAtom]; ok {
-		l.style.size = size
-		l.style.bold = true
-	}
-	if n.DataAtom == atom.Li {
-		l.pending = append(l.pending, run{text: "- ", bold: l.style.bold})
-	}
-	l.children(n)
-	l.flush()
-	l.style = saved
-}
-
-func (l *layout) space(mm float64) {
-	if mm > 0 {
-		l.pdf.Ln(mm)
-	}
-}
-
-// flush draws the pending inline runs as one paragraph.
-func (l *layout) flush() {
-	runs := normalizeRuns(l.pending)
-	l.pending = nil
-	if len(runs) == 0 {
-		return
-	}
-	mixed := false
-	for _, r := range runs {
-		if r.bold != runs[0].bold {
-			mixed = true
-		}
-	}
-	lineHeight := lineHeightMM * l.style.size / bodyFontSize
-	if !mixed || l.style.align != "L" {
-		var text strings.Builder
-		for _, r := range runs {
-			text.WriteString(r.text)
-		}
-		l.setFont(runs[0].bold, l.style.size)
-		l.pdf.MultiCell(0, lineHeight, l.tr(text.String()), "", l.style.align, false)
-	} else {
-		for _, r := range runs {
-			l.setFont(r.bold, l.style.size)
-			l.pdf.Write(lineHeight, l.tr(r.text))
-		}
-		l.pdf.Ln(lineHeight)
-	}
-	l.setFont(false, bodyFontSize)
-	l.pdf.Ln(paragraphGapMM)
-}
-
-func (l *layout) setFont(bold bool, size float64) {
-	style := ""
-	if bold {
-		style = "B"
-	}
-	l.pdf.SetFont("Helvetica", style, size)
-}
-
-// normalizeRuns collapses whitespace the way a browser does and trims the
-// paragraph's ends, dropping runs left empty.
-func normalizeRuns(runs []run) []run {
-	out := make([]run, 0, len(runs))
-	for _, r := range runs {
-		r.text = whitespace.ReplaceAllString(r.text, " ")
-		if len(out) > 0 && strings.HasSuffix(out[len(out)-1].text, " ") {
-			r.text = strings.TrimLeft(r.text, " ")
-		}
-		if r.text != "" {
-			out = append(out, r)
-		}
-	}
-	for len(out) > 0 {
-		out[0].text = strings.TrimLeft(out[0].text, " ")
-		if out[0].text != "" {
-			break
-		}
-		out = out[1:]
-	}
-	for len(out) > 0 {
-		last := len(out) - 1
-		out[last].text = strings.TrimRight(out[last].text, " ")
-		if out[last].text != "" {
-			break
-		}
-		out = out[:last]
-	}
-	return out
-}
-
-// tableCell is one td/th with its text and the style it is drawn in.
-type tableCell struct {
-	text       string
-	bold       bool
-	align      string
-	paddingTop float64
-}
-
-// table lays out rows of cells as columns across the printable width.
-//
-//   - A bordered table (border="1", the violation lists) fills the width,
-//     columns sized by their content.
-//   - A borderless table with width:100% (the signature blocks) gets equal
-//     columns, one signer each.
-//   - Any other table (label/value rows such as "Nama : ...") keeps its
-//     first columns as narrow as their text, the last one taking the rest.
-func (l *layout) table(n *html.Node) {
-	rows := tableRows(n)
-	if len(rows) == 0 {
-		return
-	}
-	bordered := attr(n, "border") != "" && attr(n, "border") != "0"
-	tableAlign, _ := textAlign(n)
-	fullWidth := strings.Contains(strings.ReplaceAll(attr(n, "style"), " ", ""), "width:100%")
-	pad := cellPadMM
-	if v, err := strconv.ParseFloat(attr(n, "cellpadding"), 64); err == nil {
-		pad = v * pxToMM
-	}
-
-	columns := 0
-	for _, row := range rows {
-		columns = max(columns, len(row))
-	}
-	pageWidth, pageHeight := l.pdf.GetPageSize()
-	left, _, right, _ := l.pdf.GetMargins()
-	available := pageWidth - left - right
-
-	cellTexts := make([][]tableCell, len(rows))
-	for i, row := range rows {
-		cellTexts[i] = make([]tableCell, len(row))
-		for j, cell := range row {
-			cellTexts[i][j] = l.cell(cell, tableAlign)
-		}
-	}
-	widths := l.columnWidths(cellTexts, columns, available, pad, bordered, fullWidth)
-
-	_, _, _, bottom := l.pdf.GetMargins()
-	for _, row := range cellTexts {
-		height := l.rowHeight(row, widths, pad)
-		if l.pdf.GetY()+height > pageHeight-bottom {
-			l.pdf.AddPage()
-		}
-		x, y := left, l.pdf.GetY()
-		for j := 0; j < columns; j++ {
-			if bordered {
-				l.pdf.Rect(x, y, widths[j], height, "D")
+// layoutHTML parses rendered template HTML into layout blocks.
+func layoutHTML(rendered []byte) []layoutBlock {
+	b := &layoutBuilder{}
+	z := html.NewTokenizer(bytes.NewReader(rendered))
+	for {
+		tt := z.Next()
+		switch tt {
+		case html.ErrorToken:
+			b.flushParagraph()
+			b.closeTables()
+			return b.blocks
+		case html.TextToken:
+			if b.skip == 0 {
+				b.text(string(z.Text()))
 			}
-			if j < len(row) {
-				c := row[j]
-				l.setFont(c.bold, bodyFontSize)
-				l.pdf.SetXY(x+pad, y+pad+c.paddingTop)
-				l.pdf.MultiCell(widths[j]-2*pad, lineHeightMM, c.text, "", c.align, false)
-			}
-			x += widths[j]
+		case html.StartTagToken, html.SelfClosingTagToken:
+			tok := z.Token()
+			b.start(tok, tt == html.SelfClosingTagToken)
+		case html.EndTagToken:
+			tok := z.Token()
+			b.end(tok.Data)
 		}
-		l.pdf.SetXY(left, y+height)
 	}
-	l.setFont(false, bodyFontSize)
 }
 
-func (l *layout) cell(n *html.Node, tableAlign string) tableCell {
-	bold := n.DataAtom == atom.Th
-	var runs []run
-	var collect func(*html.Node, bool)
-	collect = func(n *html.Node, bold bool) {
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			switch {
-			case c.Type == html.TextNode:
-				runs = append(runs, run{text: c.Data, bold: bold})
-			case c.Type == html.ElementNode && c.DataAtom == atom.Br:
-				runs = append(runs, run{text: "\n"})
-			case c.Type == html.ElementNode:
-				collect(c, bold || c.DataAtom == atom.Strong || c.DataAtom == atom.B)
-			}
+func (b *layoutBuilder) start(tok html.Token, selfClosing bool) {
+	tag := tok.Data
+	if skippedTags[tag] {
+		if !selfClosing {
+			b.skip++
 		}
+		return
 	}
-	collect(n, bold)
-	var text strings.Builder
-	allBold := len(runs) > 0
-	for _, r := range normalizeRuns(runs) {
-		text.WriteString(r.text)
-		allBold = allBold && r.bold
+	el := element{tag: tag}
+	style := attr(tok, "style")
+	el.align = styleAlign(style, attr(tok, "align"))
+	el.bold = tag == "strong" || tag == "b" || tag == "th" || headingSizes[tag] > 0 || styleBold(style)
+	el.size = headingSizes[tag]
+	if s := stylePoints(style, "font-size"); s > 0 {
+		el.size = s
 	}
-	align := "L"
-	if tableAlign != "" {
-		align = tableAlign
-	}
-	if a, ok := textAlign(n); ok {
-		align = a
-	}
-	return tableCell{text: l.tr(text.String()), bold: bold || allBold, align: align, paddingTop: styleLength(n, "padding-top")}
-}
+	el.padTop = stylePixelsAsMM(style, "padding-top")
 
-// columnWidths shares the printable width between the columns; see table.
-func (l *layout) columnWidths(rows [][]tableCell, columns int, available, pad float64, bordered, fullWidth bool) []float64 {
-	widths := make([]float64, columns)
-	if fullWidth && !bordered {
-		for j := range widths {
-			widths[j] = available / float64(columns)
-		}
-		return widths
-	}
-	natural := make([]float64, columns)
-	for _, row := range rows {
-		for j, c := range row {
-			l.setFont(c.bold, bodyFontSize)
-			natural[j] = max(natural[j], l.pdf.GetStringWidth(c.text)+2*pad+2*l.pdf.GetCellMargin()+1)
-		}
-	}
-	l.setFont(false, bodyFontSize)
-	total := sum(natural)
 	switch {
-	case total > available:
-		return fitColumns(natural, available)
-	case bordered:
-		// Fill the width, each column growing in proportion to its content.
-		for j, w := range natural {
-			widths[j] = available * w / total
+	case tag == "br":
+		if b.cell != nil {
+			b.cellSB.WriteString(lineBreak)
+		} else {
+			b.para.WriteString(lineBreak)
 		}
-	default:
-		copy(widths, natural)
-		widths[columns-1] = available - (total - natural[columns-1])
+		return
+	case tag == "table":
+		b.flushParagraph()
+		b.tables = append(b.tables, &layoutTable{
+			Border:    attr(tok, "border") != "" && attr(tok, "border") != "0",
+			FullWidth: styleFullWidth(style),
+		})
+	case tag == "tr":
+		b.endRow()
+		if len(b.tables) > 0 {
+			b.row = &layoutRow{}
+		}
+	case tag == "td" || tag == "th":
+		b.endCell()
+		if b.row == nil && len(b.tables) > 0 {
+			b.row = &layoutRow{}
+		}
+		if b.row != nil {
+			b.cell = &layoutCell{Header: tag == "th"}
+			b.cellSB.Reset()
+		}
+	case blockTags[tag]:
+		b.flushParagraph()
 	}
-	return widths
-}
-
-// fitColumns squeezes columns whose single-line text is wider than the
-// page, the way a browser's automatic table layout does: a column that
-// fits in an even share keeps its natural width (a date, a points figure)
-// and the long ones split what is left, wrapping their text.
-func fitColumns(natural []float64, available float64) []float64 {
-	widths := make([]float64, len(natural))
-	fixed := make([]bool, len(natural))
-	remaining, flexible := available, len(natural)
-	for changed := true; changed && flexible > 0; {
-		changed = false
-		share := remaining / float64(flexible)
-		for j, w := range natural {
-			if !fixed[j] && w <= share {
-				fixed[j], widths[j] = true, w
-				remaining -= w
-				flexible--
-				changed = true
+	if voidTags[tag] || selfClosing {
+		return
+	}
+	b.stack = append(b.stack, el)
+	switch {
+	case tag == "td" || tag == "th":
+		if b.cell != nil {
+			b.cell.Align = b.currentAlign()
+			b.cell.Bold = b.currentBold()
+			if el.padTop > b.row.PadTop {
+				b.row.PadTop = el.padTop
 			}
 		}
+	case blockTags[tag]:
+		b.paraAlign, b.paraSize = b.currentAlign(), b.currentSize()
 	}
-	flexTotal := 0.0
-	for j, w := range natural {
-		if !fixed[j] {
-			flexTotal += w
-		}
-	}
-	for j, w := range natural {
-		if !fixed[j] {
-			widths[j] = remaining * w / flexTotal
-		}
-	}
-	return widths
 }
 
-func (l *layout) rowHeight(row []tableCell, widths []float64, pad float64) float64 {
-	height := lineHeightMM + 2*pad
-	for j, c := range row {
-		l.setFont(c.bold, bodyFontSize)
-		lines := len(l.pdf.SplitText(c.text, widths[j]-2*pad))
-		height = max(height, float64(max(lines, 1))*lineHeightMM+2*pad+c.paddingTop)
+func (b *layoutBuilder) end(tag string) {
+	if skippedTags[tag] {
+		if b.skip > 0 {
+			b.skip--
+		}
+		return
 	}
-	l.setFont(false, bodyFontSize)
-	return height
-}
-
-// tableRows collects the td/th cells of every tr, looking through
-// thead/tbody/tfoot.
-func tableRows(table *html.Node) [][]*html.Node {
-	var rows [][]*html.Node
-	var walk func(*html.Node)
-	walk = func(n *html.Node) {
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			if c.Type != html.ElementNode {
-				continue
-			}
-			switch c.DataAtom {
-			case atom.Tr:
-				var cells []*html.Node
-				for cell := c.FirstChild; cell != nil; cell = cell.NextSibling {
-					if cell.Type == html.ElementNode && (cell.DataAtom == atom.Td || cell.DataAtom == atom.Th) {
-						cells = append(cells, cell)
-					}
-				}
-				if len(cells) > 0 {
-					rows = append(rows, cells)
-				}
-			case atom.Thead, atom.Tbody, atom.Tfoot:
-				walk(c)
-			}
+	switch {
+	case tag == "td" || tag == "th":
+		b.endCell()
+	case tag == "tr":
+		b.endRow()
+	case tag == "table":
+		b.endRow()
+		b.closeTable()
+	case blockTags[tag]:
+		b.flushParagraph()
+	}
+	// Pop back to the matching element; an unmatched end tag is ignored.
+	for i := len(b.stack) - 1; i >= 0; i-- {
+		if b.stack[i].tag == tag {
+			b.stack = b.stack[:i]
+			break
 		}
 	}
-	walk(table)
-	return rows
+	if blockTags[tag] {
+		b.paraAlign, b.paraSize = b.currentAlign(), b.currentSize()
+	}
 }
 
-func attr(n *html.Node, key string) string {
-	for _, a := range n.Attr {
-		if a.Key == key {
+func (b *layoutBuilder) text(s string) {
+	if b.cell != nil {
+		b.cellSB.WriteString(s)
+		return
+	}
+	if len(b.tables) > 0 && b.row != nil {
+		return // stray text between cells
+	}
+	if strings.TrimSpace(s) != "" {
+		bold := b.currentBold()
+		if !b.paraAny {
+			b.paraBold = bold
+			b.paraAlign, b.paraSize = b.currentAlign(), b.currentSize()
+		} else if !bold {
+			b.paraBold = false
+		}
+		b.paraAny = true
+	}
+	b.para.WriteString(s)
+}
+
+func (b *layoutBuilder) flushParagraph() {
+	text := collapseText(b.para.String())
+	b.para.Reset()
+	hadText := b.paraAny
+	b.paraAny = false
+	if !hadText || text == "" {
+		return
+	}
+	b.blocks = append(b.blocks, layoutBlock{Paragraph: &layoutParagraph{
+		Text: text, Align: orLeft(b.paraAlign), Bold: b.paraBold, Size: b.paraSize,
+	}})
+}
+
+func (b *layoutBuilder) endCell() {
+	if b.cell == nil || b.row == nil {
+		b.cell = nil
+		return
+	}
+	b.cell.Text = collapseText(b.cellSB.String())
+	b.cell.Align = orLeft(b.cell.Align)
+	b.row.Cells = append(b.row.Cells, *b.cell)
+	b.cell = nil
+	b.cellSB.Reset()
+}
+
+func (b *layoutBuilder) endRow() {
+	b.endCell()
+	if b.row == nil || len(b.tables) == 0 {
+		b.row = nil
+		return
+	}
+	if len(b.row.Cells) > 0 {
+		t := b.tables[len(b.tables)-1]
+		t.Rows = append(t.Rows, *b.row)
+	}
+	b.row = nil
+}
+
+func (b *layoutBuilder) closeTable() {
+	if len(b.tables) == 0 {
+		return
+	}
+	t := b.tables[len(b.tables)-1]
+	b.tables = b.tables[:len(b.tables)-1]
+	if len(t.Rows) > 0 {
+		b.blocks = append(b.blocks, layoutBlock{Table: t})
+	}
+}
+
+func (b *layoutBuilder) closeTables() {
+	b.endRow()
+	for len(b.tables) > 0 {
+		b.closeTable()
+	}
+}
+
+func (b *layoutBuilder) currentAlign() string {
+	for i := len(b.stack) - 1; i >= 0; i-- {
+		if b.stack[i].align != "" {
+			return b.stack[i].align
+		}
+	}
+	return ""
+}
+
+func (b *layoutBuilder) currentBold() bool {
+	for i := len(b.stack) - 1; i >= 0; i-- {
+		if b.stack[i].bold {
+			return true
+		}
+	}
+	return false
+}
+
+func (b *layoutBuilder) currentSize() float64 {
+	for i := len(b.stack) - 1; i >= 0; i-- {
+		if b.stack[i].size > 0 {
+			return b.stack[i].size
+		}
+	}
+	return 0
+}
+
+func orLeft(align string) string {
+	if align == "" {
+		return alignLeft
+	}
+	return align
+}
+
+var spaceRun = regexp.MustCompile(`[ \t\r\n\f]+`)
+
+// lineBreak is what a <br> writes into the text being collected. It is a
+// rune templates never contain, so source newlines (plain whitespace in
+// HTML) and <br> line breaks stay apart until collapseText.
+const lineBreak = "\u2028"
+
+// collapseText collapses whitespace the way a browser does, then turns
+// each <br> into "\n", dropping empty lines.
+func collapseText(s string) string {
+	parts := strings.Split(s, lineBreak)
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(spaceRun.ReplaceAllString(p, " "))
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return strings.Join(out, "\n")
+}
+
+func attr(tok html.Token, name string) string {
+	for _, a := range tok.Attr {
+		if a.Key == name {
 			return strings.TrimSpace(a.Val)
 		}
 	}
 	return ""
 }
 
-// styleValue reads one property from an element's inline style.
-func styleValue(n *html.Node, property string) (string, bool) {
-	for _, decl := range strings.Split(attr(n, "style"), ";") {
+// styleValue returns one inline-style property's value, lower-cased.
+func styleValue(style, prop string) string {
+	for _, decl := range strings.Split(style, ";") {
 		name, value, ok := strings.Cut(decl, ":")
-		if ok && strings.EqualFold(strings.TrimSpace(name), property) {
-			return strings.ToLower(strings.TrimSpace(value)), true
+		if ok && strings.EqualFold(strings.TrimSpace(name), prop) {
+			return strings.ToLower(strings.TrimSpace(value))
 		}
 	}
-	return "", false
+	return ""
 }
 
-func textAlign(n *html.Node) (string, bool) {
-	value, ok := styleValue(n, "text-align")
-	if !ok {
-		return "", false
+func styleAlign(style, alignAttr string) string {
+	v := styleValue(style, "text-align")
+	if v == "" {
+		v = strings.ToLower(alignAttr)
 	}
-	switch value {
+	switch v {
 	case "center":
-		return "C", true
-	case "right":
-		return "R", true
-	default:
-		return "L", true
+		return alignCenter
+	case "right", "end":
+		return alignRight
+	case "left", "start", "justify":
+		return alignLeft
 	}
+	return ""
 }
 
-// styleLength reads a px (or unitless) length as millimetres.
-func styleLength(n *html.Node, property string) float64 {
-	value, ok := styleValue(n, property)
-	if !ok {
-		return 0
+func styleBold(style string) bool {
+	v := styleValue(style, "font-weight")
+	if v == "bold" || v == "bolder" {
+		return true
 	}
-	px, err := strconv.ParseFloat(strings.TrimSuffix(value, "px"), 64)
-	if err != nil || px <= 0 {
-		return 0
-	}
-	return min(px*pxToMM, maxSpaceMM)
+	n, err := strconv.Atoi(v)
+	return err == nil && n >= 600
 }
 
-func sum(values []float64) float64 {
-	total := 0.0
-	for _, v := range values {
-		total += v
+func styleFullWidth(style string) bool {
+	return styleValue(style, "width") == "100%"
+}
+
+// stylePoints reads a "<n>pt" length (the unit document templates use for
+// font sizes); any other unit is ignored.
+func stylePoints(style, prop string) float64 {
+	v := styleValue(style, prop)
+	if !strings.HasSuffix(v, "pt") {
+		return 0
 	}
-	return total
+	n, err := strconv.ParseFloat(strings.TrimSuffix(v, "pt"), 64)
+	if err != nil || n <= 0 || n > 72 {
+		return 0
+	}
+	return n
+}
+
+// stylePixelsAsMM reads a "<n>px" length as millimetres (96 px per inch).
+func stylePixelsAsMM(style, prop string) float64 {
+	v := styleValue(style, prop)
+	if !strings.HasSuffix(v, "px") {
+		return 0
+	}
+	n, err := strconv.ParseFloat(strings.TrimSuffix(v, "px"), 64)
+	if err != nil || n <= 0 || n > 400 {
+		return 0
+	}
+	return n * 25.4 / 96
 }

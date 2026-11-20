@@ -10,6 +10,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 type CheckInInput struct {
@@ -72,12 +73,18 @@ func (s *Service) CheckIn(ctx context.Context, tenantID, guardUserID uuid.UUID, 
 			return err
 		}
 
+		// The badge's document record points at the visit, so the row
+		// exists first and the badge is stored on it afterwards, in the
+		// same transaction: the board, the visit detail and the badge
+		// download all read it back from the row.
 		badge, err := s.issueBadge(ctx, tenantID, guardUserID, created)
 		if err != nil {
 			return fmt.Errorf("issue visitor badge: %w", err)
 		}
-		created.BadgeNumber, created.BadgeAssetID = badge.Number, badge.AssetID
-		out = created
+		out, err = s.repo.SetVisitBadge(ctx, tenantID, created.ID, badge.Number, badge.AssetID)
+		if err != nil {
+			return err
+		}
 		return s.recordAudit(ctx, tenantID, "visitor_visit.check_in", "visitor_visit", created.ID)
 	})
 	if err != nil {
@@ -103,9 +110,16 @@ func (s *Service) issueBadge(ctx context.Context, tenantID, guardUserID uuid.UUI
 		VisitID: v.ID, AcademicYearID: yearID, IssuerUserID: guardUserID,
 		Vars: map[string]any{
 			"visitor_name": v.FullName, "organization": v.Organization, "purpose": v.Purpose,
-			"arrived_at": v.ArrivedAt.Format("02-01-2006 15:04"),
+			"arrived_at": badgeArrivedAt(v.ArrivedAt.In(s.tenantLocation(ctx, tenantID))),
 		},
 	})
+}
+
+// badgeArrivedAt prints a check-in time the way the school reads it, as
+// "20 November 2026 09.02": the long Indonesian date the receipt uses and
+// the hour with a dot. at must already be in the school's own timezone.
+func badgeArrivedAt(at time.Time) string {
+	return reportdoc.FormatDate(reportdoc.LocaleID, at) + " " + at.Format("15.04")
 }
 
 // BuiltinVisitorBadgeHTML is the template used until a school uploads its

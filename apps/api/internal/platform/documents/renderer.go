@@ -5,11 +5,11 @@
 //
 // The PDF path is deliberately not a full HTML layout engine (no
 // chromedp/headless-browser dependency, per this module's brief): it
-// executes the html/template, then lays the resulting tree out with
-// github.com/go-pdf/fpdf (layout.go). It covers what letters and reports
-// use -- headings, paragraphs with bold runs, alignment and spacing,
-// lists, and tables drawn as real columns (bordered data tables,
-// label/value rows, side-by-side signature blocks) -- and is not a
+// executes the html/template, then lays the result out block by block
+// with github.com/go-pdf/fpdf -- paragraphs with their alignment, and
+// tables as columns (layout.go). That is enough for a letter or a
+// receipt -- a title, a few paragraphs, a fee table, a signature block --
+// which is everything document_templates is used for; it is not a
 // general-purpose HTML renderer.
 package documents
 
@@ -21,6 +21,7 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/go-pdf/fpdf"
 )
@@ -43,8 +44,9 @@ type Template struct {
 	// Letterhead, when non-empty, is a JPEG or PNG image (tenant branding
 	// asset) placed above the body -- the kop surat a school letter
 	// conventionally carries. It is placed directly through fpdf rather
-	// than as an <img> tag in Body: the layout does not draw images, so a
-	// tag here would render nothing.
+	// than as an <img> tag in Body: htmlToPDF strips all markup down to
+	// plain text (see its doc comment), so a tag here would render
+	// nothing.
 	Letterhead []byte
 }
 
@@ -118,10 +120,22 @@ func ValidateHTML(body string) error {
 	return nil
 }
 
-// htmlToPDF lays rendered HTML out on A4 pages (a new page when the text
-// runs past the bottom margin), with letterhead (if non-empty, a JPEG or
-// PNG) placed at the top of the first page. See layout for the HTML it
-// understands.
+// Page geometry and type sizes for htmlToPDF, in millimetres and points.
+const (
+	pageMarginMM   = 20.0
+	bodyFontPt     = 12.0
+	lineHeightMM   = 6.0
+	blockGapMM     = 2.0
+	cellPaddingMM  = 1.5
+	fontFamilyName = "Helvetica"
+)
+
+// htmlToPDF lays rendered HTML out on A4 pages: paragraphs word-wrapped
+// with their text-align, headings and <strong>-only paragraphs in bold,
+// and tables as real columns (bordered when the table has a border
+// attribute), with letterhead (if non-empty, a JPEG or PNG) placed at the
+// top of the first page. See layoutHTML for the HTML it understands and
+// the package doc comment for why this is not a full HTML layout engine.
 func htmlToPDF(renderedHTML, letterhead []byte) ([]byte, error) {
 	pdf, err := layoutPDF(renderedHTML, letterhead)
 	if err != nil {
@@ -134,22 +148,209 @@ func htmlToPDF(renderedHTML, letterhead []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// layoutPDF is htmlToPDF before the document is written out.
 func layoutPDF(renderedHTML, letterhead []byte) (*fpdf.Fpdf, error) {
-	pdf := fpdf.New("P", "mm", "A4", "")
-	pdf.SetMargins(pageMarginMM, pageMarginMM, pageMarginMM)
-	pdf.SetAutoPageBreak(true, pageMarginMM)
-	pdf.AddPage()
-	pdf.SetFont("Helvetica", "", bodyFontSize)
+	pdf := newPDF()
 
 	if len(letterhead) > 0 {
 		if err := placeLetterhead(pdf, letterhead); err != nil {
 			return nil, err
 		}
 	}
-	if err := newLayout(pdf).render(renderedHTML); err != nil {
-		return nil, err
+
+	// The core PDF fonts are cp1252; translate so accented names and
+	// typographic punctuation print instead of turning into mojibake.
+	tr := pdf.UnicodeTranslatorFromDescriptor("")
+	for _, block := range layoutHTML(renderedHTML) {
+		switch {
+		case block.Paragraph != nil:
+			drawParagraph(pdf, tr, *block.Paragraph)
+		case block.Table != nil:
+			drawTable(pdf, tr, *block.Table)
+		}
+		pdf.Ln(blockGapMM)
 	}
-	return pdf, nil
+	return pdf, pdf.Error()
+}
+
+// newPDF starts an A4 document with the package's page margins and its
+// first page open in the body font.
+func newPDF() *fpdf.Fpdf {
+	pdf := fpdf.New("P", "mm", "A4", "")
+	pdf.SetMargins(pageMarginMM, pageMarginMM, pageMarginMM)
+	pdf.SetAutoPageBreak(true, pageMarginMM)
+	pdf.AddPage()
+	pdf.SetFont(fontFamilyName, "", bodyFontPt)
+	return pdf
+}
+
+func setFont(pdf *fpdf.Fpdf, bold bool, size float64) {
+	style := ""
+	if bold {
+		style = "B"
+	}
+	if size <= 0 {
+		size = bodyFontPt
+	}
+	pdf.SetFont(fontFamilyName, style, size)
+}
+
+func drawParagraph(pdf *fpdf.Fpdf, tr func(string) string, p layoutParagraph) {
+	setFont(pdf, p.Bold, p.Size)
+	lineH := lineHeightMM
+	if p.Size > bodyFontPt {
+		lineH = lineHeightMM * p.Size / bodyFontPt
+	}
+	for _, line := range strings.Split(p.Text, "\n") {
+		pdf.MultiCell(0, lineH, tr(line), "", p.Align, false)
+	}
+	setFont(pdf, false, 0)
+}
+
+// drawTable lays a table's rows out as columns. Each column is as wide as
+// its widest cell, scaled to the printable width when the table asks for
+// width:100% or would not fit; a cell's text wraps inside its column. A
+// row that does not fit the rest of the page moves to the next one; a row
+// taller than a whole page is split across pages instead, a slice of its
+// lines (with its own border) per page.
+func drawTable(pdf *fpdf.Fpdf, tr func(string) string, t layoutTable) {
+	widths := columnWidths(pdf, tr, t)
+	left, top, _, _ := pdf.GetMargins()
+	_, pageH := pdf.GetPageSize()
+	bottom := pageH - pageMarginMM
+	for _, row := range t.Rows {
+		lines := make([][]string, len(row.Cells))
+		rowLines := 1
+		for i, cell := range row.Cells {
+			setFont(pdf, cell.Bold, 0)
+			for _, part := range strings.Split(cell.Text, "\n") {
+				lines[i] = append(lines[i], pdf.SplitText(tr(part), widths[i]-2*cellPaddingMM)...)
+			}
+			if len(lines[i]) > rowLines {
+				rowLines = len(lines[i])
+			}
+		}
+		rowH := float64(rowLines) * lineHeightMM
+		y := pdf.GetY() + row.PadTop
+		if y+rowH > bottom && (rowH <= bottom-top || linesThatFit(y, bottom) == 0) {
+			pdf.AddPage()
+			y = pdf.GetY() + row.PadTop
+		}
+		for first := 0; first < rowLines; {
+			n := min(linesThatFit(y, bottom), rowLines-first)
+			if n == 0 {
+				// Only reachable when PadTop alone fills the fresh page.
+				pdf.AddPage()
+				y = pdf.GetY()
+				continue
+			}
+			drawRowSlice(pdf, row, lines, widths, left, y, first, n, t.Border)
+			first += n
+			y += float64(n) * lineHeightMM
+			if first < rowLines {
+				pdf.AddPage()
+				y = pdf.GetY()
+			}
+		}
+		pdf.SetXY(left, y)
+	}
+	setFont(pdf, false, 0)
+}
+
+// linesThatFit is how many table lines fit between y and the bottom
+// margin. The small tolerance keeps a line that ends exactly on the
+// margin from being pushed to the next page by float rounding.
+func linesThatFit(y, bottom float64) int {
+	if y >= bottom {
+		return 0
+	}
+	return int((bottom - y + 1e-6) / lineHeightMM)
+}
+
+// drawRowSlice draws lines [first, first+n) of every cell of row, the
+// slice's top at y, with a border around each cell's slice when border.
+func drawRowSlice(pdf *fpdf.Fpdf, row layoutRow, lines [][]string, widths []float64, left, y float64, first, n int, border bool) {
+	h := float64(n) * lineHeightMM
+	x := left
+	for i, cell := range row.Cells {
+		if border {
+			pdf.Rect(x, y, widths[i], h, "D")
+		}
+		setFont(pdf, cell.Bold, 0)
+		for j := first; j < first+n && j < len(lines[i]); j++ {
+			pdf.SetXY(x+cellPaddingMM, y+float64(j-first)*lineHeightMM)
+			pdf.CellFormat(widths[i]-2*cellPaddingMM, lineHeightMM, lines[i][j], "", 0, cell.Align, false, 0, "")
+		}
+		x += widths[i]
+	}
+}
+
+func columnWidths(pdf *fpdf.Fpdf, tr func(string) string, t layoutTable) []float64 {
+	cols := 0
+	for _, row := range t.Rows {
+		if len(row.Cells) > cols {
+			cols = len(row.Cells)
+		}
+	}
+	widths := make([]float64, cols)
+	for _, row := range t.Rows {
+		for i, cell := range row.Cells {
+			setFont(pdf, cell.Bold, 0)
+			for _, part := range strings.Split(cell.Text, "\n") {
+				// SplitText and CellFormat also keep fpdf's own cell margin
+				// on both sides, so a natural width reserves it too.
+				if w := pdf.GetStringWidth(tr(part)) + 2*cellPaddingMM + 2*pdf.GetCellMargin() + 0.5; w > widths[i] {
+					widths[i] = w
+				}
+			}
+		}
+	}
+	pageW, _ := pdf.GetPageSize()
+	available := pageW - 2*pageMarginMM
+	total := 0.0
+	for _, w := range widths {
+		total += w
+	}
+	switch {
+	case total > available:
+		// A table that does not fit shrinks only its wide columns: a column
+		// no wider than an equal share keeps its natural width, so a short
+		// "Poin" or "Rp 1.275.000" column is not squeezed to make room for
+		// a long name, full-width table or not.
+		fair := available / float64(cols)
+		fixed, flexible := 0.0, 0.0
+		for _, w := range widths {
+			if w <= fair {
+				fixed += w
+			} else {
+				flexible += w
+			}
+		}
+		for i, w := range widths {
+			if w > fair {
+				widths[i] = w * (available - fixed) / flexible
+			}
+		}
+	case t.FullWidth && total > 0:
+		// A full-width table that fits grows to the printable width: equal
+		// columns when every cell fits an equal share (a signature block),
+		// otherwise the widths keep their proportions.
+		equal := true
+		for _, w := range widths {
+			if w > available/float64(cols) {
+				equal = false
+			}
+		}
+		for i := range widths {
+			if equal {
+				widths[i] = available / float64(cols)
+			} else {
+				widths[i] *= available / total
+			}
+		}
+	}
+	setFont(pdf, false, 0)
+	return widths
 }
 
 // letterheadHeightMM is a fixed height for the kop surat image, wide

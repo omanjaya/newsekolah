@@ -85,6 +85,7 @@ type Repository interface {
 	CreateIssuedDocument(ctx context.Context, d domain.IssuedDocument) (domain.IssuedDocument, error)
 	GetIssuedDocumentByVerificationHash(ctx context.Context, tenantID uuid.UUID, hash []byte) (domain.IssuedDocument, bool, error)
 	GetIssuedDocumentByEntity(ctx context.Context, tenantID uuid.UUID, entityType string, entityID uuid.UUID, kind string) (domain.IssuedDocument, bool, error)
+	RevokeIssuedDocumentByEntity(ctx context.Context, tenantID uuid.UUID, entityType string, entityID uuid.UUID, kind string) (int, error)
 
 	// Cross-module reads (see queries/cross_module.sql): owned by
 	// identity/academic, read-only here until a reader interface replaces

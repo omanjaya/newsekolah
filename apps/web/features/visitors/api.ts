@@ -27,7 +27,6 @@ const keys = {
     ["visitors", "expected", date, includeResolved] as const,
   visits: (from: string, to: string) => ["visitors", "visits", from, to] as const,
   visit: (id: string) => ["visitors", "visit", id] as const,
-  badgeUrl: (id: string) => ["visitors", "badge-url", id] as const,
   incidents: (from: string, to: string, includeClosed: boolean) =>
     ["visitors", "incidents", from, to, includeClosed] as const,
   incident: (id: string) => ["visitors", "incident", id] as const,
@@ -78,13 +77,17 @@ export function useCheckOutVisitMutation() {
   });
 }
 
-export function useVisitBadgeUrlQuery(visitId: string, enabled: boolean) {
+/**
+ * A fresh presigned link to a visit's printable badge, fetched when the
+ * guard asks to print it (a link minted earlier may have expired).
+ */
+export function useVisitBadgeUrlMutation() {
   const client = useApiClient();
-  return useQuery({
-    queryKey: keys.badgeUrl(visitId),
-    queryFn: () =>
+  return useMutation({
+    mutationFn: (visitId: string) =>
       client.GET("/v1/visitors/visits/{visitId}/badge-url", { params: { path: { visitId } } }),
-    enabled: enabled && visitId !== "",
+
+    meta: { errorToast: false },
   });
 }
 

@@ -897,6 +897,7 @@
         "startsAt": "Tampil mulai",
         "startsAtHint": "Kosongkan untuk tampil segera setelah terbit. Isi lalu pilih Jadwalkan agar terbit otomatis.",
         "endsAt": "Tampil sampai",
+        "endsBeforeStart": "Tampil sampai harus setelah tampil mulai",
         "pinned": "Sematkan di atas",
         "cancel": "Batal",
         "saveDraft": "Simpan draf",
@@ -1794,8 +1795,11 @@
       "kind": "Jenis",
       "kinds": {
         "leave_letter": "Surat izin",
-        "warning_letter": "Surat peringatan"
+        "warning_letter": "Surat peringatan",
+        "receipt": "Kuitansi pembayaran",
+        "visitor_badge": "Kartu tamu"
       },
+      "kindOther": "Dokumen",
       "issuedAt": "Diterbitkan",
       "student": "Siswa",
       "validity": "Berlaku",

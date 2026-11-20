@@ -290,6 +290,7 @@ export type MessageKey =
   | "errors.PUSH_ENDPOINT_NOT_ALLOWED"
   | "errors.RATE_LIMITED"
   | "errors.REASON_TOO_LONG"
+  | "errors.RECEIPT_REVOKED"
   | "errors.REPORT_UNAVAILABLE"
   | "errors.ROLE_IN_USE"
   | "errors.ROLE_SYSTEM_IMMUTABLE"
@@ -754,6 +755,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.PUSH_ENDPOINT_NOT_ALLOWED",
   "errors.RATE_LIMITED",
   "errors.REASON_TOO_LONG",
+  "errors.RECEIPT_REVOKED",
   "errors.REPORT_UNAVAILABLE",
   "errors.ROLE_IN_USE",
   "errors.ROLE_SYSTEM_IMMUTABLE",

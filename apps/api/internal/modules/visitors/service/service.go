@@ -25,6 +25,7 @@ type Repository interface {
 	CancelExpectedGuest(ctx context.Context, tenantID, id uuid.UUID) error
 
 	CreateVisit(ctx context.Context, v domain.Visit) (domain.Visit, error)
+	SetVisitBadge(ctx context.Context, tenantID, id uuid.UUID, number string, assetID uuid.NullUUID) (domain.Visit, error)
 	GetVisit(ctx context.Context, tenantID, id uuid.UUID) (domain.Visit, bool, error)
 	CheckOutVisit(ctx context.Context, tenantID, id uuid.UUID, departedAt time.Time, checkedOutBy uuid.UUID) (domain.Visit, bool, error)
 	ListOnCampus(ctx context.Context, tenantID uuid.UUID) ([]domain.Visit, error)

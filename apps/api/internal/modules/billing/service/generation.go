@@ -12,9 +12,9 @@ import (
 )
 
 // GenerationSummary is what the caller sees back from a preview or an
-// actual run: how many bills were (or would be) created, their total
-// value, and how many candidates were already billed and therefore
-// skipped.
+// actual run: the bills that were (or would be) created, and how many
+// candidates were already billed (for the requested month, or for a
+// one-off fee type's own period) and therefore skipped.
 type GenerationSummary struct {
 	Created []domain.Bill
 	Skipped int
@@ -33,7 +33,8 @@ func (s *Service) PreviewGeneration(ctx context.Context, tenantID uuid.UUID, per
 		if err != nil {
 			return err
 		}
-		summary.Created = candidatesToBills(plan, tenantID, yearID, dueDate, uuid.NullUUID{})
+		summary.Created = candidatesToBills(plan.Candidates, tenantID, yearID, dueDate, uuid.NullUUID{})
+		summary.Skipped = plan.AlreadyBilled
 		return nil
 	})
 	return summary, err
@@ -53,16 +54,19 @@ func (s *Service) GenerateBills(ctx context.Context, tenantID, actorUserID uuid.
 		if err != nil {
 			return err
 		}
-		if len(plan) == 0 {
+		summary.Skipped = plan.AlreadyBilled
+		if len(plan.Candidates) == 0 {
 			return nil
 		}
-		toInsert := candidatesToBills(plan, tenantID, yearID, dueDate, uuid.NullUUID{UUID: actorUserID, Valid: true})
+		toInsert := candidatesToBills(plan.Candidates, tenantID, yearID, dueDate, uuid.NullUUID{UUID: actorUserID, Valid: true})
 		created, err := s.repo.CreateBills(ctx, toInsert)
 		if err != nil {
 			return err
 		}
 		summary.Created = created
-		summary.Skipped = len(toInsert) - len(created)
+		// A concurrent run can insert a candidate between the plan and the
+		// insert; the unique index skips it, and it counts as already billed.
+		summary.Skipped += len(toInsert) - len(created)
 		// One entry per run, not per bill: the period and the counts are
 		// what a reviewer needs; each bill keeps its own created_by.
 		return audit.Record(ctx, tenantID, "bill.generate", "bill", uuid.Nil, nil, map[string]any{
@@ -76,25 +80,26 @@ func (s *Service) GenerateBills(ctx context.Context, tenantID, actorUserID uuid.
 // already-billed keys for period, then hands them to the pure
 // domain.PlanGeneration so both preview and generate compute the exact
 // same candidates.
-func (s *Service) plan(ctx context.Context, tenantID uuid.UUID, period string) ([]domain.BillCandidate, time.Time, uuid.UUID, error) {
+func (s *Service) plan(ctx context.Context, tenantID uuid.UUID, period string) (domain.GenerationPlan, time.Time, uuid.UUID, error) {
+	var none domain.GenerationPlan
 	period = strings.TrimSpace(period)
 	if period == "" {
-		return nil, time.Time{}, uuid.Nil, domain.ErrInvalidInput
+		return none, time.Time{}, uuid.Nil, domain.ErrInvalidInput
 	}
 	yearID, err := s.activeYear(ctx, tenantID)
 	if err != nil {
-		return nil, time.Time{}, uuid.Nil, err
+		return none, time.Time{}, uuid.Nil, err
 	}
 	feeTypes, err := s.repo.ListActiveFeeTypes(ctx, tenantID, yearID)
 	if err != nil {
-		return nil, time.Time{}, uuid.Nil, err
+		return none, time.Time{}, uuid.Nil, err
 	}
 	if len(feeTypes) == 0 {
-		return nil, time.Time{}, yearID, nil
+		return none, time.Time{}, yearID, nil
 	}
 	students, err := s.repo.ListActiveEnrollments(ctx, tenantID, yearID)
 	if err != nil {
-		return nil, time.Time{}, uuid.Nil, err
+		return none, time.Time{}, uuid.Nil, err
 	}
 	feeTypeIDs := make([]uuid.UUID, len(feeTypes))
 	for i, ft := range feeTypes {
@@ -102,15 +107,15 @@ func (s *Service) plan(ctx context.Context, tenantID uuid.UUID, period string) (
 	}
 	discountRows, err := s.repo.ListActiveDiscounts(ctx, tenantID, feeTypeIDs)
 	if err != nil {
-		return nil, time.Time{}, uuid.Nil, err
+		return none, time.Time{}, uuid.Nil, err
 	}
 	discounts := make(map[domain.FeeStudentKey]domain.Discount, len(discountRows))
 	for _, d := range discountRows {
 		discounts[domain.FeeStudentKey{FeeTypeID: d.FeeTypeID, StudentUserID: d.StudentUserID}] = d
 	}
-	existing, err := s.repo.ExistingBillKeys(ctx, tenantID, feeTypeIDs, period)
+	existing, err := s.repo.ExistingBillKeys(ctx, tenantID, feeTypeIDs, domain.BillingPeriods(feeTypes, period))
 	if err != nil {
-		return nil, time.Time{}, uuid.Nil, err
+		return none, time.Time{}, uuid.Nil, err
 	}
 	dueDate := s.clock.Now().AddDate(0, 0, 10)
 	return domain.PlanGeneration(feeTypes, students, period, discounts, existing), dueDate, yearID, nil

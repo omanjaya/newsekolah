@@ -83,7 +83,11 @@ func (s *Service) Get(ctx context.Context, tenantID, id uuid.UUID) (Detail, erro
 
 // Page is one slice of the admin list; NextCursor is empty on the last page.
 type Page struct {
-	Items      []domain.Announcement
+	Items []domain.Announcement
+	// ReadCounts holds how many recipients have read each item, keyed by
+	// announcement id; an item nobody has read is absent (0). Only the
+	// admin list fills it.
+	ReadCounts map[uuid.UUID]int64
 	NextCursor string
 }
 
@@ -105,7 +109,12 @@ func (s *Service) List(ctx context.Context, tenantID uuid.UUID, status, cursorSt
 			items = items[:limit]
 		}
 		page.Items = items
-		return nil
+		ids := make([]uuid.UUID, len(items))
+		for i, a := range items {
+			ids[i] = a.ID
+		}
+		page.ReadCounts, err = s.repo.CountReadsByIDs(ctx, tenantID, ids)
+		return err
 	})
 	return page, err
 }

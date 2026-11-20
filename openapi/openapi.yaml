@@ -4333,6 +4333,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /v1/billing/arrears:
     get:
       tags:
@@ -20740,6 +20742,8 @@ components:
           type: integer
         read_count:
           type: integer
+          description: How many recipients have read it. Always present (0 included) on the admin list and the detail; absent from
+            other responses.
         created_at:
           type: string
           format: date-time

@@ -35,6 +35,7 @@ type Repository interface {
 
 	MarkRead(ctx context.Context, tenantID, announcementID, userID uuid.UUID) error
 	CountReads(ctx context.Context, tenantID, announcementID uuid.UUID) (int64, error)
+	CountReadsByIDs(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (map[uuid.UUID]int64, error)
 	ReadIDsForUser(ctx context.Context, tenantID, userID uuid.UUID, ids []uuid.UUID) ([]uuid.UUID, error)
 
 	ActiveUserIDs(ctx context.Context, tenantID uuid.UUID) ([]uuid.UUID, error)

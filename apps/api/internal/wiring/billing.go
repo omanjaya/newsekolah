@@ -18,6 +18,13 @@ import (
 // discipline uses for warning letters.
 type BillingDocuments struct{ Permits *permitsservice.Service }
 
+// receiptKind and receiptEntityType key a receipt's issued_documents row;
+// issuing and revoking must use the same pair.
+const (
+	receiptKind       = "receipt"
+	receiptEntityType = "payment"
+)
+
 func (d BillingDocuments) IssueReceipt(ctx context.Context, tenantID uuid.UUID, in billingservice.ReceiptDocument) (billingservice.IssuedReceipt, error) {
 	result, err := d.Permits.IssueDocument(ctx, tenantID, permitsservice.IssueDocumentInput{
 		// "receipt" is not one of the document_templates.kind values a
@@ -26,8 +33,8 @@ func (d BillingDocuments) IssueReceipt(ctx context.Context, tenantID uuid.UUID, 
 		// document_sequences and issued_documents have no such
 		// restriction, so numbering and the verifiable record work the
 		// same as every other document kind.
-		Kind: "receipt", NumberingTemplate: billingdomain.DefaultReceiptNumberingTemplate,
-		EntityType: "payment", EntityID: in.PaymentID, AcademicYearID: in.AcademicYearID, IssuerUserID: in.IssuerUserID,
+		Kind: receiptKind, NumberingTemplate: billingdomain.DefaultReceiptNumberingTemplate,
+		EntityType: receiptEntityType, EntityID: in.PaymentID, AcademicYearID: in.AcademicYearID, IssuerUserID: in.IssuerUserID,
 		ObjectKey: fmt.Sprintf("tenants/%s/documents/receipts/%s.pdf", tenantID, in.PaymentID),
 		Vars:      in.Vars, BuiltinHTML: billingservice.BuiltinReceiptHTML,
 	})
@@ -35,6 +42,10 @@ func (d BillingDocuments) IssueReceipt(ctx context.Context, tenantID uuid.UUID, 
 		return billingservice.IssuedReceipt{}, err
 	}
 	return billingservice.IssuedReceipt{Number: result.Number, AssetID: result.AssetID}, nil
+}
+
+func (d BillingDocuments) RevokeReceipt(ctx context.Context, tenantID, paymentID uuid.UUID) error {
+	return d.Permits.RevokeDocument(ctx, tenantID, receiptEntityType, paymentID, receiptKind)
 }
 
 func (d BillingDocuments) DocumentURL(ctx context.Context, tenantID, assetID uuid.UUID) (string, error) {

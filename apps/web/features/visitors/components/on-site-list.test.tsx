@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 
 vi.mock("next-intl", () => ({
@@ -39,4 +40,22 @@ it("names the visitor pass in the meta line for a phone, where the trailing badg
   // A long host and arrival line truncates; the pass number must not go with it.
   expect(phonePass?.closest(".truncate")).toBeNull();
   expect(phonePass).toHaveClass("shrink-0");
+});
+
+it("offers to print an issued badge and hands the visit to the caller", async () => {
+  const onPrintBadge = vi.fn();
+  render(
+    <OnSiteList entries={[entry]} canManage onCheckOut={vi.fn()} onPrintBadge={onPrintBadge} />,
+  );
+
+  await userEvent.click(screen.getByRole("button", { name: "printBadgeFor" }));
+  expect(onPrintBadge).toHaveBeenCalledWith(expect.objectContaining({ id: "v1" }));
+});
+
+it("offers no print action for a visit with no badge", () => {
+  const noBadge: BoardEntry = { ...entry, visit: { ...entry.visit, badge_number: "" } };
+  render(<OnSiteList entries={[noBadge]} canManage onCheckOut={vi.fn()} onPrintBadge={vi.fn()} />);
+
+  expect(screen.queryByRole("button", { name: "printBadgeFor" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "checkOutFor" })).toBeInTheDocument();
 });
