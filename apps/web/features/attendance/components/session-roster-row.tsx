@@ -196,3 +196,5 @@ export const SessionRosterRow = memo(function SessionRosterRow({
     </li>
   );
 });
+
+/** Lock reasons the API sends as codes (PermitsBlocker in the API wiring). */

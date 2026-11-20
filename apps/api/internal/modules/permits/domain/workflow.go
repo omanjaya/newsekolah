@@ -6,6 +6,7 @@
 package domain
 
 import (
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -154,6 +155,32 @@ type Event struct {
 	Note         string
 	OccurredAt   time.Time
 }
+
+// Fixed log labels the service writes as the note of an automatic
+// workflow step. Unlike a reviewer's reason, they are not text a person
+// wrote for the reader, so the API flags them (system_note) and clients
+// leave them out. Every literal note the service records must be one of
+// these constants (service/system_notes_test.go checks the source).
+const (
+	NoteOpened                = "opened"
+	NoteLetterIssued          = "letter issued"
+	NoteGateExit              = "gate exit"
+	NoteCancelledBySubject    = "cancelled by student"
+	NoteReviewedByDutyTeacher = "reviewed by duty teacher"
+)
+
+// SystemNotes lists every system log label, for IsSystemNote and the
+// source check that keeps new labels from reaching readers unflagged.
+var SystemNotes = []string{
+	NoteOpened, NoteLetterIssued, NoteGateExit, NoteCancelledBySubject, NoteReviewedByDutyTeacher,
+}
+
+// IsSystemNote reports whether note is one of the service's own log
+// labels rather than text a person wrote.
+func IsSystemNote(note string) bool { return slices.Contains(SystemNotes, note) }
+
+// HasSystemNote reports whether the event's note is a system log label.
+func (e Event) HasSystemNote() bool { return IsSystemNote(e.Note) }
 
 // CanTransition reports whether an instance in status "in progress" can
 // still be acted on. Every mutating service method starts by checking

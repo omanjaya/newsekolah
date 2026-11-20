@@ -194,7 +194,7 @@ export function useSubmitLeaveRequest() {
   return useMutation({
     mutationFn: (body: {
       category: LeaveCategory;
-      reason: string;
+      reason?: string;
       starts_on: string;
       ends_on: string;
     }) => getApiClient().POST("/v1/leave-requests", { body }),

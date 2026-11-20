@@ -240,7 +240,8 @@ func (s *Service) RequireCanViewExitPermit(ctx context.Context, tenantID, instan
 }
 
 // RequireCanViewLateArrival allows the subject, the teacher whose token
-// opened the flow, leadership, and manage_attendance/view_reports holders
+// opened the flow, leadership, the class's homeroom teacher, and
+// manage_attendance/view_reports holders
 // to read a late arrival's detail (docs/analysis/backend-inventory.md
 // 1.16: was unrestricted to any authenticated user).
 func (s *Service) RequireCanViewLateArrival(ctx context.Context, tenantID, instanceID, userID uuid.UUID) error {
@@ -267,6 +268,15 @@ func (s *Service) RequireCanViewLateArrival(ctx context.Context, tenantID, insta
 			return err
 		} else if ok {
 			return nil
+		}
+		// The class's homeroom teacher is notified when the flow opens, and
+		// the notification links here.
+		if inst.ClassID.Valid {
+			if ok, err := s.repo.HasActiveDuty(ctx, tenantID, inst.AcademicYearID, userID, "homeroom", inst.ClassID, today); err != nil {
+				return err
+			} else if ok {
+				return nil
+			}
 		}
 		if ok, err := s.hasReportPermission(ctx, tenantID, inst.AcademicYearID, userID, today); err != nil {
 			return err

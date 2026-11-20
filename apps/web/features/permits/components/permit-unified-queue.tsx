@@ -75,7 +75,11 @@ export function PermitUnifiedQueue({
   const { me } = useSession();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const canLeave = useCan("review_leave_requests");
+  // The leave queue holds the caller's own stage: the homeroom review, or
+  // the counselor's letter, which issue_leave_letters alone may read.
+  const canReviewLeave = useCan("review_leave_requests");
+  const canIssueLetter = useCan("issue_leave_letters");
+  const canLeave = canReviewLeave || canIssueLetter;
   const canApprove = useCan("issue_scan_tokens");
   const canGate = useCan("scan_exit_permits");
   const canLate = me?.profile_kind === "teacher" || me?.profile_kind === "staff";
@@ -224,10 +228,12 @@ export function PermitUnifiedQueue({
   const selectedLateReview =
     selected?.type === "late" && selected.late.current_stage.verification !== "qr_scan";
 
-  const bulk = useBulkLeaveApproval(
-    visible.filter((row) => row.type === "leave").map((row) => row.id),
-  );
-  const selectableLeave = canLeave && visible.filter((row) => row.type === "leave").length > 1;
+  // Only a request at a review stage can be approved in bulk; one waiting
+  // for its letter is issued from its detail.
+  const reviewable = (row: PermitQueueRow) =>
+    row.type === "leave" && row.leave.awaiting_letter !== true;
+  const bulk = useBulkLeaveApproval(visible.filter(reviewable).map((row) => row.id));
+  const selectableLeave = canReviewLeave && visible.filter(reviewable).length > 1;
   const cells = bentoCells(
     visible.map((row, index) => ({
       key: `${row.type}-${row.id}`,
@@ -237,8 +243,8 @@ export function PermitUnifiedQueue({
           name={nameFor(row)}
           locale={locale}
           timeZone={me?.tenant.timezone}
-          canReviewLeave={canLeave}
-          selectable={selectableLeave && row.type === "leave"}
+          canReviewLeave={canReviewLeave}
+          selectable={selectableLeave && reviewable(row)}
           selected={bulk.selected.has(row.id)}
           onToggleSelected={() => {
             bulk.toggle(row.id);

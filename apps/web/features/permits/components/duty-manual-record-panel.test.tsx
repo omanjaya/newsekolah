@@ -1,10 +1,11 @@
+import { ApiError } from "@newsekolah/api-client";
 import type * as UiModule from "@newsekolah/ui";
 import { Dialog, DialogContent } from "@newsekolah/ui";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ search: vi.fn(), recordLate: vi.fn() }));
+const mocks = vi.hoisted(() => ({ search: vi.fn(), recordLate: vi.fn(), recordExit: vi.fn() }));
 
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
@@ -39,7 +40,7 @@ vi.mock("../../reference/directory-names", async () => {
   };
 });
 vi.mock("../api", () => ({
-  useRecordExitPermitByStaffMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useRecordExitPermitByStaffMutation: () => ({ mutate: mocks.recordExit, isPending: false }),
   useRecordLateArrivalByStaffMutation: () => ({
     mutateAsync: mocks.recordLate,
     isPending: false,
@@ -138,5 +139,46 @@ describe("DutyManualRecordPanel in a dialog", () => {
     expect(screen.getByRole("button", { name: "submit" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "cancel" }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+});
+
+describe("DutyManualRecordPanel kind switch", () => {
+  it("starts the late form clean after a refused exit permit", async () => {
+    Element.prototype.hasPointerCapture = () => false;
+    Element.prototype.releasePointerCapture = () => undefined;
+    Element.prototype.scrollIntoView = () => undefined;
+    mocks.recordExit.mockImplementation((_body, { onError }: { onError: (e: unknown) => void }) => {
+      onError(new ApiError({ status: 409, code: "EXIT_PERMIT_ALREADY_TODAY", message: "x" }));
+    });
+    const user = userEvent.setup();
+    render(<DutyManualRecordPanel />);
+
+    await user.click(screen.getByRole("button", { name: /Sari/ }));
+    await user.type(screen.getByRole("textbox", { name: /destination/ }), "Jemput adik");
+    await user.click(screen.getByRole("combobox", { name: /startPeriod/ }));
+    await user.click(screen.getByRole("option", { name: /Jam 1/ }));
+    await user.click(screen.getByRole("combobox", { name: /endPeriod/ }));
+    await user.click(screen.getByRole("option", { name: /Jam 2/ }));
+    await user.click(screen.getByRole("button", { name: "submit" }));
+    expect(mocks.recordExit).toHaveBeenCalled();
+    expect(screen.getByText("EXIT_PERMIT_ALREADY_TODAY")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("radio", { name: "kindLate" }));
+
+    expect(screen.queryByText("EXIT_PERMIT_ALREADY_TODAY")).not.toBeInTheDocument();
+    expect(screen.queryByText("requiredError")).not.toBeInTheDocument();
+  });
+
+  it("does not flag the other kind's fields after an empty submit", async () => {
+    const user = userEvent.setup();
+    render(<DutyManualRecordPanel />);
+
+    await user.click(screen.getByRole("button", { name: "submit" }));
+    expect(screen.getByText("studentRequired")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("radio", { name: "kindLate" }));
+
+    expect(screen.queryByText("studentRequired")).not.toBeInTheDocument();
+    expect(screen.queryByText("requiredError")).not.toBeInTheDocument();
   });
 });

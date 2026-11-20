@@ -28,15 +28,29 @@ function stageState(instance: WorkflowInstance, index: number): StepperStepState
   return "upcoming";
 }
 
-/** When each stage was last acted on, from the instance's event log (newest wins). */
-function stageTimes(instance: WorkflowInstance): Map<string, string> {
-  const times = new Map<string, string>();
-  for (const event of instance.events ?? []) {
+interface StageActivity {
+  /** When the stage was last acted on. */
+  at: string;
+  /** The newest note a person wrote on the stage (a reviewer's reason). */
+  note?: string;
+}
+
+/** When each stage was last acted on and what its reviewer wrote, from the event log (newest wins). */
+function stageActivity(instance: WorkflowInstance): Map<string, StageActivity> {
+  const activity = new Map<string, StageActivity>();
+  const events = [...(instance.events ?? [])].sort((a, b) =>
+    a.occurred_at.localeCompare(b.occurred_at),
+  );
+  for (const event of events) {
     if (!event.stage_key) continue;
-    const previous = times.get(event.stage_key);
-    if (!previous || previous < event.occurred_at) times.set(event.stage_key, event.occurred_at);
+    // A system note is the API's own log label ("opened", "letter issued"),
+    // not something a person wrote, so the stepper leaves it out.
+    const note = event.system_note ? "" : (event.note?.trim() ?? "");
+    const written = note === "" ? undefined : note;
+    const previous = activity.get(event.stage_key);
+    activity.set(event.stage_key, { at: event.occurred_at, note: written ?? previous?.note });
   }
-  return times;
+  return activity;
 }
 
 /**
@@ -64,11 +78,13 @@ export function WorkflowSteps({
   const locale = useLocale() as Locale;
   const { me } = useSession();
   const timeZone = me?.tenant.timezone;
-  const times = stageTimes(instance);
+  const activity = stageActivity(instance);
   const lastIndex = instance.stages.length - 1;
   const steps: StepperStep[] = instance.stages.map((stage, index) => {
     const state = stageState(instance, index);
-    const at = times.get(stage.key);
+    const at = activity.get(stage.key)?.at;
+    const note = activity.get(stage.key)?.note;
+    const acted = state === "complete" || state === "stopped";
     const description =
       state === "complete"
         ? index === lastIndex && finalOutcome
@@ -81,8 +97,9 @@ export function WorkflowSteps({
       id: stage.key,
       label: stage.label,
       description,
+      note: acted && note ? t("stageNote", { note }) : undefined,
       time:
-        at && (state === "complete" || state === "stopped")
+        at && acted
           ? // The shared short form ("19 Nov 16.32"), with the year only
             // outside the school's current one; midday UTC is that year everywhere.
             formatShortDateTime(at, {

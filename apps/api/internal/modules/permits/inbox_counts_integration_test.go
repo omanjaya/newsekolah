@@ -51,6 +51,9 @@ func TestLeaveRequestCountMatchesReviewQueue(t *testing.T) {
 	require.NoError(t, err)
 
 	requireCountMatchesQueue(ctxDay1, w.homeroomTeacherID, 1, "homeroom stage: the homeroom teacher has it")
+	homeroomQueue, err := svc.ListLeaveRequestsForReview(ctxDay1, w.tenantID, w.homeroomTeacherID, uuid.NullUUID{})
+	require.NoError(t, err)
+	require.False(t, *homeroomQueue[0].AwaitingLetter, "the homeroom stage is a review")
 	requireCountMatchesQueue(ctxDay1, w.counselorID, 0, "homeroom stage: the counselor does not yet")
 	requireCountMatchesQueue(ctxDay1, w.studentID, 0, "the requester has nothing to review")
 
@@ -60,6 +63,14 @@ func TestLeaveRequestCountMatchesReviewQueue(t *testing.T) {
 	requireCountMatchesQueue(ctxDay1, w.homeroomTeacherID, 0, "it moved past the homeroom stage")
 	requireCountMatchesQueue(ctxDay1, w.counselorID, 1, "counselor stage while the duty is active")
 	requireCountMatchesQueue(clock.WithTime(ctx, day2), w.counselorID, 0, "counselor duty ended by the later simulated day")
+
+	// The counselor's row is the final stage: the queue marks it so the
+	// client offers issuing the letter instead of a review it would refuse.
+	counselorQueue, err := svc.ListLeaveRequestsForReview(ctxDay1, w.tenantID, w.counselorID, uuid.NullUUID{})
+	require.NoError(t, err)
+	require.Len(t, counselorQueue, 1)
+	require.NotNil(t, counselorQueue[0].AwaitingLetter)
+	require.True(t, *counselorQueue[0].AwaitingLetter, "the counselor stage completes by issuing the letter")
 }
 
 // TestLateAndExitCountsMatchQueues covers the two queues open to every

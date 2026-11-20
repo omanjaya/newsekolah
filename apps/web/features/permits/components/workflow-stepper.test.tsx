@@ -77,6 +77,7 @@ describe("WorkflowSteps", () => {
         stage_key: "duty",
         to_status: "in_progress",
         verification: "qr_scan",
+        system_note: false,
         occurred_at: "2026-11-14T02:14:00Z",
       },
     ],
@@ -99,6 +100,7 @@ describe("WorkflowSteps", () => {
           stage_key: "duty",
           to_status: "in_progress",
           verification: "qr_scan",
+          system_note: false,
           occurred_at: "2025-09-25T02:14:00Z",
         },
       ],
@@ -133,6 +135,54 @@ describe("WorkflowSteps", () => {
     const [first, second] = screen.getAllByRole("listitem");
     expect(first).toHaveTextContent("outcome.approved");
     expect(second).toHaveTextContent("Surat diterbitkan");
+  });
+
+  it("shows the reviewer's reason on the stage that rejected the request", () => {
+    render(
+      <WorkflowSteps
+        instance={{
+          ...instance,
+          status: "rejected",
+          events: [
+            ...(instance.events ?? []),
+            {
+              id: "e2",
+              stage_key: "bk",
+              to_status: "rejected",
+              verification: "manual",
+              note: "Ada ulangan Matematika hari itu.",
+              system_note: false,
+              occurred_at: "2026-11-14T03:00:00Z",
+            },
+          ],
+        }}
+      />,
+    );
+    const [first, second] = screen.getAllByRole("listitem");
+    expect(second).toHaveTextContent("stageNote");
+    expect(first).not.toHaveTextContent("stageNote");
+  });
+
+  it("leaves out the notes the API flags as its own log labels", () => {
+    render(
+      <WorkflowSteps
+        instance={{
+          ...instance,
+          events: [
+            {
+              id: "e1",
+              stage_key: "duty",
+              to_status: "in_progress",
+              verification: "auto",
+              note: "reviewed by the night shift",
+              system_note: true,
+              occurred_at: "2026-11-14T02:14:00Z",
+            },
+          ],
+        }}
+      />,
+    );
+    expect(screen.queryByText(/stageNote/)).not.toBeInTheDocument();
   });
 
   it("says how the request ended at the stage where it stopped", () => {

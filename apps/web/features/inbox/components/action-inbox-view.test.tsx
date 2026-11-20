@@ -133,6 +133,17 @@ describe("ActionInboxView", () => {
     },
   );
 
+  it("shows the counselor's waiting leave letter instead of the all-clear", () => {
+    mocks.permissions = new Set(["issue_leave_letters"]);
+    mocks.summary.mockReturnValue(summary({ leave: 1, warningLetters: 0, total: 1 }));
+    render(<ActionInboxView />);
+    const permits = screen.getByRole("region", { name: /permits/ });
+    expect(permits).toHaveTextContent("1");
+    expect(screen.getByTestId("permit-queue")).toBeInTheDocument();
+    expect(screen.queryByText("emptyTitle")).not.toBeInTheDocument();
+    expect(screen.queryByText("noAccessTitle")).not.toBeInTheDocument();
+  });
+
   it("shows the permits section to teachers for the late-arrival queue", () => {
     mocks.profileKind = "teacher";
     render(<ActionInboxView />);

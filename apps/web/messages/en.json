@@ -1466,6 +1466,7 @@
           "expired": "Expired"
         },
         "waitingFor": "Waiting for: {stage}",
+        "stageNote": "Note: {note}",
         "verification": {
           "qr_scan": "QR scan",
           "manual": "Manual review",
@@ -1555,6 +1556,7 @@
           "undoLast": "Hide from this list",
           "title": "Scan the gate QR",
           "refused": "Cannot leave",
+          "tokenGone": "This gate QR has expired or was already used. Ask the student to tap Generate a new code on their permit screen, then scan again.",
           "todayListHint": "Kept on this screen while the page stays open.",
           "todayListEmpty": "No student has passed the gate yet."
         },
@@ -1588,6 +1590,9 @@
         "idleTitle": "No exit permit in progress",
         "idleBody": "Need to leave school during lessons? Request a permit, see the teacher at each stage, then scan the approval QR they show. The gate QR appears after the last stage.",
         "historyTitle": "Exit permit history",
+        "notFoundTitle": "Exit permit not found",
+        "notFoundBody": "This exit permit does not exist or you cannot open it.",
+        "notFoundBack": "Open exit permits",
         "modeLabel": "Task on this page",
         "cancelConfirm": {
           "title": "Cancel this exit permit?",
@@ -1643,7 +1648,16 @@
         "completedBody": "Every stage is approved. You may go to class.",
         "finished": "Late arrival complete. You may go to class.",
         "completedBodySendHome": "Every stage is approved. Follow the duty teacher's directions for going home.",
-        "finishedSendHome": "Late arrival complete. Follow the duty teacher's directions for going home."
+        "finishedSendHome": "Late arrival complete. Follow the duty teacher's directions for going home.",
+        "historyTitle": "Late arrival history",
+        "historyEmpty": "No late arrivals recorded yet.",
+        "historyRow": "Late arrival no. {n}",
+        "detailTitle": "Late arrival details",
+        "student": "Student",
+        "recordedAt": "Recorded",
+        "notFoundTitle": "Late arrival not found",
+        "notFoundBody": "This late arrival does not exist or you cannot open it.",
+        "notFoundBack": "Open late arrivals"
       },
       "leave": {
         "eyebrow": "Student affairs",
@@ -1652,8 +1666,6 @@
         "tabMine": "My requests",
         "noAccessTitle": "No access",
         "noAccessBody": "Your role is not part of the planned leave flow.",
-        "issuerQueueUnavailableTitle": "Leave letters are issued from notifications",
-        "issuerQueueUnavailableBody": "Every request the homeroom teacher approves is sent to your notifications. Open the notification to see the request and issue its letter.",
         "issuerQueueInboxBody": "Requests the homeroom teacher approved wait in the leave queue. Open it to review them and issue their letters.",
         "openNotifications": "Open notifications",
         "notFoundTitle": "Request not found",
@@ -1724,12 +1736,13 @@
           "rangeError": "End date cannot be before the start date.",
           "submitted": "Request sent to the homeroom teacher",
           "send": "Send request",
-          "description": "Fill in the dates and details. Evidence can be attached now or later.",
+          "description": "Choose the leave type and dates. Evidence can be attached now or later.",
           "dates": "Leave dates",
           "datesHint": "Pick one day, or a start date and then an end date.",
           "datesRequired": "Pick the leave dates.",
           "reasonRequired": "Write a short explanation.",
-          "reasonPlaceholder": "For example: fever since last night",
+          "reasonPlaceholder": "For example: attending my sibling's wedding out of town",
+          "categoryHint": "The leave letter states this leave type as the reason. Attach a doctor's note or invitation as evidence if you have one.",
           "evidencePreview": "Evidence photo preview",
           "stagesHint": "After you send it, each approval stage reviews the request. The leave letter is issued after the last stage."
         },
@@ -1739,6 +1752,8 @@
           "detail": "View details"
         },
         "days": "{count, plural, one {# day} other {# days}}",
+        "submittedAt": "Submitted {time}",
+        "awaitingLetter": "Approved by the homeroom teacher, waiting for the letter",
         "historyTitle": "Request history",
         "letterNumberShort": "Letter {number}",
         "opened": "Requested",

@@ -187,7 +187,13 @@ export function DutyManualRecordPanel({
           { value: "late", label: t("kindLate") },
         ]}
         value={kind}
-        onValueChange={setKind}
+        onValueChange={(next) => {
+          // The other kind's form starts clean: the last submit's errors and
+          // server refusal were about the fields this switch hides.
+          setKind(next);
+          setAttempted(false);
+          setFormError(null);
+        }}
       />
 
       <Field

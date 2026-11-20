@@ -27,6 +27,14 @@ describe("translate", () => {
     expect(translate("en", "errors.TEMPLATE_INVALID")).toContain("{{ }}");
   });
 
+  it("words the in-progress conflict without a date or a third person", () => {
+    // The rule blocks any open request of the kind, whatever its dates, and
+    // the message is read by the student who submitted it.
+    const id = translate("id", "errors.WORKFLOW_ALREADY_IN_PROGRESS");
+    expect(id).not.toMatch(/hari ini|siswa ini/);
+    expect(translate("en", "errors.WORKFLOW_ALREADY_IN_PROGRESS")).not.toMatch(/today|student/);
+  });
+
   it("falls back to the key when no catalog has it", () => {
     // @ts-expect-error intentionally invalid key to test the fallback path
     expect(translate("id", "does.not.exist")).toBe("does.not.exist");

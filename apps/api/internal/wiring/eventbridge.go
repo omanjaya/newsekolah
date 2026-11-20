@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -38,7 +39,11 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 	subscribe(b, func(ctx context.Context, e permitsservice.LeaveRequestReviewed) ([]events.Envelope, error) {
 		href := "/leave-requests/" + e.InstanceID.String()
 		summary := "Pengajuan izin Anda disetujui wali kelas dan diteruskan ke guru BK."
-		if !e.Approved {
+		if note := clip(e.Note, reviewNoteMaxRunes); e.Approved && note != "" {
+			summary += " Catatan wali kelas: " + note
+		} else if !e.Approved && note != "" {
+			summary = "Pengajuan izin Anda ditolak. Alasan: " + note
+		} else if !e.Approved {
 			summary = "Pengajuan izin Anda ditolak."
 		}
 		out := []events.Envelope{{
@@ -70,10 +75,16 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 	})
 	subscribe(b, func(ctx context.Context, e permitsservice.ExitPermitIssued) ([]events.Envelope, error) {
 		security, err := b.holders(ctx, e.TenantID, "security", uuid.NullUUID{})
-		return one(events.Envelope{
-			Name: events.ExitPermitIssued, Tenant: e.TenantID, Subject: append([]uuid.UUID{e.StudentUserID}, security...),
-			Payload: map[string]any{"instance_id": e.InstanceID.String(), "summary": "Izin keluar telah disetujui. Tunjukkan QR di gerbang.", "href": "/exit-permits/" + e.InstanceID.String()},
-		}, err)
+		href := "/exit-permits/" + e.InstanceID.String()
+		// The student shows the QR; the guard verifies it, so each is told
+		// their own part.
+		return []events.Envelope{{
+			Name: events.ExitPermitIssued, Tenant: e.TenantID, Subject: []uuid.UUID{e.StudentUserID},
+			Payload: map[string]any{"instance_id": e.InstanceID.String(), "summary": "Izin keluar telah disetujui. Tunjukkan QR di gerbang.", "href": href},
+		}, {
+			Name: events.ExitPermitIssued, Tenant: e.TenantID, Subject: without(security, e.StudentUserID),
+			Payload: map[string]any{"instance_id": e.InstanceID.String(), "summary": "Izin keluar seorang siswa telah diterbitkan dan siap diverifikasi di gerbang.", "href": href},
+		}}, err
 	})
 	subscribe(b, func(_ context.Context, e permitsservice.ExitPermitExited) ([]events.Envelope, error) {
 		return one(events.Envelope{
@@ -89,9 +100,13 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 		}, err)
 	})
 	subscribe(b, func(_ context.Context, e permitsservice.LateArrivalUpdated) ([]events.Envelope, error) {
+		summary := "Keterlambatan Anda lanjut ke tahap berikutnya."
+		if e.Status == "completed" {
+			summary = "Keterlambatan Anda sudah selesai diproses."
+		}
 		return one(events.Envelope{
 			Name: events.LateArrivalUpdated, Tenant: e.TenantID, Subject: []uuid.UUID{e.StudentUserID},
-			Payload: map[string]any{"instance_id": e.InstanceID.String(), "status": e.Status, "href": "/late-arrivals/" + e.InstanceID.String()},
+			Payload: map[string]any{"instance_id": e.InstanceID.String(), "status": e.Status, "summary": summary, "href": "/late-arrivals/" + e.InstanceID.String()},
 		}, nil)
 	})
 	subscribe(b, func(_ context.Context, e schedulingservice.SubstitutionRequested) ([]events.Envelope, error) {
@@ -113,10 +128,14 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 	subscribe(b, func(ctx context.Context, e disciplineservice.WarningLetterIssued) ([]events.Envelope, error) {
 		homeroom, err := b.holders(ctx, e.TenantID, "homeroom", e.ClassID)
 		summary := fmt.Sprintf("%s nomor %s telah diterbitkan.", e.LevelLabel, e.LetterNumber)
-		recipients := append([]uuid.UUID{e.StudentUserID}, without(homeroom, e.IssuedBy)...)
+		// No page shows one letter by id: the student reads theirs on their
+		// own discipline page, the homeroom teacher on the student's record.
 		return []events.Envelope{{
-			Name: events.WarningLetterIssued, Tenant: e.TenantID, Actor: e.IssuedBy, Subject: recipients,
-			Payload: map[string]any{"letter_id": e.LetterID.String(), "level": e.Level, "summary": summary, "href": "/discipline/letters/" + e.LetterID.String()},
+			Name: events.WarningLetterIssued, Tenant: e.TenantID, Actor: e.IssuedBy, Subject: []uuid.UUID{e.StudentUserID},
+			Payload: map[string]any{"letter_id": e.LetterID.String(), "level": e.Level, "summary": summary, "href": "/my-discipline"},
+		}, {
+			Name: events.WarningLetterIssued, Tenant: e.TenantID, Actor: e.IssuedBy, Subject: without(homeroom, e.IssuedBy),
+			Payload: map[string]any{"letter_id": e.LetterID.String(), "level": e.Level, "summary": summary, "href": "/discipline/students/" + e.StudentUserID.String()},
 		}}, err
 	})
 	subscribe(b, func(ctx context.Context, e disciplineservice.ThresholdReached) ([]events.Envelope, error) {
@@ -228,6 +247,18 @@ func without(ids []uuid.UUID, exclude uuid.UUID) []uuid.UUID {
 		}
 	}
 	return out
+}
+
+// reviewNoteMaxRunes bounds a reviewer's note quoted in a notification.
+const reviewNoteMaxRunes = 200
+
+// clip trims s and cuts it to at most n runes, marking a cut with "...".
+func clip(s string, n int) string {
+	s = strings.TrimSpace(s)
+	if runes := []rune(s); len(runes) > n {
+		return strings.TrimSpace(string(runes[:n])) + "..."
+	}
+	return s
 }
 
 func one(e events.Envelope, err error) ([]events.Envelope, error) {

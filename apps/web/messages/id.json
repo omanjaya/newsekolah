@@ -1464,6 +1464,7 @@
           "expired": "Kedaluwarsa"
         },
         "waitingFor": "Menunggu: {stage}",
+        "stageNote": "Catatan: {note}",
         "verification": {
           "qr_scan": "Pindai QR",
           "manual": "Ditinjau langsung",
@@ -1553,6 +1554,7 @@
           "undoLast": "Sembunyikan dari daftar ini",
           "title": "Pindai QR gerbang",
           "refused": "Tidak bisa keluar",
+          "tokenGone": "QR gerbang sudah kedaluwarsa atau sudah dipakai. Minta siswa menekan Buat kode baru di layar izinnya, lalu pindai lagi.",
           "todayListHint": "Tersimpan di layar ini selama halaman terbuka.",
           "todayListEmpty": "Belum ada siswa yang lewat gerbang."
         },
@@ -1586,6 +1588,9 @@
         "idleTitle": "Tidak ada izin keluar berjalan",
         "idleBody": "Perlu keluar sekolah di jam pelajaran? Ajukan izin, temui guru di setiap tahap, lalu pindai QR persetujuan yang ia tampilkan. QR gerbang muncul setelah tahap terakhir.",
         "historyTitle": "Riwayat izin keluar",
+        "notFoundTitle": "Izin keluar tidak ditemukan",
+        "notFoundBody": "Izin keluar ini tidak ada atau tidak bisa Anda buka.",
+        "notFoundBack": "Buka izin keluar",
         "modeLabel": "Tugas di halaman ini",
         "cancelConfirm": {
           "title": "Batalkan izin keluar?",
@@ -1641,7 +1646,16 @@
         "completedBody": "Semua tahap disetujui. Silakan masuk kelas.",
         "finished": "Keterlambatan selesai. Silakan masuk kelas.",
         "completedBodySendHome": "Semua tahap disetujui. Ikuti arahan guru piket untuk pulang.",
-        "finishedSendHome": "Keterlambatan selesai. Ikuti arahan guru piket untuk pulang."
+        "finishedSendHome": "Keterlambatan selesai. Ikuti arahan guru piket untuk pulang.",
+        "historyTitle": "Riwayat keterlambatan",
+        "historyEmpty": "Belum ada keterlambatan tercatat.",
+        "historyRow": "Keterlambatan ke-{n}",
+        "detailTitle": "Detail keterlambatan",
+        "student": "Siswa",
+        "recordedAt": "Tercatat",
+        "notFoundTitle": "Keterlambatan tidak ditemukan",
+        "notFoundBody": "Catatan keterlambatan ini tidak ada atau tidak bisa Anda buka.",
+        "notFoundBack": "Buka keterlambatan"
       },
       "leave": {
         "eyebrow": "Kesiswaan",
@@ -1650,8 +1664,6 @@
         "tabMine": "Pengajuan saya",
         "noAccessTitle": "Tidak ada akses",
         "noAccessBody": "Peran Anda tidak terlibat dalam alur izin terencana.",
-        "issuerQueueUnavailableTitle": "Surat izin diterbitkan dari notifikasi",
-        "issuerQueueUnavailableBody": "Setiap pengajuan yang sudah disetujui wali kelas dikirim ke notifikasi Anda. Buka notifikasinya untuk melihat pengajuan dan menerbitkan suratnya.",
         "issuerQueueInboxBody": "Pengajuan yang sudah disetujui wali kelas menunggu di antrean izin. Buka antreannya untuk meninjau dan menerbitkan suratnya.",
         "openNotifications": "Buka notifikasi",
         "notFoundTitle": "Pengajuan tidak ditemukan",
@@ -1722,12 +1734,13 @@
           "rangeError": "Tanggal selesai tidak boleh sebelum tanggal mulai.",
           "submitted": "Pengajuan terkirim ke wali kelas",
           "send": "Kirim pengajuan",
-          "description": "Isi tanggal dan keterangan. Bukti bisa dilampirkan sekarang atau nanti.",
+          "description": "Pilih jenis dan tanggal izin. Bukti bisa dilampirkan sekarang atau nanti.",
           "dates": "Tanggal izin",
           "datesHint": "Pilih satu hari, atau tanggal mulai lalu tanggal selesai.",
           "datesRequired": "Pilih tanggal izin.",
           "reasonRequired": "Tulis keterangan singkat.",
-          "reasonPlaceholder": "Contoh: demam sejak semalam",
+          "reasonPlaceholder": "Contoh: menghadiri pernikahan kakak di luar kota",
+          "categoryHint": "Surat izin mencantumkan jenis izin ini sebagai keterangan. Lampirkan surat dokter atau undangan sebagai bukti bila ada.",
           "evidencePreview": "Pratinjau foto bukti",
           "stagesHint": "Setelah dikirim, pengajuan ditinjau oleh setiap tahap persetujuan. Surat izin terbit setelah tahap terakhir."
         },
@@ -1737,6 +1750,8 @@
           "detail": "Lihat detail"
         },
         "days": "{count, plural, other {# hari}}",
+        "submittedAt": "Diajukan {time}",
+        "awaitingLetter": "Disetujui wali kelas, menunggu surat izin diterbitkan",
         "historyTitle": "Riwayat pengajuan",
         "letterNumberShort": "Surat {number}",
         "opened": "Diajukan",

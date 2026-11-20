@@ -42,6 +42,8 @@ var (
 	errReasonTooLong       = httpx.NewError(http.StatusBadRequest, "REASON_TOO_LONG")
 	errTemplateInvalid     = httpx.NewError(http.StatusUnprocessableEntity, "TEMPLATE_INVALID")
 	errStageMismatch       = httpx.NewError(http.StatusConflict, "WORKFLOW_STAGE_MISMATCH")
+	errLeaveReason         = httpx.NewError(http.StatusBadRequest, "LEAVE_REASON_REQUIRED")
+	errStudentOnLeave      = httpx.NewError(http.StatusConflict, "STUDENT_ON_LEAVE_TODAY")
 )
 
 var permitErrorMap = map[error]error{
@@ -82,6 +84,8 @@ var permitErrorMap = map[error]error{
 	domain.ErrViolationInvalid:             errViolationInvalid,
 	domain.ErrScanTokenConsumerNotStudent:  errScanConsumerStudent,
 	domain.ErrReasonTooLong:                errReasonTooLong,
+	domain.ErrLeaveReasonRequired:          errLeaveReason,
+	domain.ErrStudentOnLeaveToday:          errStudentOnLeave,
 }
 
 func mapError(err error) error {
@@ -176,7 +180,7 @@ func toAPIDefinition(d domain.Definition) api.WorkflowDefinition {
 func toAPIEvent(e domain.Event) api.WorkflowEvent {
 	return api.WorkflowEvent{
 		Id: e.ID, StageKey: strPtr(e.StageKey), FromStatus: strPtr(string(e.FromStatus)), ToStatus: string(e.ToStatus),
-		ActorUserId: uuidPtr(e.ActorUserID), Verification: string(e.Verification), Note: strPtr(e.Note), OccurredAt: e.OccurredAt,
+		ActorUserId: uuidPtr(e.ActorUserID), Verification: string(e.Verification), Note: strPtr(e.Note), SystemNote: e.HasSystemNote(), OccurredAt: e.OccurredAt,
 	}
 }
 
@@ -282,6 +286,7 @@ func toAPILeaveSummary(i service.LeaveRequestItem) api.LeaveRequestSummary {
 		CurrentStageIndex: i.CurrentStageIndex, Category: api.LeaveCategory(i.Category), Reason: strPtr(i.Reason),
 		StartsOn: openapi_types.Date{Time: i.StartsOn}, EndsOn: openapi_types.Date{Time: i.EndsOn}, LetterNumber: strPtr(i.LetterNumber),
 		StudentName: i.StudentNameSnapshot, ClassName: i.ClassNameSnapshot, OpenedAt: i.OpenedAt,
+		AwaitingLetter: i.AwaitingLetter,
 	}
 }
 

@@ -10,7 +10,7 @@ var (
 	ErrStageIndexOutOfRange  = errors.New("stage index out of range")
 	ErrApproverNotEligible   = errors.New("actor does not satisfy the stage approver rule")
 	ErrApproverNotDistinct   = errors.New("actor already approved an earlier stage this rule requires to be distinct")
-	ErrAlreadyInProgress     = errors.New("subject already has an in-progress workflow of this kind today")
+	ErrAlreadyInProgress     = errors.New("subject already has an in-progress workflow of this kind")
 	ErrNotWorkflowSubject    = errors.New("only the workflow's own subject may perform this action")
 	ErrAcademicYearRequired  = errors.New("tenant has no active academic year")
 	ErrEnrollmentNotFound    = errors.New("student has no active enrollment")
@@ -35,10 +35,13 @@ var (
 	ErrLeaveRequestNotReviewable    = errors.New("leave request is not awaiting review")
 	ErrLeaveRequestNotIssuable      = errors.New("leave request is not awaiting issuance")
 	ErrLeaveRejectionReasonRequired = errors.New("rejecting a leave request requires a reason")
-	ErrEvidenceTooLarge             = errors.New("evidence file exceeds the size limit")
-	ErrEvidenceInvalidType          = errors.New("evidence file is not a supported image type")
-	ErrEvidenceRequired             = errors.New("evidence is required before this leave request can be submitted or issued")
-	ErrHomeroomTeacherRequired      = errors.New("the student's class has no active homeroom teacher to review this request")
+	// ErrLeaveReasonRequired is an "other" leave request without the
+	// student's own reason; every other category's reason is a fixed label.
+	ErrLeaveReasonRequired     = errors.New("an other-category leave request requires a reason")
+	ErrEvidenceTooLarge        = errors.New("evidence file exceeds the size limit")
+	ErrEvidenceInvalidType     = errors.New("evidence file is not a supported image type")
+	ErrEvidenceRequired        = errors.New("evidence is required before this leave request can be submitted or issued")
+	ErrHomeroomTeacherRequired = errors.New("the student's class has no active homeroom teacher to review this request")
 
 	ErrTemplateNotFound = errors.New("document template not found")
 	// ErrTemplateInvalid is a template body the renderer could never
@@ -50,7 +53,10 @@ var (
 	ErrDocumentNotFound     = errors.New("issued document not found")
 	ErrDocumentRevoked      = errors.New("issued document has been revoked")
 
-	ErrExitPermitAlreadyToday  = errors.New("student already has an exit permit for today")
+	ErrExitPermitAlreadyToday = errors.New("student already has an exit permit for today")
+	// ErrStudentOnLeaveToday refuses an exit permit for a student an issued
+	// leave letter already marks absent for the day.
+	ErrStudentOnLeaveToday     = errors.New("student is on an issued leave today")
 	ErrLateArrivalReviewerOnly = errors.New("only the teacher whose token opened this late arrival, or a manage_attendance administrator, may review it")
 	ErrViolationInvalid        = errors.New("one or more violation ids are not valid active violation types")
 

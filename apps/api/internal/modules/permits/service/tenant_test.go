@@ -78,3 +78,35 @@ func TestCombineDateAndDuration_NonUTCTenant(t *testing.T) {
 	require.Equal(t, 10, buggyResult.Day(), "the UTC-naive result stays on the wrong (server) calendar day")
 	require.Equal(t, 11, fixedResult.Day(), "the tenant-local result lands on the correct calendar day")
 }
+
+// TestLocalDayRange is the regression test for an issued leave letter
+// forcing attendance on the day after the leave: the DATE columns arrive
+// as midnight UTC and must be read as tenant-local calendar days.
+func TestLocalDayRange(t *testing.T) {
+	loc, err := time.LoadLocation("Asia/Makassar")
+	require.NoError(t, err)
+	day := time.Date(2026, time.November, 26, 0, 0, 0, 0, time.UTC)
+
+	from, to := localDayRange(day, day, loc)
+
+	require.Equal(t, time.Date(2026, time.November, 26, 0, 0, 0, 0, loc), from)
+	require.Equal(t, time.Date(2026, time.November, 26, 23, 59, 59, 0, loc), to)
+	// 07:00 on the next local day, the first period, is outside the range.
+	require.True(t, time.Date(2026, time.November, 27, 7, 0, 0, 0, loc).After(to))
+	// 07:00 on the leave day itself is inside it.
+	require.False(t, time.Date(2026, time.November, 26, 7, 0, 0, 0, loc).Before(from))
+}
+
+func TestLocalDayRange_MultiDay(t *testing.T) {
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	require.NoError(t, err)
+
+	from, to := localDayRange(
+		time.Date(2026, time.November, 23, 0, 0, 0, 0, time.UTC),
+		time.Date(2026, time.November, 24, 0, 0, 0, 0, time.UTC),
+		loc,
+	)
+
+	require.Equal(t, time.Date(2026, time.November, 23, 0, 0, 0, 0, loc), from)
+	require.Equal(t, time.Date(2026, time.November, 24, 23, 59, 59, 0, loc), to)
+}

@@ -27,6 +27,9 @@ type LeaveRequestReviewed struct {
 	StudentUserID uuid.UUID
 	Approved      bool
 	ReviewerID    uuid.UUID
+	// Note is what the reviewer wrote (the reason for a rejection), empty
+	// when they wrote nothing.
+	Note string
 }
 
 func (LeaveRequestReviewed) EventName() string { return "permits.leave_request.reviewed" }

@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, EmptyState, TextLink, domainIcons } from "@newsekolah/ui";
-import { BellRing, Inbox, Plus } from "lucide-react";
+import { Inbox, Plus } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -73,7 +73,7 @@ export function LeaveRequestsView(): ReactElement {
       ) : canIssueLetter ? (
         <>
           <ReviewInboxBanner />
-          <IssuerQueueUnavailable />
+          <IssuerQueueLink />
         </>
       ) : (
         <EmptyState
@@ -87,39 +87,28 @@ export function LeaveRequestsView(): ReactElement {
 }
 
 /**
- * Shown to a user who can issue letters (issue_leave_letters) but cannot
- * list the review queue (review_leave_requests): the API endpoint behind the
- * queue only authorizes reviewers, so fetching it would just surface a 403.
- * The counselor acts on a request by opening the notification sent when the
- * homeroom teacher approves it, which links to /leave-requests/{instanceId}.
- * A reader who also reviews (review_leave_requests) has the requests in the
- * inbox's leave queue: that is the way forward, the notifications a quiet
- * second link, so the page is never a dead end.
+ * Shown to a user who issues letters (issue_leave_letters): the requests
+ * waiting at their stage are in the inbox's leave queue (the review-queue
+ * endpoint lists them for an issuer as well as for a reviewer), so that is
+ * the way forward; the notifications are a quiet second link.
  */
-function IssuerQueueUnavailable(): ReactElement {
+function IssuerQueueLink(): ReactElement {
   const t = useTranslations("app.permits.leave");
-  const canReview = useCan("review_leave_requests");
   return (
     <EmptyState
       // The icon of where the main action leads: the inbox's leave queue
-      // (its "Perlu tindakan" nav icon), or the notifications.
-      icon={canReview ? <Inbox aria-hidden="true" /> : <BellRing aria-hidden="true" />}
+      // (its "Perlu tindakan" nav icon).
+      icon={<Inbox aria-hidden="true" />}
       tone="info"
       title={t("issuerTitle")}
-      description={t(canReview ? "issuerQueueInboxBody" : "issuerQueueUnavailableBody")}
+      description={t("issuerQueueInboxBody")}
       action={
-        canReview ? (
-          <div className="flex flex-col items-center gap-3">
-            <Button asChild>
-              <Link href="/inbox?type=leave">{t("issuerOpenInbox")}</Link>
-            </Button>
-            <TextLink href="/notifications">{t("openNotifications")}</TextLink>
-          </div>
-        ) : (
+        <div className="flex flex-col items-center gap-3">
           <Button asChild>
-            <Link href="/notifications">{t("openNotifications")}</Link>
+            <Link href="/inbox?type=leave">{t("issuerOpenInbox")}</Link>
           </Button>
-        )
+          <TextLink href="/notifications">{t("openNotifications")}</TextLink>
+        </div>
       }
     />
   );

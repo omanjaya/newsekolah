@@ -251,6 +251,16 @@ export function useCurrentLateArrivalQuery(enabled = true) {
   });
 }
 
+/** The student's own late arrivals, newest first, finished ones and hand-recorded ones included. */
+export function useMyLateArrivalsQuery(enabled = true) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: queryKeys.lateArrivalsMine(),
+    queryFn: () => client.GET("/v1/late-arrivals", { params: { query: { limit: 50 } } }),
+    enabled,
+  });
+}
+
 export function useLateArrivalQuery(id: string, { pollMs = false }: DetailPolling = {}) {
   const client = useApiClient();
   return useQuery({
@@ -389,7 +399,7 @@ export function useSubmitLeaveRequestMutation() {
   return useMutation({
     mutationFn: (body: {
       category: LeaveCategory;
-      reason: string;
+      reason?: string;
       starts_on: string;
       ends_on: string;
     }) => client.POST("/v1/leave-requests", { body }),

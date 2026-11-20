@@ -67,6 +67,15 @@ describe("useActionInboxCount", () => {
     });
   });
 
+  it("counts leave for a counselor who only issues leave letters", () => {
+    mocks.permissions = new Set(["issue_leave_letters"]);
+    mocks.counts.mockReturnValue(counts({ leave: 1 }));
+    const { result } = renderHook(() => useActionInboxCount());
+    expect(result.current).toBe(1);
+    expect(mocks.counts).toHaveBeenLastCalledWith(true, true);
+    expect(mocks.live).toHaveBeenLastCalledWith(expect.objectContaining({ leave: true }), true);
+  });
+
   it("counts late arrivals for teachers and staff", () => {
     mocks.profileKind = "staff";
     const { result } = renderHook(() => useActionInboxCount());

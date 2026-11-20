@@ -86,6 +86,19 @@ func (s *Service) forceDay(ctx context.Context, tenantID, classID, studentUserID
 		if endAt.Before(from) || startAt.After(to) {
 			continue
 		}
+		if source == domain.SourcePermit {
+			// An issued leave letter outranks an exit permit: the student
+			// is officially absent, so the permit's D must not replace the
+			// letter's S/I/D. A permit still overrides teacher and system
+			// entries.
+			existing, found, err := s.repo.GetEntryBySessionStudent(ctx, tenantID, session.ID, studentUserID)
+			if err != nil {
+				return false, err
+			}
+			if found && existing.Source == domain.SourceLeave {
+				continue
+			}
+		}
 		if _, err := s.repo.UpsertEntry(ctx, domain.Entry{
 			TenantID: tenantID, SessionID: session.ID, StudentUserID: studentUserID,
 			StatusCode: statusCode, Source: source, Notes: reason,

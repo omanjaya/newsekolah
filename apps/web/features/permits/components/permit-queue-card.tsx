@@ -18,6 +18,7 @@ import { useState } from "react";
 
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { StudentLink } from "../../students/components/student-link";
+import { countDays, formatDayRange } from "../lib/permit-dates";
 import type { PermitQueueRow } from "../lib/permit-queue";
 
 import { WorkflowStatusBadge } from "./workflow-stepper";
@@ -66,7 +67,20 @@ export function PermitQueueCard({
   const tLeave = useTranslations("app.permits.leave");
   const [rejectOpen, setRejectOpen] = useState(false);
   const [reason, setReason] = useState("");
-  const showLeaveActions = row.type === "leave" && canReviewLeave;
+  // A request at its last stage is completed by issuing the letter, which
+  // the review endpoint refuses, so it only opens the detail.
+  const awaitingLetter = row.type === "leave" && row.leave.awaiting_letter === true;
+  const showLeaveActions = row.type === "leave" && canReviewLeave && !awaitingLetter;
+  // A leave card leads with the days it covers, the thing a reviewer
+  // approves; the submission time is labelled so it is not read as them.
+  const meta =
+    row.type === "leave"
+      ? [
+          t(row.type),
+          formatDayRange(row.leave.starts_on, row.leave.ends_on, locale),
+          tLeave("days", { count: countDays(row.leave.starts_on, row.leave.ends_on) }),
+        ].join(" · ")
+      : `${t(row.type)} · ${formatDateTime(row.openedAt, { locale, timeZone })}`;
   const busy = approving || rejecting;
 
   return (
@@ -90,10 +104,17 @@ export function PermitQueueCard({
               </span>
             )}
           </span>
-          <span className="text-body-sm text-fg-muted">
-            {t(row.type)} · {formatDateTime(row.openedAt, { locale, timeZone })}
-          </span>
+          <span className="text-body-sm text-fg-muted">{meta}</span>
           {row.description && <span className="text-body-sm text-fg">{row.description}</span>}
+          {row.type === "leave" && (
+            <span className="text-caption text-fg-muted">
+              {awaitingLetter
+                ? tLeave("awaitingLetter")
+                : tLeave("submittedAt", {
+                    time: formatDateTime(row.openedAt, { locale, timeZone }),
+                  })}
+            </span>
+          )}
         </div>
         <WorkflowStatusBadge status={row.status} />
       </div>
@@ -150,8 +171,13 @@ export function PermitQueueCard({
             </Popover>
           </>
         )}
-        <Button size="sm" variant="secondary" onClick={onOpenDetail} data-queue-open="">
-          {t("open")}
+        <Button
+          size="sm"
+          variant={awaitingLetter ? "primary" : "secondary"}
+          onClick={onOpenDetail}
+          data-queue-open=""
+        >
+          {awaitingLetter ? tLeave("issueLetter") : t("open")}
         </Button>
       </div>
     </Card>

@@ -25,6 +25,7 @@ vi.mock("next-intl", () => ({
 }));
 vi.mock("@newsekolah/i18n", () => ({
   formatDateTime: () => "29 Sep 2026, 07:10",
+  formatDateRange: (from: string, to: string) => `range ${from}..${to}`,
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useCan: mocks.can,
@@ -206,6 +207,57 @@ describe("permit queue bento layout", () => {
     await userEvent.click(screen.getByRole("button", { name: "approve" }));
     expect(mocks.reviewMutate).toHaveBeenCalledTimes(1);
     expect(mocks.reviewMutate.mock.calls[0]?.[0]).toEqual({ id: "a", approve: true });
+  });
+
+  it("shows the days a leave covers on its card, the submission time only as such", () => {
+    mocks.can.mockImplementation((permission: string) => permission === "review_leave_requests");
+    mocks.leave.mockReturnValue({
+      ...emptyResult,
+      data: { data: [{ ...leaveItem("a"), starts_on: "2026-11-30", ends_on: "2026-12-01" }] },
+    });
+
+    render(<PermitUnifiedQueue />);
+
+    expect(screen.getByText("leave · range 2026-11-30..2026-12-01 · days")).toBeInTheDocument();
+    expect(screen.getByText("submittedAt")).toBeInTheDocument();
+  });
+
+  it("lists the letter stage for a counselor who only issues letters, with no review buttons", async () => {
+    mocks.can.mockImplementation((permission: string) => permission === "issue_leave_letters");
+    mocks.leave.mockReturnValue({
+      ...emptyResult,
+      data: { data: [{ ...leaveItem("a"), current_stage_index: 1, awaiting_letter: true }] },
+    });
+
+    render(<PermitUnifiedQueue />);
+
+    expect(mocks.leave).toHaveBeenCalledWith(true);
+    expect(screen.getByText("awaitingLetter")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "approve" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "reject" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "issueLetter" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("does not offer Setujui on a request waiting for its letter, even to a reviewer", () => {
+    mocks.can.mockImplementation(
+      (permission: string) =>
+        permission === "review_leave_requests" || permission === "issue_leave_letters",
+    );
+    mocks.leave.mockReturnValue({
+      ...emptyResult,
+      data: {
+        data: [
+          { ...leaveItem("a"), awaiting_letter: false },
+          { ...leaveItem("b"), current_stage_index: 1, awaiting_letter: true },
+        ],
+      },
+    });
+
+    render(<PermitUnifiedQueue />);
+
+    expect(screen.getAllByRole("button", { name: "approve" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "issueLetter" })).toHaveLength(1);
   });
 
   it("keeps only Tindak lanjuti, opening the detail dialog, for a type with no one-click decision", async () => {

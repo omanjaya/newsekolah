@@ -6268,6 +6268,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/late-arrivals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Late arrivals of the current student, newest first
+         * @description Every late arrival of the caller, finished or not, including one the duty teacher recorded by hand (which is complete from the start and never appears in /current).
+         */
+        get: operations["listMyLateArrivals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/late-arrivals/current": {
         parameters: {
             query?: never;
@@ -6388,7 +6408,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Leave requests awaiting review (optionally for one class) */
+        /**
+         * Leave requests awaiting review (optionally for one class)
+         * @description Requests at a stage the caller's own duty acts on: the homeroom review, or the counselor/leadership stage. A row whose awaiting_letter is true is at the final stage, which is completed by issuing the letter, not by review.
+         */
         get: operations["listLeaveRequestsForReview"];
         put?: never;
         post?: never;
@@ -11245,6 +11268,8 @@ export interface components {
             actor_user_id?: string;
             verification: string;
             note?: string;
+            /** @description True when `note` is a fixed log label the server records for an automatic step (such as "opened" or "letter issued") rather than text written for the reader, such as a reviewer's reason. Clients show only notes where this is false. */
+            system_note: boolean;
             /** Format: date-time */
             occurred_at: string;
         };
@@ -11369,6 +11394,8 @@ export interface components {
             class_name: string;
             /** Format: date-time */
             opened_at: string;
+            /** @description Review queue only: the request is at its final stage, completed by issuing the letter (issue_leave_letters) rather than by review. */
+            awaiting_letter?: boolean;
         };
         DocumentVerification: {
             number: string;
@@ -25319,6 +25346,32 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    listMyLateArrivals: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Late arrivals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LateArrivalSummary"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     getCurrentLateArrival: {
         parameters: {
             query?: never;
@@ -25500,7 +25553,8 @@ export interface operations {
             content: {
                 "application/json": {
                     category: components["schemas"]["LeaveCategory"];
-                    reason: string;
+                    /** @description The student's own reason. Required (non-blank) for category "other" only (LEAVE_REASON_REQUIRED); every other category stores its fixed label and ignores this field. */
+                    reason?: string;
                     /** Format: date */
                     starts_on: string;
                     /** Format: date */

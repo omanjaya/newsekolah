@@ -216,3 +216,37 @@ func TestRecordLateArrivalByStaffCompletesInOneStepAndCountsOccurrences(t *testi
 	require.Equal(t, domain.StatusCompleted, persisted.Instance.Status)
 	require.Equal(t, 2, persisted.LateArrival.OccurrenceNumber)
 }
+
+// TestListMyLateArrivalsIncludesFinishedAndStaffRecorded is the regression
+// test for a student having no record of their late arrivals once they
+// finished: /current answers 204 for a finished flow, and a duty teacher's
+// manual record is finished from the start. The student's own list holds
+// every one, newest first, and nobody else's.
+func TestListMyLateArrivalsIncludesFinishedAndStaffRecorded(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	w := seedStaffRecordWorld(t, ctx, pg.AdminPool, "my-late-"+uuid.NewString())
+	svc := buildLeaveService(pg.AppPool, &fakeAttendanceSync{})
+
+	first, err := svc.RecordLateArrivalByStaff(ctx, service.RecordLateArrivalByStaffInput{
+		TenantID: w.tenantID, StudentUserID: w.studentID, Reason: "Macet", RecordedBy: w.dutyTeacherID,
+	})
+	require.NoError(t, err)
+	second, err := svc.RecordLateArrivalByStaff(ctx, service.RecordLateArrivalByStaffInput{
+		TenantID: w.tenantID, StudentUserID: w.studentID, Reason: "Bangun kesiangan", RecordedBy: w.dutyTeacherID,
+	})
+	require.NoError(t, err)
+
+	mine, err := svc.ListMyLateArrivals(ctx, w.tenantID, w.studentID, 25, 0)
+	require.NoError(t, err)
+	require.Len(t, mine, 2)
+	require.Equal(t, second.Instance.ID, mine[0].InstanceID, "newest first")
+	require.Equal(t, first.Instance.ID, mine[1].InstanceID)
+	require.Equal(t, domain.StatusCompleted, mine[0].Status)
+	require.Equal(t, 2, mine[0].OccurrenceNumber)
+	require.Equal(t, "Bangun kesiangan", mine[0].Reason)
+
+	others, err := svc.ListMyLateArrivals(ctx, w.tenantID, w.dutyTeacherID, 25, 0)
+	require.NoError(t, err)
+	require.Empty(t, others)
+}

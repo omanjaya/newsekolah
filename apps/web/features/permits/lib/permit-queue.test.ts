@@ -27,6 +27,11 @@ const exit: ExitPermitSummary = {
 };
 
 describe("combined permit queue", () => {
+  it("keeps the leave summary on its row, so the card can show the leave dates", () => {
+    const [row] = mergePermitQueues({ leave: [leave] });
+    expect(row).toMatchObject({ type: "leave", leave: { starts_on: "2026-09-29" } });
+  });
+
   it("keeps separate workflow kinds sorted by opened time", () => {
     const rows = mergePermitQueues({ leave: [leave], exit: [exit] });
     expect(rows).toHaveLength(2);

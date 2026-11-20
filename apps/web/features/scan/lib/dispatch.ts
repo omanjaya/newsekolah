@@ -3,7 +3,7 @@ import { decodeScanPayload } from "../../permits/api";
 
 /** What the universal scanner does with a code, one per backend scan-token purpose. */
 export type ScanAction =
-  "classroom_entry" | "late_arrival" | "exit_stage" | "gate_exit" | "library_visit";
+  "classroom_entry" | "late_arrival" | "approve_stage" | "gate_exit" | "library_visit";
 
 /**
  * The feature module whose endpoint each action calls. An action whose
@@ -15,7 +15,7 @@ export type ScanAction =
 export const SCAN_ACTION_MODULE: Record<ScanAction, FeatureModule> = {
   classroom_entry: "permits",
   late_arrival: "permits",
-  exit_stage: "permits",
+  approve_stage: "permits",
   gate_exit: "permits",
   library_visit: "library",
 };
@@ -30,16 +30,19 @@ export type ScanRoute =
 /**
  * QR payload kind -> action. Kinds are the ones the minting screens
  * encode ("sion:<kind>:<instanceId>:<token>", features/permits/api.ts):
- * the duty desk emits the scan-token purpose itself, the exit-permit
- * screens emit "approve"/"gate", and the library kiosk emits
+ * the duty desk emits the scan-token purpose itself, the approver panel
+ * emits "approve" (for an exit permit and a late arrival alike, see
+ * ApprovePanel), the gate screens emit "gate", and the library kiosk emits
  * "library_visit". The scan-token purpose names are accepted as aliases,
- * as the mobile scanner does.
+ * as the mobile scanner does. "approve" does not say which workflow the
+ * instance belongs to, so the dispatcher decides at scan time
+ * (useScanDispatch), the way the mobile scanner does.
  */
 const KIND_ACTION: Record<string, { action: ScanAction; needsInstance: boolean }> = {
   classroom_entry: { action: "classroom_entry", needsInstance: false },
   late_arrival: { action: "late_arrival", needsInstance: false },
-  approve: { action: "exit_stage", needsInstance: true },
-  approve_stage: { action: "exit_stage", needsInstance: true },
+  approve: { action: "approve_stage", needsInstance: true },
+  approve_stage: { action: "approve_stage", needsInstance: true },
   gate: { action: "gate_exit", needsInstance: true },
   gate_exit: { action: "gate_exit", needsInstance: true },
   library_visit: { action: "library_visit", needsInstance: false },

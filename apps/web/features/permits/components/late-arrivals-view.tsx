@@ -14,10 +14,15 @@ import {
   EmptyState,
   Field,
   HeroCard,
+  IconCircle,
   Input,
+  List,
+  ListRow,
   Scanner,
   type ScannerResultValue,
+  SectionHeader,
   Skeleton,
+  SkeletonList,
   Textarea,
   domainIcons,
   useToast,
@@ -31,20 +36,23 @@ import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import {
   decodeScanPayload,
   type LateArrivalDetail,
   type LateArrivalSummary,
   useCurrentLateArrivalQuery,
   useLateArrivalQuery,
+  useMyLateArrivalsQuery,
   useOpenLateArrivalMutation,
   useReviewLateArrivalMutation,
   useScanLateArrivalStageMutation,
 } from "../api";
+import { formatShortWeekdayDate } from "../lib/permit-dates";
 import { useCanSubmitPermit } from "../lib/use-can-submit-permit";
 
 import { StageScanDialog } from "./stage-scan-dialog";
-import { WorkflowStepper, WorkflowSteps } from "./workflow-stepper";
+import { WorkflowStatusBadge, WorkflowStepper, WorkflowSteps } from "./workflow-stepper";
 
 /**
  * Keterlambatan: a student's own late check-in, scan first. The duty
@@ -85,6 +93,25 @@ function MyLateArrival(): ReactElement {
   const closedId = current.data === null && cardId ? cardId : "";
   const closed = useLateArrivalQuery(closedId);
 
+  // The flow on the card is left out of the history under it.
+  const onCard = current.data?.instance.id ?? (closedId || undefined);
+  return (
+    <div className="flex w-full flex-col gap-6">
+      <MyLateArrivalCard current={current} closedId={closedId} closed={closed} />
+      <LateArrivalHistory excludeId={onCard} />
+    </div>
+  );
+}
+
+function MyLateArrivalCard({
+  current,
+  closedId,
+  closed,
+}: {
+  current: ReturnType<typeof useCurrentLateArrivalQuery>;
+  closedId: string;
+  closed: ReturnType<typeof useLateArrivalQuery>;
+}): ReactElement {
   if (current.isLoading) return <Skeleton className="h-96 w-full rounded-xl" />;
   // Only a 404 means "no late arrival open" (the query maps it to null);
   // any other failure must not offer a second check-in to a student who
@@ -101,6 +128,52 @@ function MyLateArrival(): ReactElement {
     return <Skeleton className="h-96 w-full rounded-xl" />;
   }
   return <LateCheckIn />;
+}
+
+/**
+ * Every late arrival of the student, newest first, finished ones and the
+ * ones a duty teacher recorded by hand included (those are finished from
+ * the start, so the card above never shows them). Each row opens the
+ * record's own page.
+ */
+function LateArrivalHistory({ excludeId }: { excludeId?: string }): ReactElement | null {
+  const t = useTranslations("app.permits.late");
+  const locale = useLocale() as Locale;
+  const { me } = useSession();
+  const timeZone = me?.tenant.timezone;
+  const today = todayInZone(timeZone);
+  const mine = useMyLateArrivalsQuery();
+  const rows = (mine.data?.data ?? []).filter((row) => row.instance_id !== excludeId);
+
+  if (mine.isLoading) return <SkeletonList rows={2} leading framed />;
+  if (mine.isError) return <QueryError retry={() => void mine.refetch()} error={mine.error} />;
+  if (rows.length === 0) return null;
+  return (
+    <section className="flex flex-col gap-3" aria-labelledby="late-history-title">
+      <SectionHeader titleId="late-history-title" title={t("historyTitle")} count={rows.length} />
+      <List framed>
+        {rows.map((row) => (
+          <ListRow
+            key={row.instance_id}
+            leading={
+              <IconCircle tone="neutral">
+                <domainIcons.late />
+              </IconCircle>
+            }
+            title={t("historyRow", { n: row.occurrence_number })}
+            meta={[
+              formatShortWeekdayDate(row.opened_at, locale, timeZone, today),
+              formatTime(row.opened_at, { locale, timeZone }),
+              ...(row.required_action === "none" ? [] : [t(`actions.${row.required_action}`)]),
+            ]}
+            keepMetaWhole
+            trailing={<WorkflowStatusBadge status={row.status} />}
+            href={`/late-arrivals/${row.instance_id}`}
+          />
+        ))}
+      </List>
+    </section>
+  );
 }
 
 /** No late arrival open yet: the camera first, to scan the duty desk's QR. */
@@ -170,8 +243,11 @@ function LateCheckIn(): ReactElement {
   );
 }
 
-/** An open late arrival, as the page's status card: each stage, and the next scan. */
-function ActiveLateArrival({ detail }: { detail: LateArrivalDetail }): ReactElement {
+/**
+ * A late arrival as the student's status card: each stage, and the next
+ * scan while one is due. Also the student's view of the record's own page.
+ */
+export function ActiveLateArrival({ detail }: { detail: LateArrivalDetail }): ReactElement {
   const t = useTranslations("app.permits.late");
   const tWorkflow = useTranslations("app.permits.workflow");
   const tScan = useTranslations("app.permits.scan");

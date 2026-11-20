@@ -70,6 +70,9 @@ func (s *Service) RecordExitPermitByStaff(ctx context.Context, in RecordExitPerm
 		} else if ok {
 			return domain.ErrExitPermitAlreadyToday
 		}
+		if err := s.requireNotOnLeaveToday(ctx, in.TenantID, in.StudentUserID); err != nil {
+			return err
+		}
 		if err := s.validatePeriodRange(ctx, in.TenantID, in.StartPeriodID, in.EndPeriodID); err != nil {
 			return err
 		}

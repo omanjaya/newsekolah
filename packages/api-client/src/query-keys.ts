@@ -78,6 +78,7 @@ export const queryKeys = {
   leaveRequest: (id: string) => ["permits", "leave-request", id] as const,
   leaveReviewQueue: () => ["permits", "leave-review-queue"] as const,
   lateArrivalCurrent: () => ["permits", "late-arrival", "current"] as const,
+  lateArrivalsMine: () => ["permits", "late-arrivals", "mine"] as const,
   lateArrival: (id: string) => ["permits", "late-arrival", id] as const,
   lateArrivalQueue: () => ["permits", "late-arrival-queue"] as const,
   workflowDefinitions: () => ["permits", "workflow-definitions"] as const,

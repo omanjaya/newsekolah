@@ -103,6 +103,17 @@ describe("Stepper", () => {
     expect(screen.getByText("Gerbang")).toHaveClass("text-caption");
   });
 
+  it("shows a step's note under it, and leaves it out of the compact variant", () => {
+    const withNote = [
+      { id: "a", label: "Wali kelas", state: "stopped" as const, note: "Ada ulangan hari itu." },
+      { id: "b", label: "Guru BK", state: "upcoming" as const },
+    ];
+    const { rerender } = render(<Stepper steps={withNote} currentIndex={0} />);
+    expect(screen.getByText("Ada ulangan hari itu.")).toBeInTheDocument();
+    rerender(<Stepper steps={withNote} currentIndex={0} variant="compact" />);
+    expect(screen.queryByText("Ada ulangan hari itu.")).not.toBeInTheDocument();
+  });
+
   it("has no accessibility violations", async () => {
     const { container } = render(<Stepper steps={WORKFLOW} currentIndex={2} />);
     await expectNoAxeViolations(container);

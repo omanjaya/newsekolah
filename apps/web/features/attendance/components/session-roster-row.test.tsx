@@ -29,6 +29,11 @@ const statuses: SessionDetail["statuses"] = [
 ];
 
 function renderRow(item: Partial<RosterItem>, note: string, onNoteChange = vi.fn()) {
+  renderRowOnly(item, note, onNoteChange);
+  return screen.getByRole("textbox", { name: /noteFor/ });
+}
+
+function renderRowOnly(item: Partial<RosterItem>, note = "", onNoteChange = vi.fn()) {
   render(
     <ul>
       <SessionRosterRow
@@ -54,7 +59,6 @@ function renderRow(item: Partial<RosterItem>, note: string, onNoteChange = vi.fn
       />
     </ul>,
   );
-  return screen.getByRole("textbox", { name: /noteFor/ });
 }
 
 describe("SessionRosterRow", () => {
@@ -135,5 +139,12 @@ describe("SessionRosterRow", () => {
 
     expect(screen.getByText("blockedReasons.late_arrival_in_progress")).toBeInTheDocument();
     expect(screen.queryByText("late_arrival_in_progress")).not.toBeInTheDocument();
+  });
+
+  it("falls back to the generic lock label for an unknown reason code", () => {
+    renderRowOnly({ blocked: true, blocked_reason: "some_future_reason" });
+
+    expect(screen.getByText("blocked")).toBeInTheDocument();
+    expect(screen.queryByText("some_future_reason")).not.toBeInTheDocument();
   });
 });

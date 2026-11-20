@@ -36,7 +36,8 @@ limit $3 offset $4;
 --
 -- sqlc.arg('today') is the tenant-local date (s.tenantNow), not
 -- current_date: the Postgres session timezone is never set per tenant.
-select lr.*, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id
+select lr.*, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id,
+  (wi.current_stage_index = jsonb_array_length(wd.stages) - 1)::boolean as awaiting_letter
 from leave_requests lr
 join workflow_instances wi on wi.id = lr.instance_id
 join workflow_definitions wd on wd.id = wi.definition_id

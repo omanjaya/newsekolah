@@ -18,7 +18,7 @@ import {
 import { Camera, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { compressImage, formatFileSize } from "../../../lib/media/compress-image";
@@ -35,16 +35,30 @@ const CATEGORIES: LeaveCategory[] = ["sick", "religious_ceremony", "dispensation
 
 const EMPTY_RANGE: DateRange = { from: "", to: "" };
 
-/** A preview URL for the picked photo, released when the photo changes or the form closes. */
+/**
+ * A preview of the picked photo as a data: URL. A blob: object URL would be
+ * lighter, but the page's Content-Security-Policy allows images only from
+ * 'self', data: and https: (apps/web/middleware.ts), so the browser blocks
+ * a blob: thumbnail and shows a broken image. The photo is already
+ * compressed (compressImage), so reading it whole is cheap. A read that
+ * finishes after the photo changed is dropped.
+ */
 function usePreviewUrl(file: File | null): string | null {
-  const url = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
-  useEffect(
-    () => () => {
-      if (url) URL.revokeObjectURL(url);
-    },
-    [url],
-  );
-  return url;
+  const [preview, setPreview] = useState<{ file: File; url: string } | null>(null);
+  useEffect(() => {
+    if (!file) return;
+    let current = true;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (current && typeof reader.result === "string") setPreview({ file, url: reader.result });
+    };
+    reader.readAsDataURL(file);
+    return () => {
+      current = false;
+      reader.abort();
+    };
+  }, [file]);
+  return file && preview?.file === file ? preview.url : null;
 }
 
 export function SubmitForm({
@@ -72,6 +86,9 @@ export function SubmitForm({
   const sending = submit.isPending || upload.isPending;
   const startsOn = range.from;
   const endsOn = range.to || range.from;
+  // Every category but "other" puts its own fixed label on the letter (the
+  // API ignores a typed reason for them), so only "other" asks for one.
+  const asksReason = category === "other";
 
   async function pickEvidence(file: File | undefined) {
     if (!file) {
@@ -87,7 +104,7 @@ export function SubmitForm({
   async function send() {
     setError(null);
     setAttempted(true);
-    if (!reason.trim() || !startsOn || !endsOn) return;
+    if ((asksReason && !reason.trim()) || !startsOn || !endsOn) return;
     if (endsOn < startsOn) {
       setError(t("form.rangeError"));
       return;
@@ -95,7 +112,7 @@ export function SubmitForm({
     try {
       const detail = await submit.mutateAsync({
         category,
-        reason: reason.trim(),
+        ...(asksReason ? { reason: reason.trim() } : {}),
         starts_on: startsOn,
         ends_on: endsOn,
       });
@@ -131,7 +148,11 @@ export function SubmitForm({
     >
       {error && <FormError>{error}</FormError>}
       <FormSection>
-        <Field label={t("form.category")} required>
+        <Field
+          label={t("form.category")}
+          hint={asksReason ? undefined : t("form.categoryHint")}
+          required
+        >
           <Select
             options={CATEGORIES.map((c) => ({ value: c, label: t(`categories.${c}`) }))}
             value={category}
@@ -152,23 +173,25 @@ export function SubmitForm({
             today={todayInZone(me?.tenant.timezone)}
           />
         </Field>
-        <Field
-          label={t("form.reason")}
-          error={attempted && !reason.trim() ? t("form.reasonRequired") : undefined}
-          required
-          className="col-span-full"
-        >
-          <Textarea
-            rows={3}
-            autoResize
-            value={reason}
-            maxLength={500}
-            onChange={(e) => {
-              setReason(e.target.value);
-            }}
-            placeholder={t("form.reasonPlaceholder")}
-          />
-        </Field>
+        {asksReason && (
+          <Field
+            label={t("form.reason")}
+            error={attempted && !reason.trim() ? t("form.reasonRequired") : undefined}
+            required
+            className="col-span-full"
+          >
+            <Textarea
+              rows={3}
+              autoResize
+              value={reason}
+              maxLength={500}
+              onChange={(e) => {
+                setReason(e.target.value);
+              }}
+              placeholder={t("form.reasonPlaceholder")}
+            />
+          </Field>
+        )}
         <Field
           label={t("form.evidence")}
           hint={t("form.evidenceHint")}
