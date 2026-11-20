@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { classifyPeriodTiming, deriveFillStatus, findNextSessionId } from "./session-schedule";
+import {
+  classifyPeriodTiming,
+  countDayFillStatuses,
+  deriveFillStatus,
+  findNextSessionId,
+} from "./session-schedule";
 
 describe("deriveFillStatus", () => {
   const TODAY = "2026-09-24";
@@ -78,6 +83,30 @@ describe("deriveFillStatus", () => {
     expect(
       deriveFillStatus({ ...base, date: "2026-09-25", submittedAt: "2026-09-24T02:09:48Z" }),
     ).toBe("upcoming");
+  });
+});
+
+describe("countDayFillStatuses", () => {
+  it("counts each lesson once, by its status, so nothing goes negative", () => {
+    expect(
+      countDayFillStatuses(["saved", "locked", "empty", "missed", "handedOver", "upcoming"]),
+    ).toEqual({ saved: 2, pending: 1, missed: 1, handedOver: 1 });
+  });
+
+  it("leaves a submitted lesson on a later date out of saved and pending alike", () => {
+    const status = deriveFillStatus({
+      submittedAt: "2026-09-24T07:12:00Z",
+      date: "2026-09-25",
+      today: "2026-09-24",
+      editableUntil: "2026-10-01T23:59:59+08:00",
+      now: new Date("2026-09-24T14:30:00Z"),
+    });
+    expect(countDayFillStatuses([status])).toEqual({
+      saved: 0,
+      pending: 0,
+      missed: 0,
+      handedOver: 0,
+    });
   });
 });
 

@@ -52,6 +52,34 @@ export function deriveFillStatus({
   return closed ? "locked" : "saved";
 }
 
+/** A teacher's day totals for the list header. */
+export interface DayFillCounts {
+  saved: number;
+  /** Lessons this teacher can and still has to fill. */
+  pending: number;
+  missed: number;
+  handedOver: number;
+}
+
+/**
+ * Counts a day's lessons from their fill statuses, so each lesson lands in
+ * exactly one bucket and the totals agree with the row badges. A lesson on
+ * a later date is in none of them, even with a submission (one saved by an
+ * older build or under the time simulation): it cannot be filled yet, and
+ * counting it as saved as well as not-yet-open would push "pending" below
+ * zero.
+ */
+export function countDayFillStatuses(statuses: readonly SessionFillStatus[]): DayFillCounts {
+  const count = (...wanted: SessionFillStatus[]) =>
+    statuses.filter((status) => wanted.includes(status)).length;
+  return {
+    saved: count("saved", "locked"),
+    pending: count("empty"),
+    missed: count("missed"),
+    handedOver: count("handedOver"),
+  };
+}
+
 /** A period's clock-time span, "HH:MM:SS" (or "HH:MM"), compared as plain strings. */
 export interface PeriodWindow {
   startsAt: string;
