@@ -328,6 +328,10 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
           toast.success(status === "paid" ? t("settle.settledPaid") : t("settle.settledWaived"));
           setSettling(null);
         }}
+        onAlreadySettled={() => {
+          toast.info(t("settle.alreadySettled"));
+          setSettling(null);
+        }}
       />
     </AppPage>
   );
