@@ -885,6 +885,7 @@
         "archive": "Arsipkan",
         "delete": "Hapus",
         "publishDone": "Pengumuman terbit dan dikirim ke penerima",
+        "publishDoneLater": "Pengumuman terbit; baru tampil dan dikirim ke penerima mulai {date}",
         "scheduleDone": "Pengumuman dijadwalkan",
         "archiveDone": "Pengumuman diarsipkan",
         "deleteDone": "Pengumuman dihapus",

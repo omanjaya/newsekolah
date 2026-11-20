@@ -191,3 +191,34 @@ it("keeps the notice beside the empty state when the feed is empty", () => {
   expect(screen.getByText("focusMissingTitle")).toBeInTheDocument();
   expect(screen.getByText("feedEmptyTitle")).toBeInTheDocument();
 });
+
+it("keeps an opened card's body inside the card instead of below its clipped edge", async () => {
+  query.mockReturnValue({
+    data: { data: [item({ id: "a1", body_html: "<p>Isi lengkap pengumuman.</p>" })] },
+    isLoading: false,
+    isError: false,
+  });
+  const user = userEvent.setup();
+  render(<AnnouncementFeed />);
+
+  await user.click(screen.getByTestId("announcement-feed-card-a1"));
+
+  const card = screen.getByTestId("announcement-card-a1");
+  const trigger = screen.getByTestId("announcement-feed-card-a1");
+  const body = screen.getByText("Isi lengkap pengumuman.");
+  expect(trigger).toHaveAttribute("aria-expanded", "true");
+  expect(card).toContainElement(body);
+  expect(body).toBeVisible();
+  // jsdom has no layout, so the geometry is pinned by the classes. The
+  // card clips (overflow-hidden) and fills its bento cell (h-full); a
+  // percentage height on the trigger resolved to the whole card and put
+  // the body past its bottom edge. The card stacks trigger and body as a
+  // flex column, the trigger takes only the space left over (flex-1), and
+  // the body never shrinks.
+  expect(card).toHaveClass("overflow-hidden", "flex", "flex-col");
+  expect(trigger).toHaveClass("flex-1");
+  expect(trigger.className).not.toMatch(/(^|\s)(h|min-h)-(full|screen|\[)/);
+  const content = document.getElementById(trigger.getAttribute("aria-controls") ?? "");
+  expect(content?.parentElement).toBe(card);
+  expect(content).toHaveClass("shrink-0");
+});

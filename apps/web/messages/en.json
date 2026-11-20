@@ -885,6 +885,7 @@
         "archive": "Archive",
         "delete": "Delete",
         "publishDone": "Announcement published and sent to recipients",
+        "publishDoneLater": "Announcement published; it shows and is sent to recipients only from {date}",
         "scheduleDone": "Announcement scheduled",
         "archiveDone": "Announcement archived",
         "deleteDone": "Announcement deleted",

@@ -1,16 +1,20 @@
+import type * as UiModule from "@newsekolah/ui";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useAnnouncementsQuery: vi.fn(),
+  transition: vi.fn(),
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
   canCreate: true,
 }));
 
 vi.mock("next-intl", () => ({
   // A row's own title is kept in the label, so tests can tell rows apart.
-  useTranslations: () => (key: string, values?: { title?: string }) =>
-    values?.title ? `${key}:${values.title}` : key,
+  useTranslations: () => (key: string, values?: { title?: string; date?: string }) =>
+    values?.title ? `${key}:${values.title}` : values?.date ? `${key}@${values.date}` : key,
   useLocale: () => "id",
 }));
 vi.mock("next/navigation", () => ({
@@ -24,15 +28,25 @@ vi.mock("../../../lib/session/session-provider", () => ({
 }));
 vi.mock("../api", () => ({
   useAnnouncementsQuery: mocks.useAnnouncementsQuery,
-  useAnnouncementTransitionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useAnnouncementTransitionMutation: () => ({ mutateAsync: mocks.transition, isPending: false }),
   useDeleteAnnouncementMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
+
+vi.mock("@newsekolah/ui", async () => {
+  const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
+  return {
+    ...actual,
+    useToast: () => ({ success: mocks.toastSuccess, error: mocks.toastError }),
+  };
+});
 
 import { AnnouncementsManage } from "./announcements-manage";
 
 describe("AnnouncementsManage filters", () => {
   beforeEach(() => {
     mocks.canCreate = true;
+    mocks.transition.mockReset();
+    mocks.toastSuccess.mockReset();
     mocks.useAnnouncementsQuery.mockReset();
     mocks.useAnnouncementsQuery.mockReturnValue({
       data: { data: [], page: { next_cursor: "" } },
@@ -141,6 +155,42 @@ describe("AnnouncementsManage missed schedules", () => {
     expect(await confirmBody("Rapat orang tua")).toContain(
       "actions.publishConfirmBody:Rapat orang tua",
     );
+  });
+
+  it("does not say a publish with its start ahead was sent", async () => {
+    const later = row("a2", "Libur semester", "draft", "2999-01-01T01:00:00Z");
+    const now = row("a1", "Rapat orang tua", "draft", "2000-01-01T00:00:00Z");
+    mocks.useAnnouncementsQuery.mockReturnValue({
+      data: { data: [now, later], page: { next_cursor: "" } },
+      isLoading: false,
+    });
+    // The server answers with the published announcement, start unchanged.
+    mocks.transition.mockImplementation(({ id }: { id: string }) =>
+      Promise.resolve({ ...(id === later.id ? later : now), status: "published" }),
+    );
+    const user = userEvent.setup();
+    render(<AnnouncementsManage creating={false} onCreatingChange={vi.fn()} />);
+
+    async function publish(title: string): Promise<void> {
+      const [trigger] = screen.getAllByRole("button", { name: `actions.menuFor:${title}` });
+      if (!trigger) throw new Error("no row menu");
+      await user.click(trigger);
+      const menu = await screen.findByRole("menu");
+      await user.click(within(menu).getByRole("menuitem", { name: "actions.publish" }));
+      const dialog = await screen.findByRole("dialog");
+      await user.click(within(dialog).getByRole("button", { name: "actions.publish" }));
+    }
+
+    await publish("Libur semester");
+    expect(mocks.transition).toHaveBeenLastCalledWith({ id: "a2", action: "publish" });
+    // The start date in the school's zone (Asia/Jakarta, UTC+7).
+    expect(mocks.toastSuccess).toHaveBeenLastCalledWith(
+      expect.stringMatching(/^actions\.publishDoneLater@.*2999.*08[.:]00/),
+    );
+    expect(mocks.toastSuccess).not.toHaveBeenCalledWith("actions.publishDone");
+
+    await publish("Rapat orang tua");
+    expect(mocks.toastSuccess).toHaveBeenLastCalledWith("actions.publishDone");
   });
 });
 

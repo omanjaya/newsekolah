@@ -303,12 +303,19 @@ function AnnouncementCard({
   const locale = useLocale() as Locale;
   const excerpt = htmlToExcerpt(item.body_html);
 
+  // A flex column: the trigger grows (flex-1) to fill a card stretched by a
+  // taller neighbour in its bento row, and the opened body keeps its own
+  // height below it. A percentage height on the trigger would resolve to
+  // the whole card and push the body past the clipped bottom edge.
   return (
-    <Card className="h-full overflow-hidden">
+    <Card
+      className="flex h-full flex-col overflow-hidden"
+      data-testid={`announcement-card-${item.id}`}
+    >
       <Disclosure open={expanded} onOpenChange={onToggle}>
         <DisclosureTrigger
           data-testid={`announcement-feed-card-${item.id}`}
-          className="flex h-full w-full flex-col gap-1.5 p-5 transition-colors hover:bg-state-hover"
+          className="flex w-full flex-1 flex-col gap-1.5 p-5 transition-colors hover:bg-state-hover"
         >
           <div className="flex items-start gap-2">
             {item.is_pinned && (
@@ -334,7 +341,7 @@ function AnnouncementCard({
             <p className="line-clamp-2 text-body-sm text-fg-muted">{excerpt}</p>
           )}
         </DisclosureTrigger>
-        <DisclosureContent>
+        <DisclosureContent className="shrink-0">
           {expanded && (
             <SafeHtml
               html={item.body_html}
