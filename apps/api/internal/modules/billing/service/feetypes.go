@@ -166,7 +166,11 @@ func (s *Service) CreateDiscount(ctx context.Context, d domain.Discount, actorUs
 		}
 		var err error
 		out, err = s.repo.CreateDiscount(ctx, d)
-		return err
+		if err != nil {
+			return err
+		}
+		// A discount lowers what a family owes: every change is audited.
+		return audit.Record(ctx, d.TenantID, "discount.create", "discount", out.ID, nil, out)
 	})
 	return out, err
 }
@@ -190,7 +194,10 @@ func (s *Service) UpdateDiscount(ctx context.Context, d domain.Discount) (domain
 		}
 		d.FeeTypeID, d.StudentUserID = current.FeeTypeID, current.StudentUserID
 		out, err = s.repo.UpdateDiscount(ctx, d)
-		return err
+		if err != nil {
+			return err
+		}
+		return audit.Record(ctx, d.TenantID, "discount.update", "discount", out.ID, current, out)
 	})
 	return out, err
 }
@@ -200,6 +207,16 @@ func (s *Service) DeleteDiscount(ctx context.Context, tenantID, id uuid.UUID) er
 		return err
 	}
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return s.repo.DeleteDiscount(ctx, tenantID, id)
+		current, ok, err := s.repo.GetDiscount(ctx, tenantID, id)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return domain.ErrDiscountNotFound
+		}
+		if err := s.repo.DeleteDiscount(ctx, tenantID, id); err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "discount.delete", "discount", id, current, nil)
 	})
 }

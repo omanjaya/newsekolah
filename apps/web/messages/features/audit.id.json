@@ -163,6 +163,11 @@
       "update": "Mengubah jenis biaya",
       "delete": "Menghapus jenis biaya"
     },
+    "discount": {
+      "create": "Membuat potongan biaya",
+      "update": "Mengubah potongan biaya",
+      "delete": "Menghapus potongan biaya"
+    },
     "bill": {
       "generate": "Membuat tagihan massal"
     },
@@ -215,6 +220,7 @@
     "webhook_endpoint": "Endpoint webhook",
     "api_key": "Kunci API",
     "fee_type": "Jenis biaya",
+    "discount": "Potongan biaya",
     "bill": "Tagihan",
     "document_template": "Templat dokumen",
     "report_schedule": "Jadwal kirim laporan",

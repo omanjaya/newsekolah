@@ -31,6 +31,7 @@ export const AUDIT_ENTITY_TYPES = [
   "webhook_endpoint",
   "api_key",
   "fee_type",
+  "discount",
   "bill",
   "document_template",
   "report_schedule",

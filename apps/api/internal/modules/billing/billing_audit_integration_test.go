@@ -25,9 +25,11 @@ import (
 // through the service itself (fee type + GenerateBills) so the fixture
 // exercises the same idempotent generation path the real app uses.
 type billingFixture struct {
-	tenantID uuid.UUID
-	billID   uuid.UUID
-	staffID  uuid.UUID
+	tenantID  uuid.UUID
+	billID    uuid.UUID
+	staffID   uuid.UUID
+	feeTypeID uuid.UUID
+	studentID uuid.UUID
 }
 
 // seedBillingFixture seeds raw fixture rows (tenant, year, class,
@@ -89,13 +91,15 @@ func seedBillingFixture(t *testing.T, adminPool *pgxpool.Pool, mod *Module) bill
 		TenantID: tenantRow.ID, Name: "SPP", AmountMinor: 150000, Recurrence: domain.RecurrenceMonthly,
 	}, staff.ID)
 	require.NoError(t, err)
-	_ = feeType
 
 	summary, err := mod.Service.GenerateBills(ctx, tenantRow.ID, staff.ID, "2026-07")
 	require.NoError(t, err)
 	require.Len(t, summary.Created, 1, "one active enrollment and one active monthly fee type must generate exactly one bill")
 
-	return billingFixture{tenantID: tenantRow.ID, billID: summary.Created[0].ID, staffID: staff.ID}
+	return billingFixture{
+		tenantID: tenantRow.ID, billID: summary.Created[0].ID, staffID: staff.ID,
+		feeTypeID: feeType.ID, studentID: student.ID,
+	}
 }
 
 // newTestBillingModule wires the billing module against appPool -- the
@@ -157,4 +161,39 @@ func TestVoidPaymentWritesAuditRecord(t *testing.T) {
 	logs := auditLogsFor(t, pg.AdminPool, fx.tenantID, payment.ID)
 	require.Len(t, logs, 2, "record then void must write two audit_logs rows")
 	require.Equal(t, "payment.void", logs[0].Action, "ListAuditLogs orders newest first")
+}
+
+// TestDiscountChangesWriteAuditRecords covers the discount use cases: a
+// discount lowers what a family owes, so creating, editing and deleting
+// one each write an audit_logs row, with the before/after snapshots.
+func TestDiscountChangesWriteAuditRecords(t *testing.T) {
+	pg := dbtest.Start(t)
+	mod := newTestBillingModule(pg.AppPool)
+	fx := seedBillingFixture(t, pg.AdminPool, mod)
+	ctx := context.Background()
+
+	discount, err := mod.Service.CreateDiscount(ctx, domain.Discount{
+		TenantID: fx.tenantID, FeeTypeID: fx.feeTypeID, StudentUserID: fx.studentID,
+		Kind: domain.DiscountFixed, AmountMinor: 50000, Reason: "Anak guru",
+	}, fx.staffID)
+	require.NoError(t, err)
+
+	discount.AmountMinor = 75000
+	_, err = mod.Service.UpdateDiscount(ctx, discount)
+	require.NoError(t, err)
+
+	require.NoError(t, mod.Service.DeleteDiscount(ctx, fx.tenantID, discount.ID))
+	require.ErrorIs(t, mod.Service.DeleteDiscount(ctx, fx.tenantID, discount.ID), domain.ErrDiscountNotFound)
+
+	logs := auditLogsFor(t, pg.AdminPool, fx.tenantID, discount.ID)
+	require.Len(t, logs, 3)
+	// ListAuditLogs orders newest first.
+	require.Equal(t, "discount.delete", logs[0].Action)
+	require.Equal(t, "discount.update", logs[1].Action)
+	require.Equal(t, "discount.create", logs[2].Action)
+	for _, log := range logs {
+		require.Equal(t, "discount", log.EntityType)
+	}
+	require.Contains(t, string(logs[1].Before), "50000")
+	require.Contains(t, string(logs[1].After), "75000")
 }
