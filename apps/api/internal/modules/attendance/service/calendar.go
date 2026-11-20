@@ -161,13 +161,12 @@ func (s *Service) calendarDaysForRange(
 
 		expected, submitted := 0, 0
 		if hasClass {
-			dayOfWeek := domain.IsoWeekday(d)
-			isSchoolDay, err := s.repo.IsSchoolDay(ctx, tenantID, academicYearID, dayOfWeek)
+			isSchoolDay, _, err := s.teachingDay(ctx, tenantID, academicYearID, classID, d)
 			if err != nil {
 				return nil, err
 			}
 			if isSchoolDay {
-				count, err := s.schedules.CountSchedulesForClassDay(ctx, tenantID, academicYearID, classID, dayOfWeek)
+				count, err := s.schedules.CountSchedulesForClassDay(ctx, tenantID, academicYearID, classID, domain.IsoWeekday(d))
 				if err != nil {
 					return nil, err
 				}
@@ -357,14 +356,13 @@ func (s *Service) buildRoster(ctx context.Context, tenantID, academicYearID, cla
 		byStudent[r.StudentUserID] = r
 	}
 
-	dayOfWeek := domain.IsoWeekday(date)
-	isSchoolDay, err := s.repo.IsSchoolDay(ctx, tenantID, academicYearID, dayOfWeek)
+	isSchoolDay, _, err := s.teachingDay(ctx, tenantID, academicYearID, classID, date)
 	if err != nil {
 		return nil, 0, 0, err
 	}
 	expected := 0
 	if isSchoolDay {
-		count, err := s.schedules.CountSchedulesForClassDay(ctx, tenantID, academicYearID, classID, dayOfWeek)
+		count, err := s.schedules.CountSchedulesForClassDay(ctx, tenantID, academicYearID, classID, domain.IsoWeekday(date))
 		if err != nil {
 			return nil, 0, 0, err
 		}

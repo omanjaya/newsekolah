@@ -260,15 +260,14 @@ type attendanceSubmittedRolePayload struct {
 func (s *Service) recomputeDailySummaryForClassDate(
 	ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time, studentIDs []uuid.UUID, policy domain.StatusPolicy,
 ) error {
-	dayOfWeek := domain.IsoWeekday(date)
-	isSchoolDay, err := s.repo.IsSchoolDay(ctx, tenantID, academicYearID, dayOfWeek)
+	isSchoolDay, _, err := s.teachingDay(ctx, tenantID, academicYearID, classID, date)
 	if err != nil {
 		return err
 	}
 
 	expected := 0
 	if isSchoolDay {
-		count, err := s.schedules.CountSchedulesForClassDay(ctx, tenantID, academicYearID, classID, dayOfWeek)
+		count, err := s.schedules.CountSchedulesForClassDay(ctx, tenantID, academicYearID, classID, domain.IsoWeekday(date))
 		if err != nil {
 			return err
 		}

@@ -72,6 +72,47 @@ func TestHolidayAndFutureDateStopAttendance(t *testing.T) {
 	require.ErrorIs(t, err, domain.ErrSessionNotStarted)
 }
 
+// A holiday has no expected lessons, so every student's day reads as
+// "nothing scheduled" (StatusNone) on the homeroom roster and on the
+// student's own calendar, instead of an incomplete day the holiday guard
+// would then never let anyone fill.
+func TestHolidayHasNoExpectedLessonsInDailyStatus(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	w := seedWorld(t, ctx, pg.AdminPool, "holiday-status")
+	actor := service.Actor{UserID: w.teacherID}
+
+	// Control: an ordinary school day with an unfilled lesson is incomplete.
+	plain := buildService(pg.AppPool)
+	roster, err := plain.GetHomeroomAttendance(ctx, w.tenantID, actor, w.today, service.HomeroomFilter{})
+	require.NoError(t, err)
+	require.NotEmpty(t, roster.Students)
+	require.Equal(t, domain.StatusIncomplete, roster.Students[0].StatusCode)
+
+	svc := buildService(pg.AppPool)
+	svc.SetCalendar(holidayCalendar{classID: w.classID, date: w.today, name: "Libur Hari Guru"})
+
+	roster, err = svc.GetHomeroomAttendance(ctx, w.tenantID, actor, w.today, service.HomeroomFilter{})
+	require.NoError(t, err)
+	require.Len(t, roster.Students, 2)
+	for _, st := range roster.Students {
+		require.Equal(t, domain.StatusNone, st.StatusCode, "a holiday is not an incomplete day")
+		require.Equal(t, 0, st.ExpectedSessions)
+	}
+
+	days, err := svc.GetStudentCalendarMonth(ctx, w.tenantID, w.student1ID, w.today.Format("2006-01"))
+	require.NoError(t, err)
+	var found bool
+	for _, d := range days {
+		if sameDate(d.Date, w.today) {
+			found = true
+			require.Equal(t, domain.StatusNone, d.StatusCode)
+			require.Equal(t, 0, d.ExpectedSessions)
+		}
+	}
+	require.True(t, found, "the holiday is part of the month")
+}
+
 // A lesson the teacher handed to an accepted substitute shows in the
 // teacher's own list as handed over (not as an unfilled to-do), and its
 // session records the substitute whoever opens the day's list first --

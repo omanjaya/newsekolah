@@ -64,14 +64,6 @@ func (s *Service) ListDay(ctx context.Context, tenantID, teacherUserID uuid.UUID
 		}
 		dayOfWeek := domain.IsoWeekday(date)
 
-		isSchoolDay, err := s.repo.IsSchoolDay(ctx, tenantID, yearID, dayOfWeek)
-		if err != nil {
-			return err
-		}
-		if !isSchoolDay {
-			return nil
-		}
-
 		own, err := s.schedules.ListSchedulesForTeacherDay(ctx, tenantID, yearID, teacherUserID, dayOfWeek)
 		if err != nil {
 			return err
