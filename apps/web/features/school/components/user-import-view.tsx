@@ -43,6 +43,7 @@ import {
   usePreviewImportMutation,
 } from "../api";
 import {
+  countImportActions,
   downloadUserImportTemplate,
   importRowErrors,
   parseUserImportFile,
@@ -89,9 +90,11 @@ export function UserImportView(): ReactElement {
   };
 
   const errorCount = (results ?? []).filter((r) => importRowErrors(r).length > 0).length;
-  const createCount = (results ?? []).filter((r) => r.action === "create").length;
-  const updateCount = (results ?? []).filter((r) => r.action === "update").length;
-  const unchangedCount = (results ?? []).filter((r) => r.action === "unchanged").length;
+  const {
+    created: createCount,
+    updated: updateCount,
+    unchanged: unchangedCount,
+  } = countImportActions(results);
   const rowCount = rows?.length ?? 0;
   // Once committed, the counts and each row say what was done, not what
   // will be: "Dibuat" under "Impor selesai", never "Akan dibuat".
@@ -166,7 +169,14 @@ export function UserImportView(): ReactElement {
       });
       setResults(response.data);
       setStage("done");
-      toast.success(t("committed", { n: rows.length }));
+      // The toast reports what the commit did, from its own results: in
+      // upsert mode a re-imported row is updated or left alone, not created.
+      const counts = countImportActions(response.data);
+      toast.success(
+        mode === "upsert"
+          ? t("committedUpsert", { ...counts })
+          : t("committed", { n: counts.created }),
+      );
     } catch (error) {
       setCommitError(
         error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),

@@ -27,6 +27,20 @@ function rowErrorMessage(
   return t.has(key) ? t(key, error.params ?? {}) : t("rowError.unknown");
 }
 
+/**
+ * The API names each changed field by its template column identifier
+ * (guardian_phone, employment_status, ...), which is a contract, not a
+ * label: each one reads as the admin's own field name, and an identifier
+ * this build does not know yet is shown as sent rather than dropped.
+ */
+function changedFieldLabel(
+  t: ReturnType<typeof useTranslations<"app.school.users.import">>,
+  field: string,
+): string {
+  const key = `field.${field}`;
+  return t.has(key) ? t(key) : field;
+}
+
 /** A blank cell reads as missing data, so render an explicit dash instead. */
 function orDash(value: string): string {
   return value === "" ? "-" : value;
@@ -133,7 +147,9 @@ export function UserImportPreviewTable({
               </Badge>
               {action === "update" && changedFields.length > 0 && (
                 <span className="text-caption text-fg-muted">
-                  {t("table.changedFields", { fields: changedFields.join(", ") })}
+                  {t("table.changedFields", {
+                    fields: changedFields.map((field) => changedFieldLabel(t, field)).join(", "),
+                  })}
                 </span>
               )}
             </div>

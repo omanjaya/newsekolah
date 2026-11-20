@@ -23,6 +23,31 @@ export function importRowErrors(
   return Array.isArray(result?.errors) ? result.errors : [];
 }
 
+export interface ImportActionCounts {
+  created: number;
+  updated: number;
+  unchanged: number;
+}
+
+/**
+ * How many rows a preview will (or a commit did) create, update or leave
+ * unchanged, counted from each row's action. Every summary on the import
+ * screen (stats, alert, toast) reads from here, so none of them can fall
+ * back to the uploaded row count and claim rows were created when an
+ * upsert only updated them.
+ */
+export function countImportActions(
+  results: readonly Pick<UserImportRowResult, "action">[] | null | undefined,
+): ImportActionCounts {
+  const counts: ImportActionCounts = { created: 0, updated: 0, unchanged: 0 };
+  for (const result of results ?? []) {
+    if (result.action === "create") counts.created++;
+    else if (result.action === "update") counts.updated++;
+    else if (result.action === "unchanged") counts.unchanged++;
+  }
+  return counts;
+}
+
 const IMPORT_DATA_SHEET = "Import";
 
 /**
