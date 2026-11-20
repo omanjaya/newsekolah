@@ -135,7 +135,8 @@ func TestScheduleObservationRules(t *testing.T) {
 // TestCycleCriterionNamesMustDiffer: two criteria with one name (their
 // codes made distinct) gave the scoring form two rows nobody could tell
 // apart. Refused on create; an instrument stored before the rule with a
-// repeated name stays editable as long as no new repetition is added.
+// repeated name stays editable as long as no copy is added, of a new name
+// or of the one it already repeated.
 func TestCycleCriterionNamesMustDiffer(t *testing.T) {
 	ctx := context.Background()
 	pg := dbtest.Start(t)
@@ -166,5 +167,28 @@ func TestCycleCriterionNamesMustDiffer(t *testing.T) {
 	legacyInstrument.Criteria = append(legacyInstrument.Criteria,
 		domain.Criterion{Key: "m", Name: "Metode"}, domain.Criterion{Key: "m_2", Name: "metode"})
 	_, err = svc.UpdateCycle(ctx, tenant, legacy, service.CycleInput{Name: "Legacy diubah", Instrument: legacyInstrument})
+	require.ErrorIs(t, err, domain.ErrCriterionNameTaken)
+
+	// A third copy of the name the instrument already repeated is a new
+	// repetition too: the legacy count may stay or shrink, never grow.
+	third := domain.Instrument{Name: "Instrumen", ScaleMin: 1, ScaleMax: 4, Criteria: []domain.Criterion{
+		{Key: "pk", Name: "Penguasaan kelas"},
+		{Key: "pk_2", Name: "Penguasaan kelas"},
+		{Key: "penguasaan_kelas_3", Name: "Penguasaan Kelas"},
+	}}
+	_, err = svc.UpdateCycle(ctx, tenant, legacy, service.CycleInput{Name: "Legacy diubah", Instrument: third})
+	require.ErrorIs(t, err, domain.ErrCriterionNameTaken)
+
+	// Dropping one copy is accepted, after which the name may not repeat.
+	single := domain.Instrument{Name: "Instrumen", ScaleMin: 1, ScaleMax: 4, Criteria: []domain.Criterion{
+		{Key: "pk", Name: "Penguasaan kelas"},
+	}}
+	_, err = svc.UpdateCycle(ctx, tenant, legacy, service.CycleInput{Name: "Legacy diubah", Instrument: single})
+	require.NoError(t, err)
+	repeatedAgain := domain.Instrument{Name: "Instrumen", ScaleMin: 1, ScaleMax: 4, Criteria: []domain.Criterion{
+		{Key: "pk", Name: "Penguasaan kelas"},
+		{Key: "pk_2", Name: "Penguasaan kelas"},
+	}}
+	_, err = svc.UpdateCycle(ctx, tenant, legacy, service.CycleInput{Name: "Legacy diubah", Instrument: repeatedAgain})
 	require.ErrorIs(t, err, domain.ErrCriterionNameTaken)
 }

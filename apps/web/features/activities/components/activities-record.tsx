@@ -22,7 +22,10 @@ export interface RecordQuery<T> {
  * own page (/my-activities) and the student profile's activities tab, so
  * both read the same way. The student's own page lists this year's
  * achievements; the profile passes every year's (`achievementsAllYears`),
- * and the empty text says which.
+ * and the empty text says which. The rows open nothing, so a long club,
+ * activity or competition name wraps to a second line instead of being
+ * cut, and an achievement's date sits among its facts rather than beside
+ * the name, which leaves the name the row's full width on a phone.
  */
 export function ActivitiesRecord({
   clubs,
@@ -63,6 +66,7 @@ export function ActivitiesRecord({
             key={club.id}
             leading={<Volleyball aria-hidden="true" className="size-5 text-fg-muted" />}
             title={club.club_name}
+            titleLines={2}
             meta={
               club.left_on
                 ? t("memberPeriod", { from: day(club.joined_on), to: day(club.left_on) })
@@ -90,6 +94,7 @@ export function ActivitiesRecord({
               key={event.id}
               leading={<CalendarRange aria-hidden="true" className="size-5 text-fg-muted" />}
               title={event.name}
+              titleLines={2}
               meta={[
                 event.start_date === event.end_date
                   ? day(event.start_date)
@@ -113,12 +118,8 @@ export function ActivitiesRecord({
             key={achievement.id}
             leading={<Trophy aria-hidden="true" className="size-5 text-fg-muted" />}
             title={achievement.competition_name}
-            meta={[tLevels(achievement.level), achievement.placement]}
-            trailing={
-              <span className="text-body-sm text-fg-muted tabular-nums">
-                {day(achievement.achieved_on)}
-              </span>
-            }
+            titleLines={2}
+            meta={[tLevels(achievement.level), achievement.placement, day(achievement.achieved_on)]}
           />
         ))}
       </RecordSection>

@@ -68,20 +68,36 @@ export function normalizedCriterionName(name: string): string {
   return name.trim().toLowerCase().split(/\s+/).join(" ");
 }
 
+/** How many criteria carry each normalized name; a blank name is left out. */
+export function criterionNameCounts(criteria: readonly { name: string }[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const { name } of criteria) {
+    const normalized = normalizedCriterionName(name);
+    if (normalized === "") continue;
+    counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+  }
+  return counts;
+}
+
 /**
  * The normalized names more than one criterion carries. A repeated name
  * gets a distinct code from `uniqueCriterionKey`, but the observation form
  * and the teacher's report show criteria by name only, so the two rows
  * could not be told apart.
+ *
+ * `allowed` is the stored instrument's counts (`criterionNameCounts`) when
+ * a cycle saved before names had to be unique is edited: a name it already
+ * repeated may keep that many copies, or fewer, and is only returned once
+ * a copy is added. The API applies the same rule
+ * (domain.Instrument.ValidateNames).
  */
-export function duplicateCriterionNames(criteria: readonly { name: string }[]): Set<string> {
-  const seen = new Set<string>();
+export function duplicateCriterionNames(
+  criteria: readonly { name: string }[],
+  allowed?: ReadonlyMap<string, number>,
+): Set<string> {
   const duplicates = new Set<string>();
-  for (const { name } of criteria) {
-    const normalized = normalizedCriterionName(name);
-    if (normalized === "") continue;
-    if (seen.has(normalized)) duplicates.add(normalized);
-    seen.add(normalized);
+  for (const [name, count] of criterionNameCounts(criteria)) {
+    if (count > 1 && count > (allowed?.get(name) ?? 0)) duplicates.add(name);
   }
   return duplicates;
 }

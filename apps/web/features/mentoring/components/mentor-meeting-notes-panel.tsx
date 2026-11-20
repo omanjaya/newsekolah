@@ -38,9 +38,12 @@ import { MentorMeetingNoteForm } from "./mentor-meeting-note-form";
  * Meeting notes for one group. Rendered for a caller holding
  * `manage_mentoring`, which the list endpoint requires. That permission
  * does not open every note: a note's content is for its mentor, a
- * counselor or leadership only (`domain.MeetingNote.VisibleTo`), so a
- * group manager such as the admin is sent the others as `withheld_count`
- * and told they exist instead of being shown an empty list. "Catat
+ * counselor or a holder of the leadership duty (Wakil Kepala Sekolah)
+ * only (`domain.MeetingNote.VisibleTo`), so a group manager such as the
+ * admin is sent the others as `withheld_count` and told they exist
+ * instead of being shown an empty list. The principal role holds
+ * view_mentoring but not manage_mentoring and reads no note, so the
+ * withheld copy names the vice principal, not "school leadership". "Catat
  * pertemuan" is offered to whoever may write in the group: its mentor or a
  * group manager (`manage_mentor_groups`); a counselor reads only.
  */

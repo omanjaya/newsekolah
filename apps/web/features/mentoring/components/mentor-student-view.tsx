@@ -10,7 +10,7 @@ import { RecordForbiddenPage, RecordNotFoundPage } from "../../../components/rec
 import { isForbiddenError, isNotFoundError } from "../../../lib/api/not-found";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useMentorGroupQuery, useMentorStudentSnapshotQuery } from "../api";
-import { useMentorGroupsHref } from "../permissions";
+import { useMentorGroupsCrumb } from "../permissions";
 
 import { MentorTermSummaryPanel } from "./mentor-term-summary-panel";
 import {
@@ -35,12 +35,16 @@ export function MentorStudentView({
   studentId: string;
 }): ReactElement {
   const t = useTranslations("app.mentoring.studentView");
-  const tMentoring = useTranslations("app.mentoring");
   const tGroup = useTranslations("app.mentoring.groupDetail");
   const snapshot = useMentorStudentSnapshotQuery(studentId);
   const group = useMentorGroupQuery(groupId);
-  const groupsHref = useMentorGroupsHref();
+  const groupsCrumb = useMentorGroupsCrumb();
   const groupLabel = group.data?.name ?? t("backToGroup");
+  const groupCrumb = { label: groupLabel, href: `/mentoring/groups/${groupId}` };
+  // The heading while the student is loading or failed: the group once
+  // known, else the reader's own group list, never the path-derived
+  // school-wide list a guru wali without view_mentoring cannot open.
+  const pendingTitle = group.data?.name ?? groupsCrumb.label;
 
   // An unknown or malformed id is a missing record, not a failure to
   // retry: the group's not-found page when the group is what is missing
@@ -49,8 +53,9 @@ export function MentorStudentView({
     return (
       <RecordNotFoundPage
         title={tGroup("notFoundTitle")}
-        backHref={groupsHref}
+        backHref={groupsCrumb.href}
         backLabel={tGroup("backToGroups")}
+        trailParent={groupsCrumb}
       />
     );
   }
@@ -60,8 +65,9 @@ export function MentorStudentView({
     return (
       <RecordForbiddenPage
         error={group.error}
-        backHref={groupsHref}
+        backHref={groupsCrumb.href}
         backLabel={tGroup("backToGroups")}
+        trailParent={groupsCrumb}
       />
     );
   }
@@ -74,8 +80,9 @@ export function MentorStudentView({
     return (
       <RecordNotFoundPage
         title={t("notFoundTitle")}
-        backHref={`/mentoring/groups/${groupId}`}
+        backHref={groupCrumb.href}
         backLabel={t("backToGroup")}
+        trailParent={groupCrumb}
       />
     );
   }
@@ -84,15 +91,16 @@ export function MentorStudentView({
     return (
       <RecordForbiddenPage
         error={snapshot.error}
-        backHref={groupsHref}
+        backHref={groupsCrumb.href}
         backLabel={tGroup("backToGroups")}
+        trailParent={groupsCrumb}
       />
     );
   }
 
   if (snapshotFailed && !group.isPending) {
     return (
-      <AppPage>
+      <AppPage title={pendingTitle} breadcrumb={[groupsCrumb, groupCrumb]}>
         <QueryError retry={() => snapshot.refetch()} error={snapshot.error} />
       </AppPage>
     );
@@ -100,7 +108,7 @@ export function MentorStudentView({
 
   if (snapshotFailed || snapshot.isLoading || !snapshot.data) {
     return (
-      <AppPage>
+      <AppPage title={pendingTitle} breadcrumb={[groupsCrumb, groupCrumb]}>
         <SkeletonDetail rows={6} />
       </AppPage>
     );
@@ -113,11 +121,7 @@ export function MentorStudentView({
     <AppPage
       title={name}
       description={data.class_name}
-      breadcrumb={[
-        { label: tMentoring("navLabelGroups"), href: groupsHref },
-        { label: groupLabel, href: `/mentoring/groups/${groupId}` },
-        { label: name },
-      ]}
+      breadcrumb={[groupsCrumb, groupCrumb, { label: name }]}
     >
       {/* Three short read-outs side by side once there is room, each card
           stretched to the row height; the activities record and the summary

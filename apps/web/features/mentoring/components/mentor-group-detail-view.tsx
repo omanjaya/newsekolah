@@ -13,7 +13,7 @@ import { useCan } from "../../../lib/session/session-provider";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { useGroupSizeLimitQuery, useMentorGroupMembersQuery, useMentorGroupQuery } from "../api";
-import { useMentorGroupsHref } from "../permissions";
+import { useMentorGroupsCrumb } from "../permissions";
 
 import { MentorGroupMembersPanel } from "./mentor-group-members-panel";
 import { MentorMeetingNotesPanel } from "./mentor-meeting-notes-panel";
@@ -34,7 +34,9 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
   );
 
   const group = useMentorGroupQuery(groupId);
-  const groupsHref = useMentorGroupsHref();
+  // The trail leads where the back buttons do: a guru wali without
+  // view_mentoring cannot open the full list the path would point at.
+  const groupsCrumb = useMentorGroupsCrumb();
   const members = useMentorGroupMembersQuery(groupId);
   const teacherMap = useDirectoryNames([group.data?.mentor_user_id]);
 
@@ -43,8 +45,9 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
     return (
       <RecordNotFoundPage
         title={t("notFoundTitle")}
-        backHref={groupsHref}
+        backHref={groupsCrumb.href}
         backLabel={t("backToGroups")}
+        trailParent={groupsCrumb}
       />
     );
   }
@@ -55,15 +58,19 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
     return (
       <RecordForbiddenPage
         error={group.error}
-        backHref={groupsHref}
+        backHref={groupsCrumb.href}
         backLabel={t("backToGroups")}
+        trailParent={groupsCrumb}
       />
     );
   }
 
+  // Until the group loads, the heading names the reader's own group list,
+  // as the trail does: the path-derived label is the school-wide list,
+  // which a guru wali without view_mentoring cannot open.
   if (group.isError && !group.data) {
     return (
-      <AppPage>
+      <AppPage title={groupsCrumb.label} breadcrumb={[groupsCrumb]}>
         <QueryError retry={() => group.refetch()} error={group.error} />
       </AppPage>
     );
@@ -71,7 +78,7 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
 
   if (group.isLoading || !group.data) {
     return (
-      <AppPage>
+      <AppPage title={groupsCrumb.label} breadcrumb={[groupsCrumb]}>
         <SkeletonDetail rows={5} />
       </AppPage>
     );
@@ -87,6 +94,7 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
   return (
     <AppPage
       title={group.data.name}
+      breadcrumb={[groupsCrumb, { label: group.data.name }]}
       description={[t("mentorLabel", { name: mentorName }), size].filter(Boolean).join(" · ")}
     >
       <Tabs value={tab} onValueChange={setTab}>

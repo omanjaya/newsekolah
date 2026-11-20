@@ -34,6 +34,20 @@ afterEach(() => {
   mocks.update.mockReset();
 });
 
+const legacyCycle = {
+  id: "c1",
+  name: "Semester ganjil",
+  instrument: {
+    name: "Instrumen",
+    scale_min: 1,
+    scale_max: 4,
+    criteria: [
+      { key: "pk", name: "Penguasaan kelas" },
+      { key: "pk_2", name: "Penguasaan kelas" },
+    ],
+  },
+} as SupervisionCycle;
+
 function fillCycle() {
   const [cycleName, instrumentName] = screen.getAllByPlaceholderText("namePlaceholder");
   if (!cycleName || !instrumentName) throw new Error("name inputs missing");
@@ -59,23 +73,25 @@ describe("SupervisionCycleForm", () => {
   });
 
   it("saves an existing cycle whose names already repeated before the rule", () => {
-    const initial = {
-      id: "c1",
-      name: "Semester ganjil",
-      instrument: {
-        name: "Instrumen",
-        scale_min: 1,
-        scale_max: 4,
-        criteria: [
-          { key: "pk", name: "Penguasaan kelas" },
-          { key: "pk_2", name: "Penguasaan kelas" },
-        ],
-      },
-    } as SupervisionCycle;
-    render(<SupervisionCycleForm initial={initial} onDone={vi.fn()} />);
+    render(<SupervisionCycleForm initial={legacyCycle} onDone={vi.fn()} />);
+    // The stored repetition is not marked: the inline errors agree with Save.
+    expect(screen.queryByText("criterionNameDuplicate")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "submit" }));
 
     expect(screen.queryByText("errors.criteriaNameDuplicate")).not.toBeInTheDocument();
     expect(mocks.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks Save when a third copy of a name that already repeated is added", () => {
+    render(<SupervisionCycleForm initial={legacyCycle} onDone={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "addCriterion" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "criterionNameLabel 3" }), {
+      target: { value: "Penguasaan Kelas" },
+    });
+    expect(screen.getAllByText("criterionNameDuplicate")).toHaveLength(3);
+    fireEvent.click(screen.getByRole("button", { name: "submit" }));
+
+    expect(screen.getByText("errors.criteriaNameDuplicate")).toBeInTheDocument();
+    expect(mocks.update).not.toHaveBeenCalled();
   });
 });

@@ -13,7 +13,11 @@ import {
   useCreateSupervisionCycleMutation,
   useUpdateSupervisionCycleMutation,
 } from "../api";
-import { duplicateCriterionKeys, duplicateCriterionNames } from "../lib/criterion-key";
+import {
+  criterionNameCounts,
+  duplicateCriterionKeys,
+  duplicateCriterionNames,
+} from "../lib/criterion-key";
 
 import { SupervisionInstrumentFields } from "./supervision-instrument-fields";
 
@@ -50,9 +54,10 @@ export function SupervisionCycleForm({
     () => new Set((initial?.instrument.criteria ?? []).map((criterion) => criterion.key)),
   );
   // An instrument saved before names had to be unique keeps its repeated
-  // names editable, as the API allows; any new repetition blocks Save.
-  const [legacyRepeatedNames] = useState(() =>
-    duplicateCriterionNames(initial?.instrument.criteria ?? []),
+  // names editable with as many copies as it had, as the API allows; any
+  // added copy, of a new name or of one it already repeated, blocks Save.
+  const [legacyNameCounts] = useState(() =>
+    criterionNameCounts(initial?.instrument.criteria ?? []),
   );
   const [attempted, setAttempted] = useState(false);
 
@@ -68,9 +73,7 @@ export function SupervisionCycleForm({
     ...(duplicateCriterionKeys(instrument.criteria).size > 0
       ? [t("errors.criteriaDuplicate")]
       : []),
-    ...([...duplicateCriterionNames(instrument.criteria)].some(
-      (name) => !legacyRepeatedNames.has(name),
-    )
+    ...(duplicateCriterionNames(instrument.criteria, legacyNameCounts).size > 0
       ? [t("errors.criteriaNameDuplicate")]
       : []),
   ];
@@ -117,6 +120,7 @@ export function SupervisionCycleForm({
         instrument={instrument}
         onChange={setInstrument}
         lockedKeys={lockedKeys}
+        legacyNameCounts={legacyNameCounts}
       />
 
       <DialogFooter>
