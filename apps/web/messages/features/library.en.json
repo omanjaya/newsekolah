@@ -6,8 +6,11 @@
   },
   "dueBadge": {
     "dueOn": "Due {date}",
-    "overdue": "{days} days overdue (due {date})",
-    "overdueShort": "{days} days overdue"
+    "overdue": "{days} calendar days overdue (due {date})",
+    "overdueShort": "{days} calendar days overdue",
+    "overdueWorking": "{days} working days overdue (due {date})",
+    "overdueWorkingShort": "{days} working days overdue",
+    "pastDue": "Past due"
   },
   "dashboard": {
     "eyebrow": "Library",

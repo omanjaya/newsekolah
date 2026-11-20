@@ -6,8 +6,11 @@
   },
   "dueBadge": {
     "dueOn": "Kembali {date}",
-    "overdue": "Terlambat {days} hari (jatuh tempo {date})",
-    "overdueShort": "Terlambat {days} hari"
+    "overdue": "Terlambat {days} hari kalender (jatuh tempo {date})",
+    "overdueShort": "Terlambat {days} hari kalender",
+    "overdueWorking": "Terlambat {days} hari kerja (jatuh tempo {date})",
+    "overdueWorkingShort": "Terlambat {days} hari kerja",
+    "pastDue": "Lewat jatuh tempo"
   },
   "dashboard": {
     "eyebrow": "Perpustakaan",

@@ -77,6 +77,9 @@ type OverdueLoanDetail struct {
 	Loan          domain.Loan
 	ClassName     string
 	GuardianPhone string
+	// LateDays is the working days the loan is late today (closed weekend
+	// days and holidays not counted), what a return now would charge for.
+	LateDays int
 }
 
 // TenantRef is one tenant's id and timezone, for periodic jobs that must

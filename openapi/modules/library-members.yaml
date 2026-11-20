@@ -1167,7 +1167,8 @@ components:
 
     LibraryOverdueLoanDetail:
       type: object
-      required: [loan, class_name, guardian_phone, member_name, member_no, title, barcode]
+      required:
+        [loan, class_name, guardian_phone, member_name, member_no, title, barcode, late_days]
       properties:
         member_name: { type: string }
         member_no: { type: string }
@@ -1176,6 +1177,13 @@ components:
         loan: { $ref: "#/components/schemas/LibraryLoan" }
         class_name: { type: string }
         guardian_phone: { type: string }
+        late_days:
+          type: integer
+          minimum: 0
+          description: >-
+            The working days the loan is late today (closed weekend days and
+            holidays not counted), the count a return now would be charged
+            for, so the desk's overdue list and its return line agree.
 
     LibraryViolationKind:
       type: string

@@ -52,13 +52,19 @@ vi.mock("@newsekolah/ui", async () => {
   return { ...actual, useToast: () => ({ success: vi.fn(), error: vi.fn() }) };
 });
 
-const loan = (id: string, title: string, barcode: string): LibraryOverdueLoanDetail => ({
+const loan = (
+  id: string,
+  title: string,
+  barcode: string,
+  lateDays = 3,
+): LibraryOverdueLoanDetail => ({
   member_name: "Sari",
   member_no: "M-001",
   title,
   barcode,
   class_name: "X-1",
   guardian_phone: "0812",
+  late_days: lateDays,
   loan: {
     id,
     member_user_id: "member-1",
@@ -103,9 +109,26 @@ describe("DeskOverdueTable", () => {
 
     // The section heading already says the loan is late, so the badge drops
     // the "(jatuh tempo ...)" tail that kept the row too wide to fit.
-    expect(screen.getAllByText("overdueShort").length).toBeGreaterThan(0);
-    expect(screen.queryByText("overdue")).not.toBeInTheDocument();
+    expect(screen.getAllByText("overdueWorkingShort").length).toBeGreaterThan(0);
+    expect(screen.queryByText("overdueWorking")).not.toBeInTheDocument();
     expect(screen.getAllByText("dueDate").length).toBeGreaterThan(0);
+  });
+
+  // A loan due Friday read "Terlambat 3 hari" on Monday while returning it
+  // said "Terlambat 1 hari kerja": the list now shows the server's
+  // working-day count, the one the return charges for.
+  it("counts the days late in working days, as the return line does", () => {
+    mockedQuery.mockReturnValue({
+      data: { data: [loan("loan-1", "Matematika", "BC-001", 1)] },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    render(<DeskOverdueTable />);
+
+    expect(screen.getAllByText("overdueWorkingShort").length).toBeGreaterThan(0);
+    expect(screen.queryByText("overdueShort")).not.toBeInTheDocument();
   });
 
   it("filters the local table by title and barcode", async () => {

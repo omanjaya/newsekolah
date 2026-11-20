@@ -10723,6 +10723,8 @@ export interface components {
             loan: components["schemas"]["LibraryLoan"];
             class_name: string;
             guardian_phone: string;
+            /** @description The working days the loan is late today (closed weekend days and holidays not counted), the count a return now would be charged for, so the desk's overdue list and its return line agree. */
+            late_days: number;
         };
         /** @enum {string} */
         LibraryViolationKind: "late" | "lost" | "damaged" | "other";

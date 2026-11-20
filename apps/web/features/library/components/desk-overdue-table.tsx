@@ -116,7 +116,13 @@ export function DeskOverdueTable(): ReactElement {
         // cannot wrap and pushed the row's actions out of a 1280px table.
         cell: ({ row }) => (
           <div className="flex flex-col items-start gap-1">
-            <DueBadge compact dueOn={row.original.loan.due_on} today={today} locale={locale} />
+            <DueBadge
+              compact
+              dueOn={row.original.loan.due_on}
+              lateDays={row.original.late_days}
+              today={today}
+              locale={locale}
+            />
             <span className="text-caption whitespace-nowrap text-fg-muted">
               {t("dueDate", {
                 date: formatShortDay(row.original.loan.due_on, locale, { today }),

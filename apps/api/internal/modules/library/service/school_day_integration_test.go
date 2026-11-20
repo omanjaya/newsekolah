@@ -255,6 +255,33 @@ func TestOverdueMembersReportProjectsTheReturnFine(t *testing.T) {
 	require.Equal(t, 2, returned.LateDays, "the return reports the working days it charged, not calendar days")
 }
 
+// TestOverdueLoansDetailedCountsWorkingDaysLate checks the desk's overdue
+// list against the return line beside it: on Monday 28 Dec a loan due
+// Thursday 24 Dec is 2 working days late (Fri 25, Mon 28; the weekend is
+// closed), the count a return then charges, not 4 calendar days.
+func TestOverdueLoansDetailedCountsWorkingDaysLate(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	w := seedWitaWorld(t, ctx, pg.AdminPool, 1)
+	svc := newCirculationService(pg.AppPool)
+
+	w.borrow(t, at(t, ctx, "2026-12-14T01:00:00Z"), svc, w.barcodes[0]) // due Thu 24 Dec
+	monday := at(t, ctx, "2026-12-27T23:30:00Z")                        // 07:30 WITA Mon 28 Dec
+
+	overdue, err := svc.OverdueLoansDetailed(monday, w.tenantID)
+	require.NoError(t, err)
+	require.Len(t, overdue, 1)
+	require.Equal(t, 2, overdue[0].LateDays, "working days late, the weekend not counted")
+
+	returned, err := svc.Return(monday, w.tenantID, service.ReturnInput{Barcode: w.barcodes[0], CheckedInBy: w.memberID})
+	require.NoError(t, err)
+	require.Equal(t, overdue[0].LateDays, returned.LateDays, "the list and the return count the same days")
+
+	overdue, err = svc.OverdueLoansDetailed(monday, w.tenantID)
+	require.NoError(t, err)
+	require.Empty(t, overdue)
+}
+
 // memberLookupCountingRepo counts single-member lookups, so a report that
 // should load its members in one batch can be checked for an N+1.
 type memberLookupCountingRepo struct {

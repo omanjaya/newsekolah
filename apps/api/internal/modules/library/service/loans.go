@@ -750,13 +750,43 @@ func (s *Service) OverdueLoans(ctx context.Context, tenantID uuid.UUID) ([]domai
 }
 
 // OverdueLoansDetailed is the overdue list with class and guardian phone
-// (old app: library_circulation_v2.go:634-678).
+// (old app: library_circulation_v2.go:634-678). Each loan carries the
+// working days it is late today (LateDays), counted by the very rule a
+// return charges (WorkingDayRule.WorkingDaysLate): the desk shows this
+// list next to the return line, so the two must not count differently.
 func (s *Service) OverdueLoansDetailed(ctx context.Context, tenantID uuid.UUID) ([]OverdueLoanDetail, error) {
 	var out []OverdueLoanDetail
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
-		out, err = s.repo.ListOverdueLoansDetailed(ctx, tenantID, s.schoolToday(ctx, tenantID, clock.Now(ctx, s.clock)))
-		return err
+		today := s.schoolToday(ctx, tenantID, clock.Now(ctx, s.clock))
+		details, err := s.repo.ListOverdueLoansDetailed(ctx, tenantID, today)
+		if err != nil {
+			return err
+		}
+		if len(details) == 0 {
+			out = details
+			return nil
+		}
+		policy, err := s.loadPolicy(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		// One holiday calendar spans every overdue loan, earliest due date
+		// through today, as OverdueMembers loads it.
+		earliestDue := details[0].Loan.DueOn
+		for _, d := range details[1:] {
+			if d.Loan.DueOn.Before(earliestDue) {
+				earliestDue = d.Loan.DueOn
+			}
+		}
+		wdr, err := s.workingDayRule(ctx, tenantID, policy, earliestDue, daysUntil(earliestDue, today)+1)
+		if err != nil {
+			return err
+		}
+		for i := range details {
+			details[i].LateDays = wdr.WorkingDaysLate(details[i].Loan.DueOn, today)
+		}
+		out = details
+		return nil
 	})
 	return out, err
 }
