@@ -1,5 +1,9 @@
 import { decodeScanPayload } from "@/features/scan/payload";
-import { deskApprovalTarget, permitAwaitingDeskApproval } from "@/lib/permits/exit-permit";
+import {
+  deskApprovalTarget,
+  deskRefusal,
+  permitAwaitingDeskApproval,
+} from "@/lib/permits/exit-permit";
 
 const picket = { label: "Guru piket", approver_rule: "any_teacher", verification: "qr_scan" };
 const counselor = { label: "Guru BK", approver_rule: "duty:counselor", verification: "qr_scan" };
@@ -41,17 +45,56 @@ describe("deskApprovalTarget", () => {
   });
 
   it("names the stage a permit past the desk waits on", () => {
-    const permits = [{ id: "now", status: "in_progress", current_stage: counselor }];
-    expect(deskApprovalTarget(permits)).toEqual({ kind: "elsewhere", stage: counselor });
+    const permit = { id: "now", status: "in_progress", current_stage: counselor };
+    expect(deskApprovalTarget([permit])).toEqual({ kind: "elsewhere", permit, stage: counselor });
   });
 
   it("points an approved permit to the gate", () => {
-    expect(deskApprovalTarget([{ id: "now", status: "approved" }])).toEqual({
-      kind: "awaitingGate",
-    });
+    const permit = { id: "now", status: "approved" };
+    expect(deskApprovalTarget([permit])).toEqual({ kind: "awaitingGate", permit });
   });
 
   it("finds nothing under way when every permit is closed", () => {
     expect(deskApprovalTarget([{ id: "old", status: "completed" }])).toEqual({ kind: "none" });
+  });
+});
+
+describe("deskRefusal", () => {
+  const permit = { id: "now", status: "in_progress" };
+
+  it("sends the student to a QR-scan stage's own QR", () => {
+    expect(deskRefusal({ kind: "elsewhere", permit, stage: counselor }, false)).toEqual({
+      reason: "scanStage",
+      stage: "Guru BK",
+    });
+  });
+
+  // A manual stage has no QR to scan: its approver decides on their own
+  // screen, so the student is told to wait rather than to scan.
+  it("tells the student to wait for a stage reviewed without a QR", () => {
+    const review = { ...picket, verification: "manual" };
+    expect(deskRefusal({ kind: "elsewhere", permit, stage: review }, false)).toEqual({
+      reason: "awaitingReview",
+      stage: "Guru piket",
+    });
+  });
+
+  it("points an approved permit to the gate while its lessons last", () => {
+    expect(deskRefusal({ kind: "awaitingGate", permit }, false)).toEqual({
+      reason: "awaitingGate",
+    });
+  });
+
+  // Once the lessons are over the API refuses every further stage and the
+  // gate QR, so neither is advice that can work.
+  it("says the permit has ended once its lessons are over", () => {
+    expect(deskRefusal({ kind: "awaitingGate", permit }, true)).toEqual({ reason: "lessonsOver" });
+    expect(deskRefusal({ kind: "elsewhere", permit, stage: counselor }, true)).toEqual({
+      reason: "lessonsOver",
+    });
+  });
+
+  it("finds no permit under way", () => {
+    expect(deskRefusal({ kind: "none" }, false)).toEqual({ reason: "none" });
   });
 });

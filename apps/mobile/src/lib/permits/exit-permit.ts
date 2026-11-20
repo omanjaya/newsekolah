@@ -149,14 +149,14 @@ interface DeskStage {
  * What the desk QR means for the scanning student (as deskApprovalTarget
  * in apps/web/features/permits/lib/desk-approval.ts), so a scan that
  * approves nothing says why instead of sending them to request a permit
- * they already have: `elsewhere` names the stage the permit waits on,
- * `awaitingGate` means every stage has passed, `none` that no exit permit
- * is under way.
+ * they already have: `elsewhere` is a permit waiting on a stage the desk
+ * QR cannot approve, `awaitingGate` one whose every stage has passed,
+ * `none` that no exit permit is under way.
  */
 export type DeskApprovalTarget<T> =
   | { kind: "ready"; permit: T }
-  | { kind: "elsewhere"; stage: DeskStage }
-  | { kind: "awaitingGate" }
+  | { kind: "elsewhere"; permit: T; stage: DeskStage }
+  | { kind: "awaitingGate"; permit: T }
   | { kind: "none" };
 
 export function deskApprovalTarget<T extends { status: string; current_stage?: DeskStage }>(
@@ -164,10 +164,38 @@ export function deskApprovalTarget<T extends { status: string; current_stage?: D
 ): DeskApprovalTarget<T> {
   const waiting = permitAwaitingDeskApproval(permits);
   if (waiting) return { kind: "ready", permit: waiting };
-  const stage = permits.find((p) => p.status === "in_progress" && p.current_stage)?.current_stage;
-  if (stage) return { kind: "elsewhere", stage };
-  if (permits.some((p) => p.status === "approved")) return { kind: "awaitingGate" };
+  const inProgress = permits.find((p) => p.status === "in_progress" && p.current_stage);
+  if (inProgress?.current_stage) {
+    return { kind: "elsewhere", permit: inProgress, stage: inProgress.current_stage };
+  }
+  const approved = permits.find((p) => p.status === "approved");
+  if (approved) return { kind: "awaitingGate", permit: approved };
   return { kind: "none" };
+}
+
+/**
+ * Why a desk QR scan approved nothing, as the student should hear it (as
+ * deskRefusal on the web): `scanStage` sends them to a QR-scan stage's own
+ * QR, `awaitingReview` to wait for a stage its approver decides without a
+ * QR, `awaitingGate` to the gate QR, and `lessonsOver` says the permit's
+ * last lesson has ended, so the API refuses every further stage and its
+ * gate QR (EXIT_PERMIT_WINDOW_CLOSED).
+ */
+export type DeskRefusal =
+  | { reason: "scanStage" | "awaitingReview"; stage: string }
+  | { reason: "awaitingGate" | "lessonsOver" | "none" };
+
+export function deskRefusal(
+  target: Exclude<DeskApprovalTarget<unknown>, { kind: "ready" }>,
+  lessonsOver: boolean,
+): DeskRefusal {
+  if (target.kind === "none") return { reason: "none" };
+  if (lessonsOver) return { reason: "lessonsOver" };
+  if (target.kind === "awaitingGate") return { reason: "awaitingGate" };
+  return {
+    reason: target.stage.verification === "qr_scan" ? "scanStage" : "awaitingReview",
+    stage: target.stage.label,
+  };
 }
 
 export interface ExitReturnFields {

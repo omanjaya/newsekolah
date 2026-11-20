@@ -1,6 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type * as SimulationClock from "../../../lib/simulation/clock";
 import type * as PermitsApi from "../../permits/api";
 
 const mocks = vi.hoisted(() => ({
@@ -8,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   lateStage: vi.fn(),
   refetchLate: vi.fn(),
   refetchMine: vi.fn(),
+  refetchPeriods: vi.fn(),
   libraryVisit: vi.fn(),
 }));
 
@@ -20,7 +22,15 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => `error:${code}`,
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
-  useSession: () => ({ me: { disabled_modules: [] } }),
+  useSession: () => ({ me: { disabled_modules: [], tenant: { timezone: "Asia/Jakarta" } } }),
+}));
+// 10:00 on the school's clock (Asia/Jakarta, UTC+7), Wednesday 20 January 2027.
+vi.mock("../../../lib/simulation/clock", async (importOriginal) => ({
+  ...(await importOriginal<typeof SimulationClock>()),
+  businessNow: () => new Date("2027-01-20T03:00:00Z"),
+}));
+vi.mock("../../reference/api", () => ({
+  usePeriodsQuery: () => ({ refetch: mocks.refetchPeriods }),
 }));
 vi.mock("../../library/visits-api", () => ({
   useScanLibraryKioskVisitMutation: () => ({ mutateAsync: mocks.libraryVisit }),
@@ -59,6 +69,23 @@ function scanned(status: string, currentStageIndex: number) {
       current_stage_index: currentStageIndex,
       stages: [picket, counselor, principal],
     },
+  };
+}
+
+/** The timetable: lesson 2 ended at 08:30, lesson 6 ends at 11:30. */
+const periods = [
+  { id: "jam-2", ends_at: "08:30:00" },
+  { id: "jam-6", ends_at: "11:30:00" },
+];
+
+/** One of the student's own exit permits, opened this school day at 07:30. */
+function mine(id: string, status: string, endPeriodId: string, currentStage?: typeof picket) {
+  return {
+    id,
+    status,
+    end_period_id: endPeriodId,
+    opened_at: "2027-01-20T00:30:00Z",
+    current_stage: currentStage,
   };
 }
 
@@ -129,6 +156,8 @@ describe("useScanDispatch duty desk approval QR", () => {
     mocks.lateStage.mockReset();
     mocks.refetchLate.mockReset();
     mocks.refetchMine.mockReset();
+    mocks.refetchPeriods.mockReset();
+    mocks.refetchPeriods.mockResolvedValue({ data: { data: periods } });
   });
 
   it("approves the student's own exit permit waiting on the desk", async () => {
@@ -147,6 +176,7 @@ describe("useScanDispatch duty desk approval QR", () => {
 
     expect(mocks.refetchMine).toHaveBeenCalledWith({ throwOnError: true });
     expect(mocks.exitStage).toHaveBeenCalledWith({ id: "exit-7", token: "desk-tok" });
+    expect(mocks.refetchPeriods).not.toHaveBeenCalled();
     expect(mocks.lateStage).not.toHaveBeenCalled();
     expect(outcome).toMatchObject({
       ok: true,
@@ -159,7 +189,7 @@ describe("useScanDispatch duty desk approval QR", () => {
   // to the stage it waits on instead of to a request form that is hidden.
   it("names the stage the permit waits on when it is past the desk", async () => {
     mocks.refetchMine.mockResolvedValue({
-      data: { data: [{ id: "exit-7", status: "in_progress", current_stage: counselor }] },
+      data: { data: [mine("exit-7", "in_progress", "jam-6", counselor)] },
     });
     const { result } = renderHook(() => useScanDispatch());
 
@@ -172,9 +202,27 @@ describe("useScanDispatch duty desk approval QR", () => {
     });
   });
 
+  // A stage its approver decides on their own screen has no QR to scan:
+  // the student is told to wait, not to scan a code that does not exist.
+  it("tells the student to wait for a stage reviewed without a QR", async () => {
+    const review = { ...picket, verification: "manual" };
+    mocks.refetchMine.mockResolvedValue({
+      data: { data: [mine("exit-7", "in_progress", "jam-6", review)] },
+    });
+    const { result } = renderHook(() => useScanDispatch());
+
+    const outcome = await result.current("sion:approve_stage::desk-tok");
+
+    expect(mocks.exitStage).not.toHaveBeenCalled();
+    expect(outcome).toMatchObject({
+      ok: false,
+      message: 'failures.permitAwaitingReview {"stage":"Guru piket"}',
+    });
+  });
+
   it("points an approved permit to the gate", async () => {
     mocks.refetchMine.mockResolvedValue({
-      data: { data: [{ id: "exit-7", status: "approved" }] },
+      data: { data: [mine("exit-7", "approved", "jam-6")] },
     });
     const { result } = renderHook(() => useScanDispatch());
 
@@ -182,6 +230,41 @@ describe("useScanDispatch duty desk approval QR", () => {
 
     expect(mocks.exitStage).not.toHaveBeenCalled();
     expect(outcome).toMatchObject({ ok: false, message: "failures.permitAwaitingGate" });
+  });
+
+  // Once the permit's last lesson has ended the API refuses its gate QR
+  // and every further stage, and the exit permit screen hides the gate QR:
+  // neither the gate nor the next stage is advice that can work.
+  it("says the permit has ended once its lessons are over", async () => {
+    mocks.refetchMine.mockResolvedValue({
+      data: { data: [mine("exit-7", "approved", "jam-2")] },
+    });
+    const { result } = renderHook(() => useScanDispatch());
+
+    const approved = await result.current("sion:approve_stage::desk-tok");
+
+    expect(approved).toMatchObject({ ok: false, message: "failures.permitLessonsOver" });
+
+    mocks.refetchMine.mockResolvedValue({
+      data: { data: [mine("exit-7", "in_progress", "jam-2", counselor)] },
+    });
+    const pending = await result.current("sion:approve_stage::desk-tok");
+
+    expect(pending).toMatchObject({ ok: false, message: "failures.permitLessonsOver" });
+    expect(mocks.exitStage).not.toHaveBeenCalled();
+  });
+
+  it("treats a permit from an earlier school day as over", async () => {
+    mocks.refetchMine.mockResolvedValue({
+      data: {
+        data: [{ ...mine("exit-7", "approved", "jam-6"), opened_at: "2027-01-19T01:00:00Z" }],
+      },
+    });
+    const { result } = renderHook(() => useScanDispatch());
+
+    const outcome = await result.current("sion:approve_stage::desk-tok");
+
+    expect(outcome).toMatchObject({ ok: false, message: "failures.permitLessonsOver" });
   });
 
   it("says so, without a request, when no exit permit is under way", async () => {

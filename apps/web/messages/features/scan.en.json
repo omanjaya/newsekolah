@@ -29,8 +29,10 @@
     "libraryVisitExpired": "This library QR code was already used or has expired. Scan the new code on the library screen.",
     "lateArrivalBusy": "Your late arrival is already being processed and is not waiting for a scan.",
     "noPermitAwaitingDesk": "None of your exit permits is waiting for the duty teacher's approval. This code only approves the duty teacher stage of an exit permit in progress.",
-    "permitAtOtherStage": "Your exit permit is not waiting for the duty teacher but for {stage}. Scan the QR code from {stage}.",
-    "permitAwaitingGate": "Every stage of your exit permit is already approved, so this code is not needed. Show the gate QR to security."
+    "permitAtOtherStage": "Your exit permit is waiting for {stage}, and this code cannot approve that stage. Scan the QR code from {stage}.",
+    "permitAwaitingReview": "Your exit permit is waiting for {stage} to review it. This code is not needed.",
+    "permitAwaitingGate": "Every stage of your exit permit is already approved, so this code is not needed. Show the gate QR to security.",
+    "permitLessonsOver": "The lessons on your exit permit are over, so it cannot go any further and this code is not needed. The permit expires on its own."
   },
   "unknown": {
     "empty": "The code is empty.",
