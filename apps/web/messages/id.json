@@ -1594,7 +1594,8 @@
           "dueBack": "Kembali paling lambat pukul {time}",
           "wasDueBack": "Seharusnya kembali pukul {time}",
           "returnedEyebrow": "Sudah kembali",
-          "returnedAt": "Kembali pukul {time}"
+          "returnedAt": "Kembali pukul {time}",
+          "lessonsOver": "Jam pelajaran izin ini sudah selesai, jadi QR gerbang tidak bisa ditampilkan lagi. Izin ini kedaluwarsa dengan sendirinya."
         },
         "waitManual": "Menunggu {stage} meninjau.",
         "gateQrLabel": "Kode QR gerbang izin keluar",

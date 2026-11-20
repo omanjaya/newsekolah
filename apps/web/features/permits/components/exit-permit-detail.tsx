@@ -35,7 +35,6 @@ import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { useBusinessNow } from "../../../lib/simulation/clock";
-import { isoToZonedLocal } from "../../../lib/tenant-date";
 import { usePeriodsQuery } from "../../reference/api";
 import {
   type ExitPermitDetail as ExitPermitDetailData,
@@ -53,6 +52,7 @@ import {
   lessonPeriodOptions,
   upcomingLessonPeriods,
 } from "../lib/lesson-period-options";
+import { usePermitLessonsOver, useSchoolTime } from "../lib/use-school-time";
 
 import { ExitedCard, useReturnText } from "./exit-permit-return";
 import { StageScanDialog } from "./stage-scan-dialog";
@@ -69,13 +69,12 @@ export function CreateForm({
   const locale = useLocale();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const { me } = useSession();
   const periods = usePeriodsQuery();
   const create = useCreateExitPermitMutation();
   // Only the lessons still running or to come on the school's clock (the
   // simulated one under the time simulation): the API refuses a window
   // that is already over.
-  const schoolTime = isoToZonedLocal(useBusinessNow(), me?.tenant.timezone).slice(11, 16);
+  const schoolTime = useSchoolTime();
   const options = lessonPeriodOptions(
     upcomingLessonPeriods(periods.data?.data ?? [], schoolTime),
     locale,
@@ -220,6 +219,7 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
   const gate = useIssueGateTokenMutation();
   const scan = useScanExitPermitStageMutation();
   const periodRange = usePeriodRange(data);
+  const lessonsOver = usePermitLessonsOver(data);
   const now = useBusinessNow();
   const [scanning, setScanning] = useState(false);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
@@ -253,9 +253,13 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
   }
 
   const approved = inst.status === "approved";
+  // An approved permit whose lessons are over has no gate QR left to show:
+  // say so instead of offering a button that can only fail.
+  const gateClosed = approved && lessonsOver && !gate.data;
   const scanStage = inst.status === "in_progress" && stage?.verification === "qr_scan";
   return (
     <HeroCard
+      tone={gateClosed ? "neutral" : "accent-soft"}
       eyebrow={approved ? t("hero.approvedEyebrow") : t("hero.activeEyebrow")}
       chip={
         approved
@@ -279,7 +283,7 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
           >
             {t("hero.scanStage", { stage: stage.label })}
           </Button>
-        ) : approved && !gate.data ? (
+        ) : approved && !gate.data && !lessonsOver ? (
           <Button
             size="lg"
             className="w-full sm:w-auto"
@@ -306,6 +310,7 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
         ) : undefined
       }
     >
+      {gateClosed && <p className="text-body-sm text-fg-muted">{t("hero.lessonsOver")}</p>}
       {approved && gate.data && (
         <div ref={gateQrRef} className="mt-3 scroll-mt-4">
           <QrPanel

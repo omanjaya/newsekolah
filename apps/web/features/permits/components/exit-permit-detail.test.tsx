@@ -16,6 +16,13 @@ const mocks = vi.hoisted(() => ({
   gate: undefined as { token: string; expires_at: string } | undefined,
   scanDialog: vi.fn(),
   now: new Date("2026-09-29T03:30:00Z"),
+  periods: [] as {
+    id: string;
+    name: string;
+    starts_at: string;
+    ends_at: string;
+    is_break: boolean;
+  }[],
 }));
 
 vi.mock("next-intl", () => ({
@@ -33,7 +40,9 @@ vi.mock("../../../lib/session/session-provider", () => ({
 vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
-vi.mock("../../reference/api", () => ({ usePeriodsQuery: () => ({ data: { data: [] } }) }));
+vi.mock("../../reference/api", () => ({
+  usePeriodsQuery: () => ({ data: { data: mocks.periods }, isSuccess: true }),
+}));
 vi.mock("../../../lib/simulation/clock", async () => {
   const actual = await vi.importActual<typeof ClockModule>("../../../lib/simulation/clock");
   return { ...actual, useBusinessNow: () => mocks.now };
@@ -114,6 +123,7 @@ beforeEach(() => {
   mocks.gate = undefined;
   mocks.scanDialog.mockReset();
   mocks.now = new Date("2026-09-29T03:30:00Z");
+  mocks.periods = [];
 });
 
 describe("ActiveExitPermitCard", () => {
@@ -202,6 +212,36 @@ describe("ActiveExitPermitCard", () => {
   });
 });
 
+// The permit's last lesson, p2, ends at 11.00 in Asia/Makassar (03:00Z).
+const PERMIT_PERIODS = [
+  { id: "p1", name: "Jam 1", starts_at: "07:00:00", ends_at: "07:45:00", is_break: false },
+  { id: "p2", name: "Jam 2", starts_at: "10:15:00", ends_at: "11:00:00", is_break: false },
+];
+
+describe("ActiveExitPermitCard once the permit's lessons are over", () => {
+  it("offers the gate QR while the last lesson is still running", () => {
+    mocks.periods = PERMIT_PERIODS;
+    mocks.now = new Date("2026-09-29T02:59:00Z");
+    mocks.detail = detail("approved");
+    render(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    expect(screen.getByRole("button", { name: "showGateQr" })).toBeInTheDocument();
+    expect(screen.queryByText("hero.lessonsOver")).not.toBeInTheDocument();
+  });
+
+  // The regression: the button stayed, and the API could only answer
+  // EXIT_PERMIT_PERIOD_PASSED.
+  it("says the lessons are over instead of offering a gate QR the API refuses", () => {
+    mocks.periods = PERMIT_PERIODS;
+    mocks.now = new Date("2026-09-29T03:00:00Z");
+    mocks.detail = detail("approved");
+    render(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    expect(screen.queryByRole("button", { name: "showGateQr" })).not.toBeInTheDocument();
+    expect(screen.getByText("hero.lessonsOver")).toBeInTheDocument();
+  });
+});
+
 /** Through the gate at 10.15 (02:15Z), due back at 11.00 (03:00Z). */
 function exited(extra: Partial<ExitPermitDetail> = {}): ExitPermitDetail {
   const base = detail("approved");
@@ -246,6 +286,16 @@ describe("ActiveExitPermitCard after the gate", () => {
     expect(screen.getByText(/hero\.returnedAt/)).toBeInTheDocument();
   });
 
+  it("says when a student came back without judging a return that had no due time", () => {
+    mocks.detail = exited({ expected_return_at: undefined, returned_at: "2026-09-29T03:20:00Z" });
+    render(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    expect(screen.getByText("hero.returnedEyebrow")).toBeInTheDocument();
+    expect(screen.getByText(/hero\.returnedAt/)).toBeInTheDocument();
+    expect(screen.queryByText("lateBy")).not.toBeInTheDocument();
+    expect(screen.queryByText("onTime")).not.toBeInTheDocument();
+  });
+
   it("keeps the plain exited card for a student who went home", () => {
     mocks.detail = exited({ return_required: false, expected_return_at: undefined });
     render(<ActiveExitPermitCard id={PERMIT_ID} />);
@@ -270,5 +320,25 @@ describe("ExitPermitDetail return line", () => {
     render(<ExitPermitDetailView id={PERMIT_ID} />);
 
     expect(screen.getByText("noReturn")).toBeInTheDocument();
+  });
+
+  // Migration 0140 keeps return_required on permits that exited before
+  // returns were tracked, with no due time: whether that student came back
+  // is unknown, so nothing is said either way.
+  it("says nothing about the return of a permit that exited before returns were tracked", () => {
+    mocks.detail = exited({ expected_return_at: undefined });
+    render(<ExitPermitDetailView id={PERMIT_ID} />);
+
+    expect(screen.queryByText("returnLabel")).not.toBeInTheDocument();
+    expect(screen.queryByText("noReturn")).not.toBeInTheDocument();
+  });
+
+  it("tells a return imported without a due time, with no on-time or late verdict", () => {
+    mocks.detail = exited({ expected_return_at: undefined, returned_at: "2026-09-29T03:20:00Z" });
+    render(<ExitPermitDetailView id={PERMIT_ID} />);
+
+    expect(screen.getByText("hero.returnedAt")).toBeInTheDocument();
+    expect(screen.queryByText("returnedLate")).not.toBeInTheDocument();
+    expect(screen.queryByText("returnedOnTime")).not.toBeInTheDocument();
   });
 });

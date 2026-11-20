@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   endAfterStartChange,
   endPeriodOptions,
+  lessonEnded,
   lessonPeriodOptions,
   upcomingLessonPeriods,
 } from "./lesson-period-options";
@@ -44,9 +45,19 @@ describe("upcomingLessonPeriods", () => {
   });
 });
 
+describe("lessonEnded", () => {
+  it("is true from the minute the lesson ends", () => {
+    expect(lessonEnded({ ends_at: "08:45:00" }, "08:44")).toBe(false);
+    expect(lessonEnded({ ends_at: "08:45:00" }, "08:45")).toBe(true);
+  });
+});
+
 describe("endPeriodOptions", () => {
   const options = lessonPeriodOptions(periods, "id");
 
+  // The API accepts a one-lesson range (start and end the same), so the
+  // start stays on offer as an end: during the day's last lesson it is the
+  // only range left.
   it("offers only the start lesson and those after it", () => {
     expect(endPeriodOptions(options, "p2").map((o) => o.value)).toEqual(["p2", "p3"]);
   });

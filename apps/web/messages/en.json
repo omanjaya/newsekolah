@@ -1596,7 +1596,8 @@
           "dueBack": "Due back by {time}",
           "wasDueBack": "Was due back at {time}",
           "returnedEyebrow": "Back at school",
-          "returnedAt": "Back at {time}"
+          "returnedAt": "Back at {time}",
+          "lessonsOver": "This permit's lessons are over, so its gate QR can no longer be shown. The permit expires on its own."
         },
         "waitManual": "Waiting for {stage} to review.",
         "gateQrLabel": "Exit permit gate QR code",

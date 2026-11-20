@@ -44,10 +44,22 @@ export function upcomingLessonPeriods<T extends LessonPeriod>(
   periods: readonly T[],
   schoolTime: string,
 ): T[] {
-  return periods.filter((p) => p.ends_at.slice(0, 5) > schoolTime);
+  return periods.filter((p) => !lessonEnded(p, schoolTime));
 }
 
-/** The options a range may end on: the start lesson and every one after it. */
+/**
+ * Whether `period` has ended by `schoolTime` ("HH:mm", the school's wall
+ * clock now). Once a permit's last lesson has ended the API refuses its
+ * gate QR (EXIT_PERMIT_PERIOD_PASSED), as it refuses a request for it.
+ */
+export function lessonEnded(period: Pick<LessonPeriod, "ends_at">, schoolTime: string): boolean {
+  return period.ends_at.slice(0, 5) <= schoolTime;
+}
+
+/**
+ * The options a range may end on: the start lesson (a one-lesson permit)
+ * and every one after it.
+ */
 export function endPeriodOptions(
   options: readonly LessonPeriodOption[],
   startId: string,
