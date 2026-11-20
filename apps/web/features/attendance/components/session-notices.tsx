@@ -1,18 +1,21 @@
 "use client";
 
 import type { Locale } from "@newsekolah/i18n";
-import { formatDateTime, formatTime } from "@newsekolah/i18n";
+import { formatDateTime, formatTime, formatWeekdayDate } from "@newsekolah/i18n";
 import { Alert, Button } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { isoToZonedLocal } from "../../../lib/tenant-date";
 
 /**
  * Why the session cannot be saved right now, above the roster: the lesson
- * has not started yet, or this viewer's save window has closed. A closed
- * window names when it ended (the API's editable_until, on the school's
- * clock); when only the server's refusal is known, its own message.
+ * was handed to a substitute, it has not started yet, or this viewer's
+ * save window has closed. A closed window names when it ended (the API's
+ * editable_until, on the school's clock); when only the server's refusal
+ * is known, its own message. A lesson on a later day than today names
+ * that day, since its start time alone reads as later today.
  */
 export function SessionWindowNotice({
   startsAt,
@@ -20,6 +23,8 @@ export function SessionWindowNotice({
   editableUntil,
   windowEnded,
   closedCode,
+  handedOver = false,
+  today,
   timeZone,
 }: {
   startsAt?: string;
@@ -29,12 +34,23 @@ export function SessionWindowNotice({
   windowEnded: boolean;
   /** The error code a save was refused with for its window, if any. */
   closedCode: string | null;
+  /** An accepted substitute fills this lesson instead of the viewer. */
+  handedOver?: boolean;
+  /** The school's today, "YYYY-MM-DD", to tell a later day's lesson apart. */
+  today?: string;
   timeZone?: string;
 }): ReactElement | null {
   const t = useTranslations("app.attendance.session");
   const locale = useLocale() as Locale;
   const apiErrorMessage = useApiErrorMessage();
 
+  if (handedOver) {
+    return (
+      <Alert tone="info" title={t("handedOverTitle")}>
+        {t("handedOverBody")}
+      </Alert>
+    );
+  }
   if (windowEnded || closedCode !== null) {
     return (
       <Alert tone="warning" title={t("closedTitle")}>
@@ -45,9 +61,13 @@ export function SessionWindowNotice({
     );
   }
   if (notStartedYet && startsAt) {
+    const time = formatTime(startsAt, { locale, timeZone });
+    const day = formatWeekdayDate(startsAt, { locale, timeZone });
+    const laterDay =
+      today !== undefined && isoToZonedLocal(startsAt, timeZone).slice(0, 10) > today;
     return (
       <Alert tone="info" title={t("notStartedTitle")}>
-        {t("notStartedBody", { time: formatTime(startsAt, { locale, timeZone }) })}
+        {laterDay ? t("notStartedBodyOnDay", { day, time }) : t("notStartedBody", { time })}
       </Alert>
     );
   }

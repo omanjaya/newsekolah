@@ -11,6 +11,7 @@ import {
   formatShortDateTime,
   formatTime,
   formatTimeZoneName,
+  formatWeekdayDate,
 } from "./format.js";
 
 const TZ = "Asia/Jakarta";
@@ -105,6 +106,26 @@ describe("calendar dates", () => {
     for (const timeZone of ["Asia/Makassar", "Asia/Jakarta", "UTC", "America/Los_Angeles"]) {
       expect(formatDate("2026-07-13", { locale: "id", timeZone })).toBe("13 Juli 2026");
     }
+  });
+});
+
+describe("formatWeekdayDate", () => {
+  const now = new Date("2026-11-20T14:30:00Z");
+
+  it("names the weekday before the day in both languages", () => {
+    expect(formatWeekdayDate("2026-11-21", { locale: "id", timeZone: "Asia/Makassar", now })).toBe(
+      "Sabtu, 21 Nov",
+    );
+    expect(formatWeekdayDate("2026-11-21", { locale: "en", timeZone: "Asia/Makassar", now })).toBe(
+      "Saturday 21 Nov",
+    );
+  });
+
+  it("reads an instant on the school's day", () => {
+    // 23.30 UTC on Friday the 20th is already Saturday in Makassar (UTC+8).
+    expect(
+      formatWeekdayDate("2026-11-20T23:30:00Z", { locale: "id", timeZone: "Asia/Makassar", now }),
+    ).toBe("Sabtu, 21 Nov");
   });
 });
 

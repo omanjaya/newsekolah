@@ -207,6 +207,44 @@ describe("SessionEditor -- saving", () => {
     expect(screen.getByText(/notStartedBody.*08\.00/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "save" })).toBeDisabled();
   });
+
+  it("names the day of a lesson on a later day, not only its time", () => {
+    syncSimulationIdentity(superadmin());
+    // Tuesday 22.30 in Asia/Jakarta, past the lesson's 08.00 on its clock.
+    setSimulation("frozen", new Date("2026-09-15T15:30:00Z"));
+    render(
+      <SessionEditor
+        session={session({ starts_at: "2026-09-16T01:00:00Z" })}
+        openedInCorrection={false}
+      />,
+    );
+
+    expect(screen.getByText(/notStartedBodyOnDay/)).toHaveTextContent(
+      'notStartedBodyOnDay {"day":"Rabu, 16 Sep","time":"08.00"}',
+    );
+    expect(screen.getByRole("button", { name: "save" })).toBeDisabled();
+  });
+});
+
+describe("SessionEditor -- a lesson handed to a substitute", () => {
+  it("lets its own teacher look but not save", () => {
+    syncSimulationIdentity(superadmin());
+    setSimulation("frozen", new Date("2026-09-16T03:00:00Z"));
+    render(
+      <SessionEditor
+        session={session({
+          starts_at: "2026-09-16T01:00:00Z",
+          save_mode: "correction",
+          handed_over_to_user_id: "substitute",
+        })}
+        openedInCorrection={false}
+      />,
+    );
+
+    expect(screen.getByText("handedOverTitle")).toBeInTheDocument();
+    expect(screen.queryByText("closedTitle")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^(save|saveCorrection)$/ })).toBeDisabled();
+  });
 });
 
 describe("SessionEditor -- a half-filled journal", () => {
