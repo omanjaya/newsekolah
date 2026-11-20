@@ -134,7 +134,11 @@ export function MentorStudentView({
         <CardHeader>
           <CardTitle as="h2">{t("termSummary.title")}</CardTitle>
         </CardHeader>
-        <MentorTermSummaryPanel groupId={groupId} studentId={studentId} />
+        <MentorTermSummaryPanel
+          groupId={groupId}
+          studentId={studentId}
+          mentorUserId={group.data?.mentor_user_id}
+        />
       </Card>
     </AppPage>
   );

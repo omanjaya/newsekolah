@@ -10,25 +10,33 @@ import { useState } from "react";
 import { useApiClient } from "../../../lib/api/client";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useMentorTermSummaryQuery, useWriteMentorTermSummaryMutation } from "../api";
 
 /**
  * The mentor's own written term appraisal of one student, separate from
- * meeting notes. Both read and write need `manage_mentoring`, so this is
- * only rendered for a mentor (or counselor/leadership holding that grant).
+ * meeting notes. Anyone who may open the group reads it; only the group's
+ * guru wali or a group manager (`manage_mentor_groups`) writes it, the same
+ * rule as the API (`domain.Viewer.CanWrite`). A counselor or leadership
+ * duty holder reads it without the field to edit, even though their
+ * teacher role carries `manage_mentoring`.
  */
 export function MentorTermSummaryPanel({
   groupId,
   studentId,
+  mentorUserId,
 }: {
   groupId: string;
   studentId: string;
+  /** The group's guru wali; `undefined` while the group is still loading. */
+  mentorUserId: string | undefined;
 }): ReactElement {
   const t = useTranslations("app.mentoring.termSummary");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const canWrite = useCan("manage_mentoring");
+  const managesGroups = useCan("manage_mentor_groups");
+  const { me } = useSession();
+  const canWrite = managesGroups || (me?.id !== undefined && me.id === mentorUserId);
   const year = useActiveYear();
   const client = useApiClient();
 
