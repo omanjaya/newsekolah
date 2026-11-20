@@ -37,9 +37,36 @@ it("names the visitor pass in the meta line for a phone, where the trailing badg
   expect(passes).toHaveLength(2);
   const phonePass = passes.find((el) => el.classList.contains("sm:hidden"));
   expect(phonePass).toBeDefined();
-  // A long host and arrival line truncates; the pass number must not go with it.
-  expect(phonePass?.closest(".truncate")).toBeNull();
-  expect(phonePass).toHaveClass("shrink-0");
+  // Its own line: it shared one with the host and arrival, refused to
+  // shrink, and squeezed that text to nothing beside the row's buttons
+  // while its own end ("TAMU-2/XI/2") was cut off with a stray separator.
+  expect(phonePass).toHaveClass("block", "truncate");
+  expect(phonePass).not.toHaveClass("shrink-0");
+  expect(phonePass?.textContent).toBe("badgeNumber 12");
+  const arrival = screen.getByText(/arrived/);
+  expect(phonePass?.contains(arrival)).toBe(false);
+  expect(arrival.parentElement?.contains(phonePass ?? null)).toBe(false);
+});
+
+it("gives a phone's two meta lines to the arrival and the pass, not the purpose", () => {
+  render(<OnSiteList entries={[entry]} canManage={false} onCheckOut={vi.fn()} />);
+
+  expect(screen.getByText("Rapat")).toHaveClass("max-sm:hidden");
+});
+
+it("keeps the purpose on a phone when there is no pass to show", () => {
+  const noBadge: BoardEntry = { ...entry, visit: { ...entry.visit, badge_number: "" } };
+  render(<OnSiteList entries={[noBadge]} canManage={false} onCheckOut={vi.fn()} />);
+
+  expect(screen.getByText("Rapat")).not.toHaveClass("max-sm:hidden");
+});
+
+it("shows check out as an icon on a phone, keeping its accessible name", () => {
+  render(<OnSiteList entries={[entry]} canManage onCheckOut={vi.fn()} onPrintBadge={vi.fn()} />);
+
+  const checkOut = screen.getByRole("button", { name: "checkOutFor" });
+  expect(screen.getByText("checkOutShort")).toHaveClass("sr-only", "sm:not-sr-only");
+  expect(checkOut).toContainElement(screen.getByText("checkOutShort"));
 });
 
 it("offers to print an issued badge and hands the visit to the caller", async () => {

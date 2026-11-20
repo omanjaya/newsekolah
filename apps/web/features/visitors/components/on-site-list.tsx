@@ -1,7 +1,7 @@
 "use client";
 
 import { formatTime, type Locale } from "@newsekolah/i18n";
-import { Avatar, Badge, Button, IconButton, List, ListRow } from "@newsekolah/ui";
+import { Avatar, Badge, Button, IconButton, List, ListRow, cn } from "@newsekolah/ui";
 import { LogOut, Printer } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -68,7 +68,13 @@ export function OnSiteList({
             title={visit.full_name}
             meta={
               <>
-                {about && <span className="block truncate">{about}</span>}
+                {/* The meta holds two lines. On a phone with a badge they go
+                    to whom and since when, and to the badge number. */}
+                {about && (
+                  <span className={cn("block truncate", visit.badge_number && "max-sm:hidden")}>
+                    {about}
+                  </span>
+                )}
                 <span className="flex min-w-0 items-center gap-1.5">
                   {overdue && (
                     <Badge tone="warning" size="sm" dot>
@@ -78,15 +84,16 @@ export function OnSiteList({
                   <span className="truncate">
                     {host ? `${t("host", { name: host })} · ${arrival}` : arrival}
                   </span>
-                  {/* The guard collects this card at check out, often from a
-                      phone, where the trailing badge has no room. It sits
-                      outside the truncated text so the ellipsis never hides it. */}
-                  {visit.badge_number && (
-                    <span className="shrink-0 sm:hidden">
-                      {`· ${t("badgeNumber", { number: visit.badge_number })}`}
-                    </span>
-                  )}
                 </span>
+                {/* The guard collects this card at check out, often from a
+                    phone, where the trailing badge has no room. It has a line
+                    of its own, so neither it nor the host and arrival line can
+                    squeeze the other out of the row. */}
+                {visit.badge_number && (
+                  <span className="block truncate sm:hidden">
+                    {t("badgeNumber", { number: visit.badge_number })}
+                  </span>
+                )}
               </>
             }
             trailing={
@@ -120,7 +127,9 @@ export function OnSiteList({
                         onCheckOut(visit);
                       }}
                     >
-                      {t("checkOutShort")}
+                      {/* Icon only on a phone, leaving the row's text room for
+                          the host, arrival and badge. */}
+                      <span className="sr-only sm:not-sr-only">{t("checkOutShort")}</span>
                     </Button>
                   )}
                 </span>
