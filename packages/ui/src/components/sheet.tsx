@@ -8,6 +8,7 @@ import { cn } from "../utils/cn.js";
 
 import {
   DialogFooter,
+  DialogNotice,
   focusOnOpen,
   GrabHandle,
   keepOpenForToasts,
@@ -25,6 +26,8 @@ export const SheetTrigger = DialogPrimitive.Trigger;
 export const SheetClose = DialogPrimitive.Close;
 /** The sticky action row, the same as `DialogFooter`. */
 export const SheetFooter = DialogFooter;
+/** The outcome of an action, pinned under the header, the same as `DialogNotice`. */
+export const SheetNotice = DialogNotice;
 
 export type SheetSide = "bottom" | "right";
 export type SheetSize = "sm" | "md" | "lg";

@@ -242,6 +242,35 @@ export const DialogFooter = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<
 );
 
 /**
+ * A live region at the top of a dialog's or sheet's scrolling body for the
+ * outcome of an action taken further down (a status change with its undo).
+ * It sticks under the header while the body scrolls, so the message and its
+ * buttons are in view wherever the reader was when they acted; a notice in
+ * the normal flow would be scrolled out of sight, above the row they used.
+ * Place it as a direct child of the body (a fragment's first element):
+ * sticky positioning holds only within its parent, so a wrapper would let
+ * it scroll away with the wrapper. Empty, it takes no space.
+ */
+export const DialogNotice = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<"div">>(
+  function DialogNotice({ className, ...props }, ref) {
+    return (
+      <div
+        ref={ref}
+        aria-live="polite"
+        data-dialog-notice=""
+        className={cn(
+          // Bleeds over the body's side padding and its 4px top inset, so
+          // rows scrolling under it never show at its edges or above it.
+          "sticky top-0 z-sticky -mx-(--dialog-px) -mt-1 bg-surface-overlay px-(--dialog-px) pt-1 pb-3 empty:hidden",
+          className,
+        )}
+        {...props}
+      />
+    );
+  },
+);
+
+/**
  * The first field to fill in: a text-like input, a textarea, a select or a
  * combobox trigger that takes focus. Radix Select's hidden native copy
  * (`aria-hidden`, `tabindex=-1`) and read-only or disabled fields are skipped.

@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
   EmptyState,
   IconButton,
+  SheetNotice,
   domainIcons,
   type DataTableFilterDef,
 } from "@newsekolah/ui";
@@ -61,7 +62,9 @@ export function ViolationCatalogView(): ReactElement {
   // dialog (docs/07-ui-ux.md section 5). The catalog opens in a modal
   // sheet, whose focus trap keeps the keyboard out of the app's toaster and
   // hides it from screen readers, so the outcome and its undo sit inside
-  // the sheet, above the table, in a live region.
+  // the sheet, in a live region pinned under its header: the reader acted
+  // on a row further down, and a notice above the table would be scrolled
+  // out of view (on a phone, nearly always).
   const setActive = useCallback(
     (item: ViolationType, isActive: boolean) => {
       const change = async (active: boolean, offerUndo: boolean): Promise<void> => {
@@ -166,14 +169,14 @@ export function ViolationCatalogView(): ReactElement {
   );
 
   // It opens in a sheet over the Pelanggaran page (violations-view.tsx),
-  // whose body scrolls, so the table takes its natural height.
+  // whose body scrolls, so the table takes its natural height. The notice
+  // must stay a direct child of that body to stick (a fragment, no wrapper).
   return (
     <>
-      <div aria-live="polite" className="empty:hidden">
+      <SheetNotice>
         {notice && (
           <Alert
             tone={notice.tone}
-            className="mb-3"
             action={
               notice.undo && (
                 <Button size="sm" variant="secondary" onClick={notice.undo}>
@@ -188,7 +191,7 @@ export function ViolationCatalogView(): ReactElement {
             {notice.message}
           </Alert>
         )}
-      </div>
+      </SheetNotice>
       <DataTable
         toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         stateKey="features/discipline/components/violation-catalog-view:1"

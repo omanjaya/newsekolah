@@ -1,3 +1,4 @@
+import { Sheet, SheetContent } from "@newsekolah/ui";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -164,6 +165,32 @@ describe("ViolationCatalogView status actions", () => {
       await user.tab({ shift: true });
     }
     expect(undo).toHaveFocus();
+  });
+
+  it("keeps the outcome and its undo pinned in the sheet's scrolling body", async () => {
+    // On a phone the reader scrolls the sheet to reach a type further down;
+    // a notice in the normal flow above the table was then scrolled out of
+    // view with its undo. jsdom does no layout, so this checks what makes it
+    // stick in a browser: sticky at the top, as a direct child of the
+    // sheet's scroller (sticky holds only within its parent).
+    const user = userEvent.setup();
+    render(
+      <Sheet open>
+        <SheetContent title="Katalog" side="right" size="lg">
+          <ViolationCatalogView />
+        </SheetContent>
+      </Sheet>,
+    );
+
+    const row = screen.getByRole("row", { name: /LN01/ });
+    await user.click(within(row).getByRole("button", { name: "columns.actions" }));
+    await user.click(await screen.findByRole("menuitem", { name: "deactivate" }));
+
+    const status = await screen.findByRole("status");
+    const notice = status.closest("[aria-live]");
+    expect(notice).toHaveClass("sticky", "top-0");
+    expect(notice?.parentElement).toHaveClass("dialog-body", "overflow-y-auto");
+    expect(within(status).getByRole("button", { name: "undo" })).toBeVisible();
   });
 
   it("offers to switch an inactive type back on", async () => {

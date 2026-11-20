@@ -8,6 +8,7 @@ import { cn } from "../utils/cn.js";
 
 import {
   DialogFooter,
+  DialogNotice,
   focusOnOpen,
   GrabHandle,
   keepOpenForToasts,
@@ -23,7 +24,7 @@ import { useUiLabels } from "./ui-labels.js";
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
 export const DialogClose = DialogPrimitive.Close;
-export { DialogFooter };
+export { DialogFooter, DialogNotice };
 
 export type DialogSize = "sm" | "md" | "lg" | "xl";
 
