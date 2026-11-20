@@ -507,7 +507,7 @@ var attendanceDailyVocabulary = map[string]map[string]string{
 		"title":           "Presensi Harian",
 		"scopeGradeLevel": "Angkatan", "scopeClass": "Kelas", "scopeDate": "Tanggal", "classesUnit": "kelas",
 		"colNo": "No", "colName": "Nama", "colStatus": "Status",
-		"colExpected": "Jumlah Sesi Diharapkan", "colSubmitted": "Jumlah Sesi Terisi", "colComplete": "Lengkap",
+		"colExpected": "Sesi Wajib", "colSubmitted": "Sesi Terkirim", "colComplete": "Lengkap",
 		"yes": "Ya", "no": "Tidak",
 		"statusNone": "-", "statusIncomplete": "Belum Lengkap", "statusMixed": "Campuran",
 	},

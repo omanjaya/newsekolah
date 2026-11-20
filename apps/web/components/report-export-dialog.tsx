@@ -46,7 +46,12 @@ export interface ReportExportColumn {
 
 export interface ReportExportColumnChoice {
   key: string;
-  /** Present only when the user renamed the column away from its default. */
+  /**
+   * The header the dialog showed for the column (the user's rename, or
+   * the default when untouched), so the file is headed exactly as the
+   * reader saw it, whatever wording the server's own copy uses. Optional
+   * for callers that build choices themselves.
+   */
   label?: string;
 }
 
@@ -288,11 +293,13 @@ function ReportExportForm({
       format,
       title: title.trim(),
       showLetterhead,
+      // Every column carries the label shown here: a key alone would
+      // leave the header to the server's own wording, which can differ
+      // from the dialog's ("Sesi Wajib" on screen, another phrase in the
+      // file). A cleared label falls back to the default shown beside it.
       columns: chosen.map((c) => ({
         key: c.key,
-        ...(c.label.trim() !== c.defaultLabel && c.label.trim() !== ""
-          ? { label: c.label.trim() }
-          : {}),
+        label: c.label.trim() || c.defaultLabel,
       })),
     };
     try {
