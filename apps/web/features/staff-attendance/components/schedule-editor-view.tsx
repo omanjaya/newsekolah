@@ -223,7 +223,7 @@ function WeeklyScheduleForm({ employeeId }: { employeeId: string }): ReactElemen
           </TableBody>
         </Table>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2" data-testid="schedule-day-cards">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="schedule-day-cards">
           {days.map((day) => {
             const controls = controlsFor(day);
             return (
