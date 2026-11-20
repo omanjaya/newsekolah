@@ -213,12 +213,20 @@ func ValidateImportRow(row ImportRow, refs ImportValidationRefs) (copies int, me
 	if strings.TrimSpace(row.Title) == "" {
 		return 0, "Judul wajib diisi.", false
 	}
+	// An empty code says the column is missing or unmapped, which the
+	// librarian fixes differently from a code that is not in master data.
 	materialCode := strings.ToLower(strings.TrimSpace(row.MaterialTypeCode))
-	if materialCode == "" || !refs.MaterialTypeCodes[materialCode] {
+	if materialCode == "" {
+		return 0, "Jenis bahan (kode) wajib diisi.", false
+	}
+	if !refs.MaterialTypeCodes[materialCode] {
 		return 0, "Jenis bahan (kode) tidak dikenali.", false
 	}
 	categoryCode := strings.ToLower(strings.TrimSpace(row.CategoryCode))
-	if categoryCode == "" || !refs.CategoryCodes[categoryCode] {
+	if categoryCode == "" {
+		return 0, "Kategori (kode) wajib diisi.", false
+	}
+	if !refs.CategoryCodes[categoryCode] {
 		return 0, "Kategori (kode) tidak dikenali.", false
 	}
 	if access := strings.TrimSpace(row.Access); access != "" && !CopyAccess(access).Valid() {

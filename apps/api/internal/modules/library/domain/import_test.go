@@ -94,6 +94,20 @@ func TestValidateImportRow(t *testing.T) {
 		t.Error("expected an unknown material type code to fail validation")
 	}
 
+	// A missing code (column absent or unmapped) is reported as required,
+	// not as an unknown code, so the librarian looks at the mapping.
+	missingMaterial := ImportRow{Title: "Judul", CategoryCode: "fiksi"}
+	if _, msg, ok := ValidateImportRow(missingMaterial, refs); ok || msg != "Jenis bahan (kode) wajib diisi." {
+		t.Errorf("expected a missing material type to be required, got msg=%q ok=%v", msg, ok)
+	}
+	if _, msg, _ := ValidateImportRow(unknownMaterial, refs); msg != "Jenis bahan (kode) tidak dikenali." {
+		t.Errorf("expected an unknown material type to say so, got %q", msg)
+	}
+	missingCategory := ImportRow{Title: "Judul", MaterialTypeCode: "buku"}
+	if _, msg, ok := ValidateImportRow(missingCategory, refs); ok || msg != "Kategori (kode) wajib diisi." {
+		t.Errorf("expected a missing category to be required, got msg=%q ok=%v", msg, ok)
+	}
+
 	unknownCategory := ImportRow{Title: "Judul", MaterialTypeCode: "buku", CategoryCode: "referensi"}
 	if _, _, ok := ValidateImportRow(unknownCategory, refs); ok {
 		t.Error("expected an unknown category code to fail validation")
