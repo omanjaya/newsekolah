@@ -156,6 +156,37 @@ describe("ScheduleRunHistoryDialog", () => {
     expect(downloadFromUrl).toHaveBeenCalledWith("https://storage.test/report.xlsx");
   });
 
+  // admin-settings-R3: the list was its own scroll box with no inset, so
+  // the download button's pull made it scroll sideways and, once the
+  // button had focus, every row lost its first letters. The dialog body
+  // scrolls; the list does not, and the button's pull is capped at the
+  // list's zero inset.
+  it("keeps the history list from scrolling sideways under the download button", () => {
+    runsQuery.mockReturnValue(
+      runs([
+        {
+          id: "r1",
+          schedule_id: "s1",
+          due_at: "2026-11-20T17:00:00Z",
+          ran_at: "2026-11-20T17:00:12Z",
+          status: "failed",
+          failure_code: "send_failed",
+          object_key: "reports/schedules/t/s1/1.xlsx",
+          error_message: "smtp: 550",
+        },
+      ]),
+    );
+    render(<ScheduleRunHistoryDialog scheduleId="s1" onClose={vi.fn()} />);
+
+    const list = screen.getByRole("list");
+    expect(list.className).not.toMatch(/overflow-(?:y-|x-)?(?:auto|scroll)/);
+    expect(list).toHaveClass("[--list-inset:0px]");
+    const slot = screen.getByRole("button", { name: "download" }).parentElement;
+    expect(slot).toHaveAttribute("data-slot", "list-row-action");
+    expect(slot?.className).toContain("-mr-[min(--spacing(2),var(--list-inset))]");
+    expect(slot?.className).not.toMatch(/(?:^|\s|:)-mr-2(?:\s|$)/);
+  });
+
   it("disables the download while a link is being fetched", () => {
     downloadState.isPending = true;
     runsQuery.mockReturnValue(

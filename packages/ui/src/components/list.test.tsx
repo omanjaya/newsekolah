@@ -248,7 +248,10 @@ describe("List and ListRow", () => {
   });
 
   // A row menu sits under the chevrons of the rows around it: its glyph
-  // centred on theirs and as muted. A text button keeps its own box.
+  // centred on theirs and as muted. A text button keeps its own box. The
+  // pull is capped at the row's inset: in a list with --list-inset 0 a
+  // full pull stuck out past the list, made it scroll sideways and, once
+  // the button took focus, cut the first letters off every row.
   it("sets a lone icon action like the chevron, and leaves a text action alone", () => {
     render(
       <List>
@@ -262,8 +265,8 @@ describe("List and ListRow", () => {
     const slot = screen.getByRole("button", { name: "Aksi" }).parentElement;
     expect(slot).toHaveAttribute("data-slot", "list-row-action");
     expect(slot).toHaveClass(
-      "[&>button[aria-label]:has(>svg:only-child)]:-mr-2",
-      "pointer-coarse:[&>button[aria-label]:has(>svg:only-child)]:-mr-3.5",
+      "[&>button[aria-label]:has(>svg:only-child)]:-mr-[min(--spacing(2),var(--list-inset))]",
+      "pointer-coarse:[&>button[aria-label]:has(>svg:only-child)]:-mr-[min(--spacing(3.5),var(--list-inset))]",
       "[&>button[aria-label]:has(>svg:only-child)]:text-fg-muted",
     );
     const iconButton = screen.getByRole("button", { name: "Aksi" });
