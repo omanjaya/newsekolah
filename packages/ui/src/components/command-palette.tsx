@@ -10,7 +10,7 @@ import { cn } from "../utils/cn.js";
 
 import { Button } from "./button.js";
 import { Kbd } from "./kbd.js";
-import { OverlayScrim } from "./overlay-parts.js";
+import { keepOpenForToasts, OverlayScrim } from "./overlay-parts.js";
 import { useUiLabels } from "./ui-labels.js";
 
 export interface CommandPaletteItem {
@@ -90,6 +90,7 @@ export function CommandPalette({
         <DialogPrimitive.Content
           {...returnFocus}
           aria-describedby={undefined}
+          onInteractOutside={keepOpenForToasts(undefined)}
           className={cn(
             "fixed z-modal flex flex-col overflow-hidden bg-surface-overlay text-fg outline-none",
             // Phone: the whole screen, so the keyboard never hides the results.

@@ -10,6 +10,7 @@ import {
   DialogFooter,
   focusOnOpen,
   GrabHandle,
+  keepOpenForToasts,
   OverlayBody,
   OverlayDragDismiss,
   OverlayFooter,
@@ -89,6 +90,7 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
     size = "md",
     onOpenAutoFocus,
     onCloseAutoFocus,
+    onInteractOutside,
     returnFocusFallback,
     children,
     ...props
@@ -134,6 +136,7 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
           className,
         )}
         {...props}
+        onInteractOutside={keepOpenForToasts(onInteractOutside)}
         {...returnFocus}
       >
         <GrabHandle className={drawer ? "sm:hidden" : undefined} />

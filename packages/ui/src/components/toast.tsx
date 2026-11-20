@@ -87,8 +87,15 @@ export function Toaster({ toastOptions, style, ...props }: ToasterProps) {
   return (
     <>
       <SonnerToaster
-        // Wider than sonner's 356px, so a title and its description fit one line each.
-        style={{ "--width": `${TOAST_WIDTH_PX}px`, ...style } as CSSProperties}
+        // Wider than sonner's 356px, so a title and its description fit one
+        // line each. A modal dialog or sheet sets `pointer-events: none` on
+        // the body, and the toaster sits outside it: without `auto` here a
+        // toast's action (an undo for what was just done in the sheet)
+        // could not be clicked while one is open. The overlays let that
+        // press through without closing (keepOpenForToasts).
+        style={
+          { "--width": `${TOAST_WIDTH_PX}px`, pointerEvents: "auto", ...style } as CSSProperties
+        }
         position={phone ? "top-center" : "bottom-right"}
         visibleToasts={3}
         gap={8}
