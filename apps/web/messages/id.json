@@ -1261,7 +1261,7 @@
         "tabsLabel": "Bagian sesi",
         "markedAllPresent": "Semua siswa ditandai hadir",
         "rosterLabel": "Daftar siswa",
-        "journalIncomplete": "Lengkapi Topik dan Kegiatan jurnal, atau kosongkan keduanya.",
+        "journalIncomplete": "Lengkapi topik dan kegiatan jurnal, atau kosongkan keduanya.",
         "notStartedTitle": "Pelajaran belum dimulai",
         "notStartedBody": "Presensi bisa dicatat mulai pukul {time}.",
         "overriddenByLeave": "Status {names} tetap mengikuti surat izin, bukan pilihan Anda.",

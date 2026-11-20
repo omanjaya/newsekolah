@@ -81,13 +81,18 @@ describe("resolvePageContext", () => {
   });
 
   it("offers only the pages the reader may open", () => {
-    // The attendance report opens with manage_attendance; a principal reads
-    // attendance through view_reports on /reports instead.
+    // The attendance report opens with manage_attendance or view_reports:
+    // the principal reads the monthly recap there; a reader with neither
+    // does not get the tab.
     const principal = reader(["view_attendance", "view_academic_data", "view_reports"], "teacher", [
       "principal",
     ]);
     const context = resolvePageContext("/journal", appNavigationFor(principal));
-    expect(context.tabs.map((tab) => tab.key)).not.toContain("attendance-reports");
+    expect(context.tabs.map((tab) => tab.key)).toContain("attendance-reports");
+    const viewer = reader(["view_attendance", "view_academic_data"], "teacher", ["principal"]);
+    expect(
+      resolvePageContext("/journal", appNavigationFor(viewer)).tabs.map((tab) => tab.key),
+    ).not.toContain("attendance-reports");
   });
 
   it("gives a teacher who takes attendance the report tab its route opens for", () => {

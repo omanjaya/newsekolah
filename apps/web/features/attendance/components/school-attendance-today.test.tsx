@@ -54,7 +54,8 @@ describe("SchoolAttendanceToday", () => {
   });
 
   it("sends a reader without the monitor to the report centre, under its own name", () => {
-    session.permissions = ["view_reports"];
+    // Neither attendance permission: only the report centre opens.
+    session.permissions = ["view_library_reports"];
     render(<SchoolAttendanceToday />);
 
     expect(screen.getByRole("link", { name: "openReportsHub" })).toHaveAttribute(
@@ -65,6 +66,16 @@ describe("SchoolAttendanceToday", () => {
     // The body does not promise a monitor the card does not offer.
     expect(screen.getByText("bodyReportsOnly")).toBeInTheDocument();
     expect(screen.queryByText("body")).not.toBeInTheDocument();
+  });
+
+  it("sends the principal (view_reports, no manage_attendance) to the attendance report", () => {
+    session.permissions = ["view_reports"];
+    render(<SchoolAttendanceToday />);
+
+    expect(screen.getByRole("link", { name: "openReports" })).toHaveAttribute(
+      "href",
+      "/attendance/reports",
+    );
   });
 
   it("shows the principal the school's progress, as the server lets the principal read it", () => {
