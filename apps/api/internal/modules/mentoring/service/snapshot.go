@@ -9,7 +9,8 @@ import (
 )
 
 // StudentSnapshot combines what the platform already knows about one
-// student -- attendance, discipline points, and published grades -- read
+// student -- attendance, discipline points, published grades, and the
+// activities record (achievements, clubs) -- read
 // through adapters over those modules, never by mentoring querying their
 // tables directly. An id the tenant has no student for (no such user, or
 // a staff member or administrator) is domain.ErrStudentNotFound (a 404),
@@ -58,6 +59,17 @@ func (s *Service) StudentSnapshot(ctx context.Context, tenantID uuid.UUID, viewe
 				return err
 			}
 			out.PublishedSubjects = subjects
+		}
+		if s.activities != nil {
+			achievements, err := s.activities.StudentAchievements(ctx, tenantID, studentUserID)
+			if err != nil {
+				return err
+			}
+			clubs, err := s.activities.StudentClubs(ctx, tenantID, studentUserID)
+			if err != nil {
+				return err
+			}
+			out.Achievements, out.Clubs = achievements, clubs
 		}
 		return nil
 	})

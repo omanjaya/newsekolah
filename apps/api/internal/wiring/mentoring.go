@@ -6,6 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
+	activitiesdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/activities/domain"
+	activitiesservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/activities/service"
 	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
 	gradingdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/domain"
@@ -72,6 +74,53 @@ func (g MentoringGrading) PublishedSubjects(ctx context.Context, tenantID, stude
 			continue
 		}
 		out = append(out, mentoringdomain.PublishedGrade{SubjectID: subj.SubjectID, Score: *subj.ReportScore})
+	}
+	return out, nil
+}
+
+// MentoringActivities reads a mentee's achievements (every academic year,
+// as the student profile does) and club memberships through the
+// activities service, so the guru wali sees them in the snapshot without
+// view_activities, which reads every student's. While the tenant has
+// activities turned off it reports none.
+type MentoringActivities struct {
+	Svc *activitiesservice.Service
+	// Flags reads the activities feature flag; nil leaves activities on.
+	Flags ModuleFlagReader
+}
+
+func (a MentoringActivities) StudentAchievements(ctx context.Context, tenantID, studentID uuid.UUID) ([]mentoringdomain.SnapshotAchievement, error) {
+	if on, err := moduleEnabled(ctx, a.Flags, tenantID, platformdomain.ModuleActivities); err != nil || !on {
+		return nil, err
+	}
+	list, err := a.Svc.ListStudentAchievements(ctx, tenantID, studentID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]mentoringdomain.SnapshotAchievement, len(list))
+	for i, a := range list {
+		out[i] = mentoringdomain.SnapshotAchievement{
+			ID: a.ID, StudentUserID: a.StudentUserID, CompetitionName: a.CompetitionName, Level: string(a.Level),
+			Placing: a.Placing, AchievedOn: a.AchievedOn, Notes: a.Notes,
+		}
+	}
+	return out, nil
+}
+
+func (a MentoringActivities) StudentClubs(ctx context.Context, tenantID, studentID uuid.UUID) ([]mentoringdomain.SnapshotClub, error) {
+	if on, err := moduleEnabled(ctx, a.Flags, tenantID, platformdomain.ModuleActivities); err != nil || !on {
+		return nil, err
+	}
+	list, err := a.Svc.ListMyClubs(ctx, tenantID, studentID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]mentoringdomain.SnapshotClub, len(list))
+	for i, m := range list {
+		out[i] = mentoringdomain.SnapshotClub{
+			ID: m.ID, ExtracurricularID: m.ExtracurricularID, StudentUserID: m.StudentUserID, ClubName: m.ClubName,
+			JoinedOn: m.JoinedOn, LeftOn: m.LeftOn, Active: m.Status == activitiesdomain.MembershipActive,
+		}
 	}
 	return out, nil
 }

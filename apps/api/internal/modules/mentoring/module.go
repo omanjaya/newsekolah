@@ -20,6 +20,9 @@ type Dependencies struct {
 	Attendance service.AttendanceReader
 	Discipline service.DisciplineReader
 	Grading    service.GradingReader
+	// Activities reads a mentee's achievements and clubs for the snapshot;
+	// nil leaves them out.
+	Activities service.ActivitiesReader
 	Flags      service.FlagChecker
 	Sealer     *crypto.Sealer
 	// Perms resolves the caller's permissions, so a guru wali (only
@@ -36,5 +39,8 @@ type Module struct {
 
 func Register(deps Dependencies) *Module {
 	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, deps.Attendance, deps.Discipline, deps.Grading, deps.Flags, deps.Sealer, deps.Clock)
+	if deps.Activities != nil {
+		svc.WithActivities(deps.Activities)
+	}
 	return &Module{Service: svc, Handler: transporthttp.New(svc, deps.Perms)}
 }

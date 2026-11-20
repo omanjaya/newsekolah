@@ -208,6 +208,35 @@ type StudentSnapshot struct {
 	DisciplinePoints      int
 	DisciplineActiveCount int
 	PublishedSubjects     []PublishedGrade
+	// Achievements and Clubs are the student's activities record, so the
+	// guru wali who writes the term summary sees it without view_activities
+	// (which reads every student's). Empty while activities is off.
+	Achievements []SnapshotAchievement
+	Clubs        []SnapshotClub
+}
+
+// SnapshotAchievement is one competition result of the student, read
+// from the activities module.
+type SnapshotAchievement struct {
+	ID              uuid.UUID
+	StudentUserID   uuid.UUID
+	CompetitionName string
+	Level           string
+	Placing         string
+	AchievedOn      time.Time
+	Notes           string
+}
+
+// SnapshotClub is one stint of the student in an extracurricular club,
+// read from the activities module.
+type SnapshotClub struct {
+	ID                uuid.UUID
+	ExtracurricularID uuid.UUID
+	StudentUserID     uuid.UUID
+	ClubName          string
+	JoinedOn          time.Time
+	LeftOn            *time.Time
+	Active            bool
 }
 
 // PublishedGrade is one subject's published report score for the
