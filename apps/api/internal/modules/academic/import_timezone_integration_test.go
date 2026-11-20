@@ -53,3 +53,31 @@ func TestImportCommitJoinsOnTenantLocalDay(t *testing.T) {
 	require.NoError(t, pool.QueryRow(ctx, `select joined_on from enrollments where student_user_id = $1`, student).Scan(&joinedOn))
 	require.Equal(t, "2026-11-20", joinedOn.Format(time.DateOnly))
 }
+
+// TestCreateAcademicYearReadsCalendarPolicyOnTenantLocalDay: a calendar
+// policy switching to three terms takes effect on 20 November. At 23:30
+// UTC on 19 November it is already 20 November (07:30) in Asia/Makassar,
+// so a year created then gets three terms, not the previous policy's two.
+func TestCreateAcademicYearReadsCalendarPolicyOnTenantLocalDay(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	pool := pg.AdminPool
+
+	var tenantID uuid.UUID
+	require.NoError(t, pool.QueryRow(ctx,
+		`insert into tenants (slug,name,education_level,timezone,locale,status,plan) values ($1,'Test','sma','Asia/Makassar','id','active','default') returning id`,
+		"policy-tz-"+uuid.NewString()[:8]).Scan(&tenantID))
+	_, err := pool.Exec(ctx,
+		`insert into tenant_policies (tenant_id,kind,version,config,effective_from) values
+		 ($1,'calendar',1,'{"terms":2}','2026-01-01'),
+		 ($1,'calendar',2,'{"terms":3}','2026-11-20')`, tenantID)
+	require.NoError(t, err)
+
+	svc := academic.Register(pg.AppPool, clock.Frozen{At: time.Date(2026, 11, 19, 23, 30, 0, 0, time.UTC)}).Service
+	year, err := svc.CreateAcademicYear(ctx, tenantID, "2027/2028",
+		time.Date(2027, 7, 1, 0, 0, 0, 0, time.UTC), time.Date(2028, 6, 30, 0, 0, 0, 0, time.UTC))
+	require.NoError(t, err)
+	terms, err := svc.ListTerms(ctx, tenantID, year.ID)
+	require.NoError(t, err)
+	require.Len(t, terms, 3)
+}
