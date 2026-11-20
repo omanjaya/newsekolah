@@ -72,6 +72,16 @@ export interface CreateApiClientOptions {
    * identity, and with it whether they may simulate, can still be read.
    */
   onSimulationRefused?: () => void;
+  /**
+   * Asked before the page load's refresh (see `ensureBootRefresh`): true
+   * when the app already knows there is no session to restore, so the
+   * request goes out without one instead of first collecting a 401 from
+   * `/v1/auth/refresh`. Asked again on every request until it says false,
+   * so a page that later needs the session (a client-side navigation into
+   * the app) still restores it. The web app answers true on a public page
+   * whose server render saw no refresh cookie.
+   */
+  skipBootRefresh?: () => boolean;
 }
 
 /**
@@ -222,6 +232,11 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
   // answer is dropped instead of handing the ended session's token back to
   // the app.
   let endedSessions = 0;
+  // True once the server refused a refresh (401: no refresh cookie, or one
+  // it no longer accepts) and no session has started since. A request then
+  // sent with no token is anonymous on purpose, so its 401 is the answer,
+  // not a reason to ask `/v1/auth/refresh` the same question again.
+  let refreshRefused = false;
 
   // Web only: the tabs of one origin share the refresh cookie, so their
   // refreshes take turns and hand each other the result (cross-tab.ts).
@@ -242,6 +257,8 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
 
   function forgetAccessToken(): void {
     endedSessions += 1;
+    // The next identity's session is not known to be missing.
+    refreshRefused = false;
     lastRefreshed = null;
     latestSessionToken = null;
     // The next refresh starts on its own instead of joining one whose
@@ -286,7 +303,7 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
           headers: { "content-type": "application/json" },
           body: refreshToken ? JSON.stringify({ refresh_token: refreshToken }) : undefined,
         });
-        if (!response.ok) return null;
+        if (!response.ok) return { refused: response.status === 401 };
         const body = (await response.json()) as { access_token: string; refresh_token?: string };
         // Announced even when this tab no longer wants it: the rotation
         // has already revoked the session the other tabs' tokens name.
@@ -296,7 +313,8 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
       // The app ended the session while this was on its way: nothing about
       // it is stored, and the app is not told, since it already knows.
       if (sessionEnded()) return null;
-      if (!data) {
+      if (!("access_token" in data)) {
+        refreshRefused = data.refused;
         lastRefreshed = null;
         latestSessionToken = null;
         await tokenStore.clear();
@@ -313,6 +331,7 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
         refreshToken: data.refresh_token,
       });
       if (sessionEnded()) return null;
+      refreshRefused = false;
       // Remember it here too: the web app keeps the access token in a
       // module variable this package cannot see, so a client that only
       // wrote to the token store would refresh on every single request.
@@ -354,6 +373,10 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
 
   async function ensureBootRefresh(url: string): Promise<void> {
     if (url.includes("/v1/auth/")) {
+      return;
+    }
+    // Left unset, so the next request asks again (see skipBootRefresh).
+    if (bootRefresh === null && options.skipBootRefresh?.()) {
       return;
     }
     bootRefresh ??= (async () => {
@@ -446,6 +469,13 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
       const sentToken = request.headers.get("Authorization")?.replace(/^Bearer /, "") ?? null;
       const isRefreshCall = request.url.endsWith("/v1/auth/refresh");
       if (isRefreshCall || (sentToken !== null && !REFRESHABLE_CODES.has(code))) {
+        return response;
+      }
+      // Sent with no token because the refresh before it (the page load's,
+      // on an anonymous visit) was already refused: asking again would
+      // only collect the same 401 once more. A token another tab announced
+      // since is still taken.
+      if (sentToken === null && refreshRefused && latestSessionToken === null) {
         return response;
       }
       // refreshAccessToken already clears the token store and calls

@@ -1,4 +1,4 @@
-export { useMe } from "./use-me.js";
+export { useMe, type UseMeOptions } from "./use-me.js";
 export { useLogin } from "./use-login.js";
 export { useLogout } from "./use-logout.js";
 export { useStartSession, type UseStartSessionOptions } from "./use-start-session.js";

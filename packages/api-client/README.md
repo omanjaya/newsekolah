@@ -16,6 +16,12 @@ Typed API client generated from `openapi/openapi.yaml`.
     `AUTH_TOKEN_INVALID` (or one sent with no token), a single-flight call
     to `/v1/auth/refresh` (cookie for web, `tokenStore.getRefreshToken()`
     body for mobile) followed by exactly one retry of the original request.
+    A request sent with no token after the server already refused a
+    refresh (an anonymous visit) gets its `401` back without a second one.
+  - The first request of a page load without a token first restores the
+    session with one refresh, unless `skipBootRefresh()` says there is none
+    to restore (the web's public pages without a refresh cookie); it is
+    asked again on the next request until it says false.
   - On the web, the tabs of one origin share the refresh cookie, so their
     refreshes take turns under a Web Lock and each announces its new
     access token on a BroadcastChannel; a tab whose token stops working

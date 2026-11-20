@@ -4,6 +4,7 @@ import {
   ACCESS_COOKIE_MAX_AGE_SECONDS,
   ACCESS_TOKEN_TTL_SECONDS,
   REFRESH_SAFETY_MARGIN_SECONDS,
+  isAnonymousPublicVisit,
   isProtectedDocumentNavigation,
   type DocumentNavigationInput,
 } from "./access-cookie";
@@ -83,4 +84,21 @@ describe("isProtectedDocumentNavigation", () => {
       true,
     );
   });
+});
+
+describe("isAnonymousPublicVisit", () => {
+  it.each(["/verify", "/verify/ZLYER5", "/opac", "/opac/title-1", "/offline"])(
+    "is anonymous on the public page %s without a refresh cookie",
+    (pathname) => {
+      expect(isAnonymousPublicVisit(pathname, false)).toBe(true);
+      expect(isAnonymousPublicVisit(pathname, true)).toBe(false);
+    },
+  );
+
+  it.each(["/login", "/change-password", "/dashboard", "/opacity-settings"])(
+    "never on %s, which reads the session either way",
+    (pathname) => {
+      expect(isAnonymousPublicVisit(pathname, false)).toBe(false);
+    },
+  );
 });

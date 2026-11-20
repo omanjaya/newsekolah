@@ -352,6 +352,95 @@ describe("createApiClient", () => {
   });
 });
 
+// A visitor with no session at all (the public document check, the
+// catalogue, the sign-in page): every refresh it sends is a 401 in the
+// browser's console, so it sends as few as the page needs.
+describe("an anonymous page load", () => {
+  function anonymousApi(calls: string[]) {
+    return [
+      http.get(`${BASE_URL}/v1/me`, () => {
+        calls.push("me");
+        return HttpResponse.json(errorBody("AUTH_UNAUTHENTICATED"), { status: 401 });
+      }),
+      http.get(`${BASE_URL}/v1/tenant/branding`, () => {
+        calls.push("branding");
+        return HttpResponse.json({ name: "School" });
+      }),
+      http.post(`${BASE_URL}/v1/auth/refresh`, () => {
+        calls.push("refresh");
+        return HttpResponse.json(errorBody("AUTH_UNAUTHENTICATED"), { status: 401 });
+      }),
+    ];
+  }
+
+  it("asks for a session once, not again for the 401 of a request sent without one", async () => {
+    const calls: string[] = [];
+    server.use(...anonymousApi(calls));
+    const onUnauthorized = vi.fn();
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => null,
+      clientHeader: "web/1.0.0",
+      onUnauthorized,
+    });
+
+    const error = await client.GET("/v1/me").catch((e: unknown) => e);
+    await client.GET("/v1/me").catch(() => undefined);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).status).toBe(401);
+    expect(calls).toEqual(["refresh", "me", "me"]);
+    expect(onUnauthorized).not.toHaveBeenCalled();
+  });
+
+  it("still refreshes on a 401 without a token when the refresh only failed on the server", async () => {
+    const calls: string[] = [];
+    server.use(
+      http.get(`${BASE_URL}/v1/me`, ({ request }) => {
+        calls.push("me");
+        return request.headers.get("authorization")
+          ? HttpResponse.json({ id: "u1" })
+          : HttpResponse.json(errorBody("AUTH_UNAUTHENTICATED"), { status: 401 });
+      }),
+      http.post(`${BASE_URL}/v1/auth/refresh`, () => {
+        calls.push("refresh");
+        return calls.length === 1
+          ? HttpResponse.json(errorBody("INTERNAL"), { status: 503 })
+          : HttpResponse.json({ access_token: "restored" });
+      }),
+    );
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => null,
+      clientHeader: "web/1.0.0",
+    });
+
+    expect(await client.GET("/v1/me")).toEqual({ id: "u1" });
+    expect(calls).toEqual(["refresh", "me", "refresh", "me"]);
+  });
+
+  it("sends no refresh while the app knows there is no session, and restores one once it may", async () => {
+    const calls: string[] = [];
+    server.use(...anonymousApi(calls));
+    let publicPage = true;
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => null,
+      clientHeader: "web/1.0.0",
+      skipBootRefresh: () => publicPage,
+    });
+
+    await client.GET("/v1/tenant/branding");
+    await client.GET("/v1/tenant/branding");
+    expect(calls).toEqual(["branding", "branding"]);
+
+    // A client-side navigation into the app: the session is asked for then.
+    publicPage = false;
+    await client.GET("/v1/me").catch(() => undefined);
+    expect(calls).toEqual(["branding", "branding", "refresh", "me"]);
+  });
+});
+
 // Another tab's refresh rotates the session and revokes the row this tab's
 // access token names; an admin can also end a session on purpose. Either
 // way the token is dead, and a retry with it can never work.
@@ -739,12 +828,12 @@ describe("switching identity while a refresh is on its way", () => {
       }),
       http.post(`${BASE_URL}/v1/auth/refresh`, async () => {
         refreshCalls += 1;
-        // The page load's boot refresh fails at once; the one the
-        // unauthenticated 401 asks for is still on its way at the sign-in.
-        if (refreshCalls > 1) {
-          refreshStarted();
-          await answered;
-        }
+        // The page load's boot refresh restores the first session; the one
+        // the unauthenticated 401 after the sign-out asks for fails on the
+        // dead cookie, still on its way at the sign-in.
+        if (refreshCalls === 1) return HttpResponse.json({ access_token: "first-session" });
+        refreshStarted();
+        await answered;
         return HttpResponse.json(errorBody("AUTH_INVALID_CREDENTIALS"), { status: 401 });
       }),
     );
@@ -759,6 +848,9 @@ describe("switching identity while a refresh is on its way", () => {
       },
     });
 
+    expect(await client.GET("/v1/me")).toEqual({ id: "first-session" });
+    // The sign-out.
+    client.forgetAccessToken();
     const request = client.GET("/v1/me").catch((e: unknown) => e);
     await started;
     // The sign-in completes.
@@ -772,7 +864,7 @@ describe("switching identity while a refresh is on its way", () => {
     expect(onUnauthorized).not.toHaveBeenCalled();
     expect(appToken).toBe("new-session");
     expect(await client.GET("/v1/me")).toEqual({ id: "new-session" });
-    expect(seen).toEqual([null, "Bearer new-session"]);
+    expect(seen).toEqual(["Bearer first-session", null, "Bearer new-session"]);
   });
 });
 

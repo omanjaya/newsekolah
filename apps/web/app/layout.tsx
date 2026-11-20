@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -11,6 +11,7 @@ import { getMessagesForNamespaces } from "../lib/i18n/get-messages";
 import { ROOT_NAMESPACES } from "../lib/i18n/namespace-sets";
 import { getRequestLocale } from "../lib/i18n/request-locale.server";
 import { TITLE_SEPARATOR } from "../lib/page-title-format";
+import { REFRESH_TOKEN_COOKIE_NAME } from "../lib/session/access-cookie";
 import { getTenantBrandingServer } from "../lib/tenant/get-branding.server";
 import { PRODUCT_NAME_FALLBACK } from "../lib/tenant/product-name";
 import { THEME_COLOR } from "../lib/theme/theme-color";
@@ -68,6 +69,9 @@ export default async function RootLayout({
   // rest, scoped to where they're actually read. See lib/i18n/namespace-sets.ts.
   const messages = getMessagesForNamespaces(locale, ROOT_NAMESPACES);
   const nonce = (await headers()).get("x-nonce") ?? undefined;
+  // Only whether it is there: an anonymous visit to a public page then
+  // skips the session round trip (lib/session/access-cookie.ts).
+  const sessionCookieSeen = (await cookies()).has(REFRESH_TOKEN_COOKIE_NAME);
 
   return (
     <html
@@ -90,7 +94,11 @@ export default async function RootLayout({
       </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <AppProviders locale={locale} initialBranding={branding}>
+          <AppProviders
+            locale={locale}
+            initialBranding={branding}
+            sessionCookieSeen={sessionCookieSeen}
+          >
             {children}
           </AppProviders>
         </NextIntlClientProvider>
