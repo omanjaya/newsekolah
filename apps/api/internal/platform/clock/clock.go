@@ -4,6 +4,7 @@ package clock
 
 import (
 	"context"
+	"sync"
 	"time"
 )
 
@@ -46,16 +47,27 @@ func Now(ctx context.Context, fallback Clock) time.Time {
 // unknown: a bad setting must not fail every date decision a request
 // makes. Code that turns an instant into a school's calendar date
 // resolves the zone through this one rule.
+//
+// Results, the UTC fallback for an unknown name included, are cached per
+// name: time.LoadLocation reads and parses the zoneinfo file on every
+// call, and the authz path resolves the tenant zone on every request.
 func Location(name string) *time.Location {
 	if name == "" {
 		return time.UTC
 	}
+	if loc, ok := locations.Load(name); ok {
+		return loc.(*time.Location)
+	}
 	loc, err := time.LoadLocation(name)
 	if err != nil {
-		return time.UTC
+		loc = time.UTC
 	}
+	locations.Store(name, loc)
 	return loc
 }
+
+// locations caches Location's result per timezone name.
+var locations sync.Map
 
 // LocalDate is the calendar date t falls on in loc, as a midnight-UTC
 // time.Time: the form a Postgres date column stores unchanged and that

@@ -15,6 +15,13 @@ func TestLocationFallsBackToUTC(t *testing.T) {
 	require.Equal(t, "Asia/Makassar", clock.Location("Asia/Makassar").String())
 }
 
+func TestLocationIsCachedPerName(t *testing.T) {
+	require.Same(t, clock.Location("Asia/Jakarta"), clock.Location("Asia/Jakarta"))
+	// A cached unknown name keeps falling back to UTC.
+	require.Equal(t, time.UTC, clock.Location("Not/AZone"))
+	require.Equal(t, time.UTC, clock.Location("Not/AZone"))
+}
+
 func TestLocalDateUsesTheZonesCalendarDay(t *testing.T) {
 	// 23:30 UTC on 19 November is already 07:30 on 20 November in
 	// Asia/Makassar (UTC+8).
