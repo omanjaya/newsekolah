@@ -83,9 +83,12 @@ export function ViolationRecordForm({
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [attempted, setAttempted] = useState(false);
-  // Results of students already saved by an earlier, interrupted attempt.
+  // Students already saved by earlier, interrupted attempts, all of them:
+  // their results for the summary, their names for the partial-save alert.
   const [savedResults, setSavedResults] = useState<ViolationRecordResult[]>([]);
-  const [partial, setPartial] = useState<{ names: string[]; message: string } | null>(null);
+  const [savedNames, setSavedNames] = useState<string[]>([]);
+  // Why the latest attempt stopped, while some students are saved already.
+  const [failure, setFailure] = useState<string | null>(null);
   const refreshDiscipline = useRefreshDiscipline();
 
   const preview = usePointsPreviewQuery(studentIds);
@@ -145,7 +148,6 @@ export function ViolationRecordForm({
     setAttempted(true);
     if (studentIds.length === 0 || typeIds.length === 0 || !occurredOn) return;
     setSubmitting(true);
-    setPartial(null);
     const results: ViolationRecordResult[] = [...savedResults];
     const savedNow: string[] = [];
     try {
@@ -172,14 +174,17 @@ export function ViolationRecordForm({
       // keeps their results), so "Simpan" retries only the rest. The
       // refresh also brings the points preview up to date with whatever
       // the server did commit.
+      // The alert covers every attempt so far, so a retry that fails on its
+      // first remaining student still names the students saved before it.
       void refreshDiscipline();
       if (savedNow.length > 0) {
+        const namesNow = savedNow.map((id) => studentMap.get(id)?.name ?? t("unknownStudent"));
         setSavedResults(results);
+        setSavedNames((current) => [...current, ...namesNow]);
         setStudentIds((current) => current.filter((id) => !savedNow.includes(id)));
-        setPartial({
-          names: savedNow.map((id) => studentMap.get(id)?.name ?? t("unknownStudent")),
-          message,
-        });
+      }
+      if (results.length > 0) {
+        setFailure(message);
       } else {
         toast.error(message);
       }
@@ -401,10 +406,10 @@ export function ViolationRecordForm({
         </Alert>
       )}
 
-      {partial && (
-        <Alert variant="danger" title={t("partial.title", { count: partial.names.length })}>
-          <p>{t("partial.saved", { names: partial.names.join(", ") })}</p>
-          <p>{partial.message}</p>
+      {failure !== null && savedNames.length > 0 && (
+        <Alert variant="danger" title={t("partial.title", { count: savedNames.length })}>
+          <p>{t("partial.saved", { names: savedNames.join(", ") })}</p>
+          <p>{failure}</p>
           <p>{t("partial.rest")}</p>
         </Alert>
       )}

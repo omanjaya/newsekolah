@@ -23,6 +23,7 @@ vi.mock("../../reference/directory-names", async () => {
   const people = [
     { id: "s1", name: "Sari" },
     { id: "s2", name: "Budi" },
+    { id: "s3", name: "Tono" },
   ];
   return { ...directoryNamesStub(people), useDirectorySearch: mocks.search };
 });
@@ -69,6 +70,7 @@ beforeEach(() => {
     data: [
       { id: "s1", name: "Sari", username: "sari" },
       { id: "s2", name: "Budi", username: "budi" },
+      { id: "s3", name: "Tono", username: "tono" },
     ],
     isFetching: false,
   });
@@ -163,5 +165,49 @@ describe("ViolationRecordForm batch that fails part-way", () => {
         ([body]) => (body as { student_user_id: string }).student_user_id,
       ),
     ).toEqual(["s1", "s2", "s2"]);
+  });
+
+  it("keeps naming every saved student across failed retries, with the latest error", async () => {
+    const user = userEvent.setup();
+    const onDone = vi.fn();
+    const sariResult = { record: { student_user_id: "s1" }, total_points: 30, due_levels: [] };
+    const budiResult = { record: { student_user_id: "s2" }, total_points: 5, due_levels: [] };
+    mocks.record
+      // First attempt: Sari saved, Budi fails.
+      .mockResolvedValueOnce(sariResult)
+      .mockRejectedValueOnce(new ApiError({ status: 500, code: "INTERNAL", message: "boom" }))
+      // Second attempt fails on its first remaining student.
+      .mockRejectedValueOnce(new ApiError({ status: 503, code: "UNAVAILABLE", message: "down" }))
+      // Third attempt: Budi saved, Tono fails.
+      .mockResolvedValueOnce(budiResult)
+      .mockRejectedValueOnce(new ApiError({ status: 500, code: "INTERNAL", message: "boom" }));
+    render(<ViolationRecordForm onDone={onDone} />);
+
+    await user.click(screen.getByRole("checkbox", { name: /Sari/ }));
+    await user.click(screen.getByRole("checkbox", { name: /Budi/ }));
+    await user.click(screen.getByRole("checkbox", { name: /Tono/ }));
+    await user.click(screen.getByRole("checkbox", { name: /Terlambat/ }));
+    await user.click(screen.getByRole("button", { name: /submit/ }));
+
+    let alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/partial.title \{"count":1\}/);
+    expect(alert).toHaveTextContent("INTERNAL");
+
+    await user.click(screen.getByRole("button", { name: /submit/ }));
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("UNAVAILABLE");
+    });
+    alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent(/partial.saved.*Sari/);
+    expect(alert).not.toHaveTextContent("INTERNAL");
+    expect(mocks.toastError).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: /submit/ }));
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/partial.title \{"count":2\}/);
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(/partial.saved.*Sari, Budi/);
+    expect(screen.getByRole("alert")).toHaveTextContent("INTERNAL");
+    expect(onDone).not.toHaveBeenCalled();
   });
 });
