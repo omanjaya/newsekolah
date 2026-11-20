@@ -63,7 +63,9 @@ export function SessionView({
   }
   return (
     <SessionEditor
-      key={data.submitted_at ?? "open"}
+      // A new save or a switch to correction mode starts a fresh editor,
+      // so an error from the other mode does not linger.
+      key={`${data.submitted_at ?? "open"}:${openedInCorrection ? "correction" : "normal"}`}
       session={data}
       openedInCorrection={openedInCorrection}
     />

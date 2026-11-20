@@ -88,6 +88,23 @@ func (r LeaveRequest) Days() int {
 	return int(r.EndsOn.Sub(r.StartsOn).Hours()/24) + 1
 }
 
+// SchoolDays returns how many of teaching (the days the student's class
+// has lessons on, read by their year, month and day) fall within the
+// leave's range: its real length, since a weekend or holiday inside the
+// range is not a day of leave.
+func (r LeaveRequest) SchoolDays(teaching []time.Time) int {
+	from, to := dayKey(r.StartsOn), dayKey(r.EndsOn)
+	n := 0
+	for _, d := range teaching {
+		if k := dayKey(d); k >= from && k <= to {
+			n++
+		}
+	}
+	return n
+}
+
+func dayKey(t time.Time) string { return t.Format("2006-01-02") }
+
 // DocumentKind is a leave_documents.kind value.
 type DocumentKind string
 

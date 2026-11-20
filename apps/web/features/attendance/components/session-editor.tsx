@@ -4,8 +4,6 @@ import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatTime } from "@newsekolah/i18n";
 import {
-  Alert,
-  Button,
   SearchInput,
   Tabs,
   TabsContent,
@@ -24,6 +22,7 @@ import { useDraftOwner } from "../../../lib/drafts/draft-owner";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useUnsavedChangesProtection } from "../../../lib/navigation/use-unsaved-changes-protection";
+import { isRetryableError } from "../../../lib/query/retryable-error";
 import { useSession } from "../../../lib/session/session-provider";
 import { businessNow, useBusinessNow } from "../../../lib/simulation/clock";
 import { todayInZone } from "../../../lib/tenant-date";
@@ -37,9 +36,15 @@ import {
 } from "../lib/attendance-draft";
 import { studentsToMarkPresent } from "../lib/bulk-actions";
 import { computeJournalChangeCount, computeRosterChanges } from "../lib/change-tracking";
-import { attendanceListHref, overriddenNames } from "../lib/session-save";
+import {
+  attendanceListHref,
+  isWindowClosedCode,
+  overriddenNames,
+  saveEntriesBody,
+} from "../lib/session-save";
 
 import { SessionJournalPanel } from "./session-journal-panel";
+import { SessionDraftOffer, SessionWindowNotice } from "./session-notices";
 import { SessionRosterHeader } from "./session-roster-header";
 import { SessionRosterPanel } from "./session-roster-panel";
 import { SessionSaveBar } from "./session-save-bar";
@@ -103,6 +108,8 @@ export function SessionEditor({
   const [reflection, setReflection] = useState(initialJournal.reflection);
   const [reason, setReason] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [canRetry, setCanRetry] = useState(true);
+  const [closedCode, setClosedCode] = useState<string | null>(null);
   const [savedSuccessfully, setSavedSuccessfully] = useState(false);
   const [draftOffer, setDraftOffer] = useState<{ savedAt: string } | null>(null);
   // A save stopped by a half-filled journal shows the journal's field
@@ -143,6 +150,13 @@ export function SessionEditor({
   // Nothing can be recorded before the lesson starts.
   const notStartedYet =
     session.starts_at !== undefined && now.getTime() < Date.parse(session.starts_at);
+  // Nor after the viewer's save window closes: the API says until when
+  // this viewer may save, so a locked session says so before anyone fills
+  // in a roster the save would refuse. A save the server refuses for its
+  // window locks the editor too (an older API sends no editable_until).
+  const windowEnded =
+    session.editable_until !== undefined && now.getTime() > Date.parse(session.editable_until);
+  const windowClosed = windowEnded || closedCode !== null;
   // A journal is optional, but once either required field is filled both are.
   const journalStarted = topic.trim() !== "" || activities.trim() !== "";
   const journalComplete = topic.trim() !== "" && activities.trim() !== "";
@@ -260,7 +274,7 @@ export function SessionEditor({
 
   async function submit() {
     setFormError(null);
-    if (notStartedYet) return;
+    if (notStartedYet || windowClosed) return;
     if (!checkJournal(!journalStarted || journalComplete)) {
       setActiveTab("journal");
       setFormError(t("journalIncomplete"));
@@ -271,30 +285,17 @@ export function SessionEditor({
       return;
     }
     try {
-      const saved = await save.mutateAsync({
-        mode: isCorrection ? "correction" : "normal",
-        ...(isCorrection ? { reason: reason.trim() } : {}),
-        entries: session.roster
-          .filter((item) => !item.blocked)
-          .map((item) => ({
-            student_user_id: item.student_user_id,
-            status_code: statuses[item.student_user_id] ?? defaultCode,
-            ...(notes[item.student_user_id] ? { notes: notes[item.student_user_id] } : {}),
-            // Discipline off: violations (say from a restored draft) are not sent.
-            ...(disciplineOn && violations[item.student_user_id]?.length
-              ? { violation_ids: violations[item.student_user_id] }
-              : {}),
-          })),
-        ...(journalComplete
-          ? {
-              journal: {
-                topic: topic.trim(),
-                activities: activities.trim(),
-                ...(reflection.trim() ? { reflection: reflection.trim() } : {}),
-              },
-            }
-          : {}),
-      });
+      const saved = await save.mutateAsync(
+        saveEntriesBody({
+          roster: session.roster,
+          statuses,
+          notes,
+          violations: disciplineOn ? violations : {},
+          defaultCode,
+          reason: isCorrection ? reason : null,
+          journal: journalComplete ? { topic, activities, reflection } : null,
+        }),
+      );
       setSavedSuccessfully(true);
       clearAttendanceDraft(draftOwner, session.id);
       toast.success(
@@ -311,9 +312,15 @@ export function SessionEditor({
       // Back to the day the lesson belongs to, not always today.
       router.push(attendanceListHref(session.date, todayInZone(me?.tenant.timezone)));
     } catch (error) {
-      setFormError(
-        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-      );
+      const code = error instanceof ApiError ? error.code : "UNKNOWN";
+      // The locked notice above the roster says it; the save bar would
+      // only repeat it next to a button that can no longer succeed.
+      if (isWindowClosedCode(code)) {
+        setClosedCode(code);
+        return;
+      }
+      setCanRetry(isRetryableError(error));
+      setFormError(apiErrorMessage(code));
     }
   }
 
@@ -332,11 +339,11 @@ export function SessionEditor({
       timeZone={me?.tenant.timezone}
       onMarkAllPresent={markAllPresent}
       onResetChanges={resetChanges}
-      canReset={isDirty}
-      disabled={save.isPending}
+      canReset={isDirty && !windowClosed}
+      disabled={save.isPending || windowClosed}
       floating={
         <SessionSaveBar
-          disabled={notStartedYet}
+          disabled={notStartedYet || windowClosed}
           isCorrection={isCorrection}
           reason={reason}
           onReasonChange={setReason}
@@ -344,36 +351,26 @@ export function SessionEditor({
           changedFromDefaultCount={session.roster.length - (counts[defaultCode] ?? 0)}
           saving={save.isPending}
           formError={formError}
+          canRetry={canRetry}
           onSave={() => void submit()}
         />
       }
     >
-      {notStartedYet && session.starts_at && (
-        <Alert tone="info" title={t("notStartedTitle")}>
-          {t("notStartedBody", {
-            time: formatTime(session.starts_at, { locale, timeZone: me?.tenant.timezone }),
-          })}
-        </Alert>
-      )}
-      {draftOffer && (
-        <Alert
-          variant="warning"
-          title={t("draftFoundTitle")}
-          action={
-            <div className="flex gap-2">
-              <Button size="sm" variant="secondary" onClick={dismissDraft}>
-                {t("draftDismiss")}
-              </Button>
-              <Button size="sm" onClick={restoreDraft}>
-                {t("draftRestore")}
-              </Button>
-            </div>
-          }
-        >
-          {t("draftFoundBody", {
-            time: formatTime(draftOffer.savedAt, { locale, timeZone: me?.tenant.timezone }),
-          })}
-        </Alert>
+      <SessionWindowNotice
+        startsAt={session.starts_at}
+        notStartedYet={notStartedYet}
+        editableUntil={session.editable_until}
+        windowEnded={windowEnded}
+        closedCode={closedCode}
+        timeZone={me?.tenant.timezone}
+      />
+      {draftOffer && !windowClosed && (
+        <SessionDraftOffer
+          savedAt={draftOffer.savedAt}
+          timeZone={me?.tenant.timezone}
+          onDismiss={dismissDraft}
+          onRestore={restoreDraft}
+        />
       )}
 
       {/* PageShell pads the page clear of the fixed save bar. */}
@@ -421,7 +418,7 @@ export function SessionEditor({
             changedStudentIds={rosterChanges.changedStudentIds}
             presentCodes={presentCodes}
             defaultCode={defaultCode}
-            disabled={save.isPending}
+            disabled={save.isPending || windowClosed}
             search={search}
             statusFilter={statusFilter}
             onToggleStatusFilter={toggleStatusFilter}
@@ -436,7 +433,7 @@ export function SessionEditor({
             topic={topic}
             activities={activities}
             reflection={reflection}
-            disabled={save.isPending}
+            disabled={save.isPending || windowClosed}
             onTopicChange={setTopic}
             onActivitiesChange={setActivities}
             onReflectionChange={setReflection}

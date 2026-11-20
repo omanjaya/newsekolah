@@ -9074,6 +9074,11 @@ export interface components {
              * @enum {string}
              */
             save_mode?: "normal" | "correction";
+            /**
+             * Format: date-time
+             * @description The last instant this viewer may save the session in save_mode (tenant time zone). After it the session is locked for the viewer, and a save is refused with ATTENDANCE_WINDOW_CLOSED or ATTENDANCE_CORRECTION_WINDOW_CLOSED. Absent when the viewer may not save it in that mode at all.
+             */
+            editable_until?: string;
         };
         SaveAttendanceEntriesRequest: {
             /**
@@ -11596,6 +11601,8 @@ export interface components {
             guardian_name?: string;
             has_evidence: boolean;
             has_letter: boolean;
+            /** @description How many days of the range the student's class has lessons on (weekends, holidays, no-school days and semester breaks left out): the leave's length, as the letter states it and attendance records it. */
+            school_days: number;
         };
         LeaveRequestSummary: {
             /** Format: uuid */
@@ -11617,6 +11624,8 @@ export interface components {
             class_name: string;
             /** Format: date-time */
             opened_at: string;
+            /** @description How many days of the range the student's class has lessons on (see LeaveRequestDetail). */
+            school_days: number;
             /** @description Review queue only: the request is at its final stage, completed by issuing the letter (issue_leave_letters) rather than by review. */
             awaiting_letter?: boolean;
         };

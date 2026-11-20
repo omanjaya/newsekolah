@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"sort"
 	"strings"
 	"time"
 
@@ -27,7 +28,10 @@ func (s *Service) GetMonitorDisplayToken(ctx context.Context, tenantID uuid.UUID
 // class whose current period is running right now, each card's
 // not_started/in_progress/submitted state, the period running now (from
 // the cards, or else from the weekday's bell schedule), and the day's
-// status totals across the tenant.
+// status totals across the tenant. A class the academic calendar gives no
+// lessons today (a holiday, no-school day or semester break) shows as
+// no_schedule rather than as a lesson not started, and when that leaves no
+// lesson running anywhere, the bell schedule names no period either.
 func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (MonitorSnapshot, error) {
 	var out MonitorSnapshot
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -41,11 +45,11 @@ func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (M
 		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 		dayOfWeek := domain.IsoWeekday(now)
 
-		cards, err := s.repo.ListCurrentPeriodScheduleCards(ctx, tenantID, yearID, dayOfWeek, today, now)
+		cards, offToday, err := s.currentLessonCards(ctx, tenantID, yearID, today, now)
 		if err != nil {
 			return err
 		}
-		sessions := make([]MonitorCard, 0, len(cards)+4)
+		sessions := make([]MonitorCard, 0, len(cards)+len(offToday)+4)
 		var currentPeriod *MonitorPeriod
 		for _, c := range cards {
 			status := "not_started"
@@ -67,7 +71,7 @@ func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (M
 			}
 		}
 
-		if currentPeriod == nil {
+		if currentPeriod == nil && len(offToday) == 0 {
 			// No class has a lesson right now, but the bell schedule may
 			// still be in a period (bell times set, timetables not entered
 			// yet): name that period instead of reporting none.
@@ -83,6 +87,10 @@ func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (M
 		noSchedule, err := s.repo.ListClassesWithoutCurrentSchedule(ctx, tenantID, yearID, dayOfWeek, now)
 		if err != nil {
 			return err
+		}
+		if len(offToday) > 0 {
+			noSchedule = append(noSchedule, offToday...)
+			sort.SliceStable(noSchedule, func(i, j int) bool { return noSchedule[i].ClassName < noSchedule[j].ClassName })
 		}
 		for _, c := range noSchedule {
 			sessions = append(sessions, MonitorCard{ClassName: c.ClassName, Status: "no_schedule"})
@@ -108,8 +116,9 @@ func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (M
 // uses for its cards, reused here instead of a new query so the admin/
 // principal dashboard's progress figure (docs/analysis/realtime-plan-
 // 2026-09-25.md section 2 opportunity #6) always agrees with what
-// /monitor shows for the same moment. A class with no schedule right now
-// is excluded from total, since it can never be "submitted" or not.
+// /monitor shows for the same moment. A class with no schedule right now,
+// or no lessons today in the academic calendar, is excluded from total,
+// since it can never be "submitted" or not.
 func (s *Service) TodaySubmittedCount(ctx context.Context, tenantID uuid.UUID) (submitted, total int, err error) {
 	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeAcademicYear(ctx, tenantID)
@@ -119,9 +128,8 @@ func (s *Service) TodaySubmittedCount(ctx context.Context, tenantID uuid.UUID) (
 		loc := s.tenantLocation(ctx, tenantID)
 		now := clock.Now(ctx, s.clock).In(loc)
 		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
-		dayOfWeek := domain.IsoWeekday(now)
 
-		cards, err := s.repo.ListCurrentPeriodScheduleCards(ctx, tenantID, yearID, dayOfWeek, today, now)
+		cards, _, err := s.currentLessonCards(ctx, tenantID, yearID, today, now)
 		if err != nil {
 			return err
 		}
@@ -134,6 +142,36 @@ func (s *Service) TodaySubmittedCount(ctx context.Context, tenantID uuid.UUID) (
 		return nil
 	})
 	return submitted, total, err
+}
+
+// currentLessonCards is ListCurrentPeriodScheduleCards (which matches the
+// weekday alone) without the classes that have no lessons today per
+// teachingDay -- a holiday, no-school day or semester break -- which it
+// returns separately as offToday, in card order. The calendar is asked
+// once per distinct class.
+func (s *Service) currentLessonCards(ctx context.Context, tenantID, yearID uuid.UUID, today, now time.Time) (cards []MonitorCardRow, offToday []NoScheduleClassRow, err error) {
+	rows, err := s.repo.ListCurrentPeriodScheduleCards(ctx, tenantID, yearID, domain.IsoWeekday(now), today, now)
+	if err != nil {
+		return nil, nil, err
+	}
+	teaching := make(map[uuid.UUID]bool)
+	cards = make([]MonitorCardRow, 0, len(rows))
+	for _, c := range rows {
+		has, known := teaching[c.ClassID]
+		if !known {
+			if has, _, err = s.teachingDay(ctx, tenantID, yearID, c.ClassID, today); err != nil {
+				return nil, nil, err
+			}
+			teaching[c.ClassID] = has
+			if !has {
+				offToday = append(offToday, NoScheduleClassRow{ClassID: c.ClassID, ClassName: c.ClassName})
+			}
+		}
+		if has {
+			cards = append(cards, c)
+		}
+	}
+	return cards, offToday, nil
 }
 
 // GetMonitorPresence reports who currently has a realtime socket open, per

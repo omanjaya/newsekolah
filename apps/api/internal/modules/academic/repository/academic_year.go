@@ -266,6 +266,26 @@ func (r *Repository) ListCalendarEventsForDate(ctx context.Context, tenantID, ye
 	return events, nil
 }
 
+// ListNonTeachingEventsInRange is ListCalendarEventsForDate for a whole
+// date range in one query, grade levels included.
+func (r *Repository) ListNonTeachingEventsInRange(ctx context.Context, tenantID, yearID uuid.UUID, from, to time.Time) ([]domain.CalendarEvent, error) {
+	rows, err := r.queries(ctx).AcademicListNonTeachingEventsInRange(ctx, db.AcademicListNonTeachingEventsInRangeParams{
+		TenantID: tenantID, AcademicYearID: yearID, FromDate: pdatabase.Date(from), ToDate: pdatabase.Date(to),
+	})
+	if err != nil {
+		return nil, err
+	}
+	events := make([]domain.CalendarEvent, len(rows))
+	for i, row := range rows {
+		events[i] = domain.CalendarEvent{
+			ID: row.ID, TenantID: tenantID, AcademicYearID: yearID,
+			Date: pdatabase.DateOrZero(row.Date), EndDate: pdatabase.DateOrZero(row.EndDate),
+			Kind: row.Kind, Name: row.Name, GradeLevelIDs: row.GradeLevelIds,
+		}
+	}
+	return events, nil
+}
+
 func (r *Repository) UpsertSchoolDay(ctx context.Context, tenantID, yearID uuid.UUID, dayOfWeek int16, isActive bool) error {
 	return r.queries(ctx).AcademicUpsertSchoolDay(ctx, db.AcademicUpsertSchoolDayParams{
 		TenantID: tenantID, AcademicYearID: yearID, DayOfWeek: dayOfWeek, IsActive: isActive,

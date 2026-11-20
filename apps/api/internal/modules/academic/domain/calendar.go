@@ -52,6 +52,21 @@ func IsSchoolDay(date time.Time, weeklyActive bool, events []CalendarEvent, grad
 	return true
 }
 
+// SchoolDaysInRange applies IsSchoolDay to every date in [from, to] (both
+// read by their own year, month and day): weekly holds whether each ISO
+// weekday is normally in session, events the calendar events that may
+// cover the range. It returns the school days at midnight UTC, in order.
+func SchoolDaysInRange(from, to time.Time, weekly map[int16]bool, events []CalendarEvent, gradeLevelID *uuid.UUID) []time.Time {
+	var out []time.Time
+	last := truncateToDay(to)
+	for d := truncateToDay(from); !d.After(last); d = d.AddDate(0, 0, 1) {
+		if IsSchoolDay(d, weekly[IsoWeekday(d)], events, gradeLevelID) {
+			out = append(out, d)
+		}
+	}
+	return out
+}
+
 // NonTeachingEventName is IsSchoolDay's counterpart for display: the name
 // of the first non-teaching calendar event (holiday, no-school day,
 // semester break) covering date and targeting gradeLevelID, if any. Used

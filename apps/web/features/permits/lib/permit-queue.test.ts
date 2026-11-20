@@ -15,6 +15,7 @@ const leave: LeaveRequestSummary = {
   starts_on: "2026-09-29",
   ends_on: "2026-09-29",
   opened_at: "2026-09-29T08:00:00Z",
+  school_days: 1,
 };
 const exit: ExitPermitSummary = {
   instance_id: "overlapping-id",

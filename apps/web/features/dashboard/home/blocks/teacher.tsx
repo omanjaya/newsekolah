@@ -94,6 +94,9 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
   if (!active) return EMPTY_BLOCK;
 
   const todaySessions = sessions.data?.data ?? [];
+  // A holiday in the academic calendar has no lessons to fill, and says
+  // which holiday it is instead of reading as an ordinary free day.
+  const holidayName = sessions.data?.holiday_name;
   const ordered = [...todaySessions].sort((a, b) =>
     (periodMap.get(a.start_period_id)?.starts_at ?? "").localeCompare(
       periodMap.get(b.start_period_id)?.starts_at ?? "",
@@ -202,13 +205,22 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
       }
     } else {
       const allDone = todaySessions.length > 0;
+      const holiday = !allDone && holidayName;
       block.hero = {
         key: "teacher.idle",
         priority: HERO_PRIORITY.teacherIdle,
         tone: "neutral",
         eyebrow: t("hero.idleEyebrow"),
-        title: allDone ? t("hero.doneTitle") : t("hero.freeTitle"),
-        meta: allDone ? t("hero.doneMeta", { total: todaySessions.length }) : t("hero.freeMeta"),
+        title: allDone
+          ? t("hero.doneTitle")
+          : holiday
+            ? t("hero.holidayTitle", { name: holidayName })
+            : t("hero.freeTitle"),
+        meta: allDone
+          ? t("hero.doneMeta", { total: todaySessions.length })
+          : holiday
+            ? t("hero.holidayMeta")
+            : t("hero.freeMeta"),
         action: allDone
           ? { label: t("hero.journalAction"), href: JOURNAL_HREF }
           : { label: t("hero.scheduleAction"), href: SCHEDULE_HREF },
@@ -231,6 +243,7 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
           namesError={namesError}
           onRetry={retryFailed}
           sessions={ordered}
+          holidayName={holidayName}
           classMap={classMap}
           subjectMap={subjectMap}
           periodMap={periodMap}
@@ -250,6 +263,7 @@ function TeacherTodayCard({
   namesError,
   onRetry,
   sessions,
+  holidayName,
   classMap,
   subjectMap,
   periodMap,
@@ -263,6 +277,8 @@ function TeacherTodayCard({
   namesError: unknown;
   onRetry: () => void;
   sessions: Session[];
+  /** The academic calendar's holiday that cancelled today's lessons. */
+  holidayName?: string;
   classMap: Map<string, ClassRef>;
   subjectMap: Map<string, SubjectRef>;
   periodMap: Map<string, PeriodRef>;
@@ -285,7 +301,11 @@ function TeacherTodayCard({
         </div>
       ) : sessions.length === 0 ? (
         <div className="px-5 pb-5">
-          <EmptyState variant="compact" icon={<CalendarX2 />} title={t("card.empty")} />
+          <EmptyState
+            variant="compact"
+            icon={<CalendarX2 />}
+            title={holidayName ? t("card.holiday", { name: holidayName }) : t("card.empty")}
+          />
         </div>
       ) : (
         <>

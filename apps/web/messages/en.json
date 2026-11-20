@@ -1275,6 +1275,8 @@
         "journalIncomplete": "Fill in both the journal topic and activities, or leave both empty.",
         "notStartedTitle": "The lesson has not started",
         "notStartedBody": "Attendance can be recorded from {time}.",
+        "closedTitle": "This session's attendance is locked",
+        "closedBody": "The time to change it ended {time}. Contact the school admin if it still needs changing.",
         "overriddenByLeave": "{names} kept the status set by their leave letter, not the one you chose.",
         "blockedReasons": {
           "late_arrival_in_progress": "Late, waiting for the late-arrival pass to be completed"
@@ -1755,7 +1757,7 @@
           "letterPending": "Waiting for the letter",
           "detail": "View details"
         },
-        "days": "{count, plural, one {# day} other {# days}}",
+        "days": "{count, plural, one {# school day} other {# school days}}",
         "submittedAt": "Submitted {time}",
         "awaitingLetter": "Approved by the homeroom teacher, waiting for the letter",
         "historyTitle": "Request history",

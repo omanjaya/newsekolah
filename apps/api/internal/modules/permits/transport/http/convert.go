@@ -276,7 +276,7 @@ func toAPILeaveRequest(d service.LeaveRequestDetail) api.LeaveRequestDetail {
 		Instance: toAPIInstance(d.Instance, d.Definition, d.Events), Category: api.LeaveCategory(lr.Category), Reason: lr.Reason,
 		StartsOn: openapi_types.Date{Time: lr.StartsOn}, EndsOn: openapi_types.Date{Time: lr.EndsOn},
 		LetterNumber: strPtr(lr.LetterNumber), IssuedAt: lr.IssuedAt, StudentName: lr.StudentNameSnapshot, ClassName: lr.ClassNameSnapshot,
-		GuardianName: strPtr(lr.GuardianNameSnapshot), HasEvidence: d.HasEvidence, HasLetter: d.HasLetter,
+		GuardianName: strPtr(lr.GuardianNameSnapshot), HasEvidence: d.HasEvidence, HasLetter: d.HasLetter, SchoolDays: d.SchoolDays,
 	}
 }
 
@@ -286,7 +286,7 @@ func toAPILeaveSummary(i service.LeaveRequestItem) api.LeaveRequestSummary {
 		CurrentStageIndex: i.CurrentStageIndex, Category: api.LeaveCategory(i.Category), Reason: strPtr(i.Reason),
 		StartsOn: openapi_types.Date{Time: i.StartsOn}, EndsOn: openapi_types.Date{Time: i.EndsOn}, LetterNumber: strPtr(i.LetterNumber),
 		StudentName: i.StudentNameSnapshot, ClassName: i.ClassNameSnapshot, OpenedAt: i.OpenedAt,
-		AwaitingLetter: i.AwaitingLetter,
+		AwaitingLetter: i.AwaitingLetter, SchoolDays: i.SchoolDays,
 	}
 }
 

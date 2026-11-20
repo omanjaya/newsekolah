@@ -53,6 +53,16 @@ func (s *Service) ForceStatus(ctx context.Context, tenantID, studentUserID uuid.
 
 		touched := map[time.Time]struct{}{}
 		for day := startOfDayIn(from, loc); !day.After(to); day = day.AddDate(0, 0, 1) {
+			// A letter covers the days with lessons in its range: a
+			// session left on a day the calendar has since made a holiday
+			// does not take the letter's status.
+			teaching, _, err := s.teachingDay(ctx, tenantID, yearID, classID, day)
+			if err != nil {
+				return err
+			}
+			if !teaching {
+				continue
+			}
 			changed, err := s.forceDay(ctx, tenantID, classID, studentUserID, day, from, to, statusCode, entrySource, reason, loc)
 			if err != nil {
 				return err
@@ -119,10 +129,15 @@ func (s *Service) sessionWindow(ctx context.Context, tenantID uuid.UUID, session
 	if err != nil {
 		return time.Time{}, time.Time{}, err
 	}
-	day := startOfDayIn(session.Date, loc)
+	// The DATE's own fields name the day (it arrives as midnight UTC);
+	// converting it first would move it back a day west of UTC.
+	y, m, d := session.Date.Date()
+	day := time.Date(y, m, d, 0, 0, 0, 0, loc)
 	return day.Add(start), day.Add(end), nil
 }
 
+// startOfDayIn is the start of the day instant t falls on, on loc's wall
+// clock.
 func startOfDayIn(t time.Time, loc *time.Location) time.Time {
 	y, m, d := t.In(loc).Date()
 	return time.Date(y, m, d, 0, 0, 0, 0, loc)

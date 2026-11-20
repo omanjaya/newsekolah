@@ -39,3 +39,31 @@ func (c ClassCalendar) IsTeachingDay(ctx context.Context, tenantID, academicYear
 	name, _, err := c.Calendar.NonTeachingEventName(ctx, tenantID, academicYearID, date, &gradeLevelID)
 	return false, name, err
 }
+
+// TeachingDays is IsTeachingDay for many classes over [from, to] at once:
+// for each class, the dates it has lessons on, at midnight UTC from their
+// own year, month and day. Each class is read once and the calendar once
+// per distinct grade level, instead of both once per class and date.
+func (c ClassCalendar) TeachingDays(ctx context.Context, tenantID, academicYearID uuid.UUID, classIDs []uuid.UUID, from, to time.Time) (map[uuid.UUID][]time.Time, error) {
+	byGrade := make(map[uuid.UUID][]time.Time)
+	out := make(map[uuid.UUID][]time.Time, len(classIDs))
+	for _, classID := range classIDs {
+		if _, done := out[classID]; done {
+			continue
+		}
+		class, err := c.Classes.GetClass(ctx, tenantID, classID)
+		if err != nil {
+			return nil, err
+		}
+		gradeLevelID := class.GradeLevelID
+		days, ok := byGrade[gradeLevelID]
+		if !ok {
+			if days, err = c.Calendar.SchoolDaysInRange(ctx, tenantID, academicYearID, from, to, &gradeLevelID); err != nil {
+				return nil, err
+			}
+			byGrade[gradeLevelID] = days
+		}
+		out[classID] = days
+	}
+	return out, nil
+}

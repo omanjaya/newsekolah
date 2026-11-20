@@ -500,7 +500,7 @@
     "ACADEMIC_PERIOD_SEQUENCE_TAKEN": "Urutan jam pelajaran ini sudah dipakai di templat yang sama. Pilih urutan lain.",
     "ACADEMIC_TEACHING_ASSIGNMENT_EXISTS": "Guru ini sudah ditugaskan untuk mapel dan kelas tersebut.",
     "ACADEMIC_TEACHER_NOT_ASSIGNED": "Guru ini belum ditugaskan mengajar mapel tersebut di kelas ini. Tambahkan penugasan mengajarnya dulu.",
-    "ATTENDANCE_WINDOW_CLOSED": "Batas waktu menyimpan presensi sesi ini sudah lewat. Perubahan sekarang hanya bisa lewat koreksi presensi.",
+    "ATTENDANCE_WINDOW_CLOSED": "Batas waktu mengubah presensi sesi ini sudah lewat. Hubungi admin sekolah bila masih perlu diubah.",
     "ATTENDANCE_CORRECTION_WINDOW_CLOSED": "Batas waktu koreksi presensi sesi ini sudah lewat. Hubungi admin sekolah bila masih perlu diubah.",
     "ATTENDANCE_CORRECTION_NOT_ALLOWED": "Anda tidak berwenang mengoreksi presensi kelas ini.",
     "ATTENDANCE_SESSION_NOT_STARTED": "Pelajaran ini belum berlangsung, jadi presensinya belum bisa dicatat.",

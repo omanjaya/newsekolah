@@ -111,3 +111,21 @@ func TestNonTeachingEventName(t *testing.T) {
 		require.False(t, found)
 	})
 }
+
+// A Friday-to-Tuesday range over a weekend and a Monday holiday holds two
+// school days, and a grade-scoped event only removes the day for its grade.
+func TestSchoolDaysInRange(t *testing.T) {
+	gradeX := uuid.New()
+	gradeXI := uuid.New()
+	weekly := map[int16]bool{1: true, 2: true, 3: true, 4: true, 5: true}
+	events := []domain.CalendarEvent{
+		{Kind: domain.CalendarEventHoliday, Name: "Cuti bersama", Date: date("2027-02-08"), EndDate: date("2027-02-08")},
+		{Kind: domain.CalendarEventNoSchool, Date: date("2027-02-09"), EndDate: date("2027-02-09"), GradeLevelIDs: []uuid.UUID{gradeXI}},
+	}
+
+	require.Equal(t, []time.Time{date("2027-02-05"), date("2027-02-09")},
+		domain.SchoolDaysInRange(date("2027-02-05"), date("2027-02-09"), weekly, events, &gradeX))
+	require.Equal(t, []time.Time{date("2027-02-05")},
+		domain.SchoolDaysInRange(date("2027-02-05"), date("2027-02-09"), weekly, events, &gradeXI))
+	require.Empty(t, domain.SchoolDaysInRange(date("2027-02-06"), date("2027-02-07"), weekly, events, nil))
+}

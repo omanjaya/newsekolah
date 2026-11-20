@@ -295,6 +295,8 @@ func (r *Repository) ListLeaveRequestsBySubject(ctx context.Context, tenantID, s
 		out[i] = service.LeaveRequestItem{
 			LeaveRequest:      toLeaveRequest(db.LeaveRequest(leaveRequestColumns(row))),
 			SubjectUserID:     subjectUserID,
+			ClassID:           pdatabase.UUIDOrNil(row.ClassID),
+			AcademicYearID:    row.AcademicYearID,
 			Status:            domain.Status(row.Status),
 			OpenedAt:          pdatabase.TimeOrZero(row.OpenedAt),
 			CurrentStageIndex: int(row.CurrentStageIndex),
@@ -319,7 +321,7 @@ func (r *Repository) ListLeaveRequestsForReview(ctx context.Context, tenantID, r
 				StudentNameSnapshot: row.StudentNameSnapshot, ClassNameSnapshot: row.ClassNameSnapshot,
 				GuardianNameSnapshot: row.GuardianNameSnapshot,
 			}),
-			SubjectUserID: row.SubjectUserID, ClassID: pdatabase.UUIDOrNil(row.ClassID),
+			SubjectUserID: row.SubjectUserID, ClassID: pdatabase.UUIDOrNil(row.ClassID), AcademicYearID: row.AcademicYearID,
 			Status: domain.Status(row.Status), OpenedAt: pdatabase.TimeOrZero(row.OpenedAt), CurrentStageIndex: int(row.CurrentStageIndex),
 			AwaitingLetter: &row.AwaitingLetter,
 		}

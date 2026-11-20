@@ -515,6 +515,13 @@ components:
               description:
                 The mode this viewer saves the session in. normal for its own teacher or accepted substitute, who may
                 keep re-saving until the correction deadline; correction (with a reason) for anyone else.
+            editable_until:
+              type: string
+              format: date-time
+              description:
+                The last instant this viewer may save the session in save_mode (tenant time zone). After it the
+                session is locked for the viewer, and a save is refused with ATTENDANCE_WINDOW_CLOSED or
+                ATTENDANCE_CORRECTION_WINDOW_CLOSED. Absent when the viewer may not save it in that mode at all.
     SaveAttendanceEntriesRequest:
       type: object
       required: [entries]

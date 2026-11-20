@@ -500,7 +500,7 @@
     "ACADEMIC_PERIOD_SEQUENCE_TAKEN": "This period number is already used in this template. Pick a different number.",
     "ACADEMIC_TEACHING_ASSIGNMENT_EXISTS": "This teacher is already assigned to this subject and class.",
     "ACADEMIC_TEACHER_NOT_ASSIGNED": "This teacher is not assigned to teach this subject in this class. Add the teaching assignment first.",
-    "ATTENDANCE_WINDOW_CLOSED": "The save window for this session has closed. Changes now go through an attendance correction.",
+    "ATTENDANCE_WINDOW_CLOSED": "The time to change this session's attendance has passed. Contact the school admin if it still needs changing.",
     "ATTENDANCE_CORRECTION_WINDOW_CLOSED": "The correction window for this session has closed. Contact the school admin if it still needs changing.",
     "ATTENDANCE_CORRECTION_NOT_ALLOWED": "You are not allowed to correct attendance for this class.",
     "ATTENDANCE_SESSION_NOT_STARTED": "This lesson has not started yet, so its attendance cannot be recorded.",

@@ -56,6 +56,7 @@ function item(
     student_name: "Siswa Contoh",
     class_name: "Kelas 10 A",
     opened_at: "2026-09-28T10:00:00Z",
+    school_days: 1,
     ...overrides,
   };
 }
@@ -121,18 +122,21 @@ describe("MyLeaveRequests", () => {
     expect(screen.getByTestId("leave-mine-card-done")).toBeInTheDocument();
   });
 
-  it("says a request once in its date range, with the number of days", () => {
+  it("says a request once in its date range, with the school days the server counted", () => {
+    // Tue 29 Sep to Thu 1 Oct, with a holiday on 30 Sep: two school days,
+    // not the three calendar days of the range.
     mineItems = [
       item({
         instance_id: "a",
         status: "completed",
         starts_on: "2026-09-29",
         ends_on: "2026-10-01",
+        school_days: 2,
       }),
     ];
     renderMine();
     const row = screen.getByTestId("leave-mine-card-a");
-    expect(row).toHaveTextContent('days:{"count":3}');
+    expect(row).toHaveTextContent('days:{"count":2}');
     expect(row).not.toHaveTextContent(/29 Sep 2026.*29 Sep 2026/);
   });
 

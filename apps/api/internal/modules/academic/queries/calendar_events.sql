@@ -32,6 +32,24 @@ where tenant_id = $1 and academic_year_id = $2
   and kind in ('holiday', 'no_school', 'semester_break')
   and date <= $3 and end_date >= $3;
 
+-- name: AcademicListNonTeachingEventsInRange :many
+-- Every non-teaching calendar event (holiday, no_school, semester_break)
+-- overlapping [from_date, to_date], with the grade levels it targets
+-- (empty for a school-wide event), so a caller can answer "is this a
+-- school day" for a whole date range in one read instead of one
+-- AcademicListCalendarEventsForDate per date.
+select
+  e.id, e.date, e.end_date, e.kind, e.name,
+  coalesce(array_agg(gl.grade_level_id) filter (where gl.grade_level_id is not null), '{}')::uuid[] as grade_level_ids
+from academic_calendar_events e
+left join academic_calendar_event_grade_levels gl
+  on gl.tenant_id = e.tenant_id and gl.calendar_event_id = e.id
+where e.tenant_id = $1 and e.academic_year_id = $2
+  and e.kind in ('holiday', 'no_school', 'semester_break')
+  and e.date <= sqlc.arg('to_date')::date and e.end_date >= sqlc.arg('from_date')::date
+group by e.id
+order by e.date;
+
 -- name: AcademicReplaceCalendarEventGradeLevels :exec
 delete from academic_calendar_event_grade_levels where tenant_id = $1 and calendar_event_id = $2;
 
