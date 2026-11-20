@@ -553,6 +553,13 @@ type Querier interface {
 	DeleteSchedulesByAcademicYear(ctx context.Context, arg DeleteSchedulesByAcademicYearParams) error
 	DeleteTPMapping(ctx context.Context, arg DeleteTPMappingParams) error
 	DeleteTitle(ctx context.Context, arg DeleteTitleParams) (int64, error)
+	// Drops the automatic report scores of one class-subject whose student has
+	// no grade left to average (every score cleared, or the last component
+	// removed), so the gradebook, the e-Rapor export and the student's own
+	// grades all agree the student has no report score yet. keep_student_ids
+	// are the students recomputation just wrote a score for. A row with a
+	// manual override stays: the teacher set it explicitly.
+	DeleteUngradedReportScores(ctx context.Context, arg DeleteUngradedReportScoresParams) error
 	DeleteUserRoles(ctx context.Context, arg DeleteUserRolesParams) error
 	// Hard delete, not void: replacing an attendance session's per-student
 	// violations on resave is delete-then-reinsert, matching the old system's

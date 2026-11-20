@@ -53,6 +53,10 @@ type Repository interface {
 	// is the caller's business time, stored in computed_at.
 	UpsertReportScore(ctx context.Context, tenantID, yearID, termID, classID, subjectID, studentID uuid.UUID, previous, manual *float64, automatic float64, computedAt time.Time) (ReportScore, error)
 	SetManualReportScore(ctx context.Context, tenantID, yearID, termID, classID, subjectID, studentID uuid.UUID, manual *float64, computedAt time.Time) (ReportScore, error)
+	// DeleteUngradedReportScores removes the class-subject's automatic
+	// report scores of every student not in keepStudentIDs; manual
+	// overrides stay.
+	DeleteUngradedReportScores(ctx context.Context, tenantID, yearID, termID, classID, subjectID uuid.UUID, keepStudentIDs []uuid.UUID) error
 	ListReportScores(ctx context.Context, tenantID, termID, classID, subjectID uuid.UUID) ([]ReportScore, error)
 	ListReportScoresForStudent(ctx context.Context, tenantID, termID, studentID uuid.UUID) ([]ReportScore, error)
 	ListPublishedReportScores(ctx context.Context, tenantID, yearID, termID uuid.UUID, studentIDs []uuid.UUID) ([]PublishedReportScore, error)

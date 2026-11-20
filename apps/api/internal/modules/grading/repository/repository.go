@@ -219,6 +219,19 @@ func (r *Repository) SetManualReportScore(ctx context.Context, tenantID, yearID,
 	return toReportScore(row), nil
 }
 
+func (r *Repository) DeleteUngradedReportScores(ctx context.Context, tenantID, yearID, termID, classID, subjectID uuid.UUID, keepStudentIDs []uuid.UUID) error {
+	if keepStudentIDs == nil {
+		keepStudentIDs = []uuid.UUID{}
+	}
+	err := r.queries(ctx).DeleteUngradedReportScores(ctx, db.DeleteUngradedReportScoresParams{
+		TenantID: tenantID, AcademicYearID: yearID, TermID: termID, ClassID: classID, SubjectID: subjectID, KeepStudentIds: keepStudentIDs,
+	})
+	if err != nil {
+		return fmt.Errorf("delete ungraded report scores: %w", err)
+	}
+	return nil
+}
+
 func (r *Repository) ListReportScores(ctx context.Context, tenantID, termID, classID, subjectID uuid.UUID) ([]service.ReportScore, error) {
 	rows, err := r.queries(ctx).ListReportScores(ctx, db.ListReportScoresParams{TenantID: tenantID, TermID: termID, ClassID: classID, SubjectID: subjectID})
 	if err != nil {

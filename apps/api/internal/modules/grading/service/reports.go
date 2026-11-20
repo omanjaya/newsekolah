@@ -176,13 +176,19 @@ func averagePerStudent(rows []PublishedReportScore) map[uuid.UUID]float64 {
 // winning as final_score -- UpsertReportScore only replaces final_score
 // with the automatic value when no override exists (domain.
 // ComputeReportScore's doc comment has the full rule).
+//
+// A student left with nothing to average (every grade cleared, or the last
+// component removed) loses their automatic report score instead of keeping
+// the last one computed: the gradebook, the e-Rapor export and the
+// student's own grades then all agree there is no report score yet. A
+// manual override stays, because the teacher set it explicitly.
 func (s *Service) recomputeReportScores(ctx context.Context, tenantID, yearID, termID, classID, subjectID uuid.UUID, scale domain.Scale) error {
 	components, err := s.repo.ListComponents(ctx, tenantID, termID, classID, subjectID)
 	if err != nil {
 		return err
 	}
 	if len(components) == 0 {
-		return nil
+		return s.repo.DeleteUngradedReportScores(ctx, tenantID, yearID, termID, classID, subjectID, nil)
 	}
 	componentIDs := make([]uuid.UUID, len(components))
 	for i, c := range components {
@@ -210,6 +216,7 @@ func (s *Service) recomputeReportScores(ctx context.Context, tenantID, yearID, t
 		return err
 	}
 	computedAt := clock.Now(ctx, s.clock)
+	scored := make([]uuid.UUID, 0, len(byStudent))
 	for studentID, scores := range byStudent {
 		raw, ok := domain.WeightedAverage(components, scores)
 		if !ok {
@@ -219,8 +226,9 @@ func (s *Service) recomputeReportScores(ctx context.Context, tenantID, yearID, t
 		if _, err := s.repo.UpsertReportScore(ctx, tenantID, yearID, termID, classID, subjectID, studentID, previous[studentID], nil, result.Automatic, computedAt); err != nil {
 			return err
 		}
+		scored = append(scored, studentID)
 	}
-	return nil
+	return s.repo.DeleteUngradedReportScores(ctx, tenantID, yearID, termID, classID, subjectID, scored)
 }
 
 // applicableRanges keeps the ranges that target this subject or teacher,

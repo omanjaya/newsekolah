@@ -22,6 +22,18 @@ update report_scores set manual_score = $7, final_score = coalesce($7, automatic
 where tenant_id = $1 and term_id = $2 and class_id = $3 and subject_id = $4 and student_user_id = $5 and academic_year_id = $6
 returning *;
 
+-- name: DeleteUngradedReportScores :exec
+-- Drops the automatic report scores of one class-subject whose student has
+-- no grade left to average (every score cleared, or the last component
+-- removed), so the gradebook, the e-Rapor export and the student's own
+-- grades all agree the student has no report score yet. keep_student_ids
+-- are the students recomputation just wrote a score for. A row with a
+-- manual override stays: the teacher set it explicitly.
+delete from report_scores
+where tenant_id = $1 and academic_year_id = $2 and term_id = $3 and class_id = $4 and subject_id = $5
+  and manual_score is null
+  and not (student_user_id = any(sqlc.arg(keep_student_ids)::uuid[]));
+
 -- name: ListReportScores :many
 select * from report_scores
 where tenant_id = $1 and term_id = $2 and class_id = $3 and subject_id = $4
