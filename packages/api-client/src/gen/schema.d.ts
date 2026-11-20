@@ -4204,7 +4204,10 @@ export interface paths {
         /** Library member types (max loan items/days, renewal, fine rules) */
         get: operations["listLibraryMemberTypes"];
         put?: never;
-        /** Create a member type */
+        /**
+         * Create a member type
+         * @description Answers 409 LIBRARY_MEMBER_TYPE_NAME_EXISTS when another live type of the school already uses the name (case and surrounding spaces ignored), and 409 LIBRARY_MEMBER_TYPE_DEFAULT_ROLE_TAKEN when another type is already the default for the role.
+         */
         post: operations["createLibraryMemberType"];
         delete?: never;
         options?: never;
@@ -4220,7 +4223,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update a member type */
+        /**
+         * Update a member type
+         * @description Answers 409 LIBRARY_MEMBER_TYPE_NAME_EXISTS when another live type of the school already uses the name (case and surrounding spaces ignored), and 409 LIBRARY_MEMBER_TYPE_DEFAULT_ROLE_TAKEN when another type is already the default for the role.
+         */
         put: operations["updateLibraryMemberType"];
         post?: never;
         /** Delete a member type (refused while any member still uses it) */
@@ -21055,6 +21061,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
         };
     };
     updateLibraryMemberType: {
@@ -21085,6 +21092,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     deleteLibraryMemberType: {
