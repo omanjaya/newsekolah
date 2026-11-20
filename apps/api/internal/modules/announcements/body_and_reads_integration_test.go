@@ -2,6 +2,7 @@ package announcements
 
 import (
 	"context"
+	"io/fs"
 	"testing"
 	"time"
 
@@ -35,8 +36,10 @@ func TestBodyTextKeepsWordBreaks(t *testing.T) {
 	require.Contains(t, created.BodyHTML, "<br", "the stored HTML keeps its line break")
 }
 
-// TestMigrationRederivesGluedBodyText runs 0129 over a row stored by the
-// old derivation and checks it gets the same text the service now writes.
+// TestMigrationRederivesGluedBodyText runs the announcement_body_text_breaks
+// migration over a row stored by the old derivation and checks it gets the
+// same text the service now writes. The file is found by its name, not its
+// number, so renumbering it when parallel branches merge is a plain rename.
 func TestMigrationRederivesGluedBodyText(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx := context.Background()
@@ -49,7 +52,10 @@ func TestMigrationRederivesGluedBodyText(t *testing.T) {
 	_, err = pg.AdminPool.Exec(ctx, `update announcements set body_text = 'Seluruh warga sekolah wajib hadir.Pakaian: seragam putih abu-abu.Bawa topi & air minum.' where id = $1`, created.ID)
 	require.NoError(t, err)
 
-	up, err := migrations.FS.ReadFile("0129_announcement_body_text_breaks.up.sql")
+	matches, err := fs.Glob(migrations.FS, "*_announcement_body_text_breaks.up.sql")
+	require.NoError(t, err)
+	require.Len(t, matches, 1)
+	up, err := migrations.FS.ReadFile(matches[0])
 	require.NoError(t, err)
 	_, err = pg.AdminPool.Exec(ctx, string(up))
 	require.NoError(t, err)
