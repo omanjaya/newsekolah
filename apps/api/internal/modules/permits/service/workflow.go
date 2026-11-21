@@ -345,7 +345,10 @@ func (s *Service) rejectInstance(ctx context.Context, tenantID, instanceID, acto
 }
 
 // cancelInstance is the subject (or an admin) withdrawing their own
-// still-open request, distinct from a reviewer rejecting it.
+// still-open request, distinct from a reviewer rejecting it. The event
+// carries the key of the stage the request was waiting at, as a reject
+// does, so the timeline dates that stage by the cancel rather than by an
+// earlier event on it.
 func (s *Service) cancelInstance(ctx context.Context, tenantID, instanceID, actorUserID uuid.UUID, reason string) (domain.Instance, error) {
 	inst, ok, err := s.repo.GetInstanceForUpdate(ctx, tenantID, instanceID)
 	if err != nil {
@@ -357,6 +360,17 @@ func (s *Service) cancelInstance(ctx context.Context, tenantID, instanceID, acto
 	if !inst.CanTransition() {
 		return domain.Instance{}, domain.ErrInstanceNotInProgress
 	}
+	def, ok, err := s.repo.GetDefinitionByID(ctx, tenantID, inst.DefinitionID)
+	if err != nil {
+		return domain.Instance{}, err
+	}
+	if !ok {
+		return domain.Instance{}, domain.ErrDefinitionNotFound
+	}
+	stage, err := def.StageAt(inst.CurrentStageIndex)
+	if err != nil {
+		return domain.Instance{}, err
+	}
 
 	now := clock.Now(ctx, s.clock)
 	updated, err := s.repo.AdvanceInstance(ctx, tenantID, instanceID, inst.CurrentStageIndex, domain.StatusCancelled, &now)
@@ -364,7 +378,7 @@ func (s *Service) cancelInstance(ctx context.Context, tenantID, instanceID, acto
 		return domain.Instance{}, err
 	}
 	_, err = s.repo.CreateEvent(ctx, domain.Event{
-		TenantID: tenantID, InstanceID: instanceID, FromStatus: inst.Status, ToStatus: domain.StatusCancelled,
+		TenantID: tenantID, InstanceID: instanceID, StageKey: stage.Key, FromStatus: inst.Status, ToStatus: domain.StatusCancelled,
 		ActorUserID: uuid.NullUUID{UUID: actorUserID, Valid: true}, Verification: domain.VerificationManual,
 		Note: reason, OccurredAt: now,
 	})

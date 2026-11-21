@@ -6409,7 +6409,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Student cancels an in-progress exit permit */
+        /**
+         * Student cancels an in-progress exit permit
+         * @description Once the permit's last period is over on the school's clock the permit has lapsed and is no longer cancelled: 422 EXIT_PERMIT_WINDOW_CLOSED.
+         */
         post: operations["cancelExitPermit"];
         delete?: never;
         options?: never;
@@ -26029,6 +26032,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     issueExitPermitGateToken: {

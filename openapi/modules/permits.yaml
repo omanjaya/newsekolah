@@ -319,6 +319,9 @@ paths:
       operationId: cancelExitPermit
       x-permission: authenticated
       summary: Student cancels an in-progress exit permit
+      description: >-
+        Once the permit's last period is over on the school's clock the permit has
+        lapsed and is no longer cancelled: 422 EXIT_PERMIT_WINDOW_CLOSED.
       parameters:
         - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
@@ -331,6 +334,8 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
+        # EXIT_PERMIT_WINDOW_CLOSED: the permit's last period is over.
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
 
   /v1/exit-permits/{instanceId}/gate-token:
     post:

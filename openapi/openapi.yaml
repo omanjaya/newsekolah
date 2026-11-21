@@ -14762,6 +14762,8 @@ paths:
       operationId: cancelExitPermit
       x-permission: authenticated
       summary: Student cancels an in-progress exit permit
+      description: "Once the permit's last period is over on the school's clock the permit has lapsed and is no longer
+        cancelled: 422 EXIT_PERMIT_WINDOW_CLOSED."
       parameters:
         - name: instanceId
           in: path
@@ -14784,6 +14786,8 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
   /v1/exit-permits/{instanceId}/gate-token:
     post:
       tags:
