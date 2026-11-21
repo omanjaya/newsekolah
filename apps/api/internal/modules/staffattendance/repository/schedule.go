@@ -12,14 +12,14 @@ import (
 	pdatabase "github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
-func (r *Repository) UpsertScheduleDay(
+func (r *Repository) InsertScheduleVersion(
 	ctx context.Context, tenantID, employeeUserID, actorID uuid.UUID, day domain.ScheduleDay,
 ) (domain.ScheduleDay, error) {
-	row, err := r.queries(ctx).UpsertStaffAttendanceScheduleDay(ctx, db.UpsertStaffAttendanceScheduleDayParams{
+	row, err := r.queries(ctx).InsertStaffAttendanceScheduleVersion(ctx, db.InsertStaffAttendanceScheduleVersionParams{
 		TenantID: tenantID, EmployeeUserID: employeeUserID, Weekday: day.Weekday, IsWorkingDay: day.IsWorkingDay,
 		StartMinute: int16(day.StartMinute), EndMinute: int16(day.EndMinute), GraceMinutes: int16(day.GraceMinutes), //nolint:gosec // clamped by domain.ScheduleDay.Valid before this call
-		CreatedBy: pdatabase.NullUUID(uuid.NullUUID{UUID: actorID, Valid: actorID != uuid.Nil}),
-		CreatedAt: pdatabase.Timestamptz(day.CreatedAt),
+		CreatedBy:     pdatabase.NullUUID(uuid.NullUUID{UUID: actorID, Valid: actorID != uuid.Nil}),
+		EffectiveFrom: pdatabase.Date(day.EffectiveFrom),
 	})
 	if err != nil {
 		return domain.ScheduleDay{}, err
@@ -27,14 +27,14 @@ func (r *Repository) UpsertScheduleDay(
 	return toScheduleDay(row), nil
 }
 
-func (r *Repository) ListScheduleDays(ctx context.Context, tenantID, employeeUserID uuid.UUID) ([]domain.ScheduleDay, error) {
-	rows, err := r.queries(ctx).ListStaffAttendanceScheduleDays(ctx, db.ListStaffAttendanceScheduleDaysParams{
+func (r *Repository) ListScheduleHistory(ctx context.Context, tenantID, employeeUserID uuid.UUID) (domain.ScheduleHistory, error) {
+	rows, err := r.queries(ctx).ListStaffAttendanceScheduleVersions(ctx, db.ListStaffAttendanceScheduleVersionsParams{
 		TenantID: tenantID, EmployeeUserID: employeeUserID,
 	})
 	if err != nil {
 		return nil, err
 	}
-	out := make([]domain.ScheduleDay, len(rows))
+	out := make(domain.ScheduleHistory, len(rows))
 	for i, row := range rows {
 		out[i] = toScheduleDay(row)
 	}

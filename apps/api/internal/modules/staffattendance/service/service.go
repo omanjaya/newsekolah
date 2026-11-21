@@ -29,9 +29,12 @@ type Repository interface {
 	// default, matching platform/service.ListFlags's "opt-out" semantics.
 	IsFeatureEnabled(ctx context.Context, tenantID uuid.UUID, module string) (bool, error)
 
-	// Schedules.
-	UpsertScheduleDay(ctx context.Context, tenantID, employeeUserID, actorID uuid.UUID, day domain.ScheduleDay) (domain.ScheduleDay, error)
-	ListScheduleDays(ctx context.Context, tenantID, employeeUserID uuid.UUID) ([]domain.ScheduleDay, error)
+	// Schedules. A schedule is an append-only history of weekday versions
+	// (domain.ScheduleHistory): a save inserts a version, never updates one.
+	InsertScheduleVersion(ctx context.Context, tenantID, employeeUserID, actorID uuid.UUID, day domain.ScheduleDay) (domain.ScheduleDay, error)
+	// ListScheduleHistory is every version of the employee's weekdays,
+	// ordered as domain.ScheduleHistory requires.
+	ListScheduleHistory(ctx context.Context, tenantID, employeeUserID uuid.UUID) (domain.ScheduleHistory, error)
 	ListRosterEmployees(ctx context.Context, tenantID uuid.UUID) ([]EmployeeRef, error)
 	ListCandidateEmployees(ctx context.Context, tenantID uuid.UUID) ([]CandidateRef, error)
 	// ListRecapEmployees is the roster plus anyone with a record in
@@ -173,13 +176,15 @@ func (s *Service) computeStatus(
 }
 
 // derivedStatus is computeStatus for a day with no stored record (today's
-// board, history, the recap). Such a day is only measured against the
-// schedule as it stood on it (domain.ScheduleDay.AsOf): before the
+// board, history, the recap). Such a day is judged again on every read, so
+// it is measured against the schedule version in effect on it
+// (domain.ScheduleHistory.InEffect), never the current one: before the
 // employee's first schedule it is StatusUnscheduled, never StatusAbsent,
-// and before a weekday became a working day it is that weekday's day off,
-// StatusHoliday. A stored record is still judged against the current
-// schedule whatever its date, so a device import or manual backfill of
-// earlier days keeps working once the schedule exists.
+// and a later change to the weekday rewrites none of its earlier days. A
+// stored record is judged by the version in effect on its date too, or the
+// weekday's first version for a date before the schedule existed
+// (ForRecord), so a device import or manual backfill of earlier days keeps
+// working once the schedule exists.
 func (s *Service) derivedStatus(
 	ctx context.Context, tenantID, employeeUserID uuid.UUID, date time.Time,
 ) (domain.LatenessResult, string, error) {
@@ -189,21 +194,14 @@ func (s *Service) derivedStatus(
 func (s *Service) judgeDay(
 	ctx context.Context, tenantID, employeeUserID uuid.UUID, date time.Time, arrival, departure *time.Time, derived bool,
 ) (domain.LatenessResult, string, error) {
-	days, err := s.repo.ListScheduleDays(ctx, tenantID, employeeUserID)
+	history, err := s.repo.ListScheduleHistory(ctx, tenantID, employeeUserID)
 	if err != nil {
 		return domain.LatenessResult{}, "", err
 	}
 	weekday := domain.IsoWeekday(date)
-	var schedule *domain.ScheduleDay
-	for _, d := range days {
-		if d.Weekday == weekday {
-			day := d
-			schedule = &day
-			break
-		}
-	}
-	if derived && schedule != nil {
-		schedule = schedule.AsOf(staffDate(ctx, date))
+	schedule := history.ForRecord(weekday, date)
+	if derived {
+		schedule = history.InEffect(weekday, date)
 	}
 
 	yearID, hasYear, err := s.activeAcademicYear(ctx, tenantID)

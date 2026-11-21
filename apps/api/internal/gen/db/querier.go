@@ -1011,6 +1011,11 @@ type Querier interface {
 	InsertLoginAttempt(ctx context.Context, arg InsertLoginAttemptParams) error
 	InsertMessageDelivery(ctx context.Context, arg InsertMessageDeliveryParams) (MessageDelivery, error)
 	InsertNotification(ctx context.Context, arg InsertNotificationParams) (Notification, error)
+	// One version of a weekday, in effect from effective_from (the school-local
+	// date of the save) until the next version of the same weekday. Versions
+	// are never updated: the service appends one for each weekday a save
+	// changes, so every past date keeps the version it was judged by.
+	InsertStaffAttendanceScheduleVersion(ctx context.Context, arg InsertStaffAttendanceScheduleVersionParams) (StaffAttendanceSchedule, error)
 	InsertStarEvent(ctx context.Context, arg InsertStarEventParams) (StarEvent, error)
 	// Persisted stocktake reconciliation (migration 0098): Close writes one
 	// row per anomalous copy here so the result survives the page being
@@ -1530,7 +1535,10 @@ type Querier interface {
 	// header note that the schedule table is the source of "who counts as
 	// staff" for this module.
 	ListStaffAttendanceRosterEmployees(ctx context.Context, tenantID uuid.UUID) ([]ListStaffAttendanceRosterEmployeesRow, error)
-	ListStaffAttendanceScheduleDays(ctx context.Context, arg ListStaffAttendanceScheduleDaysParams) ([]StaffAttendanceSchedule, error)
+	// Every version of an employee's weekdays, oldest first: by weekday, then
+	// the date each takes effect, then save order, so of two versions saved
+	// for the same date the later one comes last (domain.ScheduleHistory).
+	ListStaffAttendanceScheduleVersions(ctx context.Context, arg ListStaffAttendanceScheduleVersionsParams) ([]StaffAttendanceSchedule, error)
 	// One employee's records stored as "unscheduled": the days they recorded
 	// before any work schedule existed, which a first schedule re-judges.
 	ListStaffAttendanceUnscheduledRecords(ctx context.Context, arg ListStaffAttendanceUnscheduledRecordsParams) ([]StaffAttendanceRecord, error)
@@ -1993,17 +2001,6 @@ type Querier interface {
 	// shown alongside the score, not bookkeeping.
 	UpsertReportScore(ctx context.Context, arg UpsertReportScoreParams) (ReportScore, error)
 	UpsertStaffAttendanceRecord(ctx context.Context, arg UpsertStaffAttendanceRecordParams) (StaffAttendanceRecord, error)
-	// created_at is the service clock's instant rather than now(), so a
-	// simulated school day dates a first schedule the way it dates scans:
-	// days before it have no schedule to be absent from. An update keeps the
-	// original created_at. working_since dates when the weekday became a
-	// working day: the save instant on an insert as a working day or on an
-	// update that turns a day off into one, kept while it stays working, and
-	// null while it is a day off. The editor stores all seven weekdays on the
-	// first save, so an off weekday already has a row: its earlier days stay
-	// days off (holiday) once it is turned on, never absences or "no
-	// schedule" (domain.ScheduleDay.AsOf).
-	UpsertStaffAttendanceScheduleDay(ctx context.Context, arg UpsertStaffAttendanceScheduleDayParams) (StaffAttendanceSchedule, error)
 	UpsertStaffProfile(ctx context.Context, arg UpsertStaffProfileParams) error
 	UpsertStudentProfile(ctx context.Context, arg UpsertStudentProfileParams) error
 	UpsertTPMapping(ctx context.Context, arg UpsertTPMappingParams) (ReportTpMapping, error)
