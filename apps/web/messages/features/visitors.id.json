@@ -17,7 +17,7 @@
     "clearSearch": "Hapus pencarian",
     "overdue": "Belum keluar",
     "host": "Menemui {name}",
-    "arrived": "Masuk {time} · {stay}",
+    "arrivedAt": "Masuk {time}",
     "stayMinutes": "{minutes} mnt",
     "stayHours": "{hours} j {minutes} mnt",
     "badgeNumber": "Kartu {number}",
