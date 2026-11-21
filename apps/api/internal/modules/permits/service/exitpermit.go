@@ -252,11 +252,36 @@ func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scan
 
 // CancelExitPermit lets the student withdraw their own not-yet-exited
 // permit (docs/analysis/backend-inventory.md 1.15: "Cancel bila belum
-// exited").
+// exited"). Once the permit's last lesson period is over on the business
+// clock the permit has lapsed (it reads as expired), so a cancel is
+// refused like its stage scans and gate QR: it would otherwise record a
+// lapsed permit as the student's own withdrawal.
 func (s *Service) CancelExitPermit(ctx context.Context, tenantID, instanceID, actorUserID uuid.UUID) (domain.Instance, error) {
 	var out domain.Instance
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
+		inst, ok, err := s.repo.GetInstance(ctx, tenantID, instanceID)
+		if err != nil {
+			return err
+		}
+		if !ok || inst.Kind != domain.KindExitPermit {
+			return domain.ErrInstanceNotFound
+		}
+		if inst.CanTransition() {
+			permit, ok, err := s.repo.GetExitPermit(ctx, tenantID, instanceID)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				return domain.ErrInstanceNotFound
+			}
+			periodEndsAt, err := s.exitPermitEndsAt(ctx, inst, permit)
+			if err != nil {
+				return err
+			}
+			if !periodEndsAt.After(clock.Now(ctx, s.clock)) {
+				return domain.ErrExitPermitWindowClosed
+			}
+		}
 		out, err = s.cancelInstance(ctx, tenantID, instanceID, actorUserID, domain.NoteCancelledBySubject)
 		return err
 	})

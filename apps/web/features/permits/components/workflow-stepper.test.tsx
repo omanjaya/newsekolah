@@ -209,7 +209,9 @@ describe("WorkflowSteps", () => {
     expect(expired).not.toHaveTextContent("09.10");
     unmount();
 
-    // A student's cancel is a system note too, but it is when the request ended.
+    // A student's cancel is a system note too, but it is when the request
+    // ended. A cancel stored before the API kept its stage key has none, as
+    // the live payload showed.
     render(
       <WorkflowSteps
         instance={{
@@ -219,7 +221,6 @@ describe("WorkflowSteps", () => {
             ...(opened.events ?? []),
             {
               id: "e1",
-              stage_key: "duty",
               to_status: "cancelled",
               verification: "auto",
               note: "cancelled by student",
@@ -233,6 +234,37 @@ describe("WorkflowSteps", () => {
     const [cancelled] = screen.getAllByRole("listitem");
     expect(cancelled).toHaveTextContent("status.cancelled");
     expect(cancelled).toHaveTextContent("14 Nov 09.30");
+    expect(cancelled).not.toHaveTextContent("09.10");
+  });
+
+  // The cancelled path of the same defect: the stage where a request was
+  // cancelled read the request time. closed_at is when it ended.
+  it("dates the stage a request was cancelled at by its closed_at", () => {
+    render(
+      <WorkflowSteps
+        instance={{
+          ...instance,
+          current_stage_index: 0,
+          status: "cancelled",
+          closed_at: "2026-11-14T02:37:00Z",
+          events: [
+            {
+              id: "e0",
+              stage_key: "duty",
+              to_status: "in_progress",
+              verification: "auto",
+              note: "opened",
+              system_note: true,
+              occurred_at: "2026-11-14T02:10:00Z",
+            },
+          ],
+        }}
+      />,
+    );
+    const [cancelled] = screen.getAllByRole("listitem");
+    expect(cancelled).toHaveTextContent("status.cancelled");
+    expect(cancelled).toHaveTextContent("14 Nov 09.37");
+    expect(cancelled).not.toHaveTextContent("09.10");
   });
 
   it("says how the request ended at the stage where it stopped", () => {

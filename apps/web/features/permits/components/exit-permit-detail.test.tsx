@@ -272,8 +272,21 @@ describe("ActiveExitPermitCard once the permit's lessons are over", () => {
       screen.queryByRole("button", { name: "hero.scanStage:Guru piket" }),
     ).not.toBeInTheDocument();
     expect(screen.getByText("hero.lessonsOverPending")).toBeInTheDocument();
-    // The student can still withdraw it.
+  });
+
+  // The regression: "Batalkan izin" stayed under the text saying the
+  // permit had expired, and confirming it recorded the lapsed permit as
+  // cancelled.
+  it("offers no cancel once the lessons of a pending permit are over", () => {
+    mocks.periods = PERMIT_PERIODS;
+    mocks.detail = detail("in_progress");
+    mocks.now = new Date("2026-09-29T02:30:00Z");
+    const { rerender } = render(<ActiveExitPermitCard id={PERMIT_ID} />);
     expect(screen.getByRole("button", { name: "cancel" })).toBeInTheDocument();
+
+    mocks.now = new Date("2026-09-29T03:00:00Z");
+    rerender(<ActiveExitPermitCard id={PERMIT_ID} />);
+    expect(screen.queryByRole("button", { name: "cancel" })).not.toBeInTheDocument();
   });
 
   it("reads a permit from an earlier school day as over, whatever the time now", () => {

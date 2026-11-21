@@ -178,8 +178,11 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
           </Button>
         ) : undefined
       }
+      // A closed permit has lapsed: the API refuses its cancel
+      // (EXIT_PERMIT_WINDOW_CLOSED), which would otherwise record it as
+      // the student's own withdrawal instead of expired.
       secondaryAction={
-        inst.status === "in_progress" ? (
+        inst.status === "in_progress" && !closed ? (
           <Button
             variant="ghost"
             loading={cancel.isPending}
