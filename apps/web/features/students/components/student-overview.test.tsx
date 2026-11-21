@@ -9,6 +9,7 @@ const risk = vi.hoisted(() => ({
   previous_average: 0,
   has_grade_trend: false,
   scored_subjects: 0,
+  score_decimals: 2,
   has_attendance: false,
   absent_days: 0,
   considered_days: 0,
@@ -77,6 +78,7 @@ vi.mock("../../analytics/api", () => ({
             current_average: risk.current_average,
             scored_subjects: risk.scored_subjects,
             subjects_below_kktp: 0,
+            score_decimals: risk.score_decimals,
           },
         },
     isLoading: false,
@@ -102,6 +104,7 @@ describe("StudentOverviewTab risk figures", () => {
     risk.scored_subjects = 0;
     risk.current_average = 0;
     risk.previous_average = 0;
+    risk.score_decimals = 2;
     risk.error = undefined;
     risk.has_attendance = false;
     risk.absent_days = 0;
@@ -110,14 +113,40 @@ describe("StudentOverviewTab risk figures", () => {
     discipline.live = undefined;
   });
 
-  it("writes the grade average with one decimal and the Indonesian comma", () => {
+  // r4v-grades-discipline-R1: the card rounded to one decimal (78,5) while
+  // the gradebook and the student's own page showed the scale's 78,46.
+  it("writes the grade average at the scale's precision with the Indonesian comma", () => {
     risk.has_grade_trend = true;
     risk.scored_subjects = 4;
     risk.current_average = 78.46;
     risk.previous_average = 80;
     render(<StudentOverviewTab studentId="s-1" />);
 
+    expect(screen.getByText("78,46")).toBeInTheDocument();
+    expect(screen.queryByText("78,5")).not.toBeInTheDocument();
+    expect(screen.getByText('gradeDelta {"delta":"1,54"}')).toBeInTheDocument();
+  });
+
+  it("follows a school whose scale keeps one decimal", () => {
+    risk.has_grade_trend = true;
+    risk.scored_subjects = 4;
+    risk.current_average = 78.46;
+    risk.previous_average = 80;
+    risk.score_decimals = 1;
+    render(<StudentOverviewTab studentId="s-1" />);
+
     expect(screen.getByText("78,5")).toBeInTheDocument();
+    expect(screen.getByText('gradeDelta {"delta":"1,5"}')).toBeInTheDocument();
+  });
+
+  it("shows no change when the averages match at the scale's precision", () => {
+    risk.has_grade_trend = true;
+    risk.scored_subjects = 4;
+    risk.current_average = 80.001;
+    risk.previous_average = 80;
+    render(<StudentOverviewTab studentId="s-1" />);
+
+    expect(screen.queryByText(/gradeDelta/)).not.toBeInTheDocument();
   });
 
   // grades-discipline-R3: in a first term (no previous term to compare)
@@ -129,7 +158,7 @@ describe("StudentOverviewTab risk figures", () => {
     risk.current_average = 55.08;
     render(<StudentOverviewTab studentId="s-1" />);
 
-    expect(screen.getByText("55,1")).toBeInTheDocument();
+    expect(screen.getByText("55,08")).toBeInTheDocument();
     expect(screen.getByText("noGradeTrend")).toBeInTheDocument();
     expect(screen.queryByText("noGrades")).not.toBeInTheDocument();
   });

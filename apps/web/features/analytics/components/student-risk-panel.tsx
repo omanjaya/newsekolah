@@ -1,7 +1,7 @@
 "use client";
 
 import type { Locale } from "@newsekolah/i18n";
-import { formatDateTime, formatNumber } from "@newsekolah/i18n";
+import { formatDateTime } from "@newsekolah/i18n";
 import {
   Card,
   CardDescription,
@@ -18,6 +18,7 @@ import { QueryError } from "../../../components/query-error";
 import { isNotFoundError } from "../../../lib/api/not-found";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { useSession } from "../../../lib/session/session-provider";
+import { formatScore } from "../../grading/lib/format-score";
 import { useStudentRiskQuery } from "../api";
 
 import { AttendanceRatioBar } from "./attendance-ratio-bar";
@@ -36,10 +37,13 @@ export function StudentRiskPanel({ studentId }: { studentId: string }): ReactEle
   const levelLabel = useTranslations("app.analytics.level");
   const locale = useLocale() as Locale;
   const { me } = useSession();
-  const reasonText = useReasonText();
   const disciplineOn = useModuleEnabled("discipline");
   const gradingOn = useModuleEnabled("grading");
   const { data, isLoading, error, refetch } = useStudentRiskQuery(studentId);
+  // Averages at the precision of the school's grading scale, the one the
+  // gradebook and the student's own grades page show them at.
+  const decimals = data?.signals.score_decimals;
+  const reasonText = useReasonText(decimals);
 
   if (isLoading) return <SkeletonDetail rows={4} />;
 
@@ -135,30 +139,22 @@ export function StudentRiskPanel({ studentId }: { studentId: string }): ReactEle
               {data.signals.has_grade_trend ? (
                 <div className="flex flex-col gap-1.5">
                   <SignalFigure
-                    value={formatNumber(data.signals.current_average, {
-                      locale,
-                      fractionDigits: 1,
-                    })}
+                    value={formatScore(data.signals.current_average, locale, decimals)}
                     unit={t("signals.gradeTrendUnit", {
-                      previous: formatNumber(data.signals.previous_average, {
-                        locale,
-                        fractionDigits: 1,
-                      }),
+                      previous: formatScore(data.signals.previous_average, locale, decimals),
                     })}
                   />
                   <GradeTrendBars
                     previous={data.signals.previous_average}
                     current={data.signals.current_average}
+                    decimals={decimals}
                   />
                 </div>
               ) : data.signals.scored_subjects > 0 ? (
                 // A first term: its average is known, with nothing to
                 // compare it with yet.
                 <SignalFigure
-                  value={formatNumber(data.signals.current_average, {
-                    locale,
-                    fractionDigits: 1,
-                  })}
+                  value={formatScore(data.signals.current_average, locale, decimals)}
                   unit={t("signals.gradeTrendNoPrevious")}
                 />
               ) : (
