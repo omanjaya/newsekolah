@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { memberBorrowBlock } from "./member-borrowing";
+import { memberBorrowBlock, shownMemberStatus } from "./member-borrowing";
 
 // The same cases as domain.Member.EligibleToBorrow on the server
 // (apps/api/internal/modules/library/domain/members.go).
@@ -15,16 +15,31 @@ describe("memberBorrowBlock", () => {
   it("blocks a suspended member through the suspension's last day", () => {
     expect(
       memberBorrowBlock({ status: "suspended", suspended_until: "2026-12-07" }, today),
-    ).toEqual({ kind: "suspended", until: "2026-12-07", borrowFrom: "2026-12-08" });
+    ).toEqual({
+      kind: "suspended",
+      until: "2026-12-07",
+      borrowFrom: "2026-12-08",
+      membershipEnds: null,
+    });
     expect(
       memberBorrowBlock({ status: "suspended", suspended_until: "2026-12-04" }, today),
-    ).toEqual({ kind: "suspended", until: "2026-12-04", borrowFrom: "2026-12-05" });
+    ).toEqual({
+      kind: "suspended",
+      until: "2026-12-04",
+      borrowFrom: "2026-12-05",
+      membershipEnds: null,
+    });
   });
 
   it("carries the next day across a month end", () => {
     expect(
       memberBorrowBlock({ status: "suspended", suspended_until: "2026-12-31" }, "2026-12-30"),
-    ).toEqual({ kind: "suspended", until: "2026-12-31", borrowFrom: "2027-01-01" });
+    ).toEqual({
+      kind: "suspended",
+      until: "2026-12-31",
+      borrowFrom: "2027-01-01",
+      membershipEnds: null,
+    });
   });
 
   it("treats a suspension whose end date has passed as over", () => {
@@ -38,6 +53,7 @@ describe("memberBorrowBlock", () => {
       kind: "suspended",
       until: null,
       borrowFrom: null,
+      membershipEnds: null,
     });
   });
 
@@ -58,9 +74,81 @@ describe("memberBorrowBlock", () => {
     });
   });
 
+  // A suspension through 7 Dec with a membership valid through 30 Nov: on
+  // 4 Dec the page promised borrowing again from 8 Dec, a day the desk
+  // would refuse as an expired membership.
+  it("reports an ended membership first, even while a suspension runs", () => {
+    expect(
+      memberBorrowBlock(
+        { status: "suspended", suspended_until: "2026-12-07", valid_until: "2026-11-30" },
+        today,
+      ),
+    ).toEqual({ kind: "expired", until: "2026-11-30" });
+    expect(memberBorrowBlock({ status: "suspended", valid_until: "2026-11-30" }, today)).toEqual({
+      kind: "expired",
+      until: "2026-11-30",
+    });
+  });
+
+  it("promises no borrow-again day the membership does not reach", () => {
+    expect(
+      memberBorrowBlock(
+        { status: "suspended", suspended_until: "2026-12-07", valid_until: "2026-12-05" },
+        today,
+      ),
+    ).toEqual({
+      kind: "suspended",
+      until: "2026-12-07",
+      borrowFrom: null,
+      membershipEnds: "2026-12-05",
+    });
+    // Valid through the suspension's last day only: the day after is already out.
+    expect(
+      memberBorrowBlock(
+        { status: "suspended", suspended_until: "2026-12-07", valid_until: "2026-12-07" },
+        today,
+      ),
+    ).toEqual({
+      kind: "suspended",
+      until: "2026-12-07",
+      borrowFrom: null,
+      membershipEnds: "2026-12-07",
+    });
+    // Valid on the day borrowing resumes: the day is promised.
+    expect(
+      memberBorrowBlock(
+        { status: "suspended", suspended_until: "2026-12-07", valid_until: "2026-12-08" },
+        today,
+      ),
+    ).toEqual({
+      kind: "suspended",
+      until: "2026-12-07",
+      borrowFrom: "2026-12-08",
+      membershipEnds: null,
+    });
+  });
+
   it("blocks a pending, inactive or cleared membership", () => {
     for (const status of ["pending", "inactive", "cleared"] as const) {
       expect(memberBorrowBlock({ status }, today)).toEqual({ kind: "inactive" });
     }
+  });
+});
+
+describe("shownMemberStatus", () => {
+  it("shows a suspension whose last day has passed as active", () => {
+    expect(
+      shownMemberStatus({ status: "suspended", suspended_until: "2026-12-07" }, "2026-12-08"),
+    ).toBe("active");
+  });
+
+  it("keeps a running or open-ended suspension, and every other status", () => {
+    expect(
+      shownMemberStatus({ status: "suspended", suspended_until: "2026-12-07" }, "2026-12-07"),
+    ).toBe("suspended");
+    expect(shownMemberStatus({ status: "suspended" }, "2027-01-01")).toBe("suspended");
+    expect(
+      shownMemberStatus({ status: "inactive", suspended_until: "2026-12-07" }, "2026-12-08"),
+    ).toBe("inactive");
   });
 });

@@ -1694,6 +1694,8 @@
       "suspendedTitle": "Peminjaman ditangguhkan sampai {date}",
       "suspendedMeta": "Bisa meminjam lagi mulai {date}.",
       "suspendedMetaWithLoans": "Bisa meminjam lagi mulai {date}. Buku yang sedang dipinjam tetap dikembalikan sebelum jatuh tempo dan belum bisa diperpanjang.",
+      "suspendedMetaMembershipEnds": "Keanggotaan juga berakhir {date}. Minta petugas perpustakaan memperpanjangnya sebelum meminjam lagi.",
+      "suspendedMetaMembershipEndsWithLoans": "Keanggotaan juga berakhir {date}. Minta petugas perpustakaan memperpanjangnya sebelum meminjam lagi. Buku yang sedang dipinjam tetap dikembalikan sebelum jatuh tempo dan belum bisa diperpanjang.",
       "suspendedOpenTitle": "Peminjaman sedang ditangguhkan",
       "suspendedOpenMeta": "Tanyakan ke petugas perpustakaan kapan bisa meminjam lagi.",
       "suspendedChip": "Ditangguhkan",

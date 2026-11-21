@@ -132,7 +132,12 @@ describe("MyLibraryLoanRow", () => {
         loan={loan()}
         today="2026-09-15"
         locale="id"
-        block={{ kind: "suspended", until: "2026-09-20", borrowFrom: "2026-09-21" }}
+        block={{
+          kind: "suspended",
+          until: "2026-09-20",
+          borrowFrom: "2026-09-21",
+          membershipEnds: null,
+        }}
       />,
     );
     expect(screen.getByRole("button", { name: "renewAction" })).toBeDisabled();
@@ -143,7 +148,7 @@ describe("MyLibraryLoanRow", () => {
         loan={loan()}
         today="2026-09-15"
         locale="id"
-        block={{ kind: "suspended", until: null, borrowFrom: null }}
+        block={{ kind: "suspended", until: null, borrowFrom: null, membershipEnds: null }}
       />,
     );
     expect(screen.getByText("renewBlockedSuspendedOpen")).toBeInTheDocument();

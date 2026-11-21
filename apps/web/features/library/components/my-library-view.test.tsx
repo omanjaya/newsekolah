@@ -285,6 +285,54 @@ describe("MyLibraryView", () => {
     expect(screen.getByTestId("my-library-hero")).toHaveTextContent("idleTitle");
   });
 
+  // A suspension still running over a membership that has already ended:
+  // the hero promised borrowing again the day after the suspension, a day
+  // the desk refuses as an expired membership.
+  it("leads with the ended membership while a suspension still runs", () => {
+    mocks.data = {
+      ...profile([]),
+      member: {
+        user_id: "u1",
+        member_no: "M-1",
+        member_type_id: "t1",
+        registered_on: "2000-01-01",
+        valid_until: "2000-12-31",
+        status: "suspended",
+        suspended_until: "2999-12-07",
+        late_return_count: 1,
+      },
+    };
+
+    render(<MyLibraryView />);
+
+    const hero = screen.getByTestId("my-library-hero");
+    expect(hero).toHaveTextContent("expiredTitle");
+    expect(hero).not.toHaveTextContent("suspendedTitle");
+  });
+
+  it("promises no borrow-again day past the membership's end", () => {
+    mocks.data = {
+      ...profile([]),
+      member: {
+        user_id: "u1",
+        member_no: "M-1",
+        member_type_id: "t1",
+        registered_on: "2026-01-01",
+        valid_until: "2999-12-05",
+        status: "suspended",
+        suspended_until: "2999-12-07",
+        late_return_count: 1,
+      },
+    };
+
+    render(<MyLibraryView />);
+
+    const hero = screen.getByTestId("my-library-hero");
+    expect(hero).toHaveTextContent("suspendedTitle");
+    expect(screen.getByText("suspendedMetaMembershipEnds")).toBeInTheDocument();
+    expect(screen.queryByText("suspendedMeta")).not.toBeInTheDocument();
+  });
+
   it("tells a member with an inactive membership that they cannot borrow", () => {
     mocks.data = {
       ...profile([]),

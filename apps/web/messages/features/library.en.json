@@ -1694,6 +1694,8 @@
       "suspendedTitle": "Borrowing suspended through {date}",
       "suspendedMeta": "You can borrow again from {date}.",
       "suspendedMetaWithLoans": "You can borrow again from {date}. Books you have now still go back by their due date and cannot be renewed until then.",
+      "suspendedMetaMembershipEnds": "Your membership also ends {date}. Ask the librarian to renew it before you borrow again.",
+      "suspendedMetaMembershipEndsWithLoans": "Your membership also ends {date}. Ask the librarian to renew it before you borrow again. Books you have now still go back by their due date and cannot be renewed until then.",
       "suspendedOpenTitle": "Borrowing is suspended",
       "suspendedOpenMeta": "Ask the librarian when you can borrow again.",
       "suspendedChip": "Suspended",

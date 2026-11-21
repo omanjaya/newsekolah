@@ -310,7 +310,16 @@ function MyLibraryBlockedHero({
             ? t(hasLoans ? "suspendedMetaWithLoans" : "suspendedMeta", {
                 date: day(block.borrowFrom),
               })
-            : t("suspendedOpenMeta")
+            : block.membershipEnds
+              ? // The membership ends before the suspension does: no
+                // borrow-again day to promise, renewing comes first.
+                t(
+                  hasLoans ? "suspendedMetaMembershipEndsWithLoans" : "suspendedMetaMembershipEnds",
+                  {
+                    date: day(block.membershipEnds),
+                  },
+                )
+              : t("suspendedOpenMeta")
         }
         chip={t("suspendedChip")}
         secondaryAction={browse}
