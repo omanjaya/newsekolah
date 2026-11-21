@@ -85,6 +85,12 @@ export function WorkflowSteps({
     const at = activity.get(stage.key)?.at;
     const note = activity.get(stage.key)?.note;
     const acted = state === "complete" || state === "stopped";
+    // A request that expired lapsed at its stage with no event of its own
+    // (the expiry job writes none, and the web reads a permit whose lessons
+    // are over as expired before it runs): the newest event there, such as
+    // the API's "opened" entry, dates something else, so the stage shows
+    // no time rather than the request's.
+    const timed = state === "complete" || (state === "stopped" && instance.status !== "expired");
     const description =
       state === "complete"
         ? index === lastIndex && finalOutcome
@@ -99,7 +105,7 @@ export function WorkflowSteps({
       description,
       note: acted && note ? t("stageNote", { note }) : undefined,
       time:
-        at && acted
+        at && timed
           ? // The shared short form ("19 Nov 16.32"), with the year only
             // outside the school's current one; midday UTC is that year everywhere.
             formatShortDateTime(at, {

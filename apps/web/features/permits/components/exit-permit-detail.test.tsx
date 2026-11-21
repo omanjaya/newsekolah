@@ -33,6 +33,7 @@ vi.mock("next-intl", () => ({
 vi.mock("@newsekolah/i18n", () => ({
   formatTime: () => "07:10",
   formatDateTime: () => "29 Sep 2026, 07:10",
+  formatShortDateTime: () => "29 Sep 08.10",
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
   useSession: () => ({ me: { tenant: { timezone: "Asia/Makassar" } } }),
@@ -326,6 +327,88 @@ describe("ActiveExitPermitCard once the permit's lessons are over", () => {
     expect(screen.getByText("hero.activeEyebrow")).toBeInTheDocument();
     expect(screen.getByText("waitingFor:Guru piket")).toBeInTheDocument();
     expect(container.querySelector('[aria-current="step"]')).not.toBeNull();
+  });
+});
+
+/**
+ * `detail(status)` with the one event the API logs on a new permit: the
+ * system "opened" entry on the duty teacher's stage, at the request time.
+ */
+function openedOnly(status: "in_progress" | "approved"): ExitPermitDetail {
+  const base = detail(status);
+  return {
+    ...base,
+    instance: {
+      ...base.instance,
+      events: [
+        {
+          id: "e-opened",
+          stage_key: "duty_teacher",
+          to_status: "in_progress",
+          verification: "auto",
+          note: "opened",
+          system_note: true,
+          occurred_at: base.instance.opened_at,
+        },
+      ],
+    },
+  };
+}
+
+// The regression: the stage a pending permit stopped at read "Kedaluwarsa"
+// over the time the permit was requested, as if it had expired then.
+describe("the stage an expired permit stopped at", () => {
+  it("shows no time on the live card once the lessons are over", () => {
+    mocks.periods = PERMIT_PERIODS;
+    mocks.now = new Date("2026-09-29T05:00:00Z");
+    mocks.detail = openedOnly("in_progress");
+    render(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    const [stopped] = screen.getAllByRole("listitem");
+    expect(stopped).toHaveTextContent("status.expired");
+    expect(stopped).not.toHaveTextContent("29 Sep 08.10");
+  });
+
+  it("shows no time in the history on a later day", () => {
+    mocks.periods = PERMIT_PERIODS;
+    mocks.now = new Date("2026-10-01T02:30:00Z");
+    mocks.detail = openedOnly("in_progress");
+    render(<ExitPermitDetailView id={PERMIT_ID} />);
+
+    const [stopped] = screen.getAllByRole("listitem");
+    expect(stopped).toHaveTextContent("status.expired");
+    expect(stopped).not.toHaveTextContent("29 Sep 08.10");
+  });
+
+  it("still dates a stage a person finished before the permit expired", () => {
+    mocks.periods = PERMIT_PERIODS;
+    mocks.now = new Date("2026-10-01T02:30:00Z");
+    const base = openedOnly("in_progress");
+    mocks.detail = {
+      ...base,
+      instance: {
+        ...base.instance,
+        current_stage_index: 1,
+        current_stage: base.instance.stages[1],
+        events: [
+          ...(base.instance.events ?? []),
+          {
+            id: "e-duty",
+            stage_key: "duty_teacher",
+            to_status: "in_progress",
+            verification: "qr_scan",
+            system_note: false,
+            occurred_at: "2026-09-29T00:15:00Z",
+          },
+        ],
+      },
+    };
+    render(<ExitPermitDetailView id={PERMIT_ID} />);
+
+    const [done, stopped] = screen.getAllByRole("listitem");
+    expect(done).toHaveTextContent("29 Sep 08.10");
+    expect(stopped).toHaveTextContent("status.expired");
+    expect(stopped).not.toHaveTextContent("29 Sep 08.10");
   });
 });
 
