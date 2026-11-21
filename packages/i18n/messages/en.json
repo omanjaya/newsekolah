@@ -551,6 +551,7 @@
     "SCHEDULE_PERIOD_INVALID": "The selected period does not apply to that day or is a break. Pick another period.",
     "SUBSTITUTION_WEEKDAY_MISMATCH": "The selected date does not fall on this lesson's weekday. Pick a date on the same weekday as the lesson.",
     "SUBSTITUTION_DATE_IN_PAST": "The selected date has passed. Pick today or a later date.",
+    "SUBSTITUTION_CANCEL_PAST": "A schedule manager cannot cancel a substitute request whose date has passed: the lesson has already taken place.",
     "SUBSTITUTION_NOT_SCHOOL_DAY": "The selected date is a holiday or has no lessons. Pick another date.",
     "SUBSTITUTE_IS_REQUESTER": "You cannot be your own substitute. Pick another teacher.",
     "ATTENDANCE_NOT_SCHOOL_DAY": "This date is a holiday or has no lessons for this class, so no attendance is recorded.",

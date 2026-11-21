@@ -83,6 +83,7 @@ var (
 	errScheduleConflictClass   = httpx.NewError(http.StatusConflict, "SCHEDULE_CONFLICT_CLASS")
 	errScheduleConflictTeacher = httpx.NewError(http.StatusConflict, "SCHEDULE_CONFLICT_TEACHER")
 	errSubstitutionConflict    = httpx.NewError(http.StatusConflict, "SUBSTITUTION_CONFLICT")
+	errSubstitutionCancelPast  = httpx.NewError(http.StatusConflict, "SUBSTITUTION_CANCEL_PAST")
 	errJournalConflict         = httpx.NewError(http.StatusConflict, "JOURNAL_CONFLICT")
 	errJournalReportColumn     = httpx.NewError(http.StatusBadRequest, "JOURNAL_REPORT_UNKNOWN_COLUMN")
 
@@ -246,6 +247,8 @@ func mapSubstitutionError(err error) error {
 		return errSubstitutionWeekdayMismatch
 	case errors.Is(err, domain.ErrSubstitutionDateInPast):
 		return errSubstitutionDateInPast
+	case errors.Is(err, domain.ErrSubstitutionCancelPast):
+		return errSubstitutionCancelPast
 	case errors.Is(err, domain.ErrSubstitutionNotSchoolDay):
 		return errSubstitutionNotSchoolDay
 	case errors.Is(err, domain.ErrSubstituteIsRequester):

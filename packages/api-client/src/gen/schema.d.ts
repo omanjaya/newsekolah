@@ -7366,7 +7366,7 @@ export interface paths {
         put?: never;
         /**
          * Cancel a pending or accepted substitution request I made, or with manage_schedules anyone's
-         * @description A schedule manager cancels another teacher's request to release a lesson whose timetable change it holds back (MutationPolicy.held_by); that cancellation is written to the audit log, and both the requester and the substitute are notified. Anyone else gets 403 for a request they did not make.
+         * @description A schedule manager cancels another teacher's request to release a lesson whose timetable change it holds back (MutationPolicy.held_by); that cancellation is written to the audit log, and both the requester and the substitute are notified. A manager may cancel only another teacher's request dated today or later: one already past holds no change back, so it is refused with 409 SUBSTITUTION_CANCEL_PAST. Anyone else gets 403 for a request they did not make.
          */
         post: operations["cancelSubstitution"];
         delete?: never;

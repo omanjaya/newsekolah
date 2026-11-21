@@ -51,9 +51,16 @@ func TestSchedulingErrorsKeepTheirOwnCode(t *testing.T) {
 		})
 	}
 
+	// A schedule manager releasing a request already past is a conflict
+	// with its own code, not the date-picker's SUBSTITUTION_DATE_IN_PAST.
+	var cancelPast *httpx.Error
+	require.ErrorAs(t, mapSubstitutionError(domain.ErrSubstitutionCancelPast), &cancelPast)
+	require.Equal(t, 409, cancelPast.Status)
+	require.Equal(t, "SUBSTITUTION_CANCEL_PAST", cancelPast.Code)
+
 	for _, code := range []string{
 		"SCHEDULE_HAS_HISTORY", "SCHEDULE_YEAR_ARCHIVED", "SCHEDULE_CHANGE_BEFORE_HISTORY", "SCHEDULE_ENDED",
-		"SCHEDULE_CONFLICT_CLASS", "SCHEDULE_CONFLICT_TEACHER",
+		"SCHEDULE_CONFLICT_CLASS", "SCHEDULE_CONFLICT_TEACHER", "SUBSTITUTION_CANCEL_PAST",
 	} {
 		require.NotEqual(t, unknown, i18n.Message(code, "id"), code)
 		require.NotEqual(t, i18n.Message("INTERNAL_ERROR", "en"), i18n.Message(code, "en"), code)

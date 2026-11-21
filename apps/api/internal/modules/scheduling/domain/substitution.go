@@ -96,13 +96,21 @@ func (s Substitution) CanRespond(responderUserID uuid.UUID) error {
 // CanCancel reports whether canceller may cancel this request: the
 // original requester, or a schedule manager (canManage) releasing a request
 // that holds a timetable change back, and only while it is still pending
-// or accepted (not already rejected/cancelled).
-func (s Substitution) CanCancel(cancellerUserID uuid.UUID, canManage bool) error {
-	if cancellerUserID != s.RequesterUserID && !canManage {
+// or accepted (not already rejected/cancelled). A manager's release is
+// limited to a request dated today (the tenant's calendar date) or later:
+// one already past holds no change back (the earliest change date is never
+// before today), and cancelling it would rewrite who taught a lesson that
+// is over and take the substitute's access to that day's session.
+func (s Substitution) CanCancel(cancellerUserID uuid.UUID, canManage bool, today time.Time) error {
+	byManager := cancellerUserID != s.RequesterUserID
+	if byManager && !canManage {
 		return ErrSubstitutionNotRequester
 	}
 	if s.Status != SubstitutionPending && s.Status != SubstitutionAccepted {
 		return ErrSubstitutionAlreadyResponded
+	}
+	if byManager && calendarDate(s.Date).Before(calendarDate(today)) {
+		return ErrSubstitutionCancelPast
 	}
 	return nil
 }

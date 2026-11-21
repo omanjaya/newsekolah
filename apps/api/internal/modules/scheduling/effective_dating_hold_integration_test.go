@@ -3,6 +3,7 @@ package scheduling_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -13,6 +14,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/service"
 	schedulehttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
 
@@ -129,4 +131,53 @@ func TestRequesterCancelIsNotAudited(t *testing.T) {
 	require.True(t, ok)
 	require.False(t, cancelled.ByManager)
 	require.Equal(t, w.t1, cancelled.CancelledBy)
+}
+
+// A schedule manager releases a request still to come, never one already
+// past: that one holds no change back (the earliest change date is never
+// before today), and cancelling an accepted one would rewrite who taught a
+// lesson that is over and take the substitute's access to its session.
+// The requester's own withdrawal keeps its rule.
+func TestManagerCannotCancelARequestAlreadyPast(t *testing.T) {
+	w := newEffectiveWorld(t, "effective-hold-past")
+	monday := w.create(w.lesson(w.classA, w.t1, 1, w.p1))
+	publisher := &spyPublisher{}
+	request := func(date string) domain.Substitution {
+		t.Helper()
+		created, err := w.svc.RequestSubstitution(w.ctx, w.tenant, monday.ID, mustParseDate(t, date), w.t1, w.t3, "", publisher)
+		require.NoError(t, err)
+		return created
+	}
+	accepted := request("2026-09-21")
+	_, err := w.svc.RespondSubstitution(w.ctx, w.tenant, accepted.ID, w.t3, true, "", publisher)
+	require.NoError(t, err)
+	pending := request("2026-09-28")
+
+	// Tuesday 22 September: the accepted substitution on Monday is over.
+	tuesday := clock.WithTime(w.ctx, time.Date(2026, 9, 22, 3, 0, 0, 0, time.UTC))
+	manager := service.Actor{CanManage: true, UserID: w.t2}
+	_, err = w.svc.CancelSubstitution(tuesday, w.tenant, accepted.ID, manager, publisher)
+	require.ErrorIs(t, err, domain.ErrSubstitutionCancelPast)
+	asManager := schedulehttp.New(w.svc, fullAccessPermissions{}, publisher)
+	_, err = asManager.CancelSubstitution(httpx.WithUserID(tuesday, w.t2), api.CancelSubstitutionRequestObject{SubstitutionId: accepted.ID})
+	var appErr *httpx.Error
+	require.ErrorAs(t, err, &appErr)
+	require.Equal(t, 409, appErr.Status)
+	require.Equal(t, "SUBSTITUTION_CANCEL_PAST", appErr.Code)
+	require.Equal(t, 1, w.count(`select count(*) from substitution_requests where id=$1 and status='accepted'`, accepted.ID),
+		"the lesson that took place keeps its substitute")
+	require.Zero(t, w.count(`select count(*) from audit_logs where tenant_id=$1 and entity_id=$2`, w.tenant, accepted.ID))
+
+	// A request still ahead, and one on the day itself, the manager may.
+	resp, err := asManager.CancelSubstitution(httpx.WithUserID(tuesday, w.t2), api.CancelSubstitutionRequestObject{SubstitutionId: pending.ID})
+	require.NoError(t, err)
+	require.Equal(t, api.SubstitutionStatus("cancelled"), resp.(api.CancelSubstitution200JSONResponse).Status)
+	sameDay := request("2026-10-05")
+	onTheDay := clock.WithTime(w.ctx, time.Date(2026, 10, 5, 3, 0, 0, 0, time.UTC))
+	_, err = w.svc.CancelSubstitution(onTheDay, w.tenant, sameDay.ID, manager, publisher)
+	require.NoError(t, err)
+
+	// The requester still withdraws their own past request.
+	_, err = w.svc.CancelSubstitution(tuesday, w.tenant, accepted.ID, service.Actor{UserID: w.t1}, publisher)
+	require.NoError(t, err)
 }

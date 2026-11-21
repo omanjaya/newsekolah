@@ -185,11 +185,12 @@ func (s *Service) RespondSubstitution(ctx context.Context, tenantID, id, respond
 }
 
 // CancelSubstitution withdraws a pending or accepted request. Its requester
-// may always do so; a schedule manager (actor.CanManage) may cancel anyone's,
-// which is how they release a request that holds a timetable change back
-// (MutationPolicy.HeldBy). A manager's cancellation of someone else's
-// request is written to the audit log, and both teachers are told of a
-// cancellation they did not make themselves.
+// may always do so; a schedule manager (actor.CanManage) may cancel anyone's
+// dated today or later, which is how they release a request that holds a
+// timetable change back (MutationPolicy.HeldBy); one already past is
+// refused (domain.ErrSubstitutionCancelPast). A manager's cancellation of
+// someone else's request is written to the audit log, and both teachers
+// are told of a cancellation they did not make themselves.
 func (s *Service) CancelSubstitution(ctx context.Context, tenantID, id uuid.UUID, actor Actor, publisher EventPublisher) (domain.Substitution, error) {
 	var existing, updated domain.Substitution
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -198,7 +199,7 @@ func (s *Service) CancelSubstitution(ctx context.Context, tenantID, id uuid.UUID
 		if err != nil {
 			return domain.ErrSubstitutionNotFound
 		}
-		if err := existing.CanCancel(actor.UserID, actor.CanManage); err != nil {
+		if err := existing.CanCancel(actor.UserID, actor.CanManage, s.now(ctx)); err != nil {
 			return err
 		}
 		updated, err = s.repo.CancelSubstitution(ctx, tenantID, id)

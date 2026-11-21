@@ -50,6 +50,7 @@ var (
 	ErrSubstitutionAlreadyResponded = errors.New("substitution request has already been responded to")
 	ErrSubstitutionScheduleMismatch = errors.New("substitution request does not belong to the given schedule")
 	ErrSubstitutionNotScheduled     = errors.New("the lesson is not on the timetable on that date")
+	ErrSubstitutionCancelPast       = errors.New("a schedule manager cannot cancel another teacher's request dated before today")
 
 	ErrJournalNotFound        = errors.New("class journal not found")
 	ErrJournalNotOwner        = errors.New("only the teaching teacher may write this journal")
