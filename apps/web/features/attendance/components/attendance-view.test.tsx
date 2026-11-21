@@ -348,6 +348,44 @@ describe("DaySessions", () => {
     expect(screen.getByTestId("attendance-day-summary")).toHaveTextContent('dayMissed:{"count":1}');
   });
 
+  // A past day's badge ("Tersimpan pukul 07.40", "Terkunci, belum diisi")
+  // is wider than a phone's row has to spare beside "Mapel · Kelas". The
+  // row keeps the class name and each period range whole: out of room,
+  // the badge moves under the text (ListRow keepMetaWhole) and the title
+  // may take a second line, instead of being cut to "Matemati…".
+  it.each(["missed", "locked"] as const)(
+    "keeps the class name and periods of a %s row whole beside its badge",
+    (scheduleId) => {
+      todaySessions = [
+        // The running lesson takes the hero, so the row under test is listed.
+        session({ schedule_id: "running" }),
+        session({
+          schedule_id: scheduleId,
+          date: "2026-09-08",
+          editable_until: "2026-09-15T23:59:59+07:00",
+          start_period_id: "p1",
+          end_period_id: "p2",
+          roster_count: 4,
+          entered_count: 1,
+          ...(scheduleId === "locked" ? { submitted_at: "2026-09-08T07:10:00Z" } : {}),
+        }),
+      ];
+      render(<DaySessions />);
+
+      const row = screen.getByTestId(`attendance-session-row-${scheduleId}`);
+      expect(row.querySelector("[data-slot=list-row-body]")).toHaveClass("flex-wrap");
+      const title = within(row).getByRole("button", { name: /Matematika · Kelas 10 A/ });
+      expect(title).toHaveClass("line-clamp-2");
+      expect(title).not.toHaveClass("truncate");
+      // Each fact is its own unbreakable box, so the line never wraps
+      // inside "Jam ke-1 – Jam ke-2".
+      const facts = Array.from(row.querySelectorAll("[data-meta-fact]"), (fact) =>
+        fact.textContent.trim(),
+      );
+      expect(facts).toEqual(["Jam ke-1 – Jam ke-2 ·", 'fillProgress:{"entered":1,"roster":4}']);
+    },
+  );
+
   it("badges another teacher's day by that teacher's deadline, not the viewer's lock (R1)", async () => {
     // A manager without correction rights may not save another teacher's
     // session (no editable_until), but that teacher still fills it today.
