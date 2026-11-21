@@ -14,11 +14,17 @@ import (
 	pdatabase "github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
+// CreateViolation stores v with the status it carries; an empty status is
+// unpaid. A settled status is stamped settled by v.CreatedBy at creation.
 func (r *Repository) CreateViolation(ctx context.Context, v domain.Violation) (domain.Violation, error) {
+	status := v.Status
+	if status == "" {
+		status = domain.ViolationUnpaid
+	}
 	row, err := r.queries(ctx).CreateViolation(ctx, db.CreateViolationParams{
 		TenantID: v.TenantID, LoanID: pdatabase.NullUUID(v.LoanID), MemberUserID: v.MemberUserID, Kind: string(v.Kind),
 		Penalty: string(v.Penalty), Amount: int32(v.Amount), SuspendDays: int32(v.SuspendDays), //nolint:gosec // validated ranges
-		Notes: v.Notes, CreatedBy: v.CreatedBy,
+		Notes: v.Notes, CreatedBy: v.CreatedBy, Status: string(status),
 	})
 	if err != nil {
 		return domain.Violation{}, fmt.Errorf("create violation: %w", err)

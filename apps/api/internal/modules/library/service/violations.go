@@ -35,7 +35,7 @@ func (s *Service) CreateViolation(ctx context.Context, tenantID uuid.UUID, in Cr
 		var err error
 		violation, err = s.repo.CreateViolation(ctx, domain.Violation{
 			TenantID: tenantID, LoanID: in.LoanID, MemberUserID: in.MemberUserID, Kind: in.Kind, Penalty: in.Penalty,
-			Amount: in.Amount, SuspendDays: in.SuspendDays, Status: domain.ViolationUnpaid, Notes: in.Notes, CreatedBy: in.CreatedBy,
+			Amount: in.Amount, SuspendDays: in.SuspendDays, Status: domain.InitialViolationStatus(in.Penalty), Notes: in.Notes, CreatedBy: in.CreatedBy,
 		})
 		if err != nil {
 			return err

@@ -480,7 +480,7 @@ func (s *Service) recordLateOutcome(ctx context.Context, tenantID uuid.UUID, loa
 	default: // warning: recorded for the history, no fine and no suspension
 		_, err := s.repo.CreateViolation(ctx, domain.Violation{
 			TenantID: tenantID, LoanID: uuid.NullUUID{UUID: loan.ID, Valid: true}, MemberUserID: loan.MemberUserID,
-			Kind: domain.ViolationLate, Penalty: domain.PenaltyWarning, Status: domain.ViolationWaived,
+			Kind: domain.ViolationLate, Penalty: domain.PenaltyWarning, Status: domain.InitialViolationStatus(domain.PenaltyWarning),
 			CreatedBy: loan.CheckedOutBy,
 		})
 		return 0, err
@@ -721,7 +721,7 @@ func (s *Service) MarkLost(ctx context.Context, tenantID, loanID, checkedInBy uu
 		}
 		_, err = s.repo.CreateViolation(ctx, domain.Violation{
 			TenantID: tenantID, LoanID: uuid.NullUUID{UUID: loanID, Valid: true}, MemberUserID: existing.MemberUserID,
-			Kind: domain.ViolationLost, Penalty: penalty, Amount: fineAmount, Status: domain.ViolationUnpaid,
+			Kind: domain.ViolationLost, Penalty: penalty, Amount: fineAmount, Status: domain.InitialViolationStatus(penalty),
 			Notes: notes, CreatedBy: checkedInBy,
 		})
 		return err

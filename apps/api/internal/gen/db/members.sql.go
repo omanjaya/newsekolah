@@ -15,7 +15,11 @@ import (
 const countActiveLoansAndUnpaidFinesForClearance = `-- name: CountActiveLoansAndUnpaidFinesForClearance :one
 select
   (select count(*) from library_loans ll where ll.tenant_id = $1 and ll.member_user_id = $2 and ll.status = 'active')::int as active_loans,
-  (select count(*) from library_violations lv where lv.tenant_id = $1 and lv.member_user_id = $2 and lv.status = 'unpaid')::int as unpaid_violations
+  -- Only what the member still owes blocks clearance: an unpaid fine with
+  -- an amount, or a book to replace. A warning has nothing to settle and a
+  -- suspension is served by its dates, so neither holds clearance back.
+  (select count(*) from library_violations lv where lv.tenant_id = $1 and lv.member_user_id = $2 and lv.status = 'unpaid'
+     and (lv.penalty = 'replace_book' or (lv.penalty = 'fine' and lv.amount > 0)))::int as unpaid_violations
 `
 
 type CountActiveLoansAndUnpaidFinesForClearanceParams struct {

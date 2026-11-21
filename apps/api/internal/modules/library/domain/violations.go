@@ -71,6 +71,17 @@ type Violation struct {
 
 func (v Violation) IsSettled() bool { return v.Status != ViolationUnpaid }
 
+// InitialViolationStatus is the status a new violation with penalty p is
+// stored with. A warning leaves the member nothing to pay or serve, so it
+// is recorded already settled (waived) and never reads as an unpaid fine
+// or holds back clearance; every other penalty starts unpaid.
+func InitialViolationStatus(p Penalty) ViolationStatus {
+	if p == PenaltyWarning {
+		return ViolationWaived
+	}
+	return ViolationUnpaid
+}
+
 // LateOutcome is what a late return resolves to under the member's type
 // and the tenant's fine settings, mirroring the old app's decision at
 // library_common.go:284-296: a currency fine when fines are enabled (one

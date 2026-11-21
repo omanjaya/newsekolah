@@ -491,6 +491,8 @@ type Querier interface {
 	// An empty locale stores NULL: no preference, the school's language applies.
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserProfile(ctx context.Context, arg CreateUserProfileParams) error
+	// A violation recorded already settled (a warning: nothing to pay or
+	// serve) is stamped settled by its author at creation, like a settled one.
 	CreateViolation(ctx context.Context, arg CreateViolationParams) (LibraryViolation, error)
 	CreateViolationAttachment(ctx context.Context, arg CreateViolationAttachmentParams) (ViolationAttachment, error)
 	CreateViolationRecord(ctx context.Context, arg CreateViolationRecordParams) (ViolationRecord, error)

@@ -29,8 +29,10 @@ func (q *Queries) CountUnpaidViolations(ctx context.Context, arg CountUnpaidViol
 }
 
 const createViolation = `-- name: CreateViolation :one
-insert into library_violations (tenant_id, loan_id, member_user_id, kind, penalty, amount, suspend_days, notes, created_by)
-values ($1, $9::uuid, $2, $3, $4, $5, $6, $7, $8)
+insert into library_violations (tenant_id, loan_id, member_user_id, kind, penalty, amount, suspend_days, notes, created_by, status, settled_at, settled_by)
+values ($1, $10::uuid, $2, $3, $4, $5, $6, $7, $8, $9,
+  case when $9 = 'unpaid' then null else now() end,
+  case when $9 = 'unpaid' then null else $8::uuid end)
 returning id, tenant_id, loan_id, member_user_id, kind, penalty, amount, suspend_days, status, notes, created_by, created_at, settled_at, settled_by
 `
 
@@ -43,9 +45,12 @@ type CreateViolationParams struct {
 	SuspendDays  int32       `json:"suspend_days"`
 	Notes        string      `json:"notes"`
 	CreatedBy    uuid.UUID   `json:"created_by"`
+	Status       string      `json:"status"`
 	LoanID       pgtype.UUID `json:"loan_id"`
 }
 
+// A violation recorded already settled (a warning: nothing to pay or
+// serve) is stamped settled by its author at creation, like a settled one.
 func (q *Queries) CreateViolation(ctx context.Context, arg CreateViolationParams) (LibraryViolation, error) {
 	row := q.db.QueryRow(ctx, createViolation,
 		arg.TenantID,
@@ -56,6 +61,7 @@ func (q *Queries) CreateViolation(ctx context.Context, arg CreateViolationParams
 		arg.SuspendDays,
 		arg.Notes,
 		arg.CreatedBy,
+		arg.Status,
 		arg.LoanID,
 	)
 	var i LibraryViolation
@@ -111,7 +117,7 @@ func (q *Queries) GetViolation(ctx context.Context, arg GetViolationParams) (Lib
 
 const hasUnpaidFine = `-- name: HasUnpaidFine :one
 select exists(
-  select 1 from library_violations where tenant_id = $1 and member_user_id = $2 and status = 'unpaid' and penalty = 'fine'
+  select 1 from library_violations where tenant_id = $1 and member_user_id = $2 and status = 'unpaid' and penalty = 'fine' and amount > 0
 )::bool
 `
 

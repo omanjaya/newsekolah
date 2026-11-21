@@ -1,6 +1,10 @@
 -- name: CreateViolation :one
-insert into library_violations (tenant_id, loan_id, member_user_id, kind, penalty, amount, suspend_days, notes, created_by)
-values ($1, sqlc.narg(loan_id)::uuid, $2, $3, $4, $5, $6, $7, $8)
+-- A violation recorded already settled (a warning: nothing to pay or
+-- serve) is stamped settled by its author at creation, like a settled one.
+insert into library_violations (tenant_id, loan_id, member_user_id, kind, penalty, amount, suspend_days, notes, created_by, status, settled_at, settled_by)
+values ($1, sqlc.narg(loan_id)::uuid, $2, $3, $4, $5, $6, $7, $8, $9,
+  case when $9 = 'unpaid' then null else now() end,
+  case when $9 = 'unpaid' then null else $8::uuid end)
 returning *;
 
 -- name: GetViolation :one
@@ -24,7 +28,7 @@ returning *;
 
 -- name: HasUnpaidFine :one
 select exists(
-  select 1 from library_violations where tenant_id = $1 and member_user_id = $2 and status = 'unpaid' and penalty = 'fine'
+  select 1 from library_violations where tenant_id = $1 and member_user_id = $2 and status = 'unpaid' and penalty = 'fine' and amount > 0
 )::bool;
 
 -- name: CountUnpaidViolations :one
