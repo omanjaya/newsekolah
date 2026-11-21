@@ -277,7 +277,7 @@ export function LessonCell({
   /** True when this block's periods touch a break; see break-warning.ts. */
   crossesBreak?: boolean;
   breakWarningLabel?: string;
-  /** "Mulai Kam, 3 Des" or "Sampai Kam, 26 Nov"; see `useEffectiveCaption`. */
+  /** "Mulai Kam, 3 Des", "Sampai Kam, 26 Nov" or "Hanya Kam, 26 Nov"; see `useEffectiveCaption`. */
   caption?: string;
   onCopy: (block: ScheduleBlock) => void;
   onEdit: (block: ScheduleBlock) => void;

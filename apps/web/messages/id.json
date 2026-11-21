@@ -1168,6 +1168,7 @@
       "blockBoundByHistory": "semua pertemuan tersisa sudah punya riwayat",
       "startsOn": "Mulai {date}",
       "endsOn": "Sampai {date}",
+      "onlyOn": "Hanya {date}",
       "pastedFrom": "Jadwal ditempel, berlaku mulai {date}.",
       "retireTitle": "Hapus jadwal mulai tanggal",
       "retireBody": "{lesson} dihapus dari jadwal mulai tanggal berlaku. Pertemuan sebelum tanggal itu tetap tercatat beserta presensi, jurnal, dan guru penggantinya.",

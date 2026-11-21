@@ -46,18 +46,28 @@ export function maxEffectiveFrom(
   return earlierDate(yearEnd, block.effective_until);
 }
 
+/** What `effectiveCaption` says about a block's dates in the week shown. */
+export interface EffectiveCaption {
+  key: "startsOn" | "endsOn" | "onlyOn";
+  /** The first date the caption names: the start, or the end for "endsOn". */
+  date: string;
+  /** The block's last date, for "onlyOn" (the same as `date` for one lesson). */
+  until?: string;
+}
+
 /**
  * A note for a block that does not cover the whole week shown: it starts
- * after the week's Monday, or ends before its Sunday (a lesson changed or
- * removed from a date on). `weekStart` is the Monday of the week shown.
+ * after the week's Monday ("startsOn"), ends before its Sunday ("endsOn"),
+ * or both ("onlyOn": a version whose every lesson falls in this week, such
+ * as one lesson kept when the rest was removed from the next day on).
+ * `weekStart` is the Monday of the week shown.
  */
-export function effectiveCaption(
-  block: ScheduleBlock,
-  weekStart: string,
-): { key: "startsOn" | "endsOn"; date: string } | null {
-  if (block.effective_from > weekStart) return { key: "startsOn", date: block.effective_from };
-  if (block.effective_until !== undefined && block.effective_until < cellDate(weekStart, 7)) {
-    return { key: "endsOn", date: block.effective_until };
-  }
+export function effectiveCaption(block: ScheduleBlock, weekStart: string): EffectiveCaption | null {
+  const starts = block.effective_from > weekStart;
+  const until = block.effective_until;
+  const ends = until !== undefined && until < cellDate(weekStart, 7);
+  if (starts && ends) return { key: "onlyOn", date: block.effective_from, until };
+  if (starts) return { key: "startsOn", date: block.effective_from };
+  if (ends) return { key: "endsOn", date: until };
   return null;
 }

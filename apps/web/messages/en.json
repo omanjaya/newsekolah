@@ -1168,6 +1168,7 @@
       "blockBoundByHistory": "every remaining lesson already has history",
       "startsOn": "From {date}",
       "endsOn": "Until {date}",
+      "onlyOn": "Only {date}",
       "pastedFrom": "Schedule pasted, effective from {date}.",
       "retireTitle": "Remove schedule from a date",
       "retireBody": "{lesson} is removed from the timetable from the effective date on. Lessons before that date stay recorded with their attendance, journals and substitutes.",
