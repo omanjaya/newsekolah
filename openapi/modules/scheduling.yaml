@@ -748,13 +748,22 @@ components:
         response_note: { type: string }
         responded_at: { type: string, format: date-time }
         created_at: { type: string, format: date-time }
-        # Set on the incoming/outgoing (self) list scopes, where the server
-        # already joins the covered schedule; left unset on the
-        # manage_schedules-only "all" scope, which does not.
+        # Set on every list scope, where the server joins the covered
+        # schedule; left unset on a single request's create/respond/cancel
+        # response.
         class_id: { type: string, format: uuid }
         subject_id: { type: string, format: uuid }
         start_period_id: { type: string, format: uuid }
         end_period_id: { type: string, format: uuid }
+        release_frees_from:
+          type: string
+          format: date
+          description: >-
+            All scope only. The earliest date the lesson's timetable could change from once a schedule manager
+            cancels this request, present only when that is earlier than it can change now (or it cannot change
+            at all now): the request is what holds the change back. Absent when cancelling frees nothing (another
+            record holds the same or a later date, the date is the lesson's first, or the lesson ends first) and
+            for a request a manager cannot cancel.
     SubstituteCandidate:
       type: object
       required: [user_id, name]

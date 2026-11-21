@@ -1529,7 +1529,8 @@
       "release": "Cancel {requester}'s request to {substitute}",
       "releaseConfirm": {
         "title": "Cancel {requester}'s request to {substitute}?",
-        "body": "{lesson}. Both teachers are told and the cancellation is written to the audit log. This lesson's timetable can then change from an earlier date.",
+        "body": "{lesson}. Both teachers are told and the cancellation is written to the audit log.",
+        "bodyFreeing": "{lesson}. Both teachers are told and the cancellation is written to the audit log. This lesson's timetable can then change from {date}.",
         "confirm": "Cancel request",
         "keep": "Keep request"
       }

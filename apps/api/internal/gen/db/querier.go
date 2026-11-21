@@ -1497,7 +1497,10 @@ type Querier interface {
 	// The record dated history_until comes along (held_by_*, empty when no
 	// date is bound), so the editor can say what holds a change back: on a
 	// date two records share, the one no admin can release wins (a recorded
-	// session, then a visit, then a substitution request).
+	// session, then a visit, then a substitution request). released_request_id
+	// leaves one request out of the date it binds (it still makes the row
+	// history), so the substitutions list can say what cancelling it would free;
+	// the nil uuid leaves nothing out.
 	ListScheduleHistory(ctx context.Context, arg ListScheduleHistoryParams) ([]ListScheduleHistoryRow, error)
 	// Every version of the year, locked for an effective-dated clear.
 	ListSchedulesByAcademicYear(ctx context.Context, arg ListSchedulesByAcademicYearParams) ([]Schedule, error)

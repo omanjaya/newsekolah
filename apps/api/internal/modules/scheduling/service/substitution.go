@@ -290,16 +290,88 @@ func (s *Service) ListSubstitutionsOutgoingWithSchedule(ctx context.Context, ten
 	return out, err
 }
 
+// ListedSubstitution is one row of the school-wide list: the request, the
+// lesson it covers, and what a schedule manager's cancel would free.
+type ListedSubstitution struct {
+	domain.SubstitutionWithSchedule
+	// ReleaseFrom is the earliest date the lesson's timetable could change
+	// from once the request is cancelled, set only when that is earlier
+	// than it can change now, or the lesson cannot change at all now: the
+	// request is what holds the change back. Nil when cancelling it frees
+	// nothing (another record holds the same date or a later one, the date
+	// is the lesson's first, or the lesson ends first), and for a request a
+	// manager cannot cancel (rejected, cancelled, or already past).
+	ReleaseFrom *time.Time
+}
+
 // ListSubstitutionsAll is the manage_schedules-only "all" list scope; the
 // transport layer is responsible for the permission check.
-func (s *Service) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.SubstitutionWithSchedule, error) {
-	var out []domain.SubstitutionWithSchedule
+func (s *Service) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]ListedSubstitution, error) {
+	var out []ListedSubstitution
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
-		out, err = s.repo.ListSubstitutionsAll(ctx, tenantID, status)
-		return err
+		subs, err := s.repo.ListSubstitutionsAll(ctx, tenantID, status)
+		if err != nil {
+			return err
+		}
+		dates := s.changeDates(ctx, tenantID)
+		out = make([]ListedSubstitution, len(subs))
+		for i, sub := range subs {
+			out[i] = ListedSubstitution{SubstitutionWithSchedule: sub}
+			from, frees, err := s.releaseFrom(ctx, tenantID, dates, sub.Substitution)
+			if err != nil {
+				return err
+			}
+			if frees {
+				out[i].ReleaseFrom = &from
+			}
+		}
+		return nil
 	})
 	return out, err
+}
+
+// releaseFrom is the earliest change date of the lesson block sub covers
+// once sub is cancelled, and whether cancelling it moves that date earlier
+// (or unlocks a block whose every date left is bound now). It compares the
+// block's manager policy with and without sub's date, so it agrees with
+// what the schedule editor offers before and after the cancel.
+func (s *Service) releaseFrom(ctx context.Context, tenantID uuid.UUID, dates *changeDates, sub domain.Substitution) (time.Time, bool, error) {
+	active := sub.Status == domain.SubstitutionPending || sub.Status == domain.SubstitutionAccepted
+	if !active || domain.CalendarDate(sub.Date).Before(dates.today) {
+		return time.Time{}, false, nil
+	}
+	sched, err := s.repo.GetScheduleByID(ctx, tenantID, sub.ScheduleID)
+	if err != nil {
+		return time.Time{}, false, err
+	}
+	rows, err := s.lessonBlock(ctx, tenantID, sched)
+	if err != nil {
+		return time.Time{}, false, err
+	}
+	ids := make([]uuid.UUID, len(rows))
+	for i, row := range rows {
+		ids[i] = row.ID
+	}
+	policies := make([]MutationPolicy, 2)
+	for i, released := range []uuid.UUID{uuid.Nil, sub.ID} {
+		history, err := s.loadHistoryReleasing(ctx, tenantID, ids, released)
+		if err != nil {
+			return time.Time{}, false, err
+		}
+		window, err := dates.window(ctx, history, rows)
+		if err != nil {
+			return time.Time{}, false, err
+		}
+		policies[i] = managerPolicy(sched.EffectiveUntil, true, window, dates.today)
+	}
+	now, then := policies[0], policies[1]
+	if !then.CanEdit {
+		return time.Time{}, false, nil
+	}
+	if now.CanEdit && !then.MinEffectiveFrom.Before(*now.MinEffectiveFrom) {
+		return time.Time{}, false, nil
+	}
+	return *then.MinEffectiveFrom, true, nil
 }
 
 // ListEligibleSubstitutes backs the substitute picker (docs/analysis/

@@ -132,11 +132,13 @@ func (r *Repository) ListSchedulesForTeacherOn(ctx context.Context, tenantID, ac
 	return toSchedules(rows), nil
 }
 
-func (r *Repository) ListScheduleHistory(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]domain.History, error) {
+func (r *Repository) ListScheduleHistory(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID, releasedRequestID uuid.UUID) ([]domain.History, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	rows, err := r.queries(ctx).ListScheduleHistory(ctx, db.ListScheduleHistoryParams{TenantID: tenantID, Ids: ids})
+	rows, err := r.queries(ctx).ListScheduleHistory(ctx, db.ListScheduleHistoryParams{
+		TenantID: tenantID, Ids: ids, ReleasedRequestID: releasedRequestID,
+	})
 	if err != nil {
 		return nil, err
 	}

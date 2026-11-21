@@ -17,8 +17,13 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
-  useFormatter: () => ({ dateTime: () => "Sabtu, 14 November" }),
-  useTranslations: () => (key: string) => key,
+  useFormatter: () => ({
+    dateTime: (value: Date, options?: { year?: string }) =>
+      options?.year ? value.toISOString().slice(0, 10) : "Sabtu, 14 November",
+  }),
+  // A date a message names is kept, so a test can tell which one it says.
+  useTranslations: () => (key: string, values?: { date?: string }) =>
+    values?.date ? `${key} [${values.date}]` : key,
 }));
 vi.mock("../../../components/app-page", () => import("../../../test/app-page-stub"));
 vi.mock("../../../lib/i18n/api-error-message", () => ({
@@ -250,9 +255,39 @@ it("lets a schedule manager cancel another teacher's request, after confirming",
   expect(mutations.cancel).not.toHaveBeenCalled();
   const dialog = await screen.findByRole("dialog");
   expect(dialog).toHaveTextContent("releaseConfirm.title");
-  expect(dialog).toHaveTextContent("releaseConfirm.body");
+  expect(within(dialog).getByText("releaseConfirm.body")).toBeInTheDocument();
   await user.click(within(dialog).getByRole("button", { name: "releaseConfirm.confirm" }));
   expect(mutations.cancel).toHaveBeenCalledWith("r1", expect.any(Object));
+});
+
+// Every manager cancel promised the timetable could then change earlier,
+// even for a request on the lesson's first date or behind a later hold,
+// where cancelling freed nothing. The promise, with its date, now comes
+// only when the server says the request is what holds the change back.
+it("promises an earlier change date only when cancelling frees one", async () => {
+  const user = userEvent.setup();
+  access.permissions = ["manage_schedules"];
+  access.roles = [{ slug: "admin" }];
+  requests.all = [
+    { ...othersRequest("frees", "pending", "2027-03-01"), release_frees_from: "2026-11-16" },
+    othersRequest("holds-nothing", "accepted", "2027-03-08"),
+  ];
+  render(<SubstitutionsView />);
+
+  const open = async (id: string) => {
+    await user.click(
+      within(screen.getByTestId(`substitution-${id}`)).getByRole("button", { name: "release" }),
+    );
+    return screen.findByRole("dialog");
+  };
+  const freeing = await open("frees");
+  expect(within(freeing).getByText("releaseConfirm.bodyFreeing [2026-11-16]")).toBeInTheDocument();
+  expect(within(freeing).queryByText("releaseConfirm.body")).not.toBeInTheDocument();
+  await user.click(within(freeing).getByRole("button", { name: "releaseConfirm.keep" }));
+
+  const neutral = await open("holds-nothing");
+  expect(within(neutral).getByText("releaseConfirm.body")).toBeInTheDocument();
+  expect(within(neutral).queryByText(/releaseConfirm\.bodyFreeing/)).not.toBeInTheDocument();
 });
 
 it("offers the manager's cancel on accepted requests to come, never on past or closed ones", () => {

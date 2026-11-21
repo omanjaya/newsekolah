@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"slices"
 	"sort"
 	"time"
 
@@ -55,12 +56,47 @@ func (s *Service) lockScheduleBlock(ctx context.Context, tenantID, primaryID uui
 	return primary, rows, nil
 }
 
+// lessonBlock is the rows of the block sched shows in on its class's
+// timetable (domain.MergeContiguous over its day): what the schedule editor
+// changes together with it. Rows merge only when their dates match, so the
+// week of sched's first lesson shows the same block as any other week.
+func (s *Service) lessonBlock(ctx context.Context, tenantID uuid.UUID, sched domain.Schedule) ([]domain.Schedule, error) {
+	week := domain.WeekStart(domain.OnOrAfter(sched.EffectiveFrom, sched.DayOfWeek))
+	schedules, err := s.repo.ListSchedulesByClassForWeek(ctx, tenantID, sched.AcademicYearID, sched.ClassID, week)
+	if err != nil {
+		return nil, err
+	}
+	schedules = filterByDay(schedules, &sched.DayOfWeek)
+	byID := make(map[uuid.UUID]domain.Schedule, len(schedules))
+	for _, row := range schedules {
+		byID[row.ID] = row
+	}
+	for _, block := range domain.MergeContiguous(schedules) {
+		if !slices.Contains(block.ScheduleIDs, sched.ID) {
+			continue
+		}
+		rows := make([]domain.Schedule, len(block.ScheduleIDs))
+		for i, id := range block.ScheduleIDs {
+			rows[i] = byID[id]
+		}
+		return rows, nil
+	}
+	return []domain.Schedule{sched}, nil
+}
+
 // historyIndex is ListScheduleHistory keyed by schedule id; a schedule
 // absent from it has no history.
 type historyIndex map[uuid.UUID]domain.History
 
 func (s *Service) loadHistory(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (historyIndex, error) {
-	rows, err := s.repo.ListScheduleHistory(ctx, tenantID, ids)
+	return s.loadHistoryReleasing(ctx, tenantID, ids, uuid.Nil)
+}
+
+// loadHistoryReleasing is loadHistory as it would read once the
+// substitution request releasedRequestID is cancelled: the request still
+// makes its row history but binds no date.
+func (s *Service) loadHistoryReleasing(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID, releasedRequestID uuid.UUID) (historyIndex, error) {
+	rows, err := s.repo.ListScheduleHistory(ctx, tenantID, ids, releasedRequestID)
 	if err != nil {
 		return nil, err
 	}
