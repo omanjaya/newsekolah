@@ -262,8 +262,11 @@ export function GradingView(): ReactElement {
   const scope = !showScope ? undefined : canOpenAny ? (
     // On a phone the class and the term share the first row and the
     // subject, the longest name, takes the second whole; from sm one row
-    // in reading order.
-    <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+    // in reading order that wraps (the three need 544px, and beside the
+    // sidebar a 768px tablet leaves the page header 480), so a picker
+    // with no room left moves to the next line whole instead of running
+    // past the column and scrolling the page sideways.
+    <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
       <Select
         options={classList.map((c) => ({ value: c.id, label: c.name }))}
         value={effectiveClassId}
@@ -293,7 +296,7 @@ export function GradingView(): ReactElement {
       <div className="min-w-0">{termSelect}</div>
     </div>
   ) : (
-    <div className="grid w-full grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-2 sm:flex sm:w-auto">
+    <div className="grid w-full grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-2 sm:flex sm:w-auto sm:flex-wrap">
       <Select
         options={assignmentPairs.map((pair) => ({
           value: pairKey(pair),
