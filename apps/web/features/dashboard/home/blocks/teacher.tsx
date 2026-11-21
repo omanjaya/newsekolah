@@ -126,7 +126,10 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
     pending: reads.some((read) => read.isLoading),
     failed: reads.some((read) => read.isError),
   };
-  let runningId: string | undefined;
+  // The running lesson by its schedule: one the time simulation has reached
+  // before the real day has no session yet (the list does not open it), so
+  // it has no id, yet it is still the one running.
+  let runningScheduleId: string | undefined;
   // One retry for the card: it refetches whichever of its reads failed.
   const retryFailed = () => {
     for (const read of reads) if (read.isError) void read.refetch();
@@ -162,7 +165,7 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
     // submitted; the hero, though, has nothing left to ask for from it, so it
     // is excluded from the pick and the hero falls through to whatever is
     // still open today (not yet started, or running and unsubmitted).
-    runningId = ranges.find((r) => r.start <= now && now < r.end)?.session.id;
+    runningScheduleId = ranges.find((r) => r.start <= now && now < r.end)?.session.schedule_id;
     const eligible = ranges.filter(
       (r) => r.start > now || (r.start <= now && now < r.end && !r.session.submitted_at),
     );
@@ -261,7 +264,7 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
           classMap={classMap}
           subjectMap={subjectMap}
           periodMap={periodMap}
-          runningId={runningId}
+          runningScheduleId={runningScheduleId}
           clock={clock}
         />
       ),
@@ -281,7 +284,7 @@ function TeacherTodayCard({
   classMap,
   subjectMap,
   periodMap,
-  runningId,
+  runningScheduleId,
   clock,
 }: {
   isLoading: boolean;
@@ -296,7 +299,7 @@ function TeacherTodayCard({
   classMap: Map<string, ClassRef>;
   subjectMap: Map<string, SubjectRef>;
   periodMap: Map<string, PeriodRef>;
-  runningId?: string;
+  runningScheduleId?: string;
   clock: (value: string | undefined) => string;
 }): ReactElement {
   const t = useTranslations("app.dashboardTeaching.teacher");
@@ -330,7 +333,7 @@ function TeacherTodayCard({
           ) : null}
           <List>
             {sessions.map((session) => {
-              const running = session.id !== undefined && session.id === runningId;
+              const running = session.schedule_id === runningScheduleId;
               const subject = subjectMap.get(session.subject_id)?.name;
               const startPeriod = periodMap.get(session.start_period_id);
               return (

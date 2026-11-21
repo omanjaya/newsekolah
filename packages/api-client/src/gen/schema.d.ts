@@ -9128,7 +9128,7 @@ export interface components {
         AttendanceSessionSummary: {
             /**
              * Format: uuid
-             * @description The session's ID. Absent on a lesson on a later day that nobody has opened yet -- listing a day never opens a session ahead of it, since attendance cannot be recorded before the lesson's date.
+             * @description The session's ID. Absent on a lesson on a later day that nobody has opened yet -- listing a day never opens a session ahead of it, since attendance cannot be recorded before the lesson's date. Under the time simulation the same goes for a lesson the simulated day has reached but the real one has not. It is listed with its editable_until, and opening it (POST /v1/attendance/sessions) records it.
              */
             id?: string;
             /** Format: uuid */
@@ -9171,7 +9171,7 @@ export interface components {
             editable_until?: string;
             /**
              * Format: date-time
-             * @description The last instant the teacher whose day is listed may save this session, sent only when the viewer reads another teacher's day (teacher_user_id), so a monitoring view shows that teacher's fill state instead of the viewer's own lock. Absent on the viewer's own day, for a lesson with no session yet, or when that teacher may not save it.
+             * @description The last instant the teacher whose day is listed may save this session, sent only when the viewer reads another teacher's day (teacher_user_id), so a monitoring view shows that teacher's fill state instead of the viewer's own lock. Absent on the viewer's own day, for a lesson on a later day with no session yet, or when that teacher may not save it.
              */
             owner_editable_until?: string;
         };

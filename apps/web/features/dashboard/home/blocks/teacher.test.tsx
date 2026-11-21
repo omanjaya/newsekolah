@@ -545,6 +545,27 @@ describe("useTeacherBlock", () => {
     expect(hrefs).toContain("/attendance/s1");
   });
 
+  it("still marks the running lesson a simulated day reaches before its session is opened", () => {
+    // A simulated day ahead of the real one lists its lessons without
+    // opening them, so the running one has no session id yet.
+    runningLessonLoaded();
+    sessionsQuery.mockReturnValue({
+      data: { data: [session({ id: undefined, submitted_at: undefined })] },
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      refetch: vi.fn(),
+    });
+
+    const { result } = renderHook(() => useTeacherBlock(me, true));
+    render(<>{result.current.main.map((slot) => slot.node)}</>);
+
+    expect(result.current.hero?.priority).toBe(HERO_PRIORITY.teacherNowPending);
+    // Opening it is the attendance list's job, which records it then.
+    expect(result.current.hero?.action?.href).toBe("/attendance");
+    expect(screen.getByText("08.40")).toHaveClass("text-accent");
+  });
+
   it("names the academic calendar's holiday instead of a free day", () => {
     sessionsQuery.mockReturnValue({
       data: { data: [], holiday_name: "Cuti bersama Imlek" },
