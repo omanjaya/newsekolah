@@ -539,7 +539,8 @@ func (s *Service) ListExitPermitsAwaitingReturn(ctx context.Context, tenantID uu
 // missing feature (docs/analysis/backend-inventory.md 1.15) -- in-progress
 // permits at a duty-scoped approval stage the caller may act on, plus
 // every approved permit visible to scan_exit_permits holders awaiting
-// their gate scan.
+// their gate scan. A permit whose lessons are over (exitPermitEndsAt has
+// passed) is left out: its stages and gate refuse it from then on.
 func (s *Service) ListExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]ExitPermitReviewItem, error) {
 	var out []ExitPermitReviewItem
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {

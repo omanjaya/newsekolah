@@ -1300,8 +1300,10 @@ type Querier interface {
 	// current_date: the Postgres session timezone is never set per tenant.
 	// current_stage is null once every stage has passed (an approved permit
 	// waiting at the gate): the index is then past the last stage.
-	// A permit from an earlier day is left out: its lessons are over, the gate
-	// and every stage refuse it, and it reads as expired on its own detail.
+	// A permit whose lessons are over is left out: from the end of its last
+	// period on its own day (sqlc.arg('now_time'), the tenant's wall clock),
+	// and from any earlier day, the gate and every stage refuse it, and it
+	// reads as expired on its own detail and the student's card.
 	ListExitPermitsForApproval(ctx context.Context, arg ListExitPermitsForApprovalParams) ([]ListExitPermitsForApprovalRow, error)
 	// The year's dates are the school's calendar days, so they are compared
 	// with local_date (the tenant-local day the permit was opened), not with

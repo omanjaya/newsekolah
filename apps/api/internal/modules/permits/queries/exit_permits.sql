@@ -74,19 +74,23 @@ order by ep.expected_return_at, ep.exited_at;
 -- current_date: the Postgres session timezone is never set per tenant.
 -- current_stage is null once every stage has passed (an approved permit
 -- waiting at the gate): the index is then past the last stage.
--- A permit from an earlier day is left out: its lessons are over, the gate
--- and every stage refuse it, and it reads as expired on its own detail.
+-- A permit whose lessons are over is left out: from the end of its last
+-- period on its own day (sqlc.arg('now_time'), the tenant's wall clock),
+-- and from any earlier day, the gate and every stage refuse it, and it
+-- reads as expired on its own detail and the student's card.
 select ep.*, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id,
   (wd.stages -> wi.current_stage_index)::jsonb as current_stage
 from exit_permits ep
 join workflow_instances wi on wi.id = ep.instance_id
 join workflow_definitions wd on wd.id = wi.definition_id
+join periods p on p.id = ep.end_period_id
 where ep.tenant_id = $1
   and wi.status in ('in_progress', 'approved')
-  -- Only today's permits: one left open on an earlier day can go no
-  -- further and reads as expired everywhere else
+  -- Only today's permits whose last period has not ended: one past its
+  -- lessons can go no further and reads as expired everywhere else
   -- (domain.ExitPermitReadStatus), before the expiry job closes it.
   and wi.local_date >= sqlc.arg('today')::date
+  and p.ends_at > sqlc.arg('now_time')::time
   and (
     (
       wi.status = 'approved'
@@ -150,12 +154,14 @@ select count(*)::int as total
 from exit_permits ep
 join workflow_instances wi on wi.id = ep.instance_id
 join workflow_definitions wd on wd.id = wi.definition_id
+join periods p on p.id = ep.end_period_id
 where ep.tenant_id = $1
   and wi.status in ('in_progress', 'approved')
-  -- Only today's permits: one left open on an earlier day can go no
-  -- further and reads as expired everywhere else
+  -- Only today's permits whose last period has not ended: one past its
+  -- lessons can go no further and reads as expired everywhere else
   -- (domain.ExitPermitReadStatus), before the expiry job closes it.
   and wi.local_date >= sqlc.arg('today')::date
+  and p.ends_at > sqlc.arg('now_time')::time
   and (
     (
       wi.status = 'approved'

@@ -14,15 +14,15 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
 )
 
-// TestExitPermitReviewQueueLeavesOutEarlierDays covers the approver queue
-// and its inbox badge on a later school day, before the expiry job has
-// closed the earlier day's permits (a simulated day it never sees). The
-// counselor's queue still listed yesterday's permit waiting at their stage
-// as "Berjalan" with "Tindak lanjuti", while the sheet it opened read the
-// permit as expired and the student's scan was refused. Security's queue
-// kept yesterday's approved permit the gate now refuses. Both queues and
-// their counts now hold only the permits of the tenant's own day.
-func TestExitPermitReviewQueueLeavesOutEarlierDays(t *testing.T) {
+// TestExitPermitReviewQueueLeavesOutPermitsPastTheirLessons covers the approver queue
+// and its inbox badge once a permit's lessons are over, before the expiry
+// job has closed it. The counselor's queue still listed such a permit
+// waiting at their stage as "Berjalan" with "Tindak lanjuti", while the
+// student's card read it as expired and their scan was refused; security's
+// queue kept an approved permit the gate now refuses. Both queues and their
+// counts now hold only the permits of the tenant's own day whose last
+// period (Jam 2, ending 09:00) has not yet ended.
+func TestExitPermitReviewQueueLeavesOutPermitsPastTheirLessons(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx := context.Background()
 	w := seedRealtimeWorld(t, ctx, pg.AdminPool, "exit-queue-day-"+uuid.NewString())
@@ -80,16 +80,19 @@ func TestExitPermitReviewQueueLeavesOutEarlierDays(t *testing.T) {
 	_, err = svc.ExitPermitScan(at(0, 7, 15), w.tenantID, pending.ID, w.studentID, dutyToken.RawValue)
 	require.NoError(t, err)
 
-	// Late on its own day it still waits for the counselor.
-	require.Equal(t, []uuid.UUID{pending.ID}, queueIDs(at(0, 23, 30), w.counselorID))
+	// On its own day it waits for the counselor until its last period ends.
+	require.Equal(t, []uuid.UUID{pending.ID}, queueIDs(at(0, 8, 59), w.counselorID))
+	require.Empty(t, queueIDs(at(0, 9, 0), w.counselorID), "its lessons are over")
 
-	// Day 1: yesterday's permit has left the counselor's queue; today's
-	// approved one waits for the gate.
+	// Day 1: yesterday's permit stays out of the counselor's queue even
+	// before today's periods end; today's approved one waits for the gate
+	// until its own lessons are over.
 	approvedID, _ := runExitPermitToGate(t, at(1, 7, 10), svc, w)
-	require.Empty(t, queueIDs(at(1, 10, 0), w.counselorID), "yesterday's permit can go no further")
-	require.Equal(t, []uuid.UUID{approvedID}, queueIDs(at(1, 23, 30), guardID))
+	require.Empty(t, queueIDs(at(1, 7, 30), w.counselorID), "yesterday's permit can go no further")
+	require.Equal(t, []uuid.UUID{approvedID}, queueIDs(at(1, 8, 59), guardID))
+	require.Empty(t, queueIDs(at(1, 9, 0), guardID), "the gate refuses it once its lessons are over")
 
-	// Day 2: the approved permit never taken through the gate is gone too.
-	require.Empty(t, queueIDs(at(2, 10, 0), guardID), "yesterday's approved permit is refused at the gate")
-	require.Empty(t, queueIDs(at(2, 10, 0), w.counselorID))
+	// Day 2: the approved permit never taken through the gate stays out.
+	require.Empty(t, queueIDs(at(2, 7, 30), guardID), "yesterday's approved permit is refused at the gate")
+	require.Empty(t, queueIDs(at(2, 7, 30), w.counselorID))
 }
