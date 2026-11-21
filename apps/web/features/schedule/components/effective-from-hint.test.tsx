@@ -67,7 +67,7 @@ describe("EffectiveFromHint", () => {
     );
     expect(screen.getByRole("link", { name: "Buka presensi" })).toHaveAttribute(
       "href",
-      "/attendance?date=2027-02-13",
+      "/attendance/session-1",
     );
     unmount();
 

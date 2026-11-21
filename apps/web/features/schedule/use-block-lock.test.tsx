@@ -81,13 +81,16 @@ describe("useBlockLock", () => {
     );
   });
 
-  it("names a recorded session with that day's attendance, and a visit without a link", () => {
+  // The link opened that day's attendance, which for a manager with no
+  // teacher picked said nothing was recorded that day: it now opens the
+  // session that holds the lesson.
+  it("links a recorded session to the session itself, and a visit to nothing", () => {
     const session = lockIn("id", boundBy({ kind: "attendance", id: "s-1", date: "2026-11-26" }));
     expect(session?.reason).toBe(
       "semua pertemuan tersisa sudah punya riwayat, ditahan oleh presensi yang tercatat pada Kam, 26 Nov",
     );
     expect(session?.link).toEqual({
-      href: "/attendance?date=2026-11-26",
+      href: "/attendance/s-1",
       label: "Buka presensi Kam, 26 Nov",
       page: "attendance",
     });

@@ -405,7 +405,7 @@ describe("ScheduleForm", () => {
     expect(await screen.findByText(/heldBy\.attendance/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "heldBy.openAttendance" })).toHaveAttribute(
       "href",
-      "/attendance?date=2026-11-30",
+      "/attendance/session-1",
     );
   });
 });
