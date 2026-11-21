@@ -327,16 +327,24 @@ export function AttendanceCalendar(): ReactElement {
             </CardContent>
           ) : selectedSessions.length > 0 ? (
             <List>
-              {selectedSessions.map((session) => {
+              {selectedSessions.map((session, index) => {
                 const sessionToken = session.status_code
                   ? statusToken(session.status_code)
                   : undefined;
+                // A row a letter or permit stands for without naming a
+                // lesson (a student with no class) is titled by it, not by
+                // a bare "Subject".
+                const coveredBy =
+                  !session.subject_name &&
+                  (session.source === "leave" || session.source === "permit")
+                    ? session.source
+                    : undefined;
                 const meta = [
                   [session.period_label, session.teacher_name].filter(Boolean).join(" · "),
                   sourceNoteText(session.note, session.source, (number) =>
                     tAttendance("leaveLetterNote", { number }),
                   ),
-                  session.source && session.source !== "teacher"
+                  session.source && session.source !== "teacher" && !coveredBy
                     ? tCal(`sessionSource.${session.source}`)
                     : undefined,
                 ]
@@ -344,8 +352,12 @@ export function AttendanceCalendar(): ReactElement {
                   .join(" · ");
                 return (
                   <ListRow
-                    key={session.schedule_id}
-                    title={session.subject_name ?? tCal("unknownSubject")}
+                    // Such a row carries no lesson, hence no schedule id of its own.
+                    key={`${String(index)}:${session.schedule_id}`}
+                    title={
+                      session.subject_name ??
+                      (coveredBy ? tCal(`coveredBy.${coveredBy}`) : tCal("unknownSubject"))
+                    }
                     meta={meta}
                     trailing={
                       sessionToken ? (
