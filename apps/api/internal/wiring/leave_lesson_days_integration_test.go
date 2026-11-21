@@ -156,13 +156,38 @@ func TestIssuedLeaveCountsOnlyTheClassLessonDays(t *testing.T) {
 		require.Equal(t, "NONE", byDate[iso].StatusCode, "%s has no X-B lesson", iso)
 	}
 
-	_, totals, err := attendanceModule.Service.GetMonthlySummary(later, tenantUUID, student, "2027-02")
+	// No session was ever opened on the letter's days, yet each is still a
+	// day with one X-B lesson: none of one session saved, not none of none.
+	for _, iso := range []string{"2027-02-12", "2027-02-16"} {
+		require.Equal(t, 1, byDate[iso].ExpectedSessions, "%s has one X-B lesson", iso)
+		require.Equal(t, 0, byDate[iso].SubmittedSessions, "%s had no session saved", iso)
+	}
+
+	monthly, totals, err := attendanceModule.Service.GetMonthlySummary(later, tenantUUID, student, "2027-02")
 	require.NoError(t, err)
 	require.Equal(t, 2, totals["I"], "the monthly recap counts two days of Izin")
+	monthlyByDate := map[string]attendanceservice.CalendarDay{}
+	for _, d := range monthly {
+		monthlyByDate[d.Date.Format(time.DateOnly)] = d
+	}
 
 	roster, err := attendanceModule.Service.GetHomeroomAttendance(later, tenantUUID, attendanceservice.Actor{UserID: homeroomTeacher}, day("2027-02-12"), attendanceservice.HomeroomFilter{})
 	require.NoError(t, err)
 	require.Len(t, roster.Students, 1)
 	require.Equal(t, student, roster.Students[0].StudentUserID)
 	require.Equal(t, "I", roster.Students[0].StatusCode, "the homeroom roster agrees with the student's calendar")
+
+	// The monthly recap, the homeroom roster and the daily report count
+	// the leave day's sessions alike (audit attendance-R2: the recap said
+	// 0/0 where the daily report said 0/1).
+	report, err := attendanceModule.Service.GetDailyReport(later, tenantUUID, classXB, day("2027-02-12"))
+	require.NoError(t, err)
+	require.Len(t, report.Students, 1)
+	require.Equal(t, "I", report.Students[0].StatusCode)
+	recapDay := monthlyByDate["2027-02-12"]
+	require.Equal(t, 1, recapDay.ExpectedSessions)
+	for _, entry := range []attendanceservice.RosterEntry{roster.Students[0].RosterEntry, report.Students[0]} {
+		require.Equal(t, entry.ExpectedSessions, recapDay.ExpectedSessions, "expected sessions on the leave day")
+		require.Equal(t, entry.SubmittedSessions, recapDay.SubmittedSessions, "submitted sessions on the leave day")
+	}
 }
