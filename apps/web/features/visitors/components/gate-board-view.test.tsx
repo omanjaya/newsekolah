@@ -147,6 +147,32 @@ describe("GateBoardView", () => {
     expect(grid?.className).not.toMatch(/(^|\s)lg:/);
   });
 
+  it("lays the search and the status filter out by the toolbar's width, not the screen's", () => {
+    // On a 768px tablet the toolbar turned into a row at 640px of screen
+    // while the sidebar left the column 480px: beside a 288px search the
+    // filter strip got 180px of its 373 and "Terjadwal" was off its edge.
+    render(<GateBoardView />);
+    const strip = screen.getByRole("radiogroup", { name: "filterLabel" });
+    const bar = strip.closest("[data-slot=filter-bar]");
+    const row = bar?.querySelector("[data-slot=filter-bar-row]");
+    expect(bar).toHaveClass("@container/filter-bar", "w-full");
+    expect(bar).toContainElement(screen.getByRole("searchbox", { name: "searchPlaceholder" }));
+    expect(row).toHaveClass(
+      "@max-2xl/filter-bar:*:w-full",
+      "@2xl/filter-bar:flex-row",
+      "@2xl/filter-bar:flex-wrap",
+    );
+    // Every option is in the strip, and neither the bar nor a control's
+    // own box in it switches at a screen breakpoint any more.
+    expect(screen.getAllByRole("radio")).toHaveLength(3);
+    const viewportVariant = /(^|:)(max-)?(sm|md|lg|xl|2xl):/;
+    const layout = [bar, row, ...Array.from(row?.children ?? [])]
+      .filter((el): el is Element => el != null)
+      .flatMap((el) => Array.from(el.classList));
+    expect(layout.length).toBeGreaterThan(0);
+    expect(layout.filter((name) => viewportVariant.test(name))).toEqual([]);
+  });
+
   it("lists a visitor still here past the school day first, marked as such", () => {
     render(<GateBoardView />);
     const rows = screen.getAllByRole("listitem");

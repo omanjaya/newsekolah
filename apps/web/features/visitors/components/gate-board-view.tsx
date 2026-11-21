@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
+  FilterBar,
   FilteredEmptyState,
   FirstUseEmptyState,
   SearchInput,
@@ -177,24 +178,29 @@ export function GateBoardView(): ReactElement {
         canManage ? { icon: <Plus />, label: t("newVisitor"), onSelect: startCheckIn } : undefined
       }
       toolbar={
-        // Full width of the toolbar row and allowed to shrink, so the filter
-        // strip scrolls inside the column instead of pushing past it; the
-        // search keeps the data-table toolbar's width.
-        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <SearchInput
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value);
-            }}
-            placeholder={t("searchPlaceholder")}
-            aria-label={t("searchPlaceholder")}
-            className="sm:w-72 sm:flex-none lg:w-80"
-          />
+        // Laid out by the room the toolbar really has: beside the sidebar a
+        // 768px tablet leaves 480px, and a row keyed to the screen gave the
+        // strip 180px of its 373 and hid "Terjadwal". From 42rem of
+        // toolbar the search keeps 18rem or more beside the strip; below
+        // that they stack, each the toolbar's full width.
+        <FilterBar
+          rowFrom="2xl"
+          search={
+            <SearchInput
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value);
+              }}
+              placeholder={t("searchPlaceholder")}
+              aria-label={t("searchPlaceholder")}
+            />
+          }
+        >
           <SegmentedControl<BoardFilter>
             aria-label={t("filterLabel")}
             value={status}
             onValueChange={setStatus}
-            fullWidth="phone"
+            className="ml-auto"
             options={[
               { value: "all", label: t("filters.all") },
               {
@@ -209,7 +215,7 @@ export function GateBoardView(): ReactElement {
               },
             ]}
           />
-        </div>
+        </FilterBar>
       }
     >
       <div
