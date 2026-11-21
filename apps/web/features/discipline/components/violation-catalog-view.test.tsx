@@ -188,7 +188,8 @@ describe("ViolationCatalogView status actions", () => {
 
     const status = await screen.findByRole("status");
     const notice = status.closest("[aria-live]");
-    expect(notice).toHaveClass("sticky", "top-0");
+    // Stuck over the body's top inset, so no scrolled row shows above it.
+    expect(notice).toHaveClass("sticky", "-top-(--dialog-body-pt)");
     expect(notice?.parentElement).toHaveClass("dialog-body", "overflow-y-auto");
     expect(within(status).getByRole("button", { name: "undo" })).toBeVisible();
   });

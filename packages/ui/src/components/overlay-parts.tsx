@@ -173,11 +173,13 @@ export function OverlayBody({
   return (
     <div
       ref={ref}
+      // The top inset is `dialog-body`'s --dialog-body-pt (styles.css): the
+      // side padding here, and under a header 4px, which keeps the first
+      // child's outside ring and focus outline inside the scroller instead
+      // of clipped. DialogNotice sticks over it.
+      data-pad-top={padTop ? "" : undefined}
       className={cn(
         "dialog-body min-h-0 flex-1 overflow-y-auto overscroll-contain px-(--dialog-px)",
-        // Under a header, a 4px inset keeps the first child's outside
-        // ring and focus outline inside the scroller instead of clipped.
-        padTop ? "pt-(--dialog-px)" : "pt-1",
         // With a footer below, its own top padding is most of the gap.
         padBottom === "with-safe-area"
           ? "pb-[calc(var(--dialog-pb)+var(--dialog-safe-bottom))]"
@@ -290,9 +292,13 @@ export const DialogNotice = forwardRef<HTMLDivElement, ComponentPropsWithoutRef<
         aria-live="polite"
         data-dialog-notice=""
         className={cn(
-          // Bleeds over the body's side padding and its 4px top inset, so
-          // rows scrolling under it never show at its edges or above it.
-          "sticky top-0 z-sticky -mx-(--dialog-px) -mt-1 bg-surface-overlay px-(--dialog-px) pt-1 pb-3 empty:hidden",
+          // Bleeds over the body's side padding and its top inset, so rows
+          // scrolling under it never show at its edges or above it. A sticky
+          // element stops at the scroller's padding edge, not its border
+          // edge, so `top` is negative by the same inset as the margin: with
+          // `top-0` it stuck 4px below the header, over a strip of the
+          // scrolled rows.
+          "sticky -top-(--dialog-body-pt) z-sticky -mx-(--dialog-px) -mt-(--dialog-body-pt) bg-surface-overlay px-(--dialog-px) pt-(--dialog-body-pt) pb-3 empty:hidden",
           className,
         )}
         {...props}
