@@ -111,6 +111,28 @@ describe("LoanDeskView", () => {
     expect(setMode).toHaveBeenCalledWith("return");
   });
 
+  it("sets the modes beside the member search by the card's width, not the screen's", () => {
+    // Beside the side column a 1024px screen leaves the card 352px; a row
+    // from 640px of screen squeezed the three modes to 52px there.
+    deskSession.mockReturnValue(baseSession());
+    render(<LoanDeskView />);
+
+    const modes = screen.getByRole("radiogroup", { name: "modes.label" });
+    const bar = modes.closest("[data-slot=filter-bar]");
+    expect(bar).toHaveClass("@container/filter-bar");
+    expect(bar?.querySelector("[data-slot=filter-bar-row]")).toHaveClass(
+      "@max-2xl/filter-bar:*:w-full",
+      "@2xl/filter-bar:flex-row",
+    );
+    const memberSearch = within(bar as HTMLElement).getByRole("button", { name: "searchMember" });
+    expect(memberSearch).toHaveClass("w-72");
+    expect(memberSearch.className).not.toMatch(/(^|\s)sm:w-72/);
+    // The modes take what the search leaves in a row, all of it once stacked.
+    const track = bar?.querySelector("[data-slot=filter-bar-row]")?.firstElementChild;
+    expect(track).toContainElement(modes);
+    expect(track).toHaveClass("grow");
+  });
+
   it("announces a scan error in the result banner", () => {
     deskSession.mockReturnValue(baseSession({ scanError: "Kode tidak dikenali" }));
     const { container } = render(<LoanDeskView />);

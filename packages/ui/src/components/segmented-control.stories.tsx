@@ -88,24 +88,24 @@ function WeekStrip() {
   );
 }
 
-/** A filter under a search field: full width on a phone, its own width beside the field from 640px. */
+/**
+ * A strip alone on its row: full width on a phone, its own width from
+ * 640px. Beside a search it goes in a FilterBar (see its stories) instead.
+ */
 function ToolbarFilter() {
   const [value, setValue] = useState("all");
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="h-11 rounded-md bg-surface-sunken sm:max-w-sm sm:flex-1" />
-      <SegmentedControl
-        aria-label="Tampilkan"
-        fullWidth="phone"
-        value={value}
-        onValueChange={setValue}
-        options={[
-          { value: "all", label: "Semua" },
-          { value: "onSite", label: "Di lokasi", count: 4 },
-          { value: "expected", label: "Dijadwalkan", count: 2 },
-        ]}
-      />
-    </div>
+    <SegmentedControl
+      aria-label="Tampilkan"
+      fullWidth="phone"
+      value={value}
+      onValueChange={setValue}
+      options={[
+        { value: "all", label: "Semua" },
+        { value: "onSite", label: "Di lokasi", count: 4 },
+        { value: "expected", label: "Dijadwalkan", count: 2 },
+      ]}
+    />
   );
 }
 

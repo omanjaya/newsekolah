@@ -6,6 +6,7 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
+  FilterBar,
   SearchInput,
   SectionHeader,
   SegmentedControl,
@@ -270,28 +271,32 @@ export function PermitUnifiedQueue({
       {/* One row of tools above the requests: the search, the class and,
           for a reader of several queues, the kind as one segmented filter
           that carries each queue's count (no tiles repeating the same
-          three numbers). On a phone they stack, the filter one scrolling
-          row with fades. */}
-      <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        <SearchInput
-          size="sm"
-          aria-label={t("search")}
-          placeholder={t("search")}
-          value={search}
-          className="sm:max-w-sm sm:flex-1"
-          onChange={(event) => {
-            setSearch(event.target.value);
-          }}
-          onClear={() => {
-            setSearch("");
-          }}
-        />
+          three numbers). Laid out by the room the bar has, not the
+          screen's: where it is narrow they stack at full width, and a
+          filter with no room left beside the search moves to the next
+          line whole instead of squeezing the search to a sliver. */}
+      <FilterBar
+        search={
+          <SearchInput
+            size="sm"
+            aria-label={t("search")}
+            placeholder={t("search")}
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+            }}
+            onClear={() => {
+              setSearch("");
+            }}
+          />
+        }
+      >
         {classNames.length > 1 && (
           <Select
             aria-label={t("classFilter")}
             value={classFilter}
             onValueChange={setClassFilter}
-            className="sm:w-48"
+            className="w-48"
             options={[
               { value: "all", label: t("allClasses") },
               ...classNames.map((name) => ({ value: name, label: name })),
@@ -301,7 +306,6 @@ export function PermitUnifiedQueue({
         {sources.length > 1 && (
           <SegmentedControl
             size="sm"
-            fullWidth="phone"
             aria-label={t("typeFilter")}
             value={kind}
             onValueChange={setKind}
@@ -315,7 +319,7 @@ export function PermitUnifiedQueue({
             ]}
           />
         )}
-      </div>
+      </FilterBar>
       {errors.map((source, index) => (
         <section
           key={`${source.label}-${index}`}

@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
   EmptyState,
   Field,
+  FilterBar,
   SegmentedControl,
   Select,
   Skeleton,
@@ -197,7 +198,10 @@ export function PromotionPlanTable({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {/* By the card's own width, not the screen's: a row from 640px of
+          screen clipped the strip beside the 224px class select in the
+          narrower column the sidebar leaves a tablet. */}
+      <FilterBar>
         <SegmentedControl
           aria-label={t("showLabel")}
           options={[
@@ -215,10 +219,10 @@ export function PromotionPlanTable({
             onValueChange={(value) => {
               setFromClass(value === "all" ? "" : value);
             }}
-            className="sm:w-56"
+            className="ml-auto w-56"
           />
         )}
-      </div>
+      </FilterBar>
       <DataTable
         mode="local"
         stateKey="features/promotion/components/promotion-plan-table:1"

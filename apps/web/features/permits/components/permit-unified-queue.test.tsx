@@ -577,6 +577,24 @@ describe("permit queue filters", () => {
     expect(window.location.search).toBe("?type=late");
   });
 
+  it("lays the search, class and type filters out by the bar's width, not the screen's", () => {
+    // A row from 640px of screen gave the search flex-basis 0 beside the
+    // class select and the type strip: in the inbox's column it was left
+    // a few dozen pixels. In a FilterBar a filter with no room left moves
+    // to the next line whole, and the bar stacks them where it is narrow.
+    render(<PermitUnifiedQueue />);
+    const bar = screen.getByRole("searchbox", { name: "search" }).closest("[data-slot=filter-bar]");
+    expect(bar).toHaveClass("@container/filter-bar");
+    expect(bar).toContainElement(screen.getByRole("combobox", { name: "classFilter" }));
+    expect(bar).toContainElement(screen.getByRole("radiogroup", { name: "typeFilter" }));
+    expect(bar?.querySelector("[data-slot=filter-bar-search]")).toHaveClass(
+      "@xl/filter-bar:min-w-48",
+    );
+    // The class select keeps its own width in a row; the bar stretches it when stacked.
+    expect(screen.getByRole("combobox", { name: "classFilter" })).toHaveClass("w-48");
+    expect(screen.getByRole("combobox", { name: "classFilter" }).className).not.toMatch(/sm:/);
+  });
+
   it("carries each queue's count on its filter segment instead of a row of tiles", () => {
     render(<PermitUnifiedQueue />);
     expect(screen.getByRole("radio", { name: "leave 2" })).toBeInTheDocument();

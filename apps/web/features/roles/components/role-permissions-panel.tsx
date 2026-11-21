@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardTitle,
+  FilterBar,
   FilteredEmptyState,
   SearchInput,
   SegmentedControl,
@@ -118,28 +119,36 @@ export function RolePermissionsPanel({
   }
 
   const tally = t("roleTally", { granted: grantedTotal, total });
+  // By the panel's own width, not the screen's: from 768px the panel sits
+  // beside the role list, and a row keyed to 640px of screen left the
+  // search a few pixels beside the scope strip in its 176px header there.
+  // The two share a row from 24rem of panel (a 12rem search and the strip).
   const filters = (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-      <SearchInput
-        className="sm:flex-1"
-        aria-label={t("searchLabel")}
-        placeholder={t("searchPlaceholder")}
-        value={query}
-        onChange={(event) => {
-          setQuery(event.target.value);
-        }}
-      />
+    <FilterBar
+      rowFrom="sm"
+      search={
+        <SearchInput
+          aria-label={t("searchLabel")}
+          placeholder={t("searchPlaceholder")}
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+          }}
+        />
+      }
+    >
       <SegmentedControl<Scope>
         aria-label={t("scopeLabel")}
         size="sm"
         value={scope}
         onValueChange={setScope}
+        className="ml-auto"
         options={[
           { value: "all", label: t("scopeAll") },
           { value: "granted", label: t("scopeGranted") },
         ]}
       />
-    </div>
+    </FilterBar>
   );
 
   return (

@@ -138,6 +138,20 @@ describe("RolesView", () => {
     expect(screen.getByRole("checkbox", { name: /view_y/ })).toBeChecked();
   });
 
+  it("lays the permission search and scope out by the panel's width, not the screen's", () => {
+    // Beside the role list from 768px the panel header is 176px wide, and
+    // a row keyed to 640px of screen left the search a few pixels there.
+    render(<RolesView />);
+    const search = screen.getByRole("searchbox", { name: "searchLabel" });
+    const bar = search.closest("[data-slot=filter-bar]");
+    expect(bar).toHaveClass("@container/filter-bar");
+    expect(bar).toContainElement(screen.getByRole("radiogroup", { name: "scopeLabel" }));
+    expect(bar?.querySelector("[data-slot=filter-bar-row]")).toHaveClass(
+      "@max-sm/filter-bar:*:w-full",
+      "@sm/filter-bar:flex-row",
+    );
+  });
+
   it("shows a retryable error instead of an empty grid when roles fail to load", () => {
     rolesQuery.mockReturnValue({
       data: undefined,

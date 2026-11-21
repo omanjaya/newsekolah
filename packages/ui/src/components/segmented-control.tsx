@@ -57,8 +57,10 @@ export interface SegmentedControlProps<T extends string = string> {
   size?: SegmentedControlSize;
   /**
    * Stretch across the container, segments sharing the width equally.
-   * "phone" does so below 640px only (a filter under a search field on a
-   * phone, beside it from `sm` up) and keeps its own width above.
+   * "phone" does so below 640px of screen only, for a strip alone on its
+   * row. A strip beside a search or other filters goes in a `FilterBar`
+   * instead, without this: the bar stretches it while the room it really
+   * has (not the screen) stacks its controls.
    */
   fullWidth?: boolean | "phone";
   disabled?: boolean;
@@ -151,12 +153,11 @@ export function SegmentedControl<T extends string = string>({
           aria-label={ariaLabel}
           aria-labelledby={ariaLabelledBy}
           style={trackStyle}
-          className={cn(
-            // Never squeezed by the scroller's flex row: a track too wide
-            // for the screen scrolls instead.
-            "relative grid shrink-0 auto-cols-fr grid-flow-col",
-            fullWidth === true || fullWidth === "phone" ? "w-full min-w-max" : "w-max",
-          )}
+          // Never squeezed by the scroller's flex row: a track too wide for
+          // the screen scrolls instead. It fills whatever width the track
+          // is given (its own, `fullWidth`, or a stacked FilterBar's), so
+          // the segments share a stretched track.
+          className="relative grid w-full min-w-max shrink-0 auto-cols-fr grid-flow-col"
         >
           <span
             aria-hidden="true"

@@ -26,13 +26,15 @@ export interface ListRowProps extends Omit<ComponentPropsWithRef<"li">, "title" 
    */
   meta?: ReactNode | readonly ReactNode[];
   /**
-   * How many lines the meta may take: 2 (default), or 3 to 5 for a row
+   * How many lines the meta may take: 2 (default), or 3 to 6 for a row
    * whose facts each need a line of their own (whom a visitor came to see,
    * since when, the badge they wear), so none of them is cut to make room.
    * 4 leaves a long name room to wrap onto a second line on a phone; 5
-   * adds a status line (a warning Badge) that has no room beside them.
+   * adds a status line (a warning Badge) that has no room beside them; 6
+   * keeps a leading context line (where they come from and why) above all
+   * of those.
    */
-  metaLines?: 2 | 3 | 4 | 5;
+  metaLines?: 2 | 3 | 4 | 5 | 6;
   /**
    * Keeps every fact of an array `meta` (a date, a request time) whole,
    * whatever the locale makes of their length: the row's text never
@@ -176,6 +178,7 @@ const META_LINE_CLAMP = {
   3: "line-clamp-3",
   4: "line-clamp-4",
   5: "line-clamp-5",
+  6: "line-clamp-6",
 } as const;
 
 /**
