@@ -339,17 +339,21 @@ export function AttendanceCalendar(): ReactElement {
                   (session.source === "leave" || session.source === "permit")
                     ? session.source
                     : undefined;
+                // Separate facts, so the line wraps between them and never
+                // cuts one in the middle. A row a letter fills holds all
+                // four (period, teacher, letter number, source), which take
+                // three lines in a phone's text column, so the meta may run
+                // to one line per fact instead of being clamped at two.
                 const meta = [
-                  [session.period_label, session.teacher_name].filter(Boolean).join(" · "),
+                  session.period_label,
+                  session.teacher_name,
                   sourceNoteText(session.note, session.source, (number) =>
                     tAttendance("leaveLetterNote", { number }),
                   ),
                   session.source && session.source !== "teacher" && !coveredBy
                     ? tCal(`sessionSource.${session.source}`)
                     : undefined,
-                ]
-                  .filter(Boolean)
-                  .join(" · ");
+                ];
                 return (
                   <ListRow
                     // Such a row carries no lesson, hence no schedule id of its own.
@@ -359,6 +363,7 @@ export function AttendanceCalendar(): ReactElement {
                       (coveredBy ? tCal(`coveredBy.${coveredBy}`) : tCal("unknownSubject"))
                     }
                     meta={meta}
+                    metaLines={4}
                     trailing={
                       sessionToken ? (
                         <StatusBadge
