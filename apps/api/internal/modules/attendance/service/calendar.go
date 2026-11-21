@@ -163,8 +163,13 @@ func (s *Service) calendarDaysForRange(
 			return nil, err
 		} else if ok {
 			day.StatusCode, day.Complete = overrideCode, true
+			// The day's sessions are counted as on any other lesson day
+			// (and as the daily report and the homeroom roster count
+			// them, buildRoster), not left at 0/0 when none was opened.
 			if hasRow {
 				day.ExpectedSessions, day.SubmittedSessions = row.ExpectedSessions, row.SubmittedSessions
+			} else if day.ExpectedSessions, day.SubmittedSessions, err = s.lessonDayCounts(ctx, tenantID, academicYearID, classID, hasClass, hasLessons, d, sessionsForDay); err != nil {
+				return nil, err
 			}
 			if len(day.Sessions) == 0 {
 				day.Sessions = []CalendarDaySession{{StatusCode: overrideCode, Source: overrideSource}}
@@ -189,20 +194,9 @@ func (s *Service) calendarDaysForRange(
 			continue
 		}
 
-		expected, submitted := 0, 0
-		if hasClass {
-			if hasLessons {
-				count, err := s.schedules.CountSchedulesForClassOn(ctx, tenantID, academicYearID, classID, d)
-				if err != nil {
-					return nil, err
-				}
-				expected = int(count)
-			}
-			for _, sess := range sessionsForDay {
-				if sess.IsSubmitted() {
-					submitted++
-				}
-			}
+		expected, submitted, err := s.lessonDayCounts(ctx, tenantID, academicYearID, classID, hasClass, hasLessons, d, sessionsForDay)
+		if err != nil {
+			return nil, err
 		}
 
 		statuses, err := s.repo.ListEntryStatusesForStudentDate(ctx, tenantID, studentUserID, d)
@@ -214,6 +208,33 @@ func (s *Service) calendarDaysForRange(
 		days = append(days, day)
 	}
 	return days, nil
+}
+
+// lessonDayCounts is a day's expected and submitted session counts for a
+// student of classID with no daily summary row: the class's lessons that
+// day (none on a day without lessons, or for a student with no class) and
+// how many of the day's sessions were submitted.
+func (s *Service) lessonDayCounts(
+	ctx context.Context, tenantID, academicYearID, classID uuid.UUID, hasClass, hasLessons bool, date time.Time, sessions []domain.Session,
+) (int, int, error) {
+	if !hasClass {
+		return 0, 0, nil
+	}
+	expected := 0
+	if hasLessons {
+		count, err := s.schedules.CountSchedulesForClassOn(ctx, tenantID, academicYearID, classID, date)
+		if err != nil {
+			return 0, 0, err
+		}
+		expected = int(count)
+	}
+	submitted := 0
+	for _, sess := range sessions {
+		if sess.IsSubmitted() {
+			submitted++
+		}
+	}
+	return expected, submitted, nil
 }
 
 // studentHasLessons reports whether a student of classID has lessons on

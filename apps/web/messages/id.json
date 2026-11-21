@@ -114,7 +114,7 @@
         "roleTesting": "Menguji sebagai {name}",
         "roleTestingReturn": "Kembali",
         "roleTestingExpired": "Sesi uji berakhir",
-        "impersonation": "{adminName} mengoperasikan akun {name}",
+        "impersonation": "Masuk sebagai {name}",
         "impersonationStop": "Hentikan",
         "impersonationPendingPassword": "Sandi belum diganti",
         "simulation": "Waktu simulasi {time}",

@@ -31,16 +31,17 @@ function useSessionText(item: DaySessionItem) {
   const roster = item.session.roster_count ?? 0;
   const entered = item.session.entered_count ?? 0;
   const periods = item.start && item.end ? `${item.start.name} – ${item.end.name}` : "";
-  const meta = [
+  const metaFacts = [
     periods,
     roster > 0 ? t("fillProgress", { entered, roster }) : "",
     item.session.is_substitute ? t("substituteBadge") : "",
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  ].filter(Boolean);
   return {
     title: [item.subjectName, item.className].filter(Boolean).join(" · "),
-    meta,
+    /** The facts one by one, for a list row that keeps each whole. */
+    metaFacts,
+    /** The same facts as one line, for the hero card. */
+    meta: metaFacts.join(" · "),
     roster,
     entered,
     time: item.start && item.end ? clockRange(item.start.starts_at, item.end.ends_at, locale) : "",
@@ -225,7 +226,13 @@ function SessionRow({
         </span>
       }
       title={text.title}
-      meta={text.meta}
+      // A status badge ("Tersimpan pukul 07.40", "Terkunci, belum diisi")
+      // can take most of a phone's row: rather than cut "Mapel · Kelas"
+      // or a period range, the badge moves under the text, and the title
+      // may wrap onto a second line.
+      titleLines={2}
+      meta={text.metaFacts}
+      keepMetaWhole
       trailing={<StatusBadge item={item} timeZone={timeZone} />}
       // A lesson on a later day cannot be opened: nothing to record yet.
       disabled={item.submitting || item.fillStatus === "upcoming"}
