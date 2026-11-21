@@ -75,10 +75,14 @@ func (d ScheduleDay) SameHours(other ScheduleDay) bool {
 // ScheduleHistory is every version of one employee's weekdays, oldest
 // first: a version of a weekday applies from its EffectiveFrom until the
 // next one, and of two versions with the same EffectiveFrom the later in
-// the slice (the later save) wins. A schedule change is never retroactive:
-// each past date is judged by the version in effect on it, so turning a
-// working weekday off keeps its earlier days absences, and turning a day
-// off into a working day keeps its earlier days off.
+// the slice wins. Versions of one date must therefore come in the real
+// order they were saved (the repository lists them by their uuidv7 id),
+// never by a recorded save instant: under a superadmin's simulated time an
+// earlier save can carry an instant ahead of a later one. A schedule
+// change is never retroactive: each past date is judged by the version in
+// effect on it, so turning a working weekday off keeps its earlier days
+// absences, and turning a day off into a working day keeps its earlier
+// days off.
 type ScheduleHistory []ScheduleDay
 
 // InEffect is the version of weekday in effect on date (its calendar date,

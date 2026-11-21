@@ -1256,7 +1256,7 @@ func (q *Queries) ListStaffAttendanceRosterEmployees(ctx context.Context, tenant
 const listStaffAttendanceScheduleVersions = `-- name: ListStaffAttendanceScheduleVersions :many
 select id, tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_at, created_by, effective_from from staff_attendance_schedules
 where tenant_id = $1 and employee_user_id = $2
-order by weekday, effective_from, created_at, id
+order by weekday, effective_from, id
 `
 
 type ListStaffAttendanceScheduleVersionsParams struct {
@@ -1267,6 +1267,10 @@ type ListStaffAttendanceScheduleVersionsParams struct {
 // Every version of an employee's weekdays, oldest first: by weekday, then
 // the date each takes effect, then save order, so of two versions saved
 // for the same date the later one comes last (domain.ScheduleHistory).
+// Save order is the uuidv7 primary key, minted from the database's real
+// clock at insert. created_at cannot stand in for it: rows migrated by 0150
+// carry the service clock's save instant, which a superadmin's simulated
+// time can put days ahead of a later save's real now().
 func (q *Queries) ListStaffAttendanceScheduleVersions(ctx context.Context, arg ListStaffAttendanceScheduleVersionsParams) ([]StaffAttendanceSchedule, error) {
 	rows, err := q.db.Query(ctx, listStaffAttendanceScheduleVersions, arg.TenantID, arg.EmployeeUserID)
 	if err != nil {

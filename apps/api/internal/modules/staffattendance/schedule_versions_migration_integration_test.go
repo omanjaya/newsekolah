@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
 )
@@ -27,7 +28,7 @@ func scheduleVersions(t *testing.T, ctx context.Context, pool *pgxpool.Pool, emp
 	t.Helper()
 	rows, err := pool.Query(ctx, `
 		select weekday, is_working_day, effective_from, created_at from staff_attendance_schedules
-		where employee_user_id = $1 order by weekday, effective_from, created_at, id`, employee)
+		where employee_user_id = $1 order by weekday, effective_from, id`, employee)
 	require.NoError(t, err)
 	defer rows.Close()
 	var out []scheduleVersionRow
@@ -142,6 +143,69 @@ func TestScheduleVersionsMigrationKeepsEachPeriod(t *testing.T) {
 		insert into staff_attendance_schedules (tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, working_since)
 		values ($1, $2, 6, true, 480, 960, now())`, schoolID, employee)
 	require.Error(t, err, "one row per weekday is enforced again")
+
+	// Leave the schema as every other test in this database expects it.
+	runMigrationFile(t, ctx, pg.AdminPool, scheduleVersionsMigration+".up.sql")
+}
+
+// TestSameDateSaveOutranksAMigratedVersionAheadOfTheRealClock: before 0150
+// a save stored the service clock's instant, so under a superadmin's
+// simulated time a weekday could be saved with a created_at days ahead of
+// the real clock, and 0150 carried that instant over onto the version in
+// effect from that date. A later save on the same school date gets the
+// database's real now() as its created_at, which is earlier, yet it is the
+// later save: it wins for that date in the editor, in the judging of a
+// record and in the down migration (r4v-attendance-R1).
+func TestSameDateSaveOutranksAMigratedVersionAheadOfTheRealClock(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx, schoolID, employee, loc := makassarStaff(t, pg, "Staf Simulasi")
+	mod := Register(Dependencies{Pool: pg.AppPool, Years: stubYears{}, Calendar: stubCalendar{}, Leave: stubLeave{}})
+
+	// The school date D lies a week past the real clock, as the simulated
+	// dates of a verification run can.
+	y, m, d := time.Now().In(loc).AddDate(0, 0, 7).Date()
+	date := time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
+	weekday := domain.IsoWeekday(date)
+	_, err := pg.AdminPool.Exec(ctx, `
+		insert into staff_attendance_schedules
+		  (tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_at, effective_from)
+		values ($1, $2, $3, true, 480, 960, 10, $4, $5::date)`,
+		schoolID, employee, weekday, time.Date(y, m, d, 9, 0, 0, 0, loc), date.Format("2006-01-02"))
+	require.NoError(t, err)
+
+	// On D itself, an earlier start for every day of the week.
+	week := weekdaysSchedule(7*60, 15*60, 10)
+	for i := range week {
+		week[i].IsWorkingDay = true
+	}
+	savedAt := clock.WithTime(ctx, time.Date(y, m, d, 10, 0, 0, 0, loc))
+	_, err = mod.Service.ReplaceWeeklySchedule(savedAt, schoolID, employee, employee, week)
+	require.NoError(t, err)
+
+	readAt := clock.WithTime(ctx, time.Date(y, m, d, 11, 0, 0, 0, loc))
+	got, err := mod.Service.GetWeeklySchedule(readAt, schoolID, employee)
+	require.NoError(t, err)
+	require.Len(t, got, 7)
+	require.Equal(t, weekday, got[weekday-1].Weekday)
+	require.Equal(t, 7*60, got[weekday-1].StartMinute, "the save on D outranks the version migrated for D")
+	require.Equal(t, 15*60, got[weekday-1].EndMinute)
+
+	// 07:30 is 20 minutes past the new start's grace; the migrated 08:00
+	// start would call it on time.
+	arrival := time.Date(y, m, d, 7, 30, 0, 0, loc)
+	entry, err := mod.Service.RecordManual(readAt, schoolID, employee, service.EntryInput{
+		EmployeeUserID: employee, Date: date, ArrivalAt: &arrival,
+	})
+	require.NoError(t, err)
+	require.Equal(t, domain.StatusLate, entry.StatusCode)
+	require.Equal(t, 20, entry.LateMinutes)
+
+	runMigrationFile(t, ctx, pg.AdminPool, scheduleVersionsMigration+".down.sql")
+	var startMinute int16
+	require.NoError(t, pg.AdminPool.QueryRow(ctx,
+		`select start_minute from staff_attendance_schedules where employee_user_id = $1 and weekday = $2`,
+		employee, weekday).Scan(&startMinute))
+	require.Equal(t, int16(7*60), startMinute, "the down migration keeps the later save, not the later created_at")
 
 	// Leave the schema as every other test in this database expects it.
 	runMigrationFile(t, ctx, pg.AdminPool, scheduleVersionsMigration+".up.sql")

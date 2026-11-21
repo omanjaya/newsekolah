@@ -12,12 +12,15 @@ with zone as (
          coalesce((select n.name from pg_timezone_names n where n.name = t.timezone), 'UTC') as name
   from tenants t
 ),
--- The version each date settles on: the last one saved for it.
+-- The version each date settles on: the last one saved for it. Save order
+-- is the uuidv7 id, from the database's real clock; created_at is not, as
+-- a row the up migration carried over keeps the service clock's instant,
+-- which a simulated time can put ahead of a later save.
 settled as (
   select distinct on (tenant_id, employee_user_id, weekday, effective_from)
     tenant_id, employee_user_id, weekday, effective_from, is_working_day
   from staff_attendance_schedules
-  order by tenant_id, employee_user_id, weekday, effective_from, created_at desc, id desc
+  order by tenant_id, employee_user_id, weekday, effective_from, id desc
 ),
 last_off as (
   select tenant_id, employee_user_id, weekday, max(effective_from) as effective_from
@@ -39,7 +42,7 @@ latest as (
   select distinct on (tenant_id, employee_user_id, weekday)
     id, tenant_id, employee_user_id, weekday, is_working_day, created_at, created_by
   from staff_attendance_schedules
-  order by tenant_id, employee_user_id, weekday, effective_from desc, created_at desc, id desc
+  order by tenant_id, employee_user_id, weekday, effective_from desc, id desc
 )
 update staff_attendance_schedules s set
   created_at = d.first_from::timestamp at time zone z.name,

@@ -1538,6 +1538,10 @@ type Querier interface {
 	// Every version of an employee's weekdays, oldest first: by weekday, then
 	// the date each takes effect, then save order, so of two versions saved
 	// for the same date the later one comes last (domain.ScheduleHistory).
+	// Save order is the uuidv7 primary key, minted from the database's real
+	// clock at insert. created_at cannot stand in for it: rows migrated by 0150
+	// carry the service clock's save instant, which a superadmin's simulated
+	// time can put days ahead of a later save's real now().
 	ListStaffAttendanceScheduleVersions(ctx context.Context, arg ListStaffAttendanceScheduleVersionsParams) ([]StaffAttendanceSchedule, error)
 	// One employee's records stored as "unscheduled": the days they recorded
 	// before any work schedule existed, which a first schedule re-judges.
