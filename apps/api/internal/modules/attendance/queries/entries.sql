@@ -17,8 +17,9 @@ select * from attendance_entries where tenant_id = $1 and session_id = $2;
 -- (moved or left since): the entry stays a true record of that lesson,
 -- but the report's student table -- the class's current roster -- no
 -- longer lists them, so the detail says why the name is there. Those rows
--- come after the current roster's.
-select e.session_id, e.student_user_id, e.status_code, e.notes, coalesce(u.name, '')::text as student_name,
+-- come after the current roster's. source lets the report read a permit's
+-- machine note ("leave letter <number>") as the web localizes it.
+select e.session_id, e.student_user_id, e.status_code, e.source, e.notes, coalesce(u.name, '')::text as student_name,
   (not exists (
     select 1 from enrollments en
     where en.tenant_id = e.tenant_id and en.class_id = s.class_id and en.academic_year_id = s.academic_year_id

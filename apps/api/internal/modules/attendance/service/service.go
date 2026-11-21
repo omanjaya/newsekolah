@@ -316,9 +316,14 @@ type Overrider interface {
 
 // OverrideNoter is an optional extension of Overrider: the note its forced
 // status carries on date (an issued leave letter's "leave letter <number>",
-// the note ForceStatus writes into each opened session), so a calendar row
-// for a lesson whose session was never opened names the letter as an
-// opened one does. Without it, or with an empty note, such a row has none.
+// the note ForceStatus writes into each session already open when the
+// letter is issued). It names the letter in three places: SaveEntries
+// stores it as the note of every entry the Overrider forces (so a session
+// opened after the letter carries it too, one lookup per forced entry),
+// buildSessionDetail puts it on the locked roster row before the save, and
+// the student calendar shows it for a lesson whose session was never
+// opened and fills it into a forced entry stored without one. Without it,
+// or with an empty note, those rows have none.
 type OverrideNoter interface {
 	OverrideNote(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (string, error)
 }

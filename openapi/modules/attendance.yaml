@@ -676,7 +676,12 @@ components:
         student_user_id: { type: string, format: uuid }
         name: { type: string }
         status_code: { type: string }
-        notes: { type: string }
+        source: { type: string, enum: [teacher, leave, permit, system] }
+        notes:
+          type: string
+          description:
+            For a source of leave or permit, the permit's machine note ("leave letter <number>", "exit permit"), which a
+            client localizes rather than shows as is.
         left_class:
           type: boolean
           description:

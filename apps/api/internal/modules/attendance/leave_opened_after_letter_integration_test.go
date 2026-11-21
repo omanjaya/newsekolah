@@ -57,6 +57,19 @@ func TestSessionOpenedAfterLetterNamesIt(t *testing.T) {
 	require.Equal(t, note, storedNote(w.student1ID), "the forced entry stores the letter's note, as ForceStatus writes it")
 	require.Equal(t, "teacher note", storedNote(w.student2ID), "an entry the letter does not decide keeps the teacher's note")
 
+	// The daily report's per-session detail says where each entry came
+	// from, so a client reads the letter's machine note as a leave letter.
+	report, err := svc.GetDailyReport(ctx, w.tenantID, w.classID, w.today)
+	require.NoError(t, err)
+	require.Len(t, report.Sessions, 1)
+	reportEntries := map[uuid.UUID]service.DailyReportSessionEntry{}
+	for _, e := range report.Sessions[0].Entries {
+		reportEntries[e.StudentUserID] = e
+	}
+	require.Equal(t, domain.SourceLeave, reportEntries[w.student1ID].Source)
+	require.Equal(t, note, reportEntries[w.student1ID].Notes)
+	require.Equal(t, domain.SourceTeacher, reportEntries[w.student2ID].Source)
+
 	todayOf := func() service.CalendarDay {
 		t.Helper()
 		days, err := svc.GetStudentCalendarMonth(ctx, w.tenantID, w.student1ID, w.today.Format("2006-01"))
