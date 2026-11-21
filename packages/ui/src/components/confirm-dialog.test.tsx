@@ -258,26 +258,34 @@ function MutationHarness({ onConfirm }: { onConfirm: () => void }) {
 }
 
 describe("ConfirmDialog double click", () => {
-  it("runs a synchronous action once for two quick clicks, then allows a retry", async () => {
-    const onConfirm = vi.fn();
-    render(<MutationHarness onConfirm={onConfirm} />);
-    const confirm = screen.getByRole("button", { name: "Terbitkan SP 1" });
+  it("runs a synchronous action once for two quick clicks, then allows a retry", () => {
+    // Fake timers step the harness's progress reports one at a time, so a
+    // loaded test runner cannot fold "started" and "ended" into one render.
+    vi.useFakeTimers();
+    try {
+      const onConfirm = vi.fn();
+      render(<MutationHarness onConfirm={onConfirm} />);
+      const button = () => screen.getByRole("button", { name: "Terbitkan SP 1" });
 
-    fireEvent.click(confirm);
-    fireEvent.click(confirm);
-    expect(onConfirm).toHaveBeenCalledTimes(1);
+      fireEvent.click(button());
+      fireEvent.click(button());
+      expect(onConfirm).toHaveBeenCalledTimes(1);
 
-    // The action starts, then ends (a failure leaves the dialog open): the
-    // reader can try again.
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 5));
-    });
-    expect(screen.getByRole("button", { name: "Terbitkan SP 1" })).toHaveAttribute("aria-busy");
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 40));
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Terbitkan SP 1" }));
-    expect(onConfirm).toHaveBeenCalledTimes(2);
+      // The action starts, then ends (a failure leaves the dialog open): the
+      // reader can try again.
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
+      expect(button()).toHaveAttribute("aria-busy", "true");
+      act(() => {
+        vi.advanceTimersByTime(20);
+      });
+      expect(button()).toHaveAttribute("aria-busy", "false");
+      fireEvent.click(button());
+      expect(onConfirm).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("runs an async action once until its promise settles", async () => {
