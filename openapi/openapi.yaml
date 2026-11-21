@@ -24748,7 +24748,8 @@ components:
           type: string
           format: date
           description: Last day of a running suspension. A suspension whose last day has passed reads as status active with no end
-            date.
+            date, on the school's day of the request (the simulated one under the time simulation); a read derives it
+            and stores nothing.
         late_return_count:
           type: integer
         notes:

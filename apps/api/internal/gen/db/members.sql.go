@@ -177,6 +177,34 @@ func (q *Queries) DeleteMemberType(ctx context.Context, arg DeleteMemberTypePara
 	return result.RowsAffected(), nil
 }
 
+const endLapsedSuspension = `-- name: EndLapsedSuspension :execrows
+update library_members set status = 'active', suspended_until = null
+where tenant_id = $1
+  and user_id = $2
+  and status = 'suspended'
+  and suspended_until < $3::date
+`
+
+type EndLapsedSuspensionParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	UserID   uuid.UUID   `json:"user_id"`
+	Today    pgtype.Date `json:"today"`
+}
+
+// Stores the end of one member's suspension once its last day is before
+// today, the school's calendar day: the member is active again
+// (domain.Member.SuspensionLapsed). A suspension still running, or one
+// with no end date, is left alone. Only explicit circulation writes for
+// that member call it, and only with the real date; reads derive the same
+// status (domain.Member.AsOf) without storing it.
+func (q *Queries) EndLapsedSuspension(ctx context.Context, arg EndLapsedSuspensionParams) (int64, error) {
+	result, err := q.db.Exec(ctx, endLapsedSuspension, arg.TenantID, arg.UserID, arg.Today)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getMember = `-- name: GetMember :one
 select user_id, tenant_id, member_no, member_type_id, registered_on, valid_until, status, suspended_until, late_return_count, notes, created_at, updated_at from library_members where tenant_id = $1 and user_id = $2
 `
@@ -470,11 +498,13 @@ const listMembers = `-- name: ListMembers :many
 select m.user_id, m.tenant_id, m.member_no, m.member_type_id, m.registered_on, m.valid_until, m.status, m.suspended_until, m.late_return_count, m.notes, m.created_at, m.updated_at from library_members m
 join users u on u.id = m.user_id
 where m.tenant_id = $1
-  and ($4::text is null or m.status = $4::text)
-  and ($5::uuid is null or m.member_type_id = $5::uuid)
-  and ($6::text is null
-    or lower(u.name) like '%' || lower($6::text) || '%'
-    or lower(m.member_no) like '%' || lower($6::text) || '%')
+  and ($4::text is null
+    or (case when m.status = 'suspended' and m.suspended_until < $5::date then 'active' else m.status end)
+       = $4::text)
+  and ($6::uuid is null or m.member_type_id = $6::uuid)
+  and ($7::text is null
+    or lower(u.name) like '%' || lower($7::text) || '%'
+    or lower(m.member_no) like '%' || lower($7::text) || '%')
 order by u.name
 limit $2 offset $3
 `
@@ -484,16 +514,23 @@ type ListMembersParams struct {
 	Limit        int32       `json:"limit"`
 	Offset       int32       `json:"offset"`
 	Status       pgtype.Text `json:"status"`
+	Today        pgtype.Date `json:"today"`
 	MemberTypeID pgtype.UUID `json:"member_type_id"`
 	Search       pgtype.Text `json:"search"`
 }
 
+// The status filter matches the status a member has on today, the
+// school's calendar day (domain.Member.AsOf): a suspension whose last day
+// is before today is listed as active, not suspended. Reads derive it, so
+// a read at a simulated date stores nothing (EndLapsedSuspension is for
+// explicit writes).
 func (q *Queries) ListMembers(ctx context.Context, arg ListMembersParams) ([]LibraryMember, error) {
 	rows, err := q.db.Query(ctx, listMembers,
 		arg.TenantID,
 		arg.Limit,
 		arg.Offset,
 		arg.Status,
+		arg.Today,
 		arg.MemberTypeID,
 		arg.Search,
 	)
@@ -611,32 +648,6 @@ func (q *Queries) MemberTypeNameTaken(ctx context.Context, arg MemberTypeNameTak
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
-}
-
-const reactivateLapsedSuspensions = `-- name: ReactivateLapsedSuspensions :execrows
-update library_members set status = 'active', suspended_until = null
-where tenant_id = $1
-  and status = 'suspended'
-  and suspended_until < $2::date
-  and ($3::uuid is null or user_id = $3::uuid)
-`
-
-type ReactivateLapsedSuspensionsParams struct {
-	TenantID uuid.UUID   `json:"tenant_id"`
-	Today    pgtype.Date `json:"today"`
-	UserID   pgtype.UUID `json:"user_id"`
-}
-
-// Ends every suspension of the tenant (or of one member, when user_id is
-// given) whose last day is before today, the school's calendar day: the
-// member is active again (domain.Member.SuspensionLapsed). A suspension
-// still running, or one with no end date, is left alone.
-func (q *Queries) ReactivateLapsedSuspensions(ctx context.Context, arg ReactivateLapsedSuspensionsParams) (int64, error) {
-	result, err := q.db.Exec(ctx, reactivateLapsedSuspensions, arg.TenantID, arg.Today, arg.UserID)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
 }
 
 const updateMemberProfile = `-- name: UpdateMemberProfile :one

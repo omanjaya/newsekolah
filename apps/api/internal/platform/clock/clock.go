@@ -42,6 +42,16 @@ func Now(ctx context.Context, fallback Clock) time.Time {
 	return fallback.Now()
 }
 
+// Simulated reports whether ctx carries a business-time override
+// (WithTime). A read never stores what it computes from the simulated
+// time, and a write that stores a fact only because a date has passed
+// (rather than because the user asked for it) skips that step under
+// simulation: the simulated date would otherwise reach the real data.
+func Simulated(ctx context.Context) bool {
+	_, ok := ctx.Value(simulationTimeKey{}).(time.Time)
+	return ok
+}
+
 // Location resolves an IANA timezone name (a tenant's tenants.timezone)
 // to a *time.Location, falling back to UTC when the name is empty or
 // unknown: a bad setting must not fail every date decision a request

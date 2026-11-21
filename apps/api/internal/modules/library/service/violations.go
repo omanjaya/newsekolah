@@ -88,10 +88,11 @@ func (s *Service) ListViolations(ctx context.Context, tenantID uuid.UUID, status
 // SettleViolation marks a violation paid or waived. Settling never lifts
 // a suspension still running: a suspension is served by its dates, so the
 // member stays suspended through its last day and is active again the day
-// after, whatever is settled (endLapsedSuspensions, the rule
-// EligibleToBorrow lends on). A settle made after that day stores the end
-// of the suspension at once, as the old app reactivated the member when a
-// settle found the suspension over (library_circulation.go settle).
+// after, whatever is settled (domain.Member.AsOf, the rule EligibleToBorrow
+// lends on). A settle made in real time after that day also stores the end
+// of the suspension, as the old app reactivated the member when a settle
+// found the suspension over (library_circulation.go settle); a settle at a
+// simulated date leaves that to the real date (storeLapsedSuspensionEnd).
 func (s *Service) SettleViolation(ctx context.Context, tenantID, id uuid.UUID, status domain.ViolationStatus, settledBy uuid.UUID) (domain.Violation, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return domain.Violation{}, err
@@ -110,7 +111,7 @@ func (s *Service) SettleViolation(ctx context.Context, tenantID, id uuid.UUID, s
 		if !found {
 			return domain.ErrViolationAlreadySettled
 		}
-		return s.endLapsedSuspensions(ctx, tenantID, uuid.NullUUID{UUID: violation.MemberUserID, Valid: true})
+		return s.storeLapsedSuspensionEnd(ctx, tenantID, violation.MemberUserID)
 	})
 	return violation, err
 }

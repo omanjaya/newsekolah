@@ -132,11 +132,24 @@ func (m Member) EligibleToBorrow(asOf time.Time) error {
 // last day is before today (the school's calendar day): the suspension has
 // run its course, so the member is active again. A suspension runs through
 // its last day, and one with no end date lasts until staff lift it, so
-// neither has lapsed. EligibleToBorrow lends on this rule, and the service
-// stores it (ReactivateLapsedSuspensions) before any read that shows the
-// member's status, so no screen reads a finished suspension as running.
+// neither has lapsed. EligibleToBorrow lends on this rule and AsOf shows
+// it, so no screen reads a finished suspension as running.
 func (m Member) SuspensionLapsed(today time.Time) bool {
 	return m.Status == MemberSuspended && m.SuspendedUntil != nil && today.After(*m.SuspendedUntil)
+}
+
+// AsOf is m as it stands on today (the school's calendar day): a member
+// whose suspension has lapsed (SuspensionLapsed) is active, with no end
+// date. Every read that shows a member derives this rather than storing
+// it, so a read at a simulated later date never ends a suspension for real
+// time; the member list's status filter and the active-member counts apply
+// the same rule in SQL (queries/members.sql's ListMembers).
+func (m Member) AsOf(today time.Time) Member {
+	if m.SuspensionLapsed(today) {
+		m.Status = MemberActive
+		m.SuspendedUntil = nil
+	}
+	return m
 }
 
 // EligibleForClearance is true only when clearance ("bebas pustaka") can be

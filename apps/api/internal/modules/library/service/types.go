@@ -1,6 +1,8 @@
 package service
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
@@ -9,9 +11,13 @@ import (
 // MemberListFilter narrows Repository.ListMembers; a zero value lists
 // everyone.
 type MemberListFilter struct {
+	// Status matches the status a member has on Today (domain.Member.AsOf),
+	// so a lapsed suspension is listed as active.
 	Status       string
 	MemberTypeID uuid.NullUUID
 	Search       string
+	// Today is the school's calendar day the status filter is read on.
+	Today time.Time
 }
 
 // MemberCardListFilter narrows Repository.ListMembersForCardPrint to the

@@ -47,10 +47,17 @@ select * from library_members where tenant_id = $1 and user_id = $2;
 select * from library_members where tenant_id = $1 and member_no = $2;
 
 -- name: ListMembers :many
+-- The status filter matches the status a member has on today, the
+-- school's calendar day (domain.Member.AsOf): a suspension whose last day
+-- is before today is listed as active, not suspended. Reads derive it, so
+-- a read at a simulated date stores nothing (EndLapsedSuspension is for
+-- explicit writes).
 select m.* from library_members m
 join users u on u.id = m.user_id
 where m.tenant_id = $1
-  and (sqlc.narg(status)::text is null or m.status = sqlc.narg(status)::text)
+  and (sqlc.narg(status)::text is null
+    or (case when m.status = 'suspended' and m.suspended_until < sqlc.arg(today)::date then 'active' else m.status end)
+       = sqlc.narg(status)::text)
   and (sqlc.narg(member_type_id)::uuid is null or m.member_type_id = sqlc.narg(member_type_id)::uuid)
   and (sqlc.narg(search)::text is null
     or lower(u.name) like '%' || lower(sqlc.narg(search)::text) || '%'
@@ -84,16 +91,18 @@ limit $2;
 -- name: UpdateMemberStatus :one
 update library_members set status = $3, suspended_until = $4 where tenant_id = $1 and user_id = $2 returning *;
 
--- name: ReactivateLapsedSuspensions :execrows
--- Ends every suspension of the tenant (or of one member, when user_id is
--- given) whose last day is before today, the school's calendar day: the
--- member is active again (domain.Member.SuspensionLapsed). A suspension
--- still running, or one with no end date, is left alone.
+-- name: EndLapsedSuspension :execrows
+-- Stores the end of one member's suspension once its last day is before
+-- today, the school's calendar day: the member is active again
+-- (domain.Member.SuspensionLapsed). A suspension still running, or one
+-- with no end date, is left alone. Only explicit circulation writes for
+-- that member call it, and only with the real date; reads derive the same
+-- status (domain.Member.AsOf) without storing it.
 update library_members set status = 'active', suspended_until = null
 where tenant_id = $1
+  and user_id = $2
   and status = 'suspended'
-  and suspended_until < sqlc.arg(today)::date
-  and (sqlc.narg(user_id)::uuid is null or user_id = sqlc.narg(user_id)::uuid);
+  and suspended_until < sqlc.arg(today)::date;
 
 -- name: UpdateMemberProfile :one
 update library_members set member_type_id = $3, valid_until = $4, notes = $5

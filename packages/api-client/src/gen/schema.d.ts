@@ -10683,7 +10683,7 @@ export interface components {
             status: components["schemas"]["LibraryMemberStatus"];
             /**
              * Format: date
-             * @description Last day of a running suspension. A suspension whose last day has passed reads as status active with no end date.
+             * @description Last day of a running suspension. A suspension whose last day has passed reads as status active with no end date, on the school's day of the request (the simulated one under the time simulation); a read derives it and stores nothing.
              */
             suspended_until?: string;
             late_return_count: number;

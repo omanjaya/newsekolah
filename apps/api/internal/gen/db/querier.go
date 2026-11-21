@@ -291,7 +291,10 @@ type Querier interface {
 	CountActiveLoansAndUnpaidFinesForClearance(ctx context.Context, arg CountActiveLoansAndUnpaidFinesForClearanceParams) (CountActiveLoansAndUnpaidFinesForClearanceRow, error)
 	CountActiveLoansForMember(ctx context.Context, arg CountActiveLoansForMemberParams) (int32, error)
 	CountActiveMembers(ctx context.Context, arg CountActiveMembersParams) (int32, error)
-	CountActiveMembersTotal(ctx context.Context, tenantID uuid.UUID) (int32, error)
+	// Members active on today, the school's calendar day: a suspension whose
+	// last day is before today counts as active (domain.Member.AsOf), as
+	// ListMembers' status filter reads it.
+	CountActiveMembersTotal(ctx context.Context, arg CountActiveMembersTotalParams) (int32, error)
 	// Report figures that need library_members/library_visits plus the
 	// academic module's enrollments/classes, now that both exist in this
 	// worktree (migrations 0090-0092): the accreditation summary's
@@ -615,6 +618,13 @@ type Querier interface {
 	// keeps two homeroom holders: not limited to one row, so duplicates left
 	// by older code heal on the next change.
 	EndActiveAssignmentsForClass(ctx context.Context, arg EndActiveAssignmentsForClassParams) error
+	// Stores the end of one member's suspension once its last day is before
+	// today, the school's calendar day: the member is active again
+	// (domain.Member.SuspensionLapsed). A suspension still running, or one
+	// with no end date, is left alone. Only explicit circulation writes for
+	// that member call it, and only with the real date; reads derive the same
+	// status (domain.Member.AsOf) without storing it.
+	EndLapsedSuspension(ctx context.Context, arg EndLapsedSuspensionParams) (int64, error)
 	EndMembership(ctx context.Context, arg EndMembershipParams) (ExtracurricularMembership, error)
 	// A copy is at one table at a time: starting a new session closes any
 	// session on the copy still open.
@@ -1415,6 +1425,11 @@ type Querier interface {
 	ListMaterialTypes(ctx context.Context, tenantID uuid.UUID) ([]LibraryMaterialType, error)
 	ListMeetingsForClub(ctx context.Context, arg ListMeetingsForClubParams) ([]ExtracurricularMeeting, error)
 	ListMemberTypes(ctx context.Context, tenantID uuid.UUID) ([]LibraryMemberType, error)
+	// The status filter matches the status a member has on today, the
+	// school's calendar day (domain.Member.AsOf): a suspension whose last day
+	// is before today is listed as active, not suspended. Reads derive it, so
+	// a read at a simulated date stores nothing (EndLapsedSuspension is for
+	// explicit writes).
 	ListMembers(ctx context.Context, arg ListMembersParams) ([]LibraryMember, error)
 	// Bulk card printing's member-type/class mode: members of one type
 	// and/or currently enrolled (active) in one class, up to limit rows,
@@ -1820,11 +1835,6 @@ type Querier interface {
 	// was hidden (every title imported before imports were made public) would
 	// stay out of the OPAC's availability and reservations.
 	PublishTitleCopies(ctx context.Context, arg PublishTitleCopiesParams) error
-	// Ends every suspension of the tenant (or of one member, when user_id is
-	// given) whose last day is before today, the school's calendar day: the
-	// member is active again (domain.Member.SuspensionLapsed). A suspension
-	// still running, or one with no end date, is left alone.
-	ReactivateLapsedSuspensions(ctx context.Context, arg ReactivateLapsedSuspensionsParams) (int64, error)
 	RecordDeliveryAttempt(ctx context.Context, arg RecordDeliveryAttemptParams) error
 	RecordStocktakeScan(ctx context.Context, arg RecordStocktakeScanParams) (LibraryStocktakeScan, error)
 	RemoveParticipant(ctx context.Context, arg RemoveParticipantParams) error

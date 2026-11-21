@@ -207,6 +207,13 @@ func (s *Service) borrowOneWithQuota(ctx context.Context, tenantID uuid.UUID, in
 			return domain.Loan{}, err
 		}
 	}
+	// Lent because the member's suspension is over: store that as well, in
+	// real time only (storeLapsedSuspensionEnd).
+	if member.SuspensionLapsed(today) {
+		if err := s.storeLapsedSuspensionEnd(ctx, tenantID, member.UserID); err != nil {
+			return domain.Loan{}, err
+		}
+	}
 	return loan, nil
 }
 
@@ -655,12 +662,19 @@ func (s *Service) Renew(ctx context.Context, tenantID uuid.UUID, in RenewInput, 
 		}); err != nil {
 			return err
 		}
-		_, err = s.repo.CreateCirculationEvent(ctx, domain.ItemEventRecord{
+		if _, err := s.repo.CreateCirculationEvent(ctx, domain.ItemEventRecord{
 			TenantID: tenantID, CopyID: existing.CopyID, LoanID: uuid.NullUUID{UUID: loanID, Valid: true},
 			MemberUserID: uuid.NullUUID{UUID: existing.MemberUserID, Valid: true}, EventType: domain.EventRenewed,
 			CreatedBy: uuid.NullUUID{UUID: renewedBy, Valid: true},
-		})
-		return err
+		}); err != nil {
+			return err
+		}
+		// Renewed because the member's suspension is over: store that as
+		// well, in real time only (storeLapsedSuspensionEnd).
+		if memberFound && member.SuspensionLapsed(today) {
+			return s.storeLapsedSuspensionEnd(ctx, tenantID, member.UserID)
+		}
+		return nil
 	})
 	return loan, err
 }

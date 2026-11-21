@@ -182,28 +182,33 @@ func (s *Service) BulkRegisterByRole(ctx context.Context, tenantID, memberTypeID
 	return result, err
 }
 
-// endLapsedSuspensions stores what EligibleToBorrow already decides on its
-// own: a suspension whose last day has passed on the school's calendar
-// (clock.Now, so a simulated time applies) is over, and the member is
-// active again. Nothing else ends a dated suspension -- settling its
-// violation never lifts one still running -- so every read that shows a
-// member's status (the member page, the desk, the member list and its
-// counts, the reader's own page) calls this first, inside its own
-// transaction, and none of them reads a finished suspension as running
-// while the desk would lend. userID narrows it to one member; the zero
-// value covers the whole tenant.
-func (s *Service) endLapsedSuspensions(ctx context.Context, tenantID uuid.UUID, userID uuid.NullUUID) error {
-	today := s.schoolToday(ctx, tenantID, clock.Now(ctx, s.clock))
-	_, err := s.repo.ReactivateLapsedSuspensions(ctx, tenantID, today, userID)
+// storeLapsedSuspensionEnd stores what AsOf and EligibleToBorrow already
+// decide on their own: a suspension whose last day has passed on the
+// school's calendar is over, and the member is active again. Reads never
+// call it (they show AsOf), so a read at a simulated date changes no real
+// data. The explicit circulation writes for one member (settling a
+// violation, a borrow, a renewal) call it to keep the stored row tidy, and
+// only in real time, with the real clock: under simulation it does
+// nothing, as the simulated date has not come for real yet.
+func (s *Service) storeLapsedSuspensionEnd(ctx context.Context, tenantID, userID uuid.UUID) error {
+	if clock.Simulated(ctx) {
+		return nil
+	}
+	_, err := s.repo.EndLapsedSuspension(ctx, tenantID, userID, s.schoolToday(ctx, tenantID, s.clock.Now()))
 	return err
 }
 
+// memberToday is the school's calendar day a read shows members on
+// (clock.Now, so a simulated time applies): domain.Member.AsOf.
+func (s *Service) memberToday(ctx context.Context, tenantID uuid.UUID) time.Time {
+	return s.schoolToday(ctx, tenantID, clock.Now(ctx, s.clock))
+}
+
+// GetMember is the member as they stand today (domain.Member.AsOf): a
+// suspension whose last day has passed reads as over, without storing it.
 func (s *Service) GetMember(ctx context.Context, tenantID, userID uuid.UUID) (domain.Member, error) {
 	var member domain.Member
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		if err := s.endLapsedSuspensions(ctx, tenantID, uuid.NullUUID{UUID: userID, Valid: true}); err != nil {
-			return err
-		}
 		var found bool
 		var err error
 		member, found, err = s.repo.GetMember(ctx, tenantID, userID)
@@ -218,7 +223,7 @@ func (s *Service) GetMember(ctx context.Context, tenantID, userID uuid.UUID) (do
 	if err != nil {
 		return domain.Member{}, err
 	}
-	return member, nil
+	return member.AsOf(s.memberToday(ctx, tenantID)), nil
 }
 
 // ListMembersInput narrows ListMembers.
@@ -230,19 +235,26 @@ type ListMembersInput struct {
 	Offset       int
 }
 
+// ListMembers lists members as they stand today (domain.Member.AsOf), and
+// its status filter reads the same: a member whose suspension has ended is
+// listed as active, not suspended, without anything being stored.
 func (s *Service) ListMembers(ctx context.Context, tenantID uuid.UUID, in ListMembersInput) ([]domain.Member, error) {
+	today := s.memberToday(ctx, tenantID)
 	var members []domain.Member
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		// Before the status filter runs, so a member whose suspension has
-		// ended is listed as active, not suspended.
-		if err := s.endLapsedSuspensions(ctx, tenantID, uuid.NullUUID{}); err != nil {
-			return err
-		}
 		var err error
-		members, err = s.repo.ListMembers(ctx, tenantID, MemberListFilter{Status: in.Status, MemberTypeID: in.MemberTypeID, Search: in.Search}, clampLimit(in.Limit), in.Offset)
+		members, err = s.repo.ListMembers(ctx, tenantID, MemberListFilter{
+			Status: in.Status, MemberTypeID: in.MemberTypeID, Search: in.Search, Today: today,
+		}, clampLimit(in.Limit), in.Offset)
 		return err
 	})
-	return members, err
+	if err != nil {
+		return nil, err
+	}
+	for i := range members {
+		members[i] = members[i].AsOf(today)
+	}
+	return members, nil
 }
 
 // UpdateMemberStatus lets staff move a member between statuses directly
@@ -288,7 +300,8 @@ func (s *Service) UpdateMemberProfile(ctx context.Context, tenantID, userID, mem
 	if err != nil {
 		return domain.Member{}, err
 	}
-	return member, nil
+	// The saved profile answers with the status GetMember shows.
+	return member.AsOf(s.memberToday(ctx, tenantID)), nil
 }
 
 // Clearance grants "bebas pustaka" only when the member has no active loans
