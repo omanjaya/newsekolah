@@ -85,8 +85,14 @@ func (d AttendanceDiscipline) ViolationSummaryForClass(ctx context.Context, tena
 // PermitsOverrider exposes permits' issued leave letters to attendance as
 // its Overrider: a letter covering a date forces the student's status for
 // it. It also implements attendance's BatchOverrider so tenant-level jobs
-// resolve many students and dates in one query.
+// resolve many students and dates in one query, and its OverrideNoter so a
+// calendar row names the letter.
 type PermitsOverrider struct{ Svc *permitsservice.Service }
+
+var (
+	_ attendanceservice.BatchOverrider = PermitsOverrider{}
+	_ attendanceservice.OverrideNoter  = PermitsOverrider{}
+)
 
 func (o PermitsOverrider) Override(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (string, attendancedomain.EntrySource, bool, error) {
 	status, ok, err := o.Svc.LeaveOverride(ctx, tenantID, studentUserID, date)
@@ -94,6 +100,12 @@ func (o PermitsOverrider) Override(ctx context.Context, tenantID, studentUserID 
 		return "", "", false, err
 	}
 	return status, attendancedomain.SourceLeave, true, nil
+}
+
+// OverrideNote names the issued letter behind Override's status
+// (attendance's OverrideNoter).
+func (o PermitsOverrider) OverrideNote(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (string, error) {
+	return o.Svc.LeaveOverrideNote(ctx, tenantID, studentUserID, date)
 }
 
 func (o PermitsOverrider) OverridesForDates(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID, dates []time.Time) ([]attendanceservice.DateOverride, error) {

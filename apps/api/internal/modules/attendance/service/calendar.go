@@ -171,8 +171,8 @@ func (s *Service) calendarDaysForRange(
 			} else if day.ExpectedSessions, day.SubmittedSessions, err = s.lessonDayCounts(ctx, tenantID, academicYearID, classID, hasClass, hasLessons, d, sessionsForDay); err != nil {
 				return nil, err
 			}
-			if len(day.Sessions) == 0 {
-				day.Sessions = []CalendarDaySession{{StatusCode: overrideCode, Source: overrideSource}}
+			if day.Sessions, err = s.overrideDaySessions(ctx, tenantID, academicYearID, studentUserID, classID, hasClass, d, day.Sessions, overrideCode, overrideSource); err != nil {
+				return nil, err
 			}
 			days = append(days, day)
 			continue
@@ -208,6 +208,81 @@ func (s *Service) calendarDaysForRange(
 		days = append(days, day)
 	}
 	return days, nil
+}
+
+// overrideDaySessions is the rows of a lesson day an issued leave letter
+// or exit permit decides (Overrider): every lesson of the class that day,
+// in the order they run -- an opened session as recorded, and a lesson
+// whose session was never opened with the forced status, source and note
+// -- so the day lists the lessons the letter covers, one per expected
+// session, named like any other (audit r5v-auth-attendance-R2: an
+// unopened day read as one row titled only "Mata pelajaran"). A session
+// opened for a lesson no longer on the timetable keeps its row, last. A
+// student with no class, or a class with no lesson listed that day, keeps
+// a single unnamed row saying the letter covers the day.
+func (s *Service) overrideDaySessions(
+	ctx context.Context, tenantID, academicYearID, studentUserID, classID uuid.UUID, hasClass bool, date time.Time,
+	opened []CalendarDaySession, code string, source domain.EntrySource,
+) ([]CalendarDaySession, error) {
+	var lessons []LessonDetailRow
+	if hasClass {
+		var err error
+		if lessons, err = s.repo.ListLessonDetailsForClassDate(ctx, tenantID, academicYearID, classID, date); err != nil {
+			return nil, err
+		}
+	}
+	openedAt := make(map[uuid.UUID]int, len(opened))
+	for i, row := range opened {
+		openedAt[row.ScheduleID] = i
+	}
+	unopened := 0
+	for _, lesson := range lessons {
+		if _, ok := openedAt[lesson.ScheduleID]; !ok {
+			unopened++
+		}
+	}
+	if unopened == 0 && len(opened) > 0 {
+		return opened, nil
+	}
+
+	note, err := s.overrideNote(ctx, tenantID, studentUserID, date)
+	if err != nil {
+		return nil, err
+	}
+	if unopened == 0 {
+		return []CalendarDaySession{{StatusCode: code, Source: source, Note: note}}, nil
+	}
+	out := make([]CalendarDaySession, 0, len(lessons)+len(opened))
+	placed := make(map[uuid.UUID]bool, len(opened))
+	for _, lesson := range lessons {
+		if i, ok := openedAt[lesson.ScheduleID]; ok {
+			out = append(out, opened[i])
+			placed[lesson.ScheduleID] = true
+			continue
+		}
+		out = append(out, CalendarDaySession{
+			ScheduleID: lesson.ScheduleID, SubjectID: lesson.SubjectID, SubjectName: lesson.SubjectName,
+			TeacherUserID: lesson.TeacherUserID, TeacherName: lesson.TeacherName,
+			PeriodLabel: periodLabel(lesson.StartPeriodName, lesson.EndPeriodName),
+			StatusCode:  code, Source: source, Note: note,
+		})
+	}
+	for _, row := range opened {
+		if !placed[row.ScheduleID] {
+			out = append(out, row)
+		}
+	}
+	return out, nil
+}
+
+// overrideNote is the note the Overrider's status carries for student on
+// date, when it can say one (OverrideNoter).
+func (s *Service) overrideNote(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (string, error) {
+	noter, ok := s.overrider.(OverrideNoter)
+	if !ok {
+		return "", nil
+	}
+	return noter.OverrideNote(ctx, tenantID, studentUserID, date)
 }
 
 // lessonDayCounts is a day's expected and submitted session counts for a
