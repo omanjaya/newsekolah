@@ -180,19 +180,41 @@ function ColumnItems<TData>({
   );
 }
 
+/*
+ * The toolbar's one row, from `md` of screen (where the table replaces
+ * the phone cards) and 28rem of the toolbar's own width (a container
+ * query): a table in a narrow pane (a class's roster beside the class
+ * list) keeps the stacked rows below 28rem, where a 288px search beside
+ * the view icons ran past a 216px card and scrolled the page sideways.
+ * Whole class names, so Tailwind finds each one in the source.
+ */
+const ROW = {
+  bar: "md:@md/table-toolbar:items-start",
+  search:
+    "md:@md/table-toolbar:w-72 md:@md/table-toolbar:flex-none md:@md/table-toolbar:basis-auto md:@2xl/table-toolbar:w-80",
+  filters:
+    "md:@md/table-toolbar:order-2 md:@md/table-toolbar:min-w-48 md:@md/table-toolbar:flex-1 md:@md/table-toolbar:basis-0",
+  actions:
+    "md:@md/table-toolbar:order-3 md:@md/table-toolbar:ml-auto md:@md/table-toolbar:basis-auto md:@md/table-toolbar:[&>*]:flex-none",
+  viewOptions: "md:@md/table-toolbar:order-4",
+  viewOptionsAfterActions: "md:@md/table-toolbar:ml-0",
+};
+
 /**
  * Search, filter pills, the table's own actions and its view options.
- * From `md` up it is one row in that order (pills wrap if they must),
- * density and columns as separate icons at the end. On a phone the
- * table's own actions take the first row, each an equal share of it; the
- * search box takes the next beside one overflow menu (the columns); the
- * pills scroll sideways on a row of their own, so the first card is never
- * pushed below the fold by wrapped pills. The DOM keeps the desktop order,
- * which is where keyboards and Tab are, and the phone rows are arranged
- * with `order`. A control with nothing to act on is left out (the view
- * options over an empty, unfiltered table; the overflow menu without a
- * search box to sit beside), and a toolbar left with nothing at a width
- * is hidden at that width.
+ * Where it has the room (`ROW`) it is one row in that order (pills wrap
+ * if they must), density and columns as separate icons at the end.
+ * Otherwise, on a phone and in a narrow pane alike, the table's own
+ * actions take the first row, each an equal share of it; the search box
+ * takes the next beside the view options (on a phone one overflow menu,
+ * the columns); the pills take a row of their own, and on a phone scroll
+ * sideways on it, so the first card is never pushed below the fold by
+ * wrapped pills. The DOM keeps the desktop order, which is where
+ * keyboards and Tab are, and the stacked rows are arranged with `order`.
+ * A control with nothing to act on is left out (the view options over an
+ * empty, unfiltered table; the overflow menu without a search box to sit
+ * beside), and a toolbar left with nothing at a width is hidden at that
+ * width.
  */
 export function DataTableToolbar<TData>({
   table,
@@ -262,111 +284,122 @@ export function DataTableToolbar<TData>({
   const emptyOnPhone = !showSearch && !hasFilters && actions === undefined;
   if (emptyOnPhone && !showViewOptions) return null;
   return (
+    // The named container the row's layout reads (`ROW`): its width is the
+    // table's, wherever the table sits, never the screen's.
     <div
       data-slot="data-table-toolbar"
-      className={cn(
-        // As tall as the selection bar that replaces it, so ticking a row never moves the table.
-        // Top-aligned from md up: every control there is one height, and
-        // pills that wrap to a second row hang below the first instead of
-        // pulling the search box and the actions down to their middle.
-        "flex flex-wrap items-center gap-2 md:items-start md:pointer-fine:min-h-10",
-        emptyOnPhone && "max-md:hidden",
-      )}
+      className={cn("@container/table-toolbar min-w-0", emptyOnPhone && "max-md:hidden")}
     >
-      {showSearch && (
-        <SearchInput
-          ref={searchRef}
-          size="sm"
-          value={localSearch}
-          onChange={(event) => {
-            setLocalSearch(event.target.value);
-            onSearchChange(event.target.value);
-          }}
-          onClear={onSearchClear}
-          placeholder={labels.searchPlaceholder}
-          aria-label={labels.searchPlaceholder}
-          className="order-1 min-w-0 flex-1 basis-0 md:w-72 md:flex-none md:basis-auto lg:w-80"
-        />
-      )}
-      {/* From md up the pills take the room the search box, the actions and
-          the view icons leave (basis 0, at least 12rem) and wrap inside it,
-          so a long set of pills never pushes the actions or the icons onto
-          a row of their own. Below md the row scrolls sideways and runs out
-          into the 16px page gutter on both sides (32px wider than the
-          column, its first pill where it was), so the next pill peeks in
-          from the screen's edge instead of ending flush with the column. */}
-      {hasFilters && (
-        <DataTableFilters
-          filters={filters}
-          labels={filtersLabels}
-          resetFocusRef={searchRef}
-          className={cn(
-            "order-4 basis-full md:order-2 md:min-w-48 md:flex-1 md:basis-0",
-            "max-md:-mx-4 max-md:basis-[calc(100%+2rem)] max-md:scroll-px-4 max-md:px-4",
-          )}
-        />
-      )}
-      {/* On a phone the table's own actions take the first row, each an equal
-          share of it, so the search row below holds only the box and the
-          overflow menu. */}
-      {actions !== undefined && (
-        <div className="order-0 flex basis-full items-center gap-2 [&>*]:flex-1 md:order-3 md:ml-auto md:basis-auto md:[&>*]:flex-none">
-          {actions}
-        </div>
-      )}
-      {showViewOptions && (
-        <div
-          className={cn(
-            "order-2 ml-auto flex shrink-0 items-center gap-1 md:order-4",
-            // Below md only the column menu lives here, beside the search box.
-            !showPhoneColumns && "max-md:hidden",
-            actions !== undefined && "md:ml-0",
-          )}
-        >
-          <IconButton
-            icon={<Rows3 />}
-            aria-label={densityLabel}
-            aria-pressed={density === "compact"}
-            onClick={() => {
-              onDensityChange(density === "compact" ? "normal" : "compact");
+      <div
+        className={cn(
+          // As tall as the selection bar that replaces it, so ticking a row never moves the table.
+          // Top-aligned as one row: every control there is one height, and
+          // pills that wrap to a second row hang below the first instead of
+          // pulling the search box and the actions down to their middle.
+          "flex flex-wrap items-center gap-2 md:pointer-fine:min-h-10",
+          ROW.bar,
+        )}
+      >
+        {showSearch && (
+          <SearchInput
+            ref={searchRef}
+            size="sm"
+            value={localSearch}
+            onChange={(event) => {
+              setLocalSearch(event.target.value);
+              onSearchChange(event.target.value);
             }}
+            onClear={onSearchClear}
+            placeholder={labels.searchPlaceholder}
+            aria-label={labels.searchPlaceholder}
+            className={cn("order-1 min-w-0 flex-1 basis-0", ROW.search)}
+          />
+        )}
+        {/* In the one row the pills take the room the search box, the
+            actions and the view icons leave (basis 0, at least 12rem) and
+            wrap inside it, so a long set of pills never pushes the actions
+            or the icons onto a row of their own. Stacked they take a row of
+            their own; on a phone it scrolls sideways and runs out into the
+            16px page gutter on both sides (32px wider than the column, its
+            first pill where it was), so the next pill peeks in from the
+            screen's edge instead of ending flush with the column. */}
+        {hasFilters && (
+          <DataTableFilters
+            filters={filters}
+            labels={filtersLabels}
+            resetFocusRef={searchRef}
             className={cn(
-              "hidden md:inline-flex",
-              TOOLBAR_ICON,
-              density === "compact" && "bg-state-selected text-accent",
+              "order-4 basis-full",
+              ROW.filters,
+              "max-md:-mx-4 max-md:basis-[calc(100%+2rem)] max-md:scroll-px-4 max-md:px-4",
             )}
           />
-          {showColumns && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <IconButton
-                  icon={<Columns3 />}
-                  aria-label={labels.columns}
-                  className={cn("hidden md:inline-flex", TOOLBAR_ICON)}
-                />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <ColumnItems columns={columns} columnLabels={columnLabels} />
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          {showPhoneColumns && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <IconButton
-                  icon={<Ellipsis />}
-                  aria-label={uiLabels.tableMoreOptions}
-                  className="md:hidden"
-                />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{labels.columns}</DropdownMenuLabel>
-                <ColumnItems columns={columns} columnLabels={columnLabels} />
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      )}
+        )}
+        {/* Stacked, the table's own actions take the first row, each an
+            equal share of it, so the search row below holds only the box
+            and the view options. */}
+        {actions !== undefined && (
+          <div
+            className={cn("order-0 flex basis-full items-center gap-2 [&>*]:flex-1", ROW.actions)}
+          >
+            {actions}
+          </div>
+        )}
+        {showViewOptions && (
+          <div
+            className={cn(
+              "order-2 ml-auto flex shrink-0 items-center gap-1",
+              ROW.viewOptions,
+              // Below md only the column menu lives here, beside the search box.
+              !showPhoneColumns && "max-md:hidden",
+              actions !== undefined && ROW.viewOptionsAfterActions,
+            )}
+          >
+            <IconButton
+              icon={<Rows3 />}
+              aria-label={densityLabel}
+              aria-pressed={density === "compact"}
+              onClick={() => {
+                onDensityChange(density === "compact" ? "normal" : "compact");
+              }}
+              className={cn(
+                "hidden md:inline-flex",
+                TOOLBAR_ICON,
+                density === "compact" && "bg-state-selected text-accent",
+              )}
+            />
+            {showColumns && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <IconButton
+                    icon={<Columns3 />}
+                    aria-label={labels.columns}
+                    className={cn("hidden md:inline-flex", TOOLBAR_ICON)}
+                  />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <ColumnItems columns={columns} columnLabels={columnLabels} />
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            {showPhoneColumns && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <IconButton
+                    icon={<Ellipsis />}
+                    aria-label={uiLabels.tableMoreOptions}
+                    className="md:hidden"
+                  />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>{labels.columns}</DropdownMenuLabel>
+                  <ColumnItems columns={columns} columnLabels={columnLabels} />
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
