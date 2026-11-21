@@ -126,8 +126,8 @@ function outcomeOf(instance: WorkflowInstance, shown: ShownStage | null): Outcom
 /**
  * An approver's stage QR for one workflow the queue opened (docs/07-ui-ux.md
  * section 4: the student presses "Pindai QR <tahap>" and scans it). The
- * token is bound to this instance and single use, so it is minted on open
- * and renewed by itself when it expires while the stage still waits; the
+ * token is bound to this instance and single use, so it is minted once the
+ * sheet's first read finds the stage waiting, and renewed by itself when it expires while the stage still waits; the
  * QR prints no code under it, since a 43-character token is not something
  * anyone types. Beside it: who it is for, and where the flow stands. The
  * picket stage of an exit permit does not come here: the duty desk shows
@@ -194,10 +194,14 @@ export function ApprovePanel({
     );
   }
 
+  // Mint once the first fresh read finds the stage waiting, not on mount: a
+  // flow that is already closed (an exit permit from an earlier day reads
+  // as expired) needs no QR, and the token would only be refused.
+  const waitingStageRead = shownStage !== null;
   useEffect(() => {
-    mint();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mint once on mount; the key remount covers a new instance
-  }, []);
+    if (waitingStageRead) mint();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mint once per instance; the key remount covers a new one
+  }, [waitingStageRead]);
 
   // The latest callback, read when the timer fires. Next's bundled React has
   // no useEffectEvent, so a ref keeps the effect from restarting on each render.

@@ -46,6 +46,8 @@ const mocks = vi.hoisted(
     lateCalls: QueryCall[];
     lateInstance: Record<string, unknown>;
     lateClassName: string | undefined;
+    exitStatus: string;
+    exitFresh: boolean;
   } => ({
     mint: vi.fn(),
     invalidate: vi.fn(),
@@ -53,6 +55,8 @@ const mocks = vi.hoisted(
     lateCalls: [],
     lateInstance: {},
     lateClassName: "X-A",
+    exitStatus: "in_progress",
+    exitFresh: true,
   }),
 );
 
@@ -92,7 +96,7 @@ vi.mock("../api", () => ({
           : {
               instance: {
                 id,
-                status: "in_progress",
+                status: mocks.exitStatus,
                 current_stage_index: 1,
                 subject_user_id: "student-e",
                 current_stage: counselorStage,
@@ -101,7 +105,7 @@ vi.mock("../api", () => ({
               class_name: "10 A",
               destination: "Puskesmas",
             },
-      isFetchedAfterMount: id !== "",
+      isFetchedAfterMount: id !== "" && mocks.exitFresh,
       error: null,
       refetch: vi.fn(),
     };
@@ -133,6 +137,8 @@ beforeEach(() => {
   mocks.lateCalls = [];
   mocks.lateInstance = lateInstance();
   mocks.lateClassName = "X-A";
+  mocks.exitStatus = "in_progress";
+  mocks.exitFresh = true;
 });
 
 afterEach(() => {
@@ -176,6 +182,29 @@ describe("ApprovePanel", () => {
     expect(screen.getByText("Puskesmas")).toBeInTheDocument();
     expect(screen.queryByText(TOKEN)).not.toBeInTheDocument();
     expect(mocks.lateCalls.every((call) => call.id === "")).toBe(true);
+  });
+
+  it("mints no QR until a fresh read finds the stage waiting", () => {
+    // Only a cached copy from an earlier visit so far.
+    mocks.exitFresh = false;
+    const { rerender } = render(<ApprovePanel kind="exit_permit" instanceId="exit-1" />);
+    expect(mocks.mint).not.toHaveBeenCalled();
+
+    mocks.exitFresh = true;
+    rerender(<ApprovePanel kind="exit_permit" instanceId="exit-1" />);
+    expect(mocks.mint).toHaveBeenCalledTimes(1);
+    rerender(<ApprovePanel kind="exit_permit" instanceId="exit-1" />);
+    expect(mocks.mint).toHaveBeenCalledTimes(1);
+  });
+
+  // The regression: the counsellor's sheet for an exit permit from an
+  // earlier day said the flow was closed, yet still minted a stage token.
+  it("mints no QR for a flow the first read finds closed", () => {
+    mocks.exitStatus = "expired";
+    render(<ApprovePanel kind="exit_permit" instanceId="exit-1" />);
+    expect(mocks.mint).not.toHaveBeenCalled();
+    expect(screen.queryByRole("img", { name: /qrLabelStage/ })).not.toBeInTheDocument();
+    expect(screen.getByText("closedFor:Siswa Izin")).toBeInTheDocument();
   });
 
   it("polls the flow while the QR waits for the student", () => {
