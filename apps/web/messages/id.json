@@ -1571,6 +1571,8 @@
         "stageLabel": "Tahap: {stage}",
         "finished": "Selesai",
         "detailTitle": "Detail izin keluar",
+        "endedApprovedNote": "Izin ini sudah disetujui, tetapi tidak dipakai keluar gerbang sebelum jam pelajarannya selesai, jadi izin ini kedaluwarsa.",
+        "endedPendingNote": "Jam pelajaran izin ini selesai sebelum semua tahap disetujui, jadi izin ini kedaluwarsa.",
         "student": "Siswa",
         "scanStageLabel": "Kode QR {stage} (alat pemindai)",
         "approvedAwaitGate": "Semua tahap disetujui. Tunjukkan QR gerbang ke satpam.",
@@ -1641,6 +1643,7 @@
         "hero": {
           "activeEyebrow": "Izin keluar berjalan",
           "approvedEyebrow": "Siap keluar gerbang",
+          "endedEyebrow": "Izin berakhir",
           "exitedEyebrow": "Sudah keluar",
           "exitedAt": "Keluar gerbang pukul {time}",
           "scanStage": "Pindai QR {stage}",

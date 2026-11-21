@@ -27,8 +27,11 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useBusinessNow } from "../../../lib/simulation/clock";
 import { isoToZonedLocal, todayInZone } from "../../../lib/tenant-date";
+import { usePeriodsQuery } from "../../reference/api";
 import { type MyExitPermit, type WorkflowInstance, useMyExitPermitsQuery } from "../api";
+import { exitPermitReadStatus } from "../lib/exit-permit-status";
 import { exitReturnState } from "../lib/exit-return";
+import { permitLessonsOver } from "../lib/lesson-period-options";
 import { formatShortWeekdayDate } from "../lib/permit-dates";
 import { useCanSubmitPermit } from "../lib/use-can-submit-permit";
 
@@ -182,6 +185,7 @@ function MyExitPermits(): ReactElement {
   // The school's today, so a row in its current year drops the year.
   const today = todayInZone(timeZone);
   const now = useBusinessNow();
+  const periods = usePeriodsQuery();
   const onCard = items.find((item) => isTodaysPermit(item, today, timeZone));
   const history = items.filter((item) => item !== onCard);
 
@@ -272,7 +276,16 @@ function MyExitPermits(): ReactElement {
                     // beside "Kedaluwarsa"): out of room, the status moves under
                     // the text instead of a fact ending in an ellipsis.
                     keepMetaWhole
-                    trailing={<WorkflowStatusBadge status={inst.status} />}
+                    // A permit left open on an earlier day reads as expired,
+                    // as its detail does, not "Berjalan" or "Disetujui".
+                    trailing={
+                      <WorkflowStatusBadge
+                        status={exitPermitReadStatus(
+                          inst.status,
+                          permitLessonsOver(inst, periods.data?.data, now, timeZone),
+                        )}
+                      />
+                    }
                     onClick={() => {
                       setOpenId(inst.id);
                     }}

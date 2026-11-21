@@ -37,6 +37,7 @@ import {
   useIssueGateTokenMutation,
   useScanExitPermitStageMutation,
 } from "../api";
+import { exitPermitReadStatus } from "../lib/exit-permit-status";
 import { exitReturnState } from "../lib/exit-return";
 import { usePermitLessonsOver } from "../lib/use-school-time";
 
@@ -130,13 +131,24 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
   return (
     <HeroCard
       tone={closed ? "neutral" : "accent-soft"}
-      eyebrow={approved ? t("hero.approvedEyebrow") : t("hero.activeEyebrow")}
+      // A closed permit says it has ended, as its text below does: not
+      // "Siap keluar gerbang" or "Menunggu: Guru piket" over a permit that
+      // can go no further.
+      eyebrow={
+        closed
+          ? t("hero.endedEyebrow")
+          : approved
+            ? t("hero.approvedEyebrow")
+            : t("hero.activeEyebrow")
+      }
       chip={
-        approved
-          ? tWorkflow("status.approved")
-          : stage
-            ? tWorkflow("waitingFor", { stage: stage.label })
-            : tWorkflow(`status.${inst.status}`)
+        closed
+          ? tWorkflow("status.expired")
+          : approved
+            ? tWorkflow("status.approved")
+            : stage
+              ? tWorkflow("waitingFor", { stage: stage.label })
+              : tWorkflow(`status.${inst.status}`)
       }
       live={!approved && !closed}
       title={data.destination}
@@ -228,7 +240,9 @@ export function ActiveExitPermitCard({ id }: { id: string }): ReactElement {
         </Card>
       ) : (
         <Card padding="sm" className="mt-3 text-fg">
-          <WorkflowSteps instance={inst} />
+          {/* A closed permit's stage reads as where it stopped, not as the
+              stage to scan next. */}
+          <WorkflowSteps instance={closed ? { ...inst, status: "expired" } : inst} />
           {inst.status === "in_progress" && stage?.verification === "manual" && !closed && (
             <p className="text-body-sm text-fg-muted">{t("waitManual", { stage: stage.label })}</p>
           )}
@@ -283,15 +297,30 @@ export function ExitPermitDetail({ id }: { id: string }): ReactElement {
   const { data, isLoading, error, refetch } = useExitPermitQuery(id);
   const periodRange = usePeriodRange(data);
   const returnText = useReturnText(data);
+  const lessonsOver = usePermitLessonsOver(data);
 
   if (isLoading) return <SkeletonDetail rows={3} />;
   if (error || !data) return <QueryError retry={refetch} error={error} />;
   const inst = data.instance;
   const timeZone = me?.tenant.timezone;
+  // A permit that never reached the gate before its lessons ended reads as
+  // expired, as on the student's live card and in the history list. One
+  // approved but unused passed every stage: its stages stay approved.
+  const status = exitPermitReadStatus(inst.status, lessonsOver);
+  const lapsed = status === "expired" && !data.exited_at;
+  const unusedApproval = lapsed && data.issued_at !== undefined;
+  const stages: typeof inst = { ...inst, status: unusedApproval ? "approved" : status };
 
   return (
     <div className="flex flex-col gap-5">
-      <WorkflowStepper instance={inst} />
+      <div className="flex flex-col gap-2">
+        <WorkflowStepper instance={stages} status={status} />
+        {lapsed && (
+          <p className="text-body-sm text-fg-muted">
+            {t(unusedApproval ? "endedApprovedNote" : "endedPendingNote")}
+          </p>
+        )}
+      </div>
       <DataList>
         <DataListItem label={t("form.destination")}>{data.destination}</DataListItem>
         <DataListItem label={t("lessons")}>{periodRange}</DataListItem>

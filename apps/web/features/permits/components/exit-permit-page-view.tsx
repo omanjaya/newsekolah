@@ -9,6 +9,7 @@ import { AppPage } from "../../../components/app-page";
 import { RecordNotFoundPage } from "../../../components/record-not-found";
 import { isNotFoundError } from "../../../lib/api/not-found";
 import { useSession } from "../../../lib/session/session-provider";
+import { isoToZonedLocal, todayInZone } from "../../../lib/tenant-date";
 import { formatDisplayName } from "../../../lib/text/format-name";
 import { useExitPermitQuery } from "../api";
 
@@ -39,10 +40,15 @@ export function ExitPermitPageView({ id }: { id: string }): ReactElement {
   }
 
   const inst = data?.instance;
+  const timeZone = me?.tenant.timezone;
+  // Only today's permit is live: one left open on an earlier day can go no
+  // further, so it gets the read-only record that says it expired, as in
+  // the student's history, not a live card that still offers to cancel it.
   const live =
     inst !== undefined &&
     inst.subject_user_id === me?.id &&
-    (inst.status === "in_progress" || inst.status === "approved");
+    (inst.status === "in_progress" || inst.status === "approved") &&
+    isoToZonedLocal(inst.opened_at, timeZone).slice(0, 10) === todayInZone(timeZone);
 
   return (
     <AppPage

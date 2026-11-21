@@ -1573,6 +1573,8 @@
         "stageLabel": "Stage: {stage}",
         "finished": "Finished",
         "detailTitle": "Exit permit",
+        "endedApprovedNote": "This permit was approved but not used at the gate before its lessons ended, so it expired.",
+        "endedPendingNote": "This permit's lessons ended before every stage approved it, so it expired.",
         "student": "Student",
         "scanStageLabel": "{stage} QR code (barcode scanner)",
         "approvedAwaitGate": "Every stage is approved. Show the gate QR to security.",
@@ -1643,6 +1645,7 @@
         "hero": {
           "activeEyebrow": "Exit permit in progress",
           "approvedEyebrow": "Ready for the gate",
+          "endedEyebrow": "Permit ended",
           "exitedEyebrow": "Left school",
           "exitedAt": "Through the gate at {time}",
           "scanStage": "Scan the {stage} QR",
