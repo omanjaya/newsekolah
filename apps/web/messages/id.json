@@ -810,6 +810,7 @@
         "attendance_submitted": "Presensi tercatat",
         "substitution_requested": "Permintaan guru pengganti",
         "substitution_responded": "Tanggapan guru pengganti",
+        "substitution_cancelled": "Permintaan guru pengganti dibatalkan",
         "leave_request_submitted": "Pengajuan izin baru",
         "leave_request_reviewed": "Pengajuan izin ditinjau",
         "leave_request_issued": "Surat izin diterbitkan",
@@ -1088,6 +1089,14 @@
         "effectiveFrom": "Berlaku mulai",
         "effectiveFromHintCreate": "Pelajaran masuk jadwal mulai tanggal ini, pada hari pelajarannya. Minggu sebelumnya tidak berubah.",
         "effectiveFromHintDated": "Paling cepat {date}.",
+        "heldBy": {
+          "attendance": "Ditahan oleh presensi yang sudah tercatat pada {date}.",
+          "supervision": "Ditahan oleh kunjungan supervisi yang dijadwalkan pada {date}.",
+          "substitutionPending": "Ditahan oleh permintaan guru pengganti untuk {date} (menunggu jawaban). Batalkan permintaan itu agar perubahan bisa berlaku lebih awal.",
+          "substitutionAccepted": "Ditahan oleh guru pengganti yang sudah disetujui untuk {date}. Batalkan penggantian itu agar perubahan bisa berlaku lebih awal.",
+          "openAttendance": "Buka presensi",
+          "openSubstitutions": "Lihat permintaan"
+        },
         "historyNoticeTitle": "Jadwal ini sudah punya riwayat",
         "historyNoticeBody": "Jadwal ini sudah punya riwayat presensi, guru pengganti, atau kunjungan supervisi. Pertemuan sebelum tanggal berlaku tetap tercatat dengan jadwal lama.",
         "inPlaceNote": "Belum ada riwayat, jadi perubahan menggantikan jadwal ini di semua tanggal berlakunya.",
@@ -1166,8 +1175,17 @@
       "pickDate": "Pilih tanggal",
       "blockEnded": "jadwal ini sudah tidak berlaku",
       "blockBoundByHistory": "semua pertemuan tersisa sudah punya riwayat",
+      "blockHeldBy": {
+        "attendance": "semua pertemuan tersisa sudah punya riwayat, ditahan oleh presensi yang tercatat pada {date}",
+        "supervision": "semua pertemuan tersisa sudah punya riwayat, ditahan oleh kunjungan supervisi yang dijadwalkan pada {date}",
+        "substitutionPending": "semua pertemuan tersisa sudah punya riwayat, ditahan oleh permintaan guru pengganti untuk {date} yang menunggu jawaban; batalkan permintaan itu agar jadwal ini bisa diubah",
+        "substitutionAccepted": "semua pertemuan tersisa sudah punya riwayat, ditahan oleh guru pengganti yang sudah disetujui untuk {date}; batalkan penggantian itu agar jadwal ini bisa diubah",
+        "openSubstitutions": "Lihat permintaan guru pengganti untuk {date}",
+        "openAttendance": "Buka presensi {date}"
+      },
       "startsOn": "Mulai {date}",
       "endsOn": "Sampai {date}",
+      "onlyOn": "Hanya {date}",
       "pastedFrom": "Jadwal ditempel, berlaku mulai {date}.",
       "retireTitle": "Hapus jadwal mulai tanggal",
       "retireBody": "{lesson} dihapus dari jadwal mulai tanggal berlaku. Pertemuan sebelum tanggal itu tetap tercatat beserta presensi, jurnal, dan guru penggantinya.",
@@ -1503,6 +1521,13 @@
       "cancelConfirm": {
         "title": "Batalkan permintaan ke {teacher}?",
         "body": "{lesson}. Permintaan ditarik dan tidak bisa dijawab lagi.",
+        "confirm": "Batalkan permintaan",
+        "keep": "Jangan batalkan"
+      },
+      "release": "Batalkan permintaan {requester} kepada {substitute}",
+      "releaseConfirm": {
+        "title": "Batalkan permintaan {requester} kepada {substitute}?",
+        "body": "{lesson}. Kedua guru diberi tahu dan pembatalan tercatat di log audit. Jadwal pelajaran ini lalu bisa diubah mulai tanggal yang lebih awal.",
         "confirm": "Batalkan permintaan",
         "keep": "Jangan batalkan"
       }

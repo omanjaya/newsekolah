@@ -1,4 +1,4 @@
-import type { ScheduleBlock } from "./api";
+import type { ScheduleBlock, ScheduleHold } from "./api";
 import { cellDate, earlierDate } from "./week";
 
 /**
@@ -20,6 +20,18 @@ export function blockLockedReasonKey(
   return policy.reason === "SCHEDULE_CHANGE_BEFORE_HISTORY" ? "blockBoundByHistory" : "blockEnded";
 }
 
+/**
+ * The record that keeps a block locked because every remaining lesson has
+ * history: the last of them, when one record is what pushes the earliest
+ * change past the block's own last date (a pending or accepted request a
+ * schedule manager can cancel, a recorded session, a supervision visit).
+ * Undefined for a block that is not locked that way, or ended.
+ */
+export function lockingHold(block: ScheduleBlock): ScheduleHold | undefined {
+  if (blockLockedReasonKey(block) !== "blockBoundByHistory") return undefined;
+  return block.mutation_policy?.held_by;
+}
+
 /** Whether an edit or delete of the block must say from which date it takes effect. */
 export function needsEffectiveDate(block: ScheduleBlock): boolean {
   return block.mutation_policy?.requires_effective_from === true;
@@ -35,6 +47,16 @@ export function minEffectiveFrom(block: ScheduleBlock): string | undefined {
 }
 
 /**
+ * The record that holds the block's earliest "Berlaku mulai" where it is:
+ * a recorded session, a supervision visit, or a pending or accepted
+ * substitution request (which a schedule manager can cancel). Undefined
+ * when the date is today or the block's first lesson alone.
+ */
+export function heldBy(block: ScheduleBlock): ScheduleHold | undefined {
+  return block.mutation_policy?.held_by;
+}
+
+/**
  * The latest "Berlaku mulai" for the block: the year's end, or the block's
  * own last date when it already has one (a lesson removed from a later
  * date), since it no longer takes place after that.
@@ -46,18 +68,28 @@ export function maxEffectiveFrom(
   return earlierDate(yearEnd, block.effective_until);
 }
 
+/** What `effectiveCaption` says about a block's dates in the week shown. */
+export interface EffectiveCaption {
+  key: "startsOn" | "endsOn" | "onlyOn";
+  /** The first date the caption names: the start, or the end for "endsOn". */
+  date: string;
+  /** The block's last date, for "onlyOn" (the same as `date` for one lesson). */
+  until?: string;
+}
+
 /**
  * A note for a block that does not cover the whole week shown: it starts
- * after the week's Monday, or ends before its Sunday (a lesson changed or
- * removed from a date on). `weekStart` is the Monday of the week shown.
+ * after the week's Monday ("startsOn"), ends before its Sunday ("endsOn"),
+ * or both ("onlyOn": a version whose every lesson falls in this week, such
+ * as one lesson kept when the rest was removed from the next day on).
+ * `weekStart` is the Monday of the week shown.
  */
-export function effectiveCaption(
-  block: ScheduleBlock,
-  weekStart: string,
-): { key: "startsOn" | "endsOn"; date: string } | null {
-  if (block.effective_from > weekStart) return { key: "startsOn", date: block.effective_from };
-  if (block.effective_until !== undefined && block.effective_until < cellDate(weekStart, 7)) {
-    return { key: "endsOn", date: block.effective_until };
-  }
+export function effectiveCaption(block: ScheduleBlock, weekStart: string): EffectiveCaption | null {
+  const starts = block.effective_from > weekStart;
+  const until = block.effective_until;
+  const ends = until !== undefined && until < cellDate(weekStart, 7);
+  if (starts && ends) return { key: "onlyOn", date: block.effective_from, until };
+  if (starts) return { key: "startsOn", date: block.effective_from };
+  if (ends) return { key: "endsOn", date: until };
   return null;
 }

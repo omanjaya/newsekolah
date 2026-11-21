@@ -630,15 +630,29 @@ func (q *Queries) ListReportSchedules(ctx context.Context, tenantID uuid.UUID) (
 
 const listScheduleHistory = `-- name: ListScheduleHistory :many
 select s.id,
-  greatest(
-    (select max(a.date) from attendance_sessions a
-     where a.schedule_id = s.id and attendance_session_recorded(a.id)),
-    (select max(r.date) from substitution_requests r
-     where r.schedule_id = s.id and r.status in ('pending', 'accepted')),
-    (select max(v.lesson_date) from supervision_scheduled_observations v
-     where v.schedule_id = s.id)
-  )::date as history_until
+  coalesce(h.kind, '')::text as held_by_kind,
+  coalesce(h.ref_id, '00000000-0000-0000-0000-000000000000'::uuid) as held_by_id,
+  coalesce(h.status, '')::text as held_by_status,
+  h.on_date::date as history_until
 from schedules s
+left join lateral (
+  select b.kind, b.ref_id, b.status, b.on_date
+  from (
+    select 'attendance' as kind, 1 as rank, a.id as ref_id, null::text as status, a.date as on_date
+    from attendance_sessions a
+    where a.schedule_id = s.id and attendance_session_recorded(a.id)
+    union all
+    select 'supervision', 2, v.id, null::text, v.lesson_date
+    from supervision_scheduled_observations v
+    where v.schedule_id = s.id
+    union all
+    select 'substitution', 3, r.id, r.status::text, r.date
+    from substitution_requests r
+    where r.schedule_id = s.id and r.status in ('pending', 'accepted')
+  ) b
+  order by b.on_date desc, b.rank
+  limit 1
+) h on true
 where s.tenant_id = $1 and s.id = any($2::uuid[])
   and (exists (select 1 from attendance_sessions a
                where a.schedule_id = s.id and attendance_session_recorded(a.id))
@@ -653,6 +667,9 @@ type ListScheduleHistoryParams struct {
 
 type ListScheduleHistoryRow struct {
 	ID           uuid.UUID   `json:"id"`
+	HeldByKind   string      `json:"held_by_kind"`
+	HeldByID     uuid.UUID   `json:"held_by_id"`
+	HeldByStatus string      `json:"held_by_status"`
 	HistoryUntil pgtype.Date `json:"history_until"`
 }
 
@@ -665,6 +682,10 @@ type ListScheduleHistoryRow struct {
 // substitutions; the service alone for visits, whose schedule_id has no
 // foreign key), and it is never rewritten in place or deleted; a session
 // only opened, with nothing recorded, is a placeholder and binds nothing.
+// The record dated history_until comes along (held_by_*, empty when no
+// date is bound), so the editor can say what holds a change back: on a
+// date two records share, the one no admin can release wins (a recorded
+// session, then a visit, then a substitution request).
 func (q *Queries) ListScheduleHistory(ctx context.Context, arg ListScheduleHistoryParams) ([]ListScheduleHistoryRow, error) {
 	rows, err := q.db.Query(ctx, listScheduleHistory, arg.TenantID, arg.Ids)
 	if err != nil {
@@ -674,7 +695,13 @@ func (q *Queries) ListScheduleHistory(ctx context.Context, arg ListScheduleHisto
 	items := []ListScheduleHistoryRow{}
 	for rows.Next() {
 		var i ListScheduleHistoryRow
-		if err := rows.Scan(&i.ID, &i.HistoryUntil); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.HeldByKind,
+			&i.HeldByID,
+			&i.HeldByStatus,
+			&i.HistoryUntil,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

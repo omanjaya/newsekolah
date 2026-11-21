@@ -7,6 +7,7 @@ import type { ScheduleBlock } from "../api";
 import { blockCrossesBreak } from "../break-warning";
 import { isNowWithinBlock } from "../current-period";
 import { periodSpan } from "../period-span";
+import { useBlockLock } from "../use-block-lock";
 import { useEffectiveCaption } from "../use-effective-caption";
 
 import {
@@ -68,6 +69,7 @@ export function ScheduleDayGrid({
   weekStart: string;
 }): ReactElement {
   const captionOf = useEffectiveCaption(weekStart);
+  const lockOf = useBlockLock();
   return (
     // As tall as the page leaves it on desktop: the grid scrolls inside the
     // card, under day headings that stay in view.
@@ -130,6 +132,7 @@ export function ScheduleDayGrid({
                       crossesBreak={blockCrossesBreak(block, lessonPeriods)}
                       breakWarningLabel={t("crossesBreakWarning")}
                       caption={captionOf(block)}
+                      lock={lockOf(block)}
                       onCopy={onCopy}
                       onEdit={onEdit}
                       onDelete={onDelete}

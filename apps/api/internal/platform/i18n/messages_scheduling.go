@@ -63,6 +63,10 @@ func init() {
 		Indonesian: "Tanggal yang dipilih sudah lewat. Pilih tanggal hari ini atau yang akan datang.",
 		English:    "The selected date has passed. Pick today or a later date.",
 	}
+	catalog["SUBSTITUTION_CANCEL_PAST"] = map[string]string{
+		Indonesian: "Permintaan guru pengganti yang tanggalnya sudah lewat tidak bisa dibatalkan oleh pengelola jadwal, karena pelajarannya sudah berlangsung.",
+		English:    "A schedule manager cannot cancel a substitute request whose date has passed: the lesson has already taken place.",
+	}
 	catalog["SUBSTITUTION_NOT_SCHOOL_DAY"] = map[string]string{
 		Indonesian: "Tanggal yang dipilih adalah hari libur atau tidak ada KBM.",
 		English:    "The selected date is a holiday or has no lessons.",

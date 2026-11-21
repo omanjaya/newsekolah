@@ -152,11 +152,11 @@ func (s *Service) applyPolicies(ctx context.Context, tenantID uuid.UUID, schedul
 		for j, id := range b.ScheduleIDs {
 			rows[j] = byID[id]
 		}
-		earliest, err := dates.earliest(ctx, history, rows)
+		window, err := dates.window(ctx, history, rows)
 		if err != nil {
 			return nil, err
 		}
-		policy := managerPolicy(b.EffectiveUntil, b.HasHistory, earliest, dates.today)
+		policy := managerPolicy(b.EffectiveUntil, b.HasHistory, window, dates.today)
 		out[i].Policy = &policy
 	}
 	return out, nil
@@ -179,6 +179,13 @@ type MutationPolicy struct {
 	// with history); MinEffectiveFrom is the earliest such date.
 	RequiresEffectiveFrom bool
 	MinEffectiveFrom      *time.Time
+	// HeldBy is the record that pushes MinEffectiveFrom out (or, with
+	// Reason ErrScheduleChangeBeforeHistory, that binds every date left),
+	// when one does: a recorded session, a supervision visit or a pending
+	// or accepted substitution request, which a schedule manager can
+	// cancel to free the dates it holds. Nil when the date comes from today
+	// or the version's first lesson alone.
+	HeldBy *domain.Hold
 	// Reason is why the caller may not edit or delete it, as the error the
 	// attempt would meet: domain.ErrScheduleEnded (its last date has
 	// passed), domain.ErrScheduleChangeBeforeHistory (it is still on the
@@ -190,21 +197,23 @@ type MutationPolicy struct {
 
 // managerPolicy is what a manage_schedules caller may do with a version (or
 // block) ending on until: nothing once it has ended, nor while every date
-// it has left is bound by history, a dated change from earliest on when it
-// has history, anything otherwise.
-func managerPolicy(until *time.Time, hasHistory bool, earliest, today time.Time) MutationPolicy {
+// it has left is bound by history, a dated change from window.Min on when
+// it has history, anything otherwise. Whatever record holds the date back
+// is named either way.
+func managerPolicy(until *time.Time, hasHistory bool, window domain.ChangeWindow, today time.Time) MutationPolicy {
 	if until != nil && domain.CalendarDate(*until).Before(domain.CalendarDate(today)) {
 		return MutationPolicy{HasHistory: hasHistory, Reason: domain.ErrScheduleEnded}
 	}
 	if !hasHistory {
 		return MutationPolicy{CanEdit: true, CanDelete: true}
 	}
-	if until != nil && earliest.After(domain.CalendarDate(*until)) {
-		return MutationPolicy{HasHistory: true, Reason: domain.ErrScheduleChangeBeforeHistory}
+	if until != nil && window.Min.After(domain.CalendarDate(*until)) {
+		return MutationPolicy{HasHistory: true, Reason: domain.ErrScheduleChangeBeforeHistory, HeldBy: window.HeldBy}
 	}
+	earliest := window.Min
 	return MutationPolicy{
 		CanEdit: true, CanDelete: true, HasHistory: true,
-		RequiresEffectiveFrom: true, MinEffectiveFrom: &earliest,
+		RequiresEffectiveFrom: true, MinEffectiveFrom: &earliest, HeldBy: window.HeldBy,
 	}
 }
 
@@ -220,11 +229,11 @@ func (s *Service) MutationPolicyFor(ctx context.Context, tenantID uuid.UUID, sch
 		}
 		if actor.CanManage {
 			dates := s.changeDates(ctx, tenantID)
-			earliest, err := dates.earliest(ctx, history, []domain.Schedule{sched})
+			window, err := dates.window(ctx, history, []domain.Schedule{sched})
 			if err != nil {
 				return err
 			}
-			policy = managerPolicy(sched.EffectiveUntil, history.hasAny([]uuid.UUID{sched.ID}), earliest, dates.today)
+			policy = managerPolicy(sched.EffectiveUntil, history.hasAny([]uuid.UUID{sched.ID}), window, dates.today)
 			return nil
 		}
 		policy = s.teacherPolicy(ctx, tenantID, sched, history.hasAny([]uuid.UUID{sched.ID}), actor)

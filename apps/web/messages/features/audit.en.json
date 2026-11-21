@@ -190,6 +190,9 @@
     "session": {
       "revoke": "Ended a session"
     },
+    "substitution_request": {
+      "cancel": "Cancelled a substitute request"
+    },
     "visitor_visit": {
       "check_in": "Checked a visitor in",
       "check_out": "Checked a visitor out"
@@ -228,6 +231,7 @@
     "bill": "Bill",
     "document_template": "Document template",
     "report_schedule": "Report schedule",
-    "session": "Session"
+    "session": "Session",
+    "substitution_request": "Substitute request"
   }
 }

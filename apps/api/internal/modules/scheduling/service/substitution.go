@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 )
 
 // EventPublisher is the narrow slice of platform/events.Bus the service
@@ -61,6 +62,27 @@ type SubstitutionResponded struct {
 // ("substitution.responded"), the Envelope name notifications consumes; see
 // SubstitutionRequested.EventName's comment for why the two must not match.
 func (SubstitutionResponded) EventName() string { return "scheduling.substitution.responded" }
+
+// SubstitutionCancelled is published when a pending or accepted request is
+// withdrawn, by its requester or by a schedule manager (ByManager) freeing
+// the lesson for a timetable change; the bridge tells whichever of the two
+// teachers did not cancel it.
+type SubstitutionCancelled struct {
+	TenantID         uuid.UUID
+	SubstitutionID   uuid.UUID
+	ScheduleID       uuid.UUID
+	Date             time.Time
+	RequesterUserID  uuid.UUID
+	SubstituteUserID uuid.UUID
+	CancelledBy      uuid.UUID
+	ByManager        bool
+	// WasAccepted is true when the substitute had already agreed to stand in.
+	WasAccepted bool
+}
+
+// EventName deliberately differs from platform/events.SubstitutionCancelled
+// ("substitution.cancelled"); see SubstitutionRequested.EventName.
+func (SubstitutionCancelled) EventName() string { return "scheduling.substitution.cancelled" }
 
 // RequestSubstitution validates and creates a substitution request. Only
 // the schedule's own teacher (or an admin acting for them) may request one;
@@ -162,20 +184,65 @@ func (s *Service) RespondSubstitution(ctx context.Context, tenantID, id, respond
 	return updated, nil
 }
 
-func (s *Service) CancelSubstitution(ctx context.Context, tenantID, id, cancellerUserID uuid.UUID) (domain.Substitution, error) {
-	var updated domain.Substitution
+// CancelSubstitution withdraws a pending or accepted request. Its requester
+// may always do so; a schedule manager (actor.CanManage) may cancel anyone's
+// dated today or later, which is how they release a request that holds a
+// timetable change back (MutationPolicy.HeldBy); one already past is
+// refused (domain.ErrSubstitutionCancelPast). A manager's cancellation of
+// someone else's request is written to the audit log, and both teachers
+// are told of a cancellation they did not make themselves.
+func (s *Service) CancelSubstitution(ctx context.Context, tenantID, id uuid.UUID, actor Actor, publisher EventPublisher) (domain.Substitution, error) {
+	var existing, updated domain.Substitution
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		existing, err := s.repo.GetSubstitutionByID(ctx, tenantID, id)
+		var err error
+		existing, err = s.repo.GetSubstitutionByID(ctx, tenantID, id)
 		if err != nil {
 			return domain.ErrSubstitutionNotFound
 		}
-		if err := existing.CanCancel(cancellerUserID); err != nil {
+		if err := existing.CanCancel(actor.UserID, actor.CanManage, s.now(ctx)); err != nil {
 			return err
 		}
 		updated, err = s.repo.CancelSubstitution(ctx, tenantID, id)
-		return err
+		if err != nil {
+			return err
+		}
+		if actor.UserID == existing.RequesterUserID {
+			return nil
+		}
+		return audit.Record(ctx, tenantID, "substitution_request.cancel", "substitution_request", id,
+			substitutionAudit(existing), substitutionAudit(updated))
 	})
-	return updated, err
+	if err != nil {
+		return domain.Substitution{}, err
+	}
+	if publisher == nil {
+		return updated, nil
+	}
+
+	_ = publisher.Publish(ctx, SubstitutionCancelled{
+		TenantID: tenantID, SubstitutionID: updated.ID, ScheduleID: updated.ScheduleID, Date: updated.Date,
+		RequesterUserID: updated.RequesterUserID, SubstituteUserID: updated.SubstituteUserID,
+		CancelledBy: actor.UserID, ByManager: actor.UserID != existing.RequesterUserID,
+		WasAccepted: existing.Status == domain.SubstitutionAccepted,
+	})
+	return updated, nil
+}
+
+// substitutionAuditEntry is what the audit log keeps of a request: which
+// lesson and date, between whom, and its status.
+type substitutionAuditEntry struct {
+	ScheduleID       uuid.UUID `json:"schedule_id"`
+	Date             string    `json:"date"`
+	RequesterUserID  uuid.UUID `json:"requester_user_id"`
+	SubstituteUserID uuid.UUID `json:"substitute_user_id"`
+	Status           string    `json:"status"`
+}
+
+func substitutionAudit(s domain.Substitution) substitutionAuditEntry {
+	return substitutionAuditEntry{
+		ScheduleID: s.ScheduleID, Date: s.Date.Format(time.DateOnly),
+		RequesterUserID: s.RequesterUserID, SubstituteUserID: s.SubstituteUserID, Status: string(s.Status),
+	}
 }
 
 func (s *Service) ListSubstitutionsIncoming(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.Substitution, error) {

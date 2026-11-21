@@ -2,6 +2,7 @@
 
 import { Button, Card, CardHeader, CardTitle, RowActionsMenu, cn } from "@newsekolah/ui";
 import { AlertTriangle, Copy, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -10,6 +11,7 @@ import { blockCrossesBreak } from "../break-warning";
 import { clockLabel } from "../clock-label";
 import { periodSpanLabel } from "../period-span";
 import { SUBJECT_TONE_CLASSES, subjectTone } from "../subject-tone";
+import { useBlockLock } from "../use-block-lock";
 
 import { LessonSubstitutionAction } from "./lesson-substitution-action";
 import { lockableBlockActions } from "./lockable-block-actions";
@@ -67,6 +69,8 @@ export function ScheduleMobileDayList({
   t: (key: string) => string;
 }): ReactElement {
   const locale = useLocale();
+  const lockOf = useBlockLock();
+  const router = useRouter();
   const lessons = lessonPeriods.filter((period) => !period.is_break);
   const periodBySeq = new Map(lessonPeriods.map((period) => [period.sequence, period]));
 
@@ -163,7 +167,13 @@ export function ScheduleMobileDayList({
                             onCopy(block);
                           },
                         },
-                        ...lockableBlockActions(block, t, { onEdit, onDelete }),
+                        ...lockableBlockActions(block, lockOf(block), t, {
+                          onEdit,
+                          onDelete,
+                          onOpen: (href) => {
+                            router.push(href);
+                          },
+                        }),
                       ]}
                     />
                   )}

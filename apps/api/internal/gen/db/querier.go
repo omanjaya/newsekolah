@@ -1489,6 +1489,10 @@ type Querier interface {
 	// substitutions; the service alone for visits, whose schedule_id has no
 	// foreign key), and it is never rewritten in place or deleted; a session
 	// only opened, with nothing recorded, is a placeholder and binds nothing.
+	// The record dated history_until comes along (held_by_*, empty when no
+	// date is bound), so the editor can say what holds a change back: on a
+	// date two records share, the one no admin can release wins (a recorded
+	// session, then a visit, then a substitution request).
 	ListScheduleHistory(ctx context.Context, arg ListScheduleHistoryParams) ([]ListScheduleHistoryRow, error)
 	// Every version of the year, locked for an effective-dated clear.
 	ListSchedulesByAcademicYear(ctx context.Context, arg ListSchedulesByAcademicYearParams) ([]Schedule, error)

@@ -156,6 +156,40 @@ describe("ScheduleRetireDialog", () => {
     });
   });
 
+  it("says which request holds the earliest date, and where it can be cancelled", () => {
+    render(
+      <ScheduleRetireDialog
+        block={{
+          ...block,
+          mutation_policy: {
+            can_edit: true,
+            can_delete: true,
+            has_history: true,
+            requires_effective_from: true,
+            min_effective_from: "2026-11-27",
+            held_by: {
+              kind: "substitution",
+              id: "request-1",
+              date: "2026-11-26",
+              status: "pending",
+            },
+          },
+        }}
+        name="Matematika"
+        dates={dates}
+        onClose={vi.fn()}
+      />,
+    );
+
+    const field = screen.getByRole("combobox", { name: /effectiveFrom/ });
+    const hint = document.getElementById(field.getAttribute("aria-describedby") ?? "");
+    expect(hint).toHaveTextContent('heldBy.substitutionPending {"date":"2026-11-26"}');
+    expect(screen.getByRole("link", { name: "heldBy.openSubstitutions" })).toHaveAttribute(
+      "href",
+      "/substitutions?view=all",
+    );
+  });
+
   it("renders nothing to confirm without a block", () => {
     render(<ScheduleRetireDialog block={null} name="" dates={dates} onClose={vi.fn()} />);
     expect(screen.queryByRole("button", { name: "retireConfirm" })).not.toBeInTheDocument();

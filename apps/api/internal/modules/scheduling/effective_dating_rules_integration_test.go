@@ -226,6 +226,7 @@ func TestSupervisionVisitBindsTheLesson(t *testing.T) {
 	require.True(t, policy.HasHistory)
 	require.True(t, policy.RequiresEffectiveFrom)
 	require.Equal(t, visitDay, *policy.MinEffectiveFrom)
+	require.Equal(t, domain.HoldSupervision, policy.HeldBy.Kind, "the visit is named as what holds the date")
 
 	swap := w.lesson(w.classA, w.t2, 1, w.p1)
 	_, err := w.svc.UpdateSchedule(w.ctx, w.tenant, monday.ID, swap, w.actor)

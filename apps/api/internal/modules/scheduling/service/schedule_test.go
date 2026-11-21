@@ -300,27 +300,33 @@ func TestMapConstraintError(t *testing.T) {
 }
 
 // A manager may change a lesson with history from its earliest date on,
-// never one that has ended or whose remaining dates are all bound.
+// never one that has ended or whose remaining dates are all bound, and is
+// told which record holds the date back.
 func TestManagerPolicy(t *testing.T) {
 	today := date("2026-11-20")
-	require.Equal(t, MutationPolicy{CanEdit: true, CanDelete: true}, managerPolicy(nil, false, today, today))
+	free := domain.ChangeWindow{Min: today}
+	require.Equal(t, MutationPolicy{CanEdit: true, CanDelete: true}, managerPolicy(nil, false, free, today))
 
 	earliest := date("2026-11-27")
-	policy := managerPolicy(nil, true, earliest, today)
+	hold := &domain.Hold{Kind: domain.HoldSubstitution, ID: uuid.New(), Date: date("2026-11-26"), Status: domain.SubstitutionPending}
+	held := domain.ChangeWindow{Min: earliest, HeldBy: hold}
+	policy := managerPolicy(nil, true, held, today)
 	require.True(t, policy.CanEdit)
 	require.True(t, policy.RequiresEffectiveFrom)
 	require.Equal(t, earliest, *policy.MinEffectiveFrom)
+	require.Equal(t, hold, policy.HeldBy)
 
 	ended := date("2026-11-19")
-	policy = managerPolicy(&ended, true, today, today)
+	policy = managerPolicy(&ended, true, free, today)
 	require.False(t, policy.CanEdit)
 	require.ErrorIs(t, policy.Reason, domain.ErrScheduleEnded)
-	policy = managerPolicy(&ended, false, today, today)
+	policy = managerPolicy(&ended, false, free, today)
 	require.False(t, policy.CanEdit, "an ended version is locked with or without history")
 	require.ErrorIs(t, policy.Reason, domain.ErrScheduleEnded)
 
 	bound := date("2026-11-26")
-	policy = managerPolicy(&bound, true, earliest, today)
+	policy = managerPolicy(&bound, true, held, today)
 	require.False(t, policy.CanDelete, "every remaining date is bound by history")
 	require.ErrorIs(t, policy.Reason, domain.ErrScheduleChangeBeforeHistory, "still on the timetable, so not ended")
+	require.Equal(t, hold, policy.HeldBy, "the record binding the last date is named")
 }

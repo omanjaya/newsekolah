@@ -83,6 +83,7 @@ var (
 	errScheduleConflictClass   = httpx.NewError(http.StatusConflict, "SCHEDULE_CONFLICT_CLASS")
 	errScheduleConflictTeacher = httpx.NewError(http.StatusConflict, "SCHEDULE_CONFLICT_TEACHER")
 	errSubstitutionConflict    = httpx.NewError(http.StatusConflict, "SUBSTITUTION_CONFLICT")
+	errSubstitutionCancelPast  = httpx.NewError(http.StatusConflict, "SUBSTITUTION_CANCEL_PAST")
 	errJournalConflict         = httpx.NewError(http.StatusConflict, "JOURNAL_CONFLICT")
 	errJournalReportColumn     = httpx.NewError(http.StatusBadRequest, "JOURNAL_REPORT_UNKNOWN_COLUMN")
 
@@ -119,27 +120,41 @@ var (
 // withMinEffectiveFrom names the earliest effective_from the server would
 // accept, so the editor can offer it: SCHEDULE_HAS_HISTORY (an undated
 // change, code REQUIRED) and SCHEDULE_CHANGE_BEFORE_HISTORY (a date too
-// early, code BEFORE_MIN). Without a known date (a race the database
-// caught) the error goes out bare.
-func withMinEffectiveFrom(status int, code, detailCode string, earliest *time.Time) error {
+// early, code BEFORE_MIN), and the record holding it there when one does
+// (held_by.kind with its date, held_by.id and held_by.status, the
+// MutationPolicy.held_by of the block). Without a known date (a race the
+// database caught) the error goes out bare.
+func withMinEffectiveFrom(status int, code, detailCode string, err error) error {
 	out := httpx.NewError(status, code)
+	earliest, hold := minEffectiveFrom(err)
 	if earliest == nil {
 		return out
 	}
-	return out.WithDetails(httpx.ErrorDetail{Field: "effective_from", Code: detailCode, Message: earliest.Format(time.DateOnly)})
+	details := []httpx.ErrorDetail{{Field: "effective_from", Code: detailCode, Message: earliest.Format(time.DateOnly)}}
+	if hold != nil {
+		details = append(details,
+			httpx.ErrorDetail{Field: "held_by.kind", Code: string(hold.Kind), Message: hold.Date.Format(time.DateOnly)},
+			httpx.ErrorDetail{Field: "held_by.id", Code: hold.ID.String()},
+		)
+		if hold.Status != "" {
+			details = append(details, httpx.ErrorDetail{Field: "held_by.status", Code: string(hold.Status)})
+		}
+	}
+	return out.WithDetails(details...)
 }
 
-// minEffectiveFrom reads the earliest date a typed history error carries.
-func minEffectiveFrom(err error) *time.Time {
+// minEffectiveFrom reads the earliest date a typed history error carries,
+// and the record holding it there.
+func minEffectiveFrom(err error) (*time.Time, *domain.Hold) {
 	var needsDate *domain.HistoryRequiresDateError
 	if errors.As(err, &needsDate) {
-		return &needsDate.Min
+		return &needsDate.Min, needsDate.HeldBy
 	}
 	var tooEarly *domain.ChangeTooEarlyError
 	if errors.As(err, &tooEarly) {
-		return &tooEarly.Min
+		return &tooEarly.Min, tooEarly.HeldBy
 	}
-	return nil
+	return nil, nil
 }
 
 // mapScheduleError translates a scheduling/domain sentinel error into the
@@ -195,9 +210,9 @@ func mapScheduleError(err error) error {
 	case errors.Is(err, domain.ErrPeriodNotFound), errors.Is(err, domain.ErrPeriodIsBreak), errors.Is(err, domain.ErrPeriodTemplateDay):
 		return errSchedulePeriodInvalid
 	case errors.Is(err, domain.ErrScheduleHasHistory):
-		return withMinEffectiveFrom(http.StatusConflict, "SCHEDULE_HAS_HISTORY", "REQUIRED", minEffectiveFrom(err))
+		return withMinEffectiveFrom(http.StatusConflict, "SCHEDULE_HAS_HISTORY", "REQUIRED", err)
 	case errors.Is(err, domain.ErrScheduleChangeBeforeHistory):
-		return withMinEffectiveFrom(http.StatusConflict, "SCHEDULE_CHANGE_BEFORE_HISTORY", "BEFORE_MIN", minEffectiveFrom(err))
+		return withMinEffectiveFrom(http.StatusConflict, "SCHEDULE_CHANGE_BEFORE_HISTORY", "BEFORE_MIN", err)
 	case errors.Is(err, domain.ErrEffectiveFromOutOfYear):
 		return errScheduleEffectiveFromInvalid
 	case errors.Is(err, domain.ErrScheduleEnded):
@@ -232,6 +247,8 @@ func mapSubstitutionError(err error) error {
 		return errSubstitutionWeekdayMismatch
 	case errors.Is(err, domain.ErrSubstitutionDateInPast):
 		return errSubstitutionDateInPast
+	case errors.Is(err, domain.ErrSubstitutionCancelPast):
+		return errSubstitutionCancelPast
 	case errors.Is(err, domain.ErrSubstitutionNotSchoolDay):
 		return errSubstitutionNotSchoolDay
 	case errors.Is(err, domain.ErrSubstituteIsRequester):
@@ -300,9 +317,23 @@ func toAPIMutationPolicy(p service.MutationPolicy) *api.MutationPolicy {
 		out.RequiresEffectiveFrom = &requires
 	}
 	out.MinEffectiveFrom = apiDatePtr(p.MinEffectiveFrom)
+	out.HeldBy = toAPIScheduleHold(p.HeldBy)
 	if p.Reason != nil {
 		reason := policyReasonCode(p.Reason)
 		out.Reason = &reason
+	}
+	return out
+}
+
+// toAPIScheduleHold is the record holding a change back, nil for none.
+func toAPIScheduleHold(h *domain.Hold) *api.ScheduleHold {
+	if h == nil {
+		return nil
+	}
+	out := &api.ScheduleHold{Kind: api.ScheduleHoldKind(h.Kind), Id: h.ID, Date: openapi_types.Date{Time: h.Date}}
+	if h.Status != "" {
+		status := api.ScheduleHoldStatus(h.Status)
+		out.Status = &status
 	}
 	return out
 }

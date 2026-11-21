@@ -364,7 +364,13 @@ paths:
       tags: [scheduling]
       operationId: cancelSubstitution
       x-permission: view_schedules
-      summary: Cancel a substitution request I made
+      summary: Cancel a pending or accepted substitution request I made, or with manage_schedules anyone's
+      description: >-
+        A schedule manager cancels another teacher's request to release a lesson whose timetable change it holds
+        back (MutationPolicy.held_by); that cancellation is written to the audit log, and both the requester and the
+        substitute are notified. A manager may cancel only another teacher's request dated today or later: one already
+        past holds no change back, so it is refused with 409 SUBSTITUTION_CANCEL_PAST. Anyone else gets 403 for a
+        request they did not make.
       responses:
         "200":
           description: Cancelled
@@ -533,7 +539,9 @@ components:
         clashing lesson and its effective dates), the year is archived (SCHEDULE_YEAR_ARCHIVED), history prevents
         an undated change (SCHEDULE_HAS_HISTORY, details give the earliest effective_from), the change date is too
         early (SCHEDULE_CHANGE_BEFORE_HISTORY, details give the earliest effective_from), or the lesson already
-        ended (SCHEDULE_ENDED).
+        ended (SCHEDULE_ENDED). With either history code, details held_by.kind (code: attendance, supervision or
+        substitution; message: its date), held_by.id and, for a substitution, held_by.status name the record that
+        holds the earliest effective_from there, when one does (see ScheduleHold).
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
@@ -573,6 +581,32 @@ components:
             Why can_edit or can_delete is false, as the error code the change would meet: SCHEDULE_ENDED (the last
             date has passed), SCHEDULE_CHANGE_BEFORE_HISTORY (still on the timetable, but every date it has left is
             bound by history), SCHEDULE_HAS_HISTORY (a teacher's own lesson with history) or FORBIDDEN.
+        held_by:
+          $ref: "#/components/schemas/ScheduleHold"
+    ScheduleHold:
+      type: object
+      description: >-
+        The record that holds a change to a lesson back: min_effective_from is the day after its date (or, with
+        reason SCHEDULE_CHANGE_BEFORE_HISTORY, it binds every date the lesson has left). Absent when the earliest date
+        comes from today or the lesson's first date alone. A pending or accepted substitution request is the one kind
+        a schedule manager can release, by cancelling it.
+      required: [kind, id, date]
+      properties:
+        kind:
+          type: string
+          enum: [attendance, supervision, substitution]
+          description: >-
+            attendance: a recorded attendance session; supervision: a planned supervision visit; substitution: a
+            pending or accepted substitution request.
+        id:
+          type: string
+          format: uuid
+          description: The attendance session, supervision visit or substitution request.
+        date: { type: string, format: date }
+        status:
+          type: string
+          enum: [pending, accepted]
+          description: A substitution request's status.
     Schedule:
       type: object
       required:

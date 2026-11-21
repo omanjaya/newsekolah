@@ -9,6 +9,8 @@ export type ScheduleBlock = components["schemas"]["ScheduleBlock"];
 export type ScheduleWrite = components["schemas"]["ScheduleWriteRequest"];
 export type TeacherOption = components["schemas"]["UserOption"];
 export type MutationPolicy = components["schemas"]["MutationPolicy"];
+/** The record that holds a change to a lesson back (`MutationPolicy.held_by`). */
+export type ScheduleHold = components["schemas"]["ScheduleHold"];
 
 export interface ScheduleFilter {
   academicYearId: string;

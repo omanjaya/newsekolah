@@ -19,10 +19,11 @@ import { useState } from "react";
 import { formatCalendarDate } from "../../../lib/format-calendar-date";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { type ScheduleBlock, useDeleteScheduleBlockMutation } from "../api";
-import { maxEffectiveFrom, minEffectiveFrom } from "../block-policy";
-import { earliestEffectiveFromOf } from "../effective-error";
+import { heldBy, maxEffectiveFrom, minEffectiveFrom } from "../block-policy";
+import { earliestEffectiveFromOf, holdOf } from "../effective-error";
 import { defaultEffectiveFrom } from "../week";
 
+import { EffectiveFromHint } from "./effective-from-hint";
 import type { EditorDates } from "./schedule-dialogs";
 
 const LONG_DATE = {
@@ -87,6 +88,9 @@ function RetireForm({
   const apiErrorMessage = useApiErrorMessage();
   const remove = useDeleteScheduleBlockMutation();
   const [min, setMin] = useState(minEffectiveFrom(block));
+  // What holds `min` there (a pending request, a recorded session), so the
+  // reader learns why the date is that late and what could release it.
+  const [hold, setHold] = useState(heldBy(block));
   // A block already removed from a later date ends there: no later date
   // would change anything.
   const max = maxEffectiveFrom(block, dates.yearEnd);
@@ -112,6 +116,7 @@ function RetireForm({
       const earliest = earliestEffectiveFromOf(err);
       if (earliest) {
         setMin(earliest);
+        setHold(holdOf(err));
         setDate(earliest);
       }
       const message =
@@ -136,7 +141,7 @@ function RetireForm({
       <Field
         label={tForm("effectiveFrom")}
         required
-        hint={min ? tForm("effectiveFromHintDated", { date: showDate(min) }) : undefined}
+        hint={min ? <EffectiveFromHint min={min} hold={hold} /> : undefined}
       >
         <DatePicker
           value={date}

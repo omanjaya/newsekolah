@@ -50,6 +50,7 @@ var (
 	ErrSubstitutionAlreadyResponded = errors.New("substitution request has already been responded to")
 	ErrSubstitutionScheduleMismatch = errors.New("substitution request does not belong to the given schedule")
 	ErrSubstitutionNotScheduled     = errors.New("the lesson is not on the timetable on that date")
+	ErrSubstitutionCancelPast       = errors.New("a schedule manager cannot cancel another teacher's request dated before today")
 
 	ErrJournalNotFound        = errors.New("class journal not found")
 	ErrJournalNotOwner        = errors.New("only the teaching teacher may write this journal")
@@ -60,9 +61,11 @@ var (
 
 // HistoryRequiresDateError is ErrScheduleHasHistory for a change sent
 // without a date: Min is the earliest date the same change may take effect
-// from, so the caller can offer it.
+// from, so the caller can offer it, and HeldBy the record that pushes it
+// out, when one does (ChangeWindow).
 type HistoryRequiresDateError struct {
-	Min time.Time
+	Min    time.Time
+	HeldBy *Hold
 }
 
 func (e *HistoryRequiresDateError) Error() string {
@@ -72,9 +75,11 @@ func (e *HistoryRequiresDateError) Error() string {
 func (e *HistoryRequiresDateError) Unwrap() error { return ErrScheduleHasHistory }
 
 // ChangeTooEarlyError is ErrScheduleChangeBeforeHistory naming the earliest
-// date the change may take effect from instead.
+// date the change may take effect from instead, and the record that holds
+// it there, when one does (ChangeWindow).
 type ChangeTooEarlyError struct {
-	Min time.Time
+	Min    time.Time
+	HeldBy *Hold
 }
 
 func (e *ChangeTooEarlyError) Error() string {

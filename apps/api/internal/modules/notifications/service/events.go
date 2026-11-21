@@ -40,6 +40,12 @@ var eventMappings = map[string]eventMapping{
 			return "Respon pengganti mengajar", fieldOr(e, "summary", "Permintaan pengganti mengajar telah direspon."), fieldOr(e, "href", "")
 		},
 	},
+	events.SubstitutionCancelled: {
+		domain.KindSubstitutionCancelled,
+		func(e events.Envelope) (string, string, string) {
+			return "Permintaan pengganti dibatalkan", fieldOr(e, "summary", "Permintaan pengganti mengajar telah dibatalkan."), fieldOr(e, "href", "")
+		},
+	},
 	events.LeaveRequestSubmitted: {
 		domain.KindLeaveRequestSubmitted,
 		func(e events.Envelope) (string, string, string) {

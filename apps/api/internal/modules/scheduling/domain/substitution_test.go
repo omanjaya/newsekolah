@@ -43,14 +43,51 @@ func TestSubstitutionCanRespond(t *testing.T) {
 
 func TestSubstitutionCanCancel(t *testing.T) {
 	requester := uuid.New()
-	s := domain.Substitution{Status: domain.SubstitutionPending, RequesterUserID: requester}
+	date := time.Date(2026, 3, 2, 0, 0, 0, 0, time.UTC)
+	// Late evening in a zone ahead of UTC: still 2 March there.
+	today := time.Date(2026, 3, 2, 21, 0, 0, 0, time.FixedZone("WITA", 8*3600))
+	s := domain.Substitution{Status: domain.SubstitutionPending, RequesterUserID: requester, Date: date}
 
-	require.NoError(t, s.CanCancel(requester))
-	require.ErrorIs(t, s.CanCancel(uuid.New()), domain.ErrSubstitutionNotRequester)
+	require.NoError(t, s.CanCancel(requester, false, today))
+	require.ErrorIs(t, s.CanCancel(uuid.New(), false, today), domain.ErrSubstitutionNotRequester)
+	require.NoError(t, s.CanCancel(uuid.New(), true, today), "a schedule manager releases another teacher's request")
+
+	accepted := s
+	accepted.Status = domain.SubstitutionAccepted
+	require.NoError(t, accepted.CanCancel(uuid.New(), true, today))
 
 	rejected := s
 	rejected.Status = domain.SubstitutionRejected
-	require.ErrorIs(t, rejected.CanCancel(requester), domain.ErrSubstitutionAlreadyResponded)
+	require.ErrorIs(t, rejected.CanCancel(requester, false, today), domain.ErrSubstitutionAlreadyResponded)
+	require.ErrorIs(t, rejected.CanCancel(uuid.New(), true, today), domain.ErrSubstitutionAlreadyResponded)
+}
+
+// A schedule manager releases only a request still to come (today or
+// later): one already past holds no change back, and cancelling it would
+// rewrite who taught a lesson that is over.
+func TestSubstitutionCanCancelPastOnlyByRequester(t *testing.T) {
+	requester := uuid.New()
+	manager := uuid.New()
+	date := time.Date(2026, 3, 2, 0, 0, 0, 0, time.UTC)
+	nextDay := time.Date(2026, 3, 3, 7, 0, 0, 0, time.FixedZone("WITA", 8*3600))
+
+	for _, status := range []domain.SubstitutionStatus{domain.SubstitutionPending, domain.SubstitutionAccepted} {
+		s := domain.Substitution{Status: status, RequesterUserID: requester, Date: date}
+		require.ErrorIs(t, s.CanCancel(manager, true, nextDay), domain.ErrSubstitutionCancelPast, status)
+		require.NoError(t, s.CanCancel(manager, true, date), "on the day itself, %s", status)
+		require.NoError(t, s.CanCancel(manager, true, date.AddDate(0, 0, -7)), "a week ahead, %s", status)
+	}
+
+	// The requester's own withdrawal keeps its rule; a manager who made
+	// the request is its requester too.
+	own := domain.Substitution{Status: domain.SubstitutionPending, RequesterUserID: requester, Date: date}
+	require.NoError(t, own.CanCancel(requester, false, nextDay))
+	require.NoError(t, own.CanCancel(requester, true, nextDay))
+	// A refusal on rights or state comes before the date.
+	require.ErrorIs(t, own.CanCancel(manager, false, nextDay), domain.ErrSubstitutionNotRequester)
+	cancelled := own
+	cancelled.Status = domain.SubstitutionCancelled
+	require.ErrorIs(t, cancelled.CanCancel(manager, true, nextDay), domain.ErrSubstitutionAlreadyResponded)
 }
 
 func TestSubstitutionGrantsAccess(t *testing.T) {

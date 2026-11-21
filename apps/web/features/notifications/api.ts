@@ -13,6 +13,7 @@ export const NOTIFICATION_KINDS = [
   "attendance_submitted",
   "substitution_requested",
   "substitution_responded",
+  "substitution_cancelled",
   "leave_request_submitted",
   "leave_request_reviewed",
   "leave_request_issued",
@@ -38,6 +39,7 @@ export const NOTIFICATION_KIND_MODULE: Record<NotificationKind, FeatureModule | 
   attendance_submitted: undefined,
   substitution_requested: undefined,
   substitution_responded: undefined,
+  substitution_cancelled: undefined,
   leave_request_submitted: "permits",
   leave_request_reviewed: "permits",
   leave_request_issued: "permits",
@@ -97,6 +99,9 @@ export const NOTIFICATION_KIND_AUDIENCE: Record<
   attendance_submitted: { permissions: HOMEROOM },
   substitution_requested: { permissions: ["manage_schedules"], profileKinds: ["teacher"] },
   substitution_responded: { permissions: ["manage_schedules"], profileKinds: ["teacher"] },
+  // The requester and the substitute, when the other or a schedule
+  // manager cancels the request.
+  substitution_cancelled: { permissions: ["manage_schedules"], profileKinds: ["teacher"] },
   leave_request_submitted: { permissions: [...HOMEROOM, "issue_leave_letters"] },
   leave_request_reviewed: STUDENT,
   leave_request_issued: STUDENT,

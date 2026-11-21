@@ -41,11 +41,17 @@ export function useEligibleSubstitutesQuery(
   });
 }
 
+/**
+ * A request binds its lesson's date: the timetable's change policies
+ * (`MutationPolicy.held_by`, `min_effective_from`) move with it, so the
+ * schedule grid is read again too.
+ */
 function useInvalidateSubstitutions() {
   const queryClient = useQueryClient();
   return () => {
     void queryClient.invalidateQueries({ queryKey: ["substitutions"] });
     void queryClient.invalidateQueries({ queryKey: ["attendance", "today"] });
+    void queryClient.invalidateQueries({ queryKey: ["schedules"] });
   };
 }
 

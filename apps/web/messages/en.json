@@ -810,6 +810,7 @@
         "attendance_submitted": "Attendance submitted",
         "substitution_requested": "Substitute request",
         "substitution_responded": "Substitute response",
+        "substitution_cancelled": "Substitute request cancelled",
         "leave_request_submitted": "New leave request",
         "leave_request_reviewed": "Leave request reviewed",
         "leave_request_issued": "Leave letter issued",
@@ -1088,6 +1089,14 @@
         "effectiveFrom": "Effective from",
         "effectiveFromHintCreate": "The lesson joins the timetable from this date, on its weekday. Earlier weeks do not change.",
         "effectiveFromHintDated": "Earliest {date}.",
+        "heldBy": {
+          "attendance": "Held by attendance already recorded on {date}.",
+          "supervision": "Held by a supervision visit planned for {date}.",
+          "substitutionPending": "Held by a substitute request for {date} (awaiting an answer). Cancel that request to let the change take effect sooner.",
+          "substitutionAccepted": "Held by an accepted substitution on {date}. Cancel that substitution to let the change take effect sooner.",
+          "openAttendance": "Open attendance",
+          "openSubstitutions": "View requests"
+        },
         "historyNoticeTitle": "This schedule has history",
         "historyNoticeBody": "This schedule has attendance, substitution or supervision history. Lessons before the effective date stay recorded with the old schedule.",
         "inPlaceNote": "No history yet, so the change replaces this schedule on every date it is in effect.",
@@ -1166,8 +1175,17 @@
       "pickDate": "Pick a date",
       "blockEnded": "this schedule is no longer in effect",
       "blockBoundByHistory": "every remaining lesson already has history",
+      "blockHeldBy": {
+        "attendance": "every remaining lesson already has history, held by attendance recorded on {date}",
+        "supervision": "every remaining lesson already has history, held by a supervision visit planned for {date}",
+        "substitutionPending": "every remaining lesson already has history, held by a substitute request for {date} awaiting an answer; cancel that request to change this lesson",
+        "substitutionAccepted": "every remaining lesson already has history, held by an accepted substitution on {date}; cancel that substitution to change this lesson",
+        "openSubstitutions": "View the substitute request for {date}",
+        "openAttendance": "Open attendance for {date}"
+      },
       "startsOn": "From {date}",
       "endsOn": "Until {date}",
+      "onlyOn": "Only {date}",
       "pastedFrom": "Schedule pasted, effective from {date}.",
       "retireTitle": "Remove schedule from a date",
       "retireBody": "{lesson} is removed from the timetable from the effective date on. Lessons before that date stay recorded with their attendance, journals and substitutes.",
@@ -1505,6 +1523,13 @@
       "cancelConfirm": {
         "title": "Cancel the request to {teacher}?",
         "body": "{lesson}. The request is withdrawn and can no longer be answered.",
+        "confirm": "Cancel request",
+        "keep": "Keep request"
+      },
+      "release": "Cancel {requester}'s request to {substitute}",
+      "releaseConfirm": {
+        "title": "Cancel {requester}'s request to {substitute}?",
+        "body": "{lesson}. Both teachers are told and the cancellation is written to the audit log. This lesson's timetable can then change from an earlier date.",
         "confirm": "Cancel request",
         "keep": "Keep request"
       }

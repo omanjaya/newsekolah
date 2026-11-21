@@ -23,6 +23,7 @@ describe("availableNotificationKinds", () => {
       "attendance_submitted",
       "substitution_requested",
       "substitution_responded",
+      "substitution_cancelled",
       "supervision_observation_scheduled",
       "supervision_observation_completed",
       "supervision_response_recorded",
