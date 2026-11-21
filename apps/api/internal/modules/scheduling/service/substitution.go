@@ -214,6 +214,9 @@ func (s *Service) CancelSubstitution(ctx context.Context, tenantID, id uuid.UUID
 	if err != nil {
 		return domain.Substitution{}, err
 	}
+	if publisher == nil {
+		return updated, nil
+	}
 
 	_ = publisher.Publish(ctx, SubstitutionCancelled{
 		TenantID: tenantID, SubstitutionID: updated.ID, ScheduleID: updated.ScheduleID, Date: updated.Date,
