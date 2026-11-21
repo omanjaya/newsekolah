@@ -119,9 +119,15 @@ export function PermitUnifiedQueue({
     });
   };
   const [pendingId, setPendingId] = useState<string | null>(null);
+  // `label` names a queue's own section (its error, the search); the type
+  // strip takes the short `filterLabel`, so its four segments with two-digit
+  // counts fit a tablet's 480px bar on a coarse pointer. "Izin tidak masuk /
+  // Izin keluar / Keterlambatan" needed 484 to 510px there and hid the last
+  // option past the strip's edge.
   const sources: {
     type: PermitQueueRow["type"];
     label: string;
+    filterLabel: string;
     query: {
       data?: { data: unknown[] };
       isLoading: boolean;
@@ -129,9 +135,15 @@ export function PermitUnifiedQueue({
       refetch: () => unknown;
     };
   }[] = [
-    ...(canLeave ? [{ type: "leave" as const, label: t("leave"), query: leave }] : []),
-    ...(canApprove || canGate ? [{ type: "exit" as const, label: t("exit"), query: exit }] : []),
-    ...(canLate ? [{ type: "late" as const, label: t("late"), query: late }] : []),
+    ...(canLeave
+      ? [{ type: "leave" as const, label: t("leave"), filterLabel: t("filterLeave"), query: leave }]
+      : []),
+    ...(canApprove || canGate
+      ? [{ type: "exit" as const, label: t("exit"), filterLabel: t("filterExit"), query: exit }]
+      : []),
+    ...(canLate
+      ? [{ type: "late" as const, label: t("late"), filterLabel: t("filterLate"), query: late }]
+      : []),
   ];
   const rows = mergePermitQueues({
     leave: canLeave ? leave.data?.data : undefined,
@@ -313,7 +325,7 @@ export function PermitUnifiedQueue({
               { value: "all", label: t("filterAll") },
               ...sources.map((source) => ({
                 value: source.type,
-                label: source.label,
+                label: source.filterLabel,
                 count: source.query.data?.data.length,
               })),
             ]}
