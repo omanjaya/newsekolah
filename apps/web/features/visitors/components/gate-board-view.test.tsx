@@ -132,8 +132,19 @@ describe("GateBoardView", () => {
   it("shows the arrival time in the school timezone and whom the visitor came to see", () => {
     render(<GateBoardView />);
     // 23:30 UTC on 13 Nov is 06.30 on 14 Nov in Asia/Jakarta.
-    expect(screen.getByText(/arrived:06\.30/)).toBeInTheDocument();
+    expect(screen.getByText(/arrivedAt:06\.30/)).toBeInTheDocument();
     expect(screen.getAllByText(/host:Bu Rina/)).toHaveLength(2);
+  });
+
+  it("puts the scheduled column beside the on-site list only from xl", () => {
+    // At 1024 beside the sidebar, a 3fr/2fr split left the on-site list
+    // 427px and the scheduled column's empty state one word per line.
+    render(<GateBoardView />);
+    const grid = screen
+      .getByRole("list", { name: "onSiteTitle" })
+      .closest("section")?.parentElement;
+    expect(grid).toHaveClass("xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]", "xl:items-start");
+    expect(grid?.className).not.toMatch(/(^|\s)lg:/);
   });
 
   it("lists a visitor still here past the school day first, marked as such", () => {

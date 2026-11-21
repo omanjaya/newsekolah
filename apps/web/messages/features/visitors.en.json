@@ -17,7 +17,7 @@
     "clearSearch": "Clear search",
     "overdue": "Not signed out",
     "host": "Visiting {name}",
-    "arrived": "In at {time} · {stay}",
+    "arrivedAt": "In at {time}",
     "stayMinutes": "{minutes} min",
     "stayHours": "{hours} h {minutes} min",
     "badgeNumber": "Pass {number}",

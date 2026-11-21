@@ -215,7 +215,7 @@ export function GateBoardView(): ReactElement {
       <div
         className={cn(
           "grid grid-cols-1 gap-6",
-          showOnSite && showExpected && "lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start",
+          showOnSite && showExpected && "xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:items-start",
         )}
       >
         {showOnSite && (
