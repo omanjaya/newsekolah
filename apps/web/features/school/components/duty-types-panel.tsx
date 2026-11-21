@@ -106,8 +106,12 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
 
   return (
     // md:h-full: fills the tab panel's height; the type list and the
-    // detail panel each scroll internally instead of the whole page.
-    <div className="grid grid-cols-1 gap-4 md:h-full md:min-h-0 md:grid-cols-[240px_1fr]">
+    // detail panel each scroll internally instead of the whole page. The
+    // list stands beside the detail from lg: at 768px the sidebar leaves
+    // the page 480px, and a 240px list beside it squeezed the detail to
+    // 224. Below lg a picker above the detail chooses the type, and the
+    // detail takes the height the picker leaves.
+    <div className="grid grid-cols-1 gap-4 md:h-full md:min-h-0 md:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[240px_1fr] lg:grid-rows-1">
       <div className="flex min-h-0 min-w-0 flex-col gap-2">
         {canManage && (
           <Button
@@ -122,15 +126,15 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
             {t("types.add")}
           </Button>
         )}
-        {/* A phone picks the type here; the list below is for a wide screen. */}
+        {/* A phone or a tablet picks the type here; the list below is for a wide screen. */}
         <Select
-          className="md:hidden"
+          className="lg:hidden"
           aria-label={t("types.title")}
           options={list.map((d) => ({ value: d.id, label: d.name }))}
           value={selected?.id}
           onValueChange={setSelectedId}
         />
-        <Card className="max-md:hidden md:min-h-0 md:overflow-y-auto">
+        <Card className="max-lg:hidden lg:min-h-0 lg:overflow-y-auto">
           <nav aria-label={t("types.title")}>
             <List dense variant="plain">
               {list.map((d) => (

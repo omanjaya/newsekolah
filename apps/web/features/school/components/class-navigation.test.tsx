@@ -46,6 +46,23 @@ describe("class picker", () => {
     expect(screen.getAllByRole("button")).toHaveLength(2);
   });
 
+  // At 768px the sidebar leaves the page 480px: a 248px list beside the
+  // class left it about 216px, so a tablet picks the class from one select
+  // above it and the list stands beside the class only from lg.
+  it("keeps the class list for a screen with room for both panes, a picker below it", () => {
+    render(
+      <ClassNavigation
+        items={[{ id: "class1", academic_year_id: "year", grade_level_id: "grade", name: "X-1" }]}
+        selectedId="class1"
+        onSelect={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("combobox", { name: "pickClass" })).toHaveClass("lg:hidden");
+    expect(
+      screen.getByRole("navigation", { name: "classList" }).closest(".max-lg\\:hidden"),
+    ).not.toBeNull();
+  });
+
   it("names each class's homeroom teacher, or says there is none yet", () => {
     render(
       <ClassNavigation
