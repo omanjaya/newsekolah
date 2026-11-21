@@ -201,12 +201,15 @@ func TestLateReturnSuspendsFromTheSchoolDay(t *testing.T) {
 	require.NoError(t, err)
 
 	w.borrow(t, at(t, ctx, "2026-12-14T01:00:00Z"), svc, w.barcodes[0])
-	returned, err := svc.Return(at(t, ctx, "2026-12-27T23:30:00Z"), w.tenantID,
+	returnedAt := at(t, ctx, "2026-12-27T23:30:00Z")
+	returned, err := svc.Return(returnedAt, w.tenantID,
 		service.ReturnInput{Barcode: w.barcodes[0], CheckedInBy: w.memberID})
 	require.NoError(t, err)
 	require.Zero(t, returned.FineAmount, "a suspension charges no money")
 
-	member, err := svc.GetMember(ctx, w.tenantID, w.memberID)
+	// Read on the day of the return: from 1 Jan the suspension is over and
+	// the member reads active again.
+	member, err := svc.GetMember(returnedAt, w.tenantID, w.memberID)
 	require.NoError(t, err)
 	require.Equal(t, domain.MemberSuspended, member.Status)
 	require.NotNil(t, member.SuspendedUntil)

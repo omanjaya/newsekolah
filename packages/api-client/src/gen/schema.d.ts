@@ -4590,7 +4590,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Settle a violation as paid or waived; reactivates the member once every violation is clear */
+        /** Settle a violation as paid or waived; a suspension still running is not lifted, it ends the day after its last day */
         post: operations["settleLibraryViolation"];
         delete?: never;
         options?: never;
@@ -10675,7 +10675,10 @@ export interface components {
             /** Format: date */
             valid_until?: string;
             status: components["schemas"]["LibraryMemberStatus"];
-            /** Format: date */
+            /**
+             * Format: date
+             * @description Last day of a running suspension. A suspension whose last day has passed reads as status active with no end date.
+             */
             suspended_until?: string;
             late_return_count: number;
             notes?: string;

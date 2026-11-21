@@ -347,6 +347,9 @@ func (s *Service) MembersReport(ctx context.Context, tenantID uuid.UUID) (Member
 		if err != nil {
 			return err
 		}
+		if err := s.endLapsedSuspensions(ctx, tenantID, uuid.NullUUID{}); err != nil {
+			return err
+		}
 		active, err := s.repo.CountActiveMembersTotal(ctx, tenantID)
 		if err != nil {
 			return err

@@ -31,5 +31,3 @@ select exists(
   select 1 from library_violations where tenant_id = $1 and member_user_id = $2 and status = 'unpaid' and penalty = 'fine' and amount > 0
 )::bool;
 
--- name: CountUnpaidViolations :one
-select count(*)::int from library_violations where tenant_id = $1 and member_user_id = $2 and status = 'unpaid';

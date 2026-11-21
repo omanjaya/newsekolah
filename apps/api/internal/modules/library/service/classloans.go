@@ -48,6 +48,11 @@ func (s *Service) PreviewClassLoans(ctx context.Context, tenantID, classID, titl
 	}
 	out := ClassLoanPreview{}
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		// A student whose suspension has ended is paired like any active
+		// member, as a single desk borrow would lend to them.
+		if err := s.endLapsedSuspensions(ctx, tenantID, uuid.NullUUID{}); err != nil {
+			return err
+		}
 		roster, err := s.repo.ListClassRoster(ctx, tenantID, classID)
 		if err != nil {
 			return err

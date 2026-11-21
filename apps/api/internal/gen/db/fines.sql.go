@@ -12,22 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const countUnpaidViolations = `-- name: CountUnpaidViolations :one
-select count(*)::int from library_violations where tenant_id = $1 and member_user_id = $2 and status = 'unpaid'
-`
-
-type CountUnpaidViolationsParams struct {
-	TenantID     uuid.UUID `json:"tenant_id"`
-	MemberUserID uuid.UUID `json:"member_user_id"`
-}
-
-func (q *Queries) CountUnpaidViolations(ctx context.Context, arg CountUnpaidViolationsParams) (int32, error) {
-	row := q.db.QueryRow(ctx, countUnpaidViolations, arg.TenantID, arg.MemberUserID)
-	var column_1 int32
-	err := row.Scan(&column_1)
-	return column_1, err
-}
-
 const createViolation = `-- name: CreateViolation :one
 insert into library_violations (tenant_id, loan_id, member_user_id, kind, penalty, amount, suspend_days, notes, created_by, status, settled_at, settled_by)
 values ($1, $10::uuid, $2, $3, $4, $5, $6, $7, $8, $9,

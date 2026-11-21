@@ -382,7 +382,6 @@ type Querier interface {
 	// (queries/reports_extra.sql) and TodayVisitSummary (queries/visits.sql).
 	CountTitlesActive(ctx context.Context, tenantID uuid.UUID) (int32, error)
 	CountTitlesAddedInPeriod(ctx context.Context, arg CountTitlesAddedInPeriodParams) (int32, error)
-	CountUnpaidViolations(ctx context.Context, arg CountUnpaidViolationsParams) (int32, error)
 	CountUnreadNotifications(ctx context.Context, arg CountUnreadNotificationsParams) (int64, error)
 	CountUsersForRole(ctx context.Context, arg CountUsersForRoleParams) (int64, error)
 	CountVisitsBetween(ctx context.Context, arg CountVisitsBetweenParams) (int32, error)
@@ -1820,6 +1819,11 @@ type Querier interface {
 	// was hidden (every title imported before imports were made public) would
 	// stay out of the OPAC's availability and reservations.
 	PublishTitleCopies(ctx context.Context, arg PublishTitleCopiesParams) error
+	// Ends every suspension of the tenant (or of one member, when user_id is
+	// given) whose last day is before today, the school's calendar day: the
+	// member is active again (domain.Member.SuspensionLapsed). A suspension
+	// still running, or one with no end date, is left alone.
+	ReactivateLapsedSuspensions(ctx context.Context, arg ReactivateLapsedSuspensionsParams) (int64, error)
 	RecordDeliveryAttempt(ctx context.Context, arg RecordDeliveryAttemptParams) error
 	RecordStocktakeScan(ctx context.Context, arg RecordStocktakeScanParams) (LibraryStocktakeScan, error)
 	RemoveParticipant(ctx context.Context, arg RemoveParticipantParams) error

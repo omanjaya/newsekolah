@@ -182,9 +182,28 @@ func (s *Service) BulkRegisterByRole(ctx context.Context, tenantID, memberTypeID
 	return result, err
 }
 
+// endLapsedSuspensions stores what EligibleToBorrow already decides on its
+// own: a suspension whose last day has passed on the school's calendar
+// (clock.Now, so a simulated time applies) is over, and the member is
+// active again. Nothing else ends a dated suspension -- settling its
+// violation never lifts one still running -- so every read that shows a
+// member's status (the member page, the desk, the member list and its
+// counts, the reader's own page) calls this first, inside its own
+// transaction, and none of them reads a finished suspension as running
+// while the desk would lend. userID narrows it to one member; the zero
+// value covers the whole tenant.
+func (s *Service) endLapsedSuspensions(ctx context.Context, tenantID uuid.UUID, userID uuid.NullUUID) error {
+	today := s.schoolToday(ctx, tenantID, clock.Now(ctx, s.clock))
+	_, err := s.repo.ReactivateLapsedSuspensions(ctx, tenantID, today, userID)
+	return err
+}
+
 func (s *Service) GetMember(ctx context.Context, tenantID, userID uuid.UUID) (domain.Member, error) {
 	var member domain.Member
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if err := s.endLapsedSuspensions(ctx, tenantID, uuid.NullUUID{UUID: userID, Valid: true}); err != nil {
+			return err
+		}
 		var found bool
 		var err error
 		member, found, err = s.repo.GetMember(ctx, tenantID, userID)
@@ -214,6 +233,11 @@ type ListMembersInput struct {
 func (s *Service) ListMembers(ctx context.Context, tenantID uuid.UUID, in ListMembersInput) ([]domain.Member, error) {
 	var members []domain.Member
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		// Before the status filter runs, so a member whose suspension has
+		// ended is listed as active, not suspended.
+		if err := s.endLapsedSuspensions(ctx, tenantID, uuid.NullUUID{}); err != nil {
+			return err
+		}
 		var err error
 		members, err = s.repo.ListMembers(ctx, tenantID, MemberListFilter{Status: in.Status, MemberTypeID: in.MemberTypeID, Search: in.Search}, clampLimit(in.Limit), in.Offset)
 		return err

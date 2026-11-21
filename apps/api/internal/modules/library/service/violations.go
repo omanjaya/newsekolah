@@ -85,11 +85,13 @@ func (s *Service) ListViolations(ctx context.Context, tenantID uuid.UUID, status
 	return violations, err
 }
 
-// SettleViolation marks a violation paid or waived. If the member's
-// suspension was the reason for the violation and every other unpaid
-// violation is clear and the suspension window has passed, the member is
-// reactivated -- old app: library_circulation.go settle "bila semua lunas
-// + suspend sudah lewat -> anggota aktif".
+// SettleViolation marks a violation paid or waived. Settling never lifts
+// a suspension still running: a suspension is served by its dates, so the
+// member stays suspended through its last day and is active again the day
+// after, whatever is settled (endLapsedSuspensions, the rule
+// EligibleToBorrow lends on). A settle made after that day stores the end
+// of the suspension at once, as the old app reactivated the member when a
+// settle found the suspension over (library_circulation.go settle).
 func (s *Service) SettleViolation(ctx context.Context, tenantID, id uuid.UUID, status domain.ViolationStatus, settledBy uuid.UUID) (domain.Violation, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return domain.Violation{}, err
@@ -99,32 +101,16 @@ func (s *Service) SettleViolation(ctx context.Context, tenantID, id uuid.UUID, s
 	}
 	var violation domain.Violation
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		now := clock.Now(ctx, s.clock)
 		var found bool
 		var err error
-		violation, found, err = s.repo.SettleViolation(ctx, tenantID, id, status, now, settledBy)
+		violation, found, err = s.repo.SettleViolation(ctx, tenantID, id, status, clock.Now(ctx, s.clock), settledBy)
 		if err != nil {
 			return err
 		}
 		if !found {
 			return domain.ErrViolationAlreadySettled
 		}
-		member, memberFound, err := s.repo.GetMember(ctx, tenantID, violation.MemberUserID)
-		if err != nil || !memberFound || member.Status != domain.MemberSuspended {
-			return err
-		}
-		// A suspension runs through its last day (EligibleToBorrow), so it
-		// is still running while that day has not passed on the school's
-		// calendar.
-		if member.SuspendedUntil != nil && !s.schoolToday(ctx, tenantID, now).After(*member.SuspendedUntil) {
-			return nil
-		}
-		remaining, err := s.repo.CountUnpaidViolations(ctx, tenantID, member.UserID)
-		if err != nil || remaining > 0 {
-			return err
-		}
-		_, _, err = s.repo.UpdateMemberStatus(ctx, tenantID, member.UserID, domain.MemberActive, nil)
-		return err
+		return s.endLapsedSuspensions(ctx, tenantID, uuid.NullUUID{UUID: violation.MemberUserID, Valid: true})
 	})
 	return violation, err
 }

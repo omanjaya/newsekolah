@@ -87,11 +87,3 @@ func (r *Repository) HasUnpaidFine(ctx context.Context, tenantID, memberID uuid.
 	}
 	return ok, nil
 }
-
-func (r *Repository) CountUnpaidViolations(ctx context.Context, tenantID, memberID uuid.UUID) (int, error) {
-	n, err := r.queries(ctx).CountUnpaidViolations(ctx, db.CountUnpaidViolationsParams{TenantID: tenantID, MemberUserID: memberID})
-	if err != nil {
-		return 0, fmt.Errorf("count unpaid violations: %w", err)
-	}
-	return int(n), nil
-}

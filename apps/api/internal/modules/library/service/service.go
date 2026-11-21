@@ -305,6 +305,10 @@ type Repository interface {
 	GetMembersByIDs(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]domain.Member, error)
 	ListMembersForCardPrint(ctx context.Context, tenantID uuid.UUID, filter MemberCardListFilter, limit int) ([]domain.Member, error)
 	UpdateMemberStatus(ctx context.Context, tenantID, userID uuid.UUID, status domain.MemberStatus, suspendedUntil *pgtype.Date) (domain.Member, bool, error)
+	// ReactivateLapsedSuspensions makes every member whose suspension ended
+	// before today active again (only userID's, when it is valid) and
+	// reports how many it changed.
+	ReactivateLapsedSuspensions(ctx context.Context, tenantID uuid.UUID, today time.Time, userID uuid.NullUUID) (int, error)
 	UpdateMemberProfile(ctx context.Context, tenantID, userID, memberTypeID uuid.UUID, validUntil *time.Time, notes string) (domain.Member, bool, error)
 	IncrementLateReturnCount(ctx context.Context, tenantID, userID uuid.UUID) (domain.Member, error)
 	ClearanceCounts(ctx context.Context, tenantID, userID uuid.UUID) (ClearanceCounts, error)
@@ -320,7 +324,6 @@ type Repository interface {
 	ListViolations(ctx context.Context, tenantID uuid.UUID, status, kind string, limit, offset int) ([]domain.Violation, error)
 	SettleViolation(ctx context.Context, tenantID, id uuid.UUID, status domain.ViolationStatus, settledAt time.Time, settledBy uuid.UUID) (domain.Violation, bool, error)
 	HasUnpaidFine(ctx context.Context, tenantID, memberID uuid.UUID) (bool, error)
-	CountUnpaidViolations(ctx context.Context, tenantID, memberID uuid.UUID) (int, error)
 
 	CreateVisit(ctx context.Context, v domain.Visit) (domain.Visit, error)
 	GetLastVisitForMember(ctx context.Context, tenantID, memberID uuid.UUID) (domain.Visit, bool, error)

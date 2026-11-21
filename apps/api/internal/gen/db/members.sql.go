@@ -613,6 +613,32 @@ func (q *Queries) MemberTypeNameTaken(ctx context.Context, arg MemberTypeNameTak
 	return exists, err
 }
 
+const reactivateLapsedSuspensions = `-- name: ReactivateLapsedSuspensions :execrows
+update library_members set status = 'active', suspended_until = null
+where tenant_id = $1
+  and status = 'suspended'
+  and suspended_until < $2::date
+  and ($3::uuid is null or user_id = $3::uuid)
+`
+
+type ReactivateLapsedSuspensionsParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	Today    pgtype.Date `json:"today"`
+	UserID   pgtype.UUID `json:"user_id"`
+}
+
+// Ends every suspension of the tenant (or of one member, when user_id is
+// given) whose last day is before today, the school's calendar day: the
+// member is active again (domain.Member.SuspensionLapsed). A suspension
+// still running, or one with no end date, is left alone.
+func (q *Queries) ReactivateLapsedSuspensions(ctx context.Context, arg ReactivateLapsedSuspensionsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, reactivateLapsedSuspensions, arg.TenantID, arg.Today, arg.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const updateMemberProfile = `-- name: UpdateMemberProfile :one
 update library_members set member_type_id = $3, valid_until = $4, notes = $5
 where tenant_id = $1 and user_id = $2

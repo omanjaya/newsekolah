@@ -84,6 +84,17 @@ limit $2;
 -- name: UpdateMemberStatus :one
 update library_members set status = $3, suspended_until = $4 where tenant_id = $1 and user_id = $2 returning *;
 
+-- name: ReactivateLapsedSuspensions :execrows
+-- Ends every suspension of the tenant (or of one member, when user_id is
+-- given) whose last day is before today, the school's calendar day: the
+-- member is active again (domain.Member.SuspensionLapsed). A suspension
+-- still running, or one with no end date, is left alone.
+update library_members set status = 'active', suspended_until = null
+where tenant_id = $1
+  and status = 'suspended'
+  and suspended_until < sqlc.arg(today)::date
+  and (sqlc.narg(user_id)::uuid is null or user_id = sqlc.narg(user_id)::uuid);
+
 -- name: UpdateMemberProfile :one
 update library_members set member_type_id = $3, valid_until = $4, notes = $5
 where tenant_id = $1 and user_id = $2

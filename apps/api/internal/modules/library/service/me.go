@@ -32,6 +32,9 @@ func (s *Service) MyProfile(ctx context.Context, tenantID, userID uuid.UUID) (My
 	}
 	var out MyProfile
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if err := s.endLapsedSuspensions(ctx, tenantID, uuid.NullUUID{UUID: userID, Valid: true}); err != nil {
+			return err
+		}
 		if member, found, err := s.repo.GetMember(ctx, tenantID, userID); err != nil {
 			return err
 		} else if found {

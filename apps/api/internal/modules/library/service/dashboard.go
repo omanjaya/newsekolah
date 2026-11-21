@@ -111,6 +111,9 @@ func (s *Service) Dashboard(ctx context.Context, tenantID uuid.UUID) (Dashboard,
 		if err != nil {
 			return err
 		}
+		if err = s.endLapsedSuspensions(ctx, tenantID, uuid.NullUUID{}); err != nil {
+			return err
+		}
 		activeMembers, err = s.repo.CountActiveMembersTotal(ctx, tenantID)
 		if err != nil {
 			return err

@@ -10488,7 +10488,8 @@ paths:
         - library
       operationId: settleLibraryViolation
       x-permission: manage_library_circulation
-      summary: Settle a violation as paid or waived; reactivates the member once every violation is clear
+      summary: Settle a violation as paid or waived; a suspension still running is not lifted, it ends the day after its last
+        day
       parameters:
         - name: violationId
           in: path
@@ -24733,6 +24734,8 @@ components:
         suspended_until:
           type: string
           format: date
+          description: Last day of a running suspension. A suspension whose last day has passed reads as status active with no end
+            date.
         late_return_count:
           type: integer
         notes:

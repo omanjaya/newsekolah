@@ -50,6 +50,19 @@ func TestMemberEligibleToBorrow(t *testing.T) {
 	}
 }
 
+func TestMemberSuspensionLapsed(t *testing.T) {
+	until := day("2026-12-07")
+	suspended := domain.Member{Status: domain.MemberSuspended, SuspendedUntil: &until}
+
+	require.False(t, suspended.SuspensionLapsed(day("2026-12-06")), "still running")
+	require.False(t, suspended.SuspensionLapsed(day("2026-12-07")), "a suspension runs through its last day")
+	require.True(t, suspended.SuspensionLapsed(day("2026-12-08")), "over the day after")
+	require.False(t, domain.Member{Status: domain.MemberSuspended}.SuspensionLapsed(day("2027-01-01")),
+		"one with no end date lasts until staff lift it")
+	require.False(t, domain.Member{Status: domain.MemberInactive, SuspendedUntil: &until}.SuspensionLapsed(day("2026-12-08")),
+		"only a suspended member has a suspension to end")
+}
+
 func TestEligibleForClearance(t *testing.T) {
 	require.True(t, domain.EligibleForClearance(0, false))
 	require.False(t, domain.EligibleForClearance(1, false), "an active loan blocks clearance")

@@ -239,6 +239,16 @@ func (r *Repository) UpdateMemberStatus(ctx context.Context, tenantID, userID uu
 	return toMember(row), true, nil
 }
 
+func (r *Repository) ReactivateLapsedSuspensions(ctx context.Context, tenantID uuid.UUID, today time.Time, userID uuid.NullUUID) (int, error) {
+	n, err := r.queries(ctx).ReactivateLapsedSuspensions(ctx, db.ReactivateLapsedSuspensionsParams{
+		TenantID: tenantID, Today: pdatabase.Date(today), UserID: pdatabase.NullUUID(userID),
+	})
+	if err != nil {
+		return 0, fmt.Errorf("reactivate lapsed suspensions: %w", err)
+	}
+	return int(n), nil
+}
+
 func (r *Repository) UpdateMemberProfile(ctx context.Context, tenantID, userID, memberTypeID uuid.UUID, validUntil *time.Time, notes string) (domain.Member, bool, error) {
 	row, err := r.queries(ctx).UpdateMemberProfile(ctx, db.UpdateMemberProfileParams{
 		TenantID: tenantID, UserID: userID, MemberTypeID: memberTypeID, ValidUntil: nullableDate(validUntil), Notes: notes,
