@@ -26,13 +26,16 @@ import {
 } from "../../reference/components/directory-picker";
 import {
   type ScheduleBlock,
+  type ScheduleHold,
   useCreateScheduleMutation,
   useReplaceScheduleBlockMutation,
   useScheduleQuery,
 } from "../api";
 import { clockLabel } from "../clock-label";
-import { earliestEffectiveFromOf } from "../effective-error";
+import { earliestEffectiveFromOf, holdOf } from "../effective-error";
 import { useNamedConflict } from "../use-named-conflict";
+
+import { EffectiveFromHint } from "./effective-from-hint";
 
 /**
  * Whether and how the form asks for the date the lesson or the change
@@ -42,7 +45,8 @@ import { useNamedConflict } from "../use-named-conflict";
  *   before today).
  * - `dated`: a block with recorded attendance or a substitution. The
  *   change takes effect from a date no earlier than `min`; every lesson
- *   before it stays as it was taught.
+ *   before it stays as it was taught. `heldBy` names the record that holds
+ *   `min` there, when one does.
  * - `none`: a block without history, corrected in place for the whole
  *   academic year.
  */
@@ -53,6 +57,7 @@ export interface EffectiveDateConfig {
   max?: string;
   /** The school's today, which the picker marks. */
   today?: string;
+  heldBy?: ScheduleHold;
 }
 
 export function ScheduleForm({
@@ -122,8 +127,10 @@ export function ScheduleForm({
   // server with the earliest date it accepts: the form then asks for a
   // date from it instead of failing the same way again.
   const [serverMin, setServerMin] = useState<string | undefined>(undefined);
+  const [serverHold, setServerHold] = useState<ScheduleHold | undefined>(undefined);
   const dateMode = serverMin !== undefined ? "dated" : (effective?.mode ?? "none");
   const minDate = serverMin ?? effective?.min;
+  const hold = serverMin !== undefined ? serverHold : effective?.heldBy;
   const asksDate = effective !== undefined && dateMode !== "none";
   const showDate = (iso: string) =>
     formatCalendarDate(format, iso, {
@@ -211,6 +218,7 @@ export function ScheduleForm({
       const earliest = earliestEffectiveFromOf(err);
       if (earliest && effective !== undefined && err instanceof ApiError) {
         setServerMin(earliest);
+        setServerHold(holdOf(err));
         setEffectiveFrom(earliest);
         setError(
           `${apiErrorMessage(err.code)} ${t("effectiveFromHintDated", { date: showDate(earliest) })}`,
@@ -316,9 +324,11 @@ export function ScheduleForm({
           required
           error={requiredError(effectiveFrom)}
           hint={
-            dateMode === "dated" && minDate
-              ? t("effectiveFromHintDated", { date: showDate(minDate) })
-              : t("effectiveFromHintCreate")
+            dateMode === "dated" && minDate ? (
+              <EffectiveFromHint min={minDate} hold={hold} />
+            ) : (
+              t("effectiveFromHintCreate")
+            )
           }
         >
           <DatePicker

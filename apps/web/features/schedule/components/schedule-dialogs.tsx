@@ -4,7 +4,7 @@ import { Dialog, DialogContent } from "@newsekolah/ui";
 import type { ReactElement } from "react";
 
 import type { ScheduleBlock } from "../api";
-import { maxEffectiveFrom, minEffectiveFrom, needsEffectiveDate } from "../block-policy";
+import { heldBy, maxEffectiveFrom, minEffectiveFrom, needsEffectiveDate } from "../block-policy";
 import { cellDate, defaultEffectiveFrom } from "../week";
 
 import { type EffectiveDateConfig, ScheduleForm } from "./schedule-form";
@@ -41,8 +41,9 @@ export function createDateConfig(dates: EditorDates, day: number): EffectiveDate
 /**
  * The "Berlaku mulai" of a change to `block`: asked for a block with
  * history (from its earliest allowed date, or the week shown when that is
- * later, up to its own last date when it has one), not asked for one
- * without (it is corrected in place).
+ * later, up to its own last date when it has one, naming what holds that
+ * earliest date there), not asked for one without (it is corrected in
+ * place).
  */
 export function editDateConfig(dates: EditorDates, block: ScheduleBlock): EffectiveDateConfig {
   if (!needsEffectiveDate(block)) {
@@ -62,6 +63,7 @@ export function editDateConfig(dates: EditorDates, block: ScheduleBlock): Effect
     min,
     max,
     today: dates.today,
+    heldBy: heldBy(block),
   };
 }
 

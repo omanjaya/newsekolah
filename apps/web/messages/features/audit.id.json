@@ -190,6 +190,9 @@
     "session": {
       "revoke": "Mengakhiri sesi"
     },
+    "substitution_request": {
+      "cancel": "Membatalkan permintaan guru pengganti"
+    },
     "visitor_visit": {
       "check_in": "Mencatat tamu masuk",
       "check_out": "Mencatat tamu keluar"
@@ -228,6 +231,7 @@
     "bill": "Tagihan",
     "document_template": "Templat dokumen",
     "report_schedule": "Jadwal kirim laporan",
-    "session": "Sesi"
+    "session": "Sesi",
+    "substitution_request": "Permintaan guru pengganti"
   }
 }

@@ -338,4 +338,74 @@ describe("ScheduleForm", () => {
       [{ body: { effective_from?: string } }] | undefined;
     expect(retry?.[0].body.effective_from).toBe("2026-11-30");
   });
+
+  // The field used to say only "Paling cepat Selasa, 2 Maret 2027" with a
+  // generic notice: nothing named the pending request weeks away that held
+  // every change back, nor where to release it.
+  it("names the request that holds the earliest date and links to where it can be cancelled", () => {
+    scheduleDetail = { notes: "" };
+    render(
+      <ScheduleForm
+        yearId="year-1"
+        initialDay={1}
+        initialStartSeq={1}
+        initialClassId="class-1"
+        initialTeacherId="teacher-1"
+        editing={{ ...editingBlock, has_history: true }}
+        effective={{
+          mode: "dated",
+          defaultValue: "2027-03-02",
+          min: "2027-03-02",
+          heldBy: { kind: "substitution", id: "request-1", date: "2027-03-01", status: "pending" },
+        }}
+        onDone={vi.fn()}
+      />,
+    );
+
+    const picker = screen.getByRole("combobox", { name: /effectiveFrom/ });
+    const hint = document.getElementById(picker.getAttribute("aria-describedby") ?? "");
+    expect(hint).toHaveTextContent("effectiveFromHintDated heldBy.substitutionPending");
+    expect(screen.getByRole("link", { name: "heldBy.openSubstitutions" })).toHaveAttribute(
+      "href",
+      "/substitutions?view=all",
+    );
+  });
+
+  it("takes the hold from a refusal when the block gained one after the grid loaded", async () => {
+    const { ApiError } = await import("@newsekolah/api-client");
+    mocks.replace.mockRejectedValueOnce(
+      new ApiError({
+        status: 409,
+        code: "SCHEDULE_CHANGE_BEFORE_HISTORY",
+        message: "too early",
+        details: [
+          { field: "effective_from", code: "BEFORE_MIN", message: "2026-12-01" },
+          { field: "held_by.kind", code: "attendance", message: "2026-11-30" },
+          { field: "held_by.id", code: "session-1" },
+        ],
+      }),
+    );
+    scheduleDetail = { notes: "" };
+    const user = userEvent.setup();
+    render(
+      <ScheduleForm
+        yearId="year-1"
+        initialDay={1}
+        initialStartSeq={1}
+        initialClassId="class-1"
+        initialTeacherId="teacher-1"
+        editing={{ ...editingBlock, has_history: true }}
+        effective={{ mode: "dated", defaultValue: "2026-11-23", min: "2026-11-21" }}
+        onDone={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/heldBy/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "save" }));
+    expect(await screen.findByText(/heldBy\.attendance/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "heldBy.openAttendance" })).toHaveAttribute(
+      "href",
+      "/attendance?date=2026-11-30",
+    );
+  });
 });

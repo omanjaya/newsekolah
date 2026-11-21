@@ -26,6 +26,7 @@ import { useState } from "react";
 
 import { AppPage } from "../../../components/app-page";
 import { QueryError } from "../../../components/query-error";
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
@@ -45,6 +46,7 @@ import {
   useSubstitutionsQuery,
 } from "../api";
 
+import { releasable, ReleaseRequest } from "./release-request";
 import { RequestForm } from "./request-form";
 
 /** A substitution's state in the shared workflow vocabulary, so its colour matches every module. */
@@ -62,6 +64,9 @@ interface PendingAction {
   lesson: string;
 }
 
+const MINE: readonly Direction[] = ["incoming", "outgoing"];
+const EVERY: readonly Direction[] = ["incoming", "outgoing", "all"];
+
 /**
  * Substitution requests: the ones asking this teacher to stand in ("Untuk
  * saya", with how many still wait on an answer) and the ones they sent
@@ -69,7 +74,9 @@ interface PendingAction {
  * and the other teacher, and carries its own answer or cancel action. A
  * schedule manager also gets "Semua": every request in the school, each
  * naming both teachers, to coordinate cover; it opens there when they do
- * not teach themselves.
+ * not teach themselves, or when the schedule editor links to it
+ * (`?view=all`). There they can also cancel a request for its teachers,
+ * which is how a request holding a timetable change back is released.
  */
 export function SubstitutionsView(): ReactElement {
   const t = useTranslations("app.substitutions");
@@ -80,7 +87,9 @@ export function SubstitutionsView(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const canSeeAll = useCan("manage_schedules");
   const isTeacher = me?.roles.some((role) => role.slug === "teacher") ?? false;
-  const [direction, setDirection] = useState<Direction>(() =>
+  const [direction, setDirection] = useUrlState<Direction>(
+    "view",
+    canSeeAll ? EVERY : MINE,
     canSeeAll && !isTeacher ? "all" : "incoming",
   );
   const [creating, setCreating] = useState(false);
@@ -175,9 +184,17 @@ export function SubstitutionsView(): ReactElement {
         <div className="flex flex-col gap-3">
           {items.map((item) => {
             // Only the invited substitute answers and only the requester
-            // withdraws; the school-wide list shows the rest read-only.
+            // withdraws. On the school-wide list a schedule manager may
+            // also cancel another teacher's request still to come.
             const canAnswer = item.substitute_user_id === me?.id;
             const canWithdraw = item.requester_user_id === me?.id;
+            const pendingOwn = item.status === "pending" && (canAnswer || canWithdraw);
+            const canRelease =
+              direction === "all" &&
+              canSeeAll &&
+              !pendingOwn &&
+              !canWithdraw &&
+              releasable(item, today);
             const lesson = [
               item.subject_id ? subjectMap.get(item.subject_id)?.name : undefined,
               item.class_id ? classMap.get(item.class_id)?.name : undefined,
@@ -250,7 +267,18 @@ export function SubstitutionsView(): ReactElement {
                     </p>
                   )}
                 </div>
-                {item.status === "pending" && (canAnswer || canWithdraw) && (
+                {canRelease && (
+                  <ReleaseRequest
+                    release={{
+                      item,
+                      requester: nameOf(item.requester_user_id),
+                      substitute: nameOf(item.substitute_user_id),
+                      lesson: lesson ? `${lesson}, ${when}` : when,
+                    }}
+                    onError={fail}
+                  />
+                )}
+                {pendingOwn && (
                   <CardFooter className="justify-end">
                     {canAnswer ? (
                       <>

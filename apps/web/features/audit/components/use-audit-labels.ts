@@ -36,6 +36,7 @@ export const AUDIT_ENTITY_TYPES = [
   "document_template",
   "report_schedule",
   "session",
+  "substitution_request",
 ] as const;
 
 export interface AuditLabels {

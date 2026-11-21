@@ -1,4 +1,4 @@
-import type { ScheduleBlock } from "./api";
+import type { ScheduleBlock, ScheduleHold } from "./api";
 import { cellDate, earlierDate } from "./week";
 
 /**
@@ -32,6 +32,16 @@ export function needsEffectiveDate(block: ScheduleBlock): boolean {
  */
 export function minEffectiveFrom(block: ScheduleBlock): string | undefined {
   return block.mutation_policy?.min_effective_from;
+}
+
+/**
+ * The record that holds the block's earliest "Berlaku mulai" where it is:
+ * a recorded session, a supervision visit, or a pending or accepted
+ * substitution request (which a schedule manager can cancel). Undefined
+ * when the date is today or the block's first lesson alone.
+ */
+export function heldBy(block: ScheduleBlock): ScheduleHold | undefined {
+  return block.mutation_policy?.held_by;
 }
 
 /**

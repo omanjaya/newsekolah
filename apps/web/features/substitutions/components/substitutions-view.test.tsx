@@ -12,6 +12,9 @@ const requests = vi.hoisted(() => ({
 const access = vi.hoisted(() => ({ permissions: [] as string[], roles: [{ slug: "teacher" }] }));
 const mutations = vi.hoisted(() => ({ respond: vi.fn(), cancel: vi.fn() }));
 
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(window.location.search),
+}));
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
   useFormatter: () => ({ dateTime: () => "Sabtu, 14 November" }),
@@ -55,6 +58,7 @@ vi.mock("../api", () => ({
 
 afterEach(() => {
   cleanup();
+  window.history.replaceState(null, "", "/substitutions");
   requests.incoming = [];
   requests.outgoing = [];
   requests.all = [];
@@ -217,6 +221,74 @@ it("opens a non-teaching admin on every request in the school, naming both teach
   expect(card).toHaveTextContent("Matematika · X-A");
   expect(card).toHaveTextContent("fromTeacher: Guru Dua");
   expect(card).toHaveTextContent("toTeacher: Guru Tiga");
-  // Only the two teachers answer or withdraw it.
-  expect(within(card).queryByRole("button")).not.toBeInTheDocument();
+  // Only the two teachers answer it; the manager may only cancel it.
+  expect(within(card).queryByRole("button", { name: "accept" })).not.toBeInTheDocument();
+  expect(within(card).getByRole("button", { name: "release" })).toHaveTextContent("cancel");
+});
+
+/** A request between two other teachers, as the school-wide list shows it. */
+function othersRequest(id: string, status: string, date = "2026-11-16") {
+  return {
+    ...request(id, status),
+    date,
+    requester_user_id: "teacher-2",
+    substitute_user_id: "teacher-3",
+  };
+}
+
+// A pending substitution weeks away held every change to its lesson back,
+// and only the requesting teacher could withdraw it: the admin's card had
+// no buttons at all.
+it("lets a schedule manager cancel another teacher's request, after confirming", async () => {
+  const user = userEvent.setup();
+  access.permissions = ["manage_schedules"];
+  access.roles = [{ slug: "admin" }];
+  requests.all = [othersRequest("r1", "pending", "2027-03-01")];
+  render(<SubstitutionsView />);
+
+  await user.click(screen.getByRole("button", { name: "release" }));
+  expect(mutations.cancel).not.toHaveBeenCalled();
+  const dialog = await screen.findByRole("dialog");
+  expect(dialog).toHaveTextContent("releaseConfirm.title");
+  expect(dialog).toHaveTextContent("releaseConfirm.body");
+  await user.click(within(dialog).getByRole("button", { name: "releaseConfirm.confirm" }));
+  expect(mutations.cancel).toHaveBeenCalledWith("r1", expect.any(Object));
+});
+
+it("offers the manager's cancel on accepted requests to come, never on past or closed ones", () => {
+  access.permissions = ["manage_schedules"];
+  access.roles = [{ slug: "admin" }];
+  requests.all = [
+    othersRequest("accepted", "accepted", "2026-11-14"),
+    othersRequest("past", "accepted", "2026-11-13"),
+    othersRequest("rejected", "rejected", "2026-11-20"),
+    othersRequest("cancelled", "cancelled", "2026-11-20"),
+  ];
+  render(<SubstitutionsView />);
+
+  const button = (id: string) =>
+    within(screen.getByTestId(`substitution-${id}`)).queryByRole("button", { name: "release" });
+  expect(button("accepted")).toBeInTheDocument();
+  expect(button("past")).not.toBeInTheDocument();
+  expect(button("rejected")).not.toBeInTheDocument();
+  expect(button("cancelled")).not.toBeInTheDocument();
+});
+
+it("opens the school-wide list from the schedule editor's link, for a manager who teaches", () => {
+  access.permissions = ["manage_schedules"];
+  requests.all = [othersRequest("r1", "pending", "2027-03-01")];
+  window.history.replaceState(null, "", "/substitutions?view=all");
+  render(<SubstitutionsView />);
+
+  expect(screen.getByRole("radio", { name: "all" })).toBeChecked();
+  expect(screen.getByTestId("substitution-r1")).toBeInTheDocument();
+});
+
+it("ignores the school-wide link for a teacher who cannot see it", () => {
+  requests.incoming = [request("r1", "pending")];
+  window.history.replaceState(null, "", "/substitutions?view=all");
+  render(<SubstitutionsView />);
+
+  expect(screen.getByRole("radio", { name: /incoming/ })).toBeChecked();
+  expect(screen.queryByRole("button", { name: "release" })).not.toBeInTheDocument();
 });
