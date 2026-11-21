@@ -74,6 +74,8 @@ order by ep.expected_return_at, ep.exited_at;
 -- current_date: the Postgres session timezone is never set per tenant.
 -- current_stage is null once every stage has passed (an approved permit
 -- waiting at the gate): the index is then past the last stage.
+-- A permit from an earlier day is left out: its lessons are over, the gate
+-- and every stage refuse it, and it reads as expired on its own detail.
 select ep.*, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id,
   (wd.stages -> wi.current_stage_index)::jsonb as current_stage
 from exit_permits ep
@@ -81,6 +83,10 @@ join workflow_instances wi on wi.id = ep.instance_id
 join workflow_definitions wd on wd.id = wi.definition_id
 where ep.tenant_id = $1
   and wi.status in ('in_progress', 'approved')
+  -- Only today's permits: one left open on an earlier day can go no
+  -- further and reads as expired everywhere else
+  -- (domain.ExitPermitReadStatus), before the expiry job closes it.
+  and wi.local_date >= sqlc.arg('today')::date
   and (
     (
       wi.status = 'approved'
@@ -146,6 +152,10 @@ join workflow_instances wi on wi.id = ep.instance_id
 join workflow_definitions wd on wd.id = wi.definition_id
 where ep.tenant_id = $1
   and wi.status in ('in_progress', 'approved')
+  -- Only today's permits: one left open on an earlier day can go no
+  -- further and reads as expired everywhere else
+  -- (domain.ExitPermitReadStatus), before the expiry job closes it.
+  and wi.local_date >= sqlc.arg('today')::date
   and (
     (
       wi.status = 'approved'

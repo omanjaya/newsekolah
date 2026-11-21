@@ -19,6 +19,10 @@ join workflow_instances wi on wi.id = ep.instance_id
 join workflow_definitions wd on wd.id = wi.definition_id
 where ep.tenant_id = $1
   and wi.status in ('in_progress', 'approved')
+  -- Only today's permits: one left open on an earlier day can go no
+  -- further and reads as expired everywhere else
+  -- (domain.ExitPermitReadStatus), before the expiry job closes it.
+  and wi.local_date >= $3::date
   and (
     (
       wi.status = 'approved'
@@ -304,6 +308,10 @@ join workflow_instances wi on wi.id = ep.instance_id
 join workflow_definitions wd on wd.id = wi.definition_id
 where ep.tenant_id = $1
   and wi.status in ('in_progress', 'approved')
+  -- Only today's permits: one left open on an earlier day can go no
+  -- further and reads as expired everywhere else
+  -- (domain.ExitPermitReadStatus), before the expiry job closes it.
+  and wi.local_date >= $3::date
   and (
     (
       wi.status = 'approved'
@@ -385,6 +393,8 @@ type ListExitPermitsForApprovalRow struct {
 // current_date: the Postgres session timezone is never set per tenant.
 // current_stage is null once every stage has passed (an approved permit
 // waiting at the gate): the index is then past the last stage.
+// A permit from an earlier day is left out: its lessons are over, the gate
+// and every stage refuse it, and it reads as expired on its own detail.
 func (q *Queries) ListExitPermitsForApproval(ctx context.Context, arg ListExitPermitsForApprovalParams) ([]ListExitPermitsForApprovalRow, error) {
 	rows, err := q.db.Query(ctx, listExitPermitsForApproval, arg.TenantID, arg.UserID, arg.Today)
 	if err != nil {
