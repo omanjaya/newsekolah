@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Badge, Button, useToast } from "@newsekolah/ui";
+import { Badge, Button, Popover, PopoverContent, PopoverTrigger, useToast } from "@newsekolah/ui";
 import { KeyRound, UserRoundCog } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -180,7 +180,9 @@ export function ImpersonationBanner(): ReactElement | null {
   // ellipsis cuts, so the note is a badge beside the Stop button, visible at
   // every width, and leads the detail (and its tooltip) in full. On a phone
   // the badge is its key icon alone (its words stay for screen readers), so
-  // it does not take the title's room.
+  // it does not take the title's room; a touch screen shows no tooltip, so
+  // a tap on it opens the sentence in a popover (audit
+  // r5v-auth-attendance-R1).
   const pendingPassword = me.must_change_password;
   const detail = [
     pendingPassword ? t("pendingPassword") : null,
@@ -196,12 +198,27 @@ export function ImpersonationBanner(): ReactElement | null {
       action={
         <>
           {pendingPassword && (
-            <Badge tone="danger" size="sm" title={t("pendingPassword")}>
-              <KeyRound className="size-3" aria-hidden="true" />
-              <span className="sr-only sm:not-sr-only">
-                {tStrip("impersonationPendingPassword")}
-              </span>
-            </Badge>
+            <Popover>
+              <PopoverTrigger asChild>
+                {/* The strip's full 40px height is the tap target, while
+                    the strip itself stays one 40px line. */}
+                <button
+                  type="button"
+                  title={t("pendingPassword")}
+                  className="-my-1 flex min-h-10 items-center rounded-full px-1"
+                >
+                  <Badge tone="danger" size="sm">
+                    <KeyRound className="size-3" aria-hidden="true" />
+                    <span className="sr-only sm:not-sr-only">
+                      {tStrip("impersonationPendingPassword")}
+                    </span>
+                  </Badge>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64 text-body-sm">
+                {t("pendingPassword")}
+              </PopoverContent>
+            </Popover>
           )}
           <Button size="sm" variant="secondary" loading={stop.isPending} onClick={handleStop}>
             {tStrip("impersonationStop")}

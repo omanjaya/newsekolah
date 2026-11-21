@@ -278,6 +278,38 @@ describe("ImpersonationBanner", () => {
     }
   });
 
+  // A touch screen never shows a title tooltip, and on a phone the badge is
+  // its key icon alone: a tap on it opens the sentence instead (audit
+  // r5v-auth-attendance-R1).
+  it("explains the key badge on a tap at phone width", async () => {
+    const account = teacher as { must_change_password: boolean };
+    account.must_change_password = true;
+    const width = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
+    try {
+      const user = userEvent.setup();
+      renderStrip();
+
+      const trigger = screen.getByRole("button", { name: "impersonationPendingPassword" });
+      // The words are hidden on screen below `sm`; the button holding the
+      // icon is what a finger reaches, outside the hidden detail.
+      expect(screen.getByText("impersonationPendingPassword")).toHaveClass("sr-only");
+      expect(trigger.closest(".hidden, p")).toBeNull();
+      expect(screen.queryByRole("dialog")).toBeNull();
+
+      await user.pointer({ keys: "[TouchA]", target: trigger });
+
+      const popover = await screen.findByRole("dialog");
+      expect(popover).toHaveTextContent("pendingPassword");
+      expect(popover).toBeVisible();
+      expect(trigger).toHaveAttribute("aria-expanded", "true");
+      expect(screen.getByRole("button", { name: "impersonationStop" })).toBeEnabled();
+    } finally {
+      account.must_change_password = false;
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
+    }
+  });
+
   it("says nothing about the password once the account has set its own", () => {
     renderStrip();
 
