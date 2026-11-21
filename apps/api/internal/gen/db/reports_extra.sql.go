@@ -13,11 +13,21 @@ import (
 )
 
 const countActiveMembersTotal = `-- name: CountActiveMembersTotal :one
-select count(*)::int from library_members where tenant_id = $1 and status = 'active'
+select count(*)::int from library_members
+where tenant_id = $1
+  and (case when status = 'suspended' and suspended_until < $2::date then 'active' else status end) = 'active'
 `
 
-func (q *Queries) CountActiveMembersTotal(ctx context.Context, tenantID uuid.UUID) (int32, error) {
-	row := q.db.QueryRow(ctx, countActiveMembersTotal, tenantID)
+type CountActiveMembersTotalParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	Today    pgtype.Date `json:"today"`
+}
+
+// Members active on today, the school's calendar day: a suspension whose
+// last day is before today counts as active (domain.Member.AsOf), as
+// ListMembers' status filter reads it.
+func (q *Queries) CountActiveMembersTotal(ctx context.Context, arg CountActiveMembersTotalParams) (int32, error) {
+	row := q.db.QueryRow(ctx, countActiveMembersTotal, arg.TenantID, arg.Today)
 	var column_1 int32
 	err := row.Scan(&column_1)
 	return column_1, err

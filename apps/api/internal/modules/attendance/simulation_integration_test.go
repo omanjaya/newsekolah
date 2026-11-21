@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
@@ -131,4 +132,52 @@ func TestAcceptedSubstitutionAppearsUnderSimulatedDay(t *testing.T) {
 	require.Len(t, simulated, 1)
 	require.Equal(t, otherSchedule.ID, simulated[0].Session.ScheduleID)
 	require.True(t, simulated[0].IsSubstitute, "the merged session must be flagged as a substitution, not the teacher's own schedule")
+}
+
+// TestSimulatedDayListsWithoutOpeningARealFutureSession lists a teacher's
+// day at a simulated date a week ahead of the real one. The lesson is
+// listed as recordable (it carries the owner's save deadline) but no
+// session row is written by the read: in real time the lesson is still a
+// week away, and a placeholder row would hold its schedule as history.
+// Opening the lesson is the explicit write that stores it.
+func TestSimulatedDayListsWithoutOpeningARealFutureSession(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	w := seedWorld(t, ctx, pg.AdminPool, "simulated-day-listing")
+	svc := buildService(pg.AppPool).WithClock(clock.Frozen{At: w.today.Add(4 * time.Hour)})
+	countSessions := func() int {
+		t.Helper()
+		var n int
+		require.NoError(t, pg.AdminPool.QueryRow(ctx,
+			`select count(*) from attendance_sessions where tenant_id = $1`, w.tenantID).Scan(&n))
+		return n
+	}
+	nextWeek := w.today.AddDate(0, 0, 7)
+	simCtx := clock.WithTime(ctx, nextWeek.Add(4*time.Hour))
+	owner := service.Actor{UserID: w.teacherID}
+
+	sessions, err := svc.ListSessions(simCtx, w.tenantID, w.teacherID, service.ListSessionsOptions{Viewer: &owner})
+	require.NoError(t, err)
+	require.Len(t, sessions, 1)
+	require.Equal(t, w.scheduleTodayID, sessions[0].Session.ScheduleID)
+	require.Equal(t, nextWeek.Format(time.DateOnly), sessions[0].Session.Date.Format(time.DateOnly))
+	require.Equal(t, uuid.Nil, sessions[0].Session.ID, "not opened by the read")
+	require.NotNil(t, sessions[0].EditableUntil, "still recordable on the simulated day")
+	require.True(t, domain.CorrectionDeadline(nextWeek, 7, time.UTC).Equal(*sessions[0].EditableUntil))
+	require.Zero(t, countSessions(), "a simulated read writes no session dated in the real future")
+
+	detail, err := svc.OpenSession(simCtx, w.tenantID, owner, w.scheduleTodayID, nextWeek, domain.SaveModeNormal)
+	require.NoError(t, err)
+	require.NotEqual(t, uuid.Nil, detail.Session.ID)
+	require.Equal(t, 1, countSessions(), "opening the lesson is the write")
+
+	sessions, err = svc.ListSessions(simCtx, w.tenantID, w.teacherID, service.ListSessionsOptions{Viewer: &owner})
+	require.NoError(t, err)
+	require.Equal(t, detail.Session.ID, sessions[0].Session.ID, "once opened the list carries its ID")
+
+	realDay, err := svc.ListSessions(ctx, w.tenantID, w.teacherID, service.ListSessionsOptions{Viewer: &owner})
+	require.NoError(t, err)
+	require.Len(t, realDay, 1)
+	require.NotEqual(t, uuid.Nil, realDay[0].Session.ID, "a real read still opens today's lesson")
+	require.Equal(t, 2, countSessions())
 }

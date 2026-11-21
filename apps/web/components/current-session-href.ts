@@ -9,7 +9,10 @@ import { businessNow } from "../lib/simulation/clock";
 export const ATTENDANCE_HREF = "/attendance";
 
 interface SessionLike {
-  /** Absent on a lesson nobody has opened yet (only ever a later day's). */
+  /**
+   * Absent on a lesson nobody has opened yet: a later day's, or one only
+   * the simulated day has reached (the list does not open it).
+   */
   id?: string;
   start_period_id: string;
   end_period_id: string;
@@ -28,7 +31,9 @@ interface PeriodLike {
  * The session a teacher's "Isi presensi" opens, the one the home hero
  * offers: the session running now while it is still unsubmitted, else the
  * next one today, else the attendance list. A lesson handed to a
- * substitute is theirs to fill, so it is never offered here.
+ * substitute is theirs to fill, so it is never offered here. The pick
+ * counts a lesson not opened yet, as the hero does, so a later opened one
+ * never stands in for it; the bar then leads to the attendance list.
  */
 export function currentSessionHref(
   sessions: readonly SessionLike[],
@@ -37,7 +42,7 @@ export function currentSessionHref(
 ): string {
   const byId = new Map(periods.map((period) => [period.id, period]));
   const ranges = sessions
-    .filter((session) => session.id !== undefined && !session.handed_over_to_user_id)
+    .filter((session) => !session.handed_over_to_user_id)
     .map((session) => ({
       session,
       start: parseClock(byId.get(session.start_period_id)?.starts_at ?? "00:00"),

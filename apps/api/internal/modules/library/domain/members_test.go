@@ -63,6 +63,26 @@ func TestMemberSuspensionLapsed(t *testing.T) {
 		"only a suspended member has a suspension to end")
 }
 
+func TestMemberAsOf(t *testing.T) {
+	until := day("2026-12-07")
+	suspended := domain.Member{Status: domain.MemberSuspended, SuspendedUntil: &until}
+
+	running := suspended.AsOf(day("2026-12-07"))
+	require.Equal(t, domain.MemberSuspended, running.Status, "still suspended on its last day")
+	require.Equal(t, &until, running.SuspendedUntil)
+
+	over := suspended.AsOf(day("2026-12-08"))
+	require.Equal(t, domain.MemberActive, over.Status, "active the day after")
+	require.Nil(t, over.SuspendedUntil)
+	require.Equal(t, domain.MemberSuspended, suspended.Status, "AsOf leaves the stored member as it is")
+	require.Equal(t, &until, suspended.SuspendedUntil)
+
+	openEnded := domain.Member{Status: domain.MemberSuspended}
+	require.Equal(t, openEnded, openEnded.AsOf(day("2027-01-01")), "one with no end date stays until staff lift it")
+	inactive := domain.Member{Status: domain.MemberInactive, SuspendedUntil: &until}
+	require.Equal(t, inactive, inactive.AsOf(day("2026-12-08")))
+}
+
 func TestEligibleForClearance(t *testing.T) {
 	require.True(t, domain.EligibleForClearance(0, false))
 	require.False(t, domain.EligibleForClearance(1, false), "an active loan blocks clearance")

@@ -91,9 +91,10 @@ export function runningSuspension(
 
 /**
  * The status to show for `member` on `today`: a suspension whose last day
- * has passed reads active, as the server lends to (and stores) it. The
- * API already ends such a suspension before it answers; this only keeps a
- * page left open across midnight from showing it as running.
+ * has passed reads active, as the server lends to it. The API already
+ * answers such a member as active (domain.Member.AsOf, derived on every
+ * read rather than stored); this only keeps a page left open across
+ * midnight from showing it as running.
  */
 export function shownMemberStatus(
   member: Pick<LibraryMember, "status" | "suspended_until">,

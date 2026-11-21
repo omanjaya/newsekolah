@@ -32,7 +32,8 @@ type ListSessionsOptions struct {
 // that date. A lesson today or earlier is opened idempotently (see
 // domain/session.go and queries/sessions.sql's OpenAttendanceSession) so
 // its row carries a real session ID the caller can act on next; a lesson on
-// a later day is listed without being opened (listedSession). Returns an empty list
+// a later day is listed without being opened (listedSession), and so is
+// one only a simulated today has reached. Returns an empty list
 // outright on a day the tenant does not hold school
 // (docs/analysis/backend-inventory.md section 1.9, L361-364), a case the
 // merge logic below would otherwise silently treat as "no schedules
@@ -71,6 +72,11 @@ func (s *Service) ListDay(ctx context.Context, tenantID, teacherUserID uuid.UUID
 		// A lesson on a later day is listed, never opened: browsing next
 		// week must not write a session row (see listedSession).
 		future := domain.SessionNotStarted(date, now)
+		// A read stores only what a read in real time would: a lesson the
+		// simulated today has reached but the real one has not is listed
+		// as recordable without opening it, as opening it would leave a
+		// session row dated in the real future.
+		opens := !future && !domain.SessionNotStarted(date, s.clock.Now().In(loc))
 
 		// The version of each lesson in effect that date: a timetable
 		// changed from a later date still lists the old lesson here.
@@ -150,7 +156,7 @@ func (s *Service) ListDay(ctx context.Context, tenantID, teacherUserID uuid.UUID
 				ClassID: occ.schedule.ClassID, SubjectID: occ.schedule.SubjectID, TeacherUserID: occ.schedule.TeacherUserID,
 				SubstituteUserID: substituteUserID, StartPeriodID: occ.schedule.StartPeriodID, EndPeriodID: occ.schedule.EndPeriodID,
 			}
-			session, err := s.listedSession(ctx, occurrence, future)
+			session, err := s.listedSession(ctx, occurrence, opens)
 			if err != nil {
 				return err
 			}
@@ -170,11 +176,11 @@ func (s *Service) ListDay(ctx context.Context, tenantID, teacherUserID uuid.UUID
 			if err != nil {
 				return err
 			}
-			editableUntil, err := s.listedEditableUntil(ctx, tenantID, opts.Viewer, session)
+			editableUntil, err := s.listedEditableUntil(ctx, tenantID, opts.Viewer, session, future)
 			if err != nil {
 				return err
 			}
-			ownerEditableUntil, err := s.listedOwnerEditableUntil(ctx, tenantID, teacherUserID, opts.Viewer, session)
+			ownerEditableUntil, err := s.listedOwnerEditableUntil(ctx, tenantID, teacherUserID, opts.Viewer, session, future)
 			if err != nil {
 				return err
 			}
@@ -194,9 +200,11 @@ func (s *Service) ListDay(ctx context.Context, tenantID, teacherUserID uuid.UUID
 // listedEditableUntil is the last instant viewer may save a listed session,
 // resolved exactly as the session detail does (saveWindowInput and
 // viewerSaveMode). Nil with no viewer, for a lesson on a later day that
-// has no session yet, or when the viewer may not save it at all.
-func (s *Service) listedEditableUntil(ctx context.Context, tenantID uuid.UUID, viewer *Actor, session domain.Session) (*time.Time, error) {
-	if viewer == nil || session.ID == uuid.Nil {
+// has no session yet, or when the viewer may not save it at all. A lesson
+// the day has reached gets its deadline whether or not its session is
+// open yet (under simulation it is opened only when the viewer opens it).
+func (s *Service) listedEditableUntil(ctx context.Context, tenantID uuid.UUID, viewer *Actor, session domain.Session, future bool) (*time.Time, error) {
+	if viewer == nil || (future && session.ID == uuid.Nil) {
 		return nil, nil
 	}
 	window, _, err := s.saveWindowInput(ctx, tenantID, *viewer, session)
@@ -212,23 +220,27 @@ func (s *Service) listedEditableUntil(ctx context.Context, tenantID uuid.UUID, v
 // manager monitoring that day sees the teacher's own fill state (still
 // to fill, saved, locked), not the viewer's lock. Nil when the viewer
 // reads their own day (EditableUntil already is the owner's deadline),
-// for a lesson with no session yet, or when that teacher may not save it.
-func (s *Service) listedOwnerEditableUntil(ctx context.Context, tenantID, teacherUserID uuid.UUID, viewer *Actor, session domain.Session) (*time.Time, error) {
+// for a lesson on a later day with no session yet, or when that teacher
+// may not save it.
+func (s *Service) listedOwnerEditableUntil(ctx context.Context, tenantID, teacherUserID uuid.UUID, viewer *Actor, session domain.Session, future bool) (*time.Time, error) {
 	if viewer == nil || viewer.UserID == teacherUserID {
 		return nil, nil
 	}
-	return s.listedEditableUntil(ctx, tenantID, &Actor{UserID: teacherUserID}, session)
+	return s.listedEditableUntil(ctx, tenantID, &Actor{UserID: teacherUserID}, session, future)
 }
 
 // listedSession is the session a list row stands for. A lesson today or
-// earlier is opened idempotently, so the row carries a real session ID the
-// caller can act on next. A lesson on a later day is only looked up: it
-// cannot be recorded yet, and opening it would write a placeholder row for
-// a lesson that has not happened -- one the scheduling module would have
-// to tell apart from history. With no session yet, the occurrence comes
-// back as is, with no ID.
-func (s *Service) listedSession(ctx context.Context, occurrence domain.Session, future bool) (domain.Session, error) {
-	if !future {
+// earlier (open) is opened idempotently, so the row carries a real session
+// ID the caller can act on next. A lesson on a later day is only looked
+// up: it cannot be recorded yet, and opening it would write a placeholder
+// row for a lesson that has not happened -- one the scheduling module
+// would have to tell apart from history (a schedule with a session row
+// cannot be deleted). The same goes for a lesson only a simulated today
+// has reached: it is on a later day in real time. With no session yet,
+// the occurrence comes back as is, with no ID; opening it is the explicit
+// OpenSession call the list's caller makes next.
+func (s *Service) listedSession(ctx context.Context, occurrence domain.Session, open bool) (domain.Session, error) {
+	if open {
 		session, _, err := s.repo.OpenSession(ctx, occurrence)
 		return session, err
 	}

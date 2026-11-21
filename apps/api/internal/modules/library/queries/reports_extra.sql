@@ -15,7 +15,12 @@ where u.tenant_id = $1 and u.deleted_at is null and u.status = 'active';
 select count(*)::int from library_members where tenant_id = $1;
 
 -- name: CountActiveMembersTotal :one
-select count(*)::int from library_members where tenant_id = $1 and status = 'active';
+-- Members active on today, the school's calendar day: a suspension whose
+-- last day is before today counts as active (domain.Member.AsOf), as
+-- ListMembers' status filter reads it.
+select count(*)::int from library_members
+where tenant_id = $1
+  and (case when status = 'suspended' and suspended_until < sqlc.arg(today)::date then 'active' else status end) = 'active';
 
 -- name: CountVisitsBetween :one
 select count(*)::int from library_visits where tenant_id = $1 and visited_at >= $2 and visited_at < $3;

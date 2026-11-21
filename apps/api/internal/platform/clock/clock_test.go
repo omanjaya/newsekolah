@@ -1,6 +1,7 @@
 package clock_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -8,6 +9,15 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
+
+func TestSimulatedOnlyWithAnOverride(t *testing.T) {
+	ctx := context.Background()
+	require.False(t, clock.Simulated(ctx))
+	at := time.Date(2026, 11, 24, 1, 30, 0, 0, time.UTC)
+	simulated := clock.WithTime(ctx, at)
+	require.True(t, clock.Simulated(simulated))
+	require.Equal(t, at, clock.Now(simulated, clock.Real{}))
+}
 
 func TestLocationFallsBackToUTC(t *testing.T) {
 	require.Equal(t, time.UTC, clock.Location(""))

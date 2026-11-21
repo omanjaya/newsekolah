@@ -111,10 +111,9 @@ func (s *Service) Dashboard(ctx context.Context, tenantID uuid.UUID) (Dashboard,
 		if err != nil {
 			return err
 		}
-		if err = s.endLapsedSuspensions(ctx, tenantID, uuid.NullUUID{}); err != nil {
-			return err
-		}
-		activeMembers, err = s.repo.CountActiveMembersTotal(ctx, tenantID)
+		// Active on the school's today, a lapsed suspension included
+		// (domain.Member.AsOf): read, never stored.
+		activeMembers, err = s.repo.CountActiveMembersTotal(ctx, tenantID, domain.SchoolDay(now, loc))
 		if err != nil {
 			return err
 		}

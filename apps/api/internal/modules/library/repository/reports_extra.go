@@ -28,8 +28,8 @@ func (r *Repository) CountMembersTotal(ctx context.Context, tenantID uuid.UUID) 
 	return int(n), nil
 }
 
-func (r *Repository) CountActiveMembersTotal(ctx context.Context, tenantID uuid.UUID) (int, error) {
-	n, err := r.queries(ctx).CountActiveMembersTotal(ctx, tenantID)
+func (r *Repository) CountActiveMembersTotal(ctx context.Context, tenantID uuid.UUID, today time.Time) (int, error) {
+	n, err := r.queries(ctx).CountActiveMembersTotal(ctx, db.CountActiveMembersTotalParams{TenantID: tenantID, Today: pdatabase.Date(today)})
 	if err != nil {
 		return 0, fmt.Errorf("count active members total: %w", err)
 	}

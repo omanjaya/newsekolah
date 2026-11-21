@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -47,12 +48,8 @@ func (s *Service) PreviewClassLoans(ctx context.Context, tenantID, classID, titl
 		return ClassLoanPreview{}, err
 	}
 	out := ClassLoanPreview{}
+	today := s.memberToday(ctx, tenantID)
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		// A student whose suspension has ended is paired like any active
-		// member, as a single desk borrow would lend to them.
-		if err := s.endLapsedSuspensions(ctx, tenantID, uuid.NullUUID{}); err != nil {
-			return err
-		}
 		roster, err := s.repo.ListClassRoster(ctx, tenantID, classID)
 		if err != nil {
 			return err
@@ -72,7 +69,7 @@ func (s *Service) PreviewClassLoans(ctx context.Context, tenantID, classID, titl
 
 		copyIdx := 0
 		for _, student := range roster {
-			if reason := s.classLoanRejectReason(ctx, tenantID, titleID, student.UserID); reason != nil {
+			if reason := s.classLoanRejectReason(ctx, tenantID, titleID, student.UserID, today); reason != nil {
 				out.Rejected = append(out.Rejected, ClassLoanRejected{StudentUserID: student.UserID, StudentName: student.UserName, Err: reason})
 				continue
 			}
@@ -95,11 +92,14 @@ func (s *Service) PreviewClassLoans(ctx context.Context, tenantID, classID, titl
 }
 
 // classLoanRejectReason is the domain error that keeps a student out of
-// the pairing, or nil when the student can be paired. A suspended member
-// gets ErrMemberSuspended; inactive and cleared members get
+// the pairing, or nil when the student can be paired. A member suspended
+// on today gets ErrMemberSuspended (one whose suspension has ended is
+// paired like any active member, as a single desk borrow would lend to
+// them, domain.Member.AsOf); inactive and cleared members get
 // ErrMemberNotActive, the same codes a single desk borrow returns.
-func (s *Service) classLoanRejectReason(ctx context.Context, tenantID, titleID, studentID uuid.UUID) error {
+func (s *Service) classLoanRejectReason(ctx context.Context, tenantID, titleID, studentID uuid.UUID, today time.Time) error {
 	member, found, err := s.repo.GetMember(ctx, tenantID, studentID)
+	member = member.AsOf(today)
 	if err == nil && found && member.Status != domain.MemberActive && member.Status != domain.MemberPending {
 		if member.Status == domain.MemberSuspended {
 			return domain.ErrMemberSuspended

@@ -48,6 +48,12 @@ describe("currentSessionHref (the teacher's centre button)", () => {
     expect(currentSessionHref(sessions.slice(0, 1), PERIODS, at("07:50"))).toBe(ATTENDANCE_HREF);
   });
 
+  it("never skips a running lesson not opened yet for a later opened one", () => {
+    const unopened = { start_period_id: "p1", end_period_id: "p2", submitted_at: null };
+    const sessions = [unopened, session("b", "p3", "p3")];
+    expect(currentSessionHref(sessions, PERIODS, at("07:50"))).toBe(ATTENDANCE_HREF);
+  });
+
   it("falls back to the attendance list when nothing is left today", () => {
     const sessions = [session("a", "p1", "p2", true)];
     expect(currentSessionHref(sessions, PERIODS, at("12:00"))).toBe(ATTENDANCE_HREF);

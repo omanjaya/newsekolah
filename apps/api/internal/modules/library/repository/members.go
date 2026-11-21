@@ -184,7 +184,7 @@ func (r *Repository) GetMemberByNo(ctx context.Context, tenantID uuid.UUID, memb
 }
 
 func (r *Repository) ListMembers(ctx context.Context, tenantID uuid.UUID, filter service.MemberListFilter, limit, offset int) ([]domain.Member, error) {
-	params := db.ListMembersParams{TenantID: tenantID, Limit: int32(limit), Offset: int32(offset)} //nolint:gosec // clamped
+	params := db.ListMembersParams{TenantID: tenantID, Today: pdatabase.Date(filter.Today), Limit: int32(limit), Offset: int32(offset)} //nolint:gosec // clamped
 	if filter.Status != "" {
 		params.Status = pdatabase.Text(filter.Status)
 	}
@@ -239,14 +239,14 @@ func (r *Repository) UpdateMemberStatus(ctx context.Context, tenantID, userID uu
 	return toMember(row), true, nil
 }
 
-func (r *Repository) ReactivateLapsedSuspensions(ctx context.Context, tenantID uuid.UUID, today time.Time, userID uuid.NullUUID) (int, error) {
-	n, err := r.queries(ctx).ReactivateLapsedSuspensions(ctx, db.ReactivateLapsedSuspensionsParams{
-		TenantID: tenantID, Today: pdatabase.Date(today), UserID: pdatabase.NullUUID(userID),
+func (r *Repository) EndLapsedSuspension(ctx context.Context, tenantID, userID uuid.UUID, today time.Time) (bool, error) {
+	n, err := r.queries(ctx).EndLapsedSuspension(ctx, db.EndLapsedSuspensionParams{
+		TenantID: tenantID, UserID: userID, Today: pdatabase.Date(today),
 	})
 	if err != nil {
-		return 0, fmt.Errorf("reactivate lapsed suspensions: %w", err)
+		return false, fmt.Errorf("end lapsed suspension: %w", err)
 	}
-	return int(n), nil
+	return n > 0, nil
 }
 
 func (r *Repository) UpdateMemberProfile(ctx context.Context, tenantID, userID, memberTypeID uuid.UUID, validUntil *time.Time, notes string) (domain.Member, bool, error) {

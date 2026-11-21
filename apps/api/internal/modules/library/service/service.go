@@ -261,7 +261,9 @@ type Repository interface {
 
 	CountActiveStudentsTotal(ctx context.Context, tenantID uuid.UUID) (int, error)
 	CountMembersTotal(ctx context.Context, tenantID uuid.UUID) (int, error)
-	CountActiveMembersTotal(ctx context.Context, tenantID uuid.UUID) (int, error)
+	// CountActiveMembersTotal counts the members active on today, a lapsed
+	// suspension included (domain.Member.AsOf).
+	CountActiveMembersTotal(ctx context.Context, tenantID uuid.UUID, today time.Time) (int, error)
 	CountVisitsBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
 	CountCopiesAddedInPeriod(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
 	// CountLateReturnsBetween compares each return's calendar day in tz
@@ -305,10 +307,9 @@ type Repository interface {
 	GetMembersByIDs(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]domain.Member, error)
 	ListMembersForCardPrint(ctx context.Context, tenantID uuid.UUID, filter MemberCardListFilter, limit int) ([]domain.Member, error)
 	UpdateMemberStatus(ctx context.Context, tenantID, userID uuid.UUID, status domain.MemberStatus, suspendedUntil *pgtype.Date) (domain.Member, bool, error)
-	// ReactivateLapsedSuspensions makes every member whose suspension ended
-	// before today active again (only userID's, when it is valid) and
-	// reports how many it changed.
-	ReactivateLapsedSuspensions(ctx context.Context, tenantID uuid.UUID, today time.Time, userID uuid.NullUUID) (int, error)
+	// EndLapsedSuspension stores userID as active again when their
+	// suspension ended before today, reporting whether it changed the row.
+	EndLapsedSuspension(ctx context.Context, tenantID, userID uuid.UUID, today time.Time) (bool, error)
 	UpdateMemberProfile(ctx context.Context, tenantID, userID, memberTypeID uuid.UUID, validUntil *time.Time, notes string) (domain.Member, bool, error)
 	IncrementLateReturnCount(ctx context.Context, tenantID, userID uuid.UUID) (domain.Member, error)
 	ClearanceCounts(ctx context.Context, tenantID, userID uuid.UUID) (ClearanceCounts, error)
@@ -594,6 +595,12 @@ func (s *Service) Policy(ctx context.Context, tenantID uuid.UUID) (domain.Policy
 	return policy, err
 }
 
+// loadPolicy is the tenant's latest circulation policy, first storing the
+// default one when the tenant has none. Reads reach that first store (the
+// policy screen, the desk's borrowing status, OPAC), so it is dated with
+// the real clock, as every other module seeds its policy: a read at a
+// simulated date stores nothing from that date. UpdatePolicy, an explicit
+// write, dates its version with the business clock.
 func (s *Service) loadPolicy(ctx context.Context, tenantID uuid.UUID) (domain.Policy, error) {
 	raw, version, found, err := s.repo.GetLatestPolicy(ctx, tenantID)
 	if err != nil {
@@ -605,7 +612,7 @@ func (s *Service) loadPolicy(ctx context.Context, tenantID uuid.UUID) (domain.Po
 		if err != nil {
 			return domain.Policy{}, err
 		}
-		if err := s.repo.CreatePolicy(ctx, tenantID, def.Version, encoded, clock.Now(ctx, s.clock), uuid.NullUUID{}); err != nil {
+		if err := s.repo.CreatePolicy(ctx, tenantID, def.Version, encoded, s.clock.Now(), uuid.NullUUID{}); err != nil {
 			return domain.Policy{}, err
 		}
 		return def, nil
