@@ -285,6 +285,98 @@ describe("ActiveExitPermitCard once the permit's lessons are over", () => {
     expect(screen.queryByRole("button", { name: "showGateQr" })).not.toBeInTheDocument();
     expect(screen.getByText("hero.lessonsOver")).toBeInTheDocument();
   });
+
+  // The regression: "Siap keluar gerbang" and "Disetujui" stayed above the
+  // text saying the permit had expired.
+  it("heads an approved permit whose lessons are over as ended, not ready for the gate", () => {
+    mocks.periods = PERMIT_PERIODS;
+    mocks.now = new Date("2026-09-29T03:40:00Z");
+    mocks.detail = detail("approved");
+    render(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    expect(screen.getByText("hero.endedEyebrow")).toBeInTheDocument();
+    expect(screen.queryByText("hero.approvedEyebrow")).not.toBeInTheDocument();
+    expect(screen.getByText("status.expired")).toBeInTheDocument();
+    expect(screen.queryByText("status.approved")).not.toBeInTheDocument();
+  });
+
+  // The regression: "Izin keluar berjalan" and "Menunggu: Guru piket" over a
+  // permit that could not go on, with Guru piket still the step to scan.
+  it("heads a pending permit whose lessons are over as ended, with no stage left to scan", () => {
+    mocks.periods = PERMIT_PERIODS;
+    mocks.now = new Date("2026-09-29T05:00:00Z");
+    mocks.detail = detail("in_progress");
+    const { container } = render(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    expect(screen.getByText("hero.endedEyebrow")).toBeInTheDocument();
+    expect(screen.queryByText("hero.activeEyebrow")).not.toBeInTheDocument();
+    expect(screen.queryByText("waitingFor:Guru piket")).not.toBeInTheDocument();
+    // The chip and the stage it stopped at both say it expired.
+    expect(screen.getAllByText("status.expired")).toHaveLength(2);
+    expect(container.querySelector('[aria-current="step"]')).toBeNull();
+    expect(screen.getByText("hero.lessonsOverPending")).toBeInTheDocument();
+  });
+
+  it("keeps the live headline while the lessons last", () => {
+    mocks.periods = PERMIT_PERIODS;
+    mocks.now = new Date("2026-09-29T02:30:00Z");
+    mocks.detail = detail("in_progress");
+    const { container } = render(<ActiveExitPermitCard id={PERMIT_ID} />);
+
+    expect(screen.getByText("hero.activeEyebrow")).toBeInTheDocument();
+    expect(screen.getByText("waitingFor:Guru piket")).toBeInTheDocument();
+    expect(container.querySelector('[aria-current="step"]')).not.toBeNull();
+  });
+});
+
+describe("ExitPermitDetail of a permit that never reached the gate", () => {
+  // The regression: the history dialog of a permit left at the duty
+  // teacher's stage two days earlier said "Berjalan, Menunggu: Guru piket".
+  it("reads a pending permit from an earlier day as expired", () => {
+    mocks.periods = PERMIT_PERIODS;
+    mocks.now = new Date("2026-10-01T02:30:00Z");
+    mocks.detail = detail("in_progress");
+    render(<ExitPermitDetailView id={PERMIT_ID} />);
+
+    expect(screen.queryByText("status.in_progress")).not.toBeInTheDocument();
+    expect(screen.queryByText("waitingFor:Guru piket")).not.toBeInTheDocument();
+    expect(screen.getAllByText("status.expired").length).toBeGreaterThan(0);
+    expect(screen.getByText("endedPendingNote")).toBeInTheDocument();
+  });
+
+  it("reads an approved permit never used at the gate as expired, its stages still approved", () => {
+    mocks.periods = PERMIT_PERIODS;
+    mocks.now = new Date("2026-10-01T02:30:00Z");
+    mocks.detail = { ...detail("approved"), issued_at: "2026-09-29T00:30:00Z" };
+    render(<ExitPermitDetailView id={PERMIT_ID} />);
+
+    expect(screen.getAllByText("status.expired")).toHaveLength(1);
+    expect(screen.queryByText("status.approved")).not.toBeInTheDocument();
+    expect(screen.getAllByText("outcome.approved")).toHaveLength(2);
+    expect(screen.getByText("endedApprovedNote")).toBeInTheDocument();
+  });
+
+  it("says the same of a permit the API already reports as expired", () => {
+    mocks.detail = {
+      ...detail("approved"),
+      instance: { ...detail("approved").instance, status: "expired" },
+      issued_at: "2026-09-29T00:30:00Z",
+    };
+    render(<ExitPermitDetailView id={PERMIT_ID} />);
+
+    expect(screen.getByText("endedApprovedNote")).toBeInTheDocument();
+  });
+
+  it("keeps a permit's own status while its lessons last", () => {
+    mocks.periods = PERMIT_PERIODS;
+    mocks.now = new Date("2026-09-29T02:30:00Z");
+    mocks.detail = detail("in_progress");
+    render(<ExitPermitDetailView id={PERMIT_ID} />);
+
+    expect(screen.getByText("status.in_progress")).toBeInTheDocument();
+    expect(screen.getByText("waitingFor:Guru piket")).toBeInTheDocument();
+    expect(screen.queryByText("endedPendingNote")).not.toBeInTheDocument();
+  });
 });
 
 /** Through the gate at 10.15 (02:15Z), due back at 11.00 (03:00Z). */

@@ -1,6 +1,7 @@
 import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type * as ClockModule from "../../../lib/simulation/clock";
 import type * as TenantDate from "../../../lib/tenant-date";
 import type { MyExitPermit } from "../api";
 
@@ -40,6 +41,14 @@ vi.mock("../lib/use-can-submit-permit", () => ({ useCanSubmitPermit: () => mocks
 vi.mock("../../../lib/tenant-date", async (importOriginal) => ({
   ...(await importOriginal<typeof TenantDate>()),
   todayInZone: () => "2026-11-19",
+}));
+// 12.00 on that day in Asia/Makassar, on the business clock.
+vi.mock("../../../lib/simulation/clock", async (importOriginal) => ({
+  ...(await importOriginal<typeof ClockModule>()),
+  useBusinessNow: () => new Date("2026-11-19T04:00:00Z"),
+}));
+vi.mock("../../reference/api", () => ({
+  usePeriodsQuery: () => ({ data: { data: [] } }),
 }));
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
@@ -267,6 +276,22 @@ describe("ExitPermitsView for a student", () => {
 });
 
 describe("ExitPermitsView history rows", () => {
+  // The regression: under the time simulation the expiry job never closed
+  // a permit from an earlier day, and its row still said "Berjalan" or
+  // "Disetujui" although it could go no further.
+  it("reads a permit left open on an earlier day as expired", () => {
+    mocks.items = [permit("p1", "approved"), permit("p0", "in_progress")];
+    render(<ExitPermitsView />);
+
+    const rows = screen.getAllByRole("listitem");
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      expect(row).toHaveTextContent("status.expired");
+      expect(row).not.toHaveTextContent("status.approved");
+      expect(row).not.toHaveTextContent("status.in_progress");
+    }
+  });
+
   it("says when the student came back, and how late", () => {
     mocks.items = [
       permit("p0", "completed", {

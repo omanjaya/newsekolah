@@ -41,10 +41,11 @@ import { LateArrivalPageView } from "./late-arrival-page-view";
 
 const notFound = new ApiError({ status: 404, code: "NOT_FOUND", message: "x" });
 
-function exitPermit(status: string) {
+/** Opened now unless `openedAt` says otherwise: today on the school's clock. */
+function exitPermit(status: string, openedAt = new Date().toISOString()) {
   return {
     data: {
-      instance: { id: "exit-1", status, subject_user_id: "student-1" },
+      instance: { id: "exit-1", status, subject_user_id: "student-1", opened_at: openedAt },
       student_name: "SISWA CONTOH",
       class_name: "X-A",
     },
@@ -80,6 +81,17 @@ describe("ExitPermitPageView", () => {
     mocks.exitQuery.mockReturnValue(exitPermit("approved"));
     render(<ExitPermitPageView id="exit-1" />);
     expect(screen.getByTestId("active-exit-card")).toBeInTheDocument();
+  });
+
+  // The regression: a permit left at the duty teacher's stage two days
+  // earlier got the live card here (with "Batalkan izin"), while the
+  // history dialog showed the record.
+  it("gives the student the read-only record of a permit left open on an earlier day", () => {
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 3600_000).toISOString();
+    mocks.exitQuery.mockReturnValue(exitPermit("in_progress", twoDaysAgo));
+    render(<ExitPermitPageView id="exit-1" />);
+    expect(screen.getByTestId("exit-record")).toBeInTheDocument();
+    expect(screen.queryByTestId("active-exit-card")).not.toBeInTheDocument();
   });
 
   it("gives the guard who was notified the read-only record", () => {

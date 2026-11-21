@@ -125,17 +125,24 @@ export function WorkflowSteps({
 export function WorkflowStepper({
   instance,
   finalOutcome,
+  status = instance.status,
 }: {
   instance: WorkflowInstance;
   /** Passed to `WorkflowSteps`: what the last stage produced once complete. */
   finalOutcome?: string;
+  /**
+   * What the request reads as, when that is not the stages' own status: an
+   * exit permit approved but never used reads as expired while every stage
+   * it passed stays approved.
+   */
+  status?: WorkflowInstance["status"];
 }): ReactElement {
   const t = useTranslations("app.permits.workflow");
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <SemanticStatusBadge status={instance.status} label={t(`status.${instance.status}`)} />
-        {instance.current_stage && instance.status === "in_progress" && (
+        <SemanticStatusBadge status={status} label={t(`status.${status}`)} />
+        {instance.current_stage && status === "in_progress" && (
           <span className="text-body-sm text-fg-muted">
             {t("waitingFor", { stage: instance.current_stage.label })}
           </span>
