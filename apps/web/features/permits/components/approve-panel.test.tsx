@@ -48,6 +48,7 @@ const mocks = vi.hoisted(
     lateClassName: string | undefined;
     exitStatus: string;
     exitFresh: boolean;
+    lessons: { over: boolean; known: boolean };
   } => ({
     mint: vi.fn(),
     invalidate: vi.fn(),
@@ -57,6 +58,7 @@ const mocks = vi.hoisted(
     lateClassName: "X-A",
     exitStatus: "in_progress",
     exitFresh: true,
+    lessons: { over: false, known: true },
   }),
 );
 
@@ -70,6 +72,10 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
 vi.mock("../../reference/directory-names", () => ({
   useDirectoryNames: (ids: string[]) =>
     new Map(ids.map((id) => [id, { id, name: "Siswa Terlambat", username: "s" }])),
+}));
+vi.mock("../lib/use-school-time", () => ({
+  usePermitLessons: (permit: unknown) =>
+    permit === undefined ? { over: false, known: false } : mocks.lessons,
 }));
 vi.mock("./workflow-stepper", () => ({ WorkflowSteps: () => <div data-testid="steps" /> }));
 
@@ -139,6 +145,7 @@ beforeEach(() => {
   mocks.lateClassName = "X-A";
   mocks.exitStatus = "in_progress";
   mocks.exitFresh = true;
+  mocks.lessons = { over: false, known: true };
 });
 
 afterEach(() => {
@@ -204,6 +211,38 @@ describe("ApprovePanel", () => {
     render(<ApprovePanel kind="exit_permit" instanceId="exit-1" />);
     expect(mocks.mint).not.toHaveBeenCalled();
     expect(screen.queryByRole("img", { name: /qrLabelStage/ })).not.toBeInTheDocument();
+    expect(screen.getByText("closedFor:Siswa Izin")).toBeInTheDocument();
+  });
+
+  // The regression: on the permit's own day, once its lessons were over,
+  // the student's card read it as expired while the approver's sheet still
+  // showed a waiting QR the student's scan could only be refused with.
+  it("mints no QR for an exit permit opened after its lessons ended", () => {
+    mocks.lessons = { over: true, known: true };
+    render(<ApprovePanel kind="exit_permit" instanceId="exit-1" />);
+    expect(mocks.mint).not.toHaveBeenCalled();
+    expect(screen.queryByRole("img", { name: /qrLabelStage/ })).not.toBeInTheDocument();
+    expect(screen.getByText("closedFor:Siswa Izin")).toBeInTheDocument();
+  });
+
+  it("mints no QR for an exit permit until the periods say whether its lessons are over", () => {
+    mocks.lessons = { over: false, known: false };
+    const { rerender } = render(<ApprovePanel kind="exit_permit" instanceId="exit-1" />);
+    expect(mocks.mint).not.toHaveBeenCalled();
+
+    mocks.lessons = { over: false, known: true };
+    rerender(<ApprovePanel kind="exit_permit" instanceId="exit-1" />);
+    expect(mocks.mint).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops the exit permit's QR when its lessons end while the sheet is open", () => {
+    const { rerender } = render(<ApprovePanel kind="exit_permit" instanceId="exit-1" />);
+    expect(screen.getByRole("img", { name: "qrLabelStage:Guru BK" })).toBeInTheDocument();
+
+    mocks.lessons = { over: true, known: true };
+    rerender(<ApprovePanel kind="exit_permit" instanceId="exit-1" />);
+    expect(screen.queryByRole("img", { name: /qrLabelStage/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/approvedFor/)).not.toBeInTheDocument();
     expect(screen.getByText("closedFor:Siswa Izin")).toBeInTheDocument();
   });
 
