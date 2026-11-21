@@ -56,7 +56,16 @@ describe("library violation status label", () => {
       expect(settlesByPayment({ penalty })).toBe(false);
       expect(violationStatusLabelKey({ status: "unpaid", penalty })).toBe("open");
       expect(violationStatusLabelKey({ status: "paid", penalty })).toBe("done");
+    }
+    for (const penalty of ["suspend", "replace_book"] as const) {
       expect(violationStatusLabelKey({ status: "waived", penalty })).toBe("waived");
     }
+  });
+
+  // A warning is stored settled when it is given and never waived by hand:
+  // it read "Dibebaskan" (let off), as if it had been revoked.
+  it("labels a given warning as done, also one stored waived", () => {
+    expect(violationStatusLabelKey({ status: "paid", penalty: "warning" })).toBe("done");
+    expect(violationStatusLabelKey({ status: "waived", penalty: "warning" })).toBe("done");
   });
 });

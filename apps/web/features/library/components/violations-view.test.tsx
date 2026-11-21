@@ -145,6 +145,32 @@ describe("ViolationsView settlement wording", () => {
     expect(screen.queryByRole("menuitem", { name: "markPaid" })).not.toBeInTheDocument();
   });
 
+  // A warning is recorded settled: its row read "Dibebaskan" in grey, as
+  // if the warning had been revoked.
+  it("labels a given warning as done, in the settled tone", () => {
+    const warning = {
+      ...suspension,
+      id: "v-warning",
+      penalty: "warning",
+      suspend_days: 0,
+      status: "waived",
+    } as LibraryViolation;
+    mocks.useLibraryViolationsQuery.mockReturnValue({
+      data: { data: [warning] },
+      isLoading: false,
+    });
+    render(<ViolationsView />);
+
+    const badges = screen.getAllByText("status.done");
+    expect(badges.length).toBeGreaterThan(0);
+    expect(screen.queryByText("status.waived")).not.toBeInTheDocument();
+    // The label sits in a truncating span inside the badge's pill.
+    for (const badge of badges) {
+      expect(badge.closest(".rounded-full")).toHaveClass("bg-success-soft");
+    }
+    expect(screen.queryByRole("button", { name: "rowActions" })).not.toBeInTheDocument();
+  });
+
   it("keeps the money wording for a fine", async () => {
     mocks.useLibraryViolationsQuery.mockReturnValue({ data: { data: [fine] }, isLoading: false });
     const user = userEvent.setup();

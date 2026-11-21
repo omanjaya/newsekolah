@@ -104,8 +104,8 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         setStatus(value as (typeof STATUS_VALUES)[number]);
         paging.resetPage();
       },
-      // The filter spans every penalty, so its labels cover a paid fine
-      // and a served suspension alike.
+      // The filter spans every penalty, so its labels cover a paid fine,
+      // a served suspension and a given warning alike.
       options: STATUSES.map((s) => ({ value: s, label: t(`statusFilter.${s}`) })),
     },
     {
@@ -178,7 +178,7 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         enableSorting: false,
         meta: { card: "meta", skeleton: "badge" },
         cell: ({ row }) => (
-          <Badge tone={toneOf(VIOLATION_STATUS_TONE, row.original.status)}>
+          <Badge tone={toneOf(VIOLATION_STATUS_TONE, violationStatusLabelKey(row.original))}>
             {t(`status.${violationStatusLabelKey(row.original)}`)}
           </Badge>
         ),

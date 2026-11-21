@@ -56,11 +56,15 @@ export type ViolationStatusLabelKey = "unpaid" | "paid" | "waived" | "open" | "d
  * The label key for a violation's settlement. The stored status (unpaid,
  * paid, waived) is shared by every penalty; a fine keeps the money words,
  * any other penalty reads as open or done. Waived ("Dibebaskan") carries
- * no money either way.
+ * no money either way. A warning is stored settled when it is given and
+ * staff never waive one by hand, so a settled warning always reads done
+ * ("Selesai"), never as let off -- also one stored waived before the
+ * server settled warnings as done.
  */
 export function violationStatusLabelKey(
   violation: Pick<LibraryViolation, "status" | "penalty">,
 ): ViolationStatusLabelKey {
+  if (violation.penalty === "warning") return violation.status === "unpaid" ? "open" : "done";
   if (violation.status === "waived" || settlesByPayment(violation)) return violation.status;
   return violation.status === "unpaid" ? "open" : "done";
 }

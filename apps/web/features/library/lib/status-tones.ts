@@ -33,9 +33,12 @@ export const LOAN_STATUS_TONE: Record<string, BadgeTone> = {
   lost: "danger",
 };
 
+/** Keyed by violationStatusLabelKey, so a done warning reads like a paid fine. */
 export const VIOLATION_STATUS_TONE: Record<string, BadgeTone> = {
   unpaid: "warning",
+  open: "warning",
   paid: "success",
+  done: "success",
   waived: "neutral",
 };
 
