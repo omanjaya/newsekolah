@@ -126,6 +126,7 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 
 			statusCode := entryIn.StatusCode
 			source := domain.SourceTeacher
+			notes := entryIn.Notes
 			if overrideCode, overrideSource, ok, err := s.overrider.Override(ctx, tenantID, entryIn.StudentUserID, session.Date); err != nil {
 				return err
 			} else if ok {
@@ -136,6 +137,19 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 					overridden = append(overridden, entryIn.StudentUserID)
 				}
 				statusCode, source = overrideCode, overrideSource
+				// The forced entry carries the letter's note too, as
+				// ForceStatus writes it into a session already open when
+				// the letter is issued, so a session opened afterwards
+				// names the letter the same way (audit
+				// r7v-auth-attendance-R1). The teacher's note stays only
+				// when the override has none to give.
+				letterNote, err := s.overrideNote(ctx, tenantID, entryIn.StudentUserID, session.Date)
+				if err != nil {
+					return err
+				}
+				if letterNote != "" {
+					notes = letterNote
+				}
 			}
 
 			existing, found, err := s.repo.GetEntryBySessionStudent(ctx, tenantID, sessionID, entryIn.StudentUserID)
@@ -145,7 +159,7 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 
 			saved, err := s.repo.UpsertEntry(ctx, domain.Entry{
 				TenantID: tenantID, SessionID: sessionID, StudentUserID: entryIn.StudentUserID, StatusCode: statusCode,
-				Source: source, Notes: entryIn.Notes, RecordedBy: uuid.NullUUID{UUID: actor.UserID, Valid: true},
+				Source: source, Notes: notes, RecordedBy: uuid.NullUUID{UUID: actor.UserID, Valid: true},
 			})
 			if err != nil {
 				return err

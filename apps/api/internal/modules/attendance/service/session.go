@@ -504,6 +504,13 @@ func (s *Service) buildSessionDetail(ctx context.Context, tenantID uuid.UUID, se
 			return SessionDetail{}, err
 		} else if ok {
 			item.CurrentStatus, item.Source, item.Locked = code, source, true
+			// The roster names the letter before the session is saved,
+			// as SaveEntries will store it.
+			if item.Notes == "" {
+				if item.Notes, err = s.overrideNote(ctx, tenantID, student.ID, session.Date); err != nil {
+					return SessionDetail{}, err
+				}
+			}
 		}
 
 		roster = append(roster, item)
