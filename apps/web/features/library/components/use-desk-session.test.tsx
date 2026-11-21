@@ -28,7 +28,7 @@ vi.mock("../members-api", () => ({
 vi.mock("@newsekolah/ui", async () => {
   const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
   return {
-    useSingleFlight: actual.useSingleFlight,
+    useScanQueue: actual.useScanQueue,
     useScanFeedback: () => ({ playSuccess: vi.fn(), playError: vi.fn() }),
   };
 });
@@ -281,6 +281,121 @@ describe("useDeskSession", () => {
     expect(findMember).not.toHaveBeenCalled();
     expect(result.current.basket.return).toHaveLength(1);
     expect(result.current.scanError).toBe("");
+  });
+
+  // A librarian working through a stack read book B while book A's return
+  // was still in flight: B was dropped with no request, row or message,
+  // and stayed on loan.
+  it("returns a different book read while the previous return is in flight", async () => {
+    const pending: ((loan: unknown) => void)[] = [];
+    returnByBarcode.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          pending.push(resolve);
+        }),
+    );
+    const loan = (titleId: string) => ({
+      title_id: titleId,
+      member_user_id: "u1",
+      due_on: "2026-11-20",
+      returned_at: "2026-11-20T08:00:00Z",
+      fine_amount: 0,
+      late_days: 0,
+    });
+    const { result } = renderHook(() => useDeskSession());
+    act(() => {
+      result.current.setMode("return");
+    });
+
+    scan(result, "2026/00031");
+    scan(result, "2026/00032");
+    expect(returnByBarcode).toHaveBeenCalledTimes(1);
+    expect(result.current.scanning).toBe(true);
+
+    await act(async () => {
+      pending.shift()?.(loan("tA"));
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(returnByBarcode).toHaveBeenCalledTimes(2);
+    });
+    await act(async () => {
+      pending.shift()?.(loan("tB"));
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(result.current.scanning).toBe(false);
+    });
+    expect(returnByBarcode.mock.calls).toEqual([
+      [{ barcode: "2026/00031" }],
+      [{ barcode: "2026/00032" }],
+    ]);
+    expect(result.current.basket.return.map((item) => [item.barcode, item.state])).toEqual(
+      expect.arrayContaining([
+        ["2026/00031", "done"],
+        ["2026/00032", "done"],
+      ]),
+    );
+    expect(result.current.basket.return).toHaveLength(2);
+    expect(result.current.scanError).toBe("");
+  });
+
+  // The queued rescan runs right after the saves before it, often before
+  // React re-renders: it must still see book A's saved row.
+  it("reports a queued rescan of a book returned just before it", async () => {
+    const pending: ((loan: unknown) => void)[] = [];
+    returnByBarcode
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            pending.push(resolve);
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            pending.push(resolve);
+          }),
+      )
+      .mockRejectedValueOnce(
+        new ApiError({ status: 404, code: "LIBRARY_LOAN_NOT_FOUND", message: "not found" }),
+      );
+    findMember.mockResolvedValue({ status: "copy" });
+    const loan = (titleId: string) => ({
+      title_id: titleId,
+      member_user_id: "u1",
+      due_on: "2026-11-20",
+      returned_at: "2026-11-20T08:00:00Z",
+      fine_amount: 0,
+      late_days: 0,
+    });
+    const { result } = renderHook(() => useDeskSession());
+    act(() => {
+      result.current.setMode("return");
+    });
+
+    scan(result, "2026/00031");
+    scan(result, "2026/00032");
+    scan(result, "2026/00031");
+    await act(async () => {
+      pending.shift()?.(loan("tA"));
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(returnByBarcode).toHaveBeenCalledTimes(2);
+    });
+    await act(async () => {
+      pending.shift()?.(loan("tB"));
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(result.current.scanError).toContain("basket.alreadyReturned");
+    });
+    expect(returnByBarcode).toHaveBeenCalledTimes(3);
+    expect(result.current.basket.return).toHaveLength(2);
+    expect(result.current.basket.return.every((item) => item.state === "done")).toBe(true);
   });
 
   it("keeps a saved renewal when a rescan hits the renewal limit", async () => {

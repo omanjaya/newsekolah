@@ -21,7 +21,7 @@ vi.mock("../../../lib/api/client", () => ({ useApiClient: () => client }));
 vi.mock("@newsekolah/ui", async () => {
   const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
   return {
-    useSingleFlight: actual.useSingleFlight,
+    useScanQueue: actual.useScanQueue,
     useScanFeedback: () => ({ playSuccess: vi.fn(), playError: vi.fn() }),
     toast: { success: vi.fn(), error: vi.fn() },
   };

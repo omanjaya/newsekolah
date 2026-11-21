@@ -37,7 +37,7 @@ export interface DeskScanBarProps {
   pendingBorrow: number;
   /** Whether a member is being served: before one is, a scan in Pinjam is their card. */
   hasMember: boolean;
-  /** A scan is resolving; further codes wait for it (the session ignores them). */
+  /** A scan is resolving; further codes are queued and run after it, in order. */
   scanning: boolean;
   onScan: (event: BarcodeScanEvent) => void;
   onSelectMember: (member: NonNullable<LibraryLookupResult["member"]>) => void;

@@ -4,9 +4,9 @@ import { ApiError } from "@newsekolah/api-client";
 import { formatCurrency, formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import type { BarcodeScanEvent } from "@newsekolah/ui";
-import { useScanFeedback, useSingleFlight } from "@newsekolah/ui";
+import { useScanFeedback, useScanQueue } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
@@ -33,7 +33,15 @@ import { useLibraryMemberBorrowingStatusQuery, useLibraryMemberQuery } from "../
 
 import type { DeskSelectedMember } from "./desk-member-panel";
 
-const EMPTY_BASKET: Record<DeskMode, DeskBasketItem[]> = { borrow: [], return: [], renew: [] };
+type DeskBasket = Record<DeskMode, DeskBasketItem[]>;
+
+const EMPTY_BASKET: DeskBasket = { borrow: [], return: [], renew: [] };
+
+/** A code read at the desk, in the mode the desk was in when it was read. */
+interface DeskScan {
+  code: string;
+  mode: DeskMode;
+}
 
 /** Why a code scanned for a member card did not select anyone. */
 const MEMBER_MISS_KEY = {
@@ -66,10 +74,24 @@ export function useDeskSession() {
   const feedback = useScanFeedback();
 
   const [mode, setMode] = useState<DeskMode>("borrow");
-  const [member, setMember] = useState<DeskSelectedMember | null>(null);
-  const [basket, setBasket] = useState<Record<DeskMode, DeskBasketItem[]>>(EMPTY_BASKET);
-  const [scanning, setScanning] = useState(false);
+  const [member, setMemberState] = useState<DeskSelectedMember | null>(null);
+  const [basket, setBasketState] = useState<DeskBasket>(EMPTY_BASKET);
   const [scanError, setScanError] = useState("");
+
+  // Scans are queued and run one after another (see `scanQueue`), often
+  // before React has re-rendered with the previous scan's result. These
+  // refs mirror the member and the basket synchronously, so a queued scan
+  // always sees who was selected and what was saved just before it.
+  const memberRef = useRef<DeskSelectedMember | null>(null);
+  const basketRef = useRef<DeskBasket>(EMPTY_BASKET);
+  const setMember = useCallback((next: DeskSelectedMember | null) => {
+    memberRef.current = next;
+    setMemberState(next);
+  }, []);
+  const setBasket = useCallback((update: DeskBasket | ((prev: DeskBasket) => DeskBasket)) => {
+    basketRef.current = typeof update === "function" ? update(basketRef.current) : update;
+    setBasketState(basketRef.current);
+  }, []);
   const [receiptOpen, setReceiptOpen] = useState(false);
 
   const memberDetail = useLibraryMemberQuery(member?.userId ?? "");
@@ -85,30 +107,39 @@ export function useDeskSession() {
   // on the desk (an idle desk can take a whole drop-box from many readers),
   // only that member's own loans stay, so their receipt never lists books
   // someone else handed back; the rest, failed rows included, are dropped.
-  const selectMember = useCallback((next: DeskSelectedMember) => {
-    setBasket((prev) => ({
-      borrow: [],
-      return: prev.return.filter((item) => item.memberUserId === next.userId),
-      renew: prev.renew.filter((item) => item.memberUserId === next.userId),
-    }));
-    setMember(next);
-    setScanError("");
-  }, []);
+  const selectMember = useCallback(
+    (next: DeskSelectedMember) => {
+      setBasket((prev) => ({
+        borrow: [],
+        return: prev.return.filter((item) => item.memberUserId === next.userId),
+        renew: prev.renew.filter((item) => item.memberUserId === next.userId),
+      }));
+      setMember(next);
+      setScanError("");
+    },
+    [setBasket, setMember],
+  );
 
   const endSession = useCallback(() => {
     setMember(null);
     setBasket(EMPTY_BASKET);
     setScanError("");
     setReceiptOpen(false);
-  }, []);
+  }, [setBasket, setMember]);
 
-  const removeItem = useCallback((forMode: DeskMode, barcode: string) => {
-    setBasket((prev) => ({ ...prev, [forMode]: removeBasketItem(prev[forMode], barcode) }));
-  }, []);
+  const removeItem = useCallback(
+    (forMode: DeskMode, barcode: string) => {
+      setBasket((prev) => ({ ...prev, [forMode]: removeBasketItem(prev[forMode], barcode) }));
+    },
+    [setBasket],
+  );
 
-  const undo = useCallback((forMode: DeskMode) => {
-    setBasket((prev) => ({ ...prev, [forMode]: undoLastBasketItem(prev[forMode]) }));
-  }, []);
+  const undo = useCallback(
+    (forMode: DeskMode) => {
+      setBasket((prev) => ({ ...prev, [forMode]: undoLastBasketItem(prev[forMode]) }));
+    },
+    [setBasket],
+  );
 
   const addMemberByScan = useCallback(
     async (code: string) => {
@@ -165,7 +196,7 @@ export function useDeskSession() {
         setScanError(t("borrow.codeNotFound", { code }));
       }
     },
-    [findCopy, titleName, feedback, t],
+    [findCopy, titleName, feedback, t, setBasket],
   );
 
   /** The book's title for a scanned barcode, or the barcode itself when it names no copy. */
@@ -202,7 +233,7 @@ export function useDeskSession() {
         const match = await findMember.mutateAsync(code).catch(() => null);
         if (match?.status === "found") {
           const found = match.member;
-          if (found.user_id === member?.userId) {
+          if (found.user_id === memberRef.current?.userId) {
             feedback.playError();
             setScanError(t("member.cardNotBook", { code }));
             return;
@@ -220,7 +251,7 @@ export function useDeskSession() {
       }
 
       feedback.playError();
-      const known = basket[forMode].find((item) => item.barcode === code);
+      const known = basketRef.current[forMode].find((item) => item.barcode === code);
       if (known?.state === "done") {
         setScanError(
           forMode === "return"
@@ -241,7 +272,7 @@ export function useDeskSession() {
         }),
       }));
     },
-    [apiErrorMessage, findMember, member, feedback, t, selectMember, basket, titleForBarcode],
+    [apiErrorMessage, findMember, feedback, t, selectMember, setBasket, titleForBarcode],
   );
 
   const addReturnScan = useCallback(
@@ -281,7 +312,7 @@ export function useDeskSession() {
         await recordRefusal("return", code, error);
       }
     },
-    [returnByBarcode, titleName, feedback, recordRefusal, t, locale],
+    [returnByBarcode, titleName, feedback, recordRefusal, t, locale, setBasket],
   );
 
   const addRenewScan = useCallback(
@@ -304,35 +335,39 @@ export function useDeskSession() {
         await recordRefusal("renew", code, error);
       }
     },
-    [renewByBarcode, titleName, feedback, recordRefusal, t, locale],
+    [renewByBarcode, titleName, feedback, recordRefusal, t, locale, setBasket],
   );
 
-  // One scan at a time, guarded by a ref and not by `scanning`: a scanner's
-  // double read fires both events before React re-renders, so a state
-  // guard would let the second through as a concurrent request whose
-  // refusal could not yet see the first scan's saved row.
-  const runScan = useSingleFlight(async (code: string) => {
-    setScanError("");
-    setScanning(true);
-    try {
+  // Scans run one at a time, in the order they were read, so each refusal
+  // sees the previous scan's saved row. A different book read while one is
+  // in flight (a librarian working fast through a stack) waits its turn
+  // instead of being lost; only a scanner's double read of the same code
+  // is dropped, by a ref set before React re-renders.
+  const scanQueue = useScanQueue(
+    async ({ code, mode: scanMode }: DeskScan) => {
       // Only lending needs to know who is borrowing first; a return or a
-      // renewal is identified by the book's barcode alone.
-      if (mode === "return") await addReturnScan(code);
-      else if (mode === "renew") await addRenewScan(code);
-      else if (member) await addBorrowScan(code);
+      // renewal is identified by the book's barcode alone. The member is
+      // read when the scan runs, so a book read right after a card goes to
+      // the member that card selected.
+      if (scanMode === "return") await addReturnScan(code);
+      else if (scanMode === "renew") await addRenewScan(code);
+      else if (memberRef.current) await addBorrowScan(code);
       else await addMemberByScan(code);
-    } finally {
-      setScanning(false);
-    }
-  });
+    },
+    (scan) => `${scan.mode}:${scan.code}`,
+  );
+  const enqueueScan = scanQueue.enqueue;
 
   const handleScan = useCallback(
     (event: BarcodeScanEvent) => {
       const code = event.code.trim();
       if (!code) return;
-      void runScan(code);
+      // The scan keeps the mode the desk was in when the code was read. A
+      // new read clears the last message when it is taken, not when it
+      // runs, so the refusal of a book scanned before it stays on screen.
+      if (enqueueScan({ code, mode })) setScanError("");
     },
-    [runScan],
+    [enqueueScan, mode],
   );
 
   const confirmBorrow = useCallback(async () => {
@@ -385,7 +420,7 @@ export function useDeskSession() {
         return { ...prev, borrow: next };
       });
     }
-  }, [member, basket.borrow, batchBorrow, apiErrorMessage, t, locale, feedback]);
+  }, [member, basket.borrow, batchBorrow, apiErrorMessage, t, locale, feedback, setBasket]);
 
   // Alt+1/2/3 switches mode, Alt+Z undoes the last scan -- never emitted by
   // the hardware scanner itself (lib/desk-basket.ts's matchDeskShortcut).
@@ -412,7 +447,7 @@ export function useDeskSession() {
     selectMember,
     endSession,
     basket,
-    scanning,
+    scanning: scanQueue.busy,
     scanError,
     handleScan,
     removeItem,
