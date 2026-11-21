@@ -162,6 +162,85 @@ describe("AttendanceCalendar", () => {
     expect(screen.getByText("Biologi").closest("li")).toHaveTextContent("Surat dari dokter");
   });
 
+  // On a phone the text column is about 242px wide: a lesson a letter
+  // fills (period, teacher, letter number, source) needs three lines there,
+  // and the meta was one joined string clamped at two, so it ended in
+  // "Diisi otomatis dari..." (audit r9v-attendance-reports-R1).
+  it("keeps every fact of a letter-filled lesson whole, on as many lines as there are facts", () => {
+    calendarData = [
+      day("2026-09-20", "I", [
+        {
+          schedule_id: "sch-1",
+          subject_id: "subj-1",
+          subject_name: "Matematika",
+          status_code: "I",
+          period_label: "Jam 1 – Jam 11",
+          teacher_name: "Guru Contoh",
+          note: "leave letter 22/IZIN/IV/2027",
+          source: "leave",
+        },
+      ]),
+    ];
+    render(<AttendanceCalendar />);
+
+    fireEvent.click(dayButton("20"));
+
+    const row = screen.getByText("Matematika").closest("li") as HTMLElement;
+    const facts = Array.from(row.querySelectorAll("[data-meta-fact]")).map((el) =>
+      el.textContent.replace(/\s·$/, ""),
+    );
+    // One box per fact, so the line wraps between facts and never inside one.
+    expect(facts).toEqual([
+      "Jam 1 – Jam 11",
+      "Guru Contoh",
+      'leaveLetterNote {"number":"22/IZIN/IV/2027"}',
+      "sessionSource.leave",
+    ]);
+    // Room for each fact on a line of its own: none is clamped away.
+    const metaBox = row.querySelector("[data-meta-fact]")?.parentElement;
+    expect(metaBox?.className).toContain("line-clamp-4");
+    expect(metaBox?.className).not.toContain("line-clamp-2");
+    // The letter number is short and fixed: one line, like the period.
+    expect(screen.getByText('leaveLetterNote {"number":"22/IZIN/IV/2027"}')).toHaveClass(
+      "truncate",
+    );
+  });
+
+  // Each fact a one-line box cut a titled name or a sentence-long note of
+  // the teacher's to an ellipsis on a phone, with no way to read the rest
+  // and empty meta lines below it (audit r9v-attendance-reports-R1).
+  it("wraps a teacher's name and own note instead of cutting them to one line", () => {
+    const teacher = "Dra. Hj. Siti Nurhaliza Kartika, S.Pd.";
+    const note = "Datang terlambat karena hujan deras, sudah izin lewat telepon kepada wali kelas";
+    calendarData = [
+      day("2026-09-20", "S", [
+        {
+          schedule_id: "sch-1",
+          subject_id: "subj-1",
+          subject_name: "Matematika",
+          status_code: "S",
+          period_label: "Jam 1 – Jam 2",
+          teacher_name: teacher,
+          note,
+          source: "teacher",
+        },
+      ]),
+    ];
+    render(<AttendanceCalendar />);
+
+    fireEvent.click(dayButton("20"));
+
+    const noteFact = screen.getByText(note);
+    expect(noteFact).toHaveAttribute("data-meta-wrap");
+    expect(noteFact.closest(".truncate")).toBeNull();
+    const teacherFact = screen.getByText((_, el) =>
+      Boolean(el?.hasAttribute("data-meta-fact") && el.textContent.startsWith(teacher)),
+    );
+    expect(teacherFact).toHaveAttribute("data-meta-wrap");
+    expect(teacherFact.closest(".truncate")).toBeNull();
+    expect(screen.getByText("Jam 1 – Jam 2")).toHaveClass("truncate");
+  });
+
   // The API names every lesson a letter covers; a row it cannot name (a
   // student with no class) is titled by the letter, not by a bare
   // "Subject", and its zero schedule id is no key of its own (audit

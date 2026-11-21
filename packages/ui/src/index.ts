@@ -17,7 +17,7 @@ export {
 } from "./components/card.js";
 export { SectionHeader, type SectionHeaderProps } from "./components/section-header.js";
 export { List, type ListProps, type ListVariant } from "./components/list.js";
-export { ListRow, type ListRowProps } from "./components/list-row.js";
+export { ListRow, type ListRowProps, type ListRowWrappingFact } from "./components/list-row.js";
 export {
   DataList,
   DataListItem,
