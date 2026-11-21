@@ -305,7 +305,15 @@ describe("useActiveIndicator in a scrolled strip", () => {
    * counts load the strip overflows by 1px; the counts then widen every
    * segment and push the checked one past the strip's edge.
    */
-  function KindStrip({ counted, active = "late" }: { counted: boolean; active?: string }) {
+  function KindStrip({
+    counted,
+    active = "late",
+    clientWidth = 358,
+  }: {
+    counted: boolean;
+    active?: string;
+    clientWidth?: number;
+  }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const indicatorRef = useRef<HTMLSpanElement>(null);
     useActiveIndicator(containerRef, indicatorRef, '[data-state="checked"]');
@@ -327,7 +335,7 @@ describe("useActiveIndicator in a scrolled strip", () => {
         aria-label="Filter"
         data-testid="strip"
         data-scroll-root=""
-        data-clientwidth={358}
+        data-clientwidth={clientWidth}
         data-scrollwidth={counted ? 437 : 359}
       >
         <span ref={indicatorRef} aria-hidden="true" data-testid="indicator" />
@@ -406,5 +414,46 @@ describe("useActiveIndicator in a scrolled strip", () => {
       rerender(<KindStrip counted />);
     });
     expect(strip.scrollLeft).toBe(79);
+  });
+
+  it("shows the checked item again when only the strip narrows, unless the reader scrolled it", () => {
+    vi.stubGlobal("ResizeObserver", FakeResizeObserver);
+    try {
+      const first = render(<KindStrip counted />);
+      const strip = screen.getByTestId("strip");
+      const indicator = screen.getByTestId("indicator");
+      // The checked item [290-410] ends inside the 358px view.
+      expect(strip.scrollLeft).toBe(79);
+
+      // Rotation narrows the strip; every item keeps its box, so only the
+      // strip's resize reports it.
+      first.rerender(<KindStrip counted clientWidth={300} />);
+      act(() => {
+        FakeResizeObserver.last?.resize();
+      });
+      // [290-410] ends inside the 300px view again, as far as the strip scrolls.
+      expect(strip.scrollLeft).toBe(137);
+      expect(strip.scrollLeft + strip.clientWidth).toBeGreaterThanOrEqual(410);
+      expect(indicator.style.getPropertyValue("--indicator-x")).toBe("290px");
+      first.unmount();
+
+      // The same narrowing after a swipe back to the start leaves it there.
+      const second = render(<KindStrip counted />);
+      const again = screen.getByTestId("strip");
+      act(() => {
+        again.dispatchEvent(new Event("touchstart"));
+        again.scrollLeft = 0;
+        again.dispatchEvent(new Event("scroll"));
+      });
+      second.rerender(<KindStrip counted clientWidth={300} />);
+      act(() => {
+        FakeResizeObserver.last?.resize();
+      });
+      expect(again.scrollLeft).toBe(0);
+      expect(screen.getByTestId("indicator").style.getPropertyValue("--indicator-x")).toBe("290px");
+    } finally {
+      vi.unstubAllGlobals();
+      FakeResizeObserver.last = null;
+    }
   });
 });
