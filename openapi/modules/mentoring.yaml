@@ -445,6 +445,7 @@ components:
           discipline_points,
           discipline_active_count,
           published_subjects,
+          score_decimals,
           achievements,
           clubs,
         ]
@@ -466,6 +467,11 @@ components:
             properties:
               subject_id: { type: string, format: uuid }
               score: { type: number }
+        score_decimals:
+          type: integer
+          minimum: 0
+          maximum: 4
+          description: "The decimals the school's grading scale keeps (its round_decimal), so published_subjects' scores read the same as on the gradebook and the student's own grades; 2 while grading is off"
         achievements:
           type: array
           description: The student's achievements in every academic year, as the student profile lists them; empty while activities is turned off.

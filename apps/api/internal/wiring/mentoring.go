@@ -13,6 +13,7 @@ import (
 	gradingdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/domain"
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	mentoringdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring/domain"
+	mentoringservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring/service"
 	platformdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
 )
 
@@ -76,6 +77,20 @@ func (g MentoringGrading) PublishedSubjects(ctx context.Context, tenantID, stude
 		out = append(out, mentoringdomain.PublishedGrade{SubjectID: subj.SubjectID, Score: *subj.ReportScore})
 	}
 	return out, nil
+}
+
+// ScoreDecimals is the grading scale's round_decimal. While the tenant has
+// grading turned off there is no scale to read, and the snapshot has no
+// scores to format either, so it reports mentoring's default.
+func (g MentoringGrading) ScoreDecimals(ctx context.Context, tenantID uuid.UUID) (int, error) {
+	scale, err := g.Svc.Scale(ctx, tenantID)
+	if errors.Is(err, gradingdomain.ErrModuleDisabled) {
+		return mentoringservice.DefaultScoreDecimals, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	return scale.RoundDecimal, nil
 }
 
 // MentoringActivities reads a mentee's achievements (every academic year,

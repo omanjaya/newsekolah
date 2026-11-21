@@ -15,6 +15,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring"
 	mentoringdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring/domain"
+	mentoringservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/platform"
 	platformdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
@@ -157,4 +158,42 @@ func TestMentoringSnapshotKeepsWorkingWhileGradingIsOff(t *testing.T) {
 	require.Equal(t, offStudent, snapshot.StudentUserID)
 	require.Equal(t, "X-A", snapshot.ClassName)
 	require.Empty(t, snapshot.PublishedSubjects)
+	require.Equal(t, mentoringservice.DefaultScoreDecimals, snapshot.ScoreDecimals,
+		"grading off: no scale to read, the default precision applies")
+}
+
+// TestMentoringSnapshotCarriesTheGradingScalePrecision
+// (r4v-grades-discipline-R1): the student profile's Nilai tab and the
+// mentor view wrote a published 55.08 as 55,1 while the gradebook and the
+// student's own grades page showed 55,08. The snapshot now carries the
+// scale's round_decimal so the web formats scores the same way.
+func TestMentoringSnapshotCarriesTheGradingScalePrecision(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	platformSvc := platform.Register(platform.Dependencies{Pool: pg.AppPool, Clock: clock.Real{}, Mode: config.TenancyMulti}).Service
+	schoolModule := school.Register(pg.AppPool, tenant.ModeSingle, nil)
+	gradingModule := grading.Register(grading.Dependencies{
+		Pool: pg.AppPool, Years: schoolModule.Service, Clock: clock.Real{}, Flags: GradingFlags{Platform: platformSvc},
+	})
+	mentoringModule := mentoring.Register(mentoring.Dependencies{
+		Pool: pg.AppPool, Years: schoolModule.Service, Grading: MentoringGrading{Svc: gradingModule.Service},
+		Flags: PlatformFlags{Svc: platformSvc}, Clock: clock.Real{},
+	})
+
+	fx := seedGradeLevelFixture(t, pg.AdminPool)
+	student := enrolledStudent(t, pg.AdminPool, fx)
+	decimals := func() int {
+		t.Helper()
+		snapshot, err := mentoringModule.Service.StudentSnapshot(ctx, fx.tenantID, mentoringdomain.Viewer{ReadAll: true}, student)
+		require.NoError(t, err)
+		return snapshot.ScoreDecimals
+	}
+	require.Equal(t, 2, decimals(), "the default scale keeps two decimals")
+
+	scale, err := gradingModule.Service.Scale(ctx, fx.tenantID)
+	require.NoError(t, err)
+	scale.RoundDecimal = 3
+	_, err = gradingModule.Service.UpdateScale(ctx, fx.tenantID, uuid.New(), scale)
+	require.NoError(t, err)
+	require.Equal(t, 3, decimals(), "the school's own round_decimal applies on the next read")
 }

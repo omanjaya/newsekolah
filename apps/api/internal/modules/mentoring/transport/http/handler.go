@@ -361,7 +361,7 @@ func (h *MentoringHandler) GetMentorStudentSnapshot(ctx context.Context, request
 	return api.GetMentorStudentSnapshot200JSONResponse{
 		StudentUserId: openapi_types.UUID(snapshot.StudentUserID), StudentName: snapshot.StudentName, ClassName: snapshot.ClassName,
 		AttendanceByStatus: snapshot.AttendanceByStatus, DisciplinePoints: snapshot.DisciplinePoints,
-		DisciplineActiveCount: snapshot.DisciplineActiveCount, PublishedSubjects: subjects,
+		DisciplineActiveCount: snapshot.DisciplineActiveCount, PublishedSubjects: subjects, ScoreDecimals: snapshot.ScoreDecimals,
 		Achievements: toAPISnapshotAchievements(snapshot.Achievements), Clubs: toAPISnapshotClubs(snapshot.Clubs),
 	}, nil
 }
