@@ -330,6 +330,29 @@ func (s *Service) LeaveOverride(ctx context.Context, tenantID, studentUserID uui
 	return statusCode, ok, err
 }
 
+// LeaveOverrideNote is the note LeaveOverride's status carries for the
+// student on date: the covering letter's "leave letter <number>", as
+// IssueLeaveRequest writes it into each opened session
+// (attendance.OverrideNoter). Empty when no issued letter covers date.
+func (s *Service) LeaveOverrideNote(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (string, error) {
+	var note string
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		lr, found, err := s.repo.GetIssuedLeaveCoveringDate(ctx, tenantID, studentUserID, date)
+		if err != nil || !found {
+			return err
+		}
+		note = leaveLetterNote(lr.LetterNumber)
+		return nil
+	})
+	return note, err
+}
+
+// leaveLetterNote is the attendance note an issued leave letter forces with
+// its status; the web reads it back as the localized "Surat izin <number>".
+func leaveLetterNote(number string) string {
+	return "leave letter " + number
+}
+
 // LeaveOverrideRow is one student's forced attendance status on one date.
 type LeaveOverrideRow struct {
 	StudentUserID uuid.UUID

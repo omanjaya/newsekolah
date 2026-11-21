@@ -1239,6 +1239,10 @@
         "dayTitle": "{submitted} dari {expected} sesi tercatat",
         "dayDetailLabel": "Rincian sesi tanggal {date}",
         "unknownSubject": "Mata pelajaran",
+        "coveredBy": {
+          "leave": "Surat izin",
+          "permit": "Izin keluar"
+        },
         "sessionSource": {
           "leave": "Diisi otomatis dari surat izin",
           "permit": "Diisi otomatis dari izin keluar",

@@ -711,6 +711,81 @@ func (q *Queries) ListEnrolledClassesForAttendance(ctx context.Context, arg List
 	return items, nil
 }
 
+const listLessonDetailsForClassOnAttendance = `-- name: ListLessonDetailsForClassOnAttendance :many
+select
+  s.id as schedule_id,
+  s.subject_id,
+  sub.name as subject_name,
+  s.teacher_user_id,
+  tu.name as teacher_name,
+  sp.name as start_period_name,
+  ep.name as end_period_name
+from schedules s
+join subjects sub on sub.id = s.subject_id
+join users tu on tu.id = s.teacher_user_id
+join periods sp on sp.id = s.start_period_id
+join periods ep on ep.id = s.end_period_id
+where s.tenant_id = $1 and s.academic_year_id = $2 and s.class_id = $3
+  and s.day_of_week = extract(isodow from $4::date)::smallint
+  and s.effective_range @> $4::date
+order by s.start_seq, sub.name
+`
+
+type ListLessonDetailsForClassOnAttendanceParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	ClassID        uuid.UUID   `json:"class_id"`
+	OnDate         pgtype.Date `json:"on_date"`
+}
+
+type ListLessonDetailsForClassOnAttendanceRow struct {
+	ScheduleID      uuid.UUID `json:"schedule_id"`
+	SubjectID       uuid.UUID `json:"subject_id"`
+	SubjectName     string    `json:"subject_name"`
+	TeacherUserID   uuid.UUID `json:"teacher_user_id"`
+	TeacherName     string    `json:"teacher_name"`
+	StartPeriodName string    `json:"start_period_name"`
+	EndPeriodName   string    `json:"end_period_name"`
+}
+
+// A class's lessons on one date -- the version of each in effect that day,
+// the same set CountSchedulesForClassOn counts as the day's expected
+// sessions -- with the subject/teacher/period names a student calendar row
+// shows, ordered by when the lesson runs. A day an issued leave letter
+// covers lists the lessons it covers from this, opened or not.
+func (q *Queries) ListLessonDetailsForClassOnAttendance(ctx context.Context, arg ListLessonDetailsForClassOnAttendanceParams) ([]ListLessonDetailsForClassOnAttendanceRow, error) {
+	rows, err := q.db.Query(ctx, listLessonDetailsForClassOnAttendance,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.ClassID,
+		arg.OnDate,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLessonDetailsForClassOnAttendanceRow{}
+	for rows.Next() {
+		var i ListLessonDetailsForClassOnAttendanceRow
+		if err := rows.Scan(
+			&i.ScheduleID,
+			&i.SubjectID,
+			&i.SubjectName,
+			&i.TeacherUserID,
+			&i.TeacherName,
+			&i.StartPeriodName,
+			&i.EndPeriodName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listLibraryHolidaysInRange = `-- name: ListLibraryHolidaysInRange :many
 select date, end_date from academic_calendar_events
 where tenant_id = $1 and kind = 'holiday' and date <= $3 and end_date >= $2

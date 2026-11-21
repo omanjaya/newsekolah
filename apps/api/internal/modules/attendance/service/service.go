@@ -94,6 +94,21 @@ type SessionDetailRow struct {
 	SubmittedAt     *time.Time
 }
 
+// LessonDetailRow is one of a class's lessons on a date -- the schedule
+// version in effect that day, whether or not a session of it was opened --
+// with the subject/teacher/period names a calendar row shows.
+//
+// -- cross-module read; replace with academic/identity reader interface after merge --
+type LessonDetailRow struct {
+	ScheduleID      uuid.UUID
+	SubjectID       uuid.UUID
+	SubjectName     string
+	TeacherUserID   uuid.UUID
+	TeacherName     string
+	StartPeriodName string
+	EndPeriodName   string
+}
+
 // MonitorCardRow is one schedule occurrence currently in its period, the
 // raw input to a MonitorSessionCard.
 //
@@ -253,6 +268,11 @@ type Repository interface {
 	// as ListCurrentPeriodScheduleCards above.
 	ListSessionDetailsForClassDate(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) ([]SessionDetailRow, error)
 	ListOwnSubmittedSessionDetails(ctx context.Context, tenantID, teacherUserID uuid.UUID, date time.Time) ([]SessionDetailRow, error)
+	// ListLessonDetailsForClassDate lists a class's lessons on date (the
+	// versions in effect, as CountSchedulesForClassOn counts them) with
+	// their names, opened or not: the rows of a student's calendar day an
+	// issued leave letter covers.
+	ListLessonDetailsForClassDate(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) ([]LessonDetailRow, error)
 	// GetUserName resolves a display name for a session-detail row's
 	// students, since ListEntriesBySession returns only IDs.
 	//
@@ -292,6 +312,15 @@ type Blocker interface {
 
 type Overrider interface {
 	Override(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (statusCode string, source domain.EntrySource, ok bool, err error)
+}
+
+// OverrideNoter is an optional extension of Overrider: the note its forced
+// status carries on date (an issued leave letter's "leave letter <number>",
+// the note ForceStatus writes into each opened session), so a calendar row
+// for a lesson whose session was never opened names the letter as an
+// opened one does. Without it, or with an empty note, such a row has none.
+type OverrideNoter interface {
+	OverrideNote(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (string, error)
 }
 
 // ViolationRecorder lets SaveEntries record a session's per-student

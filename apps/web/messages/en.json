@@ -1239,6 +1239,10 @@
         "dayTitle": "{submitted} of {expected} sessions recorded",
         "dayDetailLabel": "Session detail for {date}",
         "unknownSubject": "Subject",
+        "coveredBy": {
+          "leave": "Leave letter",
+          "permit": "Exit permit"
+        },
         "sessionSource": {
           "leave": "Filled from a leave letter",
           "permit": "Filled from an exit permit",

@@ -190,6 +190,30 @@ join periods ep on ep.id = ats.end_period_id
 where ats.tenant_id = $1 and ats.class_id = $2 and ats.date = $3
 order by sp.sequence;
 
+-- name: ListLessonDetailsForClassOnAttendance :many
+-- A class's lessons on one date -- the version of each in effect that day,
+-- the same set CountSchedulesForClassOn counts as the day's expected
+-- sessions -- with the subject/teacher/period names a student calendar row
+-- shows, ordered by when the lesson runs. A day an issued leave letter
+-- covers lists the lessons it covers from this, opened or not.
+select
+  s.id as schedule_id,
+  s.subject_id,
+  sub.name as subject_name,
+  s.teacher_user_id,
+  tu.name as teacher_name,
+  sp.name as start_period_name,
+  ep.name as end_period_name
+from schedules s
+join subjects sub on sub.id = s.subject_id
+join users tu on tu.id = s.teacher_user_id
+join periods sp on sp.id = s.start_period_id
+join periods ep on ep.id = s.end_period_id
+where s.tenant_id = $1 and s.academic_year_id = $2 and s.class_id = $3
+  and s.day_of_week = extract(isodow from sqlc.arg(on_date)::date)::smallint
+  and s.effective_range @> sqlc.arg(on_date)::date
+order by s.start_seq, sub.name;
+
 -- name: ListOwnSubmittedSessionDetailsForAttendance :many
 -- The "own sessions" report scope (docs/analysis/backend-inventory.md
 -- section 1.10): every session teacherUserID submitted on a date, whether

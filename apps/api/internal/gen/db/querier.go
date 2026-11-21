@@ -1374,6 +1374,12 @@ type Querier interface {
 	// sqlc.arg('today') is the tenant-local date (s.tenantNow), not
 	// current_date: the Postgres session timezone is never set per tenant.
 	ListLeaveRequestsForReview(ctx context.Context, arg ListLeaveRequestsForReviewParams) ([]ListLeaveRequestsForReviewRow, error)
+	// A class's lessons on one date -- the version of each in effect that day,
+	// the same set CountSchedulesForClassOn counts as the day's expected
+	// sessions -- with the subject/teacher/period names a student calendar row
+	// shows, ordered by when the lesson runs. A day an issued leave letter
+	// covers lists the lessons it covers from this, opened or not.
+	ListLessonDetailsForClassOnAttendance(ctx context.Context, arg ListLessonDetailsForClassOnAttendanceParams) ([]ListLessonDetailsForClassOnAttendanceRow, error)
 	// Holiday date ranges overlapping [from, to] (docs/06-database-schema.md:246,
 	// "library_holidays digabung ke academic_calendar_events"): each row can
 	// span multiple days (migrations/0060_academic_calendar.up.sql end_date),

@@ -191,3 +191,99 @@ func TestIssuedLeaveDecidesEveryScreen(t *testing.T) {
 	require.Equal(t, "I", statusOf(roster, w.student1ID))
 	require.Equal(t, "INCOMPLETE", statusOf(roster, w.student2ID))
 }
+
+// notedOverrider is rangeOverrider with the OverrideNoter permits supplies:
+// the covering letter's note.
+type notedOverrider struct {
+	rangeOverrider
+	note string
+}
+
+func (o notedOverrider) OverrideNote(_ context.Context, _ uuid.UUID, student uuid.UUID, date time.Time) (string, error) {
+	if o.covers(student, date) {
+		return o.note, nil
+	}
+	return "", nil
+}
+
+// TestLeaveDayListsTheLessonsItCovers: a lesson day an issued letter
+// covers lists the class's lessons that day by name, period and teacher,
+// with the letter's status and note, whether or not their sessions were
+// opened, instead of one row titled only "Mata pelajaran" with a zero
+// schedule id (audit r5v-auth-attendance-R2).
+func TestLeaveDayListsTheLessonsItCovers(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	w := seedWorld(t, ctx, pg.AdminPool, "leave-unopened-lessons")
+	admin := pg.AdminPool
+	const note = "leave letter 16/IZIN/II/2027"
+	svc := buildServiceWithOverrider(pg.AppPool, notedOverrider{
+		rangeOverrider: rangeOverrider{student: w.student1ID, from: w.today, to: w.today, code: "I"},
+		note:           note,
+	})
+
+	// A second lesson today: Fisika in P2 with the other teacher.
+	var templateID, p2, physicsID, physicsSchedule uuid.UUID
+	require.NoError(t, admin.QueryRow(ctx, `select template_id from periods where id = $1`, w.periodID).Scan(&templateID))
+	require.NoError(t, admin.QueryRow(ctx,
+		`insert into periods (tenant_id, template_id, name, sequence, starts_at, ends_at) values ($1, $2, 'P2', 2, '00:01', '23:59') returning id`,
+		w.tenantID, templateID).Scan(&p2))
+	require.NoError(t, admin.QueryRow(ctx,
+		`insert into subjects (tenant_id, code, name) values ($1, 'FIS', 'Fisika') returning id`, w.tenantID).Scan(&physicsID))
+	require.NoError(t, admin.QueryRow(ctx,
+		`insert into schedules (tenant_id, academic_year_id, class_id, subject_id, teacher_user_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, source, effective_from)
+		 values ($1, $2, $3, $4, $5, $6, $7, $7, 2, 2, 'admin', '2025-01-01') returning id`,
+		w.tenantID, w.yearID, w.classID, physicsID, w.otherTeacherID, domain.IsoWeekday(w.today), p2).Scan(&physicsSchedule))
+
+	todayOf := func(student uuid.UUID) service.CalendarDay {
+		t.Helper()
+		days, err := svc.GetStudentCalendarMonth(ctx, w.tenantID, student, w.today.Format("2006-01"))
+		require.NoError(t, err)
+		for _, d := range days {
+			if sameDate(d.Date, w.today) {
+				return d
+			}
+		}
+		t.Fatalf("today missing from the calendar")
+		return service.CalendarDay{}
+	}
+	physicsRow := service.CalendarDaySession{
+		ScheduleID: physicsSchedule, SubjectID: physicsID, SubjectName: "Fisika",
+		TeacherUserID: w.otherTeacherID, TeacherName: "Other Teacher", PeriodLabel: "P2",
+		StatusCode: "I", Note: note, Source: domain.SourceLeave,
+	}
+
+	// No session opened: both lessons, in the order they run.
+	day := todayOf(w.student1ID)
+	require.Equal(t, "I", day.StatusCode)
+	require.Equal(t, 2, day.ExpectedSessions)
+	require.Equal(t, []service.CalendarDaySession{
+		{
+			ScheduleID: w.scheduleTodayID, SubjectID: w.subjectID, SubjectName: "Matematika",
+			TeacherUserID: w.teacherID, TeacherName: "Teacher", PeriodLabel: "P1",
+			StatusCode: "I", Note: note, Source: domain.SourceLeave,
+		},
+		physicsRow,
+	}, day.Sessions, "one named row per lesson the letter covers")
+
+	// The first lesson's session is opened: it keeps its own row, and the
+	// unopened one is still listed after it.
+	_, err := svc.OpenSession(ctx, w.tenantID, service.Actor{UserID: w.teacherID}, w.scheduleTodayID, w.today, domain.SaveModeNormal)
+	require.NoError(t, err)
+	day = todayOf(w.student1ID)
+	require.Len(t, day.Sessions, 2)
+	require.Equal(t, w.scheduleTodayID, day.Sessions[0].ScheduleID)
+	require.Equal(t, "Matematika", day.Sessions[0].SubjectName)
+	require.Equal(t, physicsRow, day.Sessions[1])
+
+	// A day without a letter lists only what was opened, as before.
+	require.Len(t, todayOf(w.student2ID).Sessions, 1)
+
+	// A student with no class has no lesson to name: one row still says
+	// the letter covers the day, with its note.
+	_, err = admin.Exec(ctx, `update enrollments set status = 'left' where student_user_id = $1`, w.student1ID)
+	require.NoError(t, err)
+	day = todayOf(w.student1ID)
+	require.Equal(t, "I", day.StatusCode)
+	require.Equal(t, []service.CalendarDaySession{{StatusCode: "I", Note: note, Source: domain.SourceLeave}}, day.Sessions)
+}

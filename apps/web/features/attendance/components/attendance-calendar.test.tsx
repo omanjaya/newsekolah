@@ -162,6 +162,38 @@ describe("AttendanceCalendar", () => {
     expect(screen.getByText("Biologi").closest("li")).toHaveTextContent("Surat dari dokter");
   });
 
+  // The API names every lesson a letter covers; a row it cannot name (a
+  // student with no class) is titled by the letter, not by a bare
+  // "Subject", and its zero schedule id is no key of its own (audit
+  // r5v-auth-attendance-R2).
+  it("titles a covered row with no lesson by the letter that covers it", () => {
+    const zero = "00000000-0000-0000-0000-000000000000";
+    calendarData = [
+      day("2026-09-20", "I", [
+        {
+          schedule_id: zero,
+          subject_id: zero,
+          status_code: "I",
+          note: "leave letter 16/IZIN/II/2027",
+          source: "leave",
+        },
+        { schedule_id: zero, subject_id: zero, status_code: "D", source: "permit" },
+      ]),
+    ];
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    render(<AttendanceCalendar />);
+
+    fireEvent.click(dayButton("20"));
+
+    const leaveRow = screen.getByText("coveredBy.leave").closest("li");
+    expect(leaveRow).toHaveTextContent('leaveLetterNote {"number":"16/IZIN/II/2027"}');
+    expect(leaveRow).not.toHaveTextContent("sessionSource.leave");
+    expect(screen.getByText("coveredBy.permit")).toBeInTheDocument();
+    expect(screen.queryByText("unknownSubject")).toBeNull();
+    expect(consoleError.mock.calls.flat().map(String).join(" ")).not.toContain("same key");
+    consoleError.mockRestore();
+  });
+
   it("shows a short sentence in the detail card when the selected day has no per-session data", () => {
     calendarData = [day("2026-09-20", "A", [])];
     render(<AttendanceCalendar />);

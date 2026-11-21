@@ -242,6 +242,17 @@ func TestLeaveRequestLifecycleCompletesAndUnblocksNextRequest(t *testing.T) {
 	require.True(t, time.Date(ey, em, ed, 23, 59, 59, 0, jakarta).Equal(call.to), "to = %s", call.to)
 	require.True(t, call.to.Before(time.Date(ey, em, ed+1, 7, 0, 0, 0, jakarta)), "the next morning's first lesson must be outside the window")
 
+	// The note attendance shows on a covered lesson whose session was never
+	// opened is the one written into the opened ones (audit
+	// r5v-auth-attendance-R2); a day outside the letter has none.
+	require.Equal(t, "leave letter "+issued.LeaveRequest.LetterNumber, call.reason)
+	note, err := svc.LeaveOverrideNote(ctx, w.tenantID, w.studentID, starts)
+	require.NoError(t, err)
+	require.Equal(t, call.reason, note)
+	note, err = svc.LeaveOverrideNote(ctx, w.tenantID, w.studentID, starts.AddDate(0, 0, -1))
+	require.NoError(t, err)
+	require.Empty(t, note)
+
 	// Re-fetch from storage to confirm the persisted row (not just the
 	// in-memory return value) reflects the same state.
 	persisted, err := svc.GetLeaveRequest(ctx, w.tenantID, instanceID)

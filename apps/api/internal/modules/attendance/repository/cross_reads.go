@@ -254,6 +254,24 @@ func (r *Repository) ListSessionDetailsForClassDate(ctx context.Context, tenantI
 	return out, nil
 }
 
+func (r *Repository) ListLessonDetailsForClassDate(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) ([]service.LessonDetailRow, error) {
+	rows, err := r.queries(ctx).ListLessonDetailsForClassOnAttendance(ctx, db.ListLessonDetailsForClassOnAttendanceParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, ClassID: classID, OnDate: pdatabase.Date(date),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.LessonDetailRow, len(rows))
+	for i, row := range rows {
+		out[i] = service.LessonDetailRow{
+			ScheduleID: row.ScheduleID, SubjectID: row.SubjectID, SubjectName: row.SubjectName,
+			TeacherUserID: row.TeacherUserID, TeacherName: row.TeacherName,
+			StartPeriodName: row.StartPeriodName, EndPeriodName: row.EndPeriodName,
+		}
+	}
+	return out, nil
+}
+
 func (r *Repository) ListOwnSubmittedSessionDetails(ctx context.Context, tenantID, teacherUserID uuid.UUID, date time.Time) ([]service.SessionDetailRow, error) {
 	rows, err := r.queries(ctx).ListOwnSubmittedSessionDetailsForAttendance(ctx, db.ListOwnSubmittedSessionDetailsForAttendanceParams{
 		TenantID: tenantID, Date: pdatabase.Date(date), TeacherUserID: teacherUserID,
