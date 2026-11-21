@@ -2,7 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import { Badge, Button, useToast } from "@newsekolah/ui";
-import { UserRoundCog } from "lucide-react";
+import { KeyRound, UserRoundCog } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -170,11 +170,17 @@ export function ImpersonationBanner(): ReactElement | null {
   }
 
   const adminName = me.impersonated_by.name ?? "admin";
+  // The title is the one part a phone always shows, and the ellipsis cuts
+  // its end first: it names the account being operated, right at the start,
+  // and leaves the admin's own name to the detail.
+  //
   // The account still has to set its own password; the admin is not sent to
   // that step (needsForcedPasswordChange), so the strip says it is pending.
   // The strip's detail is hidden on a phone and is the first part the
   // ellipsis cuts, so the note is a badge beside the Stop button, visible at
-  // every width, and leads the detail (and its tooltip) in full.
+  // every width, and leads the detail (and its tooltip) in full. On a phone
+  // the badge is its key icon alone (its words stay for screen readers), so
+  // it does not take the title's room.
   const pendingPassword = me.must_change_password;
   const detail = [
     pendingPassword ? t("pendingPassword") : null,
@@ -185,13 +191,16 @@ export function ImpersonationBanner(): ReactElement | null {
   return (
     <ShellStrip
       icon={<UserRoundCog />}
-      title={tStrip("impersonation", { adminName, name: me.name })}
+      title={tStrip("impersonation", { name: me.name })}
       detail={detail}
       action={
         <>
           {pendingPassword && (
             <Badge tone="danger" size="sm" title={t("pendingPassword")}>
-              {tStrip("impersonationPendingPassword")}
+              <KeyRound className="size-3" aria-hidden="true" />
+              <span className="sr-only sm:not-sr-only">
+                {tStrip("impersonationPendingPassword")}
+              </span>
             </Badge>
           )}
           <Button size="sm" variant="secondary" loading={stop.isPending} onClick={handleStop}>

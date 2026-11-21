@@ -114,7 +114,7 @@
         "roleTesting": "Testing as {name}",
         "roleTestingReturn": "Return",
         "roleTestingExpired": "Test session ended",
-        "impersonation": "{adminName} is operating the account of {name}",
+        "impersonation": "Signed in as {name}",
         "impersonationStop": "Stop",
         "impersonationPendingPassword": "Password not changed",
         "simulation": "Simulated time {time}",

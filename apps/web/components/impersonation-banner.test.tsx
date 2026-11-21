@@ -9,6 +9,8 @@ import { getAccessToken, setAccessToken } from "../lib/api/access-token";
 import { readDraft, writeDraft } from "../lib/drafts/draft-storage";
 import { CLEAR_ACCESS_COOKIE_PATH } from "../lib/session/clear-server-access-cookie";
 import type { Me } from "../lib/session/session-provider";
+import en from "../messages/en.json";
+import id from "../messages/id.json";
 
 import { ImpersonationBanner } from "./impersonation-banner";
 
@@ -33,8 +35,14 @@ const teacher = vi.hoisted(
 );
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
+/** Every message the strip asked for, with its values. */
+const translated = vi.hoisted(() => [] as { key: string; values?: Record<string, unknown> }[]);
+
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  useTranslations: () => (key: string, values?: Record<string, unknown>) => {
+    translated.push({ key, values });
+    return key;
+  },
   useLocale: () => "id",
 }));
 vi.mock("../lib/session/session-provider", () => ({ useSession: () => ({ me: teacher }) }));
@@ -76,6 +84,7 @@ let fetchMock: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  translated.length = 0;
   sessionStorage.clear();
   localStorage.clear();
   setAccessToken("teacher-token");
@@ -235,12 +244,37 @@ describe("ImpersonationBanner", () => {
       const note = screen.getByText("impersonationPendingPassword");
       expect(note.closest(".hidden")).toBeNull();
       expect(note.closest("p")).toBeNull();
-      expect(note.closest("[title]")).toHaveAttribute("title", "pendingPassword");
+      const badge = note.closest("[title]");
+      expect(badge).toHaveAttribute("title", "pendingPassword");
+      // On a phone the badge is its key icon alone, so the title keeps the
+      // row's room for the account's name; its words return from `sm` and
+      // stay readable to a screen reader at every width (audit
+      // auth-users-R1: the full badge cut the title to "Operator Uji ...").
+      expect(note).toHaveClass("sr-only", "sm:not-sr-only");
+      expect(badge?.querySelector("svg.lucide-key-round")).toHaveAttribute("aria-hidden", "true");
       // The full sentence leads the detail, ahead of the long banner text.
       expect(screen.getByRole("status")).toHaveTextContent("pendingPassword · banner");
       expect(screen.getByRole("button", { name: "impersonationStop" })).toBeEnabled();
     } finally {
       account.must_change_password = false;
+    }
+  });
+
+  // A phone shows the title alone and cuts its end first: it names the
+  // operated account right at the start, and the admin's own name (they
+  // know who they are) is left to the detail (audit auth-users-R1).
+  it("titles the strip with the operated account, the admin's name in the detail", () => {
+    renderStrip();
+
+    const title = translated.filter(({ key }) => key === "impersonation");
+    expect(title.length).toBeGreaterThan(0);
+    for (const { values } of title) expect(values).toEqual({ name: "Teacher" });
+    const banner = translated.find(({ key }) => key === "banner");
+    expect(banner?.values).toEqual({ name: "Teacher", adminName: "Admin" });
+    for (const messages of [id, en]) {
+      const message = messages.app.shell.strip.impersonation;
+      expect(message).not.toContain("{adminName}");
+      expect(message.indexOf("{name}")).toBeLessThanOrEqual("Masuk sebagai ".length);
     }
   });
 
