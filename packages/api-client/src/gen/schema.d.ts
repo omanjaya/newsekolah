@@ -12245,6 +12245,11 @@ export interface components {
             start_period_id?: string;
             /** Format: uuid */
             end_period_id?: string;
+            /**
+             * Format: date
+             * @description All scope only. The earliest date the lesson's timetable could change from once a schedule manager cancels this request, present only when that is earlier than it can change now (or it cannot change at all now): the request is what holds the change back. Absent when cancelling frees nothing (another record holds the same or a later date, the date is the lesson's first, or the lesson ends first) and for a request a manager cannot cancel.
+             */
+            release_frees_from?: string;
         };
         SubstituteCandidate: {
             /** Format: uuid */

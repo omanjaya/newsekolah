@@ -1531,7 +1531,8 @@
       "release": "Batalkan permintaan {requester} kepada {substitute}",
       "releaseConfirm": {
         "title": "Batalkan permintaan {requester} kepada {substitute}?",
-        "body": "{lesson}. Kedua guru diberi tahu dan pembatalan tercatat di log audit. Jadwal pelajaran ini lalu bisa diubah mulai tanggal yang lebih awal.",
+        "body": "{lesson}. Kedua guru diberi tahu dan pembatalan tercatat di log audit.",
+        "bodyFreeing": "{lesson}. Kedua guru diberi tahu dan pembatalan tercatat di log audit. Jadwal pelajaran ini lalu bisa diubah mulai {date}.",
         "confirm": "Batalkan permintaan",
         "keep": "Jangan batalkan"
       }

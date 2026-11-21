@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -290,16 +291,154 @@ func (s *Service) ListSubstitutionsOutgoingWithSchedule(ctx context.Context, ten
 	return out, err
 }
 
+// ListedSubstitution is one row of the school-wide list: the request, the
+// lesson it covers, and what a schedule manager's cancel would free.
+type ListedSubstitution struct {
+	domain.SubstitutionWithSchedule
+	// ReleaseFrom is the earliest date the lesson's timetable could change
+	// from once the request is cancelled, set only when that is earlier
+	// than it can change now, or the lesson cannot change at all now: the
+	// request is what holds the change back. Nil when cancelling it frees
+	// nothing (another record holds the same date or a later one, the date
+	// is the lesson's first, or the lesson ends first), and for a request a
+	// manager cannot cancel (rejected, cancelled, or already past).
+	ReleaseFrom *time.Time
+}
+
 // ListSubstitutionsAll is the manage_schedules-only "all" list scope; the
 // transport layer is responsible for the permission check.
-func (s *Service) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.SubstitutionWithSchedule, error) {
-	var out []domain.SubstitutionWithSchedule
+func (s *Service) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]ListedSubstitution, error) {
+	var out []ListedSubstitution
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
-		out, err = s.repo.ListSubstitutionsAll(ctx, tenantID, status)
-		return err
+		subs, err := s.repo.ListSubstitutionsAll(ctx, tenantID, status)
+		if err != nil {
+			return err
+		}
+		frees, err := s.releaseDates(ctx, tenantID, subs)
+		if err != nil {
+			return err
+		}
+		out = make([]ListedSubstitution, len(subs))
+		for i, sub := range subs {
+			out[i] = ListedSubstitution{SubstitutionWithSchedule: sub}
+			if from, ok := frees[sub.ID]; ok {
+				out[i].ReleaseFrom = &from
+			}
+		}
+		return nil
 	})
 	return out, err
+}
+
+// releaseDates is ListedSubstitution.ReleaseFrom for each request in subs
+// whose cancel would move its lesson block's earliest change date earlier
+// (or unlock a block whose every date left is bound now), keyed by request
+// id. It compares the block's manager policy with and without the request's
+// date, so it agrees with what the schedule editor offers before and after
+// the cancel.
+//
+// A request binds a date on its own row only, so cancelling it changes
+// anything only when it is the record holding that row's last history
+// date: any other record on the same date or a later one still holds the
+// row once it is gone. The list therefore reads the rows' history once,
+// and looks up blocks and the history without the request only for the
+// requests that hold their row, at most one per row; those all leave the
+// history in one read, since none binds another's row. The reads do not
+// grow with the number of requests listed, only with the lessons held.
+func (s *Service) releaseDates(ctx context.Context, tenantID uuid.UUID, subs []domain.SubstitutionWithSchedule) (map[uuid.UUID]time.Time, error) {
+	dates := s.changeDates(ctx, tenantID)
+	var rowIDs []uuid.UUID
+	for _, sub := range subs {
+		if managerCancellable(sub.Substitution, dates.today) && !slices.Contains(rowIDs, sub.ScheduleID) {
+			rowIDs = append(rowIDs, sub.ScheduleID)
+		}
+	}
+	held, err := s.loadHistory(ctx, tenantID, rowIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	type heldBlock struct {
+		sched domain.Schedule
+		rows  []domain.Schedule
+	}
+	blocks := map[uuid.UUID]heldBlock{}
+	var holding []domain.Substitution
+	var blockIDs, released []uuid.UUID
+	for _, sub := range subs {
+		if !managerCancellable(sub.Substitution, dates.today) || !held.heldBy(sub.ScheduleID, sub.ID) {
+			continue
+		}
+		holding = append(holding, sub.Substitution)
+		released = append(released, sub.ID)
+		sched, err := s.repo.GetScheduleByID(ctx, tenantID, sub.ScheduleID)
+		if err != nil {
+			return nil, err
+		}
+		rows, err := s.lessonBlock(ctx, tenantID, sched)
+		if err != nil {
+			return nil, err
+		}
+		blocks[sub.ScheduleID] = heldBlock{sched: sched, rows: rows}
+		for _, row := range rows {
+			if !slices.Contains(rowIDs, row.ID) && !slices.Contains(blockIDs, row.ID) {
+				blockIDs = append(blockIDs, row.ID)
+			}
+		}
+	}
+	if len(holding) == 0 {
+		return nil, nil
+	}
+	others, err := s.loadHistory(ctx, tenantID, blockIDs)
+	if err != nil {
+		return nil, err
+	}
+	for id, h := range others {
+		held[id] = h
+	}
+	heldRows := make([]uuid.UUID, len(holding))
+	for i, sub := range holding {
+		heldRows[i] = sub.ScheduleID
+	}
+	freed, err := s.loadHistoryReleasing(ctx, tenantID, heldRows, released)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make(map[uuid.UUID]time.Time, len(holding))
+	for _, sub := range holding {
+		block := blocks[sub.ScheduleID]
+		after := make(historyIndex, len(block.rows))
+		for _, row := range block.rows {
+			if entry, ok := held[row.ID]; ok {
+				after[row.ID] = entry
+			}
+		}
+		if entry, ok := freed[sub.ScheduleID]; ok {
+			after[sub.ScheduleID] = entry
+		}
+		var policies [2]MutationPolicy
+		for i, history := range []historyIndex{held, after} {
+			window, err := dates.window(ctx, history, block.rows)
+			if err != nil {
+				return nil, err
+			}
+			policies[i] = managerPolicy(block.sched.EffectiveUntil, true, window, dates.today)
+		}
+		now, then := policies[0], policies[1]
+		if !then.CanEdit || (now.CanEdit && !then.MinEffectiveFrom.Before(*now.MinEffectiveFrom)) {
+			continue
+		}
+		out[sub.ID] = *then.MinEffectiveFrom
+	}
+	return out, nil
+}
+
+// managerCancellable reports whether a schedule manager may cancel sub:
+// it is pending or accepted and dated today or later.
+func managerCancellable(sub domain.Substitution, today time.Time) bool {
+	active := sub.Status == domain.SubstitutionPending || sub.Status == domain.SubstitutionAccepted
+	return active && !domain.CalendarDate(sub.Date).Before(today)
 }
 
 // ListEligibleSubstitutes backs the substitute picker (docs/analysis/

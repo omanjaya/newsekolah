@@ -3,6 +3,8 @@ package http
 import (
 	"context"
 
+	openapi_types "github.com/oapi-codegen/runtime/types"
+
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
@@ -34,7 +36,10 @@ func (h *SchedulingHandler) ListSubstitutions(ctx context.Context, request api.L
 		}
 		data := make([]api.Substitution, len(subs))
 		for i, s := range subs {
-			data[i] = toAPISubstitutionWithSchedule(s)
+			data[i] = toAPISubstitutionWithSchedule(s.SubstitutionWithSchedule)
+			if s.ReleaseFrom != nil {
+				data[i].ReleaseFreesFrom = &openapi_types.Date{Time: *s.ReleaseFrom}
+			}
 		}
 		return api.ListSubstitutions200JSONResponse{Data: data}, nil
 	}
