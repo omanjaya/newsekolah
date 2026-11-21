@@ -438,6 +438,60 @@ func (q *Queries) GetScheduleByID(ctx context.Context, arg GetScheduleByIDParams
 	return i, err
 }
 
+const insertStaffAttendanceScheduleVersion = `-- name: InsertStaffAttendanceScheduleVersion :one
+insert into staff_attendance_schedules (
+  tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_by,
+  effective_from
+)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+returning id, tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_at, created_by, effective_from
+`
+
+type InsertStaffAttendanceScheduleVersionParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	EmployeeUserID uuid.UUID   `json:"employee_user_id"`
+	Weekday        int16       `json:"weekday"`
+	IsWorkingDay   bool        `json:"is_working_day"`
+	StartMinute    int16       `json:"start_minute"`
+	EndMinute      int16       `json:"end_minute"`
+	GraceMinutes   int16       `json:"grace_minutes"`
+	CreatedBy      pgtype.UUID `json:"created_by"`
+	EffectiveFrom  pgtype.Date `json:"effective_from"`
+}
+
+// One version of a weekday, in effect from effective_from (the school-local
+// date of the save) until the next version of the same weekday. Versions
+// are never updated: the service appends one for each weekday a save
+// changes, so every past date keeps the version it was judged by.
+func (q *Queries) InsertStaffAttendanceScheduleVersion(ctx context.Context, arg InsertStaffAttendanceScheduleVersionParams) (StaffAttendanceSchedule, error) {
+	row := q.db.QueryRow(ctx, insertStaffAttendanceScheduleVersion,
+		arg.TenantID,
+		arg.EmployeeUserID,
+		arg.Weekday,
+		arg.IsWorkingDay,
+		arg.StartMinute,
+		arg.EndMinute,
+		arg.GraceMinutes,
+		arg.CreatedBy,
+		arg.EffectiveFrom,
+	)
+	var i StaffAttendanceSchedule
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.EmployeeUserID,
+		&i.Weekday,
+		&i.IsWorkingDay,
+		&i.StartMinute,
+		&i.EndMinute,
+		&i.GraceMinutes,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.EffectiveFrom,
+	)
+	return i, err
+}
+
 const isStaffAttendanceCandidate = `-- name: IsStaffAttendanceCandidate :one
 select exists(
   select 1 from users u
@@ -1226,19 +1280,26 @@ func (q *Queries) ListStaffAttendanceRosterEmployees(ctx context.Context, tenant
 	return items, nil
 }
 
-const listStaffAttendanceScheduleDays = `-- name: ListStaffAttendanceScheduleDays :many
-select id, tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_at, updated_at, created_by, updated_by, working_since from staff_attendance_schedules
+const listStaffAttendanceScheduleVersions = `-- name: ListStaffAttendanceScheduleVersions :many
+select id, tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_at, created_by, effective_from from staff_attendance_schedules
 where tenant_id = $1 and employee_user_id = $2
-order by weekday
+order by weekday, effective_from, id
 `
 
-type ListStaffAttendanceScheduleDaysParams struct {
+type ListStaffAttendanceScheduleVersionsParams struct {
 	TenantID       uuid.UUID `json:"tenant_id"`
 	EmployeeUserID uuid.UUID `json:"employee_user_id"`
 }
 
-func (q *Queries) ListStaffAttendanceScheduleDays(ctx context.Context, arg ListStaffAttendanceScheduleDaysParams) ([]StaffAttendanceSchedule, error) {
-	rows, err := q.db.Query(ctx, listStaffAttendanceScheduleDays, arg.TenantID, arg.EmployeeUserID)
+// Every version of an employee's weekdays, oldest first: by weekday, then
+// the date each takes effect, then save order, so of two versions saved
+// for the same date the later one comes last (domain.ScheduleHistory).
+// Save order is the uuidv7 primary key, minted from the database's real
+// clock at insert. created_at cannot stand in for it: rows migrated by 0150
+// carry the service clock's save instant, which a superadmin's simulated
+// time can put days ahead of a later save's real now().
+func (q *Queries) ListStaffAttendanceScheduleVersions(ctx context.Context, arg ListStaffAttendanceScheduleVersionsParams) ([]StaffAttendanceSchedule, error) {
+	rows, err := q.db.Query(ctx, listStaffAttendanceScheduleVersions, arg.TenantID, arg.EmployeeUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -1256,10 +1317,8 @@ func (q *Queries) ListStaffAttendanceScheduleDays(ctx context.Context, arg ListS
 			&i.EndMinute,
 			&i.GraceMinutes,
 			&i.CreatedAt,
-			&i.UpdatedAt,
 			&i.CreatedBy,
-			&i.UpdatedBy,
-			&i.WorkingSince,
+			&i.EffectiveFrom,
 		); err != nil {
 			return nil, err
 		}
@@ -1482,82 +1541,6 @@ func (q *Queries) UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) 
 		&i.EffectiveFrom,
 		&i.EffectiveUntil,
 		&i.EffectiveRange,
-	)
-	return i, err
-}
-
-const upsertStaffAttendanceScheduleDay = `-- name: UpsertStaffAttendanceScheduleDay :one
-insert into staff_attendance_schedules (
-  tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_by, updated_by,
-  created_at, working_since
-)
-values (
-  $1, $2, $3, $4, $5, $6, $7, $8, $8, $9,
-  case when $4::boolean then $9::timestamptz end
-)
-on conflict (tenant_id, employee_user_id, weekday) do update set
-  is_working_day = excluded.is_working_day,
-  start_minute = excluded.start_minute,
-  end_minute = excluded.end_minute,
-  grace_minutes = excluded.grace_minutes,
-  updated_by = excluded.updated_by,
-  working_since = case
-    when not excluded.is_working_day then null
-    when staff_attendance_schedules.is_working_day then staff_attendance_schedules.working_since
-    else excluded.created_at
-  end
-returning id, tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_at, updated_at, created_by, updated_by, working_since
-`
-
-type UpsertStaffAttendanceScheduleDayParams struct {
-	TenantID       uuid.UUID          `json:"tenant_id"`
-	EmployeeUserID uuid.UUID          `json:"employee_user_id"`
-	Weekday        int16              `json:"weekday"`
-	IsWorkingDay   bool               `json:"is_working_day"`
-	StartMinute    int16              `json:"start_minute"`
-	EndMinute      int16              `json:"end_minute"`
-	GraceMinutes   int16              `json:"grace_minutes"`
-	CreatedBy      pgtype.UUID        `json:"created_by"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-}
-
-// created_at is the service clock's instant rather than now(), so a
-// simulated school day dates a first schedule the way it dates scans:
-// days before it have no schedule to be absent from. An update keeps the
-// original created_at. working_since dates when the weekday became a
-// working day: the save instant on an insert as a working day or on an
-// update that turns a day off into one, kept while it stays working, and
-// null while it is a day off. The editor stores all seven weekdays on the
-// first save, so an off weekday already has a row: its earlier days stay
-// days off (holiday) once it is turned on, never absences or "no
-// schedule" (domain.ScheduleDay.AsOf).
-func (q *Queries) UpsertStaffAttendanceScheduleDay(ctx context.Context, arg UpsertStaffAttendanceScheduleDayParams) (StaffAttendanceSchedule, error) {
-	row := q.db.QueryRow(ctx, upsertStaffAttendanceScheduleDay,
-		arg.TenantID,
-		arg.EmployeeUserID,
-		arg.Weekday,
-		arg.IsWorkingDay,
-		arg.StartMinute,
-		arg.EndMinute,
-		arg.GraceMinutes,
-		arg.CreatedBy,
-		arg.CreatedAt,
-	)
-	var i StaffAttendanceSchedule
-	err := row.Scan(
-		&i.ID,
-		&i.TenantID,
-		&i.EmployeeUserID,
-		&i.Weekday,
-		&i.IsWorkingDay,
-		&i.StartMinute,
-		&i.EndMinute,
-		&i.GraceMinutes,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.CreatedBy,
-		&i.UpdatedBy,
-		&i.WorkingSince,
 	)
 	return i, err
 }

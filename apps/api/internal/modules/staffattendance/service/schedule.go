@@ -9,24 +9,34 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
-// GetWeeklySchedule returns employeeUserID's configured days, in whatever
-// order the repository stores them (weekday ascending).
+// GetWeeklySchedule returns the version of each of employeeUserID's
+// weekdays in effect today, weekday ascending: the week the editor shows.
 func (s *Service) GetWeeklySchedule(ctx context.Context, tenantID, employeeUserID uuid.UUID) ([]domain.ScheduleDay, error) {
+	today := s.today(ctx, staffLocation(ctx))
 	var out []domain.ScheduleDay
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		if err := s.assertEnabled(ctx, tenantID); err != nil {
 			return err
 		}
-		var err error
-		out, err = s.repo.ListScheduleDays(ctx, tenantID, employeeUserID)
-		return err
+		history, err := s.repo.ListScheduleHistory(ctx, tenantID, employeeUserID)
+		if err != nil {
+			return err
+		}
+		out = history.Week(today)
+		return nil
 	})
 	return out, err
 }
 
-// ReplaceWeeklySchedule upserts every day the caller submits: the schedule
-// editor always sends the full week, so this is a straightforward
-// per-weekday upsert rather than a diff against what is already stored.
+// ReplaceWeeklySchedule saves the week the caller submits (the schedule
+// editor always sends all seven days) as of today, the school-local date
+// of the save: a weekday whose hours differ from the version in effect
+// today gets a new version from today, an unchanged one keeps its version.
+// Nothing is rewritten, so every earlier day is still judged by the
+// version in effect on it: turning a working weekday off keeps its past
+// absences, turning a day off on keeps its past days off. A second save on
+// the same date supersedes the first for that date. It returns the
+// submitted days as now in effect, in the order submitted.
 //
 // Records stored as StatusUnscheduled (a check-in made before the employee
 // had any schedule) are judged again against the saved week in the same
@@ -37,7 +47,7 @@ func (s *Service) ReplaceWeeklySchedule(
 	ctx context.Context, tenantID, employeeUserID, actorID uuid.UUID, days []ScheduleDayInput,
 ) ([]domain.ScheduleDay, error) {
 	out := make([]domain.ScheduleDay, 0, len(days))
-	createdAt := clock.Now(ctx, s.clock)
+	effectiveFrom := clock.LocalDate(clock.Now(ctx, s.clock), staffLocation(ctx))
 	rejudged := false
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		if err := s.assertEnabled(ctx, tenantID); err != nil {
@@ -50,19 +60,28 @@ func (s *Service) ReplaceWeeklySchedule(
 		if !eligible {
 			return domain.ErrEmployeeNotEligible
 		}
+		history, err := s.repo.ListScheduleHistory(ctx, tenantID, employeeUserID)
+		if err != nil {
+			return err
+		}
 		for _, in := range days {
 			day := domain.ScheduleDay{
 				EmployeeUserID: employeeUserID, Weekday: in.Weekday, IsWorkingDay: in.IsWorkingDay,
 				StartMinute: in.StartMinute, EndMinute: in.EndMinute, GraceMinutes: in.GraceMinutes,
-				CreatedAt: createdAt,
+				EffectiveFrom: effectiveFrom,
 			}
 			if !day.Valid() {
 				return domain.ErrScheduleDayInvalid
 			}
-			saved, err := s.repo.UpsertScheduleDay(ctx, tenantID, employeeUserID, actorID, day)
+			if current := history.InEffect(day.Weekday, effectiveFrom); current != nil && current.SameHours(day) {
+				out = append(out, *current)
+				continue
+			}
+			saved, err := s.repo.InsertScheduleVersion(ctx, tenantID, employeeUserID, actorID, day)
 			if err != nil {
 				return err
 			}
+			history = append(history, saved)
 			out = append(out, saved)
 		}
 		rejudged, err = s.rejudgeUnscheduledRecords(ctx, tenantID, employeeUserID, actorID)

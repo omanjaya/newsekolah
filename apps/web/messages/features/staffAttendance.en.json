@@ -90,6 +90,7 @@
     "graceFor": "{day} late tolerance",
     "minutesUnit": "min",
     "endHint": "Set an end earlier than the start for a shift that runs past midnight.",
+    "effectiveHint": "Changes apply from today. Earlier days keep the schedule that was in effect on them.",
     "unsaved": "There are unsaved changes",
     "upToDate": "The schedule is saved",
     "notSet": "No work schedule yet. Turn on the working days, then save.",

@@ -10,10 +10,11 @@ vi.mock("../../../lib/i18n/api-error-message", () => ({
   useApiErrorMessage: () => (code: string) => code,
 }));
 vi.mock("../../../lib/session/session-provider", () => ({
-  useCan: () => true,
+  useCan: () => scheduleState.canManage,
 }));
 type Mutate = (days: unknown, options: { onSuccess: () => void }) => void;
 const scheduleState = vi.hoisted(() => ({
+  canManage: true,
   days: [] as {
     weekday: number;
     is_working_day: boolean;
@@ -77,6 +78,7 @@ beforeEach(() => {
     addEventListener: () => undefined,
     removeEventListener: () => undefined,
   }));
+  scheduleState.canManage = true;
   scheduleState.days = [];
   scheduleState.mutate = (_days, options) => {
     options.onSuccess();
@@ -119,6 +121,22 @@ it("says the schedule is saved for someone who has one", async () => {
 
   expect(screen.getByText("schedule.upToDate")).toBeInTheDocument();
   expect(screen.queryByText("schedule.notSet")).not.toBeInTheDocument();
+});
+
+it("tells a schedule manager that a change applies from today, not to earlier days", async () => {
+  scheduleState.days = [
+    { weekday: 6, is_working_day: true, start_minute: 480, end_minute: 960, grace_minutes: 10 },
+  ];
+  await openFormFor("Satpam Contoh");
+
+  expect(screen.getByText("schedule.effectiveHint")).toBeInTheDocument();
+  cleanup();
+
+  // Someone who can only read the schedule changes nothing.
+  scheduleState.canManage = false;
+  await openFormFor("Satpam Contoh");
+  expect(screen.queryByText("schedule.effectiveHint")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "schedule.save" })).not.toBeInTheDocument();
 });
 
 it("gives each start and end time a box wide enough for the whole time", async () => {

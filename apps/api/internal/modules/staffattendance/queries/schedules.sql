@@ -1,39 +1,26 @@
--- name: UpsertStaffAttendanceScheduleDay :one
--- created_at is the service clock's instant rather than now(), so a
--- simulated school day dates a first schedule the way it dates scans:
--- days before it have no schedule to be absent from. An update keeps the
--- original created_at. working_since dates when the weekday became a
--- working day: the save instant on an insert as a working day or on an
--- update that turns a day off into one, kept while it stays working, and
--- null while it is a day off. The editor stores all seven weekdays on the
--- first save, so an off weekday already has a row: its earlier days stay
--- days off (holiday) once it is turned on, never absences or "no
--- schedule" (domain.ScheduleDay.AsOf).
+-- name: InsertStaffAttendanceScheduleVersion :one
+-- One version of a weekday, in effect from effective_from (the school-local
+-- date of the save) until the next version of the same weekday. Versions
+-- are never updated: the service appends one for each weekday a save
+-- changes, so every past date keeps the version it was judged by.
 insert into staff_attendance_schedules (
-  tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_by, updated_by,
-  created_at, working_since
+  tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_by,
+  effective_from
 )
-values (
-  $1, $2, $3, $4, $5, $6, $7, $8, $8, $9,
-  case when $4::boolean then $9::timestamptz end
-)
-on conflict (tenant_id, employee_user_id, weekday) do update set
-  is_working_day = excluded.is_working_day,
-  start_minute = excluded.start_minute,
-  end_minute = excluded.end_minute,
-  grace_minutes = excluded.grace_minutes,
-  updated_by = excluded.updated_by,
-  working_since = case
-    when not excluded.is_working_day then null
-    when staff_attendance_schedules.is_working_day then staff_attendance_schedules.working_since
-    else excluded.created_at
-  end
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 returning *;
 
--- name: ListStaffAttendanceScheduleDays :many
+-- name: ListStaffAttendanceScheduleVersions :many
+-- Every version of an employee's weekdays, oldest first: by weekday, then
+-- the date each takes effect, then save order, so of two versions saved
+-- for the same date the later one comes last (domain.ScheduleHistory).
+-- Save order is the uuidv7 primary key, minted from the database's real
+-- clock at insert. created_at cannot stand in for it: rows migrated by 0150
+-- carry the service clock's save instant, which a superadmin's simulated
+-- time can put days ahead of a later save's real now().
 select * from staff_attendance_schedules
 where tenant_id = $1 and employee_user_id = $2
-order by weekday;
+order by weekday, effective_from, id;
 
 -- name: ListStaffAttendanceRosterEmployees :many
 -- The module's own roster: every user who has at least one schedule day

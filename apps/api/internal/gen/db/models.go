@@ -1458,10 +1458,8 @@ type StaffAttendanceSchedule struct {
 	EndMinute      int16              `json:"end_minute"`
 	GraceMinutes   int16              `json:"grace_minutes"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 	CreatedBy      pgtype.UUID        `json:"created_by"`
-	UpdatedBy      pgtype.UUID        `json:"updated_by"`
-	WorkingSince   pgtype.Timestamptz `json:"working_since"`
+	EffectiveFrom  pgtype.Date        `json:"effective_from"`
 }
 
 type StaffProfile struct {

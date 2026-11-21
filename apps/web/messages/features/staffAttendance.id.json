@@ -90,6 +90,7 @@
     "graceFor": "Toleransi keterlambatan {day}",
     "minutesUnit": "mnt",
     "endHint": "Isi jam selesai lebih awal dari jam mulai untuk shift yang melewati tengah malam.",
+    "effectiveHint": "Perubahan berlaku mulai hari ini. Hari yang sudah lewat tetap dinilai dengan jadwal yang berlaku saat itu.",
     "unsaved": "Ada perubahan yang belum disimpan",
     "upToDate": "Jadwal sudah tersimpan",
     "notSet": "Belum ada jadwal kerja. Aktifkan hari kerja, lalu simpan.",

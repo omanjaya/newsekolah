@@ -60,6 +60,7 @@ func TestWorkingSinceMigrationRestoresFirstSaveDate(t *testing.T) {
 	mondayOn := time.Date(2026, 10, 5, 9, 0, 0, 0, loc)
 	saturdayOn := time.Date(2026, 10, 10, 9, 0, 0, 0, loc)
 
+	runMigrationFile(t, ctx, pg.AdminPool, scheduleVersionsMigration+".down.sql")
 	runMigrationFile(t, ctx, pg.AdminPool, workingSinceMigration+".down.sql")
 	// Monday: working, re-dated when it became one. Tuesday: working from
 	// the first save. Saturday: re-dated when it became working, then
@@ -110,4 +111,5 @@ func TestWorkingSinceMigrationRestoresFirstSaveDate(t *testing.T) {
 
 	// Leave the schema as every other test in this database expects it.
 	runMigrationFile(t, ctx, pg.AdminPool, workingSinceMigration+".up.sql")
+	runMigrationFile(t, ctx, pg.AdminPool, scheduleVersionsMigration+".up.sql")
 }

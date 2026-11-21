@@ -245,6 +245,10 @@ function WeeklyScheduleForm({ employeeId }: { employeeId: string }): ReactElemen
         </div>
       )}
       <p className="text-body-sm text-fg-muted">{t("schedule.endHint")}</p>
+      {/* A save is never retroactive: the API judges every earlier day by
+          the schedule in effect on it, so turning a day off keeps its past
+          absences. Said before the save button, where the change is made. */}
+      {canManage && <p className="text-body-sm text-fg-muted">{t("schedule.effectiveHint")}</p>}
       {canManage && (
         <FormActions align="between">
           <p className="text-body-sm text-fg-muted">{status}</p>
