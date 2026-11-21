@@ -124,4 +124,55 @@ describe("MyLibraryLoanRow", () => {
     expect(screen.getByRole("button", { name: "renewAction" })).toBeDisabled();
     expect(screen.getByText("renewBlockedLimit")).toBeInTheDocument();
   });
+  // RenewLoan also checks EligibleToBorrow: a member suspended or with an
+  // ended membership is refused, so the button says so before the tap.
+  it("disables renewing with the reason while the membership is blocked", () => {
+    const { rerender } = render(
+      <MyLibraryLoanRow
+        loan={loan()}
+        today="2026-09-15"
+        locale="id"
+        block={{ kind: "suspended", until: "2026-09-20", borrowFrom: "2026-09-21" }}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "renewAction" })).toBeDisabled();
+    expect(screen.getByText("renewBlockedSuspended")).toBeInTheDocument();
+
+    rerender(
+      <MyLibraryLoanRow
+        loan={loan()}
+        today="2026-09-15"
+        locale="id"
+        block={{ kind: "suspended", until: null, borrowFrom: null }}
+      />,
+    );
+    expect(screen.getByText("renewBlockedSuspendedOpen")).toBeInTheDocument();
+
+    rerender(
+      <MyLibraryLoanRow
+        loan={loan()}
+        today="2026-09-15"
+        locale="id"
+        block={{ kind: "expired", until: "2026-09-01" }}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "renewAction" })).toBeDisabled();
+    expect(screen.getByText("renewBlockedExpired")).toBeInTheDocument();
+
+    rerender(
+      <MyLibraryLoanRow
+        loan={loan()}
+        today="2026-09-15"
+        locale="id"
+        block={{ kind: "inactive" }}
+      />,
+    );
+    expect(screen.getByText("renewBlockedInactive")).toBeInTheDocument();
+  });
+
+  it("keeps renewing open when the membership allows borrowing", () => {
+    render(<MyLibraryLoanRow loan={loan()} today="2026-09-15" locale="id" block={null} />);
+
+    expect(screen.getByRole("button", { name: "renewAction" })).toBeEnabled();
+  });
 });

@@ -111,11 +111,12 @@ export function MyLibraryView(): ReactElement {
   const unpaidTotal = unpaidFineTotal(unpaidViolations);
   const counts = countMyLibraryTiles(data.active_loans, data.reservations, today);
   const activeLoans = [...data.active_loans].sort((a, b) => a.due_on.localeCompare(b.due_on));
+  const block = memberBorrowBlock(data.member, today);
 
   return (
     <AppPage variant="narrow">
       <MyLibraryHero
-        block={memberBorrowBlock(data.member, today)}
+        block={block}
         loans={activeLoans}
         counts={counts}
         today={today}
@@ -143,9 +144,9 @@ export function MyLibraryView(): ReactElement {
         </Alert>
       )}
 
-      {/* With nothing out, the hero already says so ("Belum ada buku yang
-          dipinjam") and points at the catalogue; a second empty card for
-          the same fact would only push the history down. */}
+      {/* With nothing out, the hero already says either that nothing is
+          out or why borrowing is blocked; a second empty card would only
+          push the history down. */}
       {activeLoans.length > 0 && (
         <section className="flex flex-col gap-3">
           <SectionHeader title={t("activeLoans")} count={activeLoans.length} />
@@ -157,6 +158,7 @@ export function MyLibraryView(): ReactElement {
                 today={today}
                 locale={locale}
                 maxRenewals={data.max_renewals}
+                block={block}
               />
             ))}
           </ul>
@@ -233,7 +235,15 @@ function MyLibraryHero({
   if (block) {
     // The idle card's "borrow at the library" invitation would send the
     // member to a desk that refuses them; the catalogue stays a quiet link.
-    return <MyLibraryBlockedHero block={block} today={today} locale={locale} browse={browse} />;
+    return (
+      <MyLibraryBlockedHero
+        block={block}
+        hasLoans={loans.length > 0}
+        today={today}
+        locale={locale}
+        browse={browse}
+      />
+    );
   }
 
   if (counts.nextDueOn) {
@@ -266,14 +276,20 @@ function MyLibraryHero({
   );
 }
 
-/** Why the desk would refuse this member a loan, in the hero's place. */
+/**
+ * Why the desk would refuse this member a loan, in the hero's place. With
+ * books still out, a dated suspension also says those go back as usual
+ * and cannot be renewed meanwhile.
+ */
 function MyLibraryBlockedHero({
   block,
+  hasLoans,
   today,
   locale,
   browse,
 }: {
   block: MemberBorrowBlock;
+  hasLoans: boolean;
   today: string;
   locale: Locale;
   browse: ReactElement;
@@ -291,7 +307,9 @@ function MyLibraryBlockedHero({
         }
         meta={
           block.borrowFrom
-            ? t("suspendedMeta", { date: day(block.borrowFrom) })
+            ? t(hasLoans ? "suspendedMetaWithLoans" : "suspendedMeta", {
+                date: day(block.borrowFrom),
+              })
             : t("suspendedOpenMeta")
         }
         chip={t("suspendedChip")}

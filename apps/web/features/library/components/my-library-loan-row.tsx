@@ -10,6 +10,7 @@ import type { ReactElement } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import type { LibraryLoan } from "../api";
 import { classifyDueDate } from "../lib/due-date";
+import type { MemberBorrowBlock } from "../lib/member-borrowing";
 import { formatShortDay } from "../lib/short-date";
 import { useRenewMyLoanMutation } from "../me-api";
 
@@ -18,16 +19,19 @@ import { DueBadge } from "./due-badge";
 /**
  * One of the reader's own books out, as a card row: title, author, the
  * due-date badge and a Perpanjang button, the one action this row needs.
- * When renewing is refused (the loan is already late, or already renewed
- * as often as the member's type allows) the button stays disabled and the
- * reason is written under it, where a touch screen shows it, not in a
- * tooltip.
+ * When renewing is refused (the loan is already late, already renewed as
+ * often as the member's type allows, or the membership itself is blocked:
+ * a running suspension, an ended or inactive membership) the button stays
+ * disabled and the reason is written under it, where a touch screen shows
+ * it, not in a tooltip. The reasons follow the server's RenewLoan order:
+ * the loan's own limits first, then the member's eligibility.
  */
 export function MyLibraryLoanRow({
   loan,
   today,
   locale,
   maxRenewals,
+  block = null,
   className,
 }: {
   loan: LibraryLoan;
@@ -35,6 +39,8 @@ export function MyLibraryLoanRow({
   locale: Locale;
   /** The member's renewal limit from GET /v1/library/me; unknown means the server decides. */
   maxRenewals?: number;
+  /** Why the membership cannot borrow today (memberBorrowBlock); renewing is refused for the same reasons. */
+  block?: MemberBorrowBlock | null;
   className?: string;
 }): ReactElement {
   const t = useTranslations("app.library.me");
@@ -44,6 +50,12 @@ export function MyLibraryLoanRow({
 
   const overdue = classifyDueDate(loan.due_on, today) === "overdue";
   const atRenewalLimit = maxRenewals !== undefined && loan.renewal_count >= maxRenewals;
+  const day = (date: string) => formatShortDay(date, locale, { today });
+  const blockedReason = overdue
+    ? t("renewBlockedOverdue")
+    : atRenewalLimit
+      ? t("renewBlockedLimit")
+      : block && renewBlockedByMembership(block, t, day);
 
   return (
     <Card asChild padding="sm">
@@ -65,13 +77,11 @@ export function MyLibraryLoanRow({
               variant="secondary"
               icon={<RotateCw />}
               loading={renew.isPending}
-              disabled={overdue || atRenewalLimit}
+              disabled={Boolean(blockedReason)}
               onClick={() => {
                 renew.mutate(loan.id, {
                   onSuccess: (result) => {
-                    toast.success(
-                      t("renewed", { date: formatShortDay(result.due_on, locale, { today }) }),
-                    );
+                    toast.success(t("renewed", { date: day(result.due_on) }));
                   },
                   onError: (error) => {
                     toast.error(
@@ -86,13 +96,27 @@ export function MyLibraryLoanRow({
               {t("renewAction")}
             </Button>
           </div>
-          {overdue ? (
-            <p className="text-caption text-fg-muted">{t("renewBlockedOverdue")}</p>
-          ) : (
-            atRenewalLimit && <p className="text-caption text-fg-muted">{t("renewBlockedLimit")}</p>
-          )}
+          {blockedReason && <p className="text-caption text-fg-muted">{blockedReason}</p>}
         </div>
       </li>
     </Card>
   );
+}
+
+/** The caption for a renewal the server refuses because of the membership (EligibleToBorrow). */
+function renewBlockedByMembership(
+  block: MemberBorrowBlock,
+  t: ReturnType<typeof useTranslations<"app.library.me">>,
+  day: (date: string) => string,
+): string {
+  switch (block.kind) {
+    case "suspended":
+      return block.until
+        ? t("renewBlockedSuspended", { date: day(block.until) })
+        : t("renewBlockedSuspendedOpen");
+    case "expired":
+      return t("renewBlockedExpired");
+    case "inactive":
+      return t("renewBlockedInactive");
+  }
 }

@@ -23,6 +23,10 @@ vi.mock("../me-api", () => ({
     isError: false,
     refetch: vi.fn(),
   }),
+  useRenewMyLoanMutation: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+vi.mock("../../../lib/i18n/api-error-message", () => ({
+  useApiErrorMessage: () => (code: string) => code,
 }));
 
 function renderWithCatalog() {
@@ -78,5 +82,55 @@ describe("MyLibraryView with the real catalog", () => {
     expect(hero).toHaveTextContent("Bisa meminjam lagi mulai 8 Des");
     expect(hero).not.toHaveTextContent("Belum ada buku yang dipinjam");
     expect(hero).not.toHaveTextContent("pinjam di perpustakaan");
+    // Nothing is out, so the hero does not talk about books being returned.
+    expect(hero).not.toHaveTextContent("Buku yang sedang dipinjam");
+  });
+
+  // Two books out, one returned late: the member is suspended while the
+  // other is still out and not yet due. RenewLoan refuses a suspended
+  // member, so the row must not offer the renewal.
+  it("refuses renewing a book still out while the member is suspended", () => {
+    mocks.data = {
+      member: {
+        user_id: "u1",
+        member_no: "PS-2026-00028",
+        member_type_id: "t1",
+        registered_on: "2026-11-01",
+        status: "suspended",
+        suspended_until: "2026-12-07",
+        late_return_count: 1,
+      },
+      active_loans: [
+        {
+          id: "loan2",
+          copy_id: "copy2",
+          title_id: "22222222-2222-2222-2222-222222222222",
+          title_name: "Fisika Dasar",
+          member_user_id: "u1",
+          borrowed_at: "2026-11-27T00:00:00Z",
+          due_on: "2026-12-11",
+          renewal_count: 0,
+          status: "active",
+          fine_amount: 0,
+        },
+      ],
+      history: [],
+      reservations: [],
+      violations: [],
+      max_renewals: 1,
+      booking_enabled: true,
+    };
+
+    renderWithCatalog();
+
+    const hero = screen.getByTestId("my-library-hero");
+    expect(hero).toHaveTextContent("Peminjaman ditangguhkan sampai 7 Des");
+    expect(hero).toHaveTextContent("belum bisa diperpanjang");
+    expect(screen.getByRole("button", { name: /Perpanjang/ })).toBeDisabled();
+    expect(
+      screen.getByText(
+        "Tidak bisa diperpanjang selama peminjaman ditangguhkan sampai 7 Des. Kembalikan bukunya sebelum jatuh tempo.",
+      ),
+    ).toBeInTheDocument();
   });
 });
