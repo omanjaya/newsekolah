@@ -120,8 +120,9 @@ animates.
 - **Surfaces and content**: `Card` (`CardHeader`, `CardTitle`,
   `CardDescription`, `CardContent`, `CardFooter`; tones, padding,
   `interactive`), `HeroCard`, `SectionHeader`, `List` and `ListRow`
-  (`titleLines` for long titles, `metaLines` for a third to fifth meta line,
-  `keepMetaWhole` so every fact, a date or
+  (`titleLines` for long titles, `metaLines` for a third to sixth meta line,
+  `{ wrap }` facts so a free-text name or note in an array `meta` wraps
+  instead of being cut to one line, `keepMetaWhole` so every fact, a date or
   a time, keeps its width and a trailing badge out of room moves under
   the text, whole), `DataList`, `Stat`/`StatGrid` (a
   `selected` state for tiles that filter a list; a `strip` shares its row

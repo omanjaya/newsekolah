@@ -8,6 +8,16 @@ import { cn } from "../utils/cn.js";
 import { useListContext } from "./list.js";
 import { UiLink } from "./ui-link.js";
 
+/**
+ * A fact of free text in an array `meta`, such as a name with titles or a
+ * person's own note, whose length nothing bounds: instead of ending in an
+ * ellipsis on one line like the other facts, it wraps onto the next lines
+ * of the meta (within `metaLines`), so it can be read whole.
+ */
+export interface ListRowWrappingFact {
+  readonly wrap: ReactNode;
+}
+
 export interface ListRowProps extends Omit<ComponentPropsWithRef<"li">, "title" | "onClick"> {
   /** An Avatar, an IconCircle, or a short fixed-width value such as a time. */
   leading?: ReactNode;
@@ -22,9 +32,12 @@ export interface ListRowProps extends Omit<ComponentPropsWithRef<"li">, "title" 
    * The secondary line under the title, up to two lines. An array is a
    * list of short facts (a day, "keluar 15.49", a count) joined with " · ":
    * the line wraps only between facts, never inside one, and a fact wider
-   * than the row ends in an ellipsis instead of being cut mid-word.
+   * than the row ends in an ellipsis instead of being cut mid-word. A
+   * free-text fact (`{ wrap: name }`, a `ListRowWrappingFact`) wraps
+   * instead, so a long name or note is not cut to one line; give the row
+   * the `metaLines` it needs.
    */
-  meta?: ReactNode | readonly ReactNode[];
+  meta?: ReactNode | readonly (ReactNode | ListRowWrappingFact)[];
   /**
    * How many lines the meta may take: 2 (default), or 3 to 6 for a row
    * whose facts each need a line of their own (whom a visitor came to see,
@@ -141,10 +154,24 @@ function RowTarget({
   );
 }
 
-/** Short facts joined with " · ", each kept on one line. */
-function presentSegments(segments: readonly ReactNode[]): ReactNode[] {
-  return segments.filter(
-    (segment) => segment !== null && segment !== undefined && segment !== false && segment !== "",
+type MetaSegment = ReactNode | ListRowWrappingFact;
+
+function isWrappingFact(segment: MetaSegment): segment is ListRowWrappingFact {
+  return typeof segment === "object" && segment !== null && "wrap" in segment;
+}
+
+function isPresent(node: ReactNode): boolean {
+  return node !== null && node !== undefined && node !== false && node !== "";
+}
+
+function isFactList(meta: ListRowProps["meta"]): meta is readonly MetaSegment[] {
+  return Array.isArray(meta);
+}
+
+/** The facts that have something to say. */
+function presentSegments(segments: readonly MetaSegment[]): MetaSegment[] {
+  return segments.filter((segment) =>
+    isWrappingFact(segment) ? isPresent(segment.wrap) : isPresent(segment),
   );
 }
 
@@ -154,18 +181,29 @@ function presentSegments(segments: readonly ReactNode[]): ReactNode[] {
  * (`truncate` on the fact, bottom-aligned to sit on the line). The " ·"
  * after a fact rides in the fact's box and never shrinks, so a wrapped
  * line ends in the separator instead of the next line opening with it.
+ *
+ * A wrapping fact is plain inline text instead: it flows on from the fact
+ * before it and wraps between its words (or inside one longer than the
+ * row), and its separator is held to its last word by a no-break space.
  */
-function MetaSegments({ segments }: { segments: readonly ReactNode[] }) {
+function MetaSegments({ segments }: { segments: readonly MetaSegment[] }) {
   const present = presentSegments(segments);
   return present.map((segment, index) => {
     const last = index === present.length - 1;
     return (
       // The facts are a fixed, ordered list for this row; the index is their identity.
       <Fragment key={index}>
-        <span data-meta-fact="" className="inline-flex max-w-full align-bottom">
-          <span className="min-w-0 truncate">{segment}</span>
-          {!last && <span className="shrink-0 whitespace-pre"> ·</span>}
-        </span>
+        {isWrappingFact(segment) ? (
+          <span data-meta-fact="" data-meta-wrap="" className="break-words">
+            {segment.wrap}
+            {!last && "\u00a0·"}
+          </span>
+        ) : (
+          <span data-meta-fact="" className="inline-flex max-w-full align-bottom">
+            <span className="min-w-0 truncate">{segment}</span>
+            {!last && <span className="shrink-0 whitespace-pre"> ·</span>}
+          </span>
+        )}
         {!last && " "}
       </Fragment>
     );
@@ -206,12 +244,12 @@ export function ListRow({
 }: ListRowProps) {
   const { variant, dense } = useListContext();
   const metaId = useId();
-  const hasMeta = Array.isArray(meta) ? presentSegments(meta).length > 0 : Boolean(meta);
+  const hasMeta = isFactList(meta) ? presentSegments(meta).length > 0 : Boolean(meta);
   const interactive = href !== undefined || onClick !== undefined;
   const showChevron = chevron ?? (interactive && !action && !disabled);
   const rule = "border-b border-line";
   // Only a list of facts has facts to keep whole.
-  const keepFacts = keepMetaWhole && Array.isArray(meta) && hasMeta;
+  const keepFacts = keepMetaWhole && isFactList(meta) && hasMeta;
 
   const text = (
     // With `keepMetaWhole` the text asks for its min-content width but
@@ -260,7 +298,7 @@ export function ListRow({
             dense ? "text-caption" : "text-body-sm",
           )}
         >
-          {Array.isArray(meta) ? <MetaSegments segments={meta} /> : meta}
+          {isFactList(meta) ? <MetaSegments segments={meta} /> : meta}
         </div>
       )}
     </div>

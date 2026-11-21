@@ -90,6 +90,34 @@ describe("List and ListRow", () => {
     expect(fact.parentElement).toHaveClass("inline-flex", "max-w-full");
   });
 
+  // A teacher's own note or a titled name cut to one line could not be
+  // read at all on a phone, with lines of the meta left empty below it.
+  it("wraps a free-text fact instead of cutting it, keeping its separator", () => {
+    const note = "Sakit sejak pagi, dijemput orang tua di ruang UKS setelah jam kedua";
+    render(
+      <List>
+        <ListRow
+          title="Matematika"
+          metaLines={4}
+          meta={["Jam 1 – Jam 2", { wrap: "Dra. Hj. Siti Nurhaliza, S.Pd." }, { wrap: note }]}
+        />
+      </List>,
+    );
+    const name = screen.getByText(/^Dra\. Hj\./);
+    expect(name).toHaveAttribute("data-meta-wrap");
+    expect(name).toHaveClass("break-words");
+    expect(name.closest(".truncate")).toBeNull();
+    // Held to the name's last word, so no line opens with it.
+    expect(name.textContent).toBe("Dra. Hj. Siti Nurhaliza, S.Pd.\u00a0·");
+    const noteFact = screen.getByText(note);
+    expect(noteFact.closest(".truncate")).toBeNull();
+    expect(noteFact.parentElement).toHaveTextContent(
+      /^Jam 1 – Jam 2 · Dra\. Hj\. Siti Nurhaliza, S\.Pd\.\s· Sakit sejak pagi/,
+    );
+    // The short fixed fact still keeps to one line.
+    expect(screen.getByText("Jam 1 – Jam 2")).toHaveClass("truncate");
+  });
+
   // At 320px a wrapped line opened with an orphan "·".
   it("keeps the separator at the end of a fact, so a wrapped line never opens with it", () => {
     render(
