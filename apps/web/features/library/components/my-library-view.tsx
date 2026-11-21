@@ -26,6 +26,7 @@ import { businessNow } from "../../../lib/simulation/clock";
 import { todayInZone } from "../../../lib/tenant-date";
 import type { LibraryLoan } from "../api";
 import { classifyDueDate, overdueDays } from "../lib/due-date";
+import { type MemberBorrowBlock, memberBorrowBlock } from "../lib/member-borrowing";
 import { shownReservationStatus } from "../lib/reservation-pickup";
 import { formatShortDay } from "../lib/short-date";
 import { isUnpaidFine, unpaidFineTotal } from "../lib/violations";
@@ -43,7 +44,8 @@ const CATALOGUE_HREF = "/opac";
 /**
  * A student's own library page, made for a phone (docs/07-ui-ux.md
  * section 0): a hero card that answers "what do I owe the library" first
- * (a late book, else the next due date, else a way to the catalogue),
+ * (a late book, else why borrowing is blocked, else the next due date,
+ * else a way to the catalogue),
  * unpaid fines, the books out now with their renew button and the reason
  * when renewing is refused, the closed loans as a short list, and the
  * self-service holds. Someone who registers members (a librarian, an
@@ -113,6 +115,7 @@ export function MyLibraryView(): ReactElement {
   return (
     <AppPage variant="narrow">
       <MyLibraryHero
+        block={memberBorrowBlock(data.member, today)}
         loans={activeLoans}
         counts={counts}
         today={today}
@@ -180,16 +183,19 @@ export function MyLibraryView(): ReactElement {
 
 /**
  * The first thing a student sees: a late book (warning, with how late and
- * which), else when the next book is due and how many are out, else a
- * calm card that points at the catalogue.
+ * which), else why the desk would refuse a loan (a running suspension, an
+ * ended or inactive membership), else when the next book is due and how
+ * many are out, else a calm card that points at the catalogue.
  */
 function MyLibraryHero({
+  block,
   loans,
   counts,
   today,
   locale,
   reservations,
 }: {
+  block: MemberBorrowBlock | null;
   loans: LibraryLoan[];
   counts: ReturnType<typeof countMyLibraryTiles>;
   today: string;
@@ -224,6 +230,12 @@ function MyLibraryHero({
     );
   }
 
+  if (block) {
+    // The idle card's "borrow at the library" invitation would send the
+    // member to a desk that refuses them; the catalogue stays a quiet link.
+    return <MyLibraryBlockedHero block={block} today={today} locale={locale} browse={browse} />;
+  }
+
   if (counts.nextDueOn) {
     return (
       <HeroCard
@@ -249,6 +261,66 @@ function MyLibraryHero({
           <Link href={CATALOGUE_HREF}>{tMe("browseCatalogue")}</Link>
         </Button>
       }
+      data-testid="my-library-hero"
+    />
+  );
+}
+
+/** Why the desk would refuse this member a loan, in the hero's place. */
+function MyLibraryBlockedHero({
+  block,
+  today,
+  locale,
+  browse,
+}: {
+  block: MemberBorrowBlock;
+  today: string;
+  locale: Locale;
+  browse: ReactElement;
+}): ReactElement {
+  const t = useTranslations("app.library.me.hero");
+  const day = (date: string) => formatShortDay(date, locale, { today });
+
+  if (block.kind === "suspended") {
+    return (
+      <HeroCard
+        tone="warning"
+        eyebrow={t("suspendedEyebrow")}
+        title={
+          block.until ? t("suspendedTitle", { date: day(block.until) }) : t("suspendedOpenTitle")
+        }
+        meta={
+          block.borrowFrom
+            ? t("suspendedMeta", { date: day(block.borrowFrom) })
+            : t("suspendedOpenMeta")
+        }
+        chip={t("suspendedChip")}
+        secondaryAction={browse}
+        data-testid="my-library-hero"
+      />
+    );
+  }
+
+  if (block.kind === "expired") {
+    return (
+      <HeroCard
+        tone="warning"
+        eyebrow={t("expiredEyebrow")}
+        title={t("expiredTitle", { date: day(block.until) })}
+        meta={t("expiredMeta")}
+        secondaryAction={browse}
+        data-testid="my-library-hero"
+      />
+    );
+  }
+
+  return (
+    <HeroCard
+      tone="neutral"
+      eyebrow={t("inactiveEyebrow")}
+      title={t("inactiveTitle")}
+      meta={t("inactiveMeta")}
+      secondaryAction={browse}
       data-testid="my-library-hero"
     />
   );

@@ -1685,7 +1685,19 @@
       "readyChip": "{count, plural, one {1 hold} other {# holds}} ready to collect",
       "idleEyebrow": "Library",
       "idleTitle": "No books on loan",
-      "idleMeta": "Find a book in the catalogue, then borrow it at the library with your member card."
+      "idleMeta": "Find a book in the catalogue, then borrow it at the library with your member card.",
+      "suspendedEyebrow": "Library",
+      "suspendedTitle": "Borrowing suspended through {date}",
+      "suspendedMeta": "You can borrow again from {date}. Books you have now are still returned as usual.",
+      "suspendedOpenTitle": "Borrowing is suspended",
+      "suspendedOpenMeta": "Ask the librarian when you can borrow again.",
+      "suspendedChip": "Suspended",
+      "expiredEyebrow": "Membership",
+      "expiredTitle": "Membership ended {date}",
+      "expiredMeta": "Ask the librarian to renew your membership before you borrow again.",
+      "inactiveEyebrow": "Membership",
+      "inactiveTitle": "Membership not active",
+      "inactiveMeta": "You cannot borrow books yet. Ask the librarian to activate your membership."
     }
   },
   "memberProfile": {

@@ -210,6 +210,120 @@ describe("MyLibraryView", () => {
     expect(screen.queryByTestId("my-library-loan-cards")).not.toBeInTheDocument();
   });
 
+  // The desk refuses a suspended member (EligibleToBorrow on the server):
+  // the page must say so instead of inviting them to come and borrow.
+  it("leads with a running suspension instead of the borrow invitation", () => {
+    mocks.data = {
+      ...profile([
+        {
+          id: "v1",
+          member_user_id: "u1",
+          kind: "late",
+          penalty: "suspend",
+          amount: 0,
+          suspend_days: 3,
+          status: "unpaid",
+        },
+      ]),
+      member: {
+        user_id: "u1",
+        member_no: "M-1",
+        member_type_id: "t1",
+        registered_on: "2026-01-01",
+        status: "suspended",
+        suspended_until: "2999-12-07",
+        late_return_count: 1,
+      },
+    };
+
+    render(<MyLibraryView />);
+
+    const hero = screen.getByTestId("my-library-hero");
+    expect(hero).toHaveTextContent("suspendedTitle");
+    expect(hero).not.toHaveTextContent("idleTitle");
+    expect(hero).not.toHaveTextContent("idleMeta");
+    // The catalogue stays reachable, as a quiet link rather than the CTA.
+    expect(screen.getByRole("link", { name: /browseCatalogue/ })).toHaveAttribute("href", "/opac");
+  });
+
+  it("puts the suspension ahead of the next due date", () => {
+    mocks.data = {
+      ...profile([]),
+      member: {
+        user_id: "u1",
+        member_no: "M-1",
+        member_type_id: "t1",
+        registered_on: "2026-01-01",
+        status: "suspended",
+        suspended_until: "2999-12-07",
+        late_return_count: 1,
+      },
+      active_loans: [loan({ id: "a", due_on: "2999-09-20" })],
+    };
+
+    render(<MyLibraryView />);
+
+    expect(screen.getByTestId("my-library-hero")).toHaveTextContent("suspendedTitle");
+  });
+
+  it("shows the idle hero once the suspension's end date has passed", () => {
+    mocks.data = {
+      ...profile([]),
+      member: {
+        user_id: "u1",
+        member_no: "M-1",
+        member_type_id: "t1",
+        registered_on: "2000-01-01",
+        status: "suspended",
+        suspended_until: "2000-01-07",
+        late_return_count: 1,
+      },
+    };
+
+    render(<MyLibraryView />);
+
+    expect(screen.getByTestId("my-library-hero")).toHaveTextContent("idleTitle");
+  });
+
+  it("tells a member with an inactive membership that they cannot borrow", () => {
+    mocks.data = {
+      ...profile([]),
+      member: {
+        user_id: "u1",
+        member_no: "M-1",
+        member_type_id: "t1",
+        registered_on: "2026-01-01",
+        status: "inactive",
+        late_return_count: 0,
+      },
+    };
+
+    render(<MyLibraryView />);
+
+    const hero = screen.getByTestId("my-library-hero");
+    expect(hero).toHaveTextContent("inactiveTitle");
+    expect(hero).not.toHaveTextContent("idleMeta");
+  });
+
+  it("tells a member whose membership has ended", () => {
+    mocks.data = {
+      ...profile([]),
+      member: {
+        user_id: "u1",
+        member_no: "M-1",
+        member_type_id: "t1",
+        registered_on: "2000-01-01",
+        valid_until: "2000-12-31",
+        status: "active",
+        late_return_count: 0,
+      },
+    };
+
+    render(<MyLibraryView />);
+
+    expect(screen.getByTestId("my-library-hero")).toHaveTextContent("expiredTitle");
+  });
+
   it("lists every current loan, soonest due first", () => {
     mocks.data = {
       ...profile([]),

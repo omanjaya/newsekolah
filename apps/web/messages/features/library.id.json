@@ -1685,7 +1685,19 @@
       "readyChip": "{count, plural, one {1 pesanan} other {# pesanan}} siap diambil",
       "idleEyebrow": "Perpustakaan",
       "idleTitle": "Belum ada buku yang dipinjam",
-      "idleMeta": "Cari buku di katalog, lalu pinjam di perpustakaan dengan kartu anggota."
+      "idleMeta": "Cari buku di katalog, lalu pinjam di perpustakaan dengan kartu anggota.",
+      "suspendedEyebrow": "Perpustakaan",
+      "suspendedTitle": "Peminjaman ditangguhkan sampai {date}",
+      "suspendedMeta": "Bisa meminjam lagi mulai {date}. Buku yang sedang dipinjam tetap dikembalikan seperti biasa.",
+      "suspendedOpenTitle": "Peminjaman sedang ditangguhkan",
+      "suspendedOpenMeta": "Tanyakan ke petugas perpustakaan kapan bisa meminjam lagi.",
+      "suspendedChip": "Ditangguhkan",
+      "expiredEyebrow": "Keanggotaan",
+      "expiredTitle": "Keanggotaan berakhir {date}",
+      "expiredMeta": "Minta petugas perpustakaan memperpanjang keanggotaan sebelum meminjam lagi.",
+      "inactiveEyebrow": "Keanggotaan",
+      "inactiveTitle": "Keanggotaan tidak aktif",
+      "inactiveMeta": "Belum bisa meminjam buku. Tanyakan ke petugas perpustakaan untuk mengaktifkan keanggotaan."
     }
   },
   "memberProfile": {
