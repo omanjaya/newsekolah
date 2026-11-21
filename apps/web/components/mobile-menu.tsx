@@ -228,7 +228,7 @@ function RecentChips({
   return (
     <ul
       ref={scrollerRef}
-      className="-mx-5 -my-1 flex scroll-fade-x gap-2 overflow-x-auto overscroll-x-contain px-5 py-1 scrollbar-none"
+      className="relative -mx-5 -my-1 flex scroll-fade-x gap-2 overflow-x-auto overscroll-x-contain px-5 py-1 scrollbar-none"
     >
       {items.map((item) => (
         <li key={item.key} className="shrink-0">

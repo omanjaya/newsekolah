@@ -99,7 +99,7 @@ export function ScheduleWeekGrid({
     // As tall as the page leaves it on desktop: the grid scrolls inside the
     // card, under day headings that stay in view.
     <Card className="hidden min-h-0 overflow-hidden p-0 md:flex md:flex-col">
-      <div className="min-h-0 overflow-auto">
+      <div className="relative min-h-0 overflow-auto">
         <Table
           framed={false}
           className="table-fixed"

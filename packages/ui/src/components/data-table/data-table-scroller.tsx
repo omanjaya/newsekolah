@@ -27,7 +27,7 @@ export function DataTableScroller({
     <div
       ref={scrollerRef}
       className={cn(
-        "hidden overflow-x-auto md:block",
+        "relative hidden overflow-x-auto md:block",
         fillHeight &&
           "scroll-fade-y [--scroll-fade-inset-start:var(--space-10)] md:min-h-0 md:overflow-y-auto",
       )}

@@ -134,6 +134,35 @@ describe("DataTable header band", () => {
   });
 });
 
+describe("DataTable scroller", () => {
+  /**
+   * The nearest positioned box at or above `element`, by its classes
+   * (jsdom computes no layout): what an absolutely positioned label inside
+   * it is placed against and clipped by.
+   */
+  function containingBlock(element: HTMLElement): HTMLElement | null {
+    let box = element.parentElement;
+    while (box && !/(?:^|\s)(?:relative|sticky|absolute|fixed)(?:\s|$)/.test(box.className)) {
+      box = box.parentElement;
+    }
+    return box;
+  }
+
+  // The fines list at 768px: the hidden "Aksi" header sat past the card's
+  // edge in the unscrolled table and scrolled the whole page sideways.
+  it("contains the hidden actions header, so it cannot widen the page", () => {
+    render(<DataTable mode="local" data={USERS} columns={fieldColumns} />);
+    const label = within(screen.getByRole("table")).getByText("Aksi");
+    expect(label).toHaveClass("sr-only");
+    const block = containingBlock(label);
+    expect(block).not.toBeNull();
+    // The scroller itself, or a box inside it, holds the label.
+    const scroller = screen.getByRole("table").closest(".overflow-x-auto");
+    expect(scroller).toHaveClass("relative");
+    expect(scroller?.contains(block)).toBe(true);
+  });
+});
+
 describe("DataTable toolbar on a phone", () => {
   it("draws no phone row for a table with nothing but the column menu", () => {
     render(<DataTable mode="local" data={USERS} columns={fieldColumns} searchable={false} />);

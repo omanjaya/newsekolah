@@ -114,7 +114,7 @@ export function GradebookDesktopTable({
     <Table
       density="compact"
       className="min-w-[720px] border-collapse"
-      containerClassName="min-h-0 overflow-auto"
+      containerClassName="relative min-h-0 overflow-auto"
     >
       <TableHeader>
         <TableRow>

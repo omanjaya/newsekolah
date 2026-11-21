@@ -147,7 +147,7 @@ function StatStrip({
         data-stat-scroller=""
         // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scroll container must be focusable to scroll by keyboard
         tabIndex={overflows ? 0 : undefined}
-        className="scrollbar-none snap-x snap-proximity overflow-x-auto overscroll-x-contain scroll-fade-x focus-visible:outline-none"
+        className="relative scrollbar-none snap-x snap-proximity overflow-x-auto overscroll-x-contain scroll-fade-x focus-visible:outline-none"
       >
         <dl className={cn(paired ? PAIRED_CLASS : ROW_CLASS, className)} {...props} />
       </div>

@@ -70,7 +70,7 @@ export function Table({
     <TableDensityContext.Provider value={density}>
       <div
         className={cn(
-          "overflow-x-auto rounded-lg border border-border bg-surface shadow-1",
+          "relative overflow-x-auto rounded-lg border border-border bg-surface shadow-1",
           containerClassName,
         )}
       >

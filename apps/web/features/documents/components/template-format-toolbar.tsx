@@ -62,7 +62,7 @@ export function TemplateFormatToolbar({
       role="toolbar"
       aria-label={t("toolbarLabel")}
       aria-orientation="horizontal"
-      className="scrollbar-none flex items-center gap-0.5 overflow-x-auto overscroll-x-contain rounded-md bg-surface-sunken p-1 scroll-fade-x sm:flex-wrap sm:overflow-visible"
+      className="relative scrollbar-none flex items-center gap-0.5 overflow-x-auto overscroll-x-contain rounded-md bg-surface-sunken p-1 scroll-fade-x sm:flex-wrap sm:overflow-visible"
     >
       {GROUPS.map((group, index) => (
         <Fragment key={group[0]?.format}>

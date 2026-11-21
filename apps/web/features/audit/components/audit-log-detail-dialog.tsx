@@ -177,7 +177,7 @@ export function AuditLogDetailSheet({
                   ).map(([key, value]) => (
                     <div key={key} className="flex min-w-0 flex-col gap-1.5">
                       <p className="text-label text-fg">{t(`detail.${key}`)}</p>
-                      <pre className="max-h-72 overflow-auto rounded-md bg-surface-sunken p-3 font-mono text-caption text-fg">
+                      <pre className="relative max-h-72 overflow-auto rounded-md bg-surface-sunken p-3 font-mono text-caption text-fg">
                         {renderJson(value, t("detail.noValue"))}
                       </pre>
                     </div>

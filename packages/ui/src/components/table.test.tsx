@@ -139,6 +139,9 @@ describe("Table", () => {
       </Table>,
     );
     expect(container.firstElementChild).toHaveClass("overflow-x-auto", "rounded-lg", "border");
+    // Positioned, so a visually hidden label in a cell is clipped by the
+    // card instead of widening the page past a table wider than it.
+    expect(container.firstElementChild).toHaveClass("relative");
     rerender(
       <Table framed={false} density="compact" className="table-fixed">
         <TableBody>

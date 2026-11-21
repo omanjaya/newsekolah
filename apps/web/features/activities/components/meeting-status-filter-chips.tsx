@@ -35,7 +35,7 @@ export function MeetingStatusFilterChips({
       role="group"
       aria-label={t("filterByStatus")}
       className={cn(
-        "flex snap-x snap-mandatory gap-2 overflow-x-auto py-0.5",
+        "relative flex snap-x snap-mandatory gap-2 overflow-x-auto py-0.5",
         "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         "md:flex-wrap md:overflow-visible",
       )}

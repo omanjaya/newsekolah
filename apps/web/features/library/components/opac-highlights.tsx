@@ -55,7 +55,7 @@ function Shelf({ label, titles }: { label: string; titles: LibraryOpacTitle[] })
           soft edge fade says there is more to scroll. */}
       <ul
         ref={scrollerRef}
-        className="scrollbar-none scroll-fade-x -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 md:-mx-1 md:px-1"
+        className="relative scrollbar-none scroll-fade-x -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 md:-mx-1 md:px-1"
       >
         {titles.map((title) => (
           <li key={title.id} className="w-32 shrink-0 snap-start sm:w-36">

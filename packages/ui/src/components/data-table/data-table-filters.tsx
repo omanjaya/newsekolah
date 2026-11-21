@@ -229,7 +229,7 @@ export function DataTableFilters({
       ref={scrollerRef}
       data-slot="data-table-filters"
       className={cn(
-        "-my-1 flex scrollbar-none items-center gap-1.5 overflow-x-auto py-1 [&>*]:shrink-0",
+        "relative -my-1 flex scrollbar-none items-center gap-1.5 overflow-x-auto py-1 [&>*]:shrink-0",
         // An edge with more pills past it fades out, as a tab strip's does,
         // so a pill cut by the edge reads as "more this way"; a row that
         // fits (and the wrapped row from md up) has no fade at all.
