@@ -36,7 +36,7 @@ import { useSession } from "../../../lib/session/session-provider";
 import { useSimulation } from "../../../lib/simulation/clock";
 import { todayInZone, useMyCalendarQuery } from "../api";
 import { monthAttendanceStats } from "../lib/attendance-stats";
-import { sourceNoteText } from "../lib/source-note";
+import { leaveLetterNumber, sourceNoteText } from "../lib/source-note";
 
 /** Solid status dot for a calendar day cell -- distinct from the 15%-opacity blocks status-tokens.ts builds for the roster/report screens. */
 const STATUS_DOT_CLASS: Record<string, string> = {
@@ -344,12 +344,17 @@ export function AttendanceCalendar(): ReactElement {
                 // four (period, teacher, letter number, source), which take
                 // three lines in a phone's text column, so the meta may run
                 // to one line per fact instead of being clamped at two.
+                // The short fixed facts keep to one line each; the
+                // teacher's name (titles and all) and a teacher's own note
+                // have no bound on their length, so they wrap instead of
+                // being cut to an ellipsis.
+                const note = sourceNoteText(session.note, session.source, (number) =>
+                  tAttendance("leaveLetterNote", { number }),
+                );
                 const meta = [
                   session.period_label,
-                  session.teacher_name,
-                  sourceNoteText(session.note, session.source, (number) =>
-                    tAttendance("leaveLetterNote", { number }),
-                  ),
+                  { wrap: session.teacher_name },
+                  leaveLetterNumber(session.note, session.source) ? note : { wrap: note },
                   session.source && session.source !== "teacher" && !coveredBy
                     ? tCal(`sessionSource.${session.source}`)
                     : undefined,

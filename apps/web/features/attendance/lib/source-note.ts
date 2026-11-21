@@ -19,11 +19,21 @@ export function sourceNoteText(
   leaveLetter: (number: string) => string,
 ): string {
   const raw = note ?? "";
-  const text = raw.trim();
-  if (source === "leave") {
-    const number = LEAVE_LETTER_NOTE.exec(text)?.[1]?.trim();
-    if (number) return leaveLetter(number);
-  }
-  if (source === "permit" && EXIT_PERMIT_NOTE.test(text)) return "";
+  const number = leaveLetterNumber(note, source);
+  if (number) return leaveLetter(number);
+  if (source === "permit" && EXIT_PERMIT_NOTE.test(raw.trim())) return "";
   return raw;
+}
+
+/**
+ * The letter number in the API's note on a row filled in from a leave
+ * letter, or undefined when the note is anything else (a teacher's own
+ * note included).
+ */
+export function leaveLetterNumber(
+  note: string | null | undefined,
+  source: string | null | undefined,
+): string | undefined {
+  if (source !== "leave") return undefined;
+  return LEAVE_LETTER_NOTE.exec((note ?? "").trim())?.[1]?.trim();
 }
