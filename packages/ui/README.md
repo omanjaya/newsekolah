@@ -155,7 +155,9 @@ animates.
   `ScannerResultBanner`, and the scanner hooks.
 - **Hooks**: `useCountUp`, `useMediaQuery`, `useContainerMinWidth`, `useHydrated`, `useScrollEdges`,
   `useActiveIndicator`, `useCollapsingTitle`, `useScanFeedback`,
-  `useCameraScanner`, `useBarcodeScanner`, `useDebouncedCallback`,
+  `useCameraScanner`, `useBarcodeScanner`, `useScanQueue` (a scan stream:
+  one at a time in the order read, only a repeat of the same code dropped),
+  `useDebouncedCallback`,
   `useFieldControl`.
 
 ## Conventions
