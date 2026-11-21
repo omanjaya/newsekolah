@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"io/fs"
 	"testing"
 
 	"github.com/google/uuid"
@@ -15,8 +16,9 @@ import (
 
 // TestLateReturnWarningIsStoredSettled returns a loan one working day late
 // with currency fines off and a member type that does not suspend: the
-// warning it records is stored waived and settled by the lender, not as an
-// unpaid Rp 0 fine, and the member can be granted clearance.
+// warning it records is stored settled as done (paid) by the lender, not
+// as an unpaid Rp 0 fine nor as waived (let off), and the member can be
+// granted clearance.
 func TestLateReturnWarningIsStoredSettled(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx := context.Background()
@@ -35,7 +37,7 @@ func TestLateReturnWarningIsStoredSettled(t *testing.T) {
 	warning := violations[0]
 	require.Equal(t, domain.PenaltyWarning, warning.Penalty)
 	require.Zero(t, warning.Amount)
-	require.Equal(t, domain.ViolationWaived, warning.Status, "a warning leaves nothing to pay")
+	require.Equal(t, domain.ViolationPaid, warning.Status, "a warning leaves nothing to pay and was not let off")
 	require.NotNil(t, warning.SettledAt)
 	require.Equal(t, uuid.NullUUID{UUID: w.memberID, Valid: true}, warning.SettledBy)
 
@@ -49,8 +51,8 @@ func TestLateReturnWarningIsStoredSettled(t *testing.T) {
 }
 
 // TestManualWarningIsStoredSettled records a warning by hand: like a
-// late-return warning it is stored waived, while a manual fine starts
-// unpaid and blocks clearance until it is settled.
+// late-return warning it is stored settled as done, while a manual fine
+// starts unpaid and blocks clearance until it is settled.
 func TestManualWarningIsStoredSettled(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx := context.Background()
@@ -61,7 +63,7 @@ func TestManualWarningIsStoredSettled(t *testing.T) {
 		MemberUserID: w.memberID, Kind: domain.ViolationOther, Penalty: domain.PenaltyWarning, CreatedBy: w.memberID,
 	})
 	require.NoError(t, err)
-	require.Equal(t, domain.ViolationWaived, warning.Status)
+	require.Equal(t, domain.ViolationPaid, warning.Status)
 
 	fine, err := svc.CreateViolation(ctx, w.tenantID, service.CreateViolationInput{
 		MemberUserID: w.memberID, Kind: domain.ViolationDamaged, Penalty: domain.PenaltyFine, Amount: 5000, CreatedBy: w.memberID,
@@ -80,8 +82,8 @@ func TestManualWarningIsStoredSettled(t *testing.T) {
 }
 
 // TestSuspensionDoesNotBlockClearance returns a loan late for a member type
-// that suspends: the suspension row stays unpaid (its settlement reactivates
-// the member) but carries nothing to pay, so clearance is not held back.
+// that suspends: the suspension row stays unpaid until staff mark it served,
+// but carries nothing to pay, so clearance is not held back.
 func TestSuspensionDoesNotBlockClearance(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx := context.Background()
@@ -141,4 +143,54 @@ func TestMigrationSettlesStoredWarnings(t *testing.T) {
 
 	require.NoError(t, pg.AdminPool.QueryRow(ctx, `select status from library_violations where id = $1`, fineID).Scan(&status))
 	require.Equal(t, "unpaid", status)
+}
+
+// TestMigrationMarksStoredWarningsDone replays the migration that moves a
+// warning stored waived to done (paid): the waived warning reads as done
+// with its settlement kept, while a waived fine and a waived suspension --
+// a real waiver by staff -- are left alone.
+func TestMigrationMarksStoredWarningsDone(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	w := seedWitaWorld(t, ctx, pg.AdminPool, 0)
+
+	insert := func(penalty string, amount int) uuid.UUID {
+		t.Helper()
+		var id uuid.UUID
+		require.NoError(t, pg.AdminPool.QueryRow(ctx, `insert into library_violations
+			(tenant_id, member_user_id, kind, penalty, amount, created_by, status, settled_at, settled_by)
+			values ($1, $2, 'late', $3, $4, $2, 'waived', now() - interval '1 day', $2) returning id`,
+			w.tenantID, w.memberID, penalty, amount).Scan(&id))
+		return id
+	}
+	warningID := insert("warning", 0)
+	fineID := insert("fine", 1000)
+	suspensionID := insert("suspend", 0)
+
+	// Found by name, not number, so a renumbered migration still runs here.
+	names, err := fs.Glob(migrations.FS, "*_library_warning_violations_done.up.sql")
+	require.NoError(t, err)
+	require.Len(t, names, 1)
+	up, err := migrations.FS.ReadFile(names[0])
+	require.NoError(t, err)
+	_, err = pg.AdminPool.Exec(ctx, string(up))
+	require.NoError(t, err)
+
+	status := func(id uuid.UUID) string {
+		t.Helper()
+		var s string
+		require.NoError(t, pg.AdminPool.QueryRow(ctx, `select status from library_violations where id = $1`, id).Scan(&s))
+		return s
+	}
+	require.Equal(t, "paid", status(warningID))
+	require.Equal(t, "waived", status(fineID))
+	require.Equal(t, "waived", status(suspensionID))
+
+	var settledBy uuid.NullUUID
+	var settledYesterday bool
+	require.NoError(t, pg.AdminPool.QueryRow(ctx,
+		`select settled_by, settled_at < now() - interval '12 hours' from library_violations where id = $1`, warningID).
+		Scan(&settledBy, &settledYesterday))
+	require.Equal(t, uuid.NullUUID{UUID: w.memberID, Valid: true}, settledBy)
+	require.True(t, settledYesterday, "the warning keeps when it was settled")
 }

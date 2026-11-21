@@ -73,11 +73,14 @@ func (v Violation) IsSettled() bool { return v.Status != ViolationUnpaid }
 
 // InitialViolationStatus is the status a new violation with penalty p is
 // stored with. A warning leaves the member nothing to pay or serve, so it
-// is recorded already settled (waived) and never reads as an unpaid fine
-// or holds back clearance; every other penalty starts unpaid.
+// is recorded already settled and never reads as an unpaid fine or holds
+// back clearance; every other penalty starts unpaid. It is settled as done
+// (paid), the status a suspension marked served takes, not waived: a
+// waiver is staff letting a member off, and a warning that was given was
+// not let off, so it reads "Selesai" and sits under the settled filter.
 func InitialViolationStatus(p Penalty) ViolationStatus {
 	if p == PenaltyWarning {
-		return ViolationWaived
+		return ViolationPaid
 	}
 	return ViolationUnpaid
 }
