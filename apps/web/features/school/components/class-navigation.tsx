@@ -114,18 +114,19 @@ export function ClassNavigation({
   };
 
   return (
-    // A phone gets one class picker above the class (the header search
-    // already finds students); a wide screen gets the searchable list.
+    // A phone or a tablet gets one class picker above the class (the
+    // header search already finds students); from lg, with room for both
+    // panes beside the sidebar, the searchable list.
     <div className="contents">
       <Select
-        className="md:hidden"
+        className="lg:hidden"
         aria-label={t("pickClass")}
         options={items.map((item) => ({ value: item.id, label: item.name }))}
         value={selectedId}
         placeholder={t("pickClass")}
         onValueChange={onSelect}
       />
-      <Card className="flex min-w-0 flex-col max-md:hidden md:min-h-0">
+      <Card className="flex min-w-0 flex-col max-lg:hidden lg:min-h-0">
         <div className="flex flex-col gap-2 p-3">
           <SearchInput
             aria-label={t("searchClasses")}
@@ -147,7 +148,7 @@ export function ClassNavigation({
             />
           )}
         </div>
-        <div className="flex min-w-0 flex-col md:min-h-0 md:flex-1 md:overflow-y-auto">
+        <div className="flex min-w-0 flex-col lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
           {studentHits.length > 0 && (
             <section aria-label={t("studentResults")} className="flex flex-col pb-2">
               <p className="px-4 pt-1 pb-1 text-caption text-fg-muted">{t("studentResults")}</p>

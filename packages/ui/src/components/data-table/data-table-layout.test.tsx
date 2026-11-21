@@ -137,14 +137,16 @@ describe("DataTable header band", () => {
 describe("DataTable toolbar on a phone", () => {
   it("draws no phone row for a table with nothing but the column menu", () => {
     render(<DataTable mode="local" data={USERS} columns={fieldColumns} searchable={false} />);
-    // The toolbar row: hidden below md, still offering density and columns from md up.
-    const toolbar = screen.getByRole("button", { name: "Kolom tampil" }).closest(".flex-wrap");
+    // The toolbar: hidden below md, still offering density and columns from md up.
+    const toolbar = screen
+      .getByRole("button", { name: "Kolom tampil" })
+      .closest("[data-slot=data-table-toolbar]");
     expect(toolbar).toHaveClass("max-md:hidden");
   });
 
   it("keeps the phone row while there is a search to type in", () => {
     render(<DataTable mode="local" data={USERS} columns={fieldColumns} />);
-    const toolbar = screen.getByRole("searchbox").closest(".flex-wrap");
+    const toolbar = screen.getByRole("searchbox").closest("[data-slot=data-table-toolbar]");
     expect(toolbar).not.toHaveClass("max-md:hidden");
     // The column menu sits beside the search box.
     expect(screen.getByRole("button", { name: "Opsi tabel" })).toBeInTheDocument();
@@ -179,6 +181,49 @@ describe("DataTable toolbar on a phone", () => {
     if (!toolbar) throw new Error("Missing toolbar");
     const strip = within(toolbar).getByRole("button", { name: "Jenis" }).closest(".scroll-fade-x");
     expect(strip).toHaveClass("max-md:-mx-4", "max-md:px-4", "max-md:basis-[calc(100%+2rem)]");
+  });
+});
+
+describe("DataTable toolbar in a narrow pane", () => {
+  // A class's roster sits in a detail card beside the class list. Keyed to
+  // the screen, the toolbar turned into its one row at 768px, and its
+  // 288px search ran past a 216px card and scrolled the page sideways.
+  it("lays its one row out by its own width, never by the screen's alone", () => {
+    const { container } = render(
+      <DataTable
+        mode="local"
+        data={USERS}
+        columns={fieldColumns}
+        filters={[{ id: "kind", label: "Jenis", value: "", onChange: () => undefined }]}
+        toolbarActions={<button type="button">Tambah</button>}
+      />,
+    );
+    const toolbar = container.querySelector<HTMLElement>("[data-slot=data-table-toolbar]");
+    if (!toolbar) throw new Error("Missing toolbar");
+    expect(toolbar).toHaveClass("@container/table-toolbar");
+    const row = toolbar.firstElementChild;
+    expect(row).toHaveClass("flex", "flex-wrap", "md:@md/table-toolbar:items-start");
+
+    // Every control's row placement waits for both md of screen (the
+    // table, not the phone cards) and 28rem of the toolbar's own width.
+    const search = within(toolbar).getByRole("searchbox").closest(".order-1");
+    const pills = within(toolbar).getByRole("button", { name: "Jenis" }).closest(".order-4");
+    const actions = within(toolbar).getByRole("button", { name: "Tambah" }).parentElement;
+    const viewOptions = within(toolbar)
+      .getByRole("button", { name: "Kolom tampil" })
+      .closest(".order-2");
+    expect(search).toHaveClass("flex-1", "md:@md/table-toolbar:w-72", "md:@2xl/table-toolbar:w-80");
+    expect(pills).toHaveClass("basis-full", "md:@md/table-toolbar:order-2");
+    expect(actions).toHaveClass("basis-full", "md:@md/table-toolbar:basis-auto");
+    expect(viewOptions).toHaveClass("ml-auto", "md:@md/table-toolbar:ml-0");
+    // (The pills still wrap from md and scroll on a phone: that is how
+    // their own row behaves, not where it goes.)
+    for (const control of [row, search, pills, actions, viewOptions]) {
+      const screenKeyed = Array.from(control?.classList ?? []).filter((name) =>
+        /^(?:sm|md|lg|xl|2xl):(?:w-|min-w-|flex-(?!wrap)|basis-|order-|ml-|items-)/.test(name),
+      );
+      expect(screenKeyed).toEqual([]);
+    }
   });
 });
 

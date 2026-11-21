@@ -152,6 +152,19 @@ describe("RolesView", () => {
     );
   });
 
+  it("stands the role list beside the panel only from lg, a picker in the panel below it", () => {
+    // Beside a 15rem list at 768px the panel was 174px inside and its
+    // search 124px: a tablet gets the whole column and the panel's picker.
+    render(<RolesView />);
+    const list = screen.getByRole("list", { name: "rolesTitle" }).closest(".hidden");
+    expect(list).toHaveClass("lg:block");
+    expect(list?.parentElement).toHaveClass("lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]");
+    expect(list?.parentElement?.className).not.toMatch(/(?:^|\s)md:grid-cols-/);
+    expect(screen.getByRole("combobox", { name: "rolePicker" }).parentElement).toHaveClass(
+      "lg:hidden",
+    );
+  });
+
   it("shows a retryable error instead of an empty grid when roles fail to load", () => {
     rolesQuery.mockReturnValue({
       data: undefined,

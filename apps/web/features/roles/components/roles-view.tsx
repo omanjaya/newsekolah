@@ -190,8 +190,12 @@ export function RolesView(): ReactElement {
       ) : roles.isError && !roles.data ? (
         <QueryError retry={() => roles.refetch()} error={roles.error} />
       ) : (
-        <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] lg:grid-cols-[minmax(0,17rem)_minmax(0,1fr)]">
-          <Card className="hidden md:sticky md:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)] md:block">
+        // The role list stands beside the role from lg: at 768px the
+        // sidebar leaves the page 480px, and a 15rem list beside it left
+        // the permissions panel 174px inside, its search 124px. Below lg
+        // the panel's own picker chooses the role.
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,17rem)_minmax(0,1fr)]">
+          <Card className="hidden lg:sticky lg:top-[calc(var(--shell-header-height,3.5rem)+1.5rem)] lg:block">
             <CardHeader>
               <CardTitle as="h2">{t("rolesTitle")}</CardTitle>
             </CardHeader>

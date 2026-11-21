@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createRef } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { expectNoAxeViolations } from "../test/axe.js";
 import { pressArrow } from "../test/press-arrow.js";
@@ -40,14 +40,92 @@ describe("SegmentedControl", () => {
     expect(screen.getByRole("radio", { name: "Disetujui" })).toBeChecked();
   });
 
-  it("slides the indicator by index through CSS variables", async () => {
-    render(<SegmentedControl aria-label="Mode" options={options} defaultValue="all" />);
-    const group = screen.getByRole("radiogroup", { name: "Mode" });
-    expect(group.style.getPropertyValue("--segment-count")).toBe("4");
-    expect(group.style.getPropertyValue("--segment-index")).toBe("0");
+  describe("with a laid-out strip", () => {
+    // jsdom has no layout: each segment reports the box a browser gave it
+    // at its label's own width (the inbox's kinds at 768px: 68, 149, 112
+    // and 144px after the track's 4px padding).
+    const boxes: Record<string, { left: number; width: number }> = {
+      Semua: { left: 4, width: 68 },
+      "Izin tidak masuk": { left: 72, width: 149 },
+      "Izin keluar": { left: 221, width: 112 },
+      Keterlambatan: { left: 333, width: 144 },
+    };
+    const kinds = Object.keys(boxes).map((label, index) => ({
+      value: String(index),
+      label,
+      count: index === 0 ? undefined : 1,
+    }));
+    const geometry = ["offsetLeft", "offsetTop", "offsetWidth", "offsetHeight"] as const;
+    const originals = new Map<string, PropertyDescriptor | undefined>();
+    const boxOf = (element: HTMLElement) =>
+      element.getAttribute("role") === "radio"
+        ? boxes[element.textContent.replace(/\s*\d+$/, "")]
+        : undefined;
 
-    await userEvent.click(screen.getByRole("radio", { name: "Disetujui" }));
-    expect(group.style.getPropertyValue("--segment-index")).toBe("3");
+    beforeAll(() => {
+      for (const key of geometry) {
+        originals.set(key, Object.getOwnPropertyDescriptor(HTMLElement.prototype, key));
+        Object.defineProperty(HTMLElement.prototype, key, {
+          configurable: true,
+          get(this: HTMLElement) {
+            const box = boxOf(this);
+            if (!box) return 0;
+            if (key === "offsetLeft") return box.left;
+            if (key === "offsetWidth") return box.width;
+            return key === "offsetTop" ? 4 : 32;
+          },
+        });
+      }
+    });
+
+    afterAll(() => {
+      for (const key of geometry) {
+        const original = originals.get(key);
+        if (original) Object.defineProperty(HTMLElement.prototype, key, original);
+      }
+    });
+
+    it("measures the raised pill from the checked segment, not from an equal share", async () => {
+      render(<SegmentedControl aria-label="Jenis" size="sm" options={kinds} defaultValue="0" />);
+      const group = screen.getByRole("radiogroup", { name: "Jenis" });
+      const indicator = group.querySelector<HTMLElement>(":scope > [aria-hidden=true]");
+      expect(group).toHaveAttribute("data-indicator", "ready");
+      expect(indicator?.style.getPropertyValue("--indicator-x")).toBe("4px");
+      expect(indicator?.style.getPropertyValue("--indicator-w")).toBe("68px");
+
+      await userEvent.click(screen.getByRole("radio", { name: "Keterlambatan 1" }));
+      // Where the last segment really is: an equal quarter of the 472px
+      // would have put it at 358px, 118px wide.
+      expect(indicator?.style.getPropertyValue("--indicator-x")).toBe("333px");
+      expect(indicator?.style.getPropertyValue("--indicator-w")).toBe("144px");
+    });
+  });
+
+  it("paints the checked segment's own pill until the sliding one is placed", () => {
+    // Unmeasured (jsdom, or a strip in a hidden panel): no ready mark.
+    render(<SegmentedControl aria-label="Mode" options={options} defaultValue="all" />);
+    expect(screen.getByRole("radiogroup", { name: "Mode" })).not.toHaveAttribute("data-indicator");
+    expect(screen.getByRole("radio", { name: "Semua 24" }).className).toContain(
+      "[[data-strip]:not([data-indicator=ready])_&]:data-[state=checked]:bg-surface-raised",
+    );
+  });
+
+  // A FilterBar that stacks stretches the strip to its own width. Equal
+  // columns (an `auto-cols-fr` grid at least `min-w-max` wide) made the
+  // inbox's four kinds need four times the longest label, 601px, so a
+  // 480px tablet bar hid "Keterlambatan" past its edge.
+  it("sizes each segment from its own label, so a stretched strip needs only their sum", () => {
+    render(<SegmentedControl aria-label="Jenis" options={options} defaultValue="all" fullWidth />);
+    const group = screen.getByRole("radiogroup", { name: "Jenis" });
+    // The radiogroup is the scroller itself: the segments are its flex items.
+    expect(group).toHaveClass("flex", "overflow-x-auto", "min-w-0");
+    expect(group).not.toHaveClass("grid", "auto-cols-fr", "min-w-max", "w-max");
+    for (const segment of screen.getAllByRole("radio")) {
+      // Grow from a zero basis, never below the label (no min-w-0) and
+      // never kept from growing (no shrink-0 left over).
+      expect(segment).toHaveClass("flex-1");
+      expect(segment).not.toHaveClass("min-w-0", "shrink-0", "basis-auto");
+    }
   });
 
   // The clear band and the longer fades are for strips that draw edge
@@ -141,8 +219,8 @@ describe("SegmentedControl", () => {
     expect(track()).toHaveClass("inline-flex", "w-fit");
     // The segments fill whatever width the track gets, so a FilterBar that
     // stretches the track while it stacks stretches the segments with it.
-    expect(screen.getByRole("radiogroup")).toHaveClass("w-full", "min-w-max");
-    expect(screen.getByRole("radiogroup")).not.toHaveClass("w-max");
+    expect(screen.getByRole("radiogroup")).toHaveClass("flex-1");
+    expect(screen.getByRole("radiogroup").parentElement).toBe(track());
     rerender(
       <SegmentedControl aria-label="Status izin" options={options} defaultValue="all" fullWidth />,
     );
@@ -157,7 +235,7 @@ describe("SegmentedControl", () => {
       />,
     );
     expect(track()).toHaveClass("flex", "w-full", "sm:inline-flex", "sm:w-fit");
-    expect(screen.getByRole("radiogroup")).toHaveClass("w-full", "min-w-max");
+    expect(screen.getByRole("radiogroup")).toHaveClass("flex-1");
   });
 
   it("has no accessibility violations", async () => {

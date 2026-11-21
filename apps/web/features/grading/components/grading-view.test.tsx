@@ -228,6 +228,25 @@ describe("GradingView read-only rendering for view_grades", () => {
     ).toHaveClass("max-sm:order-last", "sm:col-span-1");
   });
 
+  // The three pickers need 544px; beside the sidebar a 768px tablet leaves
+  // the header 480, and a row that could not wrap ran to x=808 and
+  // scrolled the whole page sideways.
+  it("wraps the school-wide pickers inside the header's column instead of running past it", () => {
+    grantViewGradesOnly();
+    render(<GradingView />);
+    const row = screen.getByRole("combobox", { name: "pickClass" }).parentElement;
+    expect(row).toContainElement(screen.getByRole("combobox", { name: "pickTerm" }));
+    expect(row).toHaveClass("sm:flex", "sm:flex-wrap");
+  });
+
+  it("wraps a teacher's assignment and term pickers the same way", () => {
+    grantManageGrades();
+    render(<GradingView />);
+    const row = screen.getByRole("combobox", { name: "pickAssignment" }).parentElement;
+    expect(row).toContainElement(screen.getByRole("combobox", { name: "pickTerm" }));
+    expect(row).toHaveClass("sm:flex", "sm:flex-wrap");
+  });
+
   it("hides the class and subject pickers on the e-Rapor panel, which has its own scope", async () => {
     grantManageGrades();
     const user = userEvent.setup();

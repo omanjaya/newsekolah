@@ -81,12 +81,16 @@ export function ClassesView(): ReactElement {
           : undefined
       }
     >
+      {/* The class list stands beside the class from lg: at 768px the
+          sidebar leaves the page 480px, and a 248px list beside it left the
+          class about 216px, too narrow for its name or its roster's toolbar.
+          Below lg a picker above the class (ClassNavigation) chooses it. */}
       {classes.isLoading ? (
         <div
           aria-busy="true"
-          className="grid grid-cols-1 min-w-0 gap-4 md:min-h-0 md:flex-1 md:grid-cols-[minmax(0,248px)_minmax(0,1fr)]"
+          className="grid grid-cols-1 min-w-0 gap-4 md:min-h-0 md:flex-1 lg:grid-cols-[minmax(0,248px)_minmax(0,1fr)]"
         >
-          <SkeletonList rows={6} framed className="max-md:hidden" />
+          <SkeletonList rows={6} framed className="max-lg:hidden" />
           <SkeletonList rows={8} leading framed />
         </div>
       ) : classes.isError ? (
@@ -99,7 +103,9 @@ export function ClassesView(): ReactElement {
           action={canManage ? addButton : undefined}
         />
       ) : (
-        <div className="grid grid-cols-1 min-w-0 gap-4 md:min-h-0 md:flex-1 md:grid-cols-[minmax(0,248px)_minmax(0,1fr)]">
+        // Viewport-fit from md: stacked (md to lg), the picker keeps its
+        // own height and the class takes the rest; side by side, one row.
+        <div className="grid grid-cols-1 min-w-0 gap-4 md:min-h-0 md:flex-1 md:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[minmax(0,248px)_minmax(0,1fr)] lg:grid-rows-1">
           <ClassNavigation items={items} selectedId={selected?.id} onSelect={setSelectedId} />
           {selected && (
             <ClassDetail

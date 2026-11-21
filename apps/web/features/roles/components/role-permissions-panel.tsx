@@ -155,7 +155,8 @@ export function RolePermissionsPanel({
     <Card className="min-w-0">
       {/* Stays under the app header while the groups scroll past. */}
       <div className="sticky top-[var(--shell-header-height,3.5rem)] z-sticky flex flex-col gap-3 rounded-t-lg border-b border-line bg-surface px-4 py-3 md:px-5 md:py-4">
-        <div className="md:hidden">
+        {/* The role picker below lg, where the role list is not beside the panel. */}
+        <div className="lg:hidden">
           <Select
             aria-label={t("rolePicker")}
             value={role.id}
@@ -170,7 +171,7 @@ export function RolePermissionsPanel({
         </div>
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
-            <div className="hidden flex-wrap items-center gap-2 md:flex">
+            <div className="hidden flex-wrap items-center gap-2 lg:flex">
               <CardTitle as="h2" className="text-title">
                 {role.name}
               </CardTitle>

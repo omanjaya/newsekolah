@@ -571,9 +571,12 @@ describe("permit queue filters", () => {
     render(<PermitUnifiedQueue />);
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
 
-    await userEvent.click(screen.getByRole("radio", { name: /^late/ }));
+    await userEvent.click(screen.getByRole("radio", { name: /^filterLate/ }));
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
-    expect(screen.getByRole("radio", { name: /^late/ })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: /^filterLate/ })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
     expect(window.location.search).toBe("?type=late");
   });
 
@@ -597,9 +600,32 @@ describe("permit queue filters", () => {
 
   it("carries each queue's count on its filter segment instead of a row of tiles", () => {
     render(<PermitUnifiedQueue />);
-    expect(screen.getByRole("radio", { name: "leave 2" })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: "late 1" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "filterLeave 2" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "filterLate 1" })).toBeInTheDocument();
     expect(screen.queryByTestId("permit-queue-tiles")).not.toBeInTheDocument();
+  });
+
+  it("names each type on the strip by its short label, the queue's section by its full name", () => {
+    // "Izin tidak masuk / Izin keluar / Keterlambatan" with their counts ran
+    // 4 to 30px past a tablet's 480px bar (two-digit counts, a coarse
+    // pointer) and hid the last option. "Tidak masuk / Keluar / Terlambat"
+    // fits it; a queue's own section keeps its full name.
+    mocks.can.mockImplementation(
+      (permission: string) =>
+        permission === "review_leave_requests" || permission === "issue_scan_tokens",
+    );
+    mocks.exit.mockReturnValue({ ...emptyResult, isError: true, data: undefined });
+    render(<PermitUnifiedQueue />);
+    const strip = screen.getByRole("radiogroup", { name: "typeFilter" });
+    expect(
+      within(strip)
+        .getAllByRole("radio")
+        .map((radio) => radio.textContent),
+    ).toEqual(["filterAll", "filterLeave 2", "filterExit", "filterLate 1"]);
+    expect(within(strip).queryByText(/^(leave|exit|late)$/)).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "exit" })).toContainElement(
+      screen.getByRole("heading", { name: "exit" }),
+    );
   });
 
   it("opens on the type selected by the link", () => {
@@ -636,7 +662,7 @@ describe("permit queue filters", () => {
     for (const box of screen.getAllByRole("checkbox")) await userEvent.click(box);
     expect(screen.getByRole("button", { name: "bulkApprove" })).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("radio", { name: /^late/ }));
+    await userEvent.click(screen.getByRole("radio", { name: /^filterLate/ }));
     expect(screen.queryByRole("button", { name: "bulkApprove" })).not.toBeInTheDocument();
     expect(mocks.reviewMutateAsync).not.toHaveBeenCalled();
   });
