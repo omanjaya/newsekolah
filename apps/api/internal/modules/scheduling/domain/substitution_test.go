@@ -45,12 +45,18 @@ func TestSubstitutionCanCancel(t *testing.T) {
 	requester := uuid.New()
 	s := domain.Substitution{Status: domain.SubstitutionPending, RequesterUserID: requester}
 
-	require.NoError(t, s.CanCancel(requester))
-	require.ErrorIs(t, s.CanCancel(uuid.New()), domain.ErrSubstitutionNotRequester)
+	require.NoError(t, s.CanCancel(requester, false))
+	require.ErrorIs(t, s.CanCancel(uuid.New(), false), domain.ErrSubstitutionNotRequester)
+	require.NoError(t, s.CanCancel(uuid.New(), true), "a schedule manager releases another teacher's request")
+
+	accepted := s
+	accepted.Status = domain.SubstitutionAccepted
+	require.NoError(t, accepted.CanCancel(uuid.New(), true))
 
 	rejected := s
 	rejected.Status = domain.SubstitutionRejected
-	require.ErrorIs(t, rejected.CanCancel(requester), domain.ErrSubstitutionAlreadyResponded)
+	require.ErrorIs(t, rejected.CanCancel(requester, false), domain.ErrSubstitutionAlreadyResponded)
+	require.ErrorIs(t, rejected.CanCancel(uuid.New(), true), domain.ErrSubstitutionAlreadyResponded)
 }
 
 func TestSubstitutionGrantsAccess(t *testing.T) {

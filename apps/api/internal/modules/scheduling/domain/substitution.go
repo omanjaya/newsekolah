@@ -93,11 +93,12 @@ func (s Substitution) CanRespond(responderUserID uuid.UUID) error {
 	return nil
 }
 
-// CanCancel reports whether canceller may cancel this request: only the
-// original requester, and only while it is still pending or accepted (not
-// already rejected/cancelled).
-func (s Substitution) CanCancel(cancellerUserID uuid.UUID) error {
-	if cancellerUserID != s.RequesterUserID {
+// CanCancel reports whether canceller may cancel this request: the
+// original requester, or a schedule manager (canManage) releasing a request
+// that holds a timetable change back, and only while it is still pending
+// or accepted (not already rejected/cancelled).
+func (s Substitution) CanCancel(cancellerUserID uuid.UUID, canManage bool) error {
+	if cancellerUserID != s.RequesterUserID && !canManage {
 		return ErrSubstitutionNotRequester
 	}
 	if s.Status != SubstitutionPending && s.Status != SubstitutionAccepted {

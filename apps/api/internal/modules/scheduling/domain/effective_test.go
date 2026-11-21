@@ -129,6 +129,59 @@ func TestEarliestChange(t *testing.T) {
 	require.Equal(t, day("2026-11-27"), domain.EarliestChange(today, legacy, &domain.History{Until: dayPtr("2026-11-25")}))
 }
 
+// The record that pushes the earliest change date out is named; one that
+// does not (the floor or the first lesson come later) is not, since
+// releasing it would not move the date.
+func TestChangeWindowNamesTheHold(t *testing.T) {
+	today := day("2026-11-20")
+	monday := domain.Schedule{DayOfWeek: 1, EffectiveFrom: day("2026-07-13")}
+	request := &domain.Hold{Kind: domain.HoldSubstitution, ID: uuid.New(), Date: day("2027-03-01"), Status: domain.SubstitutionPending}
+
+	w := domain.ChangeWindowOf(today, monday, &domain.History{Until: dayPtr("2027-03-01"), HeldBy: request})
+	require.Equal(t, day("2027-03-02"), w.Min)
+	require.Equal(t, request, w.HeldBy, "a request weeks away holds the date")
+
+	past := &domain.Hold{Kind: domain.HoldAttendance, ID: uuid.New(), Date: day("2026-11-16")}
+	w = domain.ChangeWindowOf(today, monday, &domain.History{Until: dayPtr("2026-11-16"), HeldBy: past})
+	require.Equal(t, today, w.Min)
+	require.Nil(t, w.HeldBy, "a session already past holds nothing: the date is today")
+
+	future := domain.Schedule{DayOfWeek: 4, EffectiveFrom: day("2026-11-26")}
+	first := &domain.Hold{Kind: domain.HoldSubstitution, ID: uuid.New(), Date: day("2026-11-26"), Status: domain.SubstitutionAccepted}
+	w = domain.ChangeWindowOf(today, future, &domain.History{Until: dayPtr("2026-11-26"), HeldBy: first})
+	require.Equal(t, day("2026-11-27"), w.Min)
+	require.Nil(t, w.HeldBy, "on the first lesson the version keeps that date anyway")
+}
+
+// A block's window is the latest of its rows'; a hold names it only while
+// it pushes the date past every row's own, and a record nobody can release
+// wins over a request on the same date.
+func TestChangeWindowJoin(t *testing.T) {
+	today := day("2026-11-20")
+	first := domain.Schedule{DayOfWeek: 1, EffectiveFrom: day("2026-07-13")}
+	second := domain.Schedule{DayOfWeek: 1, EffectiveFrom: day("2026-07-13")}
+	request := &domain.Hold{Kind: domain.HoldSubstitution, ID: uuid.New(), Date: day("2026-11-30"), Status: domain.SubstitutionPending}
+	session := &domain.Hold{Kind: domain.HoldAttendance, ID: uuid.New(), Date: day("2026-11-30")}
+	early := &domain.Hold{Kind: domain.HoldSubstitution, ID: uuid.New(), Date: day("2026-11-23"), Status: domain.SubstitutionPending}
+
+	byRequest := domain.ChangeWindowOf(today, first, &domain.History{Until: dayPtr("2026-11-30"), HeldBy: request})
+	bySession := domain.ChangeWindowOf(today, second, &domain.History{Until: dayPtr("2026-11-30"), HeldBy: session})
+	byEarly := domain.ChangeWindowOf(today, second, &domain.History{Until: dayPtr("2026-11-23"), HeldBy: early})
+	unheld := domain.ChangeWindowOf(today, second, nil)
+
+	w := byRequest.Join(byEarly)
+	require.Equal(t, day("2026-12-01"), w.Min)
+	require.Equal(t, request, w.HeldBy, "the later request holds the block")
+	require.Equal(t, request, unheld.Join(byRequest).HeldBy)
+
+	w = byRequest.Join(bySession)
+	require.Equal(t, session, w.HeldBy, "cancelling the request would not move a date a session holds")
+	require.Equal(t, session, bySession.Join(byRequest).HeldBy)
+
+	floor := domain.ChangeWindowOf(day("2026-12-01"), second, nil)
+	require.Nil(t, byRequest.Join(floor).HeldBy, "a later floor sets the date on its own")
+}
+
 func TestPlanChange(t *testing.T) {
 	thursday := domain.Schedule{DayOfWeek: 4, EffectiveFrom: day("2026-07-16")}
 

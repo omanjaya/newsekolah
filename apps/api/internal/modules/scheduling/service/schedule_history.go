@@ -104,19 +104,20 @@ func (s *Service) changeDates(ctx context.Context, tenantID uuid.UUID) *changeDa
 	return &changeDates{svc: s, tenantID: tenantID, today: s.today(ctx), now: s.now(ctx), starts: map[uuid.UUID]time.Time{}}
 }
 
-// earliest is the first date a change to every one of rows may take
-// effect from: domain.EarliestChange of each row, the latest of them.
-func (c *changeDates) earliest(ctx context.Context, history historyIndex, rows []domain.Schedule) (time.Time, error) {
-	earliest := c.today
+// window is when a change to every one of rows may take effect:
+// domain.ChangeWindowOf each row, joined (the latest Min, and the record
+// holding it there when one does).
+func (c *changeDates) window(ctx context.Context, history historyIndex, rows []domain.Schedule) (domain.ChangeWindow, error) {
+	out := domain.ChangeWindowOf(c.today, domain.Schedule{}, nil)
 	for _, row := range rows {
 		begun, err := c.begun(ctx, row)
 		if err != nil {
-			return time.Time{}, err
+			return domain.ChangeWindow{}, err
 		}
 		floor := domain.ChangeFloor(c.today, begun)
-		earliest = domain.LaterDate(earliest, domain.EarliestChange(floor, row, history.of(row.ID)))
+		out = out.Join(domain.ChangeWindowOf(floor, row, history.of(row.ID)))
 	}
-	return earliest, nil
+	return out, nil
 }
 
 // begun reports whether row's lesson today has already begun
@@ -156,7 +157,7 @@ func requireCurrent(rows []domain.Schedule, today time.Time) error {
 // on: ErrScheduleEnded when a row's last date has passed (no date helps),
 // ErrScheduleChangeBeforeHistory when every date a row has left is bound
 // by its history, or HistoryRequiresDateError naming the earliest date a
-// dated change may use.
+// dated change may use and the record that holds it there.
 func (s *Service) explainHistory(ctx context.Context, tenantID uuid.UUID, err error, history historyIndex, rows []domain.Schedule, actor Actor) error {
 	if err == nil || !actor.CanManage || !errors.Is(err, domain.ErrScheduleHasHistory) {
 		return err
@@ -164,14 +165,14 @@ func (s *Service) explainHistory(ctx context.Context, tenantID uuid.UUID, err er
 	if ended := requireCurrent(rows, s.today(ctx)); ended != nil {
 		return ended
 	}
-	earliest, dateErr := s.changeDates(ctx, tenantID).earliest(ctx, history, rows)
+	window, dateErr := s.changeDates(ctx, tenantID).window(ctx, history, rows)
 	if dateErr != nil {
 		return dateErr
 	}
 	for _, row := range rows {
-		if row.EffectiveUntil != nil && earliest.After(domain.CalendarDate(*row.EffectiveUntil)) {
+		if row.EffectiveUntil != nil && window.Min.After(domain.CalendarDate(*row.EffectiveUntil)) {
 			return domain.ErrScheduleChangeBeforeHistory
 		}
 	}
-	return &domain.HistoryRequiresDateError{Min: earliest}
+	return &domain.HistoryRequiresDateError{Min: window.Min, HeldBy: window.HeldBy}
 }

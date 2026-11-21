@@ -19,6 +19,7 @@ const (
 	KindAttendanceSubmitted        Kind = "attendance_submitted"
 	KindSubstitutionRequested      Kind = "substitution_requested"
 	KindSubstitutionResponded      Kind = "substitution_responded"
+	KindSubstitutionCancelled      Kind = "substitution_cancelled"
 	KindLeaveRequestSubmitted      Kind = "leave_request_submitted"
 	KindLeaveRequestReviewed       Kind = "leave_request_reviewed"
 	KindLeaveRequestIssued         Kind = "leave_request_issued"

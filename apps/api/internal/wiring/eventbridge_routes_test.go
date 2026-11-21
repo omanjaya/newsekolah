@@ -15,6 +15,7 @@ import (
 	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
+	schedulingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
 )
 
@@ -76,7 +77,7 @@ func TestNotificationLinksOpenExistingPages(t *testing.T) {
 
 	hrefs := map[string]string{}
 	for _, name := range []string{
-		events.AttendanceSubmitted, events.SubstitutionRequested, events.SubstitutionResponded,
+		events.AttendanceSubmitted, events.SubstitutionRequested, events.SubstitutionResponded, events.SubstitutionCancelled,
 		events.LeaveRequestSubmitted, events.LeaveRequestReviewed, events.LeaveRequestIssued,
 		events.ExitPermitStageChanged, events.ExitPermitIssued, events.ExitPermitExited,
 		events.LateArrivalOpened, events.LateArrivalUpdated, events.WarningLetterIssued,
@@ -98,6 +99,7 @@ func TestNotificationLinksOpenExistingPages(t *testing.T) {
 	class := uuid.NullUUID{UUID: uuid.New(), Valid: true}
 	for _, evt := range []events.Event{
 		attendanceservice.Submitted{TenantID: tenant, SessionID: uuid.New(), ClassID: class.UUID, Date: time.Now(), SubmittedBy: other, StudentCount: 1},
+		schedulingservice.SubstitutionCancelled{TenantID: tenant, SubstitutionID: uuid.New(), ScheduleID: uuid.New(), Date: time.Now(), RequesterUserID: other, SubstituteUserID: student, CancelledBy: uuid.New(), ByManager: true},
 		permitsservice.LeaveRequestSubmitted{TenantID: tenant, InstanceID: uuid.New(), StudentUserID: student, ClassID: class},
 		permitsservice.LeaveRequestReviewed{TenantID: tenant, InstanceID: uuid.New(), StudentUserID: student, Approved: true, ReviewerID: other},
 		permitsservice.LeaveRequestIssued{TenantID: tenant, InstanceID: uuid.New(), StudentUserID: student, LetterNumber: "1/IZIN"},

@@ -126,6 +126,26 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 			Payload: map[string]any{"substitution_id": e.SubstitutionID.String(), "schedule_id": e.ScheduleID.String(), "accepted": e.Accepted, "summary": summary, "href": "/substitutions"},
 		}, nil)
 	})
+	subscribe(b, func(_ context.Context, e schedulingservice.SubstitutionCancelled) ([]events.Envelope, error) {
+		// Whoever did not cancel it hears of it: the substitute when the
+		// requester withdraws, both teachers when a schedule manager does.
+		recipients := without([]uuid.UUID{e.RequesterUserID, e.SubstituteUserID}, e.CancelledBy)
+		if len(recipients) == 0 {
+			return nil, nil
+		}
+		day := reportdoc.FormatDate(reportdoc.LocaleID, e.Date)
+		summary := fmt.Sprintf("Permintaan pengganti mengajar untuk %s dibatalkan oleh guru yang memintanya.", day)
+		if e.ByManager {
+			summary = fmt.Sprintf("Permintaan pengganti mengajar untuk %s dibatalkan oleh pengelola jadwal.", day)
+		}
+		return one(events.Envelope{
+			Name: events.SubstitutionCancelled, Tenant: e.TenantID, Actor: e.CancelledBy, Subject: recipients,
+			Payload: map[string]any{
+				"substitution_id": e.SubstitutionID.String(), "schedule_id": e.ScheduleID.String(), "date": e.Date.Format("2006-01-02"),
+				"was_accepted": e.WasAccepted, "summary": summary, "href": "/substitutions",
+			},
+		}, nil)
+	})
 	subscribe(b, func(ctx context.Context, e disciplineservice.WarningLetterIssued) ([]events.Envelope, error) {
 		homeroom, err := b.holders(ctx, e.TenantID, "homeroom", e.ClassID)
 		summary := fmt.Sprintf("%s nomor %s telah diterbitkan.", e.LevelLabel, e.LetterNumber)

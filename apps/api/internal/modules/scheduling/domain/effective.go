@@ -116,10 +116,95 @@ func ResnapForWeekday(from time.Time, until *time.Time, oldDay, newDay int16, ye
 // recorded attendance session, a pending/accepted substitution request or
 // a supervision visit, nil when its history is only rejected or cancelled
 // requests (which still make it history, and so keep it from being
-// rewritten in place or deleted, but bind no date).
+// rewritten in place or deleted, but bind no date). HeldBy is the record
+// dated Until, set whenever Until is.
 type History struct {
 	ScheduleID uuid.UUID
 	Until      *time.Time
+	HeldBy     *Hold
+}
+
+// HoldKind is what kind of record binds a version's last history date.
+type HoldKind string
+
+const (
+	HoldAttendance   HoldKind = "attendance"
+	HoldSupervision  HoldKind = "supervision"
+	HoldSubstitution HoldKind = "substitution"
+)
+
+// Hold is one record that holds a change to a lesson back: a recorded
+// attendance session, a supervision visit, or a pending or accepted
+// substitution request (Status), on Date. Only the request can be
+// released (cancelled); the other two are what happened.
+type Hold struct {
+	Kind   HoldKind
+	ID     uuid.UUID
+	Date   time.Time
+	Status SubstitutionStatus
+}
+
+// weight orders holds sharing a date: the one nobody can release names the
+// date best, since releasing the other would not move it.
+func (h *Hold) weight() int {
+	switch h.Kind {
+	case HoldAttendance:
+		return 0
+	case HoldSupervision:
+		return 1
+	default:
+		return 2
+	}
+}
+
+// ChangeWindow is when a change to one or more versions may take effect:
+// from Min on. HeldBy is the record that pushes Min out, when one does: Min
+// is the day after its date and would be earlier without it (the floor and
+// each version's first lesson come first). It is nil when Min comes from
+// the floor or a first lesson alone, since releasing a record would not
+// then move it.
+type ChangeWindow struct {
+	Min    time.Time
+	HeldBy *Hold
+	// free is Min without any hold: what releasing every hold would give.
+	free time.Time
+}
+
+// ChangeWindowOf is the ChangeWindow of a change to version s from floor
+// (ChangeFloor) on, given its history h: see EarliestChange.
+func ChangeWindowOf(floor time.Time, s Schedule, h *History) ChangeWindow {
+	free := CalendarDate(floor)
+	if h != nil {
+		free = LaterDate(free, OnOrAfter(s.EffectiveFrom, s.DayOfWeek).AddDate(0, 0, 1))
+	}
+	w := ChangeWindow{Min: free, free: free}
+	if h != nil && h.Until != nil {
+		if held := CalendarDate(*h.Until).AddDate(0, 0, 1); held.After(free) {
+			w.Min, w.HeldBy = held, h.HeldBy
+		}
+	}
+	return w
+}
+
+// Join is the window of one change to the versions of both w and other (a
+// block of several rows): the later Min. A hold names it only while Min
+// lies past every version's own free date; on a date two holds share, the
+// one nobody can release wins (an attendance session, then a visit, then a
+// substitution request).
+func (w ChangeWindow) Join(other ChangeWindow) ChangeWindow {
+	out := ChangeWindow{Min: LaterDate(w.Min, other.Min), free: LaterDate(w.free, other.free)}
+	if !out.Min.After(out.free) {
+		return out
+	}
+	for _, candidate := range []ChangeWindow{w, other} {
+		if candidate.HeldBy == nil || !candidate.Min.Equal(out.Min) {
+			continue
+		}
+		if out.HeldBy == nil || candidate.HeldBy.weight() < out.HeldBy.weight() {
+			out.HeldBy = candidate.HeldBy
+		}
+	}
+	return out
 }
 
 // LessonBegun reports whether s's lesson today has already begun at now
@@ -159,15 +244,7 @@ func ChangeFloor(today time.Time, begunToday bool) time.Time {
 // (ChangeRetire), never removed, so every record pointing at it keeps its
 // row (a cancelled substitution request, too, which binds no date).
 func EarliestChange(floor time.Time, s Schedule, h *History) time.Time {
-	earliest := CalendarDate(floor)
-	if h == nil {
-		return earliest
-	}
-	earliest = LaterDate(earliest, OnOrAfter(s.EffectiveFrom, s.DayOfWeek).AddDate(0, 0, 1))
-	if h.Until != nil {
-		earliest = LaterDate(earliest, CalendarDate(*h.Until).AddDate(0, 0, 1))
-	}
-	return earliest
+	return ChangeWindowOf(floor, s, h).Min
 }
 
 // LaterDate is the later of a and b.

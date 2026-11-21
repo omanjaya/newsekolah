@@ -60,9 +60,11 @@ var (
 
 // HistoryRequiresDateError is ErrScheduleHasHistory for a change sent
 // without a date: Min is the earliest date the same change may take effect
-// from, so the caller can offer it.
+// from, so the caller can offer it, and HeldBy the record that pushes it
+// out, when one does (ChangeWindow).
 type HistoryRequiresDateError struct {
-	Min time.Time
+	Min    time.Time
+	HeldBy *Hold
 }
 
 func (e *HistoryRequiresDateError) Error() string {
@@ -72,9 +74,11 @@ func (e *HistoryRequiresDateError) Error() string {
 func (e *HistoryRequiresDateError) Unwrap() error { return ErrScheduleHasHistory }
 
 // ChangeTooEarlyError is ErrScheduleChangeBeforeHistory naming the earliest
-// date the change may take effect from instead.
+// date the change may take effect from instead, and the record that holds
+// it there, when one does (ChangeWindow).
 type ChangeTooEarlyError struct {
-	Min time.Time
+	Min    time.Time
+	HeldBy *Hold
 }
 
 func (e *ChangeTooEarlyError) Error() string {

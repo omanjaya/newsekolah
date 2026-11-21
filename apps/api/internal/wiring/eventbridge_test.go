@@ -184,6 +184,36 @@ func TestSubstitutionBridge_NotifiesWithoutPanic(t *testing.T) {
 	require.Equal(t, scheduleID.String(), (*got)[1].Payload["schedule_id"])
 }
 
+// TestSubstitutionCancelBridge_TellsTheOtherTeachers covers a cancelled
+// request: when a schedule manager releases it (to change the timetable
+// from an earlier date), both the requester and the substitute are told;
+// when the requester withdraws it, only the substitute is.
+func TestSubstitutionCancelBridge_TellsTheOtherTeachers(t *testing.T) {
+	tenantID, requester, substitute, manager := uuid.New(), uuid.New(), uuid.New(), uuid.New()
+	date := time.Date(2027, 3, 1, 0, 0, 0, 0, time.UTC)
+
+	bus := events.NewBus()
+	RegisterNotificationBridge(bus, fakeDutyLookup{}, slog.Default())
+	got := spyEnvelopes(t, bus, events.SubstitutionCancelled)
+
+	require.NoError(t, bus.Publish(context.Background(), schedulingservice.SubstitutionCancelled{
+		TenantID: tenantID, SubstitutionID: uuid.New(), ScheduleID: uuid.New(), Date: date,
+		RequesterUserID: requester, SubstituteUserID: substitute, CancelledBy: manager, ByManager: true, WasAccepted: true,
+	}))
+	require.NoError(t, bus.Publish(context.Background(), schedulingservice.SubstitutionCancelled{
+		TenantID: tenantID, SubstitutionID: uuid.New(), ScheduleID: uuid.New(), Date: date,
+		RequesterUserID: requester, SubstituteUserID: substitute, CancelledBy: requester,
+	}))
+
+	require.Len(t, *got, 2)
+	require.Equal(t, []uuid.UUID{requester, substitute}, (*got)[0].Subject)
+	require.Equal(t, manager, (*got)[0].Actor)
+	require.Equal(t, "Permintaan pengganti mengajar untuk 1 Maret 2027 dibatalkan oleh pengelola jadwal.", (*got)[0].Payload["summary"])
+	require.Equal(t, "/substitutions", (*got)[0].Payload["href"])
+	require.Equal(t, []uuid.UUID{substitute}, (*got)[1].Subject, "the requester does not hear of their own withdrawal")
+	require.Equal(t, "Permintaan pengganti mengajar untuk 1 Maret 2027 dibatalkan oleh guru yang memintanya.", (*got)[1].Payload["summary"])
+}
+
 // TestBridge_IgnoresEnvelopeUnderTypedName keeps a future name collision a
 // no-op instead of a panic: an Envelope arriving under a typed event's name
 // is skipped.
@@ -203,6 +233,7 @@ func TestBridge_IgnoresEnvelopeUnderTypedName(t *testing.T) {
 func TestBridge_TypedNamesNeverCollideWithEnvelopeNames(t *testing.T) {
 	envelopeNames := map[string]bool{
 		events.AttendanceSubmitted: true, events.SubstitutionRequested: true, events.SubstitutionResponded: true,
+		events.SubstitutionCancelled: true,
 		events.LeaveRequestSubmitted: true, events.LeaveRequestReviewed: true, events.LeaveRequestIssued: true,
 		events.ExitPermitStageChanged: true, events.ExitPermitIssued: true, events.ExitPermitExited: true,
 		events.LateArrivalOpened: true, events.LateArrivalUpdated: true, events.WarningLetterIssued: true,
@@ -212,6 +243,7 @@ func TestBridge_TypedNamesNeverCollideWithEnvelopeNames(t *testing.T) {
 	typed := []events.Event{
 		attendanceservice.Submitted{},
 		schedulingservice.SubstitutionRequested{}, schedulingservice.SubstitutionResponded{},
+		schedulingservice.SubstitutionCancelled{},
 		disciplineservice.ThresholdReached{}, disciplineservice.WarningLetterIssued{},
 		libraryservice.ReservationReadyEvent{}, libraryservice.LoanDueReminderEvent{},
 		permitsservice.LeaveRequestSubmitted{}, permitsservice.LeaveRequestReviewed{}, permitsservice.LeaveRequestIssued{},

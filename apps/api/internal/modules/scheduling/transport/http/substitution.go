@@ -124,11 +124,18 @@ func (h *SchedulingHandler) RespondSubstitution(ctx context.Context, request api
 	return api.RespondSubstitution200JSONResponse(toAPISubstitution(updated)), nil
 }
 
+// CancelSubstitution withdraws a request: the requester's own, or, for a
+// schedule manager, anyone's (to release a lesson whose timetable change it
+// holds back).
 func (h *SchedulingHandler) CancelSubstitution(ctx context.Context, request api.CancelSubstitutionRequestObject) (api.CancelSubstitutionResponseObject, error) {
 	tenantID := tenantIDFromContext(ctx)
 	userID, _ := httpx.UserIDFromContext(ctx)
+	actor, err := h.actorFor(ctx, tenantID, userID)
+	if err != nil {
+		return nil, err
+	}
 
-	updated, err := h.service.CancelSubstitution(ctx, tenantID, request.SubstitutionId, userID)
+	updated, err := h.service.CancelSubstitution(ctx, tenantID, request.SubstitutionId, actor, h.publisher)
 	if err != nil {
 		return nil, mapSubstitutionError(err)
 	}

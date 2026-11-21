@@ -7,14 +7,16 @@ import "github.com/google/uuid"
 // two allowed cross-module communication paths). The notifications module
 // subscribes to every one of these through RegisterEventHandlers.
 // Attendance publishes AttendanceSubmitted (service/entries.go) and
-// scheduling publishes SubstitutionRequested/SubstitutionResponded
-// (service/substitution.go); a constant without an owning module yet is
+// scheduling publishes SubstitutionRequested/SubstitutionResponded/
+// SubstitutionCancelled (service/substitution.go); a constant without an
+// owning module yet is
 // still exercised by unit tests calling Bus.Publish directly until that
 // module merges.
 const (
 	AttendanceSubmitted        = "attendance.submitted"
 	SubstitutionRequested      = "substitution.requested"
 	SubstitutionResponded      = "substitution.responded"
+	SubstitutionCancelled      = "substitution.cancelled"
 	LeaveRequestSubmitted      = "leave_request.submitted"
 	LeaveRequestReviewed       = "leave_request.reviewed"
 	LeaveRequestIssued         = "leave_request.issued"

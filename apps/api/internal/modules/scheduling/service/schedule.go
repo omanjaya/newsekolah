@@ -320,12 +320,13 @@ func (s *Service) changeFrom(
 // must not lie before the rows' earliest change date (changeDates), which
 // keeps every row with history from going. Rows are already locked.
 func (s *Service) retireFrom(ctx context.Context, tenantID uuid.UUID, rows []domain.Schedule, history historyIndex, d time.Time, actor Actor) error {
-	earliest, err := s.changeDates(ctx, tenantID).earliest(ctx, history, rows)
+	window, err := s.changeDates(ctx, tenantID).window(ctx, history, rows)
 	if err != nil {
 		return err
 	}
+	earliest := window.Min
 	if domain.CalendarDate(d).Before(earliest) {
-		return &domain.ChangeTooEarlyError{Min: earliest}
+		return &domain.ChangeTooEarlyError{Min: earliest, HeldBy: window.HeldBy}
 	}
 	updatedBy := uuid.NullUUID{UUID: actor.UserID, Valid: actor.UserID != uuid.Nil}
 	for _, row := range rows {

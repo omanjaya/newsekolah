@@ -7364,7 +7364,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Cancel a substitution request I made */
+        /**
+         * Cancel a pending or accepted substitution request I made, or with manage_schedules anyone's
+         * @description A schedule manager cancels another teacher's request to release a lesson whose timetable change it holds back (MutationPolicy.held_by); that cancellation is written to the audit log, and both the requester and the substitute are notified. Anyone else gets 403 for a request they did not make.
+         */
         post: operations["cancelSubstitution"];
         delete?: never;
         options?: never;
@@ -12093,6 +12096,27 @@ export interface components {
             min_effective_from?: string;
             /** @description Why can_edit or can_delete is false, as the error code the change would meet: SCHEDULE_ENDED (the last date has passed), SCHEDULE_CHANGE_BEFORE_HISTORY (still on the timetable, but every date it has left is bound by history), SCHEDULE_HAS_HISTORY (a teacher's own lesson with history) or FORBIDDEN. */
             reason?: string;
+            held_by?: components["schemas"]["ScheduleHold"];
+        };
+        /** @description The record that holds a change to a lesson back: min_effective_from is the day after its date (or, with reason SCHEDULE_CHANGE_BEFORE_HISTORY, it binds every date the lesson has left). Absent when the earliest date comes from today or the lesson's first date alone. A pending or accepted substitution request is the one kind a schedule manager can release, by cancelling it. */
+        ScheduleHold: {
+            /**
+             * @description attendance: a recorded attendance session; supervision: a planned supervision visit; substitution: a pending or accepted substitution request.
+             * @enum {string}
+             */
+            kind: "attendance" | "supervision" | "substitution";
+            /**
+             * Format: uuid
+             * @description The attendance session, supervision visit or substitution request.
+             */
+            id: string;
+            /** Format: date */
+            date: string;
+            /**
+             * @description A substitution request's status.
+             * @enum {string}
+             */
+            status?: "pending" | "accepted";
         };
         Schedule: {
             /** Format: uuid */
@@ -12767,7 +12791,7 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description Schedule overlaps another lesson (SCHEDULE_CONFLICT_CLASS / SCHEDULE_CONFLICT_TEACHER, details name the clashing lesson and its effective dates), the year is archived (SCHEDULE_YEAR_ARCHIVED), history prevents an undated change (SCHEDULE_HAS_HISTORY, details give the earliest effective_from), the change date is too early (SCHEDULE_CHANGE_BEFORE_HISTORY, details give the earliest effective_from), or the lesson already ended (SCHEDULE_ENDED). */
+        /** @description Schedule overlaps another lesson (SCHEDULE_CONFLICT_CLASS / SCHEDULE_CONFLICT_TEACHER, details name the clashing lesson and its effective dates), the year is archived (SCHEDULE_YEAR_ARCHIVED), history prevents an undated change (SCHEDULE_HAS_HISTORY, details give the earliest effective_from), the change date is too early (SCHEDULE_CHANGE_BEFORE_HISTORY, details give the earliest effective_from), or the lesson already ended (SCHEDULE_ENDED). With either history code, details held_by.kind (code: attendance, supervision or substitution; message: its date), held_by.id and, for a substitution, held_by.status name the record that holds the earliest effective_from there, when one does (see ScheduleHold). */
         ScheduleConflict: {
             headers: {
                 [name: string]: unknown;

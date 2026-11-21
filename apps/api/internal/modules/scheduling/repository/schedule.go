@@ -143,6 +143,12 @@ func (r *Repository) ListScheduleHistory(ctx context.Context, tenantID uuid.UUID
 	out := make([]domain.History, len(rows))
 	for i, row := range rows {
 		out[i] = domain.History{ScheduleID: row.ID, Until: datePtr(row.HistoryUntil)}
+		if row.HeldByKind != "" && out[i].Until != nil {
+			out[i].HeldBy = &domain.Hold{
+				Kind: domain.HoldKind(row.HeldByKind), ID: row.HeldByID, Date: *out[i].Until,
+				Status: domain.SubstitutionStatus(row.HeldByStatus),
+			}
+		}
 	}
 	return out, nil
 }
