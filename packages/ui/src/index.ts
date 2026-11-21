@@ -124,6 +124,7 @@ export {
   type SegmentedControlProps,
   type SegmentedControlSize,
 } from "./components/segmented-control.js";
+export { FilterBar, type FilterBarProps, type FilterBarRowFrom } from "./components/filter-bar.js";
 export { Switch, type SwitchProps } from "./components/switch.js";
 export {
   Form,

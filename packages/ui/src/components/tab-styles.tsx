@@ -17,8 +17,9 @@ export type StripSize = "sm" | "md";
  * The outer track. A pill strip is a sunken capsule as wide as its items;
  * an underline strip has no box, and its base line runs the full width of
  * the container, the way a page-level tab bar does. `fullWidth="phone"`
- * stretches a pill strip below 640px only, where it shares a toolbar's
- * column, and gives it back its own width from `sm` up.
+ * stretches a pill strip alone on its row below 640px of screen only, and
+ * gives it back its own width from `sm` up; a strip beside other controls
+ * is stretched by its `FilterBar` instead, by the bar's own width.
  */
 export function stripTrackClass(variant: StripVariant, fullWidth?: boolean | "phone"): string {
   return cn(

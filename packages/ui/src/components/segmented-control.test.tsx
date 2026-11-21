@@ -139,6 +139,10 @@ describe("SegmentedControl", () => {
     );
     const track = (): Element | null => container.firstElementChild;
     expect(track()).toHaveClass("inline-flex", "w-fit");
+    // The segments fill whatever width the track gets, so a FilterBar that
+    // stretches the track while it stacks stretches the segments with it.
+    expect(screen.getByRole("radiogroup")).toHaveClass("w-full", "min-w-max");
+    expect(screen.getByRole("radiogroup")).not.toHaveClass("w-max");
     rerender(
       <SegmentedControl aria-label="Status izin" options={options} defaultValue="all" fullWidth />,
     );
