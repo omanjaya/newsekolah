@@ -576,7 +576,17 @@ func (s *Service) ExitPermitYearlyReportRows(ctx context.Context, tenantID uuid.
 			return err
 		}
 		out, err = s.repo.ListExitPermitsForYear(ctx, tenantID, yearID)
-		return err
+		if err != nil {
+			return err
+		}
+		// A permit left open on an earlier day reads as expired, as on
+		// the student's own list (domain.ExitPermitReadStatus).
+		loc := s.tenantLocation(ctx, tenantID)
+		today := s.tenantNow(ctx, tenantID)
+		for i := range out {
+			out[i].Status = domain.ExitPermitReadStatus(out[i].Status, clock.LocalDate(out[i].OpenedAt, loc), today)
+		}
+		return nil
 	})
 	return out, err
 }

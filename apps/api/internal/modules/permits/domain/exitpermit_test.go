@@ -47,3 +47,22 @@ func TestExitPermitReturn(t *testing.T) {
 		require.False(t, ExitPermit{ReturnRequired: true, ExpectedReturnAt: &due}.AwaitingReturn())
 	})
 }
+
+func TestExitPermitReadStatus(t *testing.T) {
+	jakarta, err := time.LoadLocation("Asia/Jakarta")
+	require.NoError(t, err)
+	// LocalDate is a calendar day stored as midnight UTC; today is the
+	// tenant-local business instant.
+	opened := time.Date(2027, time.April, 21, 0, 0, 0, 0, time.UTC)
+	lateSameDay := time.Date(2027, time.April, 21, 23, 30, 0, 0, jakarta)
+	nextDay := time.Date(2027, time.April, 22, 0, 1, 0, 0, jakarta)
+
+	for _, status := range []Status{StatusInProgress, StatusApproved} {
+		// 23:30 in Jakarta is 16:30 UTC: the school's calendar day decides.
+		require.Equal(t, status, ExitPermitReadStatus(status, opened, lateSameDay), "still its own day")
+		require.Equal(t, StatusExpired, ExitPermitReadStatus(status, opened, nextDay), "left open on an earlier day")
+	}
+	for _, status := range []Status{StatusCompleted, StatusCancelled, StatusRejected, StatusExpired} {
+		require.Equal(t, status, ExitPermitReadStatus(status, opened, nextDay), "a closed permit keeps its own end")
+	}
+}

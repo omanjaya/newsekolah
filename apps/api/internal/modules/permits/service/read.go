@@ -55,6 +55,7 @@ func (s *Service) GetExitPermit(ctx context.Context, tenantID, instanceID uuid.U
 		if err != nil {
 			return err
 		}
+		inst.Status = domain.ExitPermitReadStatus(inst.Status, inst.LocalDate, s.tenantNow(ctx, tenantID))
 		detail = ExitPermitDetail{Instance: inst, Definition: def, Permit: permit, Events: events}
 		return nil
 	})
@@ -86,7 +87,9 @@ func (s *Service) ListMyExitPermits(ctx context.Context, tenantID, studentUserID
 		ids[i] = it.Instance.ID
 	}
 	var permits map[uuid.UUID]domain.ExitPermit
+	var today time.Time
 	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		today = s.tenantNow(ctx, tenantID)
 		permits, err = s.repo.ListExitPermitsByInstances(ctx, tenantID, ids)
 		return err
 	})
@@ -95,6 +98,7 @@ func (s *Service) ListMyExitPermits(ctx context.Context, tenantID, studentUserID
 	}
 	out := make([]MyExitPermit, len(items))
 	for i, it := range items {
+		it.Instance.Status = domain.ExitPermitReadStatus(it.Instance.Status, it.Instance.LocalDate, today)
 		out[i] = MyExitPermit{InstanceWithDefinition: it, Permit: permits[it.Instance.ID]}
 	}
 	return out, nil

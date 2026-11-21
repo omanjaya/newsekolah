@@ -59,3 +59,21 @@ func (p ExitPermit) IsOverdue(now time.Time) bool {
 func (p ExitPermit) ReturnedLate() bool {
 	return p.ReturnedAt != nil && p.ExpectedReturnAt != nil && p.ReturnedAt.After(*p.ExpectedReturnAt)
 }
+
+// ExitPermitReadStatus is the status an exit permit reads as on the school
+// day today (a tenant-local instant on the business clock). A permit opened
+// on localDate (Instance.LocalDate) and still in progress, or approved and
+// never taken through the gate, cannot go on once its own day is over: its
+// lessons are past and the gate refuses it (ErrExitPermitWindowClosed). The
+// expiry job closes such a permit after midnight on the real clock, so it
+// reads as expired from the next day on, before the job has run and on a
+// simulated later day the job never sees.
+func ExitPermitReadStatus(status Status, localDate, today time.Time) Status {
+	if status != StatusInProgress && status != StatusApproved {
+		return status
+	}
+	if localDate.Format(time.DateOnly) < today.Format(time.DateOnly) {
+		return StatusExpired
+	}
+	return status
+}
