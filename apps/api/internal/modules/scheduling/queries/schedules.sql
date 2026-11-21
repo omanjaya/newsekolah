@@ -99,10 +99,10 @@ order by start_seq;
 -- The record dated history_until comes along (held_by_*, empty when no
 -- date is bound), so the editor can say what holds a change back: on a
 -- date two records share, the one no admin can release wins (a recorded
--- session, then a visit, then a substitution request). released_request_id
--- leaves one request out of the date it binds (it still makes the row
--- history), so the substitutions list can say what cancelling it would free;
--- the nil uuid leaves nothing out.
+-- session, then a visit, then a substitution request).
+-- released_request_ids leaves each of its requests out of the date it binds
+-- (each still makes its row history), so the substitutions list can say
+-- what cancelling one would free; an empty or null array leaves nothing out.
 select s.id,
   coalesce(h.kind, '')::text as held_by_kind,
   coalesce(h.ref_id, '00000000-0000-0000-0000-000000000000'::uuid) as held_by_id,
@@ -123,7 +123,7 @@ left join lateral (
     select 'substitution', 3, r.id, r.status::text, r.date
     from substitution_requests r
     where r.schedule_id = s.id and r.status in ('pending', 'accepted')
-      and r.id <> sqlc.arg(released_request_id)::uuid
+      and r.id <> all(coalesce(sqlc.arg(released_request_ids)::uuid[], '{}'))
   ) b
   order by b.on_date desc, b.rank
   limit 1

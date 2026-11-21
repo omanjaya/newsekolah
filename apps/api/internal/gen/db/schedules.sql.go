@@ -703,7 +703,7 @@ left join lateral (
     select 'substitution', 3, r.id, r.status::text, r.date
     from substitution_requests r
     where r.schedule_id = s.id and r.status in ('pending', 'accepted')
-      and r.id <> $2::uuid
+      and r.id <> all(coalesce($2::uuid[], '{}'))
   ) b
   order by b.on_date desc, b.rank
   limit 1
@@ -716,9 +716,9 @@ where s.tenant_id = $1 and s.id = any($3::uuid[])
 `
 
 type ListScheduleHistoryParams struct {
-	TenantID          uuid.UUID   `json:"tenant_id"`
-	ReleasedRequestID uuid.UUID   `json:"released_request_id"`
-	Ids               []uuid.UUID `json:"ids"`
+	TenantID           uuid.UUID   `json:"tenant_id"`
+	ReleasedRequestIds []uuid.UUID `json:"released_request_ids"`
+	Ids                []uuid.UUID `json:"ids"`
 }
 
 type ListScheduleHistoryRow struct {
@@ -741,12 +741,12 @@ type ListScheduleHistoryRow struct {
 // The record dated history_until comes along (held_by_*, empty when no
 // date is bound), so the editor can say what holds a change back: on a
 // date two records share, the one no admin can release wins (a recorded
-// session, then a visit, then a substitution request). released_request_id
-// leaves one request out of the date it binds (it still makes the row
-// history), so the substitutions list can say what cancelling it would free;
-// the nil uuid leaves nothing out.
+// session, then a visit, then a substitution request).
+// released_request_ids leaves each of its requests out of the date it binds
+// (each still makes its row history), so the substitutions list can say
+// what cancelling one would free; an empty or null array leaves nothing out.
 func (q *Queries) ListScheduleHistory(ctx context.Context, arg ListScheduleHistoryParams) ([]ListScheduleHistoryRow, error) {
-	rows, err := q.db.Query(ctx, listScheduleHistory, arg.TenantID, arg.ReleasedRequestID, arg.Ids)
+	rows, err := q.db.Query(ctx, listScheduleHistory, arg.TenantID, arg.ReleasedRequestIds, arg.Ids)
 	if err != nil {
 		return nil, err
 	}

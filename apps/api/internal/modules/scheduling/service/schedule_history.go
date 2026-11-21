@@ -89,14 +89,14 @@ func (s *Service) lessonBlock(ctx context.Context, tenantID uuid.UUID, sched dom
 type historyIndex map[uuid.UUID]domain.History
 
 func (s *Service) loadHistory(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (historyIndex, error) {
-	return s.loadHistoryReleasing(ctx, tenantID, ids, uuid.Nil)
+	return s.loadHistoryReleasing(ctx, tenantID, ids, nil)
 }
 
 // loadHistoryReleasing is loadHistory as it would read once the
-// substitution request releasedRequestID is cancelled: the request still
-// makes its row history but binds no date.
-func (s *Service) loadHistoryReleasing(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID, releasedRequestID uuid.UUID) (historyIndex, error) {
-	rows, err := s.repo.ListScheduleHistory(ctx, tenantID, ids, releasedRequestID)
+// substitution requests releasedRequestIDs are cancelled: each still makes
+// its row history but binds no date.
+func (s *Service) loadHistoryReleasing(ctx context.Context, tenantID uuid.UUID, ids, releasedRequestIDs []uuid.UUID) (historyIndex, error) {
+	rows, err := s.repo.ListScheduleHistory(ctx, tenantID, ids, releasedRequestIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -115,6 +115,13 @@ func (h historyIndex) hasAny(ids []uuid.UUID) bool {
 		}
 	}
 	return false
+}
+
+// heldBy reports whether the substitution request requestID is the record
+// holding id's last history date.
+func (h historyIndex) heldBy(id, requestID uuid.UUID) bool {
+	hold := h[id].HeldBy
+	return hold != nil && hold.Kind == domain.HoldSubstitution && hold.ID == requestID
 }
 
 // of is id's history, nil when it has none.
