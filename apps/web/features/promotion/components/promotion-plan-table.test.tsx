@@ -69,6 +69,18 @@ describe("PromotionPlanTable", () => {
     expect(within(screen.getByRole("table")).queryByText("Siswa s-3")).not.toBeInTheDocument();
   });
 
+  it("lays the show filter and the class select out by the card's width, not the screen's", () => {
+    renderTable();
+    const strip = screen.getByRole("radiogroup", { name: "showLabel" });
+    const bar = strip.closest("[data-slot=filter-bar]");
+    expect(bar).toHaveClass("@container/filter-bar");
+    const classSelect = screen.getByRole("combobox", { name: "table.fromClass" });
+    expect(bar).toContainElement(classSelect);
+    // Its own width at the row's end; the bar stretches it when stacked.
+    expect(classSelect).toHaveClass("ml-auto", "w-56");
+    expect(classSelect.className).not.toMatch(/(^|\s)sm:/);
+  });
+
   it("sets one decision for every ticked student", async () => {
     const onOverride = renderTable();
     const [selectAll] = within(screen.getByRole("table")).getAllByRole("checkbox");

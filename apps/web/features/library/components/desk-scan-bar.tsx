@@ -3,6 +3,7 @@
 import {
   Button,
   Card,
+  FilterBar,
   IconButton,
   Input,
   ScannerResultBanner,
@@ -99,7 +100,12 @@ export function DeskScanBar({
 
   return (
     <Card padding="sm" data-testid="desk-scan-bar" className="md:gap-4 md:p-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {/* By the card's own width, not the screen's: beside the desk's side
+          column a 1024px screen leaves the card 352px, and a row from
+          640px of screen squeezed the modes to 52px beside the 288px name
+          search. The two share a row from 42rem of card; the modes take
+          whatever the search leaves, and all of it once a member is in. */}
+      <FilterBar rowFrom="2xl">
         <SegmentedControl
           aria-label={t("modes.label")}
           options={DESK_MODES.map((option) => ({
@@ -109,11 +115,10 @@ export function DeskScanBar({
           }))}
           value={mode}
           onValueChange={onModeChange}
-          className="max-sm:w-full"
-          fullWidth
+          className="grow"
         />
-        {!hasMember && <DeskMemberSearch onSelectMember={onSelectMember} className="sm:w-72" />}
-      </div>
+        {!hasMember && <DeskMemberSearch onSelectMember={onSelectMember} className="w-72" />}
+      </FilterBar>
 
       <div className="flex flex-wrap items-end gap-2">
         <Input

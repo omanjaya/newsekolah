@@ -160,6 +160,15 @@ describe("ClubDetailView", () => {
     expect(screen.getByRole("tablist", { name: "tabsLabel" })).toBeInTheDocument();
   });
 
+  it("lays the member search and its filter out by the panel's width, not the screen's", () => {
+    render(<ClubDetailView clubId="club-1" />);
+    const search = screen.getByRole("searchbox", { name: "searchPlaceholder" });
+    const bar = search.closest("[data-slot=filter-bar]");
+    expect(bar).toHaveClass("@container/filter-bar");
+    expect(bar).toContainElement(screen.getByRole("button", { name: "includeLeft" }));
+    expect(search.closest("[data-slot=input]")?.className).not.toMatch(/(^|\s)sm:w-72/);
+  });
+
   it("enrolls a member from the header's action, not an inline form", async () => {
     const user = userEvent.setup();
     render(<ClubDetailView clubId="club-1" />);

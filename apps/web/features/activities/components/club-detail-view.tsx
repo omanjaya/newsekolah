@@ -16,6 +16,7 @@ import {
   DisclosureIndicator,
   DisclosureTrigger,
   EmptyState,
+  FilterBar,
   List,
   ListRow,
   RowActionsMenu,
@@ -246,19 +247,24 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <SearchInput
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-          }}
-          onClear={() => {
-            setSearch("");
-          }}
-          placeholder={t("searchPlaceholder")}
-          aria-label={t("searchPlaceholder")}
-          className="sm:w-72"
-        />
+      {/* By the panel's own width, not the screen's: from 640px of screen
+          a fixed 288px search sat beside the pill even where the sidebar
+          left the column too narrow for both. */}
+      <FilterBar
+        search={
+          <SearchInput
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+            }}
+            onClear={() => {
+              setSearch("");
+            }}
+            placeholder={t("searchPlaceholder")}
+            aria-label={t("searchPlaceholder")}
+          />
+        }
+      >
         <DataTableFilters
           filters={[
             {
@@ -272,7 +278,7 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
             },
           ]}
         />
-      </div>
+      </FilterBar>
 
       {visible.length === 0 ? (
         <EmptyState
