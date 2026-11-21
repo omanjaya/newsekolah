@@ -185,6 +185,56 @@ describe("WorkflowSteps", () => {
     expect(screen.queryByText(/stageNote/)).not.toBeInTheDocument();
   });
 
+  // The regression: an expired stage showed the time of the API's "opened"
+  // entry, the request time, as if the request had expired then.
+  it("shows no time on the stage a request expired at, but dates one a person ended", () => {
+    const opened: WorkflowInstance = {
+      ...instance,
+      current_stage_index: 0,
+      events: [
+        {
+          id: "e0",
+          stage_key: "duty",
+          to_status: "in_progress",
+          verification: "auto",
+          note: "opened",
+          system_note: true,
+          occurred_at: "2026-11-14T02:10:00Z",
+        },
+      ],
+    };
+    const { unmount } = render(<WorkflowSteps instance={{ ...opened, status: "expired" }} />);
+    const [expired] = screen.getAllByRole("listitem");
+    expect(expired).toHaveTextContent("status.expired");
+    expect(expired).not.toHaveTextContent("09.10");
+    unmount();
+
+    // A student's cancel is a system note too, but it is when the request ended.
+    render(
+      <WorkflowSteps
+        instance={{
+          ...opened,
+          status: "cancelled",
+          events: [
+            ...(opened.events ?? []),
+            {
+              id: "e1",
+              stage_key: "duty",
+              to_status: "cancelled",
+              verification: "auto",
+              note: "cancelled by student",
+              system_note: true,
+              occurred_at: "2026-11-14T02:30:00Z",
+            },
+          ],
+        }}
+      />,
+    );
+    const [cancelled] = screen.getAllByRole("listitem");
+    expect(cancelled).toHaveTextContent("status.cancelled");
+    expect(cancelled).toHaveTextContent("14 Nov 09.30");
+  });
+
   it("says how the request ended at the stage where it stopped", () => {
     render(<WorkflowSteps instance={{ ...instance, status: "rejected" }} />);
     const [, second] = screen.getAllByRole("listitem");

@@ -127,9 +127,11 @@ type Repository interface {
 	GetExitPermitInstanceForSubjectToday(ctx context.Context, tenantID, studentUserID uuid.UUID, today time.Time) (domain.Instance, bool, error)
 	// ListExitPermitsForApproval is the counselor/leadership/security
 	// queue: in-progress permits at a duty-scoped approval stage, plus
-	// every approved permit visible to scan_exit_permits holders.
-	ListExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID, today time.Time) ([]ExitPermitReviewItem, error)
-	CountExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID, today time.Time) (int, error)
+	// every approved permit visible to scan_exit_permits holders. now is
+	// the tenant-local instant (tenantNow): only permits of its day whose
+	// last period has not yet ended are listed.
+	ListExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID, now time.Time) ([]ExitPermitReviewItem, error)
+	CountExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID, now time.Time) (int, error)
 	// ListExitPermitsForYear backs the counselor's yearly exit-permit
 	// report: every permit opened within academicYearID's own calendar
 	// bounds, regardless of status.

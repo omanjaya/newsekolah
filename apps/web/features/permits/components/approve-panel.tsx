@@ -28,6 +28,8 @@ import {
   useIssueScanTokenMutation,
   useLateArrivalQuery,
 } from "../api";
+import { exitPermitReadStatus } from "../lib/exit-permit-status";
+import { usePermitLessons } from "../lib/use-school-time";
 
 import { WorkflowSteps } from "./workflow-stepper";
 
@@ -55,6 +57,11 @@ interface ApprovalSubject {
  * student id (named through the directory); both carry the class. `fresh`
  * says the flow was read since the sheet opened, so a cached copy from an
  * earlier visit is never taken for the stage this QR approves.
+ *
+ * An exit permit whose lessons are over reads as expired, as on the
+ * student's card: from then on its stages refuse every scan
+ * (EXIT_PERMIT_WINDOW_CLOSED). Its read is fresh only once the periods
+ * settle whether they are over.
  */
 function useApprovalSubject(
   kind: ApprovalKind,
@@ -71,20 +78,24 @@ function useApprovalSubject(
   const pollMs = polling ? APPROVAL_POLL_MS : false;
   const exit = useExitPermitQuery(kind === "exit_permit" ? instanceId : "", { pollMs });
   const late = useLateArrivalQuery(kind === "late_arrival" ? instanceId : "", { pollMs });
+  const lessons = usePermitLessons(kind === "exit_permit" ? exit.data : undefined);
   const lateStudentId = late.data?.instance.subject_user_id;
   const names = useDirectoryNames(lateStudentId ? [lateStudentId] : [], kind === "late_arrival");
 
   if (kind === "exit_permit") {
     return {
       subject: exit.data && {
-        instance: exit.data.instance,
+        instance: {
+          ...exit.data.instance,
+          status: exitPermitReadStatus(exit.data.instance.status, lessons.over),
+        },
         studentName: exit.data.student_name,
         facts: [
           { label: t("class"), value: exit.data.class_name },
           { label: t("destination"), value: exit.data.destination },
         ],
       },
-      fresh: exit.isFetchedAfterMount,
+      fresh: exit.isFetchedAfterMount && lessons.known,
       error: exit.error,
       refetch: () => exit.refetch(),
     };
@@ -126,12 +137,13 @@ function outcomeOf(instance: WorkflowInstance, shown: ShownStage | null): Outcom
 /**
  * An approver's stage QR for one workflow the queue opened (docs/07-ui-ux.md
  * section 4: the student presses "Pindai QR <tahap>" and scans it). The
- * token is bound to this instance and single use, so it is minted on open
- * and renewed by itself when it expires while the stage still waits; the
- * QR prints no code under it, since a 43-character token is not something
- * anyone types. Beside it: who it is for, and where the flow stands. The
- * picket stage of an exit permit does not come here: the duty desk shows
- * one rotating QR for every student instead (DeskQrPanel).
+ * token is bound to this instance and single use, so it is minted once the
+ * sheet's first read finds the stage waiting, and renewed by itself when it
+ * expires while the stage still waits; the QR prints no code under it,
+ * since a 43-character token is not something anyone types. Beside it:
+ * who it is for, and where the flow stands. The picket stage of an exit
+ * permit does not come here: the duty desk shows one rotating QR for every
+ * student instead (DeskQrPanel).
  *
  * While the QR is up the sheet re-reads the flow; once the student's scan
  * moves it past this stage, the QR gives way to "<nama> disetujui untuk
@@ -194,10 +206,14 @@ export function ApprovePanel({
     );
   }
 
+  // Mint once the first fresh read finds the stage waiting, not on mount: a
+  // flow that is already closed (an exit permit whose lessons are over
+  // reads as expired) needs no QR, and the token would only be refused.
+  const waitingStageRead = shownStage !== null;
   useEffect(() => {
-    mint();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mint once on mount; the key remount covers a new instance
-  }, []);
+    if (waitingStageRead) mint();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mint once per instance; the key remount covers a new one
+  }, [waitingStageRead]);
 
   // The latest callback, read when the timer fires. Next's bundled React has
   // no useEffectEvent, so a ref keeps the effect from restarting on each render.

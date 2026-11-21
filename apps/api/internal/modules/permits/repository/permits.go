@@ -663,6 +663,13 @@ func (r *Repository) GetPeriod(ctx context.Context, tenantID, periodID uuid.UUID
 	}, nil
 }
 
+// wallClock is t's time of day in its own location, as a SQL TIME to
+// compare with a period's starts_at/ends_at.
+func wallClock(t time.Time) pgtype.Time {
+	midnight := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+	return pgtype.Time{Microseconds: t.Sub(midnight).Microseconds(), Valid: true}
+}
+
 func pgTimeToDuration(t pgtype.Time) time.Duration {
 	if !t.Valid {
 		return 0
@@ -735,8 +742,10 @@ func (r *Repository) GetExitPermitInstanceForSubjectToday(ctx context.Context, t
 	return toInstance(row), true, nil
 }
 
-func (r *Repository) ListExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID, today time.Time) ([]service.ExitPermitReviewItem, error) {
-	rows, err := r.queries(ctx).ListExitPermitsForApproval(ctx, db.ListExitPermitsForApprovalParams{TenantID: tenantID, UserID: callerUserID, Today: pdatabase.Date(today)})
+func (r *Repository) ListExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID, now time.Time) ([]service.ExitPermitReviewItem, error) {
+	rows, err := r.queries(ctx).ListExitPermitsForApproval(ctx, db.ListExitPermitsForApprovalParams{
+		TenantID: tenantID, UserID: callerUserID, Today: pdatabase.Date(now), NowTime: wallClock(now),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list exit permits for approval: %w", err)
 	}
@@ -839,9 +848,9 @@ func (r *Repository) CountLeaveRequestsForReview(ctx context.Context, tenantID, 
 }
 
 // CountExitPermitsForApproval is the size of ListExitPermitsForApproval's queue.
-func (r *Repository) CountExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID, today time.Time) (int, error) {
+func (r *Repository) CountExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID, now time.Time) (int, error) {
 	n, err := r.queries(ctx).CountExitPermitsForApproval(ctx, db.CountExitPermitsForApprovalParams{
-		TenantID: tenantID, UserID: callerUserID, Today: pdatabase.Date(today),
+		TenantID: tenantID, UserID: callerUserID, Today: pdatabase.Date(now), NowTime: wallClock(now),
 	})
 	if err != nil {
 		return 0, fmt.Errorf("count exit permits for approval: %w", err)

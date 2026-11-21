@@ -17,8 +17,14 @@ select count(*)::int as total
 from exit_permits ep
 join workflow_instances wi on wi.id = ep.instance_id
 join workflow_definitions wd on wd.id = wi.definition_id
+join periods p on p.id = ep.end_period_id
 where ep.tenant_id = $1
   and wi.status in ('in_progress', 'approved')
+  -- Only today's permits whose last period has not ended: one past its
+  -- lessons can go no further and reads as expired everywhere else
+  -- (domain.ExitPermitReadStatus), before the expiry job closes it.
+  and wi.local_date >= $3::date
+  and p.ends_at > $4::time
   and (
     (
       wi.status = 'approved'
@@ -65,12 +71,18 @@ type CountExitPermitsForApprovalParams struct {
 	TenantID uuid.UUID   `json:"tenant_id"`
 	UserID   uuid.UUID   `json:"user_id"`
 	Today    pgtype.Date `json:"today"`
+	NowTime  pgtype.Time `json:"now_time"`
 }
 
 // Size of ListExitPermitsForApproval's queue for the same caller. Keep the
 // where clause identical to that query: the inbox badge must match the list.
 func (q *Queries) CountExitPermitsForApproval(ctx context.Context, arg CountExitPermitsForApprovalParams) (int32, error) {
-	row := q.db.QueryRow(ctx, countExitPermitsForApproval, arg.TenantID, arg.UserID, arg.Today)
+	row := q.db.QueryRow(ctx, countExitPermitsForApproval,
+		arg.TenantID,
+		arg.UserID,
+		arg.Today,
+		arg.NowTime,
+	)
 	var total int32
 	err := row.Scan(&total)
 	return total, err
@@ -302,8 +314,14 @@ select ep.instance_id, ep.tenant_id, ep.destination, ep.start_period_id, ep.end_
 from exit_permits ep
 join workflow_instances wi on wi.id = ep.instance_id
 join workflow_definitions wd on wd.id = wi.definition_id
+join periods p on p.id = ep.end_period_id
 where ep.tenant_id = $1
   and wi.status in ('in_progress', 'approved')
+  -- Only today's permits whose last period has not ended: one past its
+  -- lessons can go no further and reads as expired everywhere else
+  -- (domain.ExitPermitReadStatus), before the expiry job closes it.
+  and wi.local_date >= $3::date
+  and p.ends_at > $4::time
   and (
     (
       wi.status = 'approved'
@@ -351,6 +369,7 @@ type ListExitPermitsForApprovalParams struct {
 	TenantID uuid.UUID   `json:"tenant_id"`
 	UserID   uuid.UUID   `json:"user_id"`
 	Today    pgtype.Date `json:"today"`
+	NowTime  pgtype.Time `json:"now_time"`
 }
 
 type ListExitPermitsForApprovalRow struct {
@@ -385,8 +404,17 @@ type ListExitPermitsForApprovalRow struct {
 // current_date: the Postgres session timezone is never set per tenant.
 // current_stage is null once every stage has passed (an approved permit
 // waiting at the gate): the index is then past the last stage.
+// A permit whose lessons are over is left out: from the end of its last
+// period on its own day (sqlc.arg('now_time'), the tenant's wall clock),
+// and from any earlier day, the gate and every stage refuse it, and it
+// reads as expired on its own detail and the student's card.
 func (q *Queries) ListExitPermitsForApproval(ctx context.Context, arg ListExitPermitsForApprovalParams) ([]ListExitPermitsForApprovalRow, error) {
-	rows, err := q.db.Query(ctx, listExitPermitsForApproval, arg.TenantID, arg.UserID, arg.Today)
+	rows, err := q.db.Query(ctx, listExitPermitsForApproval,
+		arg.TenantID,
+		arg.UserID,
+		arg.Today,
+		arg.NowTime,
+	)
 	if err != nil {
 		return nil, err
 	}
