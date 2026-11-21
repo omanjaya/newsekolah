@@ -332,7 +332,9 @@ function PermitDetail({ id, onBack }: { id: string; onBack: () => void }): React
           <Text className="text-sm text-status-present">{t("permits.exited")}</Text>
         ) : null}
         {back ? <Text className="text-sm text-ink dark:text-ink-dark">{back}</Text> : null}
-        {inst.status === "in_progress" ? (
+        {/* A permit whose lessons are over has lapsed: the API refuses its
+            cancel (EXIT_PERMIT_WINDOW_CLOSED). */}
+        {inst.status === "in_progress" && !lessonsOver ? (
           <Button
             label={t("permits.cancel")}
             variant="ghost"

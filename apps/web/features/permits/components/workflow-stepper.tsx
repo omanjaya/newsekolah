@@ -16,12 +16,14 @@ import { todayInZone } from "../../../lib/tenant-date";
 import type { WorkflowInstance } from "../api";
 import { buildMineStageTrack, type LeaveMineStageKey } from "../lib/leave-mine-stage-track";
 
+/** The instance's current stage index, kept within its stages. */
+function currentStageIndex(instance: WorkflowInstance): number {
+  return Math.min(Math.max(instance.current_stage_index, 0), instance.stages.length - 1);
+}
+
 /** Where a stage of `instance` stands, from the instance's status and current index. */
 function stageState(instance: WorkflowInstance, index: number): StepperStepState {
-  const currentIndex = Math.min(
-    Math.max(instance.current_stage_index, 0),
-    instance.stages.length - 1,
-  );
+  const currentIndex = currentStageIndex(instance);
   if (instance.status === "approved" || instance.status === "completed") return "complete";
   if (index < currentIndex) return "complete";
   if (index === currentIndex) return instance.status === "in_progress" ? "current" : "stopped";
@@ -35,20 +37,32 @@ interface StageActivity {
   note?: string;
 }
 
-/** When each stage was last acted on and what its reviewer wrote, from the event log (newest wins). */
+/** The statuses a person ends a request with at the stage it waits at. */
+const ENDED_AT_STAGE: ReadonlySet<string> = new Set(["rejected", "cancelled"]);
+
+/**
+ * When each stage was last acted on and what its reviewer wrote, from the
+ * event log (newest wins). A reject or cancel stored without a stage key
+ * (a cancel recorded before the API kept one) belongs to the stage the
+ * request stopped at, so that stage is dated by its end rather than by an
+ * earlier event there such as the API's "opened" entry.
+ */
 function stageActivity(instance: WorkflowInstance): Map<string, StageActivity> {
   const activity = new Map<string, StageActivity>();
+  const stoppedKey = instance.stages[currentStageIndex(instance)]?.key;
   const events = [...(instance.events ?? [])].sort((a, b) =>
     a.occurred_at.localeCompare(b.occurred_at),
   );
   for (const event of events) {
-    if (!event.stage_key) continue;
+    const stageKey =
+      event.stage_key ?? (ENDED_AT_STAGE.has(event.to_status) ? stoppedKey : undefined);
+    if (!stageKey) continue;
     // A system note is the API's own log label ("opened", "letter issued"),
     // not something a person wrote, so the stepper leaves it out.
     const note = event.system_note ? "" : (event.note?.trim() ?? "");
     const written = note === "" ? undefined : note;
-    const previous = activity.get(event.stage_key);
-    activity.set(event.stage_key, { at: event.occurred_at, note: written ?? previous?.note });
+    const previous = activity.get(stageKey);
+    activity.set(stageKey, { at: event.occurred_at, note: written ?? previous?.note });
   }
   return activity;
 }
@@ -82,7 +96,11 @@ export function WorkflowSteps({
   const lastIndex = instance.stages.length - 1;
   const steps: StepperStep[] = instance.stages.map((stage, index) => {
     const state = stageState(instance, index);
-    const at = activity.get(stage.key)?.at;
+    // A request a person ended closed when they did: its closed_at dates
+    // the stage it stopped at, whatever events that stage holds.
+    const endedAt =
+      state === "stopped" && ENDED_AT_STAGE.has(instance.status) ? instance.closed_at : undefined;
+    const at = endedAt ?? activity.get(stage.key)?.at;
     const note = activity.get(stage.key)?.note;
     const acted = state === "complete" || state === "stopped";
     // A request that expired lapsed at its stage with no event of its own
