@@ -9004,6 +9004,8 @@ export interface components {
             scored_subjects: number;
             /** @description Of scored_subjects, those below the subject's KKTP */
             subjects_below_kktp: number;
+            /** @description The decimals the school's grading scale keeps (its round_decimal), so the averages read the same as on the gradebook and the student's own grades; 2 when the scale cannot be read */
+            score_decimals: number;
         };
         StudentRisk: {
             /** Format: uuid */

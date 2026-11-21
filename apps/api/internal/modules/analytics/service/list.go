@@ -74,7 +74,25 @@ func (s *Service) GetStudentRisk(ctx context.Context, tenantID, actorUserID, stu
 		out = sanitized[0]
 		return nil
 	})
-	return out, err
+	if err != nil {
+		return StoredResult{}, err
+	}
+	out.ScoreDecimals = s.scoreDecimals(ctx, tenantID)
+	return out, nil
+}
+
+// scoreDecimals is the grading scale's precision, or DefaultScoreDecimals
+// when it cannot be read: a detail screen must not fail over how many
+// decimals an average shows, as buildSignals degrades a failed read.
+func (s *Service) scoreDecimals(ctx context.Context, tenantID uuid.UUID) int {
+	if s.grading == nil {
+		return DefaultScoreDecimals
+	}
+	decimals, err := s.grading.ScoreDecimals(ctx, tenantID)
+	if err != nil || decimals < 0 {
+		return DefaultScoreDecimals
+	}
+	return decimals
 }
 
 // resolveScope returns the class the caller is limited to, or an invalid

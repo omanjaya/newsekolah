@@ -98,7 +98,16 @@ type GradingReader interface {
 	// a student with no trend maps to the zero GradeTrend (Available
 	// false).
 	ReportTrends(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID) (map[uuid.UUID]GradeTrend, error)
+	// ScoreDecimals returns the decimals the school's grading scale keeps
+	// (its round_decimal), so an average shows at the precision the
+	// gradebook and the student's own grades page show it.
+	ScoreDecimals(ctx context.Context, tenantID uuid.UUID) (int, error)
 }
+
+// DefaultScoreDecimals is the grading scale's own default precision
+// (grading/domain.DefaultScale's RoundDecimal), used when the scale cannot
+// be read (grading off, or no grading reader wired).
+const DefaultScoreDecimals = 2
 
 // GradeTrend is the student's published report-score average for the
 // active term and, when one exists, the term immediately before it.
@@ -167,6 +176,11 @@ type StoredResult struct {
 	Reasons        []domain.Reason
 	PolicyVersion  int
 	ComputedAt     time.Time
+
+	// ScoreDecimals is not stored: GetStudentRisk sets it on read to the
+	// grading scale's current precision, the one Signals' averages are
+	// shown at.
+	ScoreDecimals int
 }
 
 // Repository is analytics' data-access boundary: the roster and scope

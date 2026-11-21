@@ -20728,6 +20728,7 @@ components:
         - current_average
         - scored_subjects
         - subjects_below_kktp
+        - score_decimals
       properties:
         has_attendance:
           type: boolean
@@ -20757,6 +20758,12 @@ components:
         subjects_below_kktp:
           type: integer
           description: Of scored_subjects, those below the subject's KKTP
+        score_decimals:
+          type: integer
+          minimum: 0
+          maximum: 4
+          description: The decimals the school's grading scale keeps (its round_decimal), so the averages read the same as on the
+            gradebook and the student's own grades; 2 when the scale cannot be read
     StudentRisk:
       type: object
       required:
