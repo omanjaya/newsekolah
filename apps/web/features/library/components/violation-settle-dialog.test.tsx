@@ -84,4 +84,33 @@ describe("ViolationSettleDialog", () => {
     expect(screen.getByText("error:INTERNAL_ERROR")).toBeInTheDocument();
     expect(handlers.onAlreadySettled).not.toHaveBeenCalled();
   });
+
+  // Settling a suspension is not a payment: no "Tandai lunas" anywhere.
+  it("marks a suspension settled, not paid, and hands the violation back", () => {
+    mocks.mutate.mockImplementation((_vars: unknown, opts: { onSuccess: () => void }) => {
+      opts.onSuccess();
+    });
+    const suspension = { ...violation, penalty: "suspend", amount: 0 } as LibraryViolation;
+    const handlers = { onSettled: vi.fn(), onAlreadySettled: vi.fn(), onOpenChange: vi.fn() };
+    render(
+      <ViolationSettleDialog
+        violation={suspension}
+        status="paid"
+        memberName="Siswa Dua"
+        {...handlers}
+      />,
+    );
+
+    expect(screen.getByText("confirmDoneTitle")).toBeInTheDocument();
+    expect(screen.getByText("confirmDoneBody")).toBeInTheDocument();
+    expect(screen.queryByText("confirmPaidTitle")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "markPaid" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "markDone" }));
+
+    expect(mocks.mutate).toHaveBeenCalledWith(
+      { violationId: "v1", status: "paid" },
+      expect.anything(),
+    );
+    expect(handlers.onSettled).toHaveBeenCalledWith("paid", suspension);
+  });
 });

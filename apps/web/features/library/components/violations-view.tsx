@@ -16,7 +16,7 @@ import {
   type DataTableFilterDef,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { BadgeCheck, HandCoins, Plus } from "lucide-react";
+import { BadgeCheck, CircleCheck, HandCoins, Plus } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -29,6 +29,7 @@ import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { formatShortDate } from "../lib/short-date";
 import { VIOLATION_STATUS_TONE, toneOf } from "../lib/status-tones";
+import { settlesByPayment, violationStatusLabelKey } from "../lib/violations";
 import { useTenantTimeZone } from "../use-tenant-timezone";
 import {
   type LibraryViolation,
@@ -103,7 +104,9 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         setStatus(value as (typeof STATUS_VALUES)[number]);
         paging.resetPage();
       },
-      options: STATUSES.map((s) => ({ value: s, label: t(`status.${s}`) })),
+      // The filter spans every penalty, so its labels cover a paid fine
+      // and a served suspension alike.
+      options: STATUSES.map((s) => ({ value: s, label: t(`statusFilter.${s}`) })),
     },
     {
       id: "kind",
@@ -176,7 +179,7 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         meta: { card: "meta", skeleton: "badge" },
         cell: ({ row }) => (
           <Badge tone={toneOf(VIOLATION_STATUS_TONE, row.original.status)}>
-            {t(`status.${row.original.status}`)}
+            {t(`status.${violationStatusLabelKey(row.original)}`)}
           </Badge>
         ),
       },
@@ -187,6 +190,7 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         cell: ({ row }) =>
           canRecord && row.original.status === "unpaid" ? (
             <ViolationRowActionsMenu
+              byPayment={settlesByPayment(row.original)}
               memberName={directoryMap.get(row.original.member_user_id)?.name ?? t("unknownMember")}
               onMarkPaid={() => {
                 setSettling({ violation: row.original, status: "paid" });
@@ -324,8 +328,14 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
         onOpenChange={(open) => {
           if (!open) setSettling(null);
         }}
-        onSettled={(status) => {
-          toast.success(status === "paid" ? t("settle.settledPaid") : t("settle.settledWaived"));
+        onSettled={(status, violation) => {
+          toast.success(
+            status === "waived"
+              ? t("settle.settledWaived")
+              : settlesByPayment(violation)
+                ? t("settle.settledPaid")
+                : t("settle.settledDone"),
+          );
           setSettling(null);
         }}
         onAlreadySettled={() => {
@@ -344,10 +354,13 @@ export function ViolationsView({ memberUserId }: { memberUserId?: string }): Rea
  * (docs/07-ui-ux.md: secondary actions in a labelled "..." menu).
  */
 function ViolationRowActionsMenu({
+  byPayment,
   memberName,
   onMarkPaid,
   onWaive,
 }: {
+  /** A fine is marked paid; any other penalty is marked settled. */
+  byPayment: boolean;
   memberName: string;
   onMarkPaid: () => void;
   onWaive: () => void;
@@ -360,8 +373,12 @@ function ViolationRowActionsMenu({
       ariaLabel={tRow("rowActions", { member: memberName })}
       items={[
         {
-          label: t("markPaid"),
-          icon: <HandCoins className="size-4" aria-hidden="true" />,
+          label: byPayment ? t("markPaid") : t("markDone"),
+          icon: byPayment ? (
+            <HandCoins className="size-4" aria-hidden="true" />
+          ) : (
+            <CircleCheck className="size-4" aria-hidden="true" />
+          ),
           onClick: onMarkPaid,
         },
         {

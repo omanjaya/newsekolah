@@ -79,7 +79,7 @@ describe("ViolationsView paging", () => {
     render(<ViolationsView />);
 
     await user.click(screen.getByRole("button", { name: "filters.status" }));
-    await user.click(await screen.findByRole("button", { name: "status.paid" }));
+    await user.click(await screen.findByRole("button", { name: "statusFilter.paid" }));
 
     expect(mocks.useLibraryViolationsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ status: "paid", limit: 50, offset: 0 }),

@@ -9,13 +9,15 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { settlesByPayment } from "../lib/violations";
 import { type LibraryViolation, useSettleLibraryViolationMutation } from "../violations-api";
 
 /**
  * Confirms one specific outcome (paid or waived) for one violation -- the
  * "..." row menu in ViolationsView picks the action first, so this only
  * has to name the object and its impact in Rupiah (docs/07-ui-ux.md
- * section 5), never a second choice of buttons to weigh.
+ * section 5), never a second choice of buttons to weigh. Only a fine is
+ * "paid": a suspension, warning or book to replace is marked settled.
  */
 export function ViolationSettleDialog({
   violation,
@@ -29,7 +31,7 @@ export function ViolationSettleDialog({
   status: "paid" | "waived" | null;
   memberName: string;
   onOpenChange: (open: boolean) => void;
-  onSettled: (status: "paid" | "waived") => void;
+  onSettled: (status: "paid" | "waived", violation: LibraryViolation) => void;
   /**
    * The server says the violation was settled already: a second click of
    * a double click, or another librarian. Nothing is left to do here, so
@@ -48,14 +50,19 @@ export function ViolationSettleDialog({
   const amount =
     violation && violation.amount > 0 ? formatCurrency(violation.amount, "IDR", { locale }) : null;
   const kind = violation ? tKinds(violation.kind) : "";
+  const byPayment = violation ? settlesByPayment(violation) : true;
   const bodyText =
     status === "waived"
       ? amount
         ? t("confirmWaivedBodyAmount", { member: memberName, amount, kind })
         : t("confirmWaivedBody", { member: memberName, kind })
-      : amount
-        ? t("confirmPaidBodyAmount", { member: memberName, amount, kind })
-        : t("confirmPaidBody", { member: memberName, kind });
+      : !byPayment
+        ? t("confirmDoneBody", { member: memberName, kind })
+        : amount
+          ? t("confirmPaidBodyAmount", { member: memberName, amount, kind })
+          : t("confirmPaidBody", { member: memberName, kind });
+  const settleTitle = byPayment ? t("confirmPaidTitle") : t("confirmDoneTitle");
+  const settleLabel = byPayment ? t("markPaid") : t("markDone");
 
   return (
     <ConfirmDialog
@@ -64,14 +71,14 @@ export function ViolationSettleDialog({
         if (!next) setError("");
         onOpenChange(next);
       }}
-      title={status === "waived" ? t("confirmWaivedTitle") : t("confirmPaidTitle")}
+      title={status === "waived" ? t("confirmWaivedTitle") : settleTitle}
       description={
         <div className="flex flex-col gap-2 text-body-sm text-fg-muted">
           <p>{bodyText}</p>
           {error && <FormError>{error}</FormError>}
         </div>
       }
-      confirmLabel={status === "waived" ? t("waive") : t("markPaid")}
+      confirmLabel={status === "waived" ? t("waive") : settleLabel}
       destructive={status === "waived"}
       confirming={settle.isPending}
       onConfirm={() => {
@@ -81,7 +88,7 @@ export function ViolationSettleDialog({
           { violationId: violation.id, status },
           {
             onSuccess: () => {
-              onSettled(status);
+              onSettled(status, violation);
             },
             onError: (err) => {
               if (err instanceof ApiError && err.code === "LIBRARY_VIOLATION_ALREADY_SETTLED") {

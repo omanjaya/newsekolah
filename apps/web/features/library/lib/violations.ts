@@ -37,3 +37,30 @@ export function unpaidFineTotal(violations: readonly ViolationSettlement[]): num
 export function isUnsettledSuspension(violation: ViolationSettlement): boolean {
   return violation.status === "unpaid" && violation.penalty === "suspend";
 }
+
+/**
+ * Whether settling `violation` is a payment. Only a fine is: a suspension
+ * is served by its dates, a warning is a note, and a book to replace is
+ * owed as a book. Every screen that names a settlement (the status badge,
+ * the row action, its confirmation and toast) asks this, so a sanction
+ * without money never reads as "unpaid" or "paid".
+ */
+export function settlesByPayment(violation: Pick<LibraryViolation, "penalty">): boolean {
+  return violation.penalty === "fine";
+}
+
+/** A key under app.library.violations.status. */
+export type ViolationStatusLabelKey = "unpaid" | "paid" | "waived" | "open" | "done";
+
+/**
+ * The label key for a violation's settlement. The stored status (unpaid,
+ * paid, waived) is shared by every penalty; a fine keeps the money words,
+ * any other penalty reads as open or done. Waived ("Dibebaskan") carries
+ * no money either way.
+ */
+export function violationStatusLabelKey(
+  violation: Pick<LibraryViolation, "status" | "penalty">,
+): ViolationStatusLabelKey {
+  if (violation.status === "waived" || settlesByPayment(violation)) return violation.status;
+  return violation.status === "unpaid" ? "open" : "done";
+}

@@ -32,6 +32,8 @@ vi.mock("../violations-api", () => ({
   useSettleLibraryViolationMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
+import type { LibraryViolation } from "../violations-api";
+
 import { ViolationsView } from "./violations-view";
 
 describe("ViolationsView filters", () => {
@@ -47,7 +49,7 @@ describe("ViolationsView filters", () => {
     render(<ViolationsView />);
 
     await user.click(screen.getByRole("button", { name: "filters.status" }));
-    await user.click(await screen.findByRole("button", { name: "status.paid" }));
+    await user.click(await screen.findByRole("button", { name: "statusFilter.paid" }));
 
     expect(mocks.useLibraryViolationsQuery).toHaveBeenLastCalledWith(
       expect.objectContaining({ status: "paid" }),
@@ -79,7 +81,7 @@ describe("ViolationsView filters", () => {
       true,
     );
     expect(
-      screen.getByRole("button", { name: "filters.status: status.unpaid" }),
+      screen.getByRole("button", { name: "filters.status: statusFilter.unpaid" }),
     ).toBeInTheDocument();
   });
 
@@ -94,5 +96,66 @@ describe("ViolationsView filters", () => {
       true,
     );
     expect(new URLSearchParams(window.location.search).get("kind")).toBeNull();
+  });
+});
+
+describe("ViolationsView settlement wording", () => {
+  const suspension = {
+    id: "v-suspend",
+    member_user_id: "u1",
+    kind: "damaged",
+    penalty: "suspend",
+    amount: 0,
+    suspend_days: 3,
+    status: "unpaid",
+  } as LibraryViolation;
+  const fine = {
+    id: "v-fine",
+    member_user_id: "u2",
+    kind: "late",
+    penalty: "fine",
+    amount: 5000,
+    suspend_days: 0,
+    status: "unpaid",
+  } as LibraryViolation;
+
+  beforeEach(() => {
+    mocks.canRecord = true;
+    mocks.useLibraryViolationsQuery.mockReset();
+    window.history.replaceState(null, "", "/library/violations");
+  });
+
+  // A suspension owes nothing: its row must not read "Belum dibayar" nor
+  // offer "Tandai lunas", while a fine keeps both.
+  it("labels an unsettled suspension as open and offers to mark it settled", async () => {
+    mocks.useLibraryViolationsQuery.mockReturnValue({
+      data: { data: [suspension] },
+      isLoading: false,
+    });
+    const user = userEvent.setup();
+    render(<ViolationsView />);
+
+    expect(screen.getAllByText("status.open").length).toBeGreaterThan(0);
+    expect(screen.queryByText("status.unpaid")).not.toBeInTheDocument();
+
+    const menuButton = screen.getAllByRole("button", { name: "rowActions" })[0];
+    if (!menuButton) throw new Error("Missing violation row actions menu");
+    await user.click(menuButton);
+    expect(await screen.findByRole("menuitem", { name: "markDone" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "markPaid" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the money wording for a fine", async () => {
+    mocks.useLibraryViolationsQuery.mockReturnValue({ data: { data: [fine] }, isLoading: false });
+    const user = userEvent.setup();
+    render(<ViolationsView />);
+
+    expect(screen.getAllByText("status.unpaid").length).toBeGreaterThan(0);
+
+    const menuButton = screen.getAllByRole("button", { name: "rowActions" })[0];
+    if (!menuButton) throw new Error("Missing violation row actions menu");
+    await user.click(menuButton);
+    expect(await screen.findByRole("menuitem", { name: "markPaid" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "markDone" })).not.toBeInTheDocument();
   });
 });

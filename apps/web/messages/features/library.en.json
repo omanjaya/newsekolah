@@ -655,7 +655,11 @@
       "confirmWaivedBody": "The {kind} violation for {member} will be waived. A suspended member reactivates once every violation is clear.",
       "settledPaid": "Violation marked paid",
       "settledWaived": "Violation waived",
-      "alreadySettled": "This violation was already settled. The list now shows its status."
+      "alreadySettled": "This violation was already settled. The list now shows its status.",
+      "markDone": "Mark settled",
+      "confirmDoneTitle": "Mark as settled?",
+      "confirmDoneBody": "The {kind} violation for {member} will be marked settled. A suspended member reactivates once every violation is clear.",
+      "settledDone": "Violation marked settled"
     },
     "unknownMember": "Unknown member",
     "noMatchTitle": "No matching violations",
@@ -692,6 +696,13 @@
     "status": {
       "unpaid": "Unpaid",
       "paid": "Paid",
+      "waived": "Waived",
+      "open": "Not settled",
+      "done": "Settled"
+    },
+    "statusFilter": {
+      "unpaid": "Not settled",
+      "paid": "Paid or settled",
       "waived": "Waived"
     },
     "form": {

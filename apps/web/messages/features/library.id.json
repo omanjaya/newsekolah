@@ -655,7 +655,11 @@
       "confirmWaivedBody": "Pelanggaran {kind} milik {member} akan dibebaskan. Anggota yang sedang ditangguhkan akan aktif kembali begitu semua pelanggarannya selesai.",
       "settledPaid": "Pelanggaran ditandai lunas",
       "settledWaived": "Pelanggaran dibebaskan",
-      "alreadySettled": "Pelanggaran ini sudah diselesaikan. Statusnya kini tampil di daftar."
+      "alreadySettled": "Pelanggaran ini sudah diselesaikan. Statusnya kini tampil di daftar.",
+      "markDone": "Tandai selesai",
+      "confirmDoneTitle": "Tandai selesai?",
+      "confirmDoneBody": "Pelanggaran {kind} milik {member} akan ditandai selesai. Anggota yang sedang ditangguhkan akan aktif kembali begitu semua pelanggarannya selesai.",
+      "settledDone": "Pelanggaran ditandai selesai"
     },
     "unknownMember": "Anggota tidak dikenali",
     "noMatchTitle": "Tidak ada pelanggaran yang cocok",
@@ -692,6 +696,13 @@
     "status": {
       "unpaid": "Belum dibayar",
       "paid": "Lunas",
+      "waived": "Dibebaskan",
+      "open": "Belum selesai",
+      "done": "Selesai"
+    },
+    "statusFilter": {
+      "unpaid": "Belum selesai",
+      "paid": "Lunas atau selesai",
       "waived": "Dibebaskan"
     },
     "form": {

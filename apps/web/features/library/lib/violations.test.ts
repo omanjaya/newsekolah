@@ -4,7 +4,9 @@ import {
   isOutstandingViolation,
   isUnpaidFine,
   isUnsettledSuspension,
+  settlesByPayment,
   unpaidFineTotal,
+  violationStatusLabelKey,
 } from "./violations";
 
 describe("library violation settlement", () => {
@@ -36,5 +38,25 @@ describe("library violation settlement", () => {
     expect(isUnsettledSuspension({ status: "unpaid", penalty: "suspend", amount: 0 })).toBe(true);
     expect(isUnsettledSuspension({ status: "paid", penalty: "suspend", amount: 0 })).toBe(false);
     expect(isUnsettledSuspension({ status: "unpaid", penalty: "fine", amount: 1500 })).toBe(false);
+  });
+});
+
+describe("library violation status label", () => {
+  it("keeps the money words for a fine", () => {
+    expect(settlesByPayment({ penalty: "fine" })).toBe(true);
+    expect(violationStatusLabelKey({ status: "unpaid", penalty: "fine" })).toBe("unpaid");
+    expect(violationStatusLabelKey({ status: "paid", penalty: "fine" })).toBe("paid");
+    expect(violationStatusLabelKey({ status: "waived", penalty: "fine" })).toBe("waived");
+  });
+
+  // A suspension, a warning or a book to replace owes no money: never
+  // "Belum dibayar" or "Lunas".
+  it("labels a sanction without money as open or done", () => {
+    for (const penalty of ["suspend", "warning", "replace_book"] as const) {
+      expect(settlesByPayment({ penalty })).toBe(false);
+      expect(violationStatusLabelKey({ status: "unpaid", penalty })).toBe("open");
+      expect(violationStatusLabelKey({ status: "paid", penalty })).toBe("done");
+      expect(violationStatusLabelKey({ status: "waived", penalty })).toBe("waived");
+    }
   });
 });
