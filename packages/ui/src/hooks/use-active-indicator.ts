@@ -28,6 +28,13 @@ const REVEAL_MARGIN = 48;
 const HANDOFF_MS = 2000;
 
 /**
+ * How soon after a wheel, touch, pointer or key on a strip a scroll of it
+ * counts as the reader's own: a swipe's first scroll events land well
+ * inside it, and every wheel step starts it again.
+ */
+const GESTURE_MS = 1000;
+
+/**
  * The last box of each named strip that went away, so the same strip on
  * the next page (an area's tabs, rebuilt by every page under it) slides
  * from the old tab instead of appearing under the new one.
@@ -61,6 +68,14 @@ function boxOf(element: HTMLElement): Box {
     w: element.offsetWidth,
     h: element.offsetHeight,
   };
+}
+
+/** Where the indicator was last placed, and the strip's overflow then. */
+interface Placement {
+  element: HTMLElement;
+  box: Box;
+  scrollWidth: number;
+  clientWidth: number;
 }
 
 function sameBox(a: Box, b: Box): boolean {
@@ -193,7 +208,10 @@ export function revealInStrip(container: HTMLElement, item: HTMLElement): void {
  * Positions are written as CSS variables (`--indicator-x`, `-y`, `-w`,
  * `-h`, `--indicator-scale`) on the indicator, which reads them through
  * its classes. The container is the indicator's positioned ancestor and,
- * when it scrolls, gets the newly active item scrolled into view. It is
+ * when it scrolls, gets the active item scrolled into view: when it
+ * becomes active, and again whenever its box or the strip's overflow
+ * changes (counts arriving widen every segment and can push it past the
+ * edge), unless the reader has scrolled the strip by hand since. It is
  * marked `data-indicator="ready"` once the indicator is placed, so items
  * can stop painting their own active fill (they do until then: the server
  * render and a no-JS page still show which item is active).
@@ -212,8 +230,36 @@ export function useActiveIndicator(
     const indicator = indicatorRef.current;
     if (!container || !indicator) return;
 
-    let previous: { element: HTMLElement; box: Box } | null = null;
+    let previous: Placement | null = null;
     let disposed = false;
+    // Whether the reader has scrolled the strip themselves since the active
+    // item last changed: a later resize then leaves the strip where they
+    // put it instead of pulling it back to the active item.
+    let scrolledByHand = false;
+    // A scroll moments after a gesture on the strip (wheel, touch, pointer,
+    // key), to anywhere but where the hook last left it, is the reader's
+    // own. The browser clamping a strip that got narrower, or focus
+    // scrolling an item into view from outside, comes with no such gesture.
+    let lastGesture = Number.NEGATIVE_INFINITY;
+    let settledScroll = container.scrollLeft;
+    const onGesture = () => {
+      lastGesture = performance.now();
+    };
+    const onScroll = () => {
+      const byHand = performance.now() - lastGesture < GESTURE_MS;
+      if (byHand && Math.abs(container.scrollLeft - settledScroll) >= 1) scrolledByHand = true;
+      settledScroll = container.scrollLeft;
+    };
+    const gestures = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
+    for (const type of gestures) {
+      container.addEventListener(type, onGesture, { passive: true });
+    }
+    container.addEventListener("scroll", onScroll, { passive: true });
+
+    const reveal = (active: HTMLElement) => {
+      revealInStrip(container, active);
+      settledScroll = container.scrollLeft;
+    };
     // Read when the strip is first placed and on every placement after,
     // while it is still in the document: the cleanup runs after removal.
     let key: string | null = null;
@@ -243,7 +289,20 @@ export function useActiveIndicator(
         previous = null;
         return;
       }
-      if (previous?.element === active && sameBox(previous.box, box)) return;
+      const overflow = { scrollWidth: container.scrollWidth, clientWidth: container.clientWidth };
+      const changedItem = previous?.element !== active;
+      const moved = changedItem || !previous || !sameBox(previous.box, box);
+      const reflowed =
+        previous?.scrollWidth !== overflow.scrollWidth ||
+        previous.clientWidth !== overflow.clientWidth;
+      if (!moved && !reflowed) return;
+      if (changedItem) scrolledByHand = false;
+      // The indicator already sits on this box: only the strip moved.
+      if (!moved) {
+        if (!scrolledByHand) reveal(active);
+        previous = { element: active, box, ...overflow };
+        return;
+      }
 
       key = stripKey(container);
       // The same strip on the page just left: travel from where it was.
@@ -271,8 +330,11 @@ export function useActiveIndicator(
         container.setAttribute("data-indicator", "ready");
         settle();
       }
-      if (previous?.element !== active) revealInStrip(container, active);
-      previous = { element: active, box };
+      // A newly active item is always shown; the same item again when its
+      // box or the strip's overflow changed, unless the reader scrolled
+      // the strip away from it by hand.
+      if (!scrolledByHand) reveal(active);
+      previous = { element: active, box, ...overflow };
     };
 
     place();
@@ -293,6 +355,8 @@ export function useActiveIndicator(
 
     return () => {
       disposed = true;
+      for (const type of gestures) container.removeEventListener(type, onGesture);
+      container.removeEventListener("scroll", onScroll);
       mutationObserver?.disconnect();
       sizes.disconnect();
       container.removeAttribute("data-indicator");

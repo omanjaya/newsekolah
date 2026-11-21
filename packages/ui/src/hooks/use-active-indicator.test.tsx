@@ -238,3 +238,173 @@ describe("useActiveIndicator size tracking", () => {
     }
   });
 });
+
+/**
+ * A strip that scrolls, with a layout jsdom does not have: the strip is
+ * `data-clientwidth` wide with `data-scrollwidth` of content, and each item
+ * sits at its `data-offsetleft` in that content, shifted by the scroll.
+ */
+describe("useActiveIndicator in a scrolled strip", () => {
+  const scrolls = new WeakMap<HTMLElement, number>();
+
+  beforeAll(() => {
+    // Shadows jsdom's Element getters; removed again after the suite.
+    Object.defineProperties(HTMLElement.prototype, {
+      scrollWidth: {
+        configurable: true,
+        get(this: HTMLElement) {
+          return Number(this.dataset.scrollwidth ?? 0);
+        },
+      },
+      clientWidth: {
+        configurable: true,
+        get(this: HTMLElement) {
+          return Number(this.dataset.clientwidth ?? 0);
+        },
+      },
+      scrollLeft: {
+        configurable: true,
+        get(this: HTMLElement) {
+          return scrolls.get(this) ?? 0;
+        },
+        set(this: HTMLElement, value: number) {
+          const max = Math.max(0, this.scrollWidth - this.clientWidth);
+          scrolls.set(this, Math.max(0, Math.min(value, max)));
+        },
+      },
+    });
+    Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", {
+      configurable: true,
+      value: function (this: HTMLElement) {
+        const root = this.closest<HTMLElement>("[data-scroll-root]");
+        const left = root === this || !root ? 0 : this.offsetLeft - root.scrollLeft;
+        const width = root === this ? this.clientWidth : this.offsetWidth;
+        return {
+          left,
+          right: left + width,
+          x: left,
+          width,
+          top: 0,
+          y: 0,
+          bottom: 40,
+          height: 40,
+          toJSON: () => ({}),
+        };
+      },
+    });
+  });
+
+  afterAll(() => {
+    for (const key of ["scrollWidth", "clientWidth", "scrollLeft", "getBoundingClientRect"]) {
+      Reflect.deleteProperty(HTMLElement.prototype, key);
+    }
+  });
+
+  /**
+   * The inbox's kind filter on a 390px phone, "late" checked: before the
+   * counts load the strip overflows by 1px; the counts then widen every
+   * segment and push the checked one past the strip's edge.
+   */
+  function KindStrip({ counted, active = "late" }: { counted: boolean; active?: string }) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const indicatorRef = useRef<HTMLSpanElement>(null);
+    useActiveIndicator(containerRef, indicatorRef, '[data-state="checked"]');
+    const items = counted
+      ? [
+          { id: "all", left: 0, width: 140 },
+          { id: "leave", left: 140, width: 150 },
+          { id: "late", left: 290, width: 120 },
+        ]
+      : [
+          { id: "all", left: 0, width: 120 },
+          { id: "leave", left: 120, width: 120 },
+          { id: "late", left: 240, width: 116 },
+        ];
+    return (
+      <div
+        ref={containerRef}
+        role="radiogroup"
+        aria-label="Filter"
+        data-testid="strip"
+        data-scroll-root=""
+        data-clientwidth={358}
+        data-scrollwidth={counted ? 437 : 359}
+      >
+        <span ref={indicatorRef} aria-hidden="true" data-testid="indicator" />
+        {items.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="radio"
+            aria-checked={item.id === active}
+            data-state={item.id === active ? "checked" : "unchecked"}
+            data-offsetleft={item.left}
+            data-offsetwidth={item.width}
+            data-offsetheight={32}
+          >
+            {item.id}
+            {counted && <span> 1</span>}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  async function settle(run: () => void) {
+    await act(async () => {
+      run();
+      // The mutation observer reports on a microtask.
+      await Promise.resolve();
+    });
+  }
+
+  it("shows the checked item again once counts arriving push it past the edge", async () => {
+    const { rerender } = render(<KindStrip counted={false} />);
+    const strip = screen.getByTestId("strip");
+    // The strip overflows by 1px: the first reveal can only move it by 1.
+    expect(strip.scrollLeft).toBe(1);
+    await settle(() => {
+      rerender(<KindStrip counted />);
+    });
+    // The checked item [290-410] now ends inside the 358px view.
+    expect(strip.scrollLeft).toBe(79);
+    expect(screen.getByTestId("indicator").style.getPropertyValue("--indicator-x")).toBe("290px");
+  });
+
+  it("leaves a strip the reader scrolled by hand where they put it", async () => {
+    const { rerender } = render(<KindStrip counted={false} />);
+    const strip = screen.getByTestId("strip");
+    // A swipe back to the start.
+    act(() => {
+      strip.dispatchEvent(new Event("touchstart"));
+      strip.scrollLeft = 0;
+      strip.dispatchEvent(new Event("scroll"));
+    });
+    await settle(() => {
+      rerender(<KindStrip counted />);
+    });
+    expect(strip.scrollLeft).toBe(0);
+
+    // Choosing a segment shows it again, whatever the reader scrolled.
+    await settle(() => {
+      rerender(<KindStrip counted active="leave" />);
+    });
+    await settle(() => {
+      rerender(<KindStrip counted active="late" />);
+    });
+    expect(strip.scrollLeft).toBe(79);
+  });
+
+  it("does not take the browser clamping the strip, with no gesture on it, for the reader's scroll", async () => {
+    const { rerender } = render(<KindStrip counted={false} />);
+    const strip = screen.getByTestId("strip");
+    act(() => {
+      strip.scrollLeft = 0;
+      strip.dispatchEvent(new Event("scroll"));
+    });
+    await settle(() => {
+      rerender(<KindStrip counted />);
+    });
+    expect(strip.scrollLeft).toBe(79);
+  });
+});
