@@ -71,9 +71,10 @@ export const SessionRosterRow = memo(function SessionRosterRow({
   // in from a permit starts from its localized note ("Surat izin 21/...")
   // instead of the API's English machine text; the parent keeps the
   // stored note, so it is saved unchanged unless the teacher edits it.
-  const [draftNote, setDraftNote] = useState(() =>
-    sourceNoteText(note, item.source, (number) => tAttendance("leaveLetterNote", { number })),
+  const localizedNote = sourceNoteText(note, item.source, (number) =>
+    tAttendance("leaveLetterNote", { number }),
   );
+  const [draftNote, setDraftNote] = useState(localizedNote);
   // The previous session's recorded status ("PS" in the old SION roster,
   // reference/sion-rebuild-go/frontend/app/attendance/page.tsx's
   // `attendance-ps` column), shown only when it was an exception worth a
@@ -100,6 +101,10 @@ export const SessionRosterRow = memo(function SessionRosterRow({
         ? t(`locked.${item.source}`)
         : t("blocked")
       : null;
+  // A locked leave row has no note field, so its caption names the letter
+  // the API put on the row ("Surat izin 19/IZIN/IV/2027") next to why it
+  // is locked.
+  const lockLetter = locked && item.source === "leave" ? localizedNote.trim() : "";
 
   return (
     <li
@@ -139,7 +144,7 @@ export const SessionRosterRow = memo(function SessionRosterRow({
             {lockNote && (
               <span className="flex items-center gap-1 text-caption font-normal text-fg-muted">
                 <Lock className="size-3" aria-hidden="true" />
-                {lockNote}
+                {lockLetter ? `${lockNote} · ${lockLetter}` : lockNote}
               </span>
             )}
             {!frozen && item.source && item.source !== "teacher" && (

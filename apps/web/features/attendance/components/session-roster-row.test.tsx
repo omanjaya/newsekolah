@@ -111,6 +111,17 @@ describe("SessionRosterRow", () => {
     expect(within(row).queryByRole("textbox")).not.toBeInTheDocument();
   });
 
+  it("names the leave letter next to a locked row's lock note", () => {
+    renderRowOnly({ source: "leave", locked: true }, "leave letter 19/IZIN/IV/2027");
+
+    const row = screen.getByRole("listitem");
+    expect(
+      within(row).getByText('locked.leave · leaveLetterNote {"number":"19/IZIN/IV/2027"}'),
+    ).toBeInTheDocument();
+    expect(within(row).queryByText(/leave letter/)).not.toBeInTheDocument();
+    expect(within(row).queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
   it("translates a blocked row's reason instead of printing the API's key", () => {
     render(
       <ul>
