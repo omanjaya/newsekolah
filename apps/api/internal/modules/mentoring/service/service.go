@@ -89,7 +89,17 @@ type DisciplineReader interface {
 // only published report scores matter for the mentor's snapshot.
 type GradingReader interface {
 	PublishedSubjects(ctx context.Context, tenantID, studentID uuid.UUID) ([]domain.PublishedGrade, error)
+	// ScoreDecimals returns the decimals the school's grading scale keeps
+	// (its round_decimal), so a published score shows at the precision the
+	// gradebook and the student's own grades page show it. While grading
+	// is turned off it reports DefaultScoreDecimals, not an error.
+	ScoreDecimals(ctx context.Context, tenantID uuid.UUID) (int, error)
 }
+
+// DefaultScoreDecimals is the grading scale's own default precision
+// (grading/domain.DefaultScale's RoundDecimal), used when there is no
+// scale to read (grading off, or no grading reader wired).
+const DefaultScoreDecimals = 2
 
 // ActivitiesReader is the activities module reached through a wiring
 // adapter: a mentee's achievements and club memberships, for the mentor's

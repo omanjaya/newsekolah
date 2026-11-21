@@ -11,6 +11,7 @@ import (
 	attendancedomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
 	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
+	gradingdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/domain"
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	permitsdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
@@ -135,6 +136,23 @@ func (g AnalyticsGrading) ReportTrends(ctx context.Context, tenantID uuid.UUID, 
 		}
 	}
 	return out, nil
+}
+
+// ScoreDecimals is the grading scale's round_decimal. While the tenant has
+// grading turned off there is no scale to read, so it errors and analytics
+// falls back to its default.
+func (g AnalyticsGrading) ScoreDecimals(ctx context.Context, tenantID uuid.UUID) (int, error) {
+	if on, err := moduleEnabled(ctx, g.Flags, tenantID, platformdomain.ModuleGrading); err != nil || !on {
+		if err == nil {
+			err = gradingdomain.ErrModuleDisabled
+		}
+		return 0, err
+	}
+	scale, err := g.Svc.Scale(ctx, tenantID)
+	if err != nil {
+		return 0, err
+	}
+	return scale.RoundDecimal, nil
 }
 
 // AnalyticsPresence adapts platform/realtime's Presence tracker to

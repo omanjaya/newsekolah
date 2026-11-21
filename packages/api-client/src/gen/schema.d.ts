@@ -9007,6 +9007,8 @@ export interface components {
             scored_subjects: number;
             /** @description Of scored_subjects, those below the subject's KKTP */
             subjects_below_kktp: number;
+            /** @description The decimals the school's grading scale keeps (its round_decimal), so the averages read the same as on the gradebook and the student's own grades; 2 when the scale cannot be read */
+            score_decimals: number;
         };
         StudentRisk: {
             /** Format: uuid */
@@ -11421,6 +11423,8 @@ export interface components {
                 subject_id: string;
                 score: number;
             }[];
+            /** @description The decimals the school's grading scale keeps (its round_decimal), so published_subjects' scores read the same as on the gradebook and the student's own grades; 2 while grading is off */
+            score_decimals: number;
             /** @description The student's achievements in every academic year, as the student profile lists them; empty while activities is turned off. */
             achievements: components["schemas"]["Achievement"][];
             /** @description The student's club membership history; empty while activities is turned off. */

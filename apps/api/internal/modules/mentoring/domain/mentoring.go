@@ -212,6 +212,10 @@ type StudentSnapshot struct {
 	DisciplinePoints      int
 	DisciplineActiveCount int
 	PublishedSubjects     []PublishedGrade
+	// ScoreDecimals is the grading scale's round_decimal, the precision
+	// PublishedSubjects' scores are shown at (as on the gradebook and the
+	// student's own grades page).
+	ScoreDecimals int
 	// Achievements and Clubs are the student's activities record, so the
 	// guru wali who writes the term summary sees it without view_activities
 	// (which reads every student's). Empty while activities is off.

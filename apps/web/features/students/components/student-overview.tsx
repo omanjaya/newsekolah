@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDateTime, formatNumber, type Locale } from "@newsekolah/i18n";
+import { formatDateTime, type Locale } from "@newsekolah/i18n";
 import {
   Alert,
   Card,
@@ -42,6 +42,7 @@ import { StudentRiskPanel } from "../../analytics/components/student-risk-panel"
 import { useStudentDisciplineQuery } from "../../discipline/api";
 import { useStudentCounselingsQuery } from "../../discipline/api-counseling-extras";
 import { useCounselingAccess } from "../../discipline/lib/counseling-access";
+import { DEFAULT_SCORE_DECIMALS, formatScore } from "../../grading/lib/format-score";
 import { useMentorStudentSnapshotQuery } from "../../mentoring/api";
 import {
   SnapshotAttendanceSection,
@@ -53,6 +54,13 @@ import { studentProfileHref } from "../href";
 /** The stat row enters one tile after another, once (docs/07: motion, content enter). */
 function enterStep(index: number): CSSProperties {
   return { "--stagger": index } as CSSProperties;
+}
+
+/** `value` rounded to `decimals` places, so a change too small for the
+ * scale's precision reads as no change rather than as "0,00". */
+function roundTo(value: number, decimals: number): number {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
 }
 
 /** Most events the overview's history lists before pointing at the tabs. */
@@ -145,9 +153,12 @@ function RiskStats({ studentId }: { studentId: string }): ReactElement {
   // The active term's average stands on its own, as the below-KKTP count
   // of the same grades does; only the change needs a previous term.
   const hasGrades = (signals?.scored_subjects ?? 0) > 0;
+  // At the grading scale's precision, as the gradebook and the student's
+  // own grades page show the same average (55,08, not 55,1).
+  const decimals = signals?.score_decimals ?? DEFAULT_SCORE_DECIMALS;
   const gradeDelta =
     signals?.has_grade_trend && signals.previous_average > 0
-      ? Math.round((signals.current_average - signals.previous_average) * 10) / 10
+      ? roundTo(signals.current_average - signals.previous_average, decimals)
       : undefined;
 
   return (
@@ -201,7 +212,7 @@ function RiskStats({ studentId }: { studentId: string }): ReactElement {
             tone="blue"
             label={t("averageGrade")}
             value={hasGrades && signals ? signals.current_average : "–"}
-            formatValue={(value) => formatNumber(value, { locale, fractionDigits: 1 })}
+            formatValue={(value) => formatScore(value, locale, decimals)}
             hint={
               !hasGrades ? t("noGrades") : signals?.has_grade_trend ? undefined : t("noGradeTrend")
             }
@@ -209,7 +220,9 @@ function RiskStats({ studentId }: { studentId: string }): ReactElement {
               gradeDelta === undefined || gradeDelta === 0
                 ? undefined
                 : {
-                    value: t("gradeDelta", { delta: Math.abs(gradeDelta) }),
+                    value: t("gradeDelta", {
+                      delta: formatScore(Math.abs(gradeDelta), locale, decimals),
+                    }),
                     direction: gradeDelta > 0 ? "up" : "down",
                   }
             }

@@ -120,6 +120,7 @@ func toAPIStudentRiskDetail(r service.StoredResult) api.StudentRiskDetail {
 			WarningLetterCount: r.Signals.WarningLetterCount, HasGradeTrend: r.Signals.HasGradeTrend,
 			PreviousAverage: float32(r.Signals.PreviousAverage), CurrentAverage: float32(r.Signals.CurrentAverage),
 			ScoredSubjects: r.Signals.ScoredSubjects, SubjectsBelowKktp: r.Signals.SubjectsBelowKKTP,
+			ScoreDecimals: r.ScoreDecimals,
 		},
 		Reasons: make([]api.RiskReason, len(r.Reasons)),
 	}

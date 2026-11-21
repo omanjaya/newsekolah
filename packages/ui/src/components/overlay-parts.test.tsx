@@ -16,10 +16,23 @@ describe("Overlay header and body", () => {
       </Dialog>,
     );
     const body = screen.getByText("Isi").parentElement;
-    expect(body).toHaveClass("dialog-body", "pt-1");
+    // The 4px inset is dialog-body's default --dialog-body-pt (styles.css).
+    expect(body).toHaveClass("dialog-body");
+    expect(body).not.toHaveAttribute("data-pad-top");
     const header = screen.getByRole("heading", { name: "Aksi cepat" }).closest("[data-sheet-drag]");
     expect(header).toHaveClass("pb-3");
     expect(header).not.toHaveClass("pb-4");
+  });
+
+  it("gives a body without a header the side padding as its top inset", () => {
+    render(
+      <Dialog open>
+        <DialogContent title="Aksi cepat" hideHeader>
+          <p>Isi</p>
+        </DialogContent>
+      </Dialog>,
+    );
+    expect(screen.getByText("Isi").parentElement).toHaveAttribute("data-pad-top");
   });
 });
 
@@ -39,9 +52,37 @@ describe("DialogNotice", () => {
     );
     const notice = screen.getByText("Dinonaktifkan").parentElement;
     expect(notice).toHaveAttribute("aria-live", "polite");
-    expect(notice).toHaveClass("sticky", "top-0", "z-sticky", "bg-surface-overlay");
+    expect(notice).toHaveClass("sticky", "z-sticky", "bg-surface-overlay");
     // Sticky holds only within its parent: it must be the scroller's own child.
     expect(notice?.parentElement).toHaveClass("dialog-body", "overflow-y-auto");
+  });
+
+  // r4v-grades-discipline-R2: a sticky element stops at the scroller's
+  // padding edge, so with `top: 0` the notice stuck 4px below the header
+  // and the rows scrolling under it showed in that strip. It must stick as
+  // far above the padding edge as the body's top inset, and bleed over the
+  // inset by the same amount in the normal flow.
+  it("sticks over the body's top inset, not below it", () => {
+    render(
+      <Sheet open>
+        <SheetContent title="Katalog">
+          <SheetNotice>
+            <p>Dinonaktifkan</p>
+          </SheetNotice>
+          <p>Baris</p>
+        </SheetContent>
+      </Sheet>,
+    );
+    const notice = screen.getByText("Dinonaktifkan").parentElement;
+    expect(notice).toHaveClass(
+      "-top-(--dialog-body-pt)",
+      "-mt-(--dialog-body-pt)",
+      "pt-(--dialog-body-pt)",
+    );
+    expect(notice).not.toHaveClass("top-0");
+    // The variable it reads is the body's own top padding (styles.css).
+    expect(notice?.parentElement).toHaveClass("dialog-body");
+    expect(notice?.parentElement?.className).not.toMatch(/(^|\s)pt-/);
   });
 
   it("takes no space while empty", () => {

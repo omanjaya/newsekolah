@@ -34,7 +34,10 @@ func (s *Service) StudentSnapshot(ctx context.Context, tenantID uuid.UUID, viewe
 		if err := s.requireMentorOf(ctx, tenantID, yearID, viewer, studentUserID); err != nil {
 			return err
 		}
-		out = domain.StudentSnapshot{StudentUserID: studentUserID, StudentName: info.Name, ClassName: info.ClassName}
+		out = domain.StudentSnapshot{
+			StudentUserID: studentUserID, StudentName: info.Name, ClassName: info.ClassName,
+			ScoreDecimals: DefaultScoreDecimals,
+		}
 
 		// "This month" is the school's own month: 23:30 UTC on 31
 		// October is already 1 November in Asia/Makassar.
@@ -58,7 +61,11 @@ func (s *Service) StudentSnapshot(ctx context.Context, tenantID uuid.UUID, viewe
 			if err != nil {
 				return err
 			}
-			out.PublishedSubjects = subjects
+			decimals, err := s.grading.ScoreDecimals(ctx, tenantID)
+			if err != nil {
+				return err
+			}
+			out.PublishedSubjects, out.ScoreDecimals = subjects, decimals
 		}
 		if s.activities != nil {
 			achievements, err := s.activities.StudentAchievements(ctx, tenantID, studentUserID)

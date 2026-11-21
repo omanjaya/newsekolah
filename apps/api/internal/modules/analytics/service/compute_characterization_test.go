@@ -170,6 +170,10 @@ func (d charDiscipline) StudentSummaries(_ context.Context, _ uuid.UUID, student
 
 type charGrading struct{ byID map[uuid.UUID]charStudent }
 
+func (charGrading) ScoreDecimals(context.Context, uuid.UUID) (int, error) {
+	return DefaultScoreDecimals, nil
+}
+
 func (g charGrading) ReportTrends(_ context.Context, _ uuid.UUID, studentIDs []uuid.UUID) (map[uuid.UUID]GradeTrend, error) {
 	out := map[uuid.UUID]GradeTrend{}
 	for _, id := range studentIDs {

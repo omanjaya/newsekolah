@@ -1,13 +1,17 @@
 "use client";
 
-import { formatNumber, type Locale } from "@newsekolah/i18n";
+import type { Locale } from "@newsekolah/i18n";
 import { cn } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { formatScore } from "../../grading/lib/format-score";
+
 export interface GradeTrendBarsProps {
   previous: number;
   current: number;
+  /** The grading scale's round_decimal (RiskSignals.score_decimals). */
+  decimals?: number;
 }
 
 /**
@@ -19,10 +23,10 @@ export interface GradeTrendBarsProps {
  * grading/domain.Scale) and colored by whether the average held or
  * dropped, matching the reasons this signal actually triggers on.
  */
-export function GradeTrendBars({ previous, current }: GradeTrendBarsProps): ReactElement {
+export function GradeTrendBars({ previous, current, decimals }: GradeTrendBarsProps): ReactElement {
   const t = useTranslations("app.analytics.detail.signals");
   const locale = useLocale() as Locale;
-  const format = (value: number) => formatNumber(value, { locale, fractionDigits: 1 });
+  const format = (value: number) => formatScore(value, locale, decimals);
   const max = Math.max(previous, current, 1);
   const dropped = current < previous;
   const label = t("gradeTrendValue", {

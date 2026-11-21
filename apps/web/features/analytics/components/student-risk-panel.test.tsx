@@ -11,6 +11,7 @@ const risk = vi.hoisted(() => ({
   current_average: 0,
   scored_subjects: 0,
   subjects_below_kktp: 0,
+  score_decimals: 2,
 }));
 
 vi.mock("next-intl", () => ({
@@ -50,6 +51,7 @@ vi.mock("../api", () => ({
               current_average: risk.current_average,
               scored_subjects: risk.scored_subjects,
               subjects_below_kktp: risk.subjects_below_kktp,
+              score_decimals: risk.score_decimals,
             },
           },
           isLoading: false,
@@ -112,18 +114,33 @@ describe("StudentRiskPanel signals with switched-off modules", () => {
 describe("StudentRiskPanel figures", () => {
   beforeEach(() => {
     disabled.clear();
+    risk.score_decimals = 2;
   });
 
-  it("writes the grade averages with the Indonesian decimal comma", () => {
+  // r4v-grades-discipline-R1: the averages were rounded to one decimal, so
+  // the profile disagreed with the gradebook (78,5 against 78,46).
+  it("writes the grade averages at the scale's precision with the Indonesian decimal comma", () => {
     risk.has_grade_trend = true;
     risk.previous_average = 81.24;
     risk.current_average = 78.46;
     render(<StudentRiskPanel studentId="s-1" />);
 
+    expect(screen.getAllByText("78,46").length).toBeGreaterThan(0);
+    expect(screen.getByText('signals.gradeTrendUnit {"previous":"81,24"}')).toBeInTheDocument();
+    expect(screen.queryByText("78,5")).not.toBeInTheDocument();
+    expect(screen.queryByText("78.46")).not.toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /78,46/ })).toBeInTheDocument();
+  });
+
+  it("follows a school whose scale keeps one decimal", () => {
+    risk.has_grade_trend = true;
+    risk.previous_average = 81.24;
+    risk.current_average = 78.46;
+    risk.score_decimals = 1;
+    render(<StudentRiskPanel studentId="s-1" />);
+
     expect(screen.getAllByText("78,5").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("81,2").length).toBeGreaterThan(0);
-    expect(screen.queryByText("78.5")).not.toBeInTheDocument();
-    expect(screen.getByRole("img", { name: /78,5/ })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /81,2/ })).toBeInTheDocument();
   });
 
   it("counts subjects below KKTP in a first term that has no trend yet", () => {
@@ -151,7 +168,7 @@ describe("StudentRiskPanel figures", () => {
 
     const row = screen.getByText("signals.gradeTrend").parentElement;
     if (!row) throw new Error("grade trend row not found");
-    expect(within(row).getByText("55,1")).toBeInTheDocument();
+    expect(within(row).getByText("55,08")).toBeInTheDocument();
     expect(within(row).getByText("signals.gradeTrendNoPrevious")).toBeInTheDocument();
     expect(within(row).queryByText("signals.noData")).not.toBeInTheDocument();
     risk.current_average = 0;

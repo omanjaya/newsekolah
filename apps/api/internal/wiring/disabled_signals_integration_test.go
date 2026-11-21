@@ -182,3 +182,45 @@ func TestPermitsQueuesCountZeroWhilePermitsIsOff(t *testing.T) {
 	require.NoError(t, err)
 	require.Zero(t, count)
 }
+
+// TestRiskDetailCarriesTheGradingScalePrecision (r4v-grades-discipline-R1):
+// the student profile showed a 55.08 average as 55,1 while the gradebook
+// and the student's own grades page showed 55,08. The detail now carries
+// the scale's round_decimal so the web formats averages the same way; with
+// grading switched off there is no scale and the default applies.
+func TestRiskDetailCarriesTheGradingScalePrecision(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	platformSvc := platform.Register(platform.Dependencies{Pool: pg.AppPool, Clock: clock.Real{}, Mode: config.TenancyMulti}).Service
+	schoolModule := school.Register(pg.AppPool, tenant.ModeSingle, nil)
+	gradingModule := grading.Register(grading.Dependencies{Pool: pg.AppPool, Years: schoolModule.Service, Clock: clock.Real{}})
+	analyticsModule := analytics.Register(analytics.Dependencies{
+		Pool: pg.AppPool, Years: schoolModule.Service,
+		Grading: AnalyticsGrading{Svc: gradingModule.Service, Flags: platformSvc},
+		Flags:   platformSvc, Clock: clock.Real{},
+	})
+
+	fx := seedGradeLevelFixture(t, pg.AdminPool)
+	student := enrolledStudent(t, pg.AdminPool, fx)
+	_, err := analyticsModule.Service.Recompute(ctx, fx.tenantID)
+	require.NoError(t, err)
+
+	decimals := func() int {
+		t.Helper()
+		detail, err := analyticsModule.Service.GetStudentRisk(ctx, fx.tenantID, uuid.Nil, student, true)
+		require.NoError(t, err)
+		return detail.ScoreDecimals
+	}
+	require.Equal(t, 2, decimals(), "the default scale keeps two decimals")
+
+	scale, err := gradingModule.Service.Scale(ctx, fx.tenantID)
+	require.NoError(t, err)
+	scale.RoundDecimal = 3
+	_, err = gradingModule.Service.UpdateScale(ctx, fx.tenantID, uuid.New(), scale)
+	require.NoError(t, err)
+	require.Equal(t, 3, decimals(), "a school's own precision applies on the next read")
+
+	_, err = platformSvc.SetFlag(ctx, fx.tenantID, string(platformdomain.ModuleGrading), false)
+	require.NoError(t, err)
+	require.Equal(t, analyticsservice.DefaultScoreDecimals, decimals(), "grading off: no scale to read, the default applies")
+}

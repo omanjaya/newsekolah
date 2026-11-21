@@ -20,7 +20,14 @@ import (
 
 // firstTermGrading reports one student with published report scores in a
 // first term: no previous term, so no trend, but subjects below KKTP.
-type firstTermGrading struct{ below map[uuid.UUID]int }
+type firstTermGrading struct {
+	below    map[uuid.UUID]int
+	decimals int
+}
+
+func (g firstTermGrading) ScoreDecimals(context.Context, uuid.UUID) (int, error) {
+	return g.decimals, nil
+}
 
 func (g firstTermGrading) ReportTrends(_ context.Context, _ uuid.UUID, ids []uuid.UUID) (map[uuid.UUID]service.GradeTrend, error) {
 	out := make(map[uuid.UUID]service.GradeTrend, len(ids))
@@ -77,7 +84,7 @@ func TestEarlyWarningReactsTheSameDay(t *testing.T) {
 	schoolModule := school.Register(pg.AppPool, tenant.ModeSingle, nil)
 	svc := Register(Dependencies{
 		Pool: pg.AppPool, Years: schoolModule.Service, Clock: clock.Real{},
-		Grading: firstTermGrading{below: map[uuid.UUID]int{failing.ID: 3}},
+		Grading: firstTermGrading{below: map[uuid.UUID]int{failing.ID: 3}, decimals: 3},
 	}).Service
 	adminID := uuid.New()
 
@@ -93,6 +100,9 @@ func TestEarlyWarningReactsTheSameDay(t *testing.T) {
 	// grades-discipline-R3: the profile's average card reads this; it was
 	// dropped without a trend and the card said there were no grades.
 	require.InDelta(t, 62.5, detail.Signals.CurrentAverage, 0.001, "the active term's average shows without a trend")
+	// r4v-grades-discipline-R1: the profile shows the average at the
+	// scale's precision, as the gradebook does, not at one decimal.
+	require.Equal(t, 3, detail.ScoreDecimals, "the detail carries the grading scale's round_decimal")
 	require.Len(t, detail.Reasons, 1)
 	require.Equal(t, domain.ReasonBelowKKTPAtRisk, detail.Reasons[0].Code)
 	require.Equal(t, domain.LevelNone, detail.Level, "the default weights need more than grades alone")
