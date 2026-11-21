@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import type { ScheduleBlock } from "./api";
-import { effectiveCaption } from "./block-policy";
+import type { ScheduleBlock, ScheduleHold } from "./api";
+import { blockLockedReasonKey, effectiveCaption, lockingHold } from "./block-policy";
 
 // The week of Monday 23 to Sunday 29 November 2026.
 const WEEK = "2026-11-23";
@@ -61,5 +61,65 @@ describe("effectiveCaption", () => {
         WEEK,
       ),
     ).toEqual({ key: "onlyOn", date: "2026-11-24", until: "2026-11-27" });
+  });
+});
+
+describe("lockingHold", () => {
+  const request: ScheduleHold = {
+    kind: "substitution",
+    id: "request-1",
+    date: "2026-11-26",
+    status: "pending",
+  };
+
+  it("names the pending request that keeps a block locked on its last date", () => {
+    const held = block({
+      effective_until: "2026-11-26",
+      mutation_policy: {
+        can_edit: false,
+        can_delete: false,
+        has_history: true,
+        reason: "SCHEDULE_CHANGE_BEFORE_HISTORY",
+        held_by: request,
+      },
+    });
+    expect(blockLockedReasonKey(held)).toBe("blockBoundByHistory");
+    expect(lockingHold(held)).toEqual(request);
+  });
+
+  it("has none for a block that is open, ended, or locked by history without one record", () => {
+    // Open: the hold only moves the earliest "Berlaku mulai", shown in the dialog.
+    const open = block({
+      mutation_policy: {
+        can_edit: true,
+        can_delete: true,
+        has_history: true,
+        requires_effective_from: true,
+        min_effective_from: "2026-11-27",
+        held_by: request,
+      },
+    });
+    const ended = block({
+      effective_until: "2026-11-16",
+      mutation_policy: {
+        can_edit: false,
+        can_delete: false,
+        has_history: true,
+        reason: "SCHEDULE_ENDED",
+      },
+    });
+    const bound = block({
+      effective_until: "2026-11-26",
+      mutation_policy: {
+        can_edit: false,
+        can_delete: false,
+        has_history: true,
+        reason: "SCHEDULE_CHANGE_BEFORE_HISTORY",
+      },
+    });
+    expect(lockingHold(open)).toBeUndefined();
+    expect(lockingHold(ended)).toBeUndefined();
+    expect(lockingHold(bound)).toBeUndefined();
+    expect(lockingHold(block())).toBeUndefined();
   });
 });

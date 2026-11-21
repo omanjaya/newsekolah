@@ -1,7 +1,11 @@
 import { render, screen } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
+import type { ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 
+import id from "../../../messages/id.json";
 import type { ScheduleBlock } from "../api";
+import { useBlockLock } from "../use-block-lock";
 
 import { LessonCell } from "./schedule-grid-cells";
 
@@ -25,6 +29,25 @@ function block(overrides: Partial<ScheduleBlock> = {}): ScheduleBlock {
     effective_from: "2026-07-13",
     ...overrides,
   };
+}
+
+/** A cell given its lock the way the grids give it: through `useBlockLock`. */
+function HeldCell({ block: held }: { block: ScheduleBlock }): ReactElement {
+  const lockOf = useBlockLock();
+  return (
+    <LessonCell
+      block={held}
+      lock={lockOf(held)}
+      span={1}
+      subject="Fisika"
+      detail="Guru BK Contoh"
+      canManage
+      onCopy={vi.fn()}
+      onEdit={vi.fn()}
+      onDelete={vi.fn()}
+      t={t}
+    />
+  );
 }
 
 /** `LessonCell` is a `<td>`; a table wrapper keeps the markup valid so
@@ -198,6 +221,7 @@ describe("LessonCell", () => {
           reason: "SCHEDULE_ENDED",
         },
       }),
+      lock: { reason: "blockEnded", shortReason: "blockEnded" },
       span: 1,
       subject: "Matematika",
       detail: "Budi",
@@ -231,6 +255,7 @@ describe("LessonCell", () => {
           reason: "SCHEDULE_CHANGE_BEFORE_HISTORY",
         },
       }),
+      lock: { reason: "blockBoundByHistory", shortReason: "blockBoundByHistory" },
       span: 1,
       subject: "Matematika",
       detail: "Budi",
@@ -242,6 +267,50 @@ describe("LessonCell", () => {
     expect(screen.getByRole("button", { name: "deleteBlock" })).toHaveAccessibleDescription(
       "blockBoundByHistory",
     );
+    // Without one record holding it there is nothing to open.
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("names the pending request that holds a locked block and links to where it is cancelled", () => {
+    const held = block({
+      has_history: true,
+      effective_from: "2026-11-26",
+      effective_until: "2026-11-26",
+      mutation_policy: {
+        can_edit: false,
+        can_delete: false,
+        has_history: true,
+        reason: "SCHEDULE_CHANGE_BEFORE_HISTORY",
+        held_by: { kind: "substitution", id: "request-1", date: "2026-11-26", status: "pending" },
+      },
+    });
+    render(
+      <NextIntlClientProvider
+        locale="id"
+        messages={{ app: { schedule: id.app.schedule } }}
+        timeZone="Asia/Makassar"
+        onError={(error) => {
+          throw error;
+        }}
+      >
+        <table>
+          <tbody>
+            <tr>
+              <HeldCell block={held} />
+            </tr>
+          </tbody>
+        </table>
+      </NextIntlClientProvider>,
+    );
+    const reason =
+      "semua pertemuan tersisa sudah punya riwayat, ditahan oleh permintaan guru pengganti untuk Kam, 26 Nov yang menunggu jawaban; batalkan permintaan itu agar jadwal ini bisa diubah";
+    const edit = screen.getByRole("button", { name: "editBlock" });
+    expect(edit).toHaveAttribute("aria-disabled", "true");
+    expect(edit).toHaveAccessibleDescription(reason);
+    expect(screen.getByRole("button", { name: "deleteBlock" })).toHaveAccessibleDescription(reason);
+    expect(
+      screen.getByRole("link", { name: "Lihat permintaan guru pengganti untuk Kam, 26 Nov" }),
+    ).toHaveAttribute("href", "/substitutions?view=all");
   });
 
   it("says when a block starts or ends within the week shown", () => {

@@ -6,6 +6,7 @@ import type { ReactElement } from "react";
 
 import { formatCalendarDate } from "../../../lib/format-calendar-date";
 import type { ScheduleHold } from "../api";
+import { holdKey, holdLink } from "../schedule-hold";
 
 const LONG_DATE = {
   weekday: "long",
@@ -13,27 +14,6 @@ const LONG_DATE = {
   month: "long",
   year: "numeric",
 } as const;
-
-/** The sentence that names a hold, by its kind (and a request's status). */
-function holdKey(hold: ScheduleHold): string {
-  if (hold.kind !== "substitution") return hold.kind;
-  return hold.status === "accepted" ? "substitutionAccepted" : "substitutionPending";
-}
-
-/**
- * Where a hold can be looked at: a request on the school-wide substitutions
- * list, where a schedule manager can cancel it, and a recorded session on
- * that day's attendance. A supervision visit has no page of its own here.
- */
-function holdLink(hold: ScheduleHold): { href: string; key: string } | undefined {
-  if (hold.kind === "substitution") {
-    return { href: "/substitutions?view=all", key: "openSubstitutions" };
-  }
-  if (hold.kind === "attendance") {
-    return { href: `/attendance?date=${hold.date}`, key: "openAttendance" };
-  }
-  return undefined;
-}
 
 /**
  * The "Berlaku mulai" hint of a change to a lesson with history: the

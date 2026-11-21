@@ -10,6 +10,7 @@ import {
   cn,
 } from "@newsekolah/ui";
 import { AlertTriangle, CalendarClock, Copy, Dot, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -20,6 +21,7 @@ import { clockLabel } from "../clock-label";
 import { isNowWithinBlock } from "../current-period";
 import { periodSpanLabel } from "../period-span";
 import { SUBJECT_TONE_CLASSES, subjectTone } from "../subject-tone";
+import { useBlockLock } from "../use-block-lock";
 import { useEffectiveCaption } from "../use-effective-caption";
 import { cellDate } from "../week";
 
@@ -101,6 +103,8 @@ export function ScheduleMobileAgenda({
   const locale = useLocale();
   const format = useFormatter();
   const captionOf = useEffectiveCaption(weekStart);
+  const lockOf = useBlockLock();
+  const router = useRouter();
   const dayName = `${tDays(String(mobileDay))}, ${formatCalendarDate(format, cellDate(weekStart, mobileDay), { day: "numeric", month: "short" })}`;
   const periodBySeq = new Map(lessonPeriods.map((p) => [p.sequence, p]));
   const hasLessons = lessonPeriods.some((p) => blocks.has(`${mobileDay}:${p.sequence}`));
@@ -261,7 +265,13 @@ export function ScheduleMobileAgenda({
                           onCopy(block);
                         },
                       },
-                      ...lockableBlockActions(block, t, { onEdit, onDelete }),
+                      ...lockableBlockActions(block, lockOf(block), t, {
+                        onEdit,
+                        onDelete,
+                        onOpen: (href) => {
+                          router.push(href);
+                        },
+                      }),
                     ]}
                   />
                 )}

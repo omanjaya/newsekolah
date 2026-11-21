@@ -20,6 +20,18 @@ export function blockLockedReasonKey(
   return policy.reason === "SCHEDULE_CHANGE_BEFORE_HISTORY" ? "blockBoundByHistory" : "blockEnded";
 }
 
+/**
+ * The record that keeps a block locked because every remaining lesson has
+ * history: the last of them, when one record is what pushes the earliest
+ * change past the block's own last date (a pending or accepted request a
+ * schedule manager can cancel, a recorded session, a supervision visit).
+ * Undefined for a block that is not locked that way, or ended.
+ */
+export function lockingHold(block: ScheduleBlock): ScheduleHold | undefined {
+  if (blockLockedReasonKey(block) !== "blockBoundByHistory") return undefined;
+  return block.mutation_policy?.held_by;
+}
+
 /** Whether an edit or delete of the block must say from which date it takes effect. */
 export function needsEffectiveDate(block: ScheduleBlock): boolean {
   return block.mutation_policy?.requires_effective_from === true;

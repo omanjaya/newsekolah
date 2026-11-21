@@ -6,11 +6,11 @@ import { useLocale } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 
 import type { ScheduleBlock } from "../api";
-import { blockLockedReasonKey } from "../block-policy";
 import { formatPeriodTime } from "../period-span";
 import { SUBJECT_TONE_CLASSES, subjectTone } from "../subject-tone";
+import type { BlockLock } from "../use-block-lock";
 
-import { BlockAction } from "./block-action";
+import { BlockAction, BlockLinkAction } from "./block-action";
 import { LessonSubstitutionAction } from "./lesson-substitution-action";
 
 /** Thin accent edge marking "this is the period in session right now" --
@@ -247,7 +247,12 @@ function BreakWarningBadge({ label }: { label: string }): ReactElement {
  * The timetable is effective-dated: `caption` says when a block that does
  * not cover the whole week shown starts or ends, and edit and delete stay
  * offered for a block with history (they ask for the date the change takes
- * effect); only a block that has ended is locked, saying why.
+ * effect). A block that has ended, or whose remaining lessons all have
+ * history, is locked (`lock`, see `useBlockLock`): both actions say why.
+ * When one record holds it, a link beside the teacher's name opens that
+ * record (a request a schedule manager can cancel there, or that day's
+ * attendance); it stays in sight rather than in the hover bar, as the one
+ * mark on the cell that the lesson is held, and the bar keeps its width.
  */
 export function LessonCell({
   block,
@@ -260,6 +265,7 @@ export function LessonCell({
   crossesBreak,
   breakWarningLabel,
   caption,
+  lock,
   onCopy,
   onEdit,
   onDelete,
@@ -279,14 +285,15 @@ export function LessonCell({
   breakWarningLabel?: string;
   /** "Mulai Kam, 3 Des", "Sampai Kam, 26 Nov" or "Hanya Kam, 26 Nov"; see `useEffectiveCaption`. */
   caption?: string;
+  /** Why edit and delete are unavailable, and the record holding the block; see `useBlockLock`. */
+  lock?: BlockLock;
   onCopy: (block: ScheduleBlock) => void;
   onEdit: (block: ScheduleBlock) => void;
   onDelete: (block: ScheduleBlock) => void;
   t: (key: string) => string;
 }): ReactElement {
   const tone = subjectTone(block.subject_id);
-  const lockedKey = blockLockedReasonKey(block);
-  const lockedReason = lockedKey ? t(lockedKey) : undefined;
+  const lockedReason = lock?.reason;
   return (
     <td rowSpan={span} className={cn(CELL, "p-1", today && "bg-accent/5", current && CURRENT_EDGE)}>
       <div
@@ -304,7 +311,10 @@ export function LessonCell({
         </span>
         <div className="flex items-center justify-between gap-1">
           <span className="truncate text-caption font-normal">{detail}</span>
-          <LessonSubstitutionAction block={block} compact />
+          <span className="flex shrink-0 items-center">
+            <LessonSubstitutionAction block={block} compact />
+            {canManage && lock?.link && <BlockLinkAction {...lock.link} />}
+          </span>
         </div>
         {caption && (
           <span className="flex items-center gap-1 truncate text-caption font-normal">

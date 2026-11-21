@@ -7,7 +7,8 @@ import { formatCalendarDate, formatCalendarDateRange } from "../../lib/format-ca
 import type { ScheduleBlock } from "./api";
 import { effectiveCaption } from "./block-policy";
 
-const CAPTION_DATE = { weekday: "short", day: "numeric", month: "short" } as const;
+/** "Kam, 26 Nov": how a date reads on a lesson in the grid or the agenda. */
+export const CAPTION_DATE = { weekday: "short", day: "numeric", month: "short" } as const;
 
 /**
  * "Mulai Kam, 3 Des" / "Sampai Kam, 26 Nov" / "Hanya Kam, 26 Nov" under a

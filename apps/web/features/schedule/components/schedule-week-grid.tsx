@@ -12,6 +12,7 @@ import type { ScheduleBlock } from "../api";
 import { blockCrossesBreak } from "../break-warning";
 import { isCurrentPeriodCell, isNowWithinBlock } from "../current-period";
 import { periodSpan } from "../period-span";
+import { useBlockLock } from "../use-block-lock";
 import { useEffectiveCaption } from "../use-effective-caption";
 import { cellDate, inWeek } from "../week";
 
@@ -88,6 +89,7 @@ export function ScheduleWeekGrid({
   const { me } = useSession();
   const format = useFormatter();
   const captionOf = useEffectiveCaption(weekStart);
+  const lockOf = useBlockLock();
   const todayIso = todayInZone(me?.tenant.timezone);
   // Outside the current week no column is today's.
   const today = inWeek(weekStart, todayIso) ? isoWeekdayOf(todayIso) : 0;
@@ -185,6 +187,7 @@ export function ScheduleWeekGrid({
                       crossesBreak={blockCrossesBreak(block, lessonPeriods)}
                       breakWarningLabel={t("crossesBreakWarning")}
                       caption={captionOf(block)}
+                      lock={lockOf(block)}
                       onCopy={onCopy}
                       onEdit={onEdit}
                       onDelete={onDelete}

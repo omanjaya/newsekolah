@@ -1175,6 +1175,14 @@
       "pickDate": "Pilih tanggal",
       "blockEnded": "jadwal ini sudah tidak berlaku",
       "blockBoundByHistory": "semua pertemuan tersisa sudah punya riwayat",
+      "blockHeldBy": {
+        "attendance": "semua pertemuan tersisa sudah punya riwayat, ditahan oleh presensi yang tercatat pada {date}",
+        "supervision": "semua pertemuan tersisa sudah punya riwayat, ditahan oleh kunjungan supervisi yang dijadwalkan pada {date}",
+        "substitutionPending": "semua pertemuan tersisa sudah punya riwayat, ditahan oleh permintaan guru pengganti untuk {date} yang menunggu jawaban; batalkan permintaan itu agar jadwal ini bisa diubah",
+        "substitutionAccepted": "semua pertemuan tersisa sudah punya riwayat, ditahan oleh guru pengganti yang sudah disetujui untuk {date}; batalkan penggantian itu agar jadwal ini bisa diubah",
+        "openSubstitutions": "Lihat permintaan guru pengganti untuk {date}",
+        "openAttendance": "Buka presensi {date}"
+      },
       "startsOn": "Mulai {date}",
       "endsOn": "Sampai {date}",
       "onlyOn": "Hanya {date}",

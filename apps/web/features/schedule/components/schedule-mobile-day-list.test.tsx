@@ -5,7 +5,10 @@ import type { ScheduleBlock } from "../api";
 
 vi.mock("next-intl", () => ({
   useLocale: () => "id",
+  useTranslations: () => (key: string) => key,
+  useFormatter: () => ({}),
 }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("./lesson-substitution-action", () => ({ LessonSubstitutionAction: () => null }));
 
 import { lockableBlockActions } from "./lockable-block-actions";
@@ -89,11 +92,10 @@ describe("lockableBlockActions", () => {
     source: "admin",
   } as ScheduleBlock;
 
+  const handlers = () => ({ onEdit: vi.fn(), onDelete: vi.fn(), onOpen: vi.fn() });
+
   it("offers edit and delete on a lesson without history", () => {
-    const items = lockableBlockActions(lesson, (key) => key, {
-      onEdit: vi.fn(),
-      onDelete: vi.fn(),
-    });
+    const items = lockableBlockActions(lesson, undefined, (key) => key, handlers());
     expect(items.map((item) => [item.label, item.disabled])).toEqual([
       ["editBlock", false],
       ["deleteBlock", false],
@@ -107,8 +109,9 @@ describe("lockableBlockActions", () => {
         has_history: true,
         mutation_policy: { can_edit: true, can_delete: true, requires_effective_from: true },
       },
+      undefined,
       (key) => key,
-      { onEdit: vi.fn(), onDelete: vi.fn() },
+      handlers(),
     );
     expect(items.map((item) => [item.label, item.disabled])).toEqual([
       ["editBlock", false],
@@ -119,12 +122,40 @@ describe("lockableBlockActions", () => {
   it("disables both, saying why, on a lesson that has ended", () => {
     const items = lockableBlockActions(
       { ...lesson, has_history: true, mutation_policy: { can_edit: false, can_delete: false } },
+      { reason: "blockEnded", shortReason: "blockEnded" },
       (key) => key,
-      { onEdit: vi.fn(), onDelete: vi.fn() },
+      handlers(),
     );
     expect(items.map((item) => [item.label, item.disabled])).toEqual([
       ["editBlock (blockEnded)", true],
       ["deleteBlock (blockEnded)", true],
     ]);
+  });
+
+  it("opens the request that holds a locked lesson from between the two", () => {
+    const on = handlers();
+    const items = lockableBlockActions(
+      lesson,
+      {
+        reason: "blockHeldBy.substitutionPending",
+        shortReason: "blockBoundByHistory",
+        link: {
+          href: "/substitutions?view=all",
+          label: "Lihat permintaan guru pengganti untuk Kam, 26 Nov",
+          page: "substitutions",
+        },
+      },
+      (key) => key,
+      on,
+    );
+    // The menu keeps the short reason; the record and its date are the
+    // link's own label.
+    expect(items.map((item) => [item.label, item.disabled ?? false])).toEqual([
+      ["editBlock (blockBoundByHistory)", true],
+      ["Lihat permintaan guru pengganti untuk Kam, 26 Nov", false],
+      ["deleteBlock (blockBoundByHistory)", true],
+    ]);
+    items[1]?.onClick();
+    expect(on.onOpen).toHaveBeenCalledWith("/substitutions?view=all");
   });
 });

@@ -1175,6 +1175,14 @@
       "pickDate": "Pick a date",
       "blockEnded": "this schedule is no longer in effect",
       "blockBoundByHistory": "every remaining lesson already has history",
+      "blockHeldBy": {
+        "attendance": "every remaining lesson already has history, held by attendance recorded on {date}",
+        "supervision": "every remaining lesson already has history, held by a supervision visit planned for {date}",
+        "substitutionPending": "every remaining lesson already has history, held by a substitute request for {date} awaiting an answer; cancel that request to change this lesson",
+        "substitutionAccepted": "every remaining lesson already has history, held by an accepted substitution on {date}; cancel that substitution to change this lesson",
+        "openSubstitutions": "View the substitute request for {date}",
+        "openAttendance": "Open attendance for {date}"
+      },
       "startsOn": "From {date}",
       "endsOn": "Until {date}",
       "onlyOn": "Only {date}",
