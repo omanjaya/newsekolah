@@ -165,8 +165,13 @@ describe("FilterBar", () => {
 
   it("lets a filter strip fill the width a stacked bar gives it", () => {
     render(<Board />);
-    // The bar stretches the strip's track; the segments then share it.
-    expect(screen.getByRole("radiogroup")).toHaveClass("w-full", "min-w-max");
+    // The bar stretches the strip's track; the segments then share it,
+    // each from its own label's width (no equal columns at least four
+    // times the longest label wide, which outgrew a tablet's bar).
+    const group = screen.getByRole("radiogroup");
+    expect(group).toHaveClass("flex-1");
+    expect(group).not.toHaveClass("min-w-max");
+    for (const segment of screen.getAllByRole("radio")) expect(segment).toHaveClass("flex-1");
   });
 
   it("has no accessibility violations", async () => {
