@@ -442,7 +442,9 @@ export function useDeskSession() {
     mode,
     setMode,
     member,
-    memberStatus: memberDetail.data?.status ?? null,
+    // The served member's record: its status and dates decide whether
+    // the desk stops the librarian (memberBorrowBlock).
+    membership: member ? (memberDetail.data ?? null) : null,
     borrowingStatus: member ? (borrowingStatus.data ?? null) : null,
     selectMember,
     endSession,

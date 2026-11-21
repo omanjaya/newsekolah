@@ -14,6 +14,7 @@ vi.mock("../../../components/app-page", () => import("../../../test/app-page-stu
 vi.mock("./use-desk-session", () => ({ useDeskSession: deskSession }));
 vi.mock("../dashboard-api", () => ({ useLibraryDashboardQuery: dashboardQuery }));
 vi.mock("./library-workspace-nav", () => ({ LibraryWorkspaceNav: () => null }));
+vi.mock("../use-tenant-timezone", () => ({ useTenantTimeZone: () => "Asia/Makassar" }));
 vi.mock("./desk-overdue-table", () => ({ DeskOverdueTable: () => null }));
 vi.mock("./desk-receipt-dialog", () => ({ DeskReceiptDialog: () => null }));
 // The member search reads the lookup endpoint, which needs an API client.
@@ -33,6 +34,7 @@ vi.mock("../../../lib/session/session-provider", () => ({
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
+  useLocale: () => "id",
 }));
 
 function baseSession(overrides: Partial<DeskSession> = {}): DeskSession {
@@ -40,7 +42,7 @@ function baseSession(overrides: Partial<DeskSession> = {}): DeskSession {
     mode: "borrow",
     setMode: vi.fn(),
     member: null,
-    memberStatus: null,
+    membership: null,
     borrowingStatus: null,
     selectMember: vi.fn(),
     endSession: vi.fn(),
@@ -59,6 +61,24 @@ function baseSession(overrides: Partial<DeskSession> = {}): DeskSession {
 }
 
 const member = { userId: "u1", name: "Siswa Satu", memberNo: "M-1" };
+
+function membership(
+  overrides: Partial<NonNullable<DeskSession["membership"]>>,
+): NonNullable<DeskSession["membership"]> {
+  return {
+    user_id: "u1",
+    member_no: "M-1",
+    member_type_id: "t1",
+    registered_on: "2026-01-01",
+    status: "active",
+    late_return_count: 0,
+    ...overrides,
+  };
+}
+
+function resultBanner(container: HTMLElement): Element | null {
+  return container.querySelector('[aria-live="polite"][aria-atomic="true"]');
+}
 
 describe("LoanDeskView", () => {
   beforeEach(() => {
@@ -291,6 +311,56 @@ describe("LoanDeskView", () => {
     expect(screen.getByText("member.quota")).toBeInTheDocument();
     const live = container.querySelector('[aria-live="polite"][aria-atomic="true"]');
     expect(live).toHaveTextContent("result.memberUnpaidFine");
+    expect(live?.querySelector('[data-tone="warning"]')).not.toBeNull();
+  });
+
+  // The desk read the stored status alone: a suspension settled while it
+  // ran kept warning "Ditangguhkan" after its last day, when the server
+  // lends again, and never said until when.
+  it("names a running suspension's last day and stops the librarian", () => {
+    deskSession.mockReturnValue(
+      baseSession({
+        member,
+        membership: membership({ status: "suspended", suspended_until: "2999-12-07" }),
+      }),
+    );
+    const { container } = render(<LoanDeskView />);
+
+    expect(screen.getByText("member.suspendedUntil")).toBeInTheDocument();
+    const live = resultBanner(container);
+    expect(live).toHaveTextContent("result.memberSuspendedUntil");
+    expect(live?.querySelector('[data-tone="warning"]')).not.toBeNull();
+  });
+
+  it("lends without a warning once the suspension's last day has passed", () => {
+    deskSession.mockReturnValue(
+      baseSession({
+        member,
+        membership: membership({ status: "suspended", suspended_until: "2000-01-07" }),
+      }),
+    );
+    const { container } = render(<LoanDeskView />);
+
+    expect(screen.getByText("active")).toBeInTheDocument();
+    expect(screen.queryByText("suspended")).not.toBeInTheDocument();
+    const live = resultBanner(container);
+    expect(live).toHaveTextContent("result.memberNext.borrow");
+    expect(live).not.toHaveTextContent("result.memberAttention");
+    expect(live?.querySelector('[data-tone="success"]')).not.toBeNull();
+  });
+
+  it("warns about an ended membership although its status reads active", () => {
+    deskSession.mockReturnValue(
+      baseSession({
+        member,
+        membership: membership({ status: "active", valid_until: "2000-12-31" }),
+      }),
+    );
+    const { container } = render(<LoanDeskView />);
+
+    expect(screen.getByText("member.expiredOn")).toBeInTheDocument();
+    const live = resultBanner(container);
+    expect(live).toHaveTextContent("result.memberExpired");
     expect(live?.querySelector('[data-tone="warning"]')).not.toBeNull();
   });
 

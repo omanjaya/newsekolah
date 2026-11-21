@@ -2,6 +2,7 @@ import type * as UiModule from "@newsekolah/ui";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { LibraryMember } from "../members-api";
 import type { LibraryViolation } from "../violations-api";
 
 // A late return with currency fines off records a warning (Rp 0, nothing to
@@ -11,6 +12,7 @@ const violations = vi.hoisted<{ data: LibraryViolation[] }>(() => ({ data: [] })
 const empty = vi.hoisted(() => () => ({ data: undefined, isLoading: false, isError: false }));
 const mutation = vi.hoisted(() => () => ({ mutate: vi.fn(), isPending: false }));
 const search = vi.hoisted(() => ({ query: "" }));
+const record = vi.hoisted<{ member: Partial<LibraryMember> }>(() => ({ member: {} }));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, values?: Record<string, unknown>) =>
@@ -51,11 +53,7 @@ vi.mock("../members-api", () => ({
   useClearLibraryMemberMutation: mutation,
   useUpdateLibraryMemberMutation: mutation,
   useUpdateLibraryMemberStatusMutation: mutation,
-  useLibraryMemberQuery: () => ({
-    data: { user_id: "u1", member_no: "PS-2026-00024", member_type_id: "mt1", status: "active" },
-    isLoading: false,
-    isError: false,
-  }),
+  useLibraryMemberQuery: () => ({ data: record.member, isLoading: false, isError: false }),
   useLibraryMemberTypesQuery: empty,
 }));
 vi.mock("../violations-api", () => ({
@@ -86,6 +84,12 @@ function violation(overrides: Partial<LibraryViolation>): LibraryViolation {
 beforeEach(() => {
   violations.data = [];
   search.query = "";
+  record.member = {
+    user_id: "u1",
+    member_no: "PS-2026-00024",
+    member_type_id: "mt1",
+    status: "active",
+  };
 });
 
 describe("MemberDetailView fines", () => {
@@ -129,7 +133,7 @@ describe("MemberDetailView fines", () => {
     render(<MemberDetailView userId="u1" />);
 
     expect(screen.queryByText("viewFines")).not.toBeInTheDocument();
-    expect(screen.queryByText("noFinesBody")).not.toBeInTheDocument();
+    expect(screen.queryByText("nothingOutstandingBody")).not.toBeInTheDocument();
     expect(screen.getByText("suspensionsOutstanding")).toBeInTheDocument();
     expect(screen.getByText("penalties.suspend")).toBeInTheDocument();
     expect(screen.queryByText(/Rp/)).not.toBeInTheDocument();
@@ -139,6 +143,50 @@ describe("MemberDetailView fines", () => {
     );
     expect(screen.queryByText("clearanceBlockedByLoan")).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "tabs.fines" })).toBeInTheDocument();
+  });
+
+  // Marking a running suspension settled left the page with
+  // "Ditangguhkan" and no end date, and a fines tab saying every fine is
+  // paid: the reason for the suspension was gone from the staff screens.
+  it("keeps a running suspension and its last day in view once it is settled", () => {
+    record.member = { ...record.member, status: "suspended", suspended_until: "2999-12-07" };
+    violations.data = [violation({ id: "s", penalty: "suspend", suspend_days: 3, status: "paid" })];
+    search.query = "tab=fines";
+    render(<MemberDetailView userId="u1" />);
+
+    expect(screen.getByText(/^suspendedUntil /)).toBeInTheDocument();
+    expect(screen.getByText(/^suspensionRunning /)).toBeInTheDocument();
+    expect(screen.getByText(/^suspensionBorrowFrom /)).toBeInTheDocument();
+    expect(screen.queryByText("nothingOutstandingTitle")).not.toBeInTheDocument();
+    expect(screen.queryByText("suspensionsOutstanding")).not.toBeInTheDocument();
+  });
+
+  it("reads a suspension whose last day has passed as active", () => {
+    record.member = { ...record.member, status: "suspended", suspended_until: "2000-01-07" };
+    violations.data = [violation({ id: "s", penalty: "suspend", suspend_days: 3, status: "paid" })];
+    search.query = "tab=fines";
+    render(<MemberDetailView userId="u1" />);
+
+    expect(screen.getAllByText("status.active").length).toBeGreaterThan(0);
+    expect(screen.queryByText("status.suspended")).not.toBeInTheDocument();
+    expect(screen.queryByText(/^suspendedUntil /)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^suspensionRunning/)).not.toBeInTheDocument();
+    expect(screen.getByText("nothingOutstandingTitle")).toBeInTheDocument();
+  });
+
+  it("words the empty fines tab for every sanction, not only money", () => {
+    search.query = "tab=fines";
+    render(<MemberDetailView userId="u1" />);
+
+    expect(screen.getByText("nothingOutstandingTitle")).toBeInTheDocument();
+    expect(screen.getByText("nothingOutstandingBody")).toBeInTheDocument();
+  });
+
+  it("notes an ended membership beside the status", () => {
+    record.member = { ...record.member, valid_until: "2000-12-31" };
+    render(<MemberDetailView userId="u1" />);
+
+    expect(screen.getByText("membershipExpiredNote")).toBeInTheDocument();
   });
 
   it("names a book to replace beside the money owed", () => {

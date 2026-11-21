@@ -21,8 +21,8 @@ function useInvalidateViolations() {
   const queryClient = useQueryClient();
   return () => {
     void queryClient.invalidateQueries({ queryKey: ["library", "violations"] });
-    // Settling a violation can reactivate a suspended member, so the
-    // member list/detail must refresh too.
+    // A settle ends a suspension whose last day has passed (never one
+    // still running), so the member list/detail must refresh too.
     void queryClient.invalidateQueries({ queryKey: ["library", "members"] });
   };
 }

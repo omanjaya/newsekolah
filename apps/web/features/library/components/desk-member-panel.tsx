@@ -1,11 +1,14 @@
 "use client";
 
+import type { Locale } from "@newsekolah/i18n";
 import { Avatar, Badge, Button, TextLink } from "@newsekolah/ui";
 import { CircleAlert, ReceiptText, UserX } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { StudentLink } from "../../students/components/student-link";
+import type { MemberBorrowBlock } from "../lib/member-borrowing";
+import { formatShortDay } from "../lib/short-date";
 import type { LibraryMemberBorrowingStatus, LibraryMemberStatus } from "../members-api";
 
 export interface DeskSelectedMember {
@@ -16,16 +19,48 @@ export interface DeskSelectedMember {
   username?: string;
 }
 
-/** Statuses that should stop the librarian before lending. */
-const ATTENTION_STATUSES: readonly LibraryMemberStatus[] = [
-  "suspended",
-  "inactive",
-  "pending",
-  "cleared",
-];
+/** The served member's membership as the desk reads it today. */
+export interface DeskMembership {
+  /** The status to show (shownMemberStatus: a finished suspension reads active). */
+  status: LibraryMemberStatus;
+  /**
+   * Why the membership itself would be refused a loan today
+   * (memberBorrowBlock, the server's EligibleToBorrow), or null when it
+   * would lend. A block is what stops the librarian.
+   */
+  block: MemberBorrowBlock | null;
+}
 
-export function memberNeedsAttention(status: LibraryMemberStatus | null): boolean {
-  return status !== null && ATTENTION_STATUSES.includes(status);
+/**
+ * The desk's words for a membership: the badge beside the member's name
+ * and the scan result's line when a loan would be refused. A running
+ * suspension names its last day and an ended membership its end date, so
+ * the librarian knows until when, not only that something is wrong.
+ */
+export function useDeskMembershipText(today: string): {
+  badge: (membership: DeskMembership) => string;
+  attention: (membership: DeskMembership) => string;
+} {
+  const t = useTranslations("app.library.desk");
+  const tStatus = useTranslations("app.library.members.status");
+  const locale = useLocale() as Locale;
+  const day = (date: string) => formatShortDay(date, locale, { today });
+  return {
+    badge: ({ status, block }) => {
+      if (block?.kind === "suspended" && block.until) {
+        return t("member.suspendedUntil", { date: day(block.until) });
+      }
+      if (block?.kind === "expired") return t("member.expiredOn", { date: day(block.until) });
+      return tStatus(status);
+    },
+    attention: ({ status, block }) => {
+      if (block?.kind === "suspended" && block.until) {
+        return t("result.memberSuspendedUntil", { date: day(block.until) });
+      }
+      if (block?.kind === "expired") return t("result.memberExpired", { date: day(block.until) });
+      return t("result.memberAttention", { status: tStatus(status) });
+    },
+  };
 }
 
 /**
@@ -37,20 +72,24 @@ export function memberNeedsAttention(status: LibraryMemberStatus | null): boolea
  */
 export function DeskMemberPanel({
   member,
-  memberStatus,
+  membership,
+  today,
   borrowing,
   onOpenReceipt,
   onClear,
 }: {
   member: DeskSelectedMember;
-  memberStatus: LibraryMemberStatus | null;
+  /** Null until the member's record loads. */
+  membership: DeskMembership | null;
+  /** The school's calendar day, "YYYY-MM-DD". */
+  today: string;
   borrowing: LibraryMemberBorrowingStatus | null;
   onOpenReceipt: () => void;
   onClear: () => void;
 }): ReactElement {
   const t = useTranslations("app.library.desk");
-  const tStatus = useTranslations("app.library.members.status");
-  const attention = memberNeedsAttention(memberStatus);
+  const membershipText = useDeskMembershipText(today);
+  const attention = Boolean(membership?.block);
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -63,10 +102,10 @@ export function DeskMemberPanel({
                 {member.name}
               </StudentLink>
             </span>
-            {memberStatus && (
+            {membership && (
               <Badge tone={attention ? "warning" : "success"} size="sm">
                 {attention && <UserX aria-hidden="true" />}
-                {tStatus(memberStatus)}
+                {membershipText.badge(membership)}
               </Badge>
             )}
             {borrowing?.has_unpaid_fine && (

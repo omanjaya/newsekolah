@@ -14,10 +14,13 @@ import type { ReactElement } from "react";
 import { useEffect, useRef } from "react";
 
 import { AppPage } from "../../../components/app-page";
+import { todayInZone } from "../../../lib/tenant-date";
 import { confirmableItems, hasUndoableItem } from "../lib/desk-basket";
 import { deskItemTone, deskLastResult } from "../lib/desk-last-result";
+import { memberBorrowBlock, shownMemberStatus } from "../lib/member-borrowing";
+import { useTenantTimeZone } from "../use-tenant-timezone";
 
-import { DeskMemberPanel, memberNeedsAttention } from "./desk-member-panel";
+import { DeskMemberPanel, type DeskMembership, useDeskMembershipText } from "./desk-member-panel";
 import { DeskOverdueTable } from "./desk-overdue-table";
 import { DeskReceiptDialog } from "./desk-receipt-dialog";
 import { DeskScanBar } from "./desk-scan-bar";
@@ -39,8 +42,9 @@ import { useDeskSession } from "./use-desk-session";
  */
 export function LoanDeskView(): ReactElement {
   const t = useTranslations("app.library.desk");
-  const tStatus = useTranslations("app.library.members.status");
   const session = useDeskSession();
+  const today = todayInZone(useTenantTimeZone());
+  const membershipText = useDeskMembershipText(today);
 
   // The scan field only focuses on mount, so hand focus back to it after a
   // member is picked or the session ends, and after each scan resolves.
@@ -55,7 +59,16 @@ export function LoanDeskView(): ReactElement {
   const items = session.basket[session.mode];
   const pendingBorrow = confirmableItems(session.basket.borrow).length;
   const canUndo = hasUndoableItem(items);
-  const statusAttention = memberNeedsAttention(session.memberStatus);
+  // The membership rule the server lends on (EligibleToBorrow), not the
+  // stored status alone: a suspension warns through its last day only, and
+  // an ended membership warns although its status still reads active.
+  const membership: DeskMembership | null = session.membership
+    ? {
+        status: shownMemberStatus(session.membership, today),
+        block: memberBorrowBlock(session.membership, today),
+      }
+    : null;
+  const statusAttention = Boolean(membership?.block);
   const fineBlocks = session.borrowingStatus?.unpaid_fine_blocks_loans ?? false;
   const attention = statusAttention || fineBlocks;
   // Returns and renewals need no member, so their basket shows on an
@@ -85,8 +98,8 @@ export function LoanDeskView(): ReactElement {
       tone: last.attention ? "warning" : "success",
       title: t("result.memberTitle", { name: last.name }),
       description:
-        statusAttention && session.memberStatus
-          ? t("result.memberAttention", { status: tStatus(session.memberStatus) })
+        membership && statusAttention
+          ? membershipText.attention(membership)
           : fineBlocks
             ? t("result.memberUnpaidFine")
             : t(`result.memberNext.${session.mode}`),
@@ -127,7 +140,8 @@ export function LoanDeskView(): ReactElement {
                   <div className="p-5">
                     <DeskMemberPanel
                       member={session.member}
-                      memberStatus={session.memberStatus}
+                      membership={membership}
+                      today={today}
                       borrowing={session.borrowingStatus}
                       onOpenReceipt={() => {
                         session.setReceiptOpen(true);

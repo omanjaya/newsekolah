@@ -40,6 +40,7 @@ import { todayInZone } from "../../../lib/tenant-date";
 import { useLookup } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { printMemberCard, useMemberLoanHistoryQuery, useMemberReservationsQuery } from "../api";
+import { memberBorrowBlock, shownMemberStatus } from "../lib/member-borrowing";
 import { formatShortDay } from "../lib/short-date";
 import { MEMBER_STATUS_TONE, toneOf } from "../lib/status-tones";
 import { isOutstandingViolation, isUnsettledSuspension, unpaidFineTotal } from "../lib/violations";
@@ -146,6 +147,10 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   }
 
   const data = member.data;
+  // The borrowing rule the desk lends on (EligibleToBorrow): a suspension
+  // shows its last day and reads active once that day has passed.
+  const status = shownMemberStatus(data, today);
+  const block = memberBorrowBlock(data, today);
   const name = userName ?? data.member_no;
   const typeName = memberTypeMap.get(data.member_type_id)?.name;
   const clearanceBlocked = activeLoans.length > 0 || outstanding.length > 0;
@@ -226,11 +231,17 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-label text-fg-muted">{t("statusLabel")}</span>
           {canManage ? (
-            <MemberStatusMenu userId={userId} status={data.status} memberName={name} />
+            <MemberStatusMenu userId={userId} status={status} memberName={name} />
           ) : (
-            <Badge tone={toneOf(MEMBER_STATUS_TONE, data.status)}>
-              {t(`status.${data.status}`)}
-            </Badge>
+            <Badge tone={toneOf(MEMBER_STATUS_TONE, status)}>{t(`status.${status}`)}</Badge>
+          )}
+          {block?.kind === "suspended" && block.until && (
+            <span className="text-caption text-fg-muted">
+              {t("suspendedUntil", { date: formatShortDay(block.until, locale, { today }) })}
+            </span>
+          )}
+          {block?.kind === "expired" && (
+            <span className="text-caption text-fg-muted">{t("membershipExpiredNote")}</span>
           )}
           {canManage && data.status !== "cleared" && clearanceBlocked && (
             <span className="text-caption text-fg-muted">{t("clearanceBlockedByLoan")}</span>
@@ -325,8 +336,10 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
           <MemberFines
             violations={outstanding}
             suspensions={suspensions}
+            running={block?.kind === "suspended" ? block : null}
             total={unpaidTotal}
             locale={locale}
+            today={today}
             manageHref={
               canCirculate ? `/library/violations?member=${encodeURIComponent(userId)}` : undefined
             }

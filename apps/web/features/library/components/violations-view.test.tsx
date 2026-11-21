@@ -25,6 +25,9 @@ vi.mock("../../reference/directory-names", async () => {
   const { directoryNamesStub } = await import("../../../test/directory-names-stub");
   return directoryNamesStub([]);
 });
+vi.mock("../members-api", () => ({
+  useLibraryMemberQuery: () => ({ data: undefined }),
+}));
 vi.mock("../violations-api", () => ({
   useLibraryViolationsQuery: mocks.useLibraryViolationsQuery,
   useMemberViolationsQuery: () => ({ data: { data: [] }, isLoading: false }),

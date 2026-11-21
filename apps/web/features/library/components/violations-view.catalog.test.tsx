@@ -32,6 +32,23 @@ vi.mock("../../reference/directory-names", async () => {
   const { directoryNamesStub } = await import("../../../test/directory-names-stub");
   return directoryNamesStub([]);
 });
+// The member is suspended through a day far ahead, so settling the
+// suspension leaves it running.
+vi.mock("../members-api", () => ({
+  useLibraryMemberQuery: (userId: string) => ({
+    data: userId
+      ? {
+          user_id: userId,
+          member_no: "M-1",
+          member_type_id: "t1",
+          registered_on: "2026-01-01",
+          status: "suspended",
+          suspended_until: "2999-12-07",
+          late_return_count: 1,
+        }
+      : undefined,
+  }),
+}));
 vi.mock("../violations-api", () => ({
   useLibraryViolationsQuery: () => ({ data: { data: [suspension] }, isLoading: false }),
   useMemberViolationsQuery: () => ({ data: { data: [] }, isLoading: false }),
@@ -69,5 +86,10 @@ describe("ViolationsView with the real catalog", () => {
     await user.click(await screen.findByRole("menuitem", { name: "Tandai selesai" }));
     expect(screen.queryByText(/lunas/i)).not.toBeInTheDocument();
     expect(await screen.findByRole("button", { name: "Tandai selesai" })).toBeInTheDocument();
+    // Settling does not lift a running suspension: the dialog says until
+    // when, and no longer promises the member reactivates.
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent(/Penangguhan anggota tetap berjalan sampai 7 Des 2999/);
+    expect(dialog).not.toHaveTextContent(/aktif kembali/);
   });
 });

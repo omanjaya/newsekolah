@@ -5,6 +5,7 @@ import type { Locale } from "@newsekolah/i18n";
 import {
   Badge,
   Card,
+  CardDescription,
   CardHeader,
   CardTitle,
   EmptyState,
@@ -19,7 +20,8 @@ import type { ReactElement } from "react";
 
 import { businessNow } from "../../../lib/simulation/clock";
 import type { LibraryLoan, LibraryReservation } from "../api";
-import { formatShortDate, formatShortDateRange } from "../lib/short-date";
+import type { MemberBorrowBlock } from "../lib/member-borrowing";
+import { formatShortDate, formatShortDateRange, formatShortDay } from "../lib/short-date";
 import { LOAN_STATUS_TONE, toneOf } from "../lib/status-tones";
 import type { LibraryViolation } from "../violations-api";
 
@@ -73,41 +75,60 @@ export function MemberPastLoans({
   );
 }
 
+/** The member's suspension still running today: a memberBorrowBlock of kind suspended. */
+export type RunningSuspension = Extract<MemberBorrowBlock, { kind: "suspended" }>;
+
 /**
  * What the member still owes, item by item, with the total and the way to
- * settle it. An unsettled suspension is listed apart: it is served by its
- * dates, not paid, so it never reads as money owed, yet staff still reach
- * it here to settle it.
+ * settle it. A suspension is listed apart: it is served by its dates, not
+ * paid, so it never reads as money owed. A suspension still running stays
+ * here, with its last day, even once its violation is marked settled,
+ * since settling does not lift it; an unsettled one is listed too, so
+ * staff still reach it here to settle it.
  */
 export function MemberFines({
   violations,
   suspensions = [],
+  running = null,
   total,
   locale,
+  today,
   manageHref,
 }: {
   violations: LibraryViolation[];
   /** Unsettled suspensions: listed without an amount, outside the total. */
   suspensions?: LibraryViolation[];
+  /** The member's suspension still running today, settled or not. */
+  running?: RunningSuspension | null;
   total: number;
   locale: Locale;
+  /** The school's calendar day, "YYYY-MM-DD", for the short dates. */
+  today?: string;
   manageHref?: string;
 }): ReactElement {
   const tHistory = useTranslations("app.library.memberHistory");
   const t = useTranslations("app.library.memberDetail");
   const tViolations = useTranslations("app.library.violations");
-  if (violations.length === 0 && suspensions.length === 0) {
+  if (violations.length === 0 && suspensions.length === 0 && !running) {
+    // Nothing to pay, replace or serve: worded for every sanction, not
+    // only money, since a member may never have had a fine.
     return (
       <Card>
         <EmptyState
           icon={<Scale aria-hidden="true" />}
           tone="success"
-          title={t("noFinesTitle")}
-          description={t("noFinesBody")}
+          title={t("nothingOutstandingTitle")}
+          description={t("nothingOutstandingBody")}
         />
       </Card>
     );
   }
+  const day = (date: string) => formatShortDay(date, locale, { today });
+  const suspensionTitle = running
+    ? running.until
+      ? t("suspensionRunning", { date: day(running.until) })
+      : t("suspensionRunningOpen")
+    : t("suspensionsOutstanding");
   const manageLink = manageHref ? (
     <TextLink href={manageHref}>{tHistory("fines.manage")}</TextLink>
   ) : undefined;
@@ -140,30 +161,42 @@ export function MemberFines({
           </List>
         </Card>
       )}
-      {suspensions.length > 0 && (
+      {(suspensions.length > 0 || running) && (
         <Card>
           {/* The manage link sits on the first card only. */}
           <CardHeader action={violations.length > 0 ? undefined : manageLink}>
-            <CardTitle as="h2">{t("suspensionsOutstanding")}</CardTitle>
+            <CardTitle as="h2">{suspensionTitle}</CardTitle>
+            {running?.borrowFrom && (
+              <CardDescription>
+                {t("suspensionBorrowFrom", { date: day(running.borrowFrom) })}
+              </CardDescription>
+            )}
+            {running?.membershipEnds && (
+              <CardDescription>
+                {t("suspensionMembershipEnds", { date: day(running.membershipEnds) })}
+              </CardDescription>
+            )}
           </CardHeader>
-          <List>
-            {suspensions.map((suspension) => (
-              <ListRow
-                key={suspension.id}
-                title={tHistory(`fines.kind.${suspension.kind}`)}
-                meta={
-                  suspension.suspend_days > 0
-                    ? tViolations("suspendDaysValue", { days: suspension.suspend_days })
-                    : undefined
-                }
-                trailing={
-                  <span className="text-body-sm text-fg-muted">
-                    {tViolations("penalties.suspend")}
-                  </span>
-                }
-              />
-            ))}
-          </List>
+          {suspensions.length > 0 && (
+            <List>
+              {suspensions.map((suspension) => (
+                <ListRow
+                  key={suspension.id}
+                  title={tHistory(`fines.kind.${suspension.kind}`)}
+                  meta={
+                    suspension.suspend_days > 0
+                      ? tViolations("suspendDaysValue", { days: suspension.suspend_days })
+                      : undefined
+                  }
+                  trailing={
+                    <span className="text-body-sm text-fg-muted">
+                      {tViolations("penalties.suspend")}
+                    </span>
+                  }
+                />
+              ))}
+            </List>
+          )}
         </Card>
       )}
     </div>
