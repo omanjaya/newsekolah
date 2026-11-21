@@ -28,6 +28,7 @@ import type { LibraryLoan } from "../api";
 import { classifyDueDate, overdueDays } from "../lib/due-date";
 import { shownReservationStatus } from "../lib/reservation-pickup";
 import { formatShortDay } from "../lib/short-date";
+import { isUnpaidFine, unpaidFineTotal } from "../lib/violations";
 import { type LibraryMyProfile, useMyLibraryProfileQuery } from "../me-api";
 import { useTenantTimeZone } from "../use-tenant-timezone";
 
@@ -102,10 +103,10 @@ export function MyLibraryView(): ReactElement {
     );
   }
 
-  // A violation can be marked "unpaid" with a Rp0 amount (e.g. a waived
-  // fine); only a positive amount is actually owed and worth surfacing.
-  const unpaidViolations = data.violations.filter((v) => v.status === "unpaid" && v.amount > 0);
-  const unpaidTotal = unpaidViolations.reduce((sum, v) => sum + v.amount, 0);
+  // Only an unpaid fine with an amount is money owed: a warning or a
+  // suspension carries none and is not listed as a fine.
+  const unpaidViolations = data.violations.filter(isUnpaidFine);
+  const unpaidTotal = unpaidFineTotal(unpaidViolations);
   const counts = countMyLibraryTiles(data.active_loans, data.reservations, today);
   const activeLoans = [...data.active_loans].sort((a, b) => a.due_on.localeCompare(b.due_on));
 

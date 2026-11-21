@@ -87,6 +87,7 @@ export function MemberFines({
 }): ReactElement {
   const tHistory = useTranslations("app.library.memberHistory");
   const t = useTranslations("app.library.memberDetail");
+  const tViolations = useTranslations("app.library.violations");
   if (violations.length === 0) {
     return (
       <Card>
@@ -107,7 +108,9 @@ export function MemberFines({
         }
       >
         <CardTitle as="h2">
-          {t("finesTotal", { amount: formatCurrency(total, "IDR", { locale }) })}
+          {total > 0
+            ? t("finesTotal", { amount: formatCurrency(total, "IDR", { locale }) })
+            : t("finesOutstanding")}
         </CardTitle>
       </CardHeader>
       <List>
@@ -116,8 +119,11 @@ export function MemberFines({
             key={violation.id}
             title={tHistory(`fines.kind.${violation.kind}`)}
             trailing={
+              // A book to replace is owed as a book, not as money.
               <span className="text-body font-semibold tabular-nums text-fg">
-                {formatCurrency(violation.amount, "IDR", { locale })}
+                {violation.penalty === "replace_book"
+                  ? tViolations("penalties.replace_book")
+                  : formatCurrency(violation.amount, "IDR", { locale })}
               </span>
             }
           />

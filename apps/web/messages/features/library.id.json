@@ -612,6 +612,7 @@
     "loadErrorTitle": "Anggota tidak bisa dimuat",
     "finesPage": "Denda dan sanksi",
     "unpaidAlert": "Ada denda belum dibayar sebesar {amount}",
+    "replaceBookAlert": "Ada buku yang harus diganti",
     "viewFines": "Lihat denda",
     "tabsLabel": "Bagian anggota",
     "tabs": {
@@ -624,6 +625,7 @@
     "noFinesTitle": "Tidak ada denda",
     "noFinesBody": "Semua denda anggota ini sudah lunas.",
     "finesTotal": "Belum dibayar: {amount}",
+    "finesOutstanding": "Belum diselesaikan",
     "noReservations": "Belum ada pesanan buku",
     "confirmStatus": {
       "title": "Ubah status keanggotaan?",

@@ -38,6 +38,7 @@ import { StudentCounselingHistory } from "../../discipline/components/student-co
 import { StudentDisciplinePanel } from "../../discipline/components/student-discipline-panel";
 import { useMemberLoanHistoryQuery } from "../../library/api";
 import { MemberLoanRow, loanRowSortKey } from "../../library/components/member-loan-row";
+import { isOutstandingViolation } from "../../library/lib/violations";
 import { useLibraryMemberQuery, useLibraryMemberTypesQuery } from "../../library/members-api";
 import { useMemberViolationsQuery } from "../../library/violations-api";
 import { useMentorStudentSnapshotQuery } from "../../mentoring/api";
@@ -169,7 +170,7 @@ export function StudentLibraryTab({ studentId }: { studentId: string }): ReactEl
         .sort((a, b) => loanRowSortKey(a, today) - loanRowSortKey(b, today)),
     [loans.data, today],
   );
-  const unpaid = (violations.data?.data ?? []).filter((v) => v.status === "unpaid");
+  const unpaid = (violations.data?.data ?? []).filter(isOutstandingViolation);
 
   if (member.isLoading) return <SkeletonDetail rows={4} />;
   if (!member.data) {

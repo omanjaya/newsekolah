@@ -612,6 +612,7 @@
     "loadErrorTitle": "This member could not be loaded",
     "finesPage": "Fines and sanctions",
     "unpaidAlert": "Unpaid fines of {amount}",
+    "replaceBookAlert": "A book is owed as a replacement",
     "viewFines": "View fines",
     "tabsLabel": "Member sections",
     "tabs": {
@@ -624,6 +625,7 @@
     "noFinesTitle": "No fines",
     "noFinesBody": "Every fine of this member is paid.",
     "finesTotal": "Unpaid: {amount}",
+    "finesOutstanding": "Not yet settled",
     "noReservations": "No holds",
     "confirmStatus": {
       "title": "Change the membership status?",

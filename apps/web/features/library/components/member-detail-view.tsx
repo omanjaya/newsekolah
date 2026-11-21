@@ -42,6 +42,7 @@ import { useDirectoryNames } from "../../reference/directory-names";
 import { printMemberCard, useMemberLoanHistoryQuery, useMemberReservationsQuery } from "../api";
 import { formatShortDay } from "../lib/short-date";
 import { MEMBER_STATUS_TONE, toneOf } from "../lib/status-tones";
+import { isOutstandingViolation, unpaidFineTotal } from "../lib/violations";
 import {
   printLibraryClearanceLetter,
   useClearLibraryMemberMutation,
@@ -106,8 +107,11 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
     () => (loans.data?.data ?? []).filter((loan) => loan.status !== "active"),
     [loans.data],
   );
-  const unpaidViolations = (violations.data?.data ?? []).filter((v) => v.status === "unpaid");
-  const unpaidTotal = unpaidViolations.reduce((sum, v) => sum + v.amount, 0);
+  // What the member still has to settle: an unpaid fine or a book to
+  // replace. A warning or a suspension is not money owed and never shows
+  // as an unpaid fine here.
+  const outstanding = (violations.data?.data ?? []).filter(isOutstandingViolation);
+  const unpaidTotal = unpaidFineTotal(outstanding);
   const holds = reservations.data?.data ?? [];
   const userName = directoryMap.get(userId)?.name;
 
@@ -140,7 +144,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const data = member.data;
   const name = userName ?? data.member_no;
   const typeName = memberTypeMap.get(data.member_type_id)?.name;
-  const clearanceBlocked = activeLoans.length > 0 || unpaidViolations.length > 0;
+  const clearanceBlocked = activeLoans.length > 0 || outstanding.length > 0;
 
   const secondaryActions: PageHeaderAction[] = [
     {
@@ -230,10 +234,14 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
         </div>
       </Card>
 
-      {unpaidViolations.length > 0 && (
+      {outstanding.length > 0 && (
         <Alert
           tone="warning"
-          title={t("unpaidAlert", { amount: formatCurrency(unpaidTotal, "IDR", { locale }) })}
+          title={
+            unpaidTotal > 0
+              ? t("unpaidAlert", { amount: formatCurrency(unpaidTotal, "IDR", { locale }) })
+              : t("replaceBookAlert")
+          }
           action={
             <Button
               size="sm"
@@ -261,7 +269,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
           <TabsTrigger value="history" count={pastLoans.length || undefined}>
             {t("tabs.history")}
           </TabsTrigger>
-          <TabsTrigger value="fines" count={unpaidViolations.length || undefined}>
+          <TabsTrigger value="fines" count={outstanding.length || undefined}>
             {t("tabs.fines")}
           </TabsTrigger>
           <TabsTrigger value="reservations" count={holds.length || undefined}>
@@ -308,7 +316,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
 
         <TabsContent value="fines">
           <MemberFines
-            violations={unpaidViolations}
+            violations={outstanding}
             total={unpaidTotal}
             locale={locale}
             manageHref={
