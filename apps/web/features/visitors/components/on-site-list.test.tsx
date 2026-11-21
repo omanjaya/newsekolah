@@ -98,9 +98,9 @@ it("gives whom they came to see a line of its own that wraps instead of being cu
   expect(host.contains(compactPass())).toBe(false);
 
   // About, host over up to two lines, overdue, arrival and pass: the
-  // meta holds five lines, the host before the arrival.
+  // meta holds six lines, the host before the arrival.
   const meta = host.parentElement;
-  expect(meta).toHaveClass("line-clamp-5");
+  expect(meta).toHaveClass("line-clamp-6");
   expect(meta?.contains(arrivalLine())).toBe(true);
   expect(meta?.contains(compactPass())).toBe(true);
   const lines = Array.from(meta?.children ?? []);
@@ -155,19 +155,37 @@ it("marks no visitor overdue who is not", () => {
   expect(document.querySelector("[data-slot='on-site-overdue']")).toBeNull();
 });
 
-it("gives a compact row's lines to the host, arrival and pass, not the purpose", () => {
+it("gives a phone row's lines to the host, arrival and pass, not the purpose", () => {
   render(<OnSiteList entries={[hosted]} canManage={false} onCheckOut={vi.fn()} />);
 
   const about = screen.getByText("Rapat");
-  expect(about).toHaveClass("@max-xl:hidden");
+  expect(about).toHaveClass("@max-md:hidden");
   // Still readable in full where the row cuts it.
   expect(about).toHaveAttribute("title", "Rapat");
+});
+
+it("keeps where a visitor comes from in a tablet's compact row", () => {
+  // Beside the sidebar a 768-820px screen leaves the list 30-34rem wide:
+  // a compact row (below 36rem) whose text column is as wide as a
+  // laptop's. Hidden from 36rem down, the organisation was gone there and
+  // the guard could not see where the visitor came from.
+  const fromOffice: BoardEntry = {
+    ...hosted,
+    visit: { ...hosted.visit, organization: "Dinas Pendidikan" },
+  };
+  render(<OnSiteList entries={[fromOffice]} canManage onCheckOut={vi.fn()} />);
+
+  const about = screen.getByText("Dinas Pendidikan · Rapat");
+  expect(about).toHaveClass("block", "truncate", "@max-md:hidden");
+  expect(about.className).not.toMatch(/@max-(lg|xl|2xl):hidden/);
+  // The row itself still turns compact at 36rem: only this line moved.
+  expect(screen.getByText("checkOutShort")).toHaveClass("@xl:not-sr-only");
 });
 
 it("keeps the purpose in a compact row when there is no host to show", () => {
   render(<OnSiteList entries={[entry]} canManage={false} onCheckOut={vi.fn()} />);
 
-  expect(screen.getByText("Rapat")).not.toHaveClass("@max-xl:hidden");
+  expect(screen.getByText("Rapat").className).not.toMatch(/hidden/);
   expect(screen.queryByText("host")).not.toBeInTheDocument();
 });
 
@@ -178,7 +196,7 @@ it("keeps the purpose in a compact row when there is no pass to show", () => {
   };
   render(<OnSiteList entries={[noBadge]} canManage={false} onCheckOut={vi.fn()} />);
 
-  expect(screen.getByText("Rapat")).not.toHaveClass("@max-xl:hidden");
+  expect(screen.getByText("Rapat").className).not.toMatch(/hidden/);
 });
 
 it("shows check out as an icon in a compact row, keeping its accessible name", () => {

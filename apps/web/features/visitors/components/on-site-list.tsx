@@ -33,7 +33,10 @@ export function useStayLabel(): (minutes: number) => string {
  * wide row (the pass as a trailing chip, a labelled check out) squeezed
  * the text there to "Rin...", "Me...", "Mas...".
  * - Below 36rem the row is compact: check out is an icon, and the pass
- *   and the overdue mark each take a line of their own.
+ *   and the overdue mark each take a line of their own. Where the visitor
+ *   comes from and why stays above them down to 28rem (beside the
+ *   sidebar, a tablet's list is compact yet its text has a laptop's
+ *   room), and gives way to them on a phone only.
  * - From 36rem check out is labelled and the overdue mark leads the
  *   arrival line.
  * - From 48rem the pass is the trailing chip.
@@ -86,20 +89,24 @@ export function OnSiteList({
               title={visit.full_name}
               // Whom they came to see, since when, and the badge each get a
               // line of their own: sharing one, the host or the time was
-              // cut to "Menemui Kep..." beside the row's buttons. The host
-              // may take two lines and a compact row gives the overdue
-              // mark one more, so the meta holds five.
-              metaLines={5}
+              // cut to "Menemui Kep..." beside the row's buttons. Where
+              // they come from leads, the host may take two lines and a
+              // compact row gives the overdue mark one more, so the meta
+              // holds six and the pass at its end is never cut.
+              metaLines={6}
               meta={
                 <>
-                  {/* In a compact row with a host and a badge, the
-                      organization and purpose give way to those. */}
+                  {/* In a phone's list (below 28rem) with a host and a
+                      badge, the organization and purpose give way to
+                      those. A tablet's list beside the sidebar (30 to
+                      36rem) is compact too, but its text column is as
+                      wide as a laptop's, so it keeps them. */}
                   {about && (
                     <span
                       title={about}
                       className={cn(
                         "block truncate",
-                        hostLine && visit.badge_number && "@max-xl:hidden",
+                        hostLine && visit.badge_number && "@max-md:hidden",
                       )}
                     >
                       {about}
