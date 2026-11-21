@@ -73,14 +73,22 @@ export function MemberPastLoans({
   );
 }
 
-/** What the member still owes, item by item, with the total and the way to settle it. */
+/**
+ * What the member still owes, item by item, with the total and the way to
+ * settle it. An unsettled suspension is listed apart: it is served by its
+ * dates, not paid, so it never reads as money owed, yet staff still reach
+ * it here to settle it.
+ */
 export function MemberFines({
   violations,
+  suspensions = [],
   total,
   locale,
   manageHref,
 }: {
   violations: LibraryViolation[];
+  /** Unsettled suspensions: listed without an amount, outside the total. */
+  suspensions?: LibraryViolation[];
   total: number;
   locale: Locale;
   manageHref?: string;
@@ -88,7 +96,7 @@ export function MemberFines({
   const tHistory = useTranslations("app.library.memberHistory");
   const t = useTranslations("app.library.memberDetail");
   const tViolations = useTranslations("app.library.violations");
-  if (violations.length === 0) {
+  if (violations.length === 0 && suspensions.length === 0) {
     return (
       <Card>
         <EmptyState
@@ -100,36 +108,65 @@ export function MemberFines({
       </Card>
     );
   }
+  const manageLink = manageHref ? (
+    <TextLink href={manageHref}>{tHistory("fines.manage")}</TextLink>
+  ) : undefined;
   return (
-    <Card>
-      <CardHeader
-        action={
-          manageHref ? <TextLink href={manageHref}>{tHistory("fines.manage")}</TextLink> : undefined
-        }
-      >
-        <CardTitle as="h2">
-          {total > 0
-            ? t("finesTotal", { amount: formatCurrency(total, "IDR", { locale }) })
-            : t("finesOutstanding")}
-        </CardTitle>
-      </CardHeader>
-      <List>
-        {violations.map((violation) => (
-          <ListRow
-            key={violation.id}
-            title={tHistory(`fines.kind.${violation.kind}`)}
-            trailing={
-              // A book to replace is owed as a book, not as money.
-              <span className="text-body font-semibold tabular-nums text-fg">
-                {violation.penalty === "replace_book"
-                  ? tViolations("penalties.replace_book")
-                  : formatCurrency(violation.amount, "IDR", { locale })}
-              </span>
-            }
-          />
-        ))}
-      </List>
-    </Card>
+    <div className="flex flex-col gap-3">
+      {violations.length > 0 && (
+        <Card>
+          <CardHeader action={manageLink}>
+            <CardTitle as="h2">
+              {total > 0
+                ? t("finesTotal", { amount: formatCurrency(total, "IDR", { locale }) })
+                : t("finesOutstanding")}
+            </CardTitle>
+          </CardHeader>
+          <List>
+            {violations.map((violation) => (
+              <ListRow
+                key={violation.id}
+                title={tHistory(`fines.kind.${violation.kind}`)}
+                trailing={
+                  // A book to replace is owed as a book, not as money.
+                  <span className="text-body font-semibold tabular-nums text-fg">
+                    {violation.penalty === "replace_book"
+                      ? tViolations("penalties.replace_book")
+                      : formatCurrency(violation.amount, "IDR", { locale })}
+                  </span>
+                }
+              />
+            ))}
+          </List>
+        </Card>
+      )}
+      {suspensions.length > 0 && (
+        <Card>
+          {/* The manage link sits on the first card only. */}
+          <CardHeader action={violations.length > 0 ? undefined : manageLink}>
+            <CardTitle as="h2">{t("suspensionsOutstanding")}</CardTitle>
+          </CardHeader>
+          <List>
+            {suspensions.map((suspension) => (
+              <ListRow
+                key={suspension.id}
+                title={tHistory(`fines.kind.${suspension.kind}`)}
+                meta={
+                  suspension.suspend_days > 0
+                    ? tViolations("suspendDaysValue", { days: suspension.suspend_days })
+                    : undefined
+                }
+                trailing={
+                  <span className="text-body-sm text-fg-muted">
+                    {tViolations("penalties.suspend")}
+                  </span>
+                }
+              />
+            ))}
+          </List>
+        </Card>
+      )}
+    </div>
   );
 }
 

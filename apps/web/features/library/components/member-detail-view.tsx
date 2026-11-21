@@ -42,7 +42,7 @@ import { useDirectoryNames } from "../../reference/directory-names";
 import { printMemberCard, useMemberLoanHistoryQuery, useMemberReservationsQuery } from "../api";
 import { formatShortDay } from "../lib/short-date";
 import { MEMBER_STATUS_TONE, toneOf } from "../lib/status-tones";
-import { isOutstandingViolation, unpaidFineTotal } from "../lib/violations";
+import { isOutstandingViolation, isUnsettledSuspension, unpaidFineTotal } from "../lib/violations";
 import {
   printLibraryClearanceLetter,
   useClearLibraryMemberMutation,
@@ -109,9 +109,13 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   );
   // What the member still has to settle: an unpaid fine or a book to
   // replace. A warning or a suspension is not money owed and never shows
-  // as an unpaid fine here.
-  const outstanding = (violations.data?.data ?? []).filter(isOutstandingViolation);
+  // as an unpaid fine here; an unsettled suspension is listed apart on the
+  // fines tab, outside the alert, the count and the clearance check.
+  const memberViolations = violations.data?.data ?? [];
+  const outstanding = memberViolations.filter(isOutstandingViolation);
+  const suspensions = memberViolations.filter(isUnsettledSuspension);
   const unpaidTotal = unpaidFineTotal(outstanding);
+  const owesBook = outstanding.some((violation) => violation.penalty === "replace_book");
   const holds = reservations.data?.data ?? [];
   const userName = directoryMap.get(userId)?.name;
 
@@ -253,7 +257,10 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
               {t("viewFines")}
             </Button>
           }
-        />
+        >
+          {/* A fine and a book owed together: both block clearance. */}
+          {unpaidTotal > 0 && owesBook ? t("replaceBookAlert") : null}
+        </Alert>
       )}
 
       <Tabs
@@ -317,6 +324,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
         <TabsContent value="fines">
           <MemberFines
             violations={outstanding}
+            suspensions={suspensions}
             total={unpaidTotal}
             locale={locale}
             manageHref={

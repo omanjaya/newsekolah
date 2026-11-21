@@ -626,6 +626,7 @@
     "noFinesBody": "Semua denda anggota ini sudah lunas.",
     "finesTotal": "Belum dibayar: {amount}",
     "finesOutstanding": "Belum diselesaikan",
+    "suspensionsOutstanding": "Penangguhan belum selesai",
     "noReservations": "Belum ada pesanan buku",
     "confirmStatus": {
       "title": "Ubah status keanggotaan?",

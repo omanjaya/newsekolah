@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { isOutstandingViolation, isUnpaidFine, unpaidFineTotal } from "./violations";
+import {
+  isOutstandingViolation,
+  isUnpaidFine,
+  isUnsettledSuspension,
+  unpaidFineTotal,
+} from "./violations";
 
 describe("library violation settlement", () => {
   it("never reads a warning or a suspension as an unpaid fine", () => {
@@ -25,5 +30,11 @@ describe("library violation settlement", () => {
     expect(isOutstandingViolation(paid)).toBe(false);
     expect(isOutstandingViolation(zeroFine)).toBe(false);
     expect(unpaidFineTotal([fine, replace, paid, zeroFine])).toBe(1500);
+  });
+
+  it("keeps only an unpaid suspension as an unsettled suspension", () => {
+    expect(isUnsettledSuspension({ status: "unpaid", penalty: "suspend", amount: 0 })).toBe(true);
+    expect(isUnsettledSuspension({ status: "paid", penalty: "suspend", amount: 0 })).toBe(false);
+    expect(isUnsettledSuspension({ status: "unpaid", penalty: "fine", amount: 1500 })).toBe(false);
   });
 });

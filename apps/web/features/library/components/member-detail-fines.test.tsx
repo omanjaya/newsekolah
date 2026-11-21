@@ -10,6 +10,7 @@ import type { LibraryViolation } from "../violations-api";
 const violations = vi.hoisted<{ data: LibraryViolation[] }>(() => ({ data: [] }));
 const empty = vi.hoisted(() => () => ({ data: undefined, isLoading: false, isError: false }));
 const mutation = vi.hoisted(() => () => ({ mutate: vi.fn(), isPending: false }));
+const search = vi.hoisted(() => ({ query: "" }));
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string, values?: Record<string, unknown>) =>
@@ -19,7 +20,7 @@ vi.mock("next-intl", () => ({
 vi.mock("next/navigation", () => ({
   usePathname: () => "/library/members/u1",
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => new URLSearchParams(search.query),
 }));
 vi.mock("@newsekolah/ui", async () => {
   const actual = await vi.importActual<typeof UiModule>("@newsekolah/ui");
@@ -84,6 +85,7 @@ function violation(overrides: Partial<LibraryViolation>): LibraryViolation {
 
 beforeEach(() => {
   violations.data = [];
+  search.query = "";
 });
 
 describe("MemberDetailView fines", () => {
@@ -119,5 +121,34 @@ describe("MemberDetailView fines", () => {
     expect(screen.getByText("replaceBookAlert")).toBeInTheDocument();
     expect(screen.queryByText(/unpaidAlert/)).not.toBeInTheDocument();
     expect(screen.getByText("clearanceBlockedByLoan")).toBeInTheDocument();
+  });
+
+  it("keeps an unsettled suspension reachable without counting it as money owed", () => {
+    violations.data = [violation({ id: "s", penalty: "suspend", suspend_days: 3 })];
+    search.query = "tab=fines";
+    render(<MemberDetailView userId="u1" />);
+
+    expect(screen.queryByText("viewFines")).not.toBeInTheDocument();
+    expect(screen.queryByText("noFinesBody")).not.toBeInTheDocument();
+    expect(screen.getByText("suspensionsOutstanding")).toBeInTheDocument();
+    expect(screen.getByText("penalties.suspend")).toBeInTheDocument();
+    expect(screen.queryByText(/Rp/)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "fines.manage" })).toHaveAttribute(
+      "href",
+      "/library/violations?member=u1",
+    );
+    expect(screen.queryByText("clearanceBlockedByLoan")).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "tabs.fines" })).toBeInTheDocument();
+  });
+
+  it("names a book to replace beside the money owed", () => {
+    violations.data = [
+      violation({ id: "f", penalty: "fine", amount: 1500 }),
+      violation({ id: "r", kind: "lost", penalty: "replace_book" }),
+    ];
+    render(<MemberDetailView userId="u1" />);
+
+    expect(screen.getByText(/unpaidAlert/).textContent).toMatch(/1\.500/);
+    expect(screen.getByText("replaceBookAlert")).toBeInTheDocument();
   });
 });

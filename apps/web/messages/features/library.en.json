@@ -626,6 +626,7 @@
     "noFinesBody": "Every fine of this member is paid.",
     "finesTotal": "Unpaid: {amount}",
     "finesOutstanding": "Not yet settled",
+    "suspensionsOutstanding": "Suspensions not yet settled",
     "noReservations": "No holds",
     "confirmStatus": {
       "title": "Change the membership status?",

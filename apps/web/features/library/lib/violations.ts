@@ -28,3 +28,12 @@ export function isOutstandingViolation(violation: ViolationSettlement): boolean 
 export function unpaidFineTotal(violations: readonly ViolationSettlement[]): number {
   return violations.reduce((sum, v) => (isUnpaidFine(v) ? sum + v.amount : sum), 0);
 }
+
+/**
+ * A suspension not yet settled. It is served by its dates and owes no
+ * money, so it stays out of the unpaid total and the clearance check, but
+ * staff still settle it on the violations page.
+ */
+export function isUnsettledSuspension(violation: ViolationSettlement): boolean {
+  return violation.status === "unpaid" && violation.penalty === "suspend";
+}
