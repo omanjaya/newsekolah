@@ -7,7 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { StudentLink } from "../../students/components/student-link";
-import type { MemberBorrowBlock } from "../lib/member-borrowing";
+import type { MemberBorrowBlock, RunningSuspension } from "../lib/member-borrowing";
 import { formatShortDay } from "../lib/short-date";
 import type { LibraryMemberBorrowingStatus, LibraryMemberStatus } from "../members-api";
 
@@ -29,13 +29,21 @@ export interface DeskMembership {
    * would lend. A block is what stops the librarian.
    */
   block: MemberBorrowBlock | null;
+  /**
+   * The suspension still running today (runningSuspension), even once the
+   * membership has also ended: the server refuses on it first, so the
+   * desk names it first and a renewal alone does not clear the warning.
+   */
+  suspension: RunningSuspension | null;
 }
 
 /**
  * The desk's words for a membership: the badge beside the member's name
  * and the scan result's line when a loan would be refused. A running
  * suspension names its last day and an ended membership its end date, so
- * the librarian knows until when, not only that something is wrong.
+ * the librarian knows until when, not only that something is wrong. A
+ * suspension comes first, as on the server (EligibleToBorrow); when the
+ * membership has also ended, the scan result names both.
  */
 export function useDeskMembershipText(today: string): {
   badge: (membership: DeskMembership) => string;
@@ -46,18 +54,26 @@ export function useDeskMembershipText(today: string): {
   const locale = useLocale() as Locale;
   const day = (date: string) => formatShortDay(date, locale, { today });
   return {
-    badge: ({ status, block }) => {
-      if (block?.kind === "suspended" && block.until) {
-        return t("member.suspendedUntil", { date: day(block.until) });
+    badge: ({ status, block, suspension }) => {
+      if (suspension?.until) return t("member.suspendedUntil", { date: day(suspension.until) });
+      // A suspension with no end date reads by its status, "Ditangguhkan".
+      if (block?.kind === "expired" && !suspension) {
+        return t("member.expiredOn", { date: day(block.until) });
       }
-      if (block?.kind === "expired") return t("member.expiredOn", { date: day(block.until) });
       return tStatus(status);
     },
-    attention: ({ status, block }) => {
-      if (block?.kind === "suspended" && block.until) {
-        return t("result.memberSuspendedUntil", { date: day(block.until) });
+    attention: ({ status, block, suspension }) => {
+      if (suspension?.until) {
+        return block?.kind === "expired"
+          ? t("result.memberSuspendedAndExpired", {
+              date: day(suspension.until),
+              ended: day(block.until),
+            })
+          : t("result.memberSuspendedUntil", { date: day(suspension.until) });
       }
-      if (block?.kind === "expired") return t("result.memberExpired", { date: day(block.until) });
+      if (block?.kind === "expired" && !suspension) {
+        return t("result.memberExpired", { date: day(block.until) });
+      }
       return t("result.memberAttention", { status: tStatus(status) });
     },
   };

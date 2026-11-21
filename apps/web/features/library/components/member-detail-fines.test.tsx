@@ -1,6 +1,6 @@
 import type * as UiModule from "@newsekolah/ui";
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { LibraryMember } from "../members-api";
 import type { LibraryViolation } from "../violations-api";
@@ -92,6 +92,10 @@ beforeEach(() => {
   };
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("MemberDetailView fines", () => {
   it("does not read a warning or a suspension as an unpaid fine", () => {
     violations.data = [
@@ -159,6 +163,31 @@ describe("MemberDetailView fines", () => {
     expect(screen.getByText(/^suspensionBorrowFrom /)).toBeInTheDocument();
     expect(screen.queryByText("nothingOutstandingTitle")).not.toBeInTheDocument();
     expect(screen.queryByText("suspensionsOutstanding")).not.toBeInTheDocument();
+  });
+
+  // Suspended through 7 Dec with a membership valid through 30 Nov, on
+  // 4 Dec: the ended membership is named first, and the page lost the
+  // running suspension, so a settled one left "nothing outstanding" while
+  // the server still refuses every loan on the suspension.
+  it("keeps a running suspension in view once the membership has also ended", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-12-04T03:00:00Z"));
+    record.member = {
+      ...record.member,
+      status: "suspended",
+      suspended_until: "2026-12-07",
+      valid_until: "2026-11-30",
+    };
+    violations.data = [violation({ id: "s", penalty: "suspend", suspend_days: 3, status: "paid" })];
+    search.query = "tab=fines";
+    render(<MemberDetailView userId="u1" />);
+
+    expect(screen.getByText('suspendedUntil {"date":"7 Des"}')).toBeInTheDocument();
+    expect(screen.getByText("membershipExpiredNote")).toBeInTheDocument();
+    expect(screen.getByText('suspensionRunning {"date":"7 Des"}')).toBeInTheDocument();
+    expect(screen.getByText('suspensionMembershipEnded {"date":"30 Nov"}')).toBeInTheDocument();
+    expect(screen.queryByText(/^suspensionBorrowFrom /)).not.toBeInTheDocument();
+    expect(screen.queryByText("nothingOutstandingTitle")).not.toBeInTheDocument();
   });
 
   it("reads a suspension whose last day has passed as active", () => {

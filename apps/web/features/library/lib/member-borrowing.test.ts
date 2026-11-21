@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { memberBorrowBlock, shownMemberStatus } from "./member-borrowing";
+import { memberBorrowBlock, runningSuspension, shownMemberStatus } from "./member-borrowing";
 
 // The same cases as domain.Member.EligibleToBorrow on the server
 // (apps/api/internal/modules/library/domain/members.go).
@@ -131,6 +131,50 @@ describe("memberBorrowBlock", () => {
   it("blocks a pending, inactive or cleared membership", () => {
     for (const status of ["pending", "inactive", "cleared"] as const) {
       expect(memberBorrowBlock({ status }, today)).toEqual({ kind: "inactive" });
+    }
+  });
+});
+
+// The staff screens name a suspension the server still refuses on, even
+// once memberBorrowBlock reports the ended membership first.
+describe("runningSuspension", () => {
+  const today = "2026-12-04";
+
+  it("keeps a running suspension although the membership has already ended", () => {
+    expect(
+      runningSuspension(
+        { status: "suspended", suspended_until: "2026-12-07", valid_until: "2026-11-30" },
+        today,
+      ),
+    ).toEqual({ until: "2026-12-07", borrowFrom: null, membershipEnds: "2026-11-30" });
+    expect(runningSuspension({ status: "suspended", valid_until: "2026-11-30" }, today)).toEqual({
+      until: null,
+      borrowFrom: null,
+      membershipEnds: null,
+    });
+  });
+
+  it("promises the day after the last day while the membership reaches it", () => {
+    expect(
+      runningSuspension(
+        { status: "suspended", suspended_until: "2026-12-07", valid_until: "2026-12-08" },
+        today,
+      ),
+    ).toEqual({ until: "2026-12-07", borrowFrom: "2026-12-08", membershipEnds: null });
+    expect(
+      runningSuspension({ status: "suspended", suspended_until: "2026-12-04" }, today),
+    ).toEqual({ until: "2026-12-04", borrowFrom: "2026-12-05", membershipEnds: null });
+  });
+
+  it("is null once the last day has passed, and for any other status", () => {
+    expect(
+      runningSuspension(
+        { status: "suspended", suspended_until: "2026-12-03", valid_until: "2026-11-30" },
+        today,
+      ),
+    ).toBeNull();
+    for (const status of ["active", "pending", "inactive", "cleared"] as const) {
+      expect(runningSuspension({ status, suspended_until: "2026-12-07" }, today)).toBeNull();
     }
   });
 });

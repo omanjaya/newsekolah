@@ -366,6 +366,7 @@
       "memberTitle": "Serving {name}",
       "memberAttention": "Membership is {status}. Check before lending.",
       "memberSuspendedUntil": "Suspended until {date}, cannot borrow yet.",
+      "memberSuspendedAndExpired": "Suspended until {date}, and the membership ended {ended}. Cannot borrow yet.",
       "memberExpired": "Membership ended {date}. Renew it before lending.",
       "memberUnpaidFine": "The member still has an unpaid fine. Settle it under Fines and sanctions before lending.",
       "memberNext": {
@@ -637,6 +638,7 @@
     "suspensionRunningOpen": "Suspension runs until staff end it",
     "suspensionBorrowFrom": "Can borrow again from {date}.",
     "suspensionMembershipEnds": "The membership also ends {date}; renew it before borrowing again.",
+    "suspensionMembershipEnded": "The membership also ended {date}; renew it before borrowing again.",
     "noReservations": "No holds",
     "confirmStatus": {
       "title": "Change the membership status?",

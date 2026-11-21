@@ -40,7 +40,7 @@ import { todayInZone } from "../../../lib/tenant-date";
 import { useLookup } from "../../reference/api";
 import { useDirectoryNames } from "../../reference/directory-names";
 import { printMemberCard, useMemberLoanHistoryQuery, useMemberReservationsQuery } from "../api";
-import { memberBorrowBlock, shownMemberStatus } from "../lib/member-borrowing";
+import { memberBorrowBlock, runningSuspension, shownMemberStatus } from "../lib/member-borrowing";
 import { formatShortDay } from "../lib/short-date";
 import { MEMBER_STATUS_TONE, toneOf } from "../lib/status-tones";
 import { isOutstandingViolation, isUnsettledSuspension, unpaidFineTotal } from "../lib/violations";
@@ -148,9 +148,13 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
 
   const data = member.data;
   // The borrowing rule the desk lends on (EligibleToBorrow): a suspension
-  // shows its last day and reads active once that day has passed.
+  // shows its last day and reads active once that day has passed. The
+  // suspension is read apart from the block, which names an ended
+  // membership first: a member both suspended and expired still shows
+  // until when the suspension runs, as the server refuses on it first.
   const status = shownMemberStatus(data, today);
   const block = memberBorrowBlock(data, today);
+  const suspension = runningSuspension(data, today);
   const name = userName ?? data.member_no;
   const typeName = memberTypeMap.get(data.member_type_id)?.name;
   const clearanceBlocked = activeLoans.length > 0 || outstanding.length > 0;
@@ -235,9 +239,9 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
           ) : (
             <Badge tone={toneOf(MEMBER_STATUS_TONE, status)}>{t(`status.${status}`)}</Badge>
           )}
-          {block?.kind === "suspended" && block.until && (
+          {suspension?.until && (
             <span className="text-caption text-fg-muted">
-              {t("suspendedUntil", { date: formatShortDay(block.until, locale, { today }) })}
+              {t("suspendedUntil", { date: formatShortDay(suspension.until, locale, { today }) })}
             </span>
           )}
           {block?.kind === "expired" && (
@@ -336,7 +340,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
           <MemberFines
             violations={outstanding}
             suspensions={suspensions}
-            running={block?.kind === "suspended" ? block : null}
+            running={suspension}
             total={unpaidTotal}
             locale={locale}
             today={today}

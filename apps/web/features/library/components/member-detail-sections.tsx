@@ -20,7 +20,7 @@ import type { ReactElement } from "react";
 
 import { businessNow } from "../../../lib/simulation/clock";
 import type { LibraryLoan, LibraryReservation } from "../api";
-import type { MemberBorrowBlock } from "../lib/member-borrowing";
+import type { RunningSuspension } from "../lib/member-borrowing";
 import { formatShortDate, formatShortDateRange, formatShortDay } from "../lib/short-date";
 import { LOAN_STATUS_TONE, toneOf } from "../lib/status-tones";
 import type { LibraryViolation } from "../violations-api";
@@ -75,9 +75,6 @@ export function MemberPastLoans({
   );
 }
 
-/** The member's suspension still running today: a memberBorrowBlock of kind suspended. */
-export type RunningSuspension = Extract<MemberBorrowBlock, { kind: "suspended" }>;
-
 /**
  * What the member still owes, item by item, with the total and the way to
  * settle it. A suspension is listed apart: it is served by its dates, not
@@ -98,7 +95,10 @@ export function MemberFines({
   violations: LibraryViolation[];
   /** Unsettled suspensions: listed without an amount, outside the total. */
   suspensions?: LibraryViolation[];
-  /** The member's suspension still running today, settled or not. */
+  /**
+   * The member's suspension still running today (runningSuspension),
+   * settled or not, and even once the membership has also expired.
+   */
   running?: RunningSuspension | null;
   total: number;
   locale: Locale;
@@ -173,7 +173,12 @@ export function MemberFines({
             )}
             {running?.membershipEnds && (
               <CardDescription>
-                {t("suspensionMembershipEnds", { date: day(running.membershipEnds) })}
+                {t(
+                  today && running.membershipEnds < today
+                    ? "suspensionMembershipEnded"
+                    : "suspensionMembershipEnds",
+                  { date: day(running.membershipEnds) },
+                )}
               </CardDescription>
             )}
           </CardHeader>

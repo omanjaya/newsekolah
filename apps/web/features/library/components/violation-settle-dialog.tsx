@@ -11,7 +11,7 @@ import { useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { todayInZone } from "../../../lib/tenant-date";
-import { memberBorrowBlock } from "../lib/member-borrowing";
+import { runningSuspension } from "../lib/member-borrowing";
 import { formatShortDay } from "../lib/short-date";
 import { settlesByPayment } from "../lib/violations";
 import { useLibraryMemberQuery } from "../members-api";
@@ -120,9 +120,11 @@ export function ViolationSettleDialog({
 /**
  * What settling `violation` leaves of the member's suspension, or null
  * when there is none to mention: a running one keeps its last day, one
- * with no end date stays until staff change the status. Until the member
- * loads (or for someone who may not read member records), settling a
- * suspension still says it is not ended early.
+ * with no end date stays until staff change the status, even when the
+ * membership has also expired (runningSuspension, not memberBorrowBlock,
+ * which names the expiry first). Until the member loads (or for someone
+ * who may not read member records), settling a suspension still says it
+ * is not ended early.
  */
 function useSuspensionNote(violation: LibraryViolation | null): string | null {
   const t = useTranslations("app.library.violations.settle");
@@ -132,9 +134,9 @@ function useSuspensionNote(violation: LibraryViolation | null): string | null {
   const member = useLibraryMemberQuery(canReadMember ? (violation?.member_user_id ?? "") : "");
   if (!violation) return null;
   if (!member.data) return violation.penalty === "suspend" ? t("suspensionNotLifted") : null;
-  const block = memberBorrowBlock(member.data, today);
-  if (block?.kind !== "suspended") return null;
-  return block.until
-    ? t("suspensionKeepsRunning", { date: formatShortDay(block.until, locale, { today }) })
+  const suspension = runningSuspension(member.data, today);
+  if (!suspension) return null;
+  return suspension.until
+    ? t("suspensionKeepsRunning", { date: formatShortDay(suspension.until, locale, { today }) })
     : t("suspensionKeepsRunningOpen");
 }

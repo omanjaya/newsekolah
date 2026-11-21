@@ -17,7 +17,7 @@ import { AppPage } from "../../../components/app-page";
 import { todayInZone } from "../../../lib/tenant-date";
 import { confirmableItems, hasUndoableItem } from "../lib/desk-basket";
 import { deskItemTone, deskLastResult } from "../lib/desk-last-result";
-import { memberBorrowBlock, shownMemberStatus } from "../lib/member-borrowing";
+import { memberBorrowBlock, runningSuspension, shownMemberStatus } from "../lib/member-borrowing";
 import { useTenantTimeZone } from "../use-tenant-timezone";
 
 import { DeskMemberPanel, type DeskMembership, useDeskMembershipText } from "./desk-member-panel";
@@ -66,6 +66,7 @@ export function LoanDeskView(): ReactElement {
     ? {
         status: shownMemberStatus(session.membership, today),
         block: memberBorrowBlock(session.membership, today),
+        suspension: runningSuspension(session.membership, today),
       }
     : null;
   const statusAttention = Boolean(membership?.block);

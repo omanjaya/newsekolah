@@ -364,6 +364,43 @@ describe("LoanDeskView", () => {
     expect(live?.querySelector('[data-tone="warning"]')).not.toBeNull();
   });
 
+  // A member both suspended and expired read only "Keanggotaan berakhir",
+  // while the server refuses on the suspension first: a renewal alone
+  // would still be refused.
+  it("names a running suspension first when the membership has also ended", () => {
+    deskSession.mockReturnValue(
+      baseSession({
+        member,
+        membership: membership({
+          status: "suspended",
+          suspended_until: "2999-12-07",
+          valid_until: "2000-11-30",
+        }),
+      }),
+    );
+    const { container } = render(<LoanDeskView />);
+
+    expect(screen.getByText("member.suspendedUntil")).toBeInTheDocument();
+    expect(screen.queryByText("member.expiredOn")).not.toBeInTheDocument();
+    const live = resultBanner(container);
+    expect(live).toHaveTextContent("result.memberSuspendedAndExpired");
+    expect(live?.querySelector('[data-tone="warning"]')).not.toBeNull();
+  });
+
+  it("reads an open-ended suspension by its status although the membership has ended", () => {
+    deskSession.mockReturnValue(
+      baseSession({
+        member,
+        membership: membership({ status: "suspended", valid_until: "2000-11-30" }),
+      }),
+    );
+    const { container } = render(<LoanDeskView />);
+
+    expect(screen.getByText("suspended")).toBeInTheDocument();
+    expect(screen.queryByText("member.expiredOn")).not.toBeInTheDocument();
+    expect(resultBanner(container)).toHaveTextContent("result.memberAttention");
+  });
+
   it("drops the figures card when the dashboard query has not resolved and is not loading", () => {
     deskSession.mockReturnValue(baseSession());
     render(<LoanDeskView />);

@@ -366,6 +366,7 @@
       "memberTitle": "Melayani {name}",
       "memberAttention": "Status anggota {status}. Periksa dulu sebelum meminjamkan.",
       "memberSuspendedUntil": "Ditangguhkan sampai {date}, belum bisa meminjam.",
+      "memberSuspendedAndExpired": "Ditangguhkan sampai {date}, dan keanggotaan sudah berakhir {ended}. Belum bisa meminjam.",
       "memberExpired": "Keanggotaan berakhir {date}. Perpanjang dulu sebelum meminjamkan.",
       "memberUnpaidFine": "Anggota masih punya denda belum dibayar. Selesaikan di Denda dan sanksi sebelum meminjamkan.",
       "memberNext": {
@@ -637,6 +638,7 @@
     "suspensionRunningOpen": "Penangguhan berjalan sampai petugas mengakhirinya",
     "suspensionBorrowFrom": "Bisa meminjam lagi mulai {date}.",
     "suspensionMembershipEnds": "Keanggotaan juga berakhir {date}, perpanjang dulu sebelum meminjam lagi.",
+    "suspensionMembershipEnded": "Keanggotaan juga sudah berakhir {date}, perpanjang dulu sebelum meminjam lagi.",
     "noReservations": "Belum ada pesanan buku",
     "confirmStatus": {
       "title": "Ubah status keanggotaan?",

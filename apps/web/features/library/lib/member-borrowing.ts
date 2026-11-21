@@ -2,21 +2,30 @@ import { shiftDayKey } from "../../../lib/group-by-day";
 import type { LibraryMember, LibraryMemberStatus } from "../members-api";
 
 /**
+ * A suspension still running today, whatever the membership's validity:
+ * `until` is its last day and `borrowFrom` the day after. Both are null
+ * for one with no end date (it lasts until staff lift it). When the
+ * membership itself ends before `borrowFrom` (`membershipEnds`, its last
+ * valid day, which may already have passed), no day is promised:
+ * `borrowFrom` is null, as the member could not borrow then either.
+ */
+export type RunningSuspension =
+  | { until: string; borrowFrom: string; membershipEnds: null }
+  | { until: string; borrowFrom: null; membershipEnds: string }
+  | { until: null; borrowFrom: null; membershipEnds: null };
+
+/**
  * Why a member cannot borrow today, from their membership alone:
- * - suspended: a suspension still running; `until` is its last day and
- *   `borrowFrom` the day after. Both are null for one with no end date (it
- *   lasts until staff lift it). When the membership itself ends before
- *   `borrowFrom` (`membershipEnds`, its last valid day), no day is
- *   promised: `borrowFrom` is null, as the member could not borrow then
- *   either,
+ * - suspended: a suspension still running (RunningSuspension),
  * - expired: the membership's validity ended on `until`; this comes first,
  *   even during a suspension, since renewing it is what the member needs,
  * - inactive: the membership is pending, inactive or cleared.
+ *
+ * Staff screens that must name a suspension even once the membership has
+ * also expired read runningSuspension beside this.
  */
 export type MemberBorrowBlock =
-  | { kind: "suspended"; until: string; borrowFrom: string; membershipEnds: null }
-  | { kind: "suspended"; until: string; borrowFrom: null; membershipEnds: string }
-  | { kind: "suspended"; until: null; borrowFrom: null; membershipEnds: null }
+  | ({ kind: "suspended" } & RunningSuspension)
   | { kind: "expired"; until: string }
   | { kind: "inactive" };
 
@@ -47,21 +56,37 @@ export function memberBorrowBlock(
       return expired ? { kind: "expired", until: expired } : null;
     case "suspended": {
       if (expired) return { kind: "expired", until: expired };
-      const until = dayOf(member.suspended_until);
-      if (until === null) {
-        return { kind: "suspended", until: null, borrowFrom: null, membershipEnds: null };
-      }
-      // Over the day after its last day; the validity is already checked.
-      if (today > until) return null;
-      const borrowFrom = shiftDayKey(until, 1);
-      if (validUntil !== null && validUntil < borrowFrom) {
-        return { kind: "suspended", until, borrowFrom: null, membershipEnds: validUntil };
-      }
-      return { kind: "suspended", until, borrowFrom, membershipEnds: null };
+      const running = runningSuspension(member, today);
+      return running ? { kind: "suspended", ...running } : null;
     }
     default:
       return { kind: "inactive" };
   }
+}
+
+/**
+ * The member's suspension still running on `today`, or null when there is
+ * none: the status is suspended and its last day (if any) has not passed.
+ * Unlike memberBorrowBlock this ignores whether the membership has also
+ * expired, so the staff screens keep naming a suspension the server still
+ * refuses a loan for (EligibleToBorrow checks the suspension first) after
+ * the membership is renewed.
+ */
+export function runningSuspension(
+  member: MembershipFields,
+  today: string,
+): RunningSuspension | null {
+  if (member.status !== "suspended") return null;
+  const until = dayOf(member.suspended_until);
+  if (until === null) return { until: null, borrowFrom: null, membershipEnds: null };
+  // Over the day after its last day.
+  if (today > until) return null;
+  const borrowFrom = shiftDayKey(until, 1);
+  const validUntil = dayOf(member.valid_until);
+  if (validUntil !== null && validUntil < borrowFrom) {
+    return { until, borrowFrom: null, membershipEnds: validUntil };
+  }
+  return { until, borrowFrom, membershipEnds: null };
 }
 
 /**

@@ -1,6 +1,6 @@
 import { ApiError } from "@newsekolah/api-client";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   mutate: vi.fn(),
@@ -54,6 +54,10 @@ describe("ViolationSettleDialog", () => {
   beforeEach(() => {
     mocks.mutate.mockReset();
     mocks.member = undefined;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   // Both clicks of a double click land before the mutation's pending state
@@ -158,6 +162,20 @@ describe("ViolationSettleDialog", () => {
       mocks.member = { status: "suspended", suspended_until: "2999-12-07" };
       renderSettle(violation);
       expect(screen.getByText("confirmPaidBodyAmount")).toBeInTheDocument();
+      expect(screen.getByText("suspensionKeepsRunning")).toBeInTheDocument();
+    });
+
+    // Suspended through 7 Dec with a membership valid through 30 Nov, on
+    // 4 Dec: the ended membership must not hide the running suspension.
+    it("says the suspension keeps running once the membership has also ended", () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-12-04T03:00:00Z"));
+      mocks.member = {
+        status: "suspended",
+        suspended_until: "2026-12-07",
+        valid_until: "2026-11-30",
+      };
+      renderSettle(suspension);
       expect(screen.getByText("suspensionKeepsRunning")).toBeInTheDocument();
     });
 
