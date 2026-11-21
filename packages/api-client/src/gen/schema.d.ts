@@ -9289,6 +9289,9 @@ export interface components {
             student_user_id: string;
             name: string;
             status_code: string;
+            /** @enum {string} */
+            source?: "teacher" | "leave" | "permit" | "system";
+            /** @description For a source of leave or permit, the permit's machine note ("leave letter <number>", "exit permit"), which a client localizes rather than shows as is. */
             notes?: string;
             /** @description True for a student no longer actively enrolled in the session's class (moved or left since). The entry is still that lesson's record, but the report's student list, the class's current roster, leaves them out. */
             left_class?: boolean;

@@ -3,10 +3,11 @@
 import { Badge, DataTable, EmptyState, StatusBadge, cn } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { FileBarChart } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
 
+import { SHORT_DATE, formatCalendarDate } from "../../../lib/format-calendar-date";
 import { useMonthlyAttendanceSummaryQuery, type CalendarDay } from "../api";
 
 import { STATUS_TOKEN } from "./attendance-report-options";
@@ -24,11 +25,20 @@ export function MonthlyAttendanceTable({
   month: string;
 }): ReactElement {
   const t = useTranslations("app.attendanceReports.monthly");
+  const format = useFormatter();
   const report = useMonthlyAttendanceSummaryQuery(studentId, month, studentId !== "");
 
   const columns = useMemo<ColumnDef<CalendarDay>[]>(
     () => [
-      { accessorKey: "date", header: t("columns.date"), enableSorting: false },
+      {
+        accessorKey: "date",
+        header: t("columns.date"),
+        enableSorting: false,
+        // "Sen, 5 Apr 2027" rather than the API's "2027-04-05"; the
+        // weekday helps read a month of school days at a glance.
+        cell: ({ row }) =>
+          formatCalendarDate(format, row.original.date, { weekday: "short", ...SHORT_DATE }),
+      },
       {
         accessorKey: "status_code",
         header: t("columns.status"),
@@ -54,7 +64,7 @@ export function MonthlyAttendanceTable({
         ),
       },
     ],
-    [t],
+    [format, t],
   );
 
   const rows = (report.data?.data ?? []).filter((day) => day.status_code !== "NONE");

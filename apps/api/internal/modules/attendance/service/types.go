@@ -178,7 +178,11 @@ type DailyReportSessionEntry struct {
 	StudentUserID uuid.UUID
 	Name          string
 	StatusCode    string
-	Notes         string
+	// Source is where StatusCode came from: a teacher's pick, or a leave
+	// letter or exit permit that forced it (whose Notes is then the
+	// permit's machine note, which the web localizes).
+	Source domain.EntrySource
+	Notes  string
 	// LeftClass is true for a student no longer actively enrolled in the
 	// session's class: the entry is still that lesson's record, but the
 	// student is not on the class roster the report's student table lists.

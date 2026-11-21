@@ -21421,8 +21421,17 @@ components:
           type: string
         status_code:
           type: string
+        source:
+          type: string
+          enum:
+            - teacher
+            - leave
+            - permit
+            - system
         notes:
           type: string
+          description: For a source of leave or permit, the permit's machine note ("leave letter <number>", "exit permit"), which
+            a client localizes rather than shows as is.
         left_class:
           type: boolean
           description: True for a student no longer actively enrolled in the session's class (moved or left since). The entry is

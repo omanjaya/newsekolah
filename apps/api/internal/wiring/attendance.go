@@ -85,8 +85,10 @@ func (d AttendanceDiscipline) ViolationSummaryForClass(ctx context.Context, tena
 // PermitsOverrider exposes permits' issued leave letters to attendance as
 // its Overrider: a letter covering a date forces the student's status for
 // it. It also implements attendance's BatchOverrider so tenant-level jobs
-// resolve many students and dates in one query, and its OverrideNoter so a
-// calendar row names the letter.
+// resolve many students and dates in one query, and its OverrideNoter so
+// the letter's note is stored on each entry it forces in SaveEntries, shown
+// on the locked roster row, and named on the calendar for an unopened
+// lesson or an opened entry stored without the note.
 type PermitsOverrider struct{ Svc *permitsservice.Service }
 
 var (

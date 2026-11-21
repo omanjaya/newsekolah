@@ -18,6 +18,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { sourceNoteText } from "../lib/source-note";
 import { statusToken } from "../lib/status-tokens";
 
 type DailyReportSession = components["schemas"]["AttendanceDailyReportSession"];
@@ -29,7 +30,9 @@ type DailyReportSession = components["schemas"]["AttendanceDailyReportSession"];
  * aggregate status_code cannot show once a student's day mixes statuses
  * across sessions. An entry of a student who has since left the class
  * stays, since it is that lesson's record, but says so: the student table
- * above lists the class's current roster only.
+ * above lists the class's current roster only. A note a permit wrote
+ * ("leave letter <number>") is shown in the reader's language, as the
+ * roster and the calendar show it.
  */
 export function AttendanceDailySessions({
   sessions,
@@ -37,6 +40,7 @@ export function AttendanceDailySessions({
   sessions: DailyReportSession[];
 }): ReactElement | null {
   const t = useTranslations("app.attendanceReports.daily");
+  const tAttendance = useTranslations("app.attendance");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (sessions.length === 0) return null;
@@ -84,7 +88,12 @@ export function AttendanceDailySessions({
                             key={entry.student_user_id}
                             title={entry.name}
                             meta={
-                              [entry.left_class ? t("entryLeftClass") : "", entry.notes ?? ""]
+                              [
+                                entry.left_class ? t("entryLeftClass") : "",
+                                sourceNoteText(entry.notes, entry.source, (number) =>
+                                  tAttendance("leaveLetterNote", { number }),
+                                ),
+                              ]
                                 .filter(Boolean)
                                 .join(" · ") || undefined
                             }

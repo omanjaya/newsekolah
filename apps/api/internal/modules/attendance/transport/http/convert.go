@@ -216,6 +216,10 @@ func toAPIHomeroomEntries(entries []service.HomeroomEntry) []api.AttendanceHomer
 
 func toAPIDailyReportSessionEntry(e service.DailyReportSessionEntry) api.AttendanceDailyReportSessionEntry {
 	out := api.AttendanceDailyReportSessionEntry{StudentUserId: e.StudentUserID, Name: e.Name, StatusCode: e.StatusCode}
+	if e.Source != "" {
+		source := api.AttendanceDailyReportSessionEntrySource(e.Source)
+		out.Source = &source
+	}
 	if e.Notes != "" {
 		out.Notes = &e.Notes
 	}

@@ -132,6 +132,16 @@ func (s *Service) calendarDaysForRange(
 				return nil, err
 			} else if found {
 				cds.StatusCode, cds.Note, cds.Source = entry.StatusCode, entry.Notes, entry.Source
+				// An entry a letter forced but stored without its note (a
+				// session opened after the letter was issued, saved before
+				// SaveEntries stored the note) names the letter as an
+				// unopened lesson of the same letter does (audit
+				// r7v-auth-attendance-R1).
+				if cds.Note == "" && cds.Source != domain.SourceTeacher {
+					if cds.Note, err = s.overrideNote(ctx, tenantID, studentUserID, d); err != nil {
+						return nil, err
+					}
+				}
 			}
 			day.Sessions = append(day.Sessions, cds)
 		}

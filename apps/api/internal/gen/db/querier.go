@@ -1270,7 +1270,8 @@ type Querier interface {
 	// (moved or left since): the entry stays a true record of that lesson,
 	// but the report's student table -- the class's current roster -- no
 	// longer lists them, so the detail says why the name is there. Those rows
-	// come after the current roster's.
+	// come after the current roster's. source lets the report read a permit's
+	// machine note ("leave letter <number>") as the web localizes it.
 	ListEntryReportRowsBySessions(ctx context.Context, arg ListEntryReportRowsBySessionsParams) ([]ListEntryReportRowsBySessionsRow, error)
 	// Every status code recorded for one student across the given date's
 	// submitted sessions -- the raw input to attendance/domain.ComputeDailyStatus.
