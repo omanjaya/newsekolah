@@ -33,6 +33,7 @@ const snapshot = {
   discipline_points: 0,
   discipline_active_count: 0,
   published_subjects: [],
+  score_decimals: 2,
 } as unknown as MentorStudentSnapshot;
 
 describe("mentor snapshot sections with switched-off modules", () => {
@@ -134,5 +135,25 @@ describe("mentor snapshot grades", () => {
     expect(screen.getByText("Matematika")).toBeInTheDocument();
     expect(screen.getByText("78,5")).toBeInTheDocument();
     expect(screen.queryByText("78.5")).not.toBeInTheDocument();
+  });
+
+  // r4v-grades-discipline-R1: a published 55.08 read 55,1 here while the
+  // gradebook and the student's own grades page showed 55,08.
+  it("writes a score at the grading scale's precision", () => {
+    const grades = [{ subject_id: "sub-1", score: 55.08 }];
+    const { unmount } = render(
+      <SnapshotGradesSection
+        snapshot={{ ...snapshot, published_subjects: grades, score_decimals: 2 }}
+      />,
+    );
+    expect(screen.getByText("55,08")).toBeInTheDocument();
+    unmount();
+
+    render(
+      <SnapshotGradesSection
+        snapshot={{ ...snapshot, published_subjects: grades, score_decimals: 1 }}
+      />,
+    );
+    expect(screen.getByText("55,1")).toBeInTheDocument();
   });
 });

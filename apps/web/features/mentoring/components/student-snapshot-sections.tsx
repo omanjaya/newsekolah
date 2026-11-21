@@ -1,6 +1,6 @@
 "use client";
 
-import { formatNumber, type Locale } from "@newsekolah/i18n";
+import { type Locale } from "@newsekolah/i18n";
 import {
   Badge,
   Card,
@@ -21,6 +21,7 @@ import type { ReactElement } from "react";
 import { statusToken } from "../../../lib/attendance-status";
 import { useModuleEnabled } from "../../../lib/modules/use-module-enabled";
 import { ActivitiesRecord } from "../../activities/components/activities-record";
+import { formatScore } from "../../grading/lib/format-score";
 import { useLookup, useSubjectsQuery } from "../../reference/api";
 import type { MentorStudentSnapshot } from "../api";
 
@@ -159,7 +160,11 @@ export function SnapshotActivitiesSection({
   );
 }
 
-/** Left out while the school has grading off (the API then has no grades to report). */
+/**
+ * Left out while the school has grading off (the API then has no grades to
+ * report). Scores show at the scale's precision (`score_decimals`), as the
+ * gradebook and the student's own grades page show them.
+ */
 export function SnapshotGradesSection({
   snapshot,
 }: {
@@ -193,7 +198,7 @@ export function SnapshotGradesSection({
               title={subjectMap.get(s.subject_id)?.name ?? t("grades.unknownSubject")}
               trailing={
                 <span className="text-label text-fg tabular-nums">
-                  {formatNumber(s.score, { locale, fractionDigits: 1 })}
+                  {formatScore(s.score, locale, snapshot.score_decimals)}
                 </span>
               }
             />

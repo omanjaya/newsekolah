@@ -87,6 +87,7 @@ vi.mock("../api", () => ({
         clubs: [],
         achievements: [],
         published_subjects: [],
+        score_decimals: 2,
       },
       state.snapshotError,
     ),
